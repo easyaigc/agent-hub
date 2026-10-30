@@ -1,3 +1,4 @@
+import type { CodexHistoryReader } from './history-reader.js';
 import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
 import { readCodexUsage } from './usage.js';
 import { diagnosticEvent } from './diagnostic-events.js';
@@ -800,6 +801,22 @@ export class RuntimeSession {
     await this.runtime.connect();
     await this.desktopCreationDriver?.refresh();
     this.connectedOnce = true;
+  }
+  async desktopMetadataExecutable(): Promise<string> {
+    if (!(this.runtime instanceof DesktopRuntime) || this.closed)
+      throw new RuntimeError(503, '原桌面元数据通道不可用');
+    await this.runtime.connect();
+    return this.options.executable!;
+  }
+  /** Internal metadata-only connection; no wire method supplied by a client. */
+  async connectDesktopReader(
+    reader: CodexHistoryReader,
+    recover = false,
+    active = () => true,
+  ): Promise<void> {
+    if (!(this.runtime instanceof DesktopRuntime) || this.closed)
+      throw new RuntimeError(503, '原桌面元数据通道不可用');
+    await this.runtime.connectMetadataReader(reader, recover, active);
   }
   private scheduleReconnect(): void {
     if (this.reconnectTimer || this.closed) return;

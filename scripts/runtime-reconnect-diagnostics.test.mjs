@@ -251,11 +251,15 @@ test(
   },
   async () => {
     const runtime = new DesktopRuntime({ mode: 'desktop-runtime' }, randomUUID(), 'fixture');
-    let release,
-      calls = 0,
+    let release, started;
+    const readerStarted = new Promise((resolve) => {
+      started = resolve;
+    });
+    let calls = 0,
       ipc = 0;
     runtime.reader.connect = () => {
       calls++;
+      started();
       return new Promise((resolve) => {
         release = resolve;
       });
@@ -266,6 +270,9 @@ test(
     const first = runtime.connect(),
       second = runtime.connect();
     assert.equal(first, second);
+    // Discovery is now shared asynchronously. Keep the late-reader race causal,
+    // rather than requiring reader startup before connect() returns its Promise.
+    await readerStarted;
     assert.equal(calls, 1);
     runtime.close();
     release();

@@ -112,3 +112,9 @@ node skills/codex-host-connect/scripts/probe-host.mjs --state-dir .local/desktop
 ## 后台启动与旧任务迁移
 
 统一程序已为后台 metadata／worker／原生 helper 设置隐藏窗口，并将计划任务 action 迁到等待 worker 退出的 GUI launcher。它保留原登录、每分钟 IgnoreNew 恢复、退出码和准确 stop/status 身份边界，不修改用户终端。`status.consoleLaunch=native-hidden-wait` 只说明 action 已登记；已有活进程须 stop/start 或 restart 才切换，不能仅设置任务 Hidden 属性。按随包 [迁移与回退](../assets/codex-manage/docs/windows-background-launch.md) 保存本机 XML／文件／私有配置、合并统一产物并核对实际依赖闭包。回退先用新版 stop，再还原旧文件及本机原任务 XML；旧版不识别 launcher action。原生 launcher 边界用 `node scripts/windows-host-launcher-smoke.mjs` 独立验证，窗口、调度周期和正式手机功能仍由本机逐项实测。
+
+### 自动更新与目录恢复
+
+新版 Host 中，主 runtime 和独立工作区 reader 共享有界可信安装发现。旧 Store CLI 路径失效或正常重开后，运行中的只读目录可恢复，不再要求每次手工重启 Host；旧 metadata 进程须确认退出。成功快照缓存 30 秒，故障可提前刷新，失败按 1–15 秒退避；当前可信 owner、用户／会话、安装来源和实际协议检查不变。
+
+鉴权 `/healthz` 的 200 只证明存活，检查 `status`、`runtime`、`workspaceCatalog` 及完整 `/v1/workspace`。503／degraded 的具体原因保留，不改身份或凭据，不重放未知写入，不通过改网络掩盖路径失效。安装及升级后分别记录正常启动、同一 Host 进程跨真实更新／正常重开、来源 Windows 和手机结果。辅助入口为 `node --test scripts/desktop-update-recovery.test.mjs` 和原 `node scripts/windows-host-recovery-smoke.mjs`；其他平台运行的 fixture 不能代替本机可信安装和真实桌面验收。

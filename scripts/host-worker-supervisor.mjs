@@ -241,7 +241,9 @@ export function superviseWorker({
         state = 'http-unhealthy';
       }
       if (stopping || child !== launched) return;
-      if (!['healthy', 'http-unhealthy', 'persistence-degraded'].includes(state))
+      if (
+        !['healthy', 'http-unhealthy', 'runtime-degraded', 'persistence-degraded'].includes(state)
+      )
         state = 'http-unhealthy';
       if (state !== healthState) {
         healthState = state;

@@ -315,3 +315,9 @@ pnpm test:desktop:controller:ios
 默认双通道，Tailscale 是在外远控的可选依赖；纯局域网无需 VPN。两条路使用同一 Host、授权、草稿和回执。安装流程把实测 Serve 根地址 JSON 数组保存到 `HOST_AGENT_HTTPS_ENDPOINTS`；服务通过鉴权 `GET /v1/connection-routes?hostId=<准确 ID>` 交付严格 v1 路径快照，旧 `/host` 不变。手机保留旧 Serve 地址，局域网固定证书与 Serve 系统信任分开；前台健康路径保留，失败后自动换到同目标可达入口，未知写请求只核对原回执。详见 [网络接入](../skills/codex-host-connect/references/network.md)，逐平台及跨机真实结果另记。
 
 Windows 双通道配置沿 service → 私有配置 → worker 的严格环境边界传递；三处必须同时接受 `HOST_AGENT_HTTPS_ENDPOINTS`。未知字段和非字符串仍拒绝，Host 再验证根地址与数量，不能通过放开整个环境来修复。Windows 原生首次验收发现白名单缺项，原包未切入该机正式服务；修复后统一新包逐机复验，原失败记录保留。
+
+### Codex 自动更新后的目录恢复
+
+原桌面模式的完整工作区目录 reader 与主 runtime 共享当前可信 CLI，不永久固定启动环境中的旧 Store 路径。运行期间 CLI 消失、桌面 owner 正常变化或只读传输失效时，Host 合并重新发现、等待旧 reader 完全退出，并最多重读一次幂等目录。连续失败按 1–15 秒退避；无需把每次 Codex 更新变成重装 Host 的流程。macOS 保留显式 CLI 或原固定 bundle 路径，Windows 保留原可信 owner／CLI 与协议校验。
+
+`/healthz` 的 HTTP 200 表示服务存活；同时核对 `status`、`runtime` 和 `workspaceCatalog`，`not-read` 不能当目录通过。不可用时目录返回准确 503 原因码和健康 degraded；无可信替代、坏协议或旧进程退出未确认要保留现场，不能通过关闭信任检查继续。回复、新建、审批、停止及管理操作的未知结果仍查询原回执，自动目录恢复不会重放输入。真实更新／重开和手机验收详见 [专项记录](acceptance/codex-update-resilience-20261030.md)。

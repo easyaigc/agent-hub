@@ -874,11 +874,14 @@ try {
   revision++;
   snapshot();
   await settle();
-  const runtime = Object.assign(Object.create(DesktopRuntime.prototype), {
-    ipc: client,
-    options: { socket: path },
-    reader: { read: async () => ({ config: {} }) },
-  });
+  const runtime = Object.assign(
+    new DesktopRuntime({ mode: 'desktop-runtime' }, 'fixture-host', 'fixture'),
+    {
+      ipc: client,
+      options: { socket: path },
+      reader: { read: async () => ({ config: {} }) },
+    },
+  );
   const input = [
     { type: 'text', text: '首条文字' },
     { type: 'localImage', path: '/tmp/image.png' },

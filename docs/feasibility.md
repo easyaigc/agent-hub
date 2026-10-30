@@ -549,3 +549,9 @@ P7大文本帧按当前父线13文件精确SHA接入，排除并保留Main/Sessi
 Android EasyWork残留/孤立credential只读归档实现已接入，包含无grant fence、撤销中/已确认和OIDC历史；不能据此宣称活动业务完整迁移、跨端互通、登录或当前授权有效。8项原生准备仅编译，父当前候选验证与真实DEV未完成。
 
 Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：保客户端/草稿/附件/历史和原不可变操作，原授权只读归档、显式重新配对；热6/冷2/IO5/生命周期1尚未在父候选运行。P8组合UI5和P9既有key store5也仅准备；JVM/编译、实际系统/网络、物理多端和真实DEV分别留证，当前不能宣称完整P7/A5/自然OS通知已通过。iOS原凭据迁移策略与跨格式仍待专门对齐，A6保持暂停。
+
+### 2026-10-30：更新路径漂移的目录恢复缺口
+
+已定位的调用链是 `/v1/workspace → DesktopWorkspaceView → 独立 CodexHistoryReader → 启动环境 CODEX_EXECUTABLE`。既有 worker 子启动刷新和主 DesktopRuntime 重连发现并未更新该独立 reader；其首次 spawn 失败也不会触发主 reader 的断连通知，因而主 IPC 可持续 ready 而目录每次 502。手工重启刷新环境只能临时消除这条差异。
+
+本次候选让全部目录 reader 共享 runtime 的可信安装发现、并发预算与有界退避；目录只读限次重试和准确 503／degraded 已实现。不同 owner 切换、旧进程退出未确认、无可信 CLI、协议不匹配均保持拒绝，不以版本白名单或重放未知写入恢复。Windows 原生信任与在途更新实测由来源 Windows 独立执行；macOS 辅助测试不升级其通过状态。网络域名／tailnet／Serve 故障属于另一层，本次不修改。

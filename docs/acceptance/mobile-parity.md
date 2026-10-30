@@ -1465,3 +1465,5 @@ PAR47-N：Source47 API37本地合成通知自然首击和原/新草稿完整关�
 [PAR49](../plans/android-alignment-20261022/parallel/forty-ninth-stage-recovery-controls-native.json)：同一可见文案赋予真实Material控件原生owner名称，内部文字仅隐藏AX曝光，约束内固有宽度保持小标签自然尺寸及长文换行；原role/选中/禁用/回调/字号/48dp及全部UI7断言不变。API26六个唯一方法通过；API37横屏在英语原文诊断完整性断言失败，中文两外观禁用重录标签仅局部证明，TalkBack与完整横屏仍待验。原首项完成后只读查询exit255保留；后续只读补齐原件，余五项使用新lease，未重放首项。新组件测试/F64均未采用；iOS PR60圆形重试及长按另线继续，双端影响保持登记。
 
 2026-10-29 Source50：仅测试诊断与四态原Popup像素采集，生产代码与Source49相同。API26短屏六方法通过，API37横屏在方向setup失败且body未验；P8中浅/英深两方法通过、8张四态菜单PNG逐张查看标签与唯一勾选正确。sourceRect原点独立绑定、API26菜单捕获、完整横屏/读屏/物理/真实DEV/iOS均未关闭；F64新长按与失败条、F73不在本候选。精确证据见[UI7](../plans/android-alignment-20261022/parallel/fiftieth-stage-owned-ax-native.json)及[P8](../plans/android-alignment-20261022/parallel/fiftieth-stage-p8-menu-pixels-native.json)。
+
+2026-10-30 F02／F03 Host Codex 更新恢复：共享安装快照与独立目录 reader 恢复已实现候选，端侧和 KMP 不变；本轮辅助检查、macOS 只读、Windows 原机与手机分别记录于 [专项记录](codex-update-resilience-20261030.md)。未验项保持未验，A6 暂停。

@@ -376,14 +376,17 @@ try {
     };
     const threadId = 'unicode-confirm-thread';
     let snapshot, uploadedPath;
-    const runtime = Object.assign(Object.create(DesktopRuntime.prototype), {
-      ipc: { ready: true, follow: async () => snapshot },
-      reader: {
-        ready: true,
-        read: async () => ({ thread: { projectId: null } }),
-        registerOwnerThread() {},
+    const runtime = Object.assign(
+      new DesktopRuntime({ mode: 'desktop-runtime' }, 'fixture-host', 'fixture'),
+      {
+        ipc: { ready: true, follow: async () => snapshot },
+        reader: {
+          ready: true,
+          read: async () => ({ thread: { projectId: null } }),
+          registerOwnerThread() {},
+        },
       },
-    });
+    );
     const session = Object.assign(Object.create(RuntimeSession.prototype), {
       runtime,
       options: { directory: join(root, 'unicode-confirm') },

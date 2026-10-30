@@ -82,6 +82,7 @@ export class CodexHistoryReader {
   private sidebar: DesktopSidebar | undefined;
   private connecting: Promise<void> | undefined;
   private connectionEpoch = 0;
+  private executableGeneration: string | undefined;
   onDisconnect: () => void = () => {};
 
   constructor(
@@ -95,10 +96,11 @@ export class CodexHistoryReader {
   }
 
   /** Never replace a metadata subprocess until its exit and stdio close are confirmed. */
-  async configureExecutable(executable: string): Promise<void> {
-    if (executable === this.executable) return;
+  async configureExecutable(executable: string, generation?: string): Promise<void> {
+    if (executable === this.executable && generation === this.executableGeneration) return;
     await this.closeAndWait();
     this.executable = executable;
+    this.executableGeneration = generation;
   }
 
   private async closeAndWait(): Promise<void> {
@@ -197,7 +199,9 @@ export class CodexHistoryReader {
           );
         } else request.resolve(message.result);
       } catch {
-        this.fail(new Error('Invalid Codex transport'));
+        this.fail(
+          Object.assign(new Error('Invalid Codex transport'), { code: 'CODEX_READER_PROTOCOL' }),
+        );
       }
     });
     child.once('error', () => {
@@ -227,6 +231,7 @@ export class CodexHistoryReader {
   private fail(error: Error): void {
     const wasReady = this.initialized;
     this.initialized = false;
+    if (!('code' in error)) Object.assign(error, { code: 'CODEX_READER_DISCONNECTED' });
     for (const item of this.pending.values()) {
       clearTimeout(item.timer);
       item.reject(error);
@@ -292,7 +297,8 @@ export class CodexHistoryReader {
 
   /** Metadata only; callers cannot use this reader to execute or resume a task. */
   async read(method: string, params: RecordValue): Promise<RecordValue> {
-    if (!this.ready || method === 'initialize') throw new Error('Reader unavailable');
+    if (!this.ready || method === 'initialize')
+      throw Object.assign(new Error('Reader unavailable'), { code: 'CODEX_READER_DISCONNECTED' });
     return object(await this.rpc(method, params));
   }
   /** Called only after the desktop IPC validates an exact live owner snapshot. */

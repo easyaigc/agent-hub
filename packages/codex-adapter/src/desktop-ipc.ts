@@ -7,14 +7,13 @@ import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { CodexHistoryReader } from './history-reader.js';
+import { DesktopInstallation } from './desktop-installation.js';
 import { DesktopFrameDecoder, desktopFrameLimits } from './desktop-framing.js';
 import { DesktopLiveWindow, type DesktopLiveObservation } from './desktop-live-window.js';
 import { configuredPermissionSettings, permissionSettings } from './generation-settings.js';
 import {
-  loadWindowsDesktop,
   openWindowsDesktopPipe,
   windowsDesktopPipe,
-  readMacDesktopVersion,
   type WindowsDesktopIdentity,
 } from './desktop-platform.js';
 import {
@@ -1027,6 +1026,8 @@ export class DesktopRuntime {
   version = '';
   private connecting: Promise<void> | undefined;
   private closed = false;
+  private readonly installation: DesktopInstallation;
+  private metadataGeneration: string | undefined;
   onEvent: (method: string, params: WireObject) => void = () => {};
   onRequest: (id: string | number, method: string, params: WireObject) => void = () => {};
   onDisconnect: () => void = () => {};
@@ -1045,6 +1046,7 @@ export class DesktopRuntime {
           ? windowsDesktopPipe
           : join(homedir(), '.codex', 'ipc', 'ipc.sock')),
     );
+    this.installation = new DesktopInstallation(options, hostId);
     this.reader = new CodexHistoryReader(hostId, name, options.executable);
     this.ipc.onSnapshot = (threadId, state) =>
       this.onEvent('desktop/snapshot', { threadId, state });
@@ -1057,7 +1059,7 @@ export class DesktopRuntime {
     this.reader.onDisconnect = () => this.ipc.close();
   }
   get ready(): boolean {
-    return this.ipc.ready && this.reader.ready;
+    return this.installation.available && this.ipc.ready && this.reader.ready;
   }
   /** Read this computer's desktop choice fresh; never copy another Host's settings. */
   async defaultPermissions(cwd: string): Promise<WireObject> {
@@ -1118,16 +1120,16 @@ export class DesktopRuntime {
       return false;
     }
   }
-  connect(): Promise<void> {
+  connect(recoverInstallation = false): Promise<void> {
     if (this.closed) return Promise.reject(new Error('Desktop runtime closed'));
     if (this.connecting) return this.connecting;
-    const work = this.connectOnce().finally(() => {
+    const work = this.connectOnce(recoverInstallation).finally(() => {
       if (this.connecting === work) this.connecting = undefined;
     });
     this.connecting = work;
     return work;
   }
-  private async connectOnce(): Promise<void> {
+  private async connectOnce(recoverInstallation: boolean): Promise<void> {
     const check = () => {
       if (this.closed) {
         this.ipc.close();
@@ -1135,34 +1137,57 @@ export class DesktopRuntime {
         throw new Error('Desktop runtime closed');
       }
     };
-    // Collect optional acceptance metadata without checking build compatibility.
-    let actual: string;
-    if (process.platform === 'win32') {
-      if (!this.options.windowsDesktopConfig)
-        throw new Error('CODEX_DESKTOP_WINDOWS_CONFIG required');
-      const windows = loadWindowsDesktop(this.options.windowsDesktopConfig, this.hostId, {
-        executable: this.options.executable,
-      });
-      await this.reader.configureExecutable(windows.executable!);
-      // Other metadata helpers share this options object, but resolve it only
-      // when opening their next connection. Private startup files stay intact.
-      this.options.executable = windows.executable!;
-      actual = windows.archive.version;
-      this.ipc.windowsIdentity = windows.identity;
-    } else {
-      actual = readMacDesktopVersion();
+    let installed;
+    try {
+      installed = await this.installation.resolve(recoverInstallation || !this.ipc.ready);
+    } catch (error) {
+      // A trust/protocol discovery failure must revoke live command readiness.
+      this.ipc.close();
+      throw error;
     }
-    this.version = actual;
+    check();
+    await this.reader.configureExecutable(installed.executable, installed.generation);
+    this.metadataGeneration = installed.generation;
+    this.options.executable = installed.executable;
+    this.version = installed.version;
+    if (installed.windows) {
+      const previous = this.ipc.windowsIdentity;
+      const current = installed.windows.identity;
+      if (
+        previous &&
+        (previous.pid !== current.pid ||
+          previous.startedAtUnixMs !== current.startedAtUnixMs ||
+          previous.executableSha256 !== current.executableSha256)
+      )
+        this.ipc.close();
+      this.ipc.windowsIdentity = current;
+    }
     check();
     if (!this.reader.ready) await this.reader.connect();
     check();
     try {
-      await this.ipc.connect();
+      if (!this.ipc.ready) await this.ipc.connect();
       check();
     } catch (error) {
       this.ipc.close();
       this.reader.close();
       throw error;
+    }
+  }
+  /** Auxiliary readers share trusted discovery, but never execution/replay. */
+  async connectMetadataReader(
+    reader: CodexHistoryReader,
+    recover = false,
+    active = () => true,
+  ): Promise<void> {
+    await this.connect(recover);
+    if (this.closed || !active()) throw new Error('Desktop metadata reader closed');
+    await reader.configureExecutable(this.options.executable!, this.metadataGeneration);
+    if (this.closed || !active()) throw new Error('Desktop metadata reader closed');
+    if (!reader.ready) await reader.connect();
+    if (this.closed || !active()) {
+      reader.close();
+      throw new Error('Desktop runtime closed');
     }
   }
   async call(

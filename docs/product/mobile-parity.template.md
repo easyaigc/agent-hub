@@ -123,3 +123,5 @@ Android 实现／辅助检查／真实验收：<separate statuses and evidence r
 Android 达到完整交付前，可有分阶段版本，但必须列出待开发和未验收功能。后续新增功能默认覆盖两端；确属平台能力差异时记录适用范围与等价行为，不能只更新完成的一端。
 
 2026-10-21 F69 候选：Windows 批内并行仍执行每项完整来源校验，进程使用 fresh-open 创建映像查询；iOS 只扩展独立 bundle 的正常 UI 验收准备，不改产品界面或草稿规则。当前真实 Windows 普通模式与 iPhone15 Xcode 结果待验，macOS 与 Android 的既有状态保持。参见 [当前验收范围](../acceptance/mobile-parity.md#windows-trace-当前失败与修复候选2026-10-21)。
+
+2026-10-30 F03／F02：Host 工作区独立 metadata reader 改为共享当前可信安装发现，修复 Codex 更新后仍固定旧 CLI 路径的目录读取缺口。共同断言：同一 Host/workspace/runtime、原设备凭据、缓存／草稿及未知操作 ID 不变；仅完整只读目录限次重试，不重放回复、新建、审批、停止或管理操作。iOS／Android 共用 Host，端侧 UI 与 KMP 不变；两端均保留原连接并按既有读取恢复，未新增原生通过。实现、辅助回归、Windows 原机与手机结果分列于 [恢复记录](../acceptance/codex-update-resilience-20261030.md)，A6 保持暂停。

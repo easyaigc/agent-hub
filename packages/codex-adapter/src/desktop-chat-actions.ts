@@ -219,7 +219,7 @@ export class DesktopChatActions {
   constructor(
     private directory: string,
     private hostId: string,
-    private executable: string,
+    private executable: string | (() => Promise<string>),
     private home: string,
     private guard: (request: ChatActionRequest) => Promise<void>,
     private sharedWebsocketUrl?: string,
@@ -327,7 +327,10 @@ export class DesktopChatActions {
     try {
       client = this.sharedWebsocketUrl
         ? new SharedChatMetadata(this.sharedWebsocketUrl)
-        : new ChatMetadata(this.executable, this.home);
+        : new ChatMetadata(
+            typeof this.executable === 'function' ? await this.executable() : this.executable,
+            this.home,
+          );
       this.clients.add(client);
       await this.guard(request);
       await client.initialize();

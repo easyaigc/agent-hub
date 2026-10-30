@@ -32,7 +32,10 @@ const deferred = () => {
   return { promise, resolve };
 };
 const desktopRuntime = (reader, ipc) =>
-  Object.assign(Object.create(DesktopRuntime.prototype), { reader, ipc });
+  Object.assign(new DesktopRuntime({ mode: 'desktop-runtime' }, 'fixture-host', 'fixture'), {
+    reader,
+    ipc,
+  });
 const session = (runtime, fields) =>
   Object.assign(Object.create(RuntimeSession.prototype), { runtime, ...fields });
 

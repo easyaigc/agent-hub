@@ -9,6 +9,7 @@ import {
   readFileSync,
   existsSync,
   readdirSync,
+  unlinkSync,
   rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -161,6 +162,83 @@ try {
     readFileSync(hostPath),
     Buffer.from(JSON.stringify(refreshed.configuration, null, 2) + '\n'),
   );
+  // The shared runtime coordinator must also recover independently of IPC.
+  // Only OS trust APIs above are replaced; discovery/cache/generation are real.
+  const { DesktopInstallation } =
+    await import('../packages/codex-adapter/dist/desktop-installation.js');
+  const originalNow = Date.now;
+  let clock = originalNow();
+  const originalCli = readFileSync(cli);
+  const migratedCli = join(directory, 'installed/resources/codex.exe');
+  try {
+    Date.now = () => clock;
+    const coordinator = new DesktopInstallation(
+      { windowsDesktopConfig: desktopPath, executable: 'missing-cli' },
+      'host',
+    );
+    const beforeDiscovery = calls.filter((args) => args.includes('inspect')).length;
+    const snapshots = await Promise.all(Array.from({ length: 12 }, () => coordinator.resolve()));
+    assert(
+      snapshots.every((value) => value === snapshots[0]),
+      'Concurrent independent readers share one discovery',
+    );
+    assert.equal(calls.filter((args) => args.includes('inspect')).length, beforeDiscovery + 1);
+    assert.equal(snapshots[0].executable, cli);
+    unlinkSync(cli);
+    writeFileSync(migratedCli, 'synthetic current bundled cli');
+    const migrated = await coordinator.resolve();
+    assert.equal(
+      migrated.executable,
+      migratedCli,
+      'A missing cached CLI invalidates even the success TTL',
+    );
+    assert.notEqual(migrated.generation, snapshots[0].generation);
+    clock += 1100;
+    identity.pid++;
+    const reopened = await coordinator.resolve(true);
+    assert.notEqual(
+      reopened.generation,
+      migrated.generation,
+      'Same-path desktop reopen changes metadata generation',
+    );
+    const inspectedBeforeReplacement = calls.filter((args) => args.includes('inspect')).length;
+    writeFileSync(migratedCli, 'synthetic same-path changed CLI bytes');
+    const samePathReplacement = await coordinator.resolve();
+    assert.notEqual(samePathReplacement.generation, reopened.generation);
+    assert.equal(
+      calls.filter((args) => args.includes('inspect')).length,
+      inspectedBeforeReplacement + 1,
+      'Same-path file replacement invalidates trust even within the one-second discovery floor',
+    );
+    identity.pid--;
+    validCli = false;
+    clock += 1100;
+    await assert.rejects(
+      coordinator.resolve(true),
+      (error) => error.code === 'WINDOWS_CLI_NOT_FOUND',
+    );
+    assert.equal(coordinator.available, false);
+    const failedCalls = calls.length;
+    await assert.rejects(
+      coordinator.resolve(true),
+      (error) => error.code === 'WINDOWS_CLI_NOT_FOUND',
+    );
+    assert.equal(calls.length, failedCalls, 'Even forced requests respect failure backoff');
+    validCli = true;
+    clock += 1001;
+    assert.equal((await coordinator.resolve()).executable, migratedCli);
+    assert.equal(coordinator.available, true);
+    assert.deepEqual(
+      readFileSync(desktopPath),
+      staleBytes,
+      'Live recovery never rewrites private startup configuration',
+    );
+  } finally {
+    Date.now = originalNow;
+    validCli = true;
+    if (existsSync(migratedCli)) unlinkSync(migratedCli);
+    writeFileSync(cli, originalCli);
+  }
   for (const property of ['sameUser', 'sameSession']) {
     identity[property] = false;
     assert.throws(() => loadWindowsDesktop(desktopPath, 'host', { executable: cli }), /identity/);
@@ -281,6 +359,9 @@ process.on('message',()=>{server.closeAllConnections();server.close(()=>process.
       reports.some((v) => v.state === 'http-unhealthy'),
   );
   probeState = 'persistence-degraded';
+  writeFileSync(control, probeState);
+  await until(() => reports.some((v) => v.state === probeState));
+  probeState = 'runtime-degraded';
   writeFileSync(control, probeState);
   await until(() => reports.some((v) => v.state === probeState));
   probeState = 'healthy';

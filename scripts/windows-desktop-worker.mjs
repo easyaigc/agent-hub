@@ -148,8 +148,9 @@ if (process.argv[3] === '--host-child') {
       );
       if (!response.ok) throw new Error('Host health unavailable');
       const health = await response.json();
-      if (health.service !== 'host-agent' || health.status !== 'ok')
+      if (health.service !== 'host-agent' || !['ok', 'degraded'].includes(health.status))
         throw new Error('Host health invalid');
+      if (health.status === 'degraded') return 'runtime-degraded';
       return health.persistence?.backgroundAttempt > 0 ||
         health.persistence?.historyRetrying > 0 ||
         health.persistence?.historyStalled > 0

@@ -17,10 +17,12 @@ export class DesktopTranscription {
   private capabilityRefresh: Promise<void> | undefined;
   constructor(
     private readonly codexHome = process.env.CODEX_HOME ?? join(homedir(), '.codex'),
-    private readonly executable = 'codex',
+    private readonly executable: string | (() => Promise<string>) = 'codex',
   ) {}
-  private authRead() {
-    return readDesktopBackendAuth(this.executable, this.codexHome).catch(() => {
+  private async authRead() {
+    const executable =
+      typeof this.executable === 'function' ? await this.executable() : this.executable;
+    return readDesktopBackendAuth(executable, this.codexHome).catch(() => {
       throw new RuntimeError(503, '电脑暂时无法读取 Codex 登录状态，请稍后重试；原录音不会提交');
     });
   }

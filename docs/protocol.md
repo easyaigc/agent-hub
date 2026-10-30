@@ -175,3 +175,9 @@ Android EasyWork canonical对象成员名与String值使用相同编码路径，
 Android本地迁移payload/candidate4采用text descriptor和raw UTF8 frame；envelope2与root storage3不变。严格长度/SHA/前缀、顺序、closed schema、完整图和EOF；每text8MiB、合计raw192MiB、1024条上限不放宽，pending .new/.bak拒绝而不恢复。1/2/3继续读，同ID结果核对不重stage，替换须明确动作；不宣称iOS跨格式互操作。
 
 Android迁移payload4新增migration-easywork-archives-v1 catalog和migration-easywork-original-v1惰性别名。catalog闭合绑定原安装context、原名/role/字节数/SHA256，最多16安装/每安装1024原件、catalog512KiB，并受文本8MiB/总192MiB/输出1024额度。未知major、不完整引用、pending文件拒绝；envelope2/root3不变，不定义iOS互通。传入DPoP系统私钥不导出，授权原文只在加密归档内，不进入活动目标/credentialRef/重放。
+
+### 工作区元数据恢复状态（2026-10-30）
+
+原桌面 Host 的鉴权 `/healthz` 增加 `workspaceCatalog`：`state` 为 `not-read`、`ready` 或 `unavailable`，`retryAfterMs` 为非负的本地退避剩余毫秒。尚未读取不等于成功；reader 已断开时不报告目录 ready。目录不可用或主 runtime 未就绪时 `status=degraded`，HTTP 200 仅表示 Host 存活，原有 runtime 诊断仍独立返回。
+
+`GET /v1/workspace` 的元数据失败返回 503 与具体 `CODEX_READER_*`／`WINDOWS_*` 原因码，无法归类时为 `DESKTOP_CATALOG_UNAVAILABLE`。响应不包含安装路径、原始错误 payload 或凭据。客户端沿用连接与草稿，稍后重试读取；此约定不授权回复、新建、审批、停止或聊天管理写操作重试，也不改变未知操作的原 ID／指纹。

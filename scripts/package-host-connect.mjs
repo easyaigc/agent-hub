@@ -67,6 +67,10 @@ const fixedSourceFiles = new Set([
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java',
+  'scripts/mobile/fixtures/NaturalDiagnosticCapacityVectors.java',
+  'scripts/mobile/fixtures/NaturalVisibilityVectors.java',
 ]);
 const reviewedBinarySourceSha256 = new Map([
   [

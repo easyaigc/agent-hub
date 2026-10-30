@@ -1,5 +1,5 @@
 import { CodexHistoryReader } from './history-reader.js';
-import { RuntimeSession } from './runtime-session.js';
+import { RuntimeError, RuntimeSession } from './runtime-session.js';
 import type { WorkspaceSidebar } from '@codex-manage/protocol';
 
 type Workspace = Awaited<ReturnType<RuntimeSession['workspace']>> & { sidebar?: WorkspaceSidebar };
@@ -12,6 +12,22 @@ export class DesktopWorkspaceView {
   private refreshing: Promise<Workspace> | undefined;
   private closed = false;
   private deleted = new Set<string>();
+  private retryAt = 0;
+  private retryDelay = 1000;
+  private readFailure?: unknown;
+  private catalogRead = false;
+  private recoveryTimer: NodeJS.Timeout | undefined;
+  get status() {
+    return {
+      state:
+        this.readFailure || (this.catalogRead && !this.reader.ready)
+          ? 'unavailable'
+          : this.catalogRead && this.reader.ready
+            ? 'ready'
+            : 'not-read',
+      retryAfterMs: Math.max(0, this.retryAt - Date.now()),
+    };
+  }
   removed(threadId: string): void {
     this.deleted.add(threadId);
   }
@@ -23,21 +39,97 @@ export class DesktopWorkspaceView {
     statePath: string,
   ) {
     this.reader = new CodexHistoryReader(session.hostId, name, executable, statePath);
+    this.reader.onDisconnect = () => {
+      if (this.closed) return;
+      this.readFailure ??= new RuntimeError(
+        503,
+        '原桌面目录读取器已断开',
+        'CODEX_READER_DISCONNECTED',
+      );
+      this.scheduleRecovery();
+    };
+  }
+
+  private scheduleRecovery(): void {
+    if (this.closed || this.recoveryTimer) return;
+    this.recoveryTimer = setTimeout(
+      () => {
+        this.recoveryTimer = undefined;
+        if (!this.closed) void this.workspace().catch(() => {});
+      },
+      Math.max(1000, this.retryAt - Date.now()),
+    );
+    this.recoveryTimer.unref();
   }
 
   workspace(): Promise<Workspace> {
     if (this.refreshing) return this.refreshing;
-    const work = this.refresh().finally(() => {
-      if (this.refreshing === work) this.refreshing = undefined;
-    });
+    const work = this.refresh()
+      .then((workspace) => {
+        if (this.closed) throw new Error('Desktop workspace view closed');
+        if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+        this.recoveryTimer = undefined;
+        this.catalogRead = true;
+        this.retryDelay = 1000;
+        this.readFailure = undefined;
+        return workspace;
+      })
+      .catch((error: unknown) => {
+        if (this.closed) throw error;
+        if (error !== this.readFailure) {
+          const nativeCode = (error as { code?: unknown })?.code;
+          const code =
+            typeof nativeCode === 'string' &&
+            /^(?:CODEX_READER_|WINDOWS_)[A-Z0-9_]+$/.test(nativeCode)
+              ? nativeCode
+              : 'DESKTOP_CATALOG_UNAVAILABLE';
+          this.readFailure =
+            error instanceof RuntimeError
+              ? error
+              : new RuntimeError(503, '原桌面目录暂不可用，保留原连接并稍后重试', code);
+          this.retryAt = Date.now() + this.retryDelay;
+          this.retryDelay = Math.min(15_000, this.retryDelay * 2);
+          // A disconnect may have scheduled before this attempt failed. Move
+          // that deadline forward; a premature timer must not lose the loop.
+          if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+          this.recoveryTimer = undefined;
+        }
+        this.scheduleRecovery();
+        throw this.readFailure;
+      })
+      .finally(() => {
+        if (this.refreshing === work) this.refreshing = undefined;
+      });
     this.refreshing = work;
     return work;
   }
 
   private async refresh(): Promise<Workspace> {
     if (this.closed) throw new Error('Desktop workspace view closed');
-    if (!this.reader.ready) await this.reader.connect();
-    const catalog = await this.reader.desktopWorkspace();
+    if (Date.now() < this.retryAt) throw this.readFailure;
+    let catalog;
+    try {
+      await this.session.connectDesktopReader(this.reader, false, () => !this.closed);
+      catalog = await this.reader.desktopWorkspace();
+    } catch (error) {
+      // Only transport failures can retry a complete idempotent catalog once.
+      // Protocol rejections, exit barriers and write operations never enter it.
+      const code = (error as { code?: string })?.code;
+      if (
+        ![
+          'CODEX_READER_DISCONNECTED',
+          'CODEX_READER_WRITE_FAILED',
+          'CODEX_READER_TIMEOUT',
+        ].includes(code ?? '')
+      )
+        throw error;
+      await this.session.connectDesktopReader(this.reader, true, () => !this.closed);
+      catalog = await this.reader.desktopWorkspace();
+    }
+    if (this.closed) {
+      this.reader.close();
+      throw new Error('Desktop workspace view closed');
+    }
     // Populate the existing session's read-only catalog through its public
     // pagination API, so every displayed ID remains openable by that session.
     let workspace = await this.session.workspace();
@@ -142,6 +234,8 @@ export class DesktopWorkspaceView {
 
   close(): void {
     this.closed = true;
+    if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+    this.recoveryTimer = undefined;
     this.reader.close();
   }
 }

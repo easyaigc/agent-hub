@@ -3297,6 +3297,16 @@
       "packages/protocol/package.json",
       "packages/easywork-adapter/package.json",
       "packages/easywork-adapter/tsconfig.json"
+    ],
+    "HostUpdateRecovery": [
+      "apps/host-agent/src/runtime-server.ts",
+      "packages/codex-adapter/src/desktop-chat-actions.ts",
+      "packages/codex-adapter/src/desktop-ipc.ts",
+      "packages/codex-adapter/src/desktop-transcription.ts",
+      "packages/codex-adapter/src/desktop-workspace-view.ts",
+      "packages/codex-adapter/src/history-reader.ts",
+      "packages/codex-adapter/src/runtime-session.ts",
+      "packages/codex-adapter/src/desktop-installation.ts"
     ]
   },
   "groups": [
@@ -3430,11 +3440,12 @@
         "AndroidMainIntegration",
         "AndroidNavigationCopy",
         "AndroidNotificationHostMainIntegration",
-        "HostCoordinationReviewedSourceBundle"
+        "HostCoordinationReviewedSourceBundle",
+        "HostUpdateRecovery"
       ],
       "scenarios": ["S01"],
       "ui": ["UI01", "UI03"],
-      "revision": 21,
+      "revision": 22,
       "implementation": {
         "ios": "code-present",
         "android": "implemented"
@@ -17301,6 +17312,33 @@
         "apps/android/src/main/res/values/product_strings.xml": "7add6f00d860016547d96159d974c7c53e6014b8b6d631ab525c536a70951586",
         "design/mobile/agent-usage-preview.html": "d9b7189ac9075b5df05b27438a8a79ada64bc219dcf9fd203ce941dfa388829f",
         "scripts/mobile/usage-easywork-live.mjs": "a5c5539ff200fb9ae80008403624df0e2a1e20af63df1c514d10e49af1dbb7b2"
+      }
+    },
+    {
+      "id": "host-update-reader-recovery-20261030",
+      "baseCommit": "c7a6f95e03f3ef18403c68518cb403103cf633fd",
+      "features": ["F02", "F03", "F17", "F48", "F64"],
+      "summary": "Host独立目录reader共享可信安装发现、退出屏障与有界只读恢复；两端连接和草稿不变，Windows原机及手机未新增通过。 统一包补充四个已有固定Android诊断/向量源码的准确登记，不放开Java通配。",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "936b5fdad86031ad2ccd0f5cfed86fcaa0cc98911fa888245ad2d117ffb17701",
+        "packages/codex-adapter/src/desktop-chat-actions.ts": "ecda607a01f9759987bf062e2407fc3b703daf34f70d93478f20428e04c7eeda",
+        "packages/codex-adapter/src/desktop-ipc.ts": "8781e566930ebc6f01f053dbce2e3b575aeb45e1644bc6922dd43d8677829921",
+        "packages/codex-adapter/src/desktop-transcription.ts": "1c98ff60bd17ee31d995b3088bd6315e45a00255f962499179b9cc6da499d16e",
+        "packages/codex-adapter/src/desktop-workspace-view.ts": "0a5dd08b806a0fa546ec5ab733e2ce77daa8bdc2384d2df57884ba38a9a0f06e",
+        "packages/codex-adapter/src/history-reader.ts": "1ff453f0b7a59d5fb7c70d78315524469e6005d2473281fbb740ba13d5d7cbdb",
+        "packages/codex-adapter/src/runtime-session.ts": "c98c6a2bf17bc0e0be48009293cb42ece089579abd9e8f24eb5e6453e324ce4d",
+        "scripts/host-worker-supervisor.mjs": "b68339fefe05401f706a2e3e18c79e26093c3351f1a6e82393465486bf2db873",
+        "scripts/windows-desktop-worker.mjs": "820b16a9fd319eb1fea27f0f70aa9ac6c604dad7748a09d5ab857783f21a8717",
+        "scripts/windows-host-recovery-smoke.mjs": "84a9ec107f0d636c8030bd1b620700fd07e1d33ceeb1f7bd18dc526724d53488",
+        "packages/codex-adapter/src/desktop-installation.ts": "e5915a503ee595ea1a39e7b25497435ac2e07c70b1beff920b18ffb1a9bc0201",
+        "scripts/desktop-update-recovery.test.mjs": "1f453083000818502cbeea5d1cf9e0e8ca163cec74e669ccb39d8fe68071e7fe",
+        "scripts/runtime-reconnect-diagnostics.test.mjs": "e5a6f75fee411d651d3865ff37f0ba89aaeee2107e977916274033ca8571953a",
+        "scripts/desktop-creation-smoke.mjs": "2942bae71e7157417bd03deacacdf4b0f1ee08936c6a27f4cb08472f5bab535e",
+        "scripts/chat-actions-smoke.mjs": "40b751e21c659a18c2650d599cd97e6de5f41f52661df49dd9c824e24fcbb4e8",
+        "scripts/thread-fork-recovery-smoke.mjs": "68992f1591679e9425d5a35c1de22a6653de3e06f18c8775fe8313d7c9ee3f46",
+        "scripts/desktop-ipc-smoke.mjs": "4463a05f7d8adf924bc737f1c980fe7d4c59f3c2c56d3135ef134d9df3b779c7",
+        "scripts/package-host-connect.mjs": "3184ec3bdb004b631b3fc3ac71f03619158fb5c54a105e5325508bd6fd646202",
+        "scripts/package-host-connect.test.mjs": "e2b2bdc56e00a6354bd3b31d37d7cce79634e2491e1dc6723dc866fbe7774e82"
       }
     }
   ]

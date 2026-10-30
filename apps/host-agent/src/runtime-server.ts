@@ -195,7 +195,7 @@ export async function startRuntimeServer() {
               : dirname(
                   dirname(process.env.CODEX_SOCKET ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')),
                 )),
-          process.env.CODEX_EXECUTABLE,
+          () => session.desktopMetadataExecutable(),
         )
       : undefined;
   const voice = new VoiceTranscriptions(
@@ -233,7 +233,9 @@ export async function startRuntimeServer() {
       ? new DesktopChatActions(
           join(directory, 'chat-actions'),
           session.hostId,
-          process.env.CODEX_EXECUTABLE ?? 'codex',
+          mode === 'desktop-runtime'
+            ? () => session.desktopMetadataExecutable()
+            : (process.env.CODEX_EXECUTABLE ?? 'codex'),
           process.env.CODEX_HOME ??
             (process.platform === 'win32'
               ? join(homedir(), '.codex')
@@ -448,7 +450,9 @@ export async function startRuntimeServer() {
         await session.refreshDesktopCreationAvailability();
         json(response, 200, {
           service: 'host-agent',
-          status: 'ok',
+          status:
+            !session.ready || workspaceView?.status.state === 'unavailable' ? 'degraded' : 'ok',
+          ...(workspaceView ? { workspaceCatalog: workspaceView.status } : {}),
           protocolVersion: '0.1',
           capabilities: mergeHostCapabilities(['health', ...session.capabilities]),
           persistence: session.persistenceStatus,

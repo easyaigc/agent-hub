@@ -47,7 +47,7 @@ let broker = new DesktopChatActions(journal, target.hostId, executable, director
 try {
   // The desktop API, rather than execution state or an uncertain reply, decides
   // lifecycle eligibility. Identity still belongs to this runtime.
-  const runtime = Object.create(DesktopRuntime.prototype);
+  const runtime = new DesktopRuntime({ mode: 'desktop-runtime' }, 'fixture-host', 'fixture');
   let ownerReads = 0;
   runtime.ipc = {
     ready: true,

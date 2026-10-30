@@ -233,6 +233,10 @@ test(
             'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
             'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java',
             'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java',
+            'scripts/mobile/fixtures/NaturalDiagnosticCapacityVectors.java',
+            'scripts/mobile/fixtures/NaturalVisibilityVectors.java',
           ].map((name) => [name, '// reviewed test-only source fixture\n']),
         ),
       };
@@ -325,15 +329,20 @@ test(
       );
       await assert.rejects(readFile(unknownSoundOutput), { code: 'ENOENT' });
       await rm(join(repository, unknownSound));
-      const unknown = 'apps/android/src/androidTest/java/Unknown.java';
-      await write(unknown, '// not reviewed for distribution\n');
-      const unknownOutput = join(tmp, 'unknown.zip');
-      await assert.rejects(
-        packageHostConnect({ repository, taskHubBundle, output: unknownOutput }),
-        /Review unknown source file.*Unknown\.java/,
-      );
-      await assert.rejects(readFile(unknownOutput), { code: 'ENOENT' });
-      await rm(join(repository, unknown));
+      for (const [index, unknown] of [
+        'apps/android/src/androidTest/java/Unknown.java',
+        'apps/android-inbox-examiner/src/main/java/com/agenthub/android/Unknown.java',
+        'scripts/mobile/fixtures/Unknown.java',
+      ].entries()) {
+        await write(unknown, '// not reviewed for distribution\n');
+        const unknownOutput = join(tmp, 'unknown-' + index + '.zip');
+        await assert.rejects(
+          packageHostConnect({ repository, taskHubBundle, output: unknownOutput }),
+          /Review unknown source file.*Unknown\.java/,
+        );
+        await assert.rejects(readFile(unknownOutput), { code: 'ENOENT' });
+        await rm(join(repository, unknown));
+      }
       const orphan = 'packages/codex-adapter/dist/orphan.js';
       await write(orphan, 'export const stale = true;\n');
       const output = join(tmp, 'rejected.zip');

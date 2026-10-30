@@ -59,6 +59,21 @@ internal static class PrivateState
     private static string FailureResponse(Exception error)
     {
         string value = "UNSAFE_WINDOWS_PRIVATE_STATE:" + error.GetType().Name;
+        // Only fixed policy refusals cross the channel. Never serialize an
+        // arbitrary exception message, target path, account or file content.
+        if (error is UnauthorizedAccessException)
+        {
+            string refusal = null;
+            switch (error.Message)
+            {
+                case "WRONG_FILE_OWNER": refusal = "owner-check"; break;
+                case "NULL_PRIVATE_DACL": refusal = "dacl-presence-check"; break;
+                case "UNKNOWN_PRIVATE_ACE": refusal = "dacl-ace-type-check"; break;
+                case "SHARED_PRIVATE_FILE": refusal = "dacl-allow-subject-check"; break;
+                case "UNPROTECTED_PRIVATE_DACL": refusal = "dacl-protection-check"; break;
+            }
+            if (refusal != null) return value + ":" + refusal;
+        }
         string step = error.Data["CodexManage.NativeStep"] as string;
         if (step == "normalize-path" || step == "directory-attributes" || step == "directory-parent" ||
             step == "directory-descriptor" || step == "create-directory" || step == "directory-protect") value += ":" + step;

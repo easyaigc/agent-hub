@@ -167,3 +167,5 @@ Source64r2/API33：阅读旧写入隔离 3 方法、受控 IO 归属 8 方法本
 2026-10-30 F03／F02：Host 工作区独立 metadata reader 改为共享当前可信安装发现，修复 Codex 更新后仍固定旧 CLI 路径的目录读取缺口。共同断言：同一 Host/workspace/runtime、原设备凭据、缓存／草稿及未知操作 ID 不变；仅完整只读目录限次重试，不重放回复、新建、审批、停止或管理操作。iOS／Android 共用 Host，端侧 UI 与 KMP 不变；两端均保留原连接并按既有读取恢复，未新增原生通过。实现、辅助回归、Windows 原机与手机结果分列于 [恢复记录](../acceptance/codex-update-resilience-20261030.md)，A6 保持暂停。
 
 原录音只读补证不改变两端产品UI：准确原包单次Native及完整原件/WAV核对限定通过，完整F64/P7/系统仍开放。离线验收器按完整持久化row核对，详见[检查点](../plans/android-alignment-20261022/records/original-voice-readback-20261030.md)。
+
+2026-10-31 F03/F31/F32：Windows 常驻 Native 权限拒绝补齐固定原因，权限接受/拒绝与未知操作不重放规则保持；iOS/Android 共用 Host，端侧 UI、协议、草稿和原连接无改动，不新增原生通过。PR82 来源 scheduled/交互预检通过不能代替正式 Host；新 Native/cache 需限域复验，详见[正式诊断门禁](../acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。A6 保持暂停。

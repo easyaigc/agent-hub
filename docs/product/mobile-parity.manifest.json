@@ -18270,6 +18270,20 @@
         "packages/codex-adapter/windows/startup-probe.ps1": "db765db559550e4f3bc12309730c173c129123d168468975e6c9cca9c80e59e9",
         "scripts/windows-control-smoke.mjs": "2041eacd1fe5187d32429900e6ced14b1214fa4ea763369f0d1d18ef08b77170"
       }
+    },
+    {
+      "id": "windows-native-rejection-evidence-20261031",
+      "baseCommit": "d9890ba86cc9d468c0dfcacd39376adae529cb01",
+      "features": ["F03", "F31", "F32"],
+      "summary": "Preserve five fixed owner/DACL refusal reasons through the retained Native channel and strict Adapter parser. Security class bytes, acceptance/refusal, budgets, leases and exit barriers stay identical. New synthetic Windows rejection entry changes only its own fixture. New Native/cache inputs require bounded revalidation; prior PR82 scheduled readonly success does not prove formal Host startup. iOS/Android UI/protocol and unknown-operation no-replay stay unchanged; no R11 scope.",
+      "files": {
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "2f5d9f6b09882397214b24d60a8e63d226a3d489f4e3818822a62bbf58bb954b",
+        "packages/codex-adapter/windows/private-state.cs": "e36cadf30534bf7d363c65b9efec63d9866ba140b0e13686f832ef9a4aa8e59e",
+        "scripts/fixtures/windows-private-state-child.mjs": "06d3ccf92ffedabca784c36c3279f606e68d6ad493b6813fe094fe3f77ae3ffc",
+        "scripts/windows-private-state-native.test.mjs": "f9f21603d336bc630d56ee57b2cb489ce3be241e149438151f368caa7b9d6e0c",
+        "scripts/windows-private-state-rejection-preflight.mjs": "38e28810112d41ac293566f15bfd0a43ede36285f1538a8a32ae0cf3156238ee",
+        "scripts/windows-startup-preflight.test.mjs": "8787019bc4d88ea48cca6ddb5cb8e814232376e039a234b551571d08ee27870e"
+      }
     }
   ]
 }

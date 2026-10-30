@@ -42,21 +42,39 @@ export const privateStateDirectorySteps = Object.freeze([
   'create-directory',
   'directory-protect',
 ] as const);
+const privateStateAccessReasons = Object.freeze({
+  'owner-check': 'WRONG_FILE_OWNER',
+  'dacl-presence-check': 'NULL_PRIVATE_DACL',
+  'dacl-ace-type-check': 'UNKNOWN_PRIVATE_ACE',
+  'dacl-allow-subject-check': 'SHARED_PRIVATE_FILE',
+  'dacl-protection-check': 'UNPROTECTED_PRIVATE_DACL',
+} as const);
 export function parseWindowsPrivateStateRejection(
   value: string,
-): { nativeError: string; nativeType: string; nativeStep?: string } | undefined {
+):
+  | { nativeError: string; nativeType: string; nativeStep?: string; nativeRejection?: string }
+  | undefined {
   const match =
     /^UNSAFE_WINDOWS_PRIVATE_STATE:([A-Za-z][A-Za-z0-9]{0,127})(?::([a-z-]{1,40}))?$/.exec(value);
+  const step = match?.[2];
+  const rejection =
+    step && Object.hasOwn(privateStateAccessReasons, step)
+      ? privateStateAccessReasons[step as keyof typeof privateStateAccessReasons]
+      : undefined;
   if (
     !match ||
     match[0] !== value ||
-    (match[2] !== undefined && !privateStateDirectorySteps.some((step) => step === match[2]))
+    (step !== undefined &&
+      !privateStateDirectorySteps.some((known) => known === step) &&
+      !rejection) ||
+    (rejection !== undefined && match[1] !== 'UnauthorizedAccessException')
   )
     return;
   return {
     nativeError: 'UNSAFE_WINDOWS_PRIVATE_STATE:' + match[1],
     nativeType: match[1]!,
     ...(match[2] === undefined ? {} : { nativeStep: match[2] }),
+    ...(rejection === undefined ? {} : { nativeRejection: rejection }),
   };
 }
 
@@ -104,6 +122,8 @@ export const privateStateNativeDiagnostics = Object.freeze({
     'discard-journal',
     'cleanup',
     'cleanup-compiler',
+    // Append new identifiers so existing diagnostic indices retain their meaning.
+    ...(Object.keys(privateStateAccessReasons) as (keyof typeof privateStateAccessReasons)[]),
   ] as const,
   stages: [
     'environment',

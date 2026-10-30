@@ -104,6 +104,10 @@ lines.on('line', (line) => {
     }
   }
   const ok = `${id}\t${createdIdentity ? 'PRIVATE_STATE_CREATED:' + createdIdentity : 'PRIVATE_STATE_OK'}\n`;
+  if (config.mode?.startsWith('access-step-'))
+    return process.stdout.write(
+      `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:${config.mode.slice('access-step-'.length)}\n`,
+    );
   if (config.mode?.startsWith('directory-step-'))
     process.stdout.write(
       `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:ArgumentException:${config.mode.slice('directory-step-'.length)}\n`,

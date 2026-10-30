@@ -563,3 +563,5 @@ Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：
 同一运行指纹的本机真实桌面 IPC／CLI 目录读取及辅助 reader 退出后后台恢复已通过，主 reader、IPC 和原桌面连续；仅证明 macOS 只读集成。Windows Native、旧布局、真实旧路径发现与 reader 恢复以及实际安装更新分别待来源独立验收，不能由 Mac、语义编译或 fixture 替代。
 
 2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。
+
+2026-10-31：来源 PR82 交互及独立 scheduled 八步预检通过，但 launcher EXE／payload 与失败正式启动不同，正式原因仍未知。已补常驻 Native 具体拒绝原因丢失的固定分类，不放宽 owner/DACL；新 Native/cache 及精确拒绝需复验，未变 legacy/reader 场景按输入复用。正式生命周期仅来源 Root 控制，见[诊断与回滚门禁](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。

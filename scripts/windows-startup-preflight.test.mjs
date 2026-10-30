@@ -37,7 +37,42 @@ test(
   },
 );
 
+test(
+  'normal Main rejection fixture refuses non-Windows before creating files',
+  { skip: process.platform === 'win32' },
+  () => {
+    const entry = fileURLToPath(
+      new URL('./windows-private-state-rejection-preflight.mjs', import.meta.url),
+    );
+    const result = childProcess.spawnSync(
+      process.execPath,
+      [entry, '--bundle', 'unopened-bundle'],
+      { encoding: 'utf8' },
+    );
+    assert.equal(result.status, 1);
+    const report = JSON.parse(result.stdout.trim());
+    assert.equal(report.passed, false);
+    assert.equal(report.callerBootstrapUnchanged, true);
+    assert.equal(report.fixtureRemoved, undefined);
+    assert(!result.stdout.includes('unopened-bundle'));
+  },
+);
+
 test('worker failures retain bounded cause/status including zero and Windows DWORDs', () => {
+  for (const reason of [
+    'WRONG_FILE_OWNER',
+    'NULL_PRIVATE_DACL',
+    'UNKNOWN_PRIVATE_ACE',
+    'SHARED_PRIVATE_FILE',
+    'UNPROTECTED_PRIVATE_DACL',
+  ]) {
+    const value = safeWorkerFailure({
+      code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
+      nativeRejection: reason,
+    });
+    assert.equal(value.nativeRejection, reason);
+  }
+  assert.equal(safeWorkerFailure({ nativeRejection: 'private path' }).nativeRejection, undefined);
   const fileError = { code: 'EACCES', syscall: 'rename' };
   assert.equal(safeWorkerFailure(fileError).helperCauseCode, undefined);
   assert.equal(safeWorkerFailure({ cause: fileError }).helperCauseCode, undefined);

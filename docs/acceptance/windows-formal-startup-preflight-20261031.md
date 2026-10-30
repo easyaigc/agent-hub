@@ -1,5 +1,7 @@
 # Windows 正式启动的只读诊断
 
+后续正式启动证据补充改变了核心 Native 的**错误序列化**与一个 Adapter JS，不能沿用下文 PR82「核心 Native 未变」作为新包结论。下文原补充与原通过均按其历史输入保留；本轮变更、复验及受控部署门禁见文末。
+
 基线为 PR81 合并 `8a5fcb6e7a0df62a4de408fea99c49b4dc6a5e16`。本补充保留 PR81 完整 ZIP `6d45415996a9560d7c18b34677f1e8479935d225f1a9c7640fc19d5514b7ebeb` 的五组件 ESM、核心 Native14／预检8及三个 helper cache 源摘要。仅增加诊断资源与脚本；不重建 Host、reader、Native worker 或 launcher，不修改目标私有配置。新源码与补充包须核对自己的新 tag、摘要和变动清单，不能覆盖旧资产或改写旧回执。
 
 ## 已证实与尚未知
@@ -76,3 +78,42 @@ Worker 对私有 envelope 走具名只读分支，继承启动环境，随后将
 原五组件、核心 Native14／预检8、cache key 和原验收脚本未变的 Windows 证明可按实际输入复用；不要求重复已过完整 legacy、reader、launcher 或 Trace helper 辅助。新增两份 diagnostic C#/PS1、预检／Worker 诊断分支及日志分类需要新的辅助与 Windows 执行证据。编译／合成边界回归不代表 Windows PInvoke 或 scheduled 实测。
 
 正式部署仍由来源 Root 在最新实际冻结基线与私有配置对账后决定。本轮先交付可在隔离候选执行的诊断补充；不改变正式 R10 或强制原桌面重开。回退只撤回本补充准确管理文件，保留正式配置／身份／密钥／证书／历史／附件／Task Hub、observer／retention 和 Native config；新 helper cache 不删除。iOS／Android 共同连接、草稿、回执和未知操作不重放规则不变；未增加任一端原生功能通过。
+
+## PR82 实测之后的最小证据修复
+
+来源报告交互与独立临时 scheduled 两次八步通过。两者实际 Node 均 elevated/high、session 1、无 package identity，默认 Owner 为 Administrators；这不能推广为失败正式 Host 的 token 事实。publisher 的 metadata 句柄身份／descriptor 与 Node 身份比较通过，未读正文。临时任务使用回滚 R10 的 `1de02c2f…` launcher；失败正式 PR81 使用 `3ebb8312…`。它们的 EXE 字节与编译上下文尚未取得同一性证明，payload／模块初始化次序也不同，因此正式失败仍未知。
+
+源码计算显示 `1de02c2f…` 是单个 `host-launcher.cs` 的 SHA-256；`3ebb8312…` 是 launcher、private-state 与 compilation 三份源码原字节按顺序连接的准备 cache key。PR81 launcher 编译的源文件列表仍只有 `host-launcher.cs`。物理 MSIX 路径、cache 名、Principal Limited 或源文件相同都不能代替实际 EXE、进程 token 与 package identity 的证据。
+
+已确认的诊断缺口是常驻 Native `Serve → FailureResponse` 将具体 owner／DACL 拒绝压成 `UnauthorizedAccessException`，丢失现有策略原因。本轮仅把五个固定原因映射为有界 suffix，再由原 Worker 通道解析为 `nativeRejection`：`WRONG_FILE_OWNER`、`NULL_PRIVATE_DACL`、`UNKNOWN_PRIVATE_ACE`、`SHARED_PRIVATE_FILE`、`UNPROTECTED_PRIVATE_DACL`。只有正确异常类型和准确枚举组合被接受；未知 suffix／类型仍退休通道，不重放、不转成功。任意 Exception.Message、路径、SID、token／stderr 正文不出通道。
+
+`CodexManagePrivateStateSecurity` 实现、owner/DACL 的接受拒绝、创建租约、保护幂等、退出屏障和原预算完全保持。原 diagnostic 索引不移动，新增枚举只在末尾追加。核心 C# 改动仍会改变三个准备 cache key；不能把新 Native 编译／启动证据当作未变输入复用。新清单同时列出 Native14 两份、预检8及 cache 源摘要，编译后的 helper EXE 只能由来源记录。
+
+### 下一项只读对照
+
+若失败 PR81 的实际 `3ebb8312…/host-launcher.exe` 保留，Root 先只读核对普通非 reparse 文件、原 owner/DACL、实际 EXE SHA 与创建／启动身份记录。沿用**原 PR82 候选**准备新 nonce/envelope，原 Node、正式 Principal／WorkingDirectory、候选 Worker 与 bundle 不变，仅将临时 action Execute 明确替换为该已保留 EXE；记录全部差异。仍只注册／启动一次、无 trigger／retry，任务和报告各自收尾。不要为了采样重新编译／替换共享 launcher、预建 Host state 或修改权限；文件缺失或没有可信来源时记未知。新的诊断包和 cache 不混入这次单变量对照。
+
+两次都通过只能缩小差异范围，不能模拟 `Host child → refresh 配置 → 实际 RuntimeSession/observer → publisher` 的完整初始化。若此对照仍不能定位，下面的正式诊断窗口才用于采集真实失败，不把只读 probe 命名为正式启动修复。
+
+### 新 Native 的最小前置
+
+在新冻结包的独立隔离目录，以原 Node 正常 Main 依次运行：
+
+```powershell
+& '<original-node.exe>' '<candidate>/scripts/windows-private-state-preflight.mjs' --host-config '<formal-private-windows-host.json>' --bundle '<candidate>/bundle.json'
+& '<original-node.exe>' '<candidate>/scripts/windows-private-state-rejection-preflight.mjs' --bundle '<candidate>/bundle.json'
+```
+
+第二项只在自己的 cwd 下创建随机命名目录和合成文件，使用实际 Host ESM Adapter，分别将该文件加 Everyone 读取／解除 DACL protection，要求精确拒绝并在恢复保护后接受；随后关闭 backend 并回收自有 fixture。不接收正式文件路径、不改 owner、不读取正式 token。它不是完整 legacy／reader／更新通过。源端保留已通过完整 legacy 和 reader 的场景证明；本轮仅错误序列化与解析变化不要求重复这些未变算法场景，但新 Native 编译/cache、准确拒绝、清理以及新 Adapter closure 必须重新核对。
+
+### Root 控制的正式诊断窗口与回滚
+
+只使用新发布的**完整统一包**和冻结的逐文件守卫，不把 PR82 的 19 文件覆盖到正式 R10。发布清单绑定旧 R10 ZIP `281dc46a…`、source `a9044b05…` 和五组件实际指纹，并登记本轮完整包与 PR81 的运行差异。切换前 Root 必须再次取实际 bundle／五闭包／完整 managed 文件、配置与活跃任务依赖；任何不匹配或新增正式版本先停止复制并对账，不用旧清单覆盖。保留已有 observer／retention／Native config 等环境字段。
+
+1. 保存准确 managed 文件旧字节和“不存在”项、原 Task XML、配置摘要及保护进程完整身份；`.local`、密钥、证书、授权、历史、附件、两代 cache、Task Hub、共享 helper cache 不进入程序回滚清单。
+2. Root 经支持的 stop 结束**当前** Host launcher/supervisor/child，逐个核对 PID＋开始时间＋映像＋父／命令和端口释放；原桌面／CLI 连续保留。退出屏障不明确时不复制、不启动第二实例。
+3. 按逐文件旧 SHA／不存在守卫差异安装同源 program 与 Skill，核对 actual ESM、两个 Native 资源副本及 bundle。不得整目录覆盖或从活动 R11 工作树取件。使用原支持 start 一次，保留其配置刷新账本；不手改权限、NodeOptions、argv、登录／任务身份或产品预算。
+4. 记录实际 launcher／supervisor／Host 代次、固定 worker failure 字段（helper stage/cause/status/marker、nativeRejection 等）与就绪结果。预检成功或 Task Running 不算 ready。观察窗口不改变产品超时／重试策略；出现失败先保存有限原始证据，Root 正常 stop 该代次，不靠连续部署试错。未采集到的原因继续记未知。
+5. 失败时仅恢复上述 managed 旧字节，删除本次原来不存在且当前 SHA 仍匹配的新程序文件，原 `.local` 等数据全部保留；用原支持 start 恢复 R10，独立验证三路鉴权 health/workspace 与同 Host、原连接和桌面连续性。不可把新旧过程间缺少快照的元数据变化归因给任一版本。
+
+本轮解决的是已证实的诊断信息丢失；正式故障根因、升级成功及分页正式验证仍由来源后续证据决定。临时 scheduled probe 和新包的独立运行输入分别留存，不覆盖旧资产、回执或成功证明。

@@ -526,6 +526,48 @@ test('unrecognized native directory stage retires rather than exposing payload o
   );
 });
 
+for (const [step, reason] of [
+  ['owner-check', 'WRONG_FILE_OWNER'],
+  ['dacl-presence-check', 'NULL_PRIVATE_DACL'],
+  ['dacl-ace-type-check', 'UNKNOWN_PRIVATE_ACE'],
+  ['dacl-allow-subject-check', 'SHARED_PRIVATE_FILE'],
+  ['dacl-protection-check', 'UNPROTECTED_PRIVATE_DACL'],
+])
+  test(`actual correlated refusal preserves fixed access reason ${reason}`, async (t) => {
+    const f = await fixture(t, 'access-step-' + step),
+      backend = f.open();
+    for (let attempt = 0; attempt < 2; attempt++)
+      assert.throws(
+        () => backend.call('check', 'synthetic-target'),
+        (error) =>
+          rejected(error) &&
+          error.nativeError === 'UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException' &&
+          error.nativeType === 'UnauthorizedAccessException' &&
+          error.nativeStep === step &&
+          error.nativeRejection === reason,
+      );
+    assert.equal(f.events().filter((v) => v.event === 'spawn').length, 1);
+    assert.equal(
+      f.events().filter((v) => v.event === 'request').length,
+      2,
+      'A policy refusal must not replay, restart or turn into success',
+    );
+  });
+
+for (const mode of [
+  'access-step-secret-path',
+  'access-step-constructor',
+  'directory-step-owner-check',
+])
+  test(`unknown or incorrectly typed access metadata fails closed: ${mode}`, async (t) => {
+    const f = await fixture(t, mode),
+      backend = f.open();
+    assert.throws(
+      () => backend.call('check', 'synthetic-target'),
+      (error) => unavailable(error) && !JSON.stringify(error).includes('secret-path'),
+    );
+  });
+
 for (const mode of [
   'bad-ready',
   'crlf-ready',
@@ -1562,7 +1604,7 @@ test(
         (code === null || code === 1) &&
         stdout?.trim() === '' &&
         typeof nativeError === 'string' &&
-        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::(?:normalize-path|directory-attributes|directory-parent|directory-descriptor|create-directory|directory-protect))?$/.exec(
+        /^(?:UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::(?:normalize-path|directory-attributes|directory-parent|directory-descriptor|create-directory|directory-protect))?|UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:(?:owner-check|dacl-presence-check|dacl-ace-type-check|dacl-allow-subject-check|dacl-protection-check))$/.exec(
           nativeError ?? '',
         )?.[0] === nativeError;
       const outcome = cause

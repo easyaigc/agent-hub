@@ -1,5 +1,10 @@
 import type { WindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
-import { createWindowsTraceTransport } from './desktop-private-state-native.js';
+import {
+  createWindowsTraceTransport,
+  assertWindowsTraceProducerScope,
+  windowsTraceProducerPath,
+  type WindowsTraceProducerScope,
+} from './desktop-private-state-native.js';
 import { win32 } from 'node:path';
 import { createHash } from 'node:crypto';
 import {
@@ -9,6 +14,18 @@ import {
 } from './desktop-platform.js';
 
 export type TraceSnapshotItem = { path: string; maximum: number };
+export type { WindowsTraceProducerScope } from './desktop-private-state-native.js';
+export type TraceLogRangeRequest = {
+  kind: 'log-range';
+  path: string;
+  offset: number;
+  count: number;
+};
+export type TraceLogRangeValue = TraceSnapshotValue & { size: number };
+export const traceLogRangeLimits = Object.freeze({
+  maximum: 1024 * 1024,
+  responseBytes: 2 * 1024 * 1024,
+});
 export type TraceProducerRequest = { kind: 'producer'; ProducerPid: number; Config: string };
 export type TraceProducerIdentity = {
   pid: number;
@@ -60,6 +77,35 @@ function batchPath(path: unknown): path is string {
       .slice(3)
       .split('\\')
       .some((part) => /[. ]$/.test(part))
+  );
+}
+
+export function traceProducerPathWithin(root: string, path: string): boolean {
+  if (!windowsTraceProducerPath(root) || !windowsTraceProducerPath(path)) return false;
+  const base = root.toLowerCase(),
+    child = path.toLowerCase();
+  return child === base || child.startsWith(base + '\\');
+}
+
+/** The native producer fixes the log root and desktop PID at startup. */
+export function encodeTraceLogRangeRequest(value: unknown): string {
+  if (
+    !record(value) ||
+    !fields(value, ['kind', 'path', 'offset', 'count']) ||
+    value.kind !== 'log-range' ||
+    !windowsTraceProducerPath(value.path) ||
+    !Number.isSafeInteger(value.offset) ||
+    Number(value.offset) < 0 ||
+    Object.is(value.offset, -0) ||
+    !Number.isSafeInteger(value.count) ||
+    Number(value.count) < 0 ||
+    Object.is(value.count, -0) ||
+    Number(value.count) > traceLogRangeLimits.maximum ||
+    !Number.isSafeInteger(Number(value.offset) + Number(value.count))
+  )
+    throw new Error('Invalid native log range request');
+  return (
+    'L\t' + Buffer.from(value.path).toString('base64') + '\t' + value.offset + '\t' + value.count
   );
 }
 /** Fixed internal action. No method names, command lines or extra fields cross this boundary. */
@@ -220,6 +266,83 @@ export function parseTraceSnapshotBatchJSON(text: string): unknown {
   }
   return value;
 }
+
+/** Strict UTF-8 plus the existing duplicate-key parser for private producer frames. */
+export function parseTraceProducerJSON(bytes: Buffer): unknown {
+  const text = bytes.toString('utf8');
+  if (!Buffer.from(text).equals(bytes)) throw new Error('Invalid native producer UTF-8');
+  return parseTraceSnapshotBatchJSON(text);
+}
+
+function decodeTraceIdentity(value: Record<string, unknown>, path: string, log = false): void {
+  const width = log ? 8 : 6;
+  if (
+    base64(value.identity, 32).length !== 32 ||
+    !Array.isArray(value.chain) ||
+    value.chain.length !== pathDepth(path) ||
+    value.chain.some((part) => {
+      if (typeof part !== 'string' || part.length > 128) return true;
+      const values = part.split(':');
+      if (values.length !== width) return true;
+      for (let at = 0; at < width - 1; at++) {
+        const number = Number(values[at]);
+        if (
+          !Number.isInteger(number) ||
+          String(number) !== values[at] ||
+          (at === 3 || at === 4
+            ? number < -2147483648 || number > 2147483647
+            : number < 0 || number > 4294967295) ||
+          (log && at === 5 && number < 1)
+        )
+          return true;
+      }
+      return base64(values[width - 1], 32).length !== 32;
+    })
+  )
+    throw new Error('Invalid native batch identity');
+  if (createHash('sha256').update(value.chain.join('|')).digest('base64') !== value.identity)
+    throw new Error('Inconsistent native batch identity');
+}
+
+export function decodeTraceProducerSnapshot(
+  value: unknown,
+  path: string,
+  maximum: number,
+): TraceSnapshotValue {
+  if (!record(value) || !fields(value, ['identity', 'chain', 'bytes']))
+    throw new Error('Invalid native producer snapshot');
+  decodeTraceIdentity(value, path);
+  return {
+    identity: value.identity as string,
+    chain: value.chain as string[],
+    bytes: base64(value.bytes, maximum),
+  };
+}
+
+export function decodeTraceLogRange(
+  value: unknown,
+  request: TraceLogRangeRequest,
+): TraceLogRangeValue {
+  encodeTraceLogRangeRequest(request);
+  if (
+    !record(value) ||
+    !fields(value, ['identity', 'chain', 'bytes', 'size']) ||
+    !Number.isSafeInteger(value.size) ||
+    Number(value.size) < request.offset ||
+    Object.is(value.size, -0)
+  )
+    throw new Error('Invalid native log range response');
+  decodeTraceIdentity(value, request.path, true);
+  const bytes = base64(value.bytes, request.count);
+  if (bytes.length !== Math.min(request.count, Number(value.size) - request.offset))
+    throw new Error('Incomplete native log range');
+  return {
+    identity: value.identity as string,
+    chain: value.chain as string[],
+    bytes,
+    size: value.size as number,
+  };
+}
 export function decodeTraceSnapshotBatch(
   value: unknown,
   request: TraceSnapshotBatch,
@@ -243,39 +366,11 @@ export function decodeTraceSnapshotBatch(
       !fields(item.snapshot, ['identity', 'chain', 'bytes'])
     )
       throw new Error('Invalid native batch item');
-    const snapshot = item.snapshot;
-    if (
-      base64(snapshot.identity, 32).length !== 32 ||
-      !Array.isArray(snapshot.chain) ||
-      snapshot.chain.length !== pathDepth(request.items[index]!.path) ||
-      snapshot.chain.some((part) => {
-        if (typeof part !== 'string' || part.length > 128) return true;
-        const values = part.split(':');
-        if (values.length !== 6) return true;
-        for (let at = 0; at < 5; at++) {
-          const number = Number(values[at]);
-          if (
-            !Number.isInteger(number) ||
-            String(number) !== values[at] ||
-            (at < 3
-              ? number < 0 || number > 4294967295
-              : number < -2147483648 || number > 2147483647)
-          )
-            return true;
-        }
-        return base64(values[5], 32).length !== 32;
-      })
-    )
-      throw new Error('Invalid native batch identity');
-    if (
-      createHash('sha256').update(snapshot.chain.join('|')).digest('base64') !== snapshot.identity
-    )
-      throw new Error('Inconsistent native batch identity');
-    return {
-      identity: snapshot.identity as string,
-      chain: snapshot.chain as string[],
-      bytes: base64(snapshot.bytes, request.items[index]!.maximum),
-    };
+    return decodeTraceProducerSnapshot(
+      item.snapshot,
+      request.items[index]!.path,
+      request.items[index]!.maximum,
+    );
   });
 }
 
@@ -355,12 +450,17 @@ export async function createWindowsTraceBackend(
   root: string,
   signal?: AbortSignal,
   diagnostics?: () => WindowsTraceDiagnostics,
+  producerScope?: WindowsTraceProducerScope,
 ) {
   if (signal?.aborted) throw new Error('Trace native startup closed');
+  if (producerScope !== undefined) assertWindowsTraceProducerScope(producerScope, root);
+  const scope = producerScope === undefined ? undefined : Object.freeze({ ...producerScope });
+  const desktop = scope ? Object.freeze({ ...identity }) : identity;
+  const configRoot = scope ? win32.dirname(scope.configPath) : undefined;
   const shared = new SharedArrayBuffer(48 * 1024 * 1024 + 8);
   const control = new Int32Array(shared, 0, 2),
     bytes = new Uint8Array(shared, 8);
-  const transport = createWindowsTraceTransport(identity, root, shared);
+  const transport = createWindowsTraceTransport(desktop, root, shared, scope);
   const worker = transport.port;
   let alive = true,
     deadline = Infinity;
@@ -400,11 +500,12 @@ export async function createWindowsTraceBackend(
     throw new Error('Trace native startup closed');
   }
   function call(
-    kind: 'snapshot' | 'probe' | 'tokens' | 'snapshot-many' | 'producer',
+    kind: 'snapshot' | 'probe' | 'tokens' | 'snapshot-many' | 'producer' | 'log-range',
     path?: string,
     maximum?: number,
     batch?: TraceSnapshotBatch,
     producer?: TraceProducerRequest,
+    logRange?: TraceLogRangeRequest,
   ) {
     const diagnostic = diagnostics?.();
     if (signal?.aborted) close();
@@ -412,25 +513,38 @@ export async function createWindowsTraceBackend(
       diagnostic?.end(!alive ? 'transport_lost' : 'phase_deadline', {
         deadlineKind: !alive ? 'unknown' : 'native_budget',
       });
+      if (scope) close();
       throw new Error('Trace read budget exhausted');
     }
-    const sample = diagnostic?.nativeCall(
-      kind === 'probe' || kind === 'producer'
-        ? 'P'
-        : kind === 'snapshot'
-          ? 'S'
-          : kind === 'tokens'
-            ? 'T'
-            : 'B',
-      batch?.items.length ?? 0,
-    );
+    const sample =
+      kind === 'log-range'
+        ? undefined
+        : diagnostic?.nativeCall(
+            kind === 'probe' || kind === 'producer'
+              ? 'P'
+              : kind === 'snapshot'
+                ? 'S'
+                : kind === 'tokens'
+                  ? 'T'
+                  : 'B',
+            batch?.items.length ?? 0,
+          );
     let completed = false;
     try {
       Atomics.store(control, 0, 0);
-      worker.postMessage(producer ?? batch ?? { kind, path, maximum });
+      worker.postMessage(
+        logRange ??
+          producer ??
+          batch ??
+          (scope && (kind === 'probe' || kind === 'tokens') ? { kind } : { kind, path, maximum }),
+      );
       const status = Atomics.wait(control, 0, 0, Math.min(1000, deadline - performance.now()));
       sample?.waited();
-      if (status === 'timed-out' || Atomics.load(control, 0) !== 1) {
+      if (
+        status === 'timed-out' ||
+        Atomics.load(control, 0) !== 1 ||
+        (scope && performance.now() >= deadline)
+      ) {
         diagnostic?.end(status === 'timed-out' ? 'phase_deadline' : 'transport_lost', {
           deadlineKind: performance.now() >= deadline ? 'native_budget' : 'native_response',
         });
@@ -442,27 +556,36 @@ export async function createWindowsTraceBackend(
       if (
         length < 1 ||
         length > bytes.length ||
-        (producer && length > traceProducerLimits.responseBytes)
+        (producer && length > traceProducerLimits.responseBytes) ||
+        (logRange && length > traceLogRangeLimits.responseBytes)
       ) {
         close();
         throw new Error('Invalid native response length');
       }
-      const text = Buffer.from(bytes.subarray(0, length)).toString('utf8');
-      const value =
-        kind === 'snapshot-many' || producer ? parseTraceSnapshotBatchJSON(text) : JSON.parse(text);
+      const raw = Buffer.from(bytes.subarray(0, length));
+      const value = scope
+        ? parseTraceProducerJSON(raw)
+        : kind === 'snapshot-many' || producer
+          ? parseTraceSnapshotBatchJSON(raw.toString('utf8'))
+          : JSON.parse(raw.toString('utf8'));
       if (record(value) && value.error) throw new Error('Trace native operation rejected');
-      const result = producer
-        ? decodeTraceProducerIdentity(value, producer, identity)
-        : kind === 'snapshot-many'
-          ? decodeTraceSnapshotBatch(value, batch!)
-          : kind === 'snapshot'
-            ? decodeSnapshotValue(value)
-            : value;
+      const result = logRange
+        ? decodeTraceLogRange(value, logRange)
+        : producer
+          ? decodeTraceProducerIdentity(value, producer, desktop)
+          : kind === 'snapshot-many'
+            ? decodeTraceSnapshotBatch(value, batch!)
+            : kind === 'snapshot'
+              ? scope
+                ? decodeTraceProducerSnapshot(value, path!, maximum!)
+                : decodeSnapshotValue(value)
+              : value;
+      if (scope && performance.now() >= deadline) throw new Error('Trace read budget exhausted');
       sample?.decoded();
       completed = true;
       return result;
     } catch (error) {
-      if (producer) close();
+      if (scope || producer) close();
       throw error;
     } finally {
       sample?.end(completed);
@@ -475,14 +598,36 @@ export async function createWindowsTraceBackend(
   );
   const backend = {
     snapshotMany(requestedRoot: string, items: readonly TraceSnapshotItem[]): TraceSnapshotValue[] {
+      if (
+        scope &&
+        (requestedRoot !== root || items.some((item) => !traceProducerPathWithin(root, item.path)))
+      ) {
+        close();
+        throw new Error('Trace batch scope changed');
+      }
       return batches.read(requestedRoot, items);
     },
     snapshot(requestedRoot: string, path: string, maximum = 0) {
-      if (requestedRoot !== root) throw new Error('Trace root changed');
+      if (scope) {
+        if (
+          (requestedRoot !== root && requestedRoot !== configRoot) ||
+          !traceProducerPathWithin(requestedRoot, path) ||
+          !Number.isSafeInteger(maximum) ||
+          maximum < 0 ||
+          maximum > 32 * 1024 * 1024
+        ) {
+          close();
+          throw new Error('Trace producer snapshot scope changed');
+        }
+      } else if (requestedRoot !== root) throw new Error('Trace root changed');
       return call('snapshot', path, maximum) as TraceSnapshotValue;
     },
     inspect: () => call('probe') as WindowsTraceInstance,
     inspectProducer(pid: number, configPath: string): TraceProducerIdentity {
+      if (scope && (pid !== scope.producerPid || configPath !== scope.configPath)) {
+        close();
+        throw new Error('Trace producer identity scope changed');
+      }
       const request: TraceProducerRequest = {
         kind: 'producer',
         ProducerPid: pid,
@@ -491,6 +636,39 @@ export async function createWindowsTraceBackend(
       encodeTraceProducerRequest(request);
       return call('producer', undefined, undefined, undefined, request) as TraceProducerIdentity;
     },
+    ...(scope
+      ? {
+          logRange(
+            requestedRoot: string,
+            path: string,
+            offset: number,
+            count: number,
+            desktopPid: number,
+          ) {
+            const request: TraceLogRangeRequest = { kind: 'log-range', path, offset, count };
+            try {
+              if (
+                requestedRoot !== scope.logRoot ||
+                desktopPid !== desktop.pid ||
+                !traceProducerPathWithin(scope.logRoot, path)
+              )
+                throw new Error('Trace producer log scope changed');
+              encodeTraceLogRangeRequest(request);
+              return call(
+                'log-range',
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                request,
+              ) as TraceLogRangeValue;
+            } catch (error) {
+              close();
+              throw error;
+            }
+          },
+        }
+      : {}),
   };
   installWindowsTraceBackend(backend);
   return {
@@ -505,4 +683,19 @@ export async function createWindowsTraceBackend(
     tokens: () => call('tokens'),
     close,
   };
+}
+
+/** Private sampler only; caller must be the actual main-registered owner Worker. */
+export function createWindowsTraceProducerBackend(
+  identity: WindowsDesktopIdentity,
+  root: string,
+  configPath: string,
+  logRoot: string,
+  signal?: AbortSignal,
+) {
+  return createWindowsTraceBackend(identity, root, signal, undefined, {
+    producerPid: process.pid,
+    configPath,
+    logRoot,
+  });
 }

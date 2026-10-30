@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-10-31 F69 连续建议回收候选：原始 Trace 无正文且同会话唯一 Native 正文已被下一来源轮替代时，按严格较新真实正文与持久化读回确认回收，保留来源/时间/封口/占用/原生意图守卫。真实合成文件回归先红后绿，当前 78 项中 72 通过、6 平台跳过；当前 Adapter bb036b1d924b3ce1a49ccfd825b0d012b55cbf9af01167cbb8a7d5147c0138d1。当前完整检查、Windows 和四机实体手机建议/回收待验；R10 iPhone Windows 发现与连接通过单独保留，Android/A6 状态不升级。详见 host-native-suggestions-20261031.md。
+
 2026-10-30 F03／F12／F69／F75：冻结R2的Host运行能力向PR73主线做实际三方集成，保留共享发现、创建租约和既有业务；Native建议/Trace/GC、子任务及只读Git同源保留。当前iOS/Android页面不移植、不新增通过，F75当前main只登记Host兼容与原生计划；R2旧证据保持原上下文，A6暂停。见[集成记录](codex-update-r2-integration-20261030.md)。
 
 2026-10-30 F03／F69：既有 Windows v1 阅读缓存保留 owner 与内容，启用可重建 v2；Native 创建租约衔接 Node FD，释放确认未知不截断。编译产物由保留句柄发布。R2 与 main 尚未统一，旧 owner 包禁止覆盖已部署 R2；本机辅助不替代 Windows Native／真实更新。双端 UI 不变，A6 暂停。见[专项记录](codex-update-resilience-20261030.md)。

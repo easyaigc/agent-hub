@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { parentPort, workerData } from 'node:worker_threads';
 
@@ -72,7 +73,15 @@ const generationFile = join(workerData.scope.directory, 'availability-generation
 const generation = fs.existsSync(generationFile)
   ? JSON.parse(fs.readFileSync(generationFile)) + 1
   : 1;
-fs.writeFileSync(generationFile, JSON.stringify(generation), { mode: 0o600 });
+// The parent polls while a replacement starts; publish a complete generation
+// without exposing writeFileSync's truncate-to-empty interval to that reader.
+const generationStage = generationFile + '.' + randomUUID() + '.tmp';
+try {
+  fs.writeFileSync(generationStage, JSON.stringify(generation), { flag: 'wx', mode: 0o600 });
+  fs.renameSync(generationStage, generationFile);
+} finally {
+  if (fs.existsSync(generationStage)) fs.unlinkSync(generationStage);
+}
 let reads = 0;
 let delayed;
 const lifetime = setTimeout(() => parentPort.close(), 12000);

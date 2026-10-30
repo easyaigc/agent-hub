@@ -234,6 +234,41 @@ internal sealed class TraceProcess : IDisposable {
             if(shimFile!=null)shimFile.Dispose();if(configFile!=null)configFile.Dispose();if(Shim!=null)Shim.Dispose();if(Node!=null)Node.Dispose();
         }
     }
+    // One producer generation retains the same real process/config/shim chain.
+    // Only its configuration-derived read roots and fixed identity are exposed;
+    // callers cannot replace the chain or select a different process per frame.
+    internal sealed class ProducerScope : IDisposable {
+        readonly TraceProcess owner;
+        readonly ProducerChain chain;
+        readonly string configPath;
+        internal readonly string TraceRoot,ConfigDirectory,LogRoot;
+        internal int DesktopPid { get { return owner.pid; } }
+        internal ProducerScope(TraceProcess owner,string traceRoot,int producerPid,string configPath) {
+            this.owner=owner;
+            try {
+                this.configPath=TraceState.ProducerPath(configPath);
+                chain=new ProducerChain(owner,producerPid,this.configPath);
+                TraceRoot=chain.Text("traceRoot");ConfigDirectory=Path.GetDirectoryName(this.configPath);LogRoot=chain.Text("logDirectory");
+                if(!Same(TraceRoot,TraceState.ProducerPath(traceRoot)))throw new IOException();
+                Check();
+            } catch { Dispose();throw; }
+        }
+        internal void Check() {
+            // Reconnect read-only to the actual original IPC endpoint for each
+            // fence; no idle connection occupies the desktop's pipe between reads.
+            using(var pipe=owner.Pipe()) {
+                chain.Check();owner.Check();owner.CheckPipe(pipe);
+            }
+        }
+        internal object InspectProducer(int producerPid,string config) {
+            if(producerPid!=chain.Node.Id || !String.Equals(config,configPath,StringComparison.Ordinal))throw new ArgumentException();
+            return new{pid=chain.Node.Id,desktopPid=owner.pid,desktopStartedAt=owner.started,wrapperStartedAt=chain.Node.Milliseconds};
+        }
+        public void Dispose() { if(chain!=null)chain.Dispose(); }
+    }
+    internal ProducerScope OpenProducer(string traceRoot,int producerPid,string configPath) {
+        return new ProducerScope(this,traceRoot,producerPid,configPath);
+    }
     internal object InspectProducer(int producerPid,string configPath) {
         using(var pipe=Pipe())using(var chain=new ProducerChain(this,producerPid,configPath)) {
             chain.Check();Check();CheckPipe(pipe);

@@ -622,16 +622,24 @@ export class DesktopTraceRetention {
         else if (status === 'failed') state = 'failed';
         else if (status === 'completed') state = 'unverified';
         else return { state: 'prediction-unverified', bytes: 0 };
-        const requestedAt = Math.min(
-          ...starts
-            .filter((start) => start.codex_turn_id === event.codex_turn_id)
-            .map((start) => Number(start.wall_time_unix_ms)),
-        );
+        const requestTimes = starts
+          .filter((start) => start.codex_turn_id === event.codex_turn_id)
+          .map((start) => start.wall_time_unix_ms);
+        const endedAt = ends[0].wall_time_unix_ms;
+        // Invalid ranges are unknown even for cancelled/failed attempts; they
+        // must not fall through to age-based diagnostic retirement.
+        if (
+          !Number.isSafeInteger(endedAt) ||
+          endedAt < 0 ||
+          !requestTimes.every((at) => Number.isSafeInteger(at) && at >= 0 && at <= endedAt)
+        )
+          return { state: 'prediction-unverified', bytes: 0 };
+        const requestedAt = Math.min(...requestTimes);
         const runtimeSaved = this.store.acknowledgeRuntimeResult(
           binding.sourceThreadId,
           binding.sourceTurnId,
           requestedAt,
-          Number(ends[0].wall_time_unix_ms),
+          endedAt,
         );
         const saved =
           runtimeSaved ||
@@ -643,11 +651,7 @@ export class DesktopTraceRetention {
             predictionThreadId: binding.predictionThreadId,
             predictionTurnId: binding.predictionTurnId,
             requestEvidence: binding.evidence,
-            requestedAt: Math.min(
-              ...starts
-                .filter((start) => start.codex_turn_id === event.codex_turn_id)
-                .map((start) => Number(start.wall_time_unix_ms)),
-            ),
+            requestedAt,
             recordedAt: now,
             prediction,
             state,

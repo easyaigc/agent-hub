@@ -10450,6 +10450,255 @@ final class CodexManageUITests: XCTestCase {
     print("SLOW_SYNC_PHYSICAL_RESTORE_RESTART passed")
   }
 
+  private struct SuggestionWarmupFixture: Decodable {
+    let bundleId: String
+    let hostId: String
+    let endpoint: String
+    let token: String
+    let bootstrapThreadId: String
+    let bootstrapThreadTitle: String
+    let slot: String
+    let nonce: String
+    let prompt: String
+    let requireSavedClient: Bool?
+    var resumeConsentDraft: Bool?
+  }
+
+  /// Connect only the task-owned App through the ordinary Host Key UI.
+  @MainActor func testOriginalDesktopReadOnlySuggestionsDEVConnect() throws {
+    let encoded = try XCTUnwrap(ProcessInfo.processInfo.environment["SUGGESTION_DEV_FIXTURE_JSON"])
+    let fixture = try JSONDecoder().decode(SuggestionWarmupFixture.self, from: Data(encoded.utf8))
+    guard fixture.bundleId == "com.easyai.agenthub.traceacceptance.repair20261030",
+      UUID(uuidString: fixture.hostId) != nil, UUID(uuidString: fixture.bootstrapThreadId) != nil,
+      !fixture.endpoint.isEmpty, !fixture.token.isEmpty else {
+      throw NSError(domain: "SuggestionWarmupConnect", code: 1)
+    }
+    let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    var ownSettingsVerified = false
+    let networkMonitor = addUIInterruptionMonitor(withDescription: "Owned suggestion acceptance network permission") { _ in
+      guard self.app.state == .runningForeground ||
+        (ownSettingsVerified && settings.state == .runningForeground) else { return false }
+      // SpringBoard may expose this permission as a Sheet. Use the existing
+      // title query instead of indexing stale Alert static-text snapshots.
+      let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+      let title = system.staticTexts.matching(NSPredicate(format:
+        "(label CONTAINS[c] '本地网络' OR label CONTAINS[c] 'local network' OR label CONTAINS '无线数据') AND label CONTAINS 'Agent Hub'")).firstMatch
+      guard title.exists else { return false }
+      self.allowAcceptanceLocalNetworkPermission()
+      guard !title.exists else { return false }
+      print("SUGGESTION_DEV_OWN_NETWORK_ALLOWED")
+      return true
+    }
+    defer { removeUIInterruptionMonitor(networkMonitor) }
+    // The preceding failed attempt's native log confirms XCTest dismissed this
+    // independent App's first wireless-data prompt with Don't Allow. Open only
+    // this exact bundle's own settings; restore its network access, then return
+    // to the real (non-fixture) App state before inspecting connections.
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-voice-open-settings"]
+    app.launchChineseTest()
+    XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 15))
+    let wireless = settings.buttons[fixture.bundleId + ".wireless"]
+    XCTAssertTrue(wireless.waitForExistence(timeout: 10))
+    ownSettingsVerified = true
+    allowAcceptanceLocalNetworkPermission()
+    let localNetwork = settings.switches["本地网络"].firstMatch
+    if localNetwork.exists && (localNetwork.value as? String) == "0" { localNetwork.tap() }
+    wireless.tap()
+    let wifi = settings.staticTexts.matching(NSPredicate(format: "label IN %@",
+      ["无线局域网", "WLAN", "Wi-Fi"])).firstMatch
+    XCTAssertTrue(wifi.waitForExistence(timeout: 10)); wifi.tap()
+    ownSettingsVerified = false
+    app.terminate(); app.launchArguments = []; app.activate()
+    allowAcceptanceLocalNetworkPermission()
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "warmup-connect-check"))
+    // A fresh isolated App has no selected client. Prove that empty state
+    // before applying the existing scanner's one-selected-client invariant.
+    let rows = app.collectionViews.firstMatch.buttons.matching(
+      NSPredicate(format: "identifier BEGINSWITH %@", "client-")).allElementsBoundByIndex
+    let add = app.buttons["add-client"]
+    let empty = add.exists && add.isHittable && rows.filter { $0.exists }.isEmpty
+    let ids: Set<String>
+    if empty {
+      ids = []
+      print("SUGGESTION_CONNECT_EMPTY_CONFIRMED")
+    } else {
+      ids = try XCTUnwrap(scanReadOnlySuggestionClients()).ids
+    }
+    guard fixture.requireSavedClient != true || ids.contains(fixture.hostId) else {
+      print("SUGGESTION_SAVED_CLIENT_MISSING", fixture.hostId)
+      throw NSError(domain: "SuggestionWarmupSavedClient", code: 3)
+    }
+    if ids.contains(fixture.hostId) {
+      let row = try XCTUnwrap(findReadOnlySuggestionClient(fixture.hostId))
+      XCTAssertTrue(tapReadOnlySuggestionControl(row, step: "warmup-select-host", allowSheet: true))
+      XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "warmup-select-close", automatic: true))
+    } else {
+      XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "warmup-before-add"))
+      XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "warmup-discovery-picker"))
+      let addClient = app.buttons["add-client"]
+      // Three saved clients can push Add below the half-sheet's visible edge.
+      // Scroll the actual picker until the existing full-frame guard can pass.
+      for _ in 0..<4 {
+        if addClient.exists && addClient.isHittable &&
+          app.windows.firstMatch.frame.contains(addClient.frame) { break }
+        app.collectionViews.firstMatch.swipeUp()
+      }
+      XCTAssertTrue(tapReadOnlySuggestionControl(addClient, step: "warmup-add-discovery", allowSheet: true))
+      selectConnectionMethod("自动发现", agent: "codex")
+      allowAcceptanceLocalNetworkPermission()
+      let host = app.buttons["codex-discovered-" + fixture.hostId]
+      XCTAssertTrue(host.waitForExistence(timeout: 60), "Require this exact real Host through native discovery")
+      for _ in 0..<6 where !host.isHittable { app.collectionViews.firstMatch.swipeUp() }
+      XCTAssertTrue(tapReadOnlySuggestionControl(host, step: "warmup-discovered-host", allowSheet: true))
+      let key = app.secureTextFields["codex-host-key"]
+      XCTAssertTrue(key.waitForExistence(timeout: 20))
+      XCTAssertTrue(tapReadOnlySuggestionControl(key, step: "warmup-host-key", allowSheet: true))
+      key.typeText(fixture.token)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+      XCTAssertTrue(tapReadOnlySuggestionControl(app.buttons["codex-authorize-connect"], step: "warmup-authorize-once", allowSheet: true))
+      // Use the normal certificate-pinned device-credential flow exactly once.
+      guard key.waitForNonExistence(timeout: 90) else {
+        captureSuggestionUIFailure("warmup-discovery-connect")
+        throw NSError(domain: "SuggestionWarmupConnect", code: 2)
+      }
+      dismissPhysicalPasswordPrompt()
+    }
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "warmup-connected-check"))
+    let selected = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertEqual(selected.selectedId, fixture.hostId)
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "warmup-connected-close"))
+    print("SUGGESTION_WARMUP_CONNECT_VERIFIED", fixture.hostId)
+  }
+
+  /// One ordinary projectless UI submission. Never retry an uncertain send.
+  @MainActor func testOriginalDesktopReadOnlySuggestionsDEVWarmup() throws {
+    let encoded = try XCTUnwrap(ProcessInfo.processInfo.environment["SUGGESTION_DEV_FIXTURE_JSON"])
+    let fixture = try JSONDecoder().decode(SuggestionWarmupFixture.self, from: Data(encoded.utf8))
+    func require(_ condition: Bool, _ step: String) throws {
+      guard condition else {
+        if fixture.bundleId == "com.easyai.agenthub.traceacceptance.repair20261030",
+          app.state == .runningForeground {
+          let evidence = XCTAttachment(screenshot: app.screenshot())
+          evidence.name = "SUGGESTION_WARMUP_" + step
+          evidence.lifetime = .keepAlways
+          add(evidence)
+          print("SUGGESTION_WARMUP_FAILURE_STATE", step,
+            "projectless", app.staticTexts["开始一个无项目对话"].exists,
+            "emptyDraft", normalizedSuggestionDraftText().isEmpty,
+            "pendingCreation", app.otherElements["desktop-creation-pending"].exists)
+        }
+        throw NSError(domain: "SuggestionWarmup", code: 1,
+          userInfo: [NSLocalizedDescriptionKey: step])
+      }
+    }
+    try require(fixture.bundleId == "com.easyai.agenthub.traceacceptance.repair20261030", "bundle")
+    try require(!fixture.hostId.isEmpty && !fixture.endpoint.isEmpty && !fixture.token.isEmpty
+      && !fixture.bootstrapThreadId.isEmpty && !fixture.bootstrapThreadTitle.isEmpty, "fixture")
+    try require(["A", "B"].contains(fixture.slot), "slot")
+    try require(fixture.nonce.range(of: #"^[A-Za-z0-9_-]{16,80}$"#, options: .regularExpression) != nil, "nonce")
+    let answer = "WARMUP_DONE_" + fixture.nonce
+    let planningTask = fixture.slot == "A"
+      ? "请设计一个离线待办清单同步方案。先给出第一阶段的三条方案要点；第二阶段的冲突解决细节等我确认后再展开。"
+      : "请设计一个照片整理工具的批量重命名方案。先给出第一阶段的三条方案要点；第二阶段的撤销和重复命名细节等我确认后再展开。"
+    let expectedPrompt = fixture.nonce + "\n" + planningTask + "\n最后一行输出" + answer + "\n不要使用工具，也不要创建或修改文件。"
+    try require(!expectedPrompt.hasSuffix(answer), "prompt-ends-with-answer")
+    try require(fixture.prompt == expectedPrompt, "fixed-prompt")
+    print("SUGGESTION_WARMUP", fixture.nonce, "start")
+
+    // The previous first-send click was synchronously blocked by requireAISharing
+    // before any creation/receipt existed. Resume only the exact unsent draft.
+    if fixture.resumeConsentDraft == true, app.navigationBars["AI 数据共享"].exists {
+      let cancel = app.navigationBars["AI 数据共享"].buttons["取消"]
+      try require(cancel.exists && cancel.isHittable, "resume-consent-cancel")
+      cancel.tap()
+    }
+
+    // Require an already configured task connection; never infer host identity
+    // from a display name or write into the bootstrap conversation.
+    let switcher = app.buttons["client-switch"]
+    try require(switcher.waitForExistence(timeout: 20), "client-switch")
+    switcher.tap()
+    let row = app.buttons["client-" + fixture.hostId]
+    let list = app.collectionViews.firstMatch
+    for _ in 0..<12 {
+      if row.exists && row.isHittable { break }
+      guard list.exists else { break }
+      list.swipeUp()
+    }
+    try require(row.exists && row.isHittable && row.isSelected, "selected-host")
+    let done = app.navigationBars["客户端"].buttons["完成"]
+    try require(done.waitForExistence(timeout: 10), "client-picker")
+    done.tap()
+    // A restored projectless draft is connected and writable before it owns a
+    // desktop thread. modeLabel exposes that exact ready-to-create state.
+    let newChatReady = "Codex 新聊天 · 首条发送时创建"
+    let online = XCTNSPredicateExpectation(predicate: NSPredicate(
+      format: "value CONTAINS %@ OR value CONTAINS %@", "Codex · 实时连接", newChatReady), object: switcher)
+    try require(XCTWaiter.wait(for: [online], timeout: 60) == .completed, "host-connected-or-new-chat-ready")
+    print("SUGGESTION_WARMUP", fixture.nonce, "host-verified")
+
+    if fixture.resumeConsentDraft != true {
+      let newChat = app.buttons["new-chat"]
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: newChat)
+      try require(XCTWaiter.wait(for: [ready], timeout: 30) == .completed, "new-chat-ready")
+      newChat.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      let projectless = app.buttons["choose-projectless"]
+      if projectless.waitForExistence(timeout: 5) {
+        try require(projectless.isHittable, "projectless-choice")
+        projectless.tap()
+      }
+    }
+    // SwiftUI may omit a layout-only VStack from the Other accessibility class.
+    // Assert the actual visible projectless state, then the untouched local draft.
+    let projectlessState = app.staticTexts["开始一个无项目对话"]
+    try require(projectlessState.waitForExistence(timeout: 15)
+      && projectlessState.frame.intersects(app.frame), "projectless-empty-state")
+    if fixture.resumeConsentDraft == true {
+      try require(normalizedSuggestionDraftText() == expectedPrompt
+        && app.buttons["send-message"].isEnabled
+        && !app.otherElements["desktop-creation-pending"].exists, "exact-unsent-consent-draft")
+    } else {
+      try require(normalizedSuggestionDraftText().isEmpty && !app.buttons["send-message"].isEnabled
+        && !app.otherElements["desktop-creation-pending"].exists, "empty-draft")
+    }
+    try require((switcher.value as? String ?? "").contains(newChatReady), "new-chat-ready-before-send")
+    print("SUGGESTION_WARMUP", fixture.nonce, "new-chat-verified")
+    if fixture.resumeConsentDraft != true {
+      let composerReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: composer)
+      try require(XCTWaiter.wait(for: [composerReady], timeout: 60) == .completed, "composer-ready")
+      composer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      try require(app.keyboards.firstMatch.waitForExistence(timeout: 10), "keyboard")
+      composer.typeText(expectedPrompt)
+      try require((composer.value as? String) == expectedPrompt, "draft-mismatch")
+      if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    }
+    let send = app.buttons["send-message"]
+    let sendReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: send)
+    try require(XCTWaiter.wait(for: [sendReady], timeout: 30) == .completed, "send-ready")
+    print("SUGGESTION_WARMUP", fixture.nonce, "send-action")
+    send.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    if allowTestAISharingIfNeeded() {
+      // Permission changes only; the product explicitly retains the draft and
+      // requires a new deliberate submit. Never repeat an uncertain operation.
+      try require(normalizedSuggestionDraftText() == expectedPrompt
+        && !app.otherElements["desktop-creation-pending"].exists
+        && (switcher.value as? String ?? "").contains(newChatReady)
+        && send.isEnabled && send.isHittable, "consent-retained-exact-draft")
+      print("SUGGESTION_WARMUP", fixture.nonce, "consent-granted-before-first-submission")
+      send.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    }
+    let reply = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@", answer)).firstMatch
+    try require(reply.waitForExistence(timeout: 210), "reply-unknown-check-receipt")
+    let idle = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["stop-turn"])
+    try require(XCTWaiter.wait(for: [idle], timeout: 45) == .completed
+      && !app.buttons["查询状态"].exists && !app.alerts.firstMatch.exists, "completion-unknown-check-receipt")
+    let createdOnline = XCTNSPredicateExpectation(predicate: NSPredicate(
+      format: "value CONTAINS %@", "Codex · 实时连接"), object: switcher)
+    try require(XCTWaiter.wait(for: [createdOnline], timeout: 45) == .completed, "created-thread-live-owner")
+    print("SUGGESTION_WARMUP", fixture.nonce, "completed")
+  }
+
   private struct ReadOnlySuggestionFixture: Decodable {
     let endpoint: String
     let token: String
@@ -11025,7 +11274,7 @@ final class CodexManageUITests: XCTestCase {
         clearVerifiedSuggestionDraft(ownedText)
         print("SUGGESTION_DEV_RECOVERED_OWN_ADOPTED_DRAFT", threadId, sourceTurnId)
       }
-      let before = composer.value as? String ?? ""
+      let before = normalizedSuggestionDraftText()
       if let previous = drafts[threadId] { XCTAssertEqual(before, previous, "Navigation must preserve the original draft") }
       else { drafts[threadId] = before }
       let entry = app.buttons[before.isEmpty ? "suggestion-details" : "suggestion-entry"]
@@ -11046,7 +11295,7 @@ final class CodexManageUITests: XCTestCase {
       XCTAssertEqual(XCTWaiter.wait(for: [matches], timeout: 15), .completed)
       XCTAssertEqual(text.label, expectedText, "Original suggestion bytes must belong to this source")
       XCTAssertFalse(app.buttons["suggestion-send"].exists)
-      XCTAssertEqual(composer.value as? String ?? "", drafts[threadId], "Reading/expanding must not change the draft")
+      XCTAssertEqual(normalizedSuggestionDraftText(), drafts[threadId], "Reading/expanding must not change the draft")
       shot("read-only-desktop-suggestion-\(index)")
       print("SUGGESTION_DEV_MATCH", index, threadId, sourceTurnId)
       let close = app.buttons["suggestion-details-close"]

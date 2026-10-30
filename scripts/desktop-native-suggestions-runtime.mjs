@@ -1,12 +1,23 @@
 import { spawn } from 'node:child_process';
 import { readFileSync, lstatSync, existsSync } from 'node:fs';
 import { StringDecoder } from 'node:string_decoder';
+import { Worker } from 'node:worker_threads';
 import { createDesktopNativeSampleBridge } from '../packages/codex-adapter/dist/desktop-native-sample-bridge.js';
 import {
   assertPrivateFile,
   closeWindowsPrivateStateBackend,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 import { resolveNativeSuggestionExecutable } from '../packages/codex-adapter/dist/desktop-native-sample-platform.js';
+import {
+  forwardOriginalDesktopWithNativeSampler,
+  nativeSamplerProtocol,
+} from '../packages/codex-adapter/dist/desktop-native-sample-forwarding.js';
+import { getWindowsProcessGate } from '../packages/codex-adapter/dist/windows-process.js';
+import {
+  privateStateExecArgv,
+  privateStateNodeOptions,
+  registerWindowsTraceTransport,
+} from '../packages/codex-adapter/dist/desktop-private-state-native.js';
 
 // Installed private executable override only. Never reachable as a Host command.
 const path = process.env.AGENT_HUB_NATIVE_SUGGESTIONS_CONFIG;
@@ -32,26 +43,75 @@ const observing =
   !args.includes('daemon') &&
   args.includes('--analytics-default-enabled');
 let bridge;
+let sampler;
 let ending = false;
+const closeObservation = () => {
+  bridge?.close();
+  if (sampler)
+    void sampler.close().then((confirmed) => {
+      if (!confirmed) process.stderr.write('native_sampler_retirement_unknown\n');
+    });
+};
 const finish = () => {
   if (ending) return;
   ending = true;
-  bridge?.close();
+  closeObservation();
   child.kill('SIGTERM');
 };
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, finish);
 child.once('error', () => {
-  bridge?.close();
+  closeObservation();
   closeWindowsPrivateStateBackend();
-  process.exit(1);
+  process.exitCode = 1;
+  process.stdin.pause();
 });
 child.once('close', (code) => {
-  bridge?.close();
+  closeObservation();
   closeWindowsPrivateStateBackend();
   process.exitCode = code ?? 1;
   process.stdin.pause();
 });
-if (observing) {
+if (observing && process.platform === 'win32') {
+  const startupDeadline =
+    process.hrtime.bigint() + BigInt(nativeSamplerProtocol.startupMs) * 1_000_000n;
+  sampler = forwardOriginalDesktopWithNativeSampler(
+    {
+      input: process.stdin,
+      childInput: child.stdin,
+      childOutput: child.stdout,
+      output: process.stdout,
+    },
+    () => {
+      registerWindowsTraceTransport();
+      const entry = new URL(
+        '../packages/codex-adapter/dist/desktop-native-sample-worker.js',
+        import.meta.url,
+      );
+      const shared = new SharedArrayBuffer(4);
+      const worker = new Worker(entry, {
+        workerData: {
+          kind: 'windows-native-sample',
+          entryURL: entry.href,
+          configPath: path,
+          control: shared,
+          startupDeadline,
+          windowsProcessGate: getWindowsProcessGate(),
+        },
+        execArgv: privateStateExecArgv(process.execArgv),
+        env: {
+          ...process.env,
+          NODE_OPTIONS: privateStateNodeOptions(process.env.NODE_OPTIONS ?? ''),
+        },
+      });
+      return { worker, shared };
+    },
+  );
+} else {
+  // Establish the original byte streams before any optional observation.
+  process.stdin.pipe(child.stdin);
+  child.stdout.pipe(process.stdout);
+}
+if (observing && process.platform !== 'win32') {
   bridge = createDesktopNativeSampleBridge(path);
   // Forward original bytes, including framing, independently of observation.
   // An observation failure never changes a request or stops desktop execution.
@@ -80,8 +140,6 @@ if (observing) {
   observe(process.stdin, (line) => bridge?.observeOutbound(line));
   observe(child.stdout, (line) => bridge?.observeInbound(line));
 }
-process.stdin.pipe(child.stdin);
-child.stdout.pipe(process.stdout);
 child.stdin.on('error', finish);
 child.stdout.on('error', finish);
 process.stdout.on('error', finish);

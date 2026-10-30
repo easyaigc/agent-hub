@@ -11,6 +11,7 @@ import {
   type WorkerOptions,
 } from 'node:worker_threads';
 import type { WindowsDesktopIdentity } from './desktop-platform.js';
+import { win32 } from 'node:path';
 import {
   getWindowsProcessGate,
   getWindowsProcessWorker,
@@ -300,6 +301,61 @@ export function privateStateNativeFailure(
     // A diagnostic-only property must never interrupt channel retirement.
   }
 }
+
+export type WindowsTraceProducerScope = {
+  producerPid: number;
+  configPath: string;
+  logRoot: string;
+};
+
+/** Canonical local DOS paths only; native handle/ACL checks remain authoritative. */
+export function windowsTraceProducerPath(value: unknown): value is string {
+  return (
+    privateStatePath(value) &&
+    /^[a-z]:\\/i.test(value) &&
+    value.length > 3 &&
+    value === win32.normalize(value) &&
+    !value.endsWith('\\') &&
+    !/[/:<>"|?*]/.test(value.slice(2)) &&
+    !Array.from(value).some((character) => character.charCodeAt(0) < 32) &&
+    !value
+      .slice(3)
+      .split('\\')
+      .some(
+        (part) =>
+          !part ||
+          /[. ]$/.test(part) ||
+          /~[0-9]+(?:\.|$)/.test(part) ||
+          /^(?:con|prn|aux|nul|clock\$|conin\$|conout\$|com[1-9\u00b9\u00b2\u00b3]|lpt[1-9\u00b9\u00b2\u00b3])$/i.test(
+            part.split('.')[0]!.trimEnd(),
+          ),
+      )
+  );
+}
+
+export function assertWindowsTraceProducerScope(
+  value: unknown,
+  root: string,
+): asserts value is WindowsTraceProducerScope {
+  const scope = value as WindowsTraceProducerScope | undefined;
+  if (
+    !scope ||
+    typeof scope !== 'object' ||
+    Array.isArray(scope) ||
+    Object.keys(scope).length !== 3 ||
+    !['producerPid', 'configPath', 'logRoot'].every((key) => Object.hasOwn(scope, key)) ||
+    !Number.isSafeInteger(scope.producerPid) ||
+    scope.producerPid !== process.pid ||
+    scope.producerPid < 1 ||
+    scope.producerPid > 2147483647 ||
+    !windowsTraceProducerPath(root) ||
+    !windowsTraceProducerPath(scope.configPath) ||
+    win32.basename(scope.configPath) !== 'config.json' ||
+    !windowsTraceProducerPath(win32.dirname(scope.configPath)) ||
+    !windowsTraceProducerPath(scope.logRoot)
+  )
+    throw new Error('Invalid native trace producer scope');
+}
 /** Internal transport contract; no paths or permission decisions are cached. */
 export const privateStateProtocol = Object.freeze({
   words: 6,
@@ -476,6 +532,7 @@ type PrivateStateStart = {
     identity: Pick<WindowsDesktopIdentity, 'pid' | 'startedAtUnixMs' | 'executable'>;
     root: string;
     response: SharedArrayBuffer;
+    producer?: WindowsTraceProducerScope;
   };
 };
 type NativeTransportRecord = {
@@ -483,6 +540,7 @@ type NativeTransportRecord = {
   owner: Worker;
   control: Int32Array;
   exited: Promise<boolean>;
+  producerPid?: number;
 };
 type PrivateStateSupervisor = {
   starts: Map<string, (request: PrivateStateStart, source: number) => void>;
@@ -552,7 +610,9 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       Object.keys(request).some((key) => !fields.includes(key)) ||
       (kind === 'windows-trace-start' &&
         (!trace ||
-          Object.keys(trace).some((key) => !['identity', 'root', 'response'].includes(key)) ||
+          Object.keys(trace).some(
+            (key) => !['identity', 'root', 'response', 'producer'].includes(key),
+          ) ||
           !privateStatePath(trace.root) ||
           !trace.identity ||
           Object.keys(trace.identity).some(
@@ -572,11 +632,22 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       return;
     }
     try {
+      if (trace && Object.hasOwn(trace, 'producer'))
+        assertWindowsTraceProducerScope(trace.producer, trace.root);
       // The dispatcher supplies Node's actual sender ID. Only its currently
       // registered Worker object may own this transport, never a remembered ID.
       const owner = getWindowsProcessWorker(source);
       if (!owner) throw new Error('Registered native transport owner required');
       if (supervisor.retiring.has(owner)) throw new Error('Native owner is retiring');
+      // A new owner cannot replace an unconfirmed native producer generation.
+      // Records disappear only after the child/stdio gone acknowledgement and
+      // the supervising transport Worker's confirmed exit.
+      const producerPid = trace?.producer?.producerPid;
+      if (
+        producerPid !== undefined &&
+        [...supervisor.workers].some((record) => record.producerPid === producerPid)
+      )
+        throw new Error('Native producer generation has not retired');
       // Entry is fixed by this already-loaded module, never supplied by the sender.
       const entry = new URL(
         trace ? './desktop-trace-native-worker.js' : './desktop-private-state-native-worker.js',
@@ -595,7 +666,12 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
           ...(!trace ? { diagnostics: request.diagnostics } : {}),
           ownerPort: request.ownerPort,
           ...(trace
-            ? { identity: trace.identity, root: trace.root, lifecycle: request.shared }
+            ? {
+                identity: trace.identity,
+                root: trace.root,
+                lifecycle: request.shared,
+                ...(trace.producer ? { producer: trace.producer } : {}),
+              }
             : {}),
         },
         transferList: [request.ownerPort],
@@ -604,7 +680,13 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       const exited = new Promise<boolean>((resolve) => {
         resolveExit = resolve;
       });
-      const record = { worker, owner, control, exited };
+      const record: NativeTransportRecord = {
+        worker,
+        owner,
+        control,
+        exited,
+        ...(trace?.producer ? { producerPid: trace.producer.producerPid } : {}),
+      };
       registerWindowsProcessWorker(worker);
       observeDiagnosticWorker(worker, owner);
       supervisor.workers.add(record);
@@ -683,8 +765,10 @@ export function createWindowsTraceTransport(
   identity: WindowsDesktopIdentity,
   root: string,
   response: SharedArrayBuffer,
+  producer?: WindowsTraceProducerScope,
 ) {
   if (isMainThread) throw new Error('Trace reader isolate required');
+  if (producer !== undefined) assertWindowsTraceProducerScope(producer, root);
   const p = privateStateProtocol;
   const shared = new SharedArrayBuffer(p.words * 4 + p.responseBytes);
   const control = new Int32Array(shared, 0, p.words);
@@ -702,6 +786,7 @@ export function createWindowsTraceTransport(
       },
       root,
       response,
+      ...(producer ? { producer: { ...producer } } : {}),
     },
   };
   void postMessageToThread(0, request, [ownerPort], p.startupMs).catch(() => {

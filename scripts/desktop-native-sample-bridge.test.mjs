@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import {
   appendFileSync,
   chmodSync,
@@ -20,6 +21,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { syncBuiltinESMExports } from 'node:module';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
@@ -1109,3 +1111,549 @@ test('oversized native results and ambiguous escaped routing aliases still fail 
     });
   }
 });
+
+// R11 phase-budget cases exercise this actual Bridge and real private fixture
+// files. Identity and wall-clock hooks remain explicitly synthetic; neither
+// these cases nor a short Atomics.wait attest Original/Windows performance.
+function r11PhaseBudget(overrides = {}) {
+  const grants = [];
+  let ends = 0;
+  return {
+    grants,
+    get ends() {
+      return ends;
+    },
+    hooks: {
+      active: () => true,
+      startupRemaining: () => 30_000,
+      begin: (milliseconds) => grants.push(milliseconds),
+      end: () => {
+        ends++;
+      },
+      ...overrides,
+    },
+  };
+}
+function r11ShortMonotonicBlock(milliseconds) {
+  const word = new Int32Array(new SharedArrayBuffer(4));
+  const until = performance.now() + milliseconds;
+  while (performance.now() < until)
+    Atomics.wait(word, 0, 0, Math.max(0, until - performance.now()));
+}
+function r11NoRevival(f, bridge, req, log) {
+  assert.equal(bridge.available, false);
+  const state = f.store.readProducer(),
+    row = f.row(req);
+  assert.equal(state.phase, 'unavailable');
+  assert.equal(row.result, null);
+  assert.notEqual(row.state, 'completed');
+  const producerFile = join(f.store.directory, 'producer.json');
+  const runtimeFile = join(f.store.directory, req.params.threadId + '.json');
+  const producerBytes = readFileSync(producerFile),
+    runtimeBytes = readFileSync(runtimeFile);
+  const next = request();
+  f.send(req, 'Late original candidate must never revive', bridge);
+  f.send(next, 'New input cannot reopen retired epoch', bridge);
+  append(log, f.decision(req) + '\n' + f.decision(next) + '\n');
+  f.tick(1, bridge);
+  assert.equal(bridge.available, false);
+  assert.deepEqual(readFileSync(producerFile), producerBytes);
+  assert.deepEqual(readFileSync(runtimeFile), runtimeBytes);
+  assert.deepEqual(f.row(req), row);
+  assert.equal(f.row(next), undefined);
+  assert.equal(runtimeBytes.includes(Buffer.from('Private R11 candidate')), false);
+  assert.equal(runtimeBytes.includes(Buffer.from('Late original candidate')), false);
+  assert.equal(existsSync(f.ownerPath), false);
+}
+
+test('R11 exhausted total startup budget never inspects identity, acquires an owner or publishes listening', (t) => {
+  const f = fixture(t);
+  let inspections = 0;
+  // Controlled elapsed monotonic startup time, independent of fixture wall time.
+  const total = 30_000,
+    alreadySpent = 30_000;
+  const budget = r11PhaseBudget({ startupRemaining: () => total - alreadySpent });
+  const bridge = f.start({
+    phaseBudget: budget.hooks,
+    identity: () => {
+      inspections++;
+      return { ...f.identity };
+    },
+  });
+  assert.equal(bridge, undefined);
+  assert.equal(inspections, 0);
+  assert.equal(f.store.readProducer(), undefined);
+  assert.equal(existsSync(f.ownerPath), false);
+  assert.equal(f.row(request()), undefined);
+  assert.ok(f.codes.includes('native_bridge_phase_deadline'));
+  assert.deepEqual(
+    budget.grants,
+    [1000],
+    'only bounded exact-owner retirement is allowed after expiry',
+  );
+});
+
+test('R11 one remaining startup millisecond includes time spent in begin and retires an overrun', (t) => {
+  const f = fixture(t);
+  const grants = [];
+  let first = true;
+  const budget = r11PhaseBudget({
+    startupRemaining: () => 30_000 - 29_999,
+    begin(milliseconds) {
+      grants.push(milliseconds);
+      if (first) {
+        first = false;
+        r11ShortMonotonicBlock(3);
+      }
+    },
+  });
+  assert.equal(f.start({ phaseBudget: budget.hooks }), undefined);
+  assert.equal(grants[0], 1, 'remaining startup budget cannot reset to 30 seconds');
+  assert.ok(f.codes.includes('native_bridge_phase_deadline'));
+  assert.equal(
+    f.store.readProducer(),
+    undefined,
+    'expired startup cannot atomically publish even its first listening record',
+  );
+  assert.equal(existsSync(f.ownerPath), false);
+  assert.equal(f.row(request()), undefined);
+  assert.deepEqual(
+    readdirSync(f.store.directory),
+    [],
+    'rejected publication also removes its temporary file',
+  );
+  f.advance(6000);
+  assert.deepEqual(readdirSync(f.store.directory), []);
+});
+
+test('R11 listening uses the original six-second remainder across a nested heartbeat fence', (t) => {
+  const f = fixture(t),
+    log = f.log();
+  privateFile(log, 'synthetic seed\n');
+  let armed = false,
+    inspections = 0;
+  const budget = r11PhaseBudget();
+  const bridge = f.start({
+    phaseBudget: budget.hooks,
+    identity: () => {
+      inspections++;
+      // Heartbeat inspection is inside the phase, before its second fence.
+      // Crossing the old deadline here must not create a fresh six-second lease.
+      if (armed) f.advance(1);
+      return { ...f.identity };
+    },
+  });
+  assert.ok(bridge);
+  const initial = f.store.readProducer(),
+    req = request();
+  f.send(req, 'Private R11 candidate');
+  append(log, f.decision(req) + '\n');
+  f.advance(initial.checkedAt + 5999 - f.now());
+  const beforeGrants = budget.grants.length;
+  armed = true;
+  f.tick(0, bridge);
+  assert.equal(inspections, 2, 'real heartbeat reached its nested identity fence');
+  assert.deepEqual(budget.grants.slice(beforeGrants), [1, 1000]);
+  assert.ok(f.codes.includes('native_bridge_lease_expired'));
+  assert.equal(f.store.readProducer().producer.epoch, initial.producer.epoch);
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.equal(bridge.available, false);
+  assert.equal(
+    f.row(req).result,
+    null,
+    'queued exact safety decision cannot release an expired candidate',
+  );
+  r11NoRevival(f, bridge, req, log);
+});
+
+test('R11 already expired listening budget cannot enter work or renew through heartbeat', (t) => {
+  const f = fixture(t),
+    log = f.log();
+  privateFile(log, 'synthetic seed\n');
+  let inspections = 0;
+  const budget = r11PhaseBudget();
+  const bridge = f.start({
+    phaseBudget: budget.hooks,
+    identity: () => {
+      inspections++;
+      return { ...f.identity };
+    },
+  });
+  assert.ok(bridge);
+  const initial = f.store.readProducer(),
+    req = request();
+  f.send(req, 'Private R11 candidate');
+  append(log, f.decision(req) + '\n');
+  f.advance(initial.checkedAt + 6000 - f.now());
+  const beforeGrants = budget.grants.length;
+  f.tick(0, bridge);
+  assert.equal(inspections, 1, 'expired phase never invokes heartbeat identity inspection');
+  assert.deepEqual(
+    budget.grants.slice(beforeGrants),
+    [1000],
+    'expiry allows retirement but no renewed work grant',
+  );
+  assert.ok(f.codes.includes('native_bridge_lease_expired'));
+  assert.equal(f.store.readProducer().producer.epoch, initial.producer.epoch);
+  r11NoRevival(f, bridge, req, log);
+});
+
+test('R11 inactive sampler forbids candidate-body writes while retiring only its exact owner unavailable', (t) => {
+  const f = fixture(t),
+    log = f.log();
+  privateFile(log, 'synthetic seed\n');
+  let active = true;
+  const budget = r11PhaseBudget({ active: () => active });
+  const bridge = f.start({ phaseBudget: budget.hooks });
+  assert.ok(bridge);
+  const initial = f.store.readProducer(),
+    req = request();
+  f.send(req, 'Private R11 candidate');
+  assert.equal(f.row(req).state, 'pending');
+  const pending = f.row(req);
+  append(log, f.decision(req) + '\n');
+  active = false;
+  const beforeGrants = budget.grants.length;
+  f.tick(0, bridge);
+  assert.deepEqual(budget.grants.slice(beforeGrants), [1000]);
+  assert.equal(bridge.available, false);
+  assert.ok(f.codes.includes('native_bridge_observation_failed'));
+  const retired = f.store.readProducer();
+  assert.equal(retired.phase, 'unavailable');
+  for (const field of [
+    'producer',
+    'targetKey',
+    'rootIdentity',
+    'implementationSha256',
+    'wrapperStartedAt',
+  ])
+    assert.deepEqual(retired[field], initial[field], `retirement preserves exact ${field}`);
+  assert.deepEqual(f.row(req), pending, 'active=false also fences capture.close runtime writes');
+  assert.equal(existsSync(f.ownerPath), false);
+  active = true;
+  r11NoRevival(f, bridge, req, log);
+});
+
+test('R11 inactive old sampler cannot retire a replacement owner or publish its private candidate', (t) => {
+  const f = fixture(t),
+    log = f.log();
+  privateFile(log, 'synthetic seed\n');
+  let active = true;
+  const budget = r11PhaseBudget({ active: () => active });
+  const bridge = f.start({ phaseBudget: budget.hooks });
+  assert.ok(bridge);
+  const req = request();
+  f.send(req, 'Private R11 candidate');
+  const pending = f.row(req),
+    old = f.store.readProducer();
+  const replacement = { ...old, producer: { ...old.producer, epoch: randomUUID() } };
+  privateFile(
+    f.ownerPath,
+    JSON.stringify(f.owner(replacement.producer, old.wrapperStartedAt)) + '\n',
+  );
+  f.store.saveProducer(replacement);
+  const ownerBytes = readFileSync(f.ownerPath);
+  const producerBytes = readFileSync(join(f.store.directory, 'producer.json'));
+  append(log, f.decision(req) + '\n');
+  active = false;
+  f.tick(0, bridge);
+  assert.equal(bridge.available, false);
+  assert.deepEqual(f.row(req), pending);
+  assert.deepEqual(f.store.readProducer(), replacement);
+  assert.deepEqual(readFileSync(f.ownerPath), ownerBytes);
+  assert.deepEqual(readFileSync(join(f.store.directory, 'producer.json')), producerBytes);
+  active = true;
+  f.send(req, 'Late original candidate must never revive', bridge);
+  f.tick(1, bridge);
+  assert.deepEqual(f.row(req), pending);
+  assert.deepEqual(readFileSync(f.ownerPath), ownerBytes);
+  assert.deepEqual(readFileSync(join(f.store.directory, 'producer.json')), producerBytes);
+});
+
+function r11ReadTemporary(path) {
+  return JSON.parse(JSON.parse(readFileSync(path, 'utf8')).body);
+}
+function r11PublicationProbe(t, f, kind, { prepared = () => {}, beforeRename = () => {} } = {}) {
+  const name = kind === 'producer' ? 'producer.json' : kind + '.json';
+  const path = join(f.store.directory, name);
+  const selected = (record) =>
+    name === 'producer.json' ? record.phase === 'listening' : record.state === 'completed';
+  const probe = { preparations: [], guards: [], rejections: [], renames: [], retirementGuards: [] };
+  const method = name === 'producer.json' ? 'saveProducer' : 'saveRuntime';
+  const originalSave = DesktopSuggestionStore.prototype[method];
+  const saveMock = t.mock.method(
+    DesktopSuggestionStore.prototype,
+    method,
+    function (record, guard) {
+      if (
+        this.directory === f.store.directory &&
+        method === 'saveProducer' &&
+        record.phase === 'unavailable'
+      )
+        probe.retirementGuards.push(typeof guard);
+      if (this.directory !== f.store.directory || !selected(record))
+        return originalSave.call(this, record, guard);
+      const guarded =
+        typeof guard === 'function'
+          ? () => {
+              probe.guards.push({ prepared: probe.preparations.length });
+              return guard();
+            }
+          : guard;
+      try {
+        return originalSave.call(this, record, guarded);
+      } catch (error) {
+        // Observe the original file immediately after Store unwinds, before
+        // Bridge's separately permitted unavailable retirement can replace it.
+        probe.rejections.push({
+          error,
+          bytes: readFileSync(path),
+          files: readdirSync(f.store.directory).sort(),
+        });
+        throw error;
+      }
+    },
+  );
+  const originalFsync = fs.fsyncSync,
+    originalRename = fs.renameSync;
+  const fsyncMock = t.mock.method(fs, 'fsyncSync', function (fd) {
+    const value = originalFsync.call(this, fd);
+    if (!existsSync(f.store.directory)) return value;
+    const stat = fs.fstatSync(fd, { bigint: true });
+    if (!stat.isFile()) return value;
+    for (const entry of readdirSync(f.store.directory)) {
+      if (!entry.startsWith(name + '.') || !entry.endsWith('.tmp')) continue;
+      const temporary = join(f.store.directory, entry),
+        info = lstatSync(temporary, { bigint: true });
+      if (!info.isFile() || info.isSymbolicLink() || info.ino !== stat.ino || info.dev !== stat.dev)
+        continue;
+      const record = r11ReadTemporary(temporary);
+      if (selected(record)) {
+        probe.preparations.push({ temporary, record, previous: readFileSync(path) });
+        // Actual private temp bytes have been written, protected and fsynced.
+        // Only this exact test-owned descriptor may consume the phase budget.
+        prepared(record);
+      }
+    }
+    return value;
+  });
+  const renameMock = t.mock.method(fs, 'renameSync', function (source, destination) {
+    if (
+      typeof source === 'string' &&
+      dirname(source) === f.store.directory &&
+      source.endsWith('.tmp')
+    ) {
+      const record = r11ReadTemporary(source);
+      probe.renames.push({ source, destination, phase: record.phase, state: record.state });
+      if (destination === path && selected(record)) beforeRename(record);
+    }
+    return originalRename.call(this, source, destination);
+  });
+  // Product imports are real ESM builtin bindings. Update and restore them, not
+  // a separate imitation Store or copied publication implementation.
+  syncBuiltinESMExports();
+  t.after(() => {
+    saveMock.mock.restore();
+    fsyncMock.mock.restore();
+    renameMock.mock.restore();
+    syncBuiltinESMExports();
+  });
+  return probe;
+}
+
+function r11PendingAndCompletedProposal(f) {
+  const req = request(),
+    log = f.log();
+  privateFile(log, 'synthetic seed\n');
+  // Seed before start so this actual Bridge owns the log's initial EOF.
+  f.start({ phaseBudget: r11PhaseBudget().hooks });
+  assert.ok(f.bridge);
+  f.send(req, 'Private guard proposal');
+  const path = join(f.store.directory, req.params.threadId + '.json');
+  const pending = readFileSync(path);
+  append(log, f.decision(req) + '\n');
+  f.tick();
+  const completed = f.row(req);
+  assert.equal(completed.state, 'completed');
+  // Reinstall only this fresh synthetic fixture's exact earlier snapshot. This
+  // supplies a genuinely Bridge-produced proposal without duplicating hashes,
+  // schemas or publication rules, and never edits any Original history.
+  privateFile(path, pending);
+  assert.equal(f.row(req).state, 'pending');
+  assert.equal(f.row(req).result, null);
+  return { req, path, pending, completed };
+}
+
+for (const kind of ['producer', 'runtime']) {
+  test(`R11 Store ${kind} guard rejection preserves exact old bytes and reclaims its fsynced temp`, (t) => {
+    const f = fixture(t);
+    let path, proposal, oldValue, save, probeKind;
+    if (kind === 'runtime') {
+      const seeded = r11PendingAndCompletedProposal(f);
+      path = seeded.path;
+      proposal = seeded.completed;
+      oldValue = f.row(seeded.req);
+      probeKind = seeded.req.params.threadId;
+      save = (guard) => f.store.saveRuntime(proposal, guard);
+    } else {
+      assert.ok(f.start({ phaseBudget: r11PhaseBudget().hooks }));
+      path = join(f.store.directory, 'producer.json');
+      oldValue = f.store.readProducer();
+      proposal = { ...oldValue, checkedAt: oldValue.checkedAt + 1 };
+      probeKind = 'producer';
+      save = (guard) => f.store.saveProducer(proposal, guard);
+    }
+    const oldBytes = readFileSync(path),
+      oldFiles = readdirSync(f.store.directory).sort();
+    const probe = r11PublicationProbe(t, f, probeKind);
+    const refusal = new Error('synthetic publication guard refusal');
+    let calls = 0;
+    assert.throws(
+      () =>
+        save(() => {
+          calls++;
+          throw refusal;
+        }),
+      (error) => error === refusal,
+    );
+    assert.equal(calls, 1);
+    assert.equal(probe.preparations.length, 1, 'real temp file reached fsync before refusal');
+    assert.deepEqual(probe.preparations[0].previous, oldBytes);
+    assert.deepEqual(probe.guards, [{ prepared: 1 }]);
+    assert.equal(probe.renames.length, 0, 'throwing guard prevents atomic publication');
+    assert.deepEqual(readFileSync(path), oldBytes);
+    assert.deepEqual(
+      readdirSync(f.store.directory).sort(),
+      oldFiles,
+      'no temporary file or runtime write-lock remains',
+    );
+    assert.equal(existsSync(probe.preparations[0].temporary), false);
+    assert.deepEqual(
+      kind === 'producer' ? f.store.readProducer() : f.store.readRuntime(proposal.sourceThreadId),
+      oldValue,
+    );
+  });
+}
+
+for (const scenario of ['producer-lease', 'runtime-lease', 'producer-phase']) {
+  test(`R11 slow real temporary preparation cannot publish beyond the original deadline (${scenario})`, (t) => {
+    const f = fixture(t),
+      log = f.log();
+    privateFile(log, 'synthetic seed\n');
+    assert.ok(f.start({ phaseBudget: r11PhaseBudget().hooks }));
+    const bridge = f.bridge,
+      initial = f.store.readProducer(),
+      req = request();
+    f.send(req, 'Private R11 candidate');
+    append(log, f.decision(req) + '\n');
+    const runtime = scenario === 'runtime-lease';
+    if (!runtime)
+      f.advance(initial.checkedAt + (scenario === 'producer-phase' ? 5999 : 2000) - f.now());
+    const path = join(f.store.directory, runtime ? req.params.threadId + '.json' : 'producer.json');
+    const before = readFileSync(path);
+    let consumed = false;
+    const probe = r11PublicationProbe(t, f, runtime ? req.params.threadId : 'producer', {
+      prepared() {
+        if (consumed) return;
+        consumed = true;
+        if (scenario === 'producer-phase') r11ShortMonotonicBlock(3);
+        else f.advance(initial.checkedAt + 6000 - f.now());
+      },
+    });
+    f.tick(0, bridge);
+    assert.equal(consumed, true, 'the selected real temp preparation was reached');
+    assert.equal(probe.preparations.length, 1);
+    assert.deepEqual(probe.preparations[0].previous, before);
+    assert.deepEqual(
+      probe.guards,
+      [{ prepared: 1 }],
+      'actual Bridge passes its guard through Store to the rename boundary',
+    );
+    assert.equal(probe.rejections.length, 1);
+    assert.deepEqual(
+      probe.rejections[0].bytes,
+      before,
+      'rejected publication preserves the previous atomic file',
+    );
+    assert.equal(
+      probe.rejections[0].error.bridgeCode,
+      scenario === 'producer-phase'
+        ? 'native_bridge_phase_deadline'
+        : 'native_bridge_lease_expired',
+    );
+    assert.equal(existsSync(probe.preparations[0].temporary), false);
+    assert.equal(
+      probe.rejections[0].files.some(
+        (name) => name.endsWith('.tmp') || name.endsWith('.write-lock'),
+      ),
+      false,
+    );
+    assert.equal(
+      probe.renames.some((value) =>
+        runtime ? value.state === 'completed' : value.phase === 'listening',
+      ),
+      false,
+    );
+    assert.equal(
+      probe.renames.filter((value) => value.phase === 'unavailable').length,
+      1,
+      'unavailable retirement still publishes without renewing the rejected phase',
+    );
+    if (!runtime) assert.deepEqual(probe.retirementGuards, ['undefined']);
+    assert.equal(f.store.readProducer().producer.epoch, initial.producer.epoch);
+    assert.equal(f.store.readProducer().phase, 'unavailable');
+    assert.equal(f.row(req).result, null);
+    r11NoRevival(f, bridge, req, log);
+  });
+}
+
+for (const kind of ['producer', 'runtime']) {
+  test(`R11 ${kind} publication retry rechecks its guard after a synthetic busy rename`, (t) => {
+    const f = fixture(t);
+    let path, proposal, save, probeKind;
+    if (kind === 'runtime') {
+      const seeded = r11PendingAndCompletedProposal(f);
+      path = seeded.path;
+      proposal = seeded.completed;
+      probeKind = seeded.req.params.threadId;
+      save = (guard) => f.store.saveRuntime(proposal, guard);
+    } else {
+      assert.ok(f.start({ phaseBudget: r11PhaseBudget().hooks }));
+      path = join(f.store.directory, 'producer.json');
+      proposal = { ...f.store.readProducer(), checkedAt: f.now() + 1 };
+      probeKind = 'producer';
+      save = (guard) => f.store.saveProducer(proposal, guard);
+    }
+    const oldBytes = readFileSync(path),
+      oldFiles = readdirSync(f.store.directory).sort();
+    let attempts = 0,
+      expired = false,
+      calls = 0;
+    const probe = r11PublicationProbe(t, f, probeKind, {
+      beforeRename() {
+        attempts++;
+        expired = true;
+        // Portable fault injection, not a claim about Win32 sharing behavior.
+        throw Object.assign(new Error('synthetic sharing overlap'), { code: 'EBUSY' });
+      },
+    });
+    const refusal = new Error('synthetic original deadline expired');
+    assert.throws(
+      () =>
+        save(() => {
+          calls++;
+          if (expired) throw refusal;
+        }),
+      (error) => error === refusal,
+    );
+    assert.equal(attempts, 1, 'expired retry cannot reach a second rename');
+    assert.equal(calls, 2, 'guard executes for both the first attempt and its retry');
+    assert.deepEqual(probe.guards, [{ prepared: 1 }, { prepared: 1 }]);
+    assert.equal(probe.preparations.length, 1, 'retry uses the same immutable prepared file');
+    assert.deepEqual(readFileSync(path), oldBytes);
+    assert.deepEqual(readdirSync(f.store.directory).sort(), oldFiles);
+    assert.equal(existsSync(probe.preparations[0].temporary), false);
+    if (kind === 'runtime') assert.equal(f.store.readRuntime(proposal.sourceThreadId).result, null);
+    else assert.notEqual(f.store.readProducer().checkedAt, proposal.checkedAt);
+  });
+}

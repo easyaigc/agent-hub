@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-10-31 F69：真实时钟辅助诊断已证明，Windows 逐次原生进程读取可使空闲 tick 约十一秒，触发现有六秒租期失效。R11 当前为实现候选：原通信先转发，固定采集 Worker 复用真实原 owner 绑定的持久 C# scope，沿用私有根与 vendor-log 的独立权限检查，并在最终原子发布前重验原阶段期限。完整检查、Windows 冷热耗时、逐机原进程链、真实模型建议与手机采用/撤销、对应 Trace 回收尚须按新指纹验证，见 [本轮记录](acceptance/host-native-suggestions-20261031.md)。R10 的 iPhone Windows 发现与连接已单独通过，不能升级为建议通过；Android 与 A6 状态保持。
+
 2026-10-29 诊断与重连候选修复了同步错误日志、Windows Duplex 早期取消和关闭中初始化的代码风险；尚未据此唯一确认迁移现场的 503／ABORT_ERR 根因。Windows、手机和模型恢复仍未验收，Mac 只读真实结果与合成辅助结果分别见[专项验收](research/host-reconnect-diagnostics-20261029.md)。
 
 Android 原录音文件识别已接入固定模型的 Vosk/JNA 实现，准确目的地持久化、原件保持与 typed/framed 迁移已有限定原生证据；真实下载、JNI/声学、进程死亡和完整 UI/真机仍需独立验收。iOS 既有 SFSpeech 仅在服务支持时要求 on-device，不将其视为相同离线保证；任务/项目管理与 A6 保持暂停。详见[总表](plans/android-alignment-20261022/progress.md)。

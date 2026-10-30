@@ -64,23 +64,39 @@ export function windowsPowerShellEnvironment(environment = process.env): NodeJS.
   );
 }
 
-function windowsPowerShellSync(args: string[], active?: () => boolean): string {
+function windowsPowerShellSync(args: string[], active?: () => boolean, timeoutMs?: number): string {
   try {
+    if (
+      timeoutMs !== undefined &&
+      (!Number.isFinite(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000)
+    )
+      throw new Error('Invalid Windows helper budget');
+    const deadline = timeoutMs === undefined ? Infinity : performance.now() + timeoutMs;
     return withWindowsProcessCreation(
-      30_000,
+      timeoutMs === undefined ? 30_000 : Math.floor(timeoutMs),
       (timeout) => {
         if (active && !active()) throw new Error('Native owner closed before bootstrap');
-        return execFileSync(
-          powershell(),
-          args.includes('prepare-native') ? [...args, '-BudgetMs', String(timeout)] : args,
+        const executable = powershell();
+        const environment = windowsPowerShellEnvironment();
+        const remaining =
+          timeoutMs === undefined
+            ? timeout
+            : Math.min(timeout, Math.floor(deadline - performance.now()));
+        if (remaining < 1) throw new Error('Windows helper budget exhausted');
+        const output = execFileSync(
+          executable,
+          args.includes('prepare-native') ? [...args, '-BudgetMs', String(remaining)] : args,
           {
             encoding: 'utf8',
             stdio: 'pipe',
-            timeout,
+            timeout: remaining,
             windowsHide: true,
-            env: windowsPowerShellEnvironment(),
+            env: environment,
           },
         );
+        if (timeoutMs !== undefined && performance.now() >= deadline)
+          throw new Error('Windows helper budget exhausted');
+        return output;
       },
       active,
     );
@@ -476,11 +492,17 @@ export function writePrivateFileSync(
     closeSync(file);
   }
 }
-export function renamePrivateFileSync(source: string, target: string): void {
+export function renamePrivateFileSync(
+  source: string,
+  target: string,
+  beforeRename?: () => void,
+): void {
   if (process.platform === 'win32') {
     assertPrivateFile(source);
     if (existsSync(target)) assertPrivateFile(target);
   }
+  // The final publication fence follows potentially slow native permission checks.
+  beforeRename?.();
   renameSync(source, target);
 }
 
@@ -587,7 +609,6 @@ export function windowsDesktopLogRangeSnapshot(
 } {
   if (
     process.platform !== 'win32' ||
-    !isMainThread ||
     !Number.isSafeInteger(desktopPid) ||
     desktopPid <= 1 ||
     !Number.isSafeInteger(offset) ||
@@ -597,6 +618,10 @@ export function windowsDesktopLogRangeSnapshot(
     count > 1048576
   )
     throw new Error('Invalid desktop log range');
+  // Only a registered producer isolate installs this fixed-root operation.
+  // A rejected/retired persistent read must never spawn a replacement helper.
+  if (traceBackend?.logRange) return traceBackend.logRange(root, path, offset, count, desktopPid);
+  if (!isMainThread) throw new Error('Invalid desktop log range');
   const executable = windowsPrivateStateExecutable('trace-state');
   const raw = withWindowsProcessCreation(3000, (timeout) =>
     execFileSync(
@@ -637,17 +662,22 @@ export interface WindowsDesktopIdentity {
   sameSession: boolean;
 }
 
-export function inspectWindowsPipe(): WindowsDesktopIdentity {
+/** Optional remaining startup budget covers gate wait and this one helper execution. */
+export function inspectWindowsPipe(timeoutMs?: number): WindowsDesktopIdentity {
   if (process.platform !== 'win32') throw new Error('Native Windows required');
   const value: WindowsDesktopIdentity = JSON.parse(
-    windowsPowerShellSync([
-      '-NoProfile',
-      '-NonInteractive',
-      '-File',
-      windowsHelper('desktop-pipe.ps1'),
-      '-Action',
-      'inspect',
-    ]),
+    windowsPowerShellSync(
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        windowsHelper('desktop-pipe.ps1'),
+        '-Action',
+        'inspect',
+      ],
+      undefined,
+      timeoutMs,
+    ),
   );
   if (
     !value.sameUser ||
@@ -711,6 +741,7 @@ export function inspectWindowsTraceInstance(): WindowsTraceInstance {
 
 export type WindowsTraceBackend = {
   snapshot: typeof windowsTraceSnapshot;
+  logRange?: typeof windowsDesktopLogRangeSnapshot;
   snapshotMany?: (root: string, items: readonly TraceSnapshotItem[]) => TraceSnapshotValue[];
   inspect: () => WindowsTraceInstance;
   inspectProducer?: (

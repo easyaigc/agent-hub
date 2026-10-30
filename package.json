@@ -109,7 +109,7 @@
     "check:responses-proxy": "pnpm build && node --test scripts/responses-proxy.test.mjs",
     "check:images-proxy": "pnpm build && node --test scripts/images-proxy.test.mjs",
     "check:project-git": "pnpm build && node --test scripts/project-git.test.mjs",
-    "check:native-suggestions": "node --test scripts/desktop-native-sample-capture.test.mjs scripts/desktop-native-sample-bridge.test.mjs scripts/desktop-native-suggestion-channel.test.mjs scripts/desktop-workspace-cli-refresh.test.mjs scripts/windows-native-suggestions-environment.test.mjs scripts/windows-native-producer-backend.test.mjs scripts/windows-native-log-range.test.mjs"
+    "check:native-suggestions": "node --test scripts/desktop-native-sample-capture.test.mjs scripts/desktop-native-sample-bridge.test.mjs scripts/desktop-native-sample-forwarding.test.mjs scripts/desktop-native-suggestion-channel.test.mjs scripts/desktop-workspace-cli-refresh.test.mjs scripts/windows-native-suggestions-environment.test.mjs scripts/windows-native-producer-backend.test.mjs scripts/windows-native-log-range.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

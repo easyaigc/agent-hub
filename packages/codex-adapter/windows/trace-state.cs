@@ -572,7 +572,7 @@ internal static class TraceState
         string hash=value["shimSha256"] as string;if(hash==null||!System.Text.RegularExpressions.Regex.IsMatch(hash,@"\A[a-f0-9]{64}\z"))throw new ArgumentException();
         return value;
     }
-    static object Producer(TraceProcess probe,string encoded) {
+    static object Producer(TraceProcess probe,string encoded,TraceProcess.ProducerScope scope=null) {
         if(encoded.Length>4*((BatchRequestBytes+2)/3))throw new ArgumentException();
         byte[] bytes=Convert.FromBase64String(encoded);
         if(bytes.Length>BatchRequestBytes||Convert.ToBase64String(bytes)!=encoded)throw new ArgumentException();
@@ -582,7 +582,7 @@ internal static class TraceState
         if(!Fields(request,"kind","ProducerPid","Config") || !(request["kind"] is string)||(string)request["kind"]!="producer" ||
             !(request["ProducerPid"] is int)||(int)request["ProducerPid"]<=0 || !(request["Config"] is string))throw new ArgumentException();
         string config=ProducerPath((string)request["Config"]);if(Path.GetFileName(config)!="config.json")throw new ArgumentException();
-        return probe.InspectProducer((int)request["ProducerPid"],config);
+        return scope==null ? probe.InspectProducer((int)request["ProducerPid"],config) : scope.InspectProducer((int)request["ProducerPid"],config);
     }
     static string SnapshotMany(string root, string encoded) {
         if(encoded.Length>4*((BatchRequestBytes+2)/3))throw new ArgumentException();
@@ -625,6 +625,88 @@ internal static class TraceState
         if(Encoding.UTF8.GetByteCount(result)>BatchResponseBytes)throw new ArgumentException();return result;
         } finally { if(anchors!=null)foreach(var anchor in anchors.Values)anchor.Handle.Dispose(); }
     }
+    const int ProducerFrameMaximum=100000, ProducerResponseBytes=48*1024*1024, ProducerLogResponseBytes=2*1024*1024;
+    static long ProducerNumber(string text,long maximum) {
+        long value=LogNumber(text,maximum);
+        if(text!=value.ToString(System.Globalization.CultureInfo.InvariantCulture))throw new ArgumentException();
+        return value;
+    }
+    static string ProducerDecodePath(string encoded) {
+        if(String.IsNullOrEmpty(encoded) || encoded.Length>ProducerFrameMaximum)throw new ArgumentException();
+        byte[] bytes=Convert.FromBase64String(encoded);
+        if(bytes.Length>32767*3 || Convert.ToBase64String(bytes)!=encoded)throw new ArgumentException();
+        string path=new UTF8Encoding(false,true).GetString(bytes);
+        if(path.Length>32767)throw new ArgumentException();return path;
+    }
+    static bool ProducerContains(string root,string path) {
+        return String.Equals(root,path,StringComparison.OrdinalIgnoreCase) || path.StartsWith(root+"\\",StringComparison.OrdinalIgnoreCase);
+    }
+    static string ProducerSnapshotRoot(TraceProcess.ProducerScope scope,string path) {
+        if(ProducerContains(scope.TraceRoot,path))return scope.TraceRoot;
+        if(ProducerContains(scope.ConfigDirectory,path))return scope.ConfigDirectory;
+        throw new ArgumentException();
+    }
+    // Console.ReadLine allocates before applying its length limit. The new
+    // producer protocol instead bounds accumulation and rejects partial EOF,
+    // malformed UTF-8 and any non-ASCII framing byte without resynchronizing.
+    static string ProducerLine(TextReader input) {
+        var line=new StringBuilder();
+        while(true) {
+            int value=input.Read();
+            if(value<0) { if(line.Length!=0)throw new ArgumentException();return null; }
+            if(value=='\n')return line.ToString();
+            if(value=='\r') { if(input.Read()!='\n')throw new ArgumentException();return line.ToString(); }
+            if((value!='\t' && (value<32 || value>126)) || line.Length>=ProducerFrameMaximum)throw new ArgumentException();
+            line.Append((char)value);
+        }
+    }
+    static string ProducerReply(TraceProcess probe,TraceProcess.ProducerScope scope,JavaScriptSerializer json,string line) {
+        string[] parts=line.Split('\t');string reply;
+        if(parts.Length==3 && parts[0]=="S") {
+            string path=ProducerPath(ProducerDecodePath(parts[1]));int maximum=(int)ProducerNumber(parts[2],32*1024*1024);
+            reply=Snapshot(ProducerSnapshotRoot(scope,path),path,maximum);
+        }
+        else if(parts.Length==2 && parts[0]=="B")reply=SnapshotMany(scope.TraceRoot,parts[1]);
+        else if(parts.Length==2 && parts[0]=="I") {
+            reply=json.Serialize(Producer(probe,parts[1],scope));if(Encoding.UTF8.GetByteCount(reply)>256)throw new ArgumentException();
+        }
+        else if(parts.Length==1 && parts[0]=="P")reply=json.Serialize(probe.Inspect());
+        else if(parts.Length==1 && parts[0]=="T")reply=json.Serialize(probe.Tokens());
+        else if(parts.Length==4 && parts[0]=="L") {
+            string path=LogPath(ProducerDecodePath(parts[1]));
+            long offset=ProducerNumber(parts[2],LogSafeInteger);int count=(int)ProducerNumber(parts[3],LogRangeMaximum);
+            using(var desktop=new LogDesktopIdentity(scope.DesktopPid))using(var log=new LogRangeFile(scope.LogRoot,path,count==0,desktop))reply=log.Snapshot(offset,count);
+            if(Encoding.UTF8.GetByteCount(reply)>ProducerLogResponseBytes)throw new ArgumentException();
+        }
+        else throw new ArgumentException();
+        if(Encoding.UTF8.GetByteCount(reply)>ProducerResponseBytes)throw new ArgumentException();return reply;
+    }
+    static int ServeProducer(string[] args) {
+        if(args.Length!=7)throw new ArgumentException();
+        string root=ProducerPath(args[1]),executable=ProducerPath(args[4]);
+        int desktopPid=(int)ProducerNumber(args[2],Int32.MaxValue),producerPid=(int)ProducerNumber(args[5],Int32.MaxValue);
+        long desktopStarted=ProducerNumber(args[3],LogSafeInteger);
+        if(desktopPid<1 || producerPid<1 || desktopStarted<1)throw new ArgumentException();
+        using(var probe=new TraceProcess(desktopPid,desktopStarted,executable))
+        using(var scope=probe.OpenProducer(root,producerPid,args[6]))
+        using(var input=new StreamReader(Console.OpenStandardInput(),new UTF8Encoding(false,true),false,4096)) {
+            var json=new JavaScriptSerializer { MaxJsonLength=ProducerResponseBytes };
+            scope.Check();Console.WriteLine("{\"ready\":true}");Console.Out.Flush();
+            while(true) {
+                try {
+                    string line=ProducerLine(input);if(line==null || line=="QUIT")return 0;
+                    scope.Check();string reply;
+                    try { reply=ProducerReply(probe,scope,json,line); }
+                    finally { scope.Check(); }
+                    // Nothing from a command is published until BOTH fences
+                    // have succeeded. An invalid frame retires this generation.
+                    Console.WriteLine(reply);Console.Out.Flush();
+                } catch {
+                    Console.WriteLine("{\"error\":\"WINDOWS_TRACE_NATIVE_REJECTED\"}");Console.Out.Flush();return 1;
+                }
+            }
+        }
+    }
     static int Main(string[] args) {
         try {
             AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
@@ -637,6 +719,7 @@ internal static class TraceState
             if(args.Length==4 && args[0]=="snapshot") {
                 Console.WriteLine(Snapshot(args[1],args[2],Int32.Parse(args[3]))); return 0;
             }
+            if(args.Length>0 && args[0]=="serve-producer")return ServeProducer(args);
             if(args.Length!=5 || args[0]!="serve") throw new ArgumentException();
             string root=Canonical(args[1]);
             using(var probe=new TraceProcess(Int32.Parse(args[2]),Int64.Parse(args[3]),args[4])) {

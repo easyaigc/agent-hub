@@ -910,6 +910,292 @@ test('a later failed attempt keeps one extracted body without exposing it and a 
     );
   }));
 
+function nativeReplacement(root, f) {
+  const started = f.events.find((e) => e.payload.type === 'inference_started').wall_time_unix_ms;
+  const ended = f.events.find((e) => e.payload.type === 'codex_turn_ended').wall_time_unix_ms;
+  const producer = {
+    epoch: randomUUID(),
+    pid: process.pid,
+    desktopPid: process.ppid,
+    desktopStartedAt: 1,
+  };
+  const complete = (sourceTurnId, requestSequence, requestedAt, text) => {
+    const requestId = `thread/sample:${randomUUID()}`;
+    return {
+      version: 2,
+      kind: 'native-sample',
+      targetKey: 'host-a',
+      sourceThreadId: f.sourceThreadId,
+      sourceTurnId,
+      requestId,
+      requestSequence,
+      requestedAt,
+      recordedAt: requestedAt + 3,
+      producer,
+      state: 'completed',
+      result: {
+        requestId,
+        sourceTurnId,
+        text,
+        contentSha256: createHash('sha256').update(text).digest('hex'),
+        resultSha256: 'a'.repeat(64),
+        responseId: null,
+        completedAt: requestedAt + 1,
+        safety: { decidedAt: requestedAt + 2, evidenceSha256: 'b'.repeat(64) },
+      },
+    };
+  };
+  const first = complete(f.sourceTurnId, 1, started - 1, 'obsolete extracted body');
+  const latest = complete(randomUUID(), 2, ended + 1, '最新提取正文\nLatest extracted body');
+  const store = new DesktopSuggestionStore(root, 'host-a');
+  assert.notEqual(first.sourceTurnId, latest.sourceTurnId);
+  assert.equal(store.saveRuntime(first), true);
+  assert.equal(
+    new DesktopSuggestionStore(root, 'host-a').readRuntime(f.sourceThreadId).result.text,
+    first.result.text,
+  );
+  assert.equal(store.saveRuntime(latest), true);
+  const slot = join(store.directory, f.sourceThreadId + '.json');
+  assert.equal(
+    new DesktopSuggestionStore(root, 'host-a').readRuntime(f.sourceThreadId).result.text,
+    latest.result.text,
+  );
+  assert(!fs.readFileSync(slot, 'utf8').includes(first.result.text));
+  assert.deepEqual(fs.readdirSync(store.directory), [f.sourceThreadId + '.json']);
+  return { store, slot, latest, started, ended };
+}
+
+function saveQuietEvents(f) {
+  f.saveEvents();
+  const quiet = new Date(Date.now() - 10000);
+  fs.utimesSync(f.logPath, quiet, quiet);
+}
+
+for (const [status, pending] of [
+  ['completed', false],
+  ['cancelled', false],
+  ['completed', true],
+])
+  test(
+    `first GC after two native completions retires missing-body ${status} raw (pending=${pending})`,
+    { skip: !['darwin', 'win32'].includes(process.platform) },
+    () =>
+      withRoot(async (root) => {
+        const f = unverifiedPrediction(root);
+        f.events.find((e) => e.payload.type === 'codex_turn_ended').payload.status = status;
+        saveQuietEvents(f);
+        const { store, slot, latest } = nativeReplacement(root, f);
+        if (pending) {
+          assert.equal(
+            store.saveRuntime({
+              ...latest,
+              sourceTurnId: randomUUID(),
+              requestId: `thread/sample:${randomUUID()}`,
+              requestSequence: 3,
+              requestedAt: latest.recordedAt + 1,
+              recordedAt: latest.recordedAt + 1,
+              state: 'pending',
+              result: null,
+            }),
+            true,
+          );
+          assert.equal(
+            store.readRuntime(f.sourceThreadId).latestExtracted.result.text,
+            latest.result.text,
+          );
+        }
+        const reader = new DesktopPredictionTraceReader(root, () => 'host-a');
+        const binding = reader.readBinding(f.predictionThreadId, f.predictionTurnId);
+        assert(binding);
+        assert.equal(binding.sourceThreadId, f.sourceThreadId);
+        assert.equal(binding.sourceTurnId, f.sourceTurnId);
+        assert.equal(
+          reader.readCompletedPredictionForRetention(f.predictionThreadId, f.predictionTurnId),
+          null,
+          'the old raw has no recoverable suggestion body',
+        );
+        const before = fs.readFileSync(slot);
+        assert(Date.now() - fs.statSync(f.logPath).mtimeMs < 24 * 60 * 60 * 1000);
+        // No earlier GC: A has already lost the sole body slot to B on its first scan.
+        const retention = new DesktopTraceRetention(root, 'host-a');
+        assert.equal((await processTrace(retention, f)).state, 'retired');
+        assert.equal(fs.existsSync(f.directory), false);
+        assert.deepEqual(fs.readFileSync(slot), before);
+        assert.deepEqual(fs.readdirSync(store.directory), [f.sourceThreadId + '.json']);
+        const saved = new DesktopSuggestionStore(root, 'host-a').readRuntime(f.sourceThreadId);
+        assert.equal(saved.state, pending ? 'pending' : 'completed');
+        assert.equal((saved.result ?? saved.latestExtracted.result).text, latest.result.text);
+      }),
+  );
+
+for (const failure of ['write-lock', 'flush', 'readback'])
+  test(
+    `native supersession ${failure} failure preserves raw and the new body until durable retry`,
+    { skip: !['darwin', 'win32'].includes(process.platform) },
+    () =>
+      withRoot(async (root) => {
+        const f = unverifiedPrediction(root);
+        const { store, slot, started, ended } = nativeReplacement(root, f);
+        const retention = new DesktopTraceRetention(root, 'host-a');
+        const paths = [
+          join(f.directory, 'manifest.json'),
+          f.logPath,
+          ...fs
+            .readdirSync(join(f.directory, 'payloads'))
+            .map((name) => join(f.directory, 'payloads', name)),
+        ];
+        const raw = paths.map((path) => fs.readFileSync(path));
+        const body = fs.readFileSync(slot),
+          identity = fs.statSync(slot);
+        const originalFsync = fs.fsyncSync,
+          originalRead = fs.readFileSync;
+        const lock = slot + '.write-lock';
+        const lockBytes = JSON.stringify({ version: 1, pid: process.pid, token: randomUUID() });
+        let injected = 0;
+        if (failure === 'write-lock') fs.writeFileSync(lock, lockBytes, { mode: 0o600 });
+        if (failure === 'flush')
+          fs.fsyncSync = (fd) => {
+            const stat = fs.fstatSync(fd);
+            if (stat.isFile() && stat.dev === identity.dev && stat.ino === identity.ino) {
+              injected++;
+              throw new Error('INJECTED_NATIVE_SUPERSESSION_FLUSH_FAILURE');
+            }
+            return originalFsync(fd);
+          };
+        if (failure === 'readback')
+          fs.readFileSync = (path, options) => {
+            const bytes = originalRead(path, options);
+            if (path === slot && options === 'utf8') {
+              injected++;
+              return bytes + '\n';
+            }
+            return bytes;
+          };
+        syncBuiltinESMExports();
+        try {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            if (failure === 'write-lock') {
+              assert.equal(
+                store.acknowledgeRuntimeResult(f.sourceThreadId, f.sourceTurnId, started, ended),
+                false,
+              );
+              assert.equal((await processTrace(retention, f)).state, 'superseded-or-conflicted');
+              assert.equal(originalRead(lock, 'utf8'), lockBytes);
+            } else {
+              await assert.rejects(
+                processTrace(retention, f),
+                failure === 'flush'
+                  ? /INJECTED_NATIVE_SUPERSESSION_FLUSH_FAILURE/
+                  : /Compact suggestion readback failed/,
+              );
+              assert(injected > attempt, 'the real durability fence must be reached on every scan');
+            }
+            assert(fs.existsSync(f.directory));
+            assert.deepEqual(
+              paths.map((path) => originalRead(path)),
+              raw,
+            );
+            assert.deepEqual(originalRead(slot), body);
+          }
+        } finally {
+          fs.fsyncSync = originalFsync;
+          fs.readFileSync = originalRead;
+          syncBuiltinESMExports();
+          if (failure === 'write-lock') {
+            assert.equal(originalRead(lock, 'utf8'), lockBytes);
+            fs.rmSync(lock);
+          }
+        }
+        assert.equal((await processTrace(retention, f)).state, 'retired');
+        assert(!fs.existsSync(f.directory));
+        assert.deepEqual(fs.readFileSync(slot), body);
+      }),
+  );
+
+for (const range of ['negative-start', 'negative-end', 'inverted', 'late-retry'])
+  test(`invalid ${range} raw range cannot expire a cancellation despite a later native body`, () =>
+    withRoot(async (root) => {
+      const f = unverifiedPrediction(root);
+      const { slot } = nativeReplacement(root, f);
+      const start = f.events.find((e) => e.payload.type === 'inference_started');
+      const end = f.events.find((e) => e.payload.type === 'codex_turn_ended');
+      end.payload.status = 'cancelled';
+      if (range === 'negative-start') start.wall_time_unix_ms = -1;
+      if (range === 'negative-end') end.wall_time_unix_ms = -1;
+      if (range === 'inverted') start.wall_time_unix_ms = end.wall_time_unix_ms + 1;
+      if (range === 'late-retry') {
+        const retry = structuredClone(start);
+        retry.wall_time_unix_ms = end.wall_time_unix_ms + 1;
+        retry.payload.inference_call_id = randomUUID();
+        f.events.splice(f.events.indexOf(end), 0, retry);
+        f.events.forEach((event, index) => (event.seq = index + 1));
+      }
+      saveQuietEvents(f);
+      assert(
+        new DesktopPredictionTraceReader(root, () => 'host-a').readBinding(
+          f.predictionThreadId,
+          f.predictionTurnId,
+        ),
+        'source identity is still provable',
+      );
+      const raw = fs.readFileSync(f.logPath),
+        body = fs.readFileSync(slot);
+      const retention = new DesktopTraceRetention(root, 'host-a');
+      assert.equal(
+        (await processTrace(retention, f, fs.statSync(f.logPath).mtimeMs + 72 * 60 * 60 * 1000))
+          .state,
+        'prediction-unverified',
+      );
+      assert.deepEqual(fs.readFileSync(f.logPath), raw);
+      assert.deepEqual(fs.readFileSync(slot), body);
+    }));
+
+for (const guard of ['unsealed', 'not-quiet', 'open-handle', 'source-conflict'])
+  test(
+    `a newer native body does not bypass the ${guard} guard`,
+    {
+      skip:
+        guard === 'open-handle'
+          ? process.platform !== 'darwin'
+          : !['darwin', 'win32'].includes(process.platform),
+    },
+    () =>
+      withRoot(async (root) => {
+        const f = unverifiedPrediction(root);
+        const { slot } = nativeReplacement(root, f);
+        if (guard === 'unsealed') {
+          f.events.pop();
+          saveQuietEvents(f);
+        }
+        if (guard === 'source-conflict') {
+          const event = f.events.find((e) => e.payload.event_type === 'session_configured');
+          const path = join(f.directory, event.payload.event_payload.path);
+          const configured = JSON.parse(fs.readFileSync(path, 'utf8'));
+          configured.forked_from_id = randomUUID();
+          fs.writeFileSync(path, JSON.stringify(configured));
+        }
+        const body = fs.readFileSync(slot);
+        const fd = guard === 'open-handle' ? fs.openSync(f.logPath, 'r') : undefined;
+        try {
+          const retention = new DesktopTraceRetention(root, 'host-a');
+          if (guard === 'not-quiet') fs.utimesSync(f.logPath, new Date(), new Date());
+          const result = await processTrace(retention, f);
+          assert.equal(
+            result.state,
+            guard === 'open-handle'
+              ? 'occupied'
+              : guard === 'source-conflict'
+                ? 'prediction-unverified'
+                : 'active-or-unsealed',
+          );
+          assert(fs.existsSync(f.directory));
+          assert.deepEqual(fs.readFileSync(slot), body);
+        } finally {
+          if (fd !== undefined) fs.closeSync(fd);
+        }
+      }),
+  );
+
 test(
   'a sealed internal cancellation retires only after its matching native result is durable',
   { skip: process.platform !== 'darwin' && process.platform !== 'win32' },

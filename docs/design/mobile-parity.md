@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-10-31 F69：本轮只调整 Host 单正文持久化与原始 Trace 回收确认，iOS/Android 的页面、状态字段、design token 和文案保持。预览与采用继续按当前来源生效；来源失效时清空预览，保留的一条提取正文用于持久化与回收核对。Android 建议界面仍为计划，A6 暂停。
+
 2026-10-30 F03／F12／F69／F75：冻结R2的Host运行能力向PR73主线做实际三方集成，保留共享发现、创建租约和既有业务；Native建议/Trace/GC、子任务及只读Git同源保留。当前iOS/Android页面不移植、不新增通过，F75当前main只登记Host兼容与原生计划；R2旧证据保持原上下文，A6暂停。见[集成记录](../acceptance/codex-update-r2-integration-20261030.md)。
 
 2026-10-29 F64／UI06／UI21 重试样式修订：iOS 失败态右侧仅显示 arrow.clockwise 图标，使用与左侧 × 一致的 17pt 图标、44pt 触控区和浅色圆形底；不显示“重试转写”文字，保留同名无障碍标签与原操作重试。主输入与问题回复共用，Android 现有图标操作不受影响；本次验收单列于[专项记录](../acceptance/voice-interaction-20261029.md)。

@@ -2,6 +2,8 @@
 
 Windows 私有状态的 `protect` 在同一 retained handle 校验当前 User owner 和对象类型后，只对已 protected 且 DACL 字节与标准三 SID／完整权限／继承标志完全一致的对象跳过 `SetSecurityInfo`；仍重读并执行 owner、protected、访问主体校验。其他 DACL 沿用原保护／拒绝路径，不按 Administrators owner 或仅 trusted allow 放宽。避免重复写入可继承 DACL 对未 protected 旧 v1 子对象产生副作用；实际 Windows ctime 因果与新 Native 输入通过另行验收，见[幂等保护记录](acceptance/windows-private-dacl-idempotence-20261031.md)。
 
+2026-10-31 F69 源码候选：Windows 原桌面建议观察器在原字节管道建立并收到原执行器响应后启动固定采集 Worker。Worker 使用同一原 owner、配置和启动器链验证的持久 C# producer scope，私有快照及有界 vendor-log range 不再逐次启动进程；旧 Host reader 的接口保持。队列、帧、每次原生响应及聚合阶段均有界，六秒租期不变；观察器失败仅关闭采集，未就绪前的帧不积存或重放。建议先持久保存并读回，每会话仅留最新一条；已封口且安静的对应原始 Trace 才可回收。当前实现、辅助检查和逐机真实验收分别见 [本轮记录](acceptance/host-native-suggestions-20261031.md)，不能以源码或旧版本结果代替本次 Windows 与手机建议通过。
+
 冻结 R2 的 Host 运行能力与 PR73 主线正在按实际三方差异集成：共享 CLI 发现与 reader 代次保留，R2 生命周期串行化、Native 建议、Trace/GC 和只读 Git 同源合入；不复制活动 WIP 或移动端页面。部署门禁按实际合并、制品与 Windows 独立结果解除，见[集成记录](acceptance/codex-update-r2-integration-20261030.md)。
 
 Windows 私有文件的创建事实由 Native 的 CREATE_NEW 句柄产生，并以通道租约交接到 Node 已打开的 FD；收到原租约释放确认前不得截断。Native 冷编译同样保留创建对象与自有编译 job 的退出边界，发布和清理均绑定句柄。既有对象的 User owner/DACL 要求不放宽。旧 Windows v1 阅读缓存不做 owner 迁移，保留后使用可重建的 v2 命名空间；主状态与操作账本位置不变，macOS 仍用 v1。实现、隔离回归、Windows 实测与 R2 集成部署门禁见 [更新恢复记录](acceptance/codex-update-resilience-20261030.md)。

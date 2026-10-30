@@ -54,13 +54,13 @@ async function reviewedSource(source) {
   }
   return result;
 }
-async function pnpm(args, cwd, log, executable) {
+async function pnpm(args, cwd, log, executable, nodeEnvironment = 'development') {
   const child = spawn(executable, args, {
     cwd,
     env: {
       ...process.env,
       CI: 'true',
-      NODE_ENV: 'development',
+      NODE_ENV: nodeEnvironment,
       COREPACK_ENABLE_PROJECT_SPEC: '1',
       VITE_API_BASE: '',
       WEB_ORIGIN: 'https://agenthub-task.local:9443',
@@ -271,7 +271,9 @@ export async function buildTaskHub({ source, output, repository, pnpmExecutable 
           rootPackage.packageManager,
       );
     await pnpm(['install', '--frozen-lockfile'], frozen, join(temp, 'install.log'), pnpmExecutable);
-    await pnpm(['build'], frozen, join(temp, 'build.log'), pnpmExecutable);
+    // Install needs devDependencies; the shipped web build must use React's
+    // production transform, which omits JSX debug filenames and local paths.
+    await pnpm(['build'], frozen, join(temp, 'build.log'), pnpmExecutable, 'production');
     await mkdir(artifact, { recursive: true });
     await pnpm(
       ['--filter', '@task-hub/api', 'deploy', '--legacy', '--prod', join(artifact, 'runtime')],

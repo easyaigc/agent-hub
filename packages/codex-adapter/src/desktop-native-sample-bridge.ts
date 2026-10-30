@@ -16,6 +16,7 @@ import {
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import { TextDecoder } from 'node:util';
+import { isMainThread } from 'node:worker_threads';
 import {
   machineRuntimeTargetKey,
   parseNotificationTarget,
@@ -80,6 +81,7 @@ type Code =
   | 'native_bridge_windows_log_range_unavailable'
   | 'native_bridge_clock_invalid'
   | 'native_bridge_lease_expired'
+  | 'native_bridge_phase_deadline'
   | 'native_bridge_capture_unavailable'
   | 'native_bridge_store_unavailable'
   | 'native_bridge_observation_failed'
@@ -105,6 +107,7 @@ const statusCodes: ReadonlySet<string> = new Set<Code>([
   'native_bridge_windows_log_range_unavailable',
   'native_bridge_clock_invalid',
   'native_bridge_lease_expired',
+  'native_bridge_phase_deadline',
   'native_bridge_capture_unavailable',
   'native_bridge_store_unavailable',
   'native_bridge_observation_failed',
@@ -115,10 +118,19 @@ const statusCodes: ReadonlySet<string> = new Set<Code>([
 ]);
 
 export interface DesktopNativeSampleBridge {
+  readonly available: boolean;
   /** Complete original JSON lines, supplied beside (never instead of) forwarding. */
   observeOutbound(line: string): void;
   observeInbound(line: string): void;
   close(): void;
+}
+
+/** Internal sampler-isolate budget; never supplied by a remote command. */
+export interface DesktopNativeSamplePhaseBudget {
+  startupRemaining(): number;
+  active(): boolean;
+  begin(milliseconds: number): void;
+  end(): void;
 }
 
 /** Paths describe the installed originals; native inspection verifies their provenance. */
@@ -170,6 +182,7 @@ interface Hooks {
   status?: (code: string) => void;
   implementationSha256?: string;
   manual?: boolean;
+  phaseBudget?: DesktopNativeSamplePhaseBudget;
 }
 
 function fail(code: Code): never {
@@ -585,6 +598,9 @@ class Bridge implements DesktopNativeSampleBridge {
   private closed = false;
   private lastAt = 0;
   private heartbeatAt = 0;
+  private producerCheckedAt = 0;
+  private phaseDeadline = Infinity;
+  private phaseLeaseDeadline = Infinity;
   private roundRobin = 0;
 
   constructor(
@@ -608,7 +624,51 @@ class Bridge implements DesktopNativeSampleBridge {
       /* Neither logger exceptions nor exception contents cross the tap. */
     }
   }
+  get available(): boolean {
+    return this.ready && !this.closed;
+  }
+  private assertActive(): void {
+    if (this.hooks.phaseBudget && !this.hooks.phaseBudget.active())
+      fail('native_bridge_observation_failed');
+  }
+  private publicationGuard(): (() => void) | undefined {
+    if (!this.hooks.phaseBudget) return undefined;
+    return () => {
+      this.assertActive();
+      if (performance.now() >= this.phaseDeadline) fail('native_bridge_phase_deadline');
+      if (this.time() >= this.phaseLeaseDeadline) fail('native_bridge_lease_expired');
+    };
+  }
+  private phase<T>(startup: boolean, action: () => T): T {
+    const budget = this.hooks.phaseBudget;
+    if (!budget) return action();
+    this.assertActive();
+    const remaining = startup
+      ? budget.startupRemaining()
+      : this.producerCheckedAt + limits.leaseMs - this.time();
+    if (!Number.isFinite(remaining) || remaining <= 0)
+      fail(startup ? 'native_bridge_phase_deadline' : 'native_bridge_lease_expired');
+    const deadline = performance.now() + remaining;
+    this.phaseDeadline = deadline;
+    this.phaseLeaseDeadline = startup ? Infinity : this.producerCheckedAt + limits.leaseMs;
+    budget.begin(Math.max(1, Math.floor(remaining)));
+    try {
+      const value = action();
+      this.assertActive();
+      if (performance.now() >= deadline) fail('native_bridge_phase_deadline');
+      if (this.ready && this.time() - this.producerCheckedAt >= limits.leaseMs)
+        fail('native_bridge_lease_expired');
+      return value;
+    } finally {
+      budget.end();
+      this.phaseDeadline = Infinity;
+      this.phaseLeaseDeadline = Infinity;
+    }
+  }
   start(): void {
+    this.phase(true, () => this.initialize());
+  }
+  private initialize(): void {
     if (!this.hooks.identity && process.platform !== 'darwin' && process.platform !== 'win32')
       fail('native_bridge_platform_unavailable');
     const checked = configuration(this.configPath, this.files, this.hooks);
@@ -655,7 +715,7 @@ class Bridge implements DesktopNativeSampleBridge {
         if (property === 'saveRuntime')
           return (value: Parameters<DesktopSuggestionStore['saveRuntime']>[0]) => {
             this.fence(this.time());
-            return target.saveRuntime(value);
+            return target.saveRuntime(value, this.publicationGuard());
           };
         if (property === 'readRuntime')
           return (thread: string) => {
@@ -701,13 +761,15 @@ class Bridge implements DesktopNativeSampleBridge {
     // Only its bounded top-level envelope may select the capture boundary.
     if (!isOriginalNativeSampleFrame(line, method)) return;
     try {
-      this.fence(this.time());
-      if (method === 'observeOutbound' && !this.capture!.hasPendingRequests) {
-        const budget = { remaining: limits.bytesPerTick };
-        for (const path of this.scan(this.time())) this.seed(path, budget);
-      }
-      this.capture![method](line);
-      if (!this.capture!.available) fail('native_bridge_capture_unavailable');
+      this.phase(false, () => {
+        this.fence(this.time());
+        if (method === 'observeOutbound' && !this.capture!.hasPendingRequests) {
+          const budget = { remaining: limits.bytesPerTick };
+          for (const path of this.scan(this.time())) this.seed(path, budget);
+        }
+        this.capture![method](line);
+        if (!this.capture!.available) fail('native_bridge_capture_unavailable');
+      });
     } catch (error) {
       this.stop(fixedCode(error, 'native_bridge_observation_failed'));
     }
@@ -727,6 +789,7 @@ class Bridge implements DesktopNativeSampleBridge {
     if (this.store.rootIdentity() !== this.root) fail('native_bridge_root_changed');
   }
   private fence(at: number): void {
+    this.assertActive();
     this.checkOwner();
     const state = this.store.readProducer();
     if (
@@ -740,20 +803,31 @@ class Bridge implements DesktopNativeSampleBridge {
       fail('native_bridge_owner_changed');
     if (state.checkedAt > at || at - state.checkedAt >= limits.leaseMs)
       fail('native_bridge_lease_expired');
+    this.assertActive();
+    if (this.hooks.phaseBudget && this.time() - state.checkedAt >= limits.leaseMs)
+      fail('native_bridge_lease_expired');
   }
   private writeProducer(phase: RuntimeSuggestionProducerState['phase'], at: number): void {
     this.checkOwner();
-    this.store.saveProducer({
-      version: 1,
-      kind: 'native-sample-producer',
-      targetKey: this.store.targetKey,
-      producer: { ...this.producer },
-      wrapperStartedAt: this.identity.wrapperStartedAt,
-      rootIdentity: this.root,
-      implementationSha256: this.implementationSha256,
-      checkedAt: at,
-      phase,
-    });
+    if (phase === 'listening') this.assertActive();
+    this.store.saveProducer(
+      {
+        version: 1,
+        kind: 'native-sample-producer',
+        targetKey: this.store.targetKey,
+        producer: { ...this.producer },
+        wrapperStartedAt: this.identity.wrapperStartedAt,
+        rootIdentity: this.root,
+        implementationSha256: this.implementationSha256,
+        checkedAt: at,
+        phase,
+      },
+      phase === 'listening' ? this.publicationGuard() : undefined,
+    );
+    if (phase === 'listening') {
+      this.assertActive();
+      this.producerCheckedAt = at;
+    }
   }
   private acquire(at: number): void {
     let existing: ReturnType<LocalFiles['privateBytes']> | undefined;
@@ -973,29 +1047,32 @@ class Bridge implements DesktopNativeSampleBridge {
   tick(): void {
     if (!this.ready || this.closed) return;
     try {
-      const at = this.time();
-      this.fence(at);
-      if (!this.capture!.available) fail('native_bridge_capture_unavailable');
-      if (at - this.heartbeatAt >= limits.heartbeatMs) {
-        const current = configuration(this.configPath, this.files, this.hooks);
-        if (current.hash !== this.configHash) fail('native_bridge_config_changed');
-        const identity = this.inspect(process.pid, this.configPath);
-        if (!validIdentity(identity, at) || !sameIdentity(identity, this.identity))
-          fail('native_bridge_identity_unavailable');
-        this.fence(this.time());
+      this.phase(false, () => {
+        const at = this.time();
+        this.fence(at);
         if (!this.capture!.available) fail('native_bridge_capture_unavailable');
-        this.writeProducer('listening', this.time());
-        this.heartbeatAt = this.lastAt;
-      }
-      const paths = this.scan(at),
-        budget = { remaining: limits.bytesPerTick };
-      if (!this.capture!.hasPendingRequests) return;
-      for (const path of this.cursors.keys()) if (!paths.includes(path)) this.cursors.delete(path);
-      const count = Math.min(limits.filesPerTick, paths.length);
-      for (let i = 0; i < count && budget.remaining > 0; i++) {
-        this.readLog(paths[(this.roundRobin + i) % paths.length]!, budget);
-      }
-      this.roundRobin = paths.length ? (this.roundRobin + count) % paths.length : 0;
+        if (at - this.heartbeatAt >= limits.heartbeatMs) {
+          const current = configuration(this.configPath, this.files, this.hooks);
+          if (current.hash !== this.configHash) fail('native_bridge_config_changed');
+          const identity = this.inspect(process.pid, this.configPath);
+          if (!validIdentity(identity, at) || !sameIdentity(identity, this.identity))
+            fail('native_bridge_identity_unavailable');
+          this.fence(this.time());
+          if (!this.capture!.available) fail('native_bridge_capture_unavailable');
+          this.writeProducer('listening', this.time());
+          this.heartbeatAt = this.lastAt;
+        }
+        const paths = this.scan(at),
+          budget = { remaining: limits.bytesPerTick };
+        if (!this.capture!.hasPendingRequests) return;
+        for (const path of this.cursors.keys())
+          if (!paths.includes(path)) this.cursors.delete(path);
+        const count = Math.min(limits.filesPerTick, paths.length);
+        for (let i = 0; i < count && budget.remaining > 0; i++) {
+          this.readLog(paths[(this.roundRobin + i) % paths.length]!, budget);
+        }
+        this.roundRobin = paths.length ? (this.roundRobin + count) % paths.length : 0;
+      });
     } catch (error) {
       this.stop(fixedCode(error, 'native_bridge_log_unavailable'));
     }
@@ -1018,6 +1095,9 @@ class Bridge implements DesktopNativeSampleBridge {
     }
     this.capture = undefined;
     try {
+      // Retirement may mark this exact epoch unavailable after its lease has
+      // expired. It cannot publish another listening lease or save a result.
+      this.hooks.phaseBudget?.begin(1000);
       if (this.ownerIdentity) {
         this.checkOwner();
         const state = this.store.readProducer();
@@ -1038,6 +1118,8 @@ class Bridge implements DesktopNativeSampleBridge {
       }
     } catch {
       this.report('native_bridge_close_failed');
+    } finally {
+      this.hooks.phaseBudget?.end();
     }
     for (const cursor of this.cursors.values()) cursor.tail = Buffer.alloc(0);
     this.cursors.clear();
@@ -1077,6 +1159,16 @@ export function createDesktopNativeSampleBridge(
   configPath = process.env.AGENT_HUB_NATIVE_SUGGESTIONS_CONFIG,
 ): DesktopNativeSampleBridge | undefined {
   return create(configPath, {});
+}
+
+/** Fixed Windows sampler entry only; real process inspection is never replaced. */
+export function createDesktopNativeSampleWorkerBridge(
+  configPath: string,
+  phaseBudget: DesktopNativeSamplePhaseBudget,
+  status: (code: string) => void,
+): DesktopNativeSampleBridge | undefined {
+  if (process.platform !== 'win32' || isMainThread) return undefined;
+  return create(configPath, { phaseBudget, status });
 }
 
 /** @internal Local fixture hooks only; not exported through the adapter entry point. */

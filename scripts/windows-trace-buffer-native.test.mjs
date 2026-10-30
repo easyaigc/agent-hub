@@ -161,6 +161,9 @@ test('Windows batch keeps private fresh opens, per-item guards and one-command n
   const wire = source.slice(source.indexOf('    static int Main'));
   const additions = [
     '            if(args.Length>0 && args[0]=="log-snapshot")return LogSnapshotCommand(args);\n',
+    // The independently guarded producer protocol has a separate dispatcher;
+    // removing only this exact addition must preserve the old wire fingerprint.
+    '            if(args.Length>0 && args[0]=="serve-producer")return ServeProducer(args);\n',
     '                    else if(parts.Length==2 && parts[0]=="I") {\n                        string reply=json.Serialize(Producer(probe,parts[1]));if(Encoding.UTF8.GetByteCount(reply)>256)throw new ArgumentException();Console.WriteLine(reply);\n                    }\n',
   ];
   let legacyWire = wire;

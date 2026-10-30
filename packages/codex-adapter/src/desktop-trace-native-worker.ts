@@ -1,7 +1,12 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { MessagePort, parentPort, workerData } from 'node:worker_threads';
+import { win32 } from 'node:path';
 import { windowsTraceNativeExecutable, type WindowsDesktopIdentity } from './desktop-platform.js';
-import { privateStateProtocol as p } from './desktop-private-state-native.js';
+import {
+  privateStateProtocol as p,
+  assertWindowsTraceProducerScope,
+  type WindowsTraceProducerScope,
+} from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
 import {
@@ -10,17 +15,28 @@ import {
   parseTraceSnapshotBatchJSON,
   traceSnapshotBatchLimits,
   encodeTraceProducerRequest,
+  decodeTraceProducerIdentity,
+  decodeTraceProducerSnapshot,
+  traceProducerLimits,
+  traceProducerPathWithin,
+  parseTraceProducerJSON,
+  encodeTraceLogRangeRequest,
+  decodeTraceLogRange,
+  traceLogRangeLimits,
+  type TraceLogRangeRequest,
+  type TraceProducerRequest,
   type TraceSnapshotBatch,
 } from './desktop-trace-native.js';
 
 if (workerData?.kind !== 'windows-trace-native' || workerData.entryURL !== import.meta.url)
   throw new Error('Trace transport worker required');
-const { root, identity, shared, lifecycle, ownerPort } = workerData as {
+const { root, identity, shared, lifecycle, ownerPort, producer } = workerData as {
   root: string;
   identity: WindowsDesktopIdentity;
   shared: SharedArrayBuffer;
   lifecycle: SharedArrayBuffer;
   ownerPort: MessagePort;
+  producer?: WindowsTraceProducerScope;
 };
 if (
   !(shared instanceof SharedArrayBuffer) ||
@@ -30,6 +46,9 @@ if (
   !(ownerPort instanceof MessagePort)
 )
   throw new Error('Invalid trace transport');
+if (Object.hasOwn(workerData, 'producer')) assertWindowsTraceProducerScope(producer, root);
+const configRoot = producer ? win32.dirname(producer.configPath) : undefined;
+const startupDeadline = performance.now() + p.startupMs;
 const control = new Int32Array(shared, 0, 2);
 const bytes = new Uint8Array(shared, 8);
 const life = new Int32Array(lifecycle, 0, p.words);
@@ -41,6 +60,10 @@ let ready = false,
   closed = false;
 let timer: NodeJS.Timeout | undefined;
 let batch: TraceSnapshotBatch | undefined;
+let logRange: TraceLogRangeRequest | undefined;
+let producerRequest: TraceProducerRequest | undefined;
+let snapshotRequest: { path: string; maximum: number } | undefined;
+let nativeDeadline = Infinity;
 let lastBatch = 0;
 let killTimer: NodeJS.Timeout | undefined;
 let childExited = false,
@@ -58,21 +81,50 @@ function reply(value: Buffer, failed = false): void {
   if (!pending) return;
   pending = false;
   if (value.length > bytes.length) failed = true;
-  if (batch && !failed) {
+  const expired = () =>
+    producer !== undefined &&
+    (performance.now() >= nativeDeadline ||
+      Atomics.load(life, p.state) !== p.ready ||
+      Atomics.load(control, 0) !== 0);
+  if (expired()) failed = true;
+  if ((batch || producer) && !failed) {
     try {
-      if (value.length > traceSnapshotBatchLimits.responseBytes) throw new Error('Batch too large');
-      decodeTraceSnapshotBatch(parseTraceSnapshotBatchJSON(value.toString('utf8')), batch);
+      const maximum = logRange
+        ? traceLogRangeLimits.responseBytes
+        : producerRequest
+          ? traceProducerLimits.responseBytes
+          : batch
+            ? traceSnapshotBatchLimits.responseBytes
+            : bytes.length;
+      if (value.length > maximum) throw new Error('Native response too large');
+      const parsed = producer
+        ? parseTraceProducerJSON(value)
+        : parseTraceSnapshotBatchJSON(value.toString('utf8'));
+      if (batch) decodeTraceSnapshotBatch(parsed, batch);
+      else if (logRange) decodeTraceLogRange(parsed, logRange);
+      else if (producerRequest) decodeTraceProducerIdentity(parsed, producerRequest, identity);
+      else if (snapshotRequest)
+        decodeTraceProducerSnapshot(parsed, snapshotRequest.path, snapshotRequest.maximum);
+      else if (parsed && typeof parsed === 'object' && Object.hasOwn(parsed, 'error'))
+        throw new Error('Native producer operation rejected');
     } catch {
       failed = true;
     }
   }
-  const invalidBatch = batch !== undefined && failed;
+  if (expired()) failed = true;
+  if (!failed) {
+    bytes.set(value);
+    if (expired()) failed = true;
+  }
+  const retire = (batch !== undefined || producer !== undefined) && failed;
   batch = undefined;
-  if (!failed) bytes.set(value);
+  logRange = undefined;
+  producerRequest = undefined;
+  snapshotRequest = undefined;
   Atomics.store(control, 1, failed ? 0 : value.length);
   Atomics.store(control, 0, failed ? -1 : 1);
   Atomics.notify(control, 0);
-  if (invalidBatch) close();
+  if (retire) close();
 }
 function gone(): void {
   if (retired || (child && (!childExited || !childClosed || streamsClosed !== 3))) return;
@@ -141,11 +193,26 @@ ownerPort.on('message', (input: unknown) => {
     request.maximum! >= 0 &&
     request.maximum! <= 32 * 1024 * 1024
   ) {
+    if (
+      producer &&
+      (Object.keys(request).length !== 3 ||
+        !Object.hasOwn(request, 'maximum') ||
+        !(
+          traceProducerPathWithin(root, request.path) ||
+          traceProducerPathWithin(configRoot!, request.path)
+        ))
+    ) {
+      close();
+      return;
+    }
+    if (producer) snapshotRequest = { path: request.path, maximum: request.maximum! };
     command = 'S\t' + Buffer.from(request.path).toString('base64') + '\t' + request.maximum;
   } else if (request.kind === 'snapshot-many') {
     try {
       command = encodeTraceSnapshotBatch(request);
       batch = request as unknown as TraceSnapshotBatch;
+      if (producer && batch.items.some((item) => !traceProducerPathWithin(root, item.path)))
+        throw new Error('Native producer batch scope changed');
       if (batch.id <= lastBatch) throw new Error('Stale native batch');
       lastBatch = batch.id;
     } catch {
@@ -155,18 +222,43 @@ ownerPort.on('message', (input: unknown) => {
   } else if (request.kind === 'producer') {
     try {
       command = encodeTraceProducerRequest(request);
+      if (producer) {
+        const inspect = request as unknown as TraceProducerRequest;
+        if (inspect.ProducerPid !== producer.producerPid || inspect.Config !== producer.configPath)
+          throw new Error('Native producer identity scope changed');
+        producerRequest = inspect;
+      }
     } catch {
       close();
       return;
     }
-  } else if (request.kind === 'probe') command = 'P';
-  else if (request.kind === 'tokens') command = 'T';
-  else {
+  } else if (request.kind === 'log-range' && producer) {
+    try {
+      command = encodeTraceLogRangeRequest(request);
+      logRange = request as unknown as TraceLogRangeRequest;
+      if (!traceProducerPathWithin(producer.logRoot, logRange.path))
+        throw new Error('Native producer log scope changed');
+    } catch {
+      close();
+      return;
+    }
+  } else if (request.kind === 'probe' || request.kind === 'tokens') {
+    if (producer && Object.keys(request).length !== 1) {
+      close();
+      return;
+    }
+    command = request.kind === 'probe' ? 'P' : 'T';
+  } else {
+    if (producer) {
+      close();
+      return;
+    }
     Atomics.store(control, 0, -1);
     Atomics.notify(control, 0);
     return;
   }
   pending = true;
+  if (producer) nativeDeadline = performance.now() + 750;
   responseEnd = diagnostics.begin('native_response');
   timer = setTimeout(() => {
     diagnostics.end('phase_deadline', { operation: 'read', deadlineKind: 'native_response' });
@@ -182,7 +274,8 @@ ownerPort.on('message', (input: unknown) => {
 process.once('exit', () => {
   if (Atomics.load(life, p.state) !== p.gone) child?.kill();
 });
-const starting = () => Atomics.load(life, p.state) === p.starting;
+const starting = () =>
+  Atomics.load(life, p.state) === p.starting && (!producer || performance.now() < startupDeadline);
 try {
   if (diagnostics.enabled) startupEnd = diagnostics.begin('native_start');
   const executable = starting() ? windowsTraceNativeExecutable(starting) : undefined;
@@ -191,18 +284,19 @@ try {
     Atomics.store(life, p.pid, -1);
     child = diagnostics.phase('gate_wait', () =>
       withWindowsProcessCreation(
-        p.startupMs,
+        producer ? Math.max(1, Math.floor(startupDeadline - performance.now())) : p.startupMs,
         () => {
           if (!starting()) throw new Error('Trace owner closed');
           const create = () =>
             spawn(
               executable,
               [
-                'serve',
+                producer ? 'serve-producer' : 'serve',
                 root,
                 String(identity.pid),
                 String(identity.startedAtUnixMs),
                 identity.executable,
+                ...(producer ? [String(producer.producerPid), producer.configPath] : []),
               ],
               { stdio: 'pipe', windowsHide: true },
             );
@@ -257,7 +351,12 @@ try {
         const newline = chunk.indexOf(10, start);
         const part = chunk.subarray(start, newline < 0 ? chunk.length : newline);
         buffered += part.length;
-        if (buffered > bytes.length) {
+        const maximum = logRange
+          ? traceLogRangeLimits.responseBytes
+          : producerRequest
+            ? traceProducerLimits.responseBytes
+            : bytes.length;
+        if (buffered > maximum) {
           close();
           return;
         }
@@ -270,7 +369,20 @@ try {
         if (!ready) {
           try {
             if (
-              JSON.parse(line.toString()).ready !== true ||
+              (producer
+                ? (() => {
+                    const value = parseTraceProducerJSON(line);
+                    return (
+                      !value ||
+                      typeof value !== 'object' ||
+                      Array.isArray(value) ||
+                      Object.keys(value).length !== 1 ||
+                      !Object.hasOwn(value, 'ready') ||
+                      (value as { ready: unknown }).ready !== true
+                    );
+                  })()
+                : JSON.parse(line.toString()).ready !== true) ||
+              (producer && (!starting() || start !== chunk.length)) ||
               Atomics.compareExchange(life, p.state, p.starting, p.ready) !== p.starting
             ) {
               close();

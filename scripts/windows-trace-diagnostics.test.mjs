@@ -15,6 +15,10 @@ fs.chmodSync(directory, 0o700);
 const write = (name, text) => fs.writeFileSync(join(directory, name), text, { mode: 0o600 });
 write('package.json', '{"type":"module"}');
 const protocol = new URL('../packages/protocol/dist/index.js', import.meta.url).href;
+const nativeTransportHelpers = new URL(
+  '../packages/codex-adapter/dist/desktop-private-state-native.js',
+  import.meta.url,
+).href;
 for (const name of [
   'windows-trace-diagnostics',
   'desktop-suggestion-worker-client',
@@ -42,6 +46,7 @@ write('desktop-platform.js', `export const installWindowsTraceBackend=()=>{};`);
 write(
   'desktop-private-state-native.js',
   `import {Worker,MessageChannel} from 'node:worker_threads';
+export {assertWindowsTraceProducerScope,windowsTraceProducerPath} from ${JSON.stringify(nativeTransportHelpers)};
 export const registerWindowsTraceTransport=()=>{};
 export const retireWindowsNativeOwner=async()=>true;
 let mode='normal';export const setMode=value=>mode=value;

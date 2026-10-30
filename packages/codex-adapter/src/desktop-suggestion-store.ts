@@ -432,16 +432,18 @@ export class DesktopSuggestionStore {
     if (!validProducer(value, this.targetKey)) throw new Error('Invalid native producer');
     return value;
   }
-  saveProducer(state: RuntimeSuggestionProducerState): void {
+  saveProducer(state: RuntimeSuggestionProducerState, beforePublish?: () => void): void {
     if (!validProducer(state, this.targetKey) || state.rootIdentity !== this.rootIdentity())
       throw new Error('Invalid native producer');
     this.prepare();
-    this.publishBytes(join(this.directory, 'producer.json'), state);
+    this.publishBytes(join(this.directory, 'producer.json'), state, beforePublish);
   }
-  saveRuntime(record: RuntimeDesktopSuggestion): boolean {
-    return this.withWriteLock(record.sourceThreadId, 1000, () => this.saveRuntimeLocked(record));
+  saveRuntime(record: RuntimeDesktopSuggestion, beforePublish?: () => void): boolean {
+    return this.withWriteLock(record.sourceThreadId, 1000, () =>
+      this.saveRuntimeLocked(record, beforePublish),
+    );
   }
-  private saveRuntimeLocked(record: RuntimeDesktopSuggestion): boolean {
+  private saveRuntimeLocked(record: RuntimeDesktopSuggestion, beforePublish?: () => void): boolean {
     if (
       !validRuntime(record, this.targetKey, record.sourceThreadId) ||
       realpathSync(this.traceRoot) !== this.traceRoot
@@ -509,15 +511,23 @@ export class DesktopSuggestionStore {
       } else throw new Error('Invalid prior native suggestion');
       if (record.state !== 'completed' && prior) next = { ...record, latestExtracted: prior };
     }
-    return this.publish(path, next);
+    return this.publish(path, next, beforePublish);
   }
-  /** A raw internal cancellation may precede the original sample's successful result. */
+  /** A bound raw attempt may be covered by its result or a strictly later extracted body. */
   acknowledgeRuntimeResult(
     threadId: string,
     sourceTurnId: string,
     startedAt: number,
     endedAt: number,
   ): boolean {
+    if (
+      !uuid.test(sourceTurnId) ||
+      sourceTurnId === threadId ||
+      !integer(startedAt) ||
+      !integer(endedAt) ||
+      startedAt > endedAt
+    )
+      return false;
     return this.withWriteLock(threadId, 0, () => {
       const value = this.readRuntime(threadId);
       if (!value) return false;
@@ -528,11 +538,18 @@ export class DesktopSuggestionStore {
           : undefined;
       if (
         !kept ||
-        kept.result.sourceTurnId !== sourceTurnId ||
-        kept.requestedAt > endedAt ||
-        kept.result.completedAt < startedAt
+        kept.result.completedAt < kept.requestedAt ||
+        kept.result.safety.decidedAt > value.recordedAt
       )
         return false;
+      const matching =
+        kept.result.sourceTurnId === sourceTurnId &&
+        kept.requestedAt <= endedAt &&
+        kept.result.completedAt >= startedAt;
+      // Latest-only retention is per target/source thread, across source turns.
+      // Only an extracted body can supersede; a later pending request cannot.
+      const superseded = kept.requestedAt > endedAt;
+      if (!matching && !superseded) return false;
       const path = this.path(threadId),
         bytes = this.runtimeSnapshot().file(path, compactSuggestionMaximum).toString('utf8');
       this.confirmDurable(path, bytes);
@@ -739,15 +756,16 @@ export class DesktopSuggestionStore {
   private publish(
     path: string,
     record: CompactDesktopSuggestion | RuntimeDesktopSuggestion,
+    beforePublish?: () => void,
   ): boolean {
     if (
       !valid(record, this.targetKey, record.sourceThreadId) &&
       !validRuntime(record, this.targetKey, record.sourceThreadId)
     )
       throw new Error('Invalid merged compact suggestion');
-    return this.publishBytes(path, record);
+    return this.publishBytes(path, record, beforePublish);
   }
-  private publishBytes(path: string, record: unknown): boolean {
+  private publishBytes(path: string, record: unknown, beforePublish?: () => void): boolean {
     const body = JSON.stringify(record),
       bytes = JSON.stringify({ body, sha256: hash(body) }) + '\n';
     if (Buffer.byteLength(bytes) > compactSuggestionMaximum)
@@ -768,7 +786,8 @@ export class DesktopSuggestionStore {
       const until = performance.now() + 250;
       for (;;) {
         try {
-          renamePrivateFileSync(temporary, path);
+          // Native permission checks also precede the original phase/lease fence.
+          renamePrivateFileSync(temporary, path, beforePublish);
           break;
         } catch (error) {
           if (

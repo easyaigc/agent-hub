@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, existsSync, lstatSync, openSync, readFileSync, renameSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+} from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { Agent, createServer, get, globalAgent } from 'node:http';
@@ -1899,11 +1907,21 @@ test(
       (error) => ['EACCES', 'EPERM', 'EBUSY'].includes(error.code),
       'Native creation lease must prevent path replacement until Node owns its FD',
     );
+    assert.throws(
+      () => unlinkSync(peerFile),
+      (error) => ['EACCES', 'EPERM', 'EBUSY'].includes(error.code),
+      'Native creation lease must also prevent deletion before Node owns its FD',
+    );
     const peerFd = openSync(peerFile, 'r+');
     try {
       const opened = (await import('node:fs')).fstatSync(peerFd, { bigint: true });
       assert.equal(opened.dev, BigInt('0x' + reservation.volume));
       assert.equal(opened.ino, BigInt('0x' + reservation.fileId));
+      assert.throws(
+        () => renameSync(peerFile, peerFile + '.replaced'),
+        (error) => ['EACCES', 'EPERM', 'EBUSY'].includes(error.code),
+        'Opening the Node FD must not release the Native creation lease',
+      );
       backend.call('release-file', reservation.reservation);
       renameSync(peerFile, peerFile + '.replaced');
       assert.equal((await import('node:fs')).fstatSync(peerFd, { bigint: true }).ino, opened.ino);

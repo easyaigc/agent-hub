@@ -1455,3 +1455,5 @@ Windows 常驻私有状态通道保留五种固定 owner/DACL 拒绝分类；仅
 定型 owner 证据在 Framework `Exception.Data` 中存储时满足其可序列化类型约束，附加失败保留原始拒绝，不转换为接受或覆盖成诊断异常。生产协议仍显式投影固定字段，不启用任意异常反序列化。纯托管回归使用自己构造的内存流，分别标注编译目标与实际执行 CLR，不能冒充 Windows Native 或正式初始化。
 
 owner 证据读取先判定原拒绝类别，并保护 Data getter、缺键检查和定型值查找；任何可恢复的诊断读取失败均返回证据缺省，仍保留原访问拒绝。字符串或其他任意 Data 不能充当证据。原只读 Data 夹具保留，额外的故障字典与固定阶段只用于回归，不新增生产权限或错误接受分支。
+
+Windows 创建租约使用带 FILE_READ_DATA 的 CREATE_NEW 句柄参与共享冲突检查，同时继续只分享 READ|WRITE；仅 metadata 句柄的无 DELETE share 不构成同等保护。Node r+ 打开、创建 ID／路径复查、release ACK 和截断顺序不改，原 owner/DACL 与既有对象拒绝保持。真实平台的 rename/unlink 前后断言与证据边界见[创建租约专项](acceptance/windows-private-creation-lease-20261031.md)；旧 Framework managed 成功不等于租约或正式初始化通过。

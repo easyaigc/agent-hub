@@ -18454,6 +18454,16 @@
         "scripts/fixtures/private-state-owner-evidence.cs": "90fa7fc5b6628a2c9f3175a2fa3ba29b8a284f433f79aa66cb7abff6258ade4c",
         "scripts/windows-private-state-native.test.mjs": "6cd6bd6e1b4c757e93ab1ba7239a481476e7aba406f5a454b046c041af4a3ddf"
       }
+    },
+    {
+      "id": "windows-private-creation-lease-sharing-20261031",
+      "baseCommit": "4c9dc645c69bc063cc04fe0be65dda6f8efaaea6",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Request minimal FILE_READ_DATA on the CREATE_NEW retained creation lease so its no-DELETE sharing participates in Windows sharing checks. Keep WRITE/DELETE compiler branch, owner/DACL, handles, lease limit, Node FD/release ACK/truncation order, schema and budgets. Preserve the original real rename assertion and add unlink rejection plus rename rejection after Node FD opens but before release. PR89 actual Windows managed phase passed; its subsequent API rename failure remains; new Native keys and formal initialization/pagination still need Windows acceptance. No mobile UI/protocol, Android acceptance or A6 change.",
+      "files": {
+        "packages/codex-adapter/windows/private-state.cs": "555399bf20435a191e5cc7419cfd875a59d4f0e30c97e943b54e689951d6fc58",
+        "scripts/windows-private-state-native.test.mjs": "32d4f544192d5017ccce5f846f19689ad78b1c286546b89752c187fa8419d34d"
+      }
     }
   ]
 }

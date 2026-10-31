@@ -166,6 +166,7 @@ internal static class PrivateState
 public static partial class CodexManagePrivateStateSecurity
 {
     private const uint ReadControl = 0x00020000, WriteDac = 0x00040000;
+    private const uint FileReadData = 0x00000001;
     private const uint OwnerInformation = 1, DaclInformation = 4;
     private const uint ProtectedDaclInformation = 0x80000000;
 
@@ -320,8 +321,10 @@ public static partial class CodexManagePrivateStateSecurity
         {
             var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
                 Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
-            // Retain a no-delete-share handle whenever the caller needs a lease.
-            file = CreateOwnedFile(path, ReadControl | 0x80u | (rename ? 0x40000000u | 0x00010000u : 0u),
+            // Metadata-only access does not participate in delete sharing checks.
+            // A creation lease needs FILE_READ_DATA as well as no DELETE share;
+            // Node can still open read/write before acknowledging this lease.
+            file = CreateOwnedFile(path, ReadControl | 0x80u | (rename ? 0x40000000u | 0x00010000u : FileReadData),
                 3, ref security, 1, 0x00200000u, IntPtr.Zero);
             if (file.IsInvalid) {
                 int error = Marshal.GetLastWin32Error();

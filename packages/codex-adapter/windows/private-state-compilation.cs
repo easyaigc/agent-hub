@@ -189,12 +189,12 @@ public static partial class CodexManagePrivateStateSecurity
     }
     private static void CheckCompilationPrivate(SafeFileHandle file, bool directory)
     {
-        CompilationInspect(file, directory);
+        FileInformation info = CompilationInspect(file, directory);
         SecurityIdentifier user;
         using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
         if (user == null) throw new UnauthorizedAccessException();
         RawSecurityDescriptor current = ReadSecurity(file);
-        CheckOwner(current, user);
+        CheckRetainedOwner(file, info, current, user, "compilation-check", null);
         CheckAccess(current, new[] { user.Value, "S-1-5-18", "S-1-5-32-544" });
         if ((current.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
             throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");

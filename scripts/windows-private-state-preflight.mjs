@@ -65,6 +65,14 @@ const safeFailure = (error) => {
     if (typeof error?.[key] === 'number' && Number.isFinite(error[key])) result[key] = error[key];
   const owner = safeWorkerFailure(error).nativeOwner;
   if (owner) result.nativeOwner = owner;
+  const projected = safeWorkerFailure(error);
+  for (const key of [
+    'nativeOwnerOrigin',
+    'privateStateAction',
+    'privateStatePathHash',
+    'privateStateRole',
+  ])
+    if (projected[key] !== undefined) result[key] = projected[key];
   return result;
 };
 const fail = (code) => {

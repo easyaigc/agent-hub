@@ -51,17 +51,19 @@ const privateStateAccessReasons = Object.freeze({
   'dacl-protection-check': 'UNPROTECTED_PRIVATE_DACL',
 } as const);
 export interface WindowsPrivateOwnerEvidence {
-  version: 1;
-  checkedAction: 'check' | 'protect' | 'protect-file';
-  helperPid: number;
+  version: 1 | 2;
+  checkedAction: 'check' | 'protect' | 'protect-file' | 'create-file' | 'compilation-check';
+  helperPid?: number;
   helperStartedFileTime?: string;
-  helperUserHash: string;
+  helperUserHash?: string;
   helperOwnerHash?: string;
   fileOwnerHash?: string;
-  requestedPathHash: string;
-  handleIdentityHash: string;
+  requestedPathHash?: string;
+  handleIdentityHash?: string;
   finalPathHash?: string;
-  targetKind: 'file' | 'directory';
+  targetKind: 'file' | 'directory' | 'unknown';
+  captureStage?: string;
+  captureFailure?: string;
   transportPidMatches?: boolean;
 }
 function parseOwnerEvidence(value: string): WindowsPrivateOwnerEvidence | undefined {
@@ -100,6 +102,75 @@ function parseOwnerEvidence(value: string): WindowsPrivateOwnerEvidence | undefi
     targetKind: kind as WindowsPrivateOwnerEvidence['targetKind'],
   };
 }
+export const ownerCaptureStages = Object.freeze([
+  'none',
+  'process-id',
+  'process-times',
+  'user-hash',
+  'default-owner',
+  'file-owner-hash',
+  'requested-path-hash',
+  'handle-identity-hash',
+  'final-path-hash',
+]);
+export const ownerCaptureFailures = Object.freeze([
+  'none',
+  'Win32Exception',
+  'UnauthorizedAccessException',
+  'CryptographicException',
+  'DllNotFoundException',
+  'EntryPointNotFoundException',
+  'SecurityException',
+  'ArgumentException',
+  'Exception',
+]);
+function parseOwnerEvidenceV2(value: string): WindowsPrivateOwnerEvidence | undefined {
+  if (value.length > 900) return;
+  const parts = value.split('|');
+  if (parts.length !== 12) return;
+  const [
+    action,
+    pid,
+    started,
+    user,
+    owner,
+    file,
+    requested,
+    identity,
+    final,
+    kind,
+    stage,
+    failure,
+  ] = parts;
+  const hash = (v: string | undefined) => v === '-' || /^[a-f0-9]{64}$/.test(v ?? '');
+  if (
+    !['check', 'protect', 'protect-file', 'create-file', 'compilation-check'].includes(action!) ||
+    (pid !== '-' && (!/^[1-9][0-9]{0,9}$/.test(pid!) || Number(pid) > 0xffffffff)) ||
+    (started !== '-' &&
+      (!/^[1-9][0-9]{0,18}$/.test(started!) || BigInt(started!) > 0x7fffffffffffffffn)) ||
+    ![user, owner, file, requested, identity, final].every(hash) ||
+    !['file', 'directory', 'unknown'].includes(kind!) ||
+    !ownerCaptureStages.includes(stage!) ||
+    !ownerCaptureFailures.includes(failure!) ||
+    (stage === 'none') !== (failure === 'none')
+  )
+    return;
+  return {
+    version: 2,
+    checkedAction: action as WindowsPrivateOwnerEvidence['checkedAction'],
+    ...(pid === '-' ? {} : { helperPid: Number(pid) }),
+    ...(started === '-' ? {} : { helperStartedFileTime: started! }),
+    ...(user === '-' ? {} : { helperUserHash: user! }),
+    ...(owner === '-' ? {} : { helperOwnerHash: owner! }),
+    ...(file === '-' ? {} : { fileOwnerHash: file! }),
+    ...(requested === '-' ? {} : { requestedPathHash: requested! }),
+    ...(identity === '-' ? {} : { handleIdentityHash: identity! }),
+    ...(final === '-' ? {} : { finalPathHash: final! }),
+    targetKind: kind as WindowsPrivateOwnerEvidence['targetKind'],
+    captureStage: stage!,
+    captureFailure: failure!,
+  };
+}
 export function parseWindowsPrivateStateRejection(value: string):
   | {
       nativeError: string;
@@ -109,7 +180,8 @@ export function parseWindowsPrivateStateRejection(value: string):
       nativeOwner?: WindowsPrivateOwnerEvidence;
     }
   | undefined {
-  const segments = value.split(':OWNER1:');
+  const segments = value.split(/:OWNER[12]:/);
+  const ownerVersion = value.includes(':OWNER2:') ? 2 : 1;
   if (segments.length > 2) return;
   const base = segments[0]!;
   const match =
@@ -128,7 +200,12 @@ export function parseWindowsPrivateStateRejection(value: string):
     (rejection !== undefined && match[1] !== 'UnauthorizedAccessException')
   )
     return;
-  const nativeOwner = segments.length === 2 ? parseOwnerEvidence(segments[1]!) : undefined;
+  const nativeOwner =
+    segments.length === 2
+      ? ownerVersion === 2
+        ? parseOwnerEvidenceV2(segments[1]!)
+        : parseOwnerEvidence(segments[1]!)
+      : undefined;
   if (segments.length === 2 && (rejection !== 'WRONG_FILE_OWNER' || !nativeOwner)) return;
   return {
     nativeError: 'UNSAFE_WINDOWS_PRIVATE_STATE:' + match[1],
@@ -143,7 +220,8 @@ export type WindowsPrivateStateAction =
   'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file' | 'release-file';
 // Separate from the permission response: diagnostic data never authorizes a call.
 export const privateStateNativeDiagnostics = Object.freeze({
-  words: 11,
+  // Existing numeric slots 0..10 retain their indices; 11 is byte length.
+  words: 12 + 256,
   steps: [
     ...privateStateDirectorySteps,
     'prepare',
@@ -300,8 +378,22 @@ export function privateStateNativeFailure(
           nativeStep?: unknown;
           nativeCleanupStep?: unknown;
           nativeCleanupWin32?: unknown;
+          nativeOwnerFrame?: unknown;
         }
       | undefined;
+    if (
+      typeof value?.nativeOwnerFrame === 'string' &&
+      parseWindowsPrivateStateRejection(
+        'UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:owner-check:' +
+          value.nativeOwnerFrame,
+      )?.nativeOwner
+    ) {
+      const bytes = Buffer.from(value.nativeOwnerFrame, 'ascii');
+      if (bytes.length <= 1024) {
+        new Uint8Array(shared.buffer, shared.byteOffset + 48, 1024).set(bytes);
+        Atomics.store(shared, 11, bytes.length);
+      }
+    }
     Atomics.store(
       shared,
       2,
@@ -940,10 +1032,21 @@ export function createWindowsPrivateStateBackend(
     });
   record('created');
   function unavailable(): Error {
+    const length = Atomics.load(native, 11);
+    const frame =
+      length > 0 && length <= 1024
+        ? Buffer.from(new Uint8Array(native.buffer, native.byteOffset + 48, length)).toString(
+            'ascii',
+          )
+        : '';
+    const owner = parseWindowsPrivateStateRejection(
+      'UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:owner-check:' + frame,
+    )?.nativeOwner;
     return Object.assign(new Error('Windows private state unavailable'), {
       code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
       stage: phase,
       waitMs,
+      ...(owner ? { nativeOwner: owner, nativeOwnerOrigin: 'bootstrap-csharp' } : {}),
       nativeStage: privateStateNativeDiagnostics.stages[Atomics.load(native, 0) - 1],
       nativeFailure: privateStateNativeDiagnostics.failures[(Atomics.load(native, 1) & 0xff) - 1],
       nativeCode: privateStateNativeDiagnostics.codes[Atomics.load(native, 2) - 1],
@@ -1101,13 +1204,14 @@ export function createWindowsPrivateStateBackend(
         } else if (response === 'PRIVATE_STATE_OK') return;
       }
       const refusal = parseWindowsPrivateStateRejection(response);
-      if (refusal?.nativeOwner)
+      if (refusal?.nativeOwner?.helperPid !== undefined)
         refusal.nativeOwner.transportPidMatches =
           refusal.nativeOwner.helperPid === Atomics.load(control, p.pid);
       if (Atomics.load(control, p.result) === p.rejected && refusal)
         throw Object.assign(new Error('Windows private state rejected'), {
           code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
           ...refusal,
+          nativeOwnerOrigin: refusal.nativeOwner ? 'native-serve' : 'not-emitted',
         });
       throw unavailable();
     } catch (error) {

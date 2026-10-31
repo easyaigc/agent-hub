@@ -578,6 +578,71 @@ test('malformed owner frame retires its real channel without replaying a request
   assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
 });
 
+test('partial v2 evidence crosses a real native channel without losing its policy refusal', async (t) => {
+  const f = await fixture(t, 'owner-evidence-v2-partial'),
+    backend = f.open();
+  assert.throws(
+    () => backend.call('check', 'synthetic-target'),
+    (error) => {
+      assert(rejected(error));
+      assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+      assert.equal(error.nativeOwner.version, 2);
+      assert.equal(error.nativeOwner.captureStage, 'final-path-hash');
+      assert.equal(error.nativeOwner.captureFailure, 'Win32Exception');
+      assert.equal(error.nativeOwner.transportPidMatches, true);
+      assert.equal(error.nativeOwner.finalPathHash, undefined);
+      assert.equal(error.nativeOwner.fileOwnerHash, '2'.repeat(64));
+      return true;
+    },
+  );
+  assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
+});
+
+test('bootstrap rejection keeps its bounded same-handle frame through Worker shared diagnostics', async (t) => {
+  const f = await fixture(t);
+  const frame =
+    'OWNER2:' +
+    [
+      'compilation-check',
+      '123',
+      '-',
+      '1'.repeat(64),
+      '-',
+      '2'.repeat(64),
+      '-',
+      '3'.repeat(64),
+      '4'.repeat(64),
+      'file',
+      'none',
+      'none',
+    ].join('|');
+  await writeFile(
+    join(f.directory, 'desktop-platform.js'),
+    `export const windowsPrivateStateNativeExecutable=(_a,stage)=>{
+  stage('bootstrap-native');throw Object.assign(new Error('NEVER_EXPOSE_PRIVATE_TEXT'),{
+    code:'UNSAFE_WINDOWS_PRIVATE_STATE',helperStage:'execute',nativeType:'UnauthorizedAccessException',
+    nativeRejection:'WRONG_FILE_OWNER',nativeStep:'owner-check',nativeOwnerFrame:${JSON.stringify(frame)}});
+ };`,
+  );
+  const backend = f.open();
+  assert.throws(
+    () => backend.call('check', 'synthetic-target'),
+    (error) => {
+      assert(unavailable(error));
+      assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+      assert.equal(error.nativeOwner.version, 2);
+      assert.equal(error.nativeOwner.helperPid, 123);
+      assert.equal(error.nativeOwner.checkedAction, 'compilation-check');
+      assert.equal(error.nativeOwnerOrigin, 'bootstrap-csharp');
+      assert.equal(error.nativeOwner.transportPidMatches, undefined);
+      assert(!JSON.stringify(error).includes('NEVER_EXPOSE'));
+      return true;
+    },
+  );
+  backend.close();
+  assert.equal(f.events().filter((v) => v.event === 'spawn' || v.event === 'request').length, 0);
+});
+
 test('owner evidence accepts only the fixed failure schema and does not expose arbitrary payload', async (t) => {
   const f = await fixture(t),
     parse = f.options.parseWindowsPrivateStateRejection;
@@ -1694,9 +1759,7 @@ test(
         (code === null || code === 1) &&
         stdout?.trim() === '' &&
         typeof nativeError === 'string' &&
-        /^(?:UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::(?:normalize-path|directory-attributes|directory-parent|directory-descriptor|create-directory|directory-protect))?|UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:(?:owner-check|dacl-presence-check|dacl-ace-type-check|dacl-allow-subject-check|dacl-protection-check))$/.exec(
-          nativeError ?? '',
-        )?.[0] === nativeError;
+        f.options.parseWindowsPrivateStateRejection(nativeError) !== undefined;
       const outcome = cause
         ? unknown
           ? 'unknown'

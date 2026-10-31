@@ -18406,6 +18406,32 @@
         "scripts/windows-startup-preflight.mjs": "af877218524577ae947b6ed330a8d3571cc6068a1141dd42d00c0795a4005bfe",
         "scripts/windows-startup-preflight.test.mjs": "c94b7ee579bda29752f9a6294351c98a7df93d5be0e438a5af20bd5550e15643"
       }
+    },
+    {
+      "id": "windows-notification-private-creation-owner-chain-20261031",
+      "baseCommit": "a420bdd6b53176c5dd62b83cc918bcd2b9f06735",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Fix Host notification lease/snapshot ordinary creation before strict owner protection using existing Native private creator; preserve legacy notification state/key/devices/entries and unknown-operation no-replay. Correct PR86 stack attribution to notification construction, not proof of publisher failure. OWNER2 retains partial same-handle evidence across target/creation/compiler and PowerShell bootstrap/shared diagnostics with fixed failure stage/type and role/action. Owner/DACL/identity/exit/execution deadlines unchanged. Auxiliary checks and synthetic notification preflight do not prove Windows formal startup, actual rejected target or historical native cursor root cause. No mobile UI/protocol, Android acceptance or A6 change.",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "eaa7c8941a18c5443b88cc9222aa122e778832728237b7f1268d3c7ac744e73d",
+        "packages/codex-adapter/src/desktop-platform.ts": "5eb8df729a18a948675ba9cda9eda8d7c8973d5c4643888881721e1da9db5682",
+        "packages/codex-adapter/src/desktop-private-state-native-worker.ts": "5716c6c7f383ac7d9f6540f78b1612f247470ab5e80c50789cc4fd1a12880aa8",
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "fbed62799ac15e9f71ec3eb6bf40e47b9c759abfbf5dc47f577aaf8e9394f8e1",
+        "packages/codex-adapter/windows/private-state-compilation.cs": "9dde804cccde141e9d19f114f47f1b4a36cb92c9a8d1fbe981e9ee441bed8994",
+        "packages/codex-adapter/windows/private-state.cs": "70209cdc807ca6b514baedb082634502111a8d8005e5dc6702da287f2e04992e",
+        "packages/codex-adapter/windows/private-state.ps1": "659c5c065ddee79cfaa290bb66efa94cd040eb2cb4656e321e3dc106cd1dcbfb",
+        "packages/notification-runtime/src/index.ts": "7c4fbfb81b2a3f528b407e911c331f01eb6cb4349c7fd7f74faf500f56c0a4af",
+        "packages/notification-runtime/src/state-file.ts": "225a9e359cb3e44f8bebf299ca8e80ade19c59c005698b488e8cd95de2d79b56",
+        "scripts/fixtures/windows-private-state-boundary.mjs": "b264237c1a3a48f0bdfc416475105514dd97b329e04a91be334c2942d1a25eb9",
+        "scripts/fixtures/windows-private-state-child.mjs": "bafc69e45cc337e5de9479e116a86f6fe3771c3df8a3d8cbb75d71e9aece1146",
+        "scripts/host-worker-supervisor.mjs": "c9311d3dac868c9695d5d33c403fb9ffdf2e19aacf64dbba2840a67d0ec7b8ac",
+        "scripts/notification-private-creation.test.mjs": "73f8cf02e2a4e4e03dbedf0e08e21d02d71e35e5b3e5f440359454bf1c8c4a80",
+        "scripts/windows-notification-state-preflight.mjs": "68eb484d6684f10f3580b91e3c34d58abea1749481fc6ed8f4fa315f4fd17d5e",
+        "scripts/windows-private-state-native.test.mjs": "19976fa9a2872da311894f07309f4b9f1bee92447f8f8b808be4ae9378345237",
+        "scripts/windows-private-state-preflight.mjs": "3e81113de8fce287e7f298dc7aa70150ae27fdda30cfff8a2249c6fa7915ef14",
+        "scripts/windows-startup-preflight.mjs": "ae70dbe50f17ca834cc2f16402eb3f066eb62e2c6b78ce45e790cf11f6f400e8",
+        "scripts/windows-startup-preflight.test.mjs": "be20418edfcb028e4d9616e4408408ff9166908995e1669c1fba0d29d117ca21"
+      }
     }
   ]
 }

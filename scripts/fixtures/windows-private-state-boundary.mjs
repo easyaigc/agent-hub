@@ -27,7 +27,7 @@ export function installWindowsPrivateStateFixture(directory, platformURL, { onCa
     'data:text/javascript,' +
     encodeURIComponent(
       `import {createFixtureBackend} from ${JSON.stringify(import.meta.url)};
-export {parseWindowsPrivateFileIdentity} from ${JSON.stringify(new URL('./desktop-private-state-native.js', platformURL).href)};
+export {parseWindowsPrivateFileIdentity,parseWindowsPrivateStateRejection} from ${JSON.stringify(new URL('./desktop-private-state-native.js', platformURL).href)};
 export const createWindowsPrivateStateBackend=(...args)=>createFixtureBackend(${JSON.stringify(token)},...args);`,
     );
   const hook = registerHooks({

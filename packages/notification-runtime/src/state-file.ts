@@ -17,9 +17,10 @@ export function writeNotificationState(
   path: string,
   value: unknown,
   protect?: (path: string) => void,
+  create?: (path: string) => number,
 ): void {
   const temporary = path + '.' + randomUUID() + '.tmp';
-  const fd = openSync(temporary, 'wx', 0o600);
+  const fd = create ? create(temporary) : openSync(temporary, 'wx', 0o600);
   try {
     writeFileSync(fd, JSON.stringify(value));
     fsyncSync(fd);
@@ -46,6 +47,7 @@ export function writeNotificationState(
 export function acquireNotificationState(
   path: string,
   protect?: (path: string) => void,
+  create?: (path: string) => number,
 ): () => void {
   const lock = path + '.lock';
   if (existsSync(lock)) {
@@ -70,7 +72,7 @@ export function acquireNotificationState(
     }
   }
   const owner = JSON.stringify({ pid: process.pid, nonce: randomUUID() });
-  const fd = openSync(lock, 'wx', 0o600);
+  const fd = create ? create(lock) : openSync(lock, 'wx', 0o600);
   try {
     writeFileSync(fd, owner);
     fsyncSync(fd);

@@ -357,3 +357,5 @@ Windows 旧附件兼容按真实登记引用、目标和稳定文件快照验证
 Windows 私有 Native 的 UnauthorizedAccessException 现在只对五种既定策略原因携带固定 nativeRejection，未知类型/分类仍失败关闭，不传路径/SID/原始消息。权限算法和预算保持；新 C# 改变准备 cache key，须重新核对新输入。正式 R10 切换需完整统一包、逐文件旧 SHA 守卫与 Root 控制回滚，PR82 只读 probe 不能冒充正式初始化。见[最小诊断与复验](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。
 
 `WRONG_FILE_OWNER` 现可附带拒绝时同句柄的 owner／路径／身份摘要，以及真实 helper User、PID／开始时间和传输 PID 关联。该元数据仅用于诊断，严格 User owner／DACL 和原预算不变；不可将其他进程的 `Get-Acl` 通过写成 Native 接受。官方 prepare 提供版本化固定三路径并标明 preparing Node 来源，Root 验证正式 Node 后才能以原 Principal 创建独占 Limited 只读任务；不操作正式 Host。新 Native 输入和准确的复验／清理边界见[诊断入口](acceptance/windows-native-owner-evidence-20261031.md)。实际正式拒绝原因仍待目标机证据解释。
+
+PR86 正式失败栈的 `runtime-server.js:195` 对应通知构造器，不能继续作为 publisher token 失败的证明。通知锁／临时快照现使用原 Native 私有创建接口；新 `OWNER2` 允许字段采集局部失败并保留固定阶段，bootstrap 证据经 PowerShell 与共享槽传递，Host 用固定角色／action 区分路径。新增 `windows-notification-state-preflight.mjs` 仅在自有合成目录验证真实通知模块创建／重开，不读原状态或凭据。原权限／执行时限／未知操作不重放保持，正式目标及 token 事实仍由实际回执决定。见[最小复验](acceptance/windows-notification-private-startup-20261031.md)。

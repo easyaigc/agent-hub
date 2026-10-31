@@ -72,6 +72,13 @@ try {
     $cleanupCode = $detail.Data['CodexManage.NativeCleanupWin32']
     if ($cleanupCode -is [int] -and $cleanupCode -gt 0) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_CLEANUP_WIN32:' + $cleanupCode) }
 
+    if ($privateStateStage -eq 'execute') {
+        try {
+            $ownerEvidence = [CodexManagePrivateStateSecurity]::OwnerFailureEvidence($detail)
+            if ($ownerEvidence) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_OWNER:' + $ownerEvidence) }
+        } catch { # Diagnostic collection must not replace the original refusal.
+        }
+    }
     if ($detail.Message -in @('WRONG_FILE_OWNER', 'NULL_PRIVATE_DACL', 'UNKNOWN_PRIVATE_ACE', 'SHARED_PRIVATE_FILE', 'UNPROTECTED_PRIVATE_DACL')) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_REJECTED:' + $detail.Message) }
     exit 1
 }

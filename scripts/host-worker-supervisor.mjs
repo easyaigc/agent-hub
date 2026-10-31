@@ -21,6 +21,79 @@ function ownerFailureMetadata(error) {
     return;
   const value = error?.nativeOwner;
   const hash = (v) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+  if (value?.version === 2) {
+    if (
+      !['check', 'protect', 'protect-file', 'create-file', 'compilation-check'].includes(
+        value.checkedAction,
+      ) ||
+      !['file', 'directory', 'unknown'].includes(value.targetKind) ||
+      ![
+        'none',
+        'process-id',
+        'process-times',
+        'user-hash',
+        'default-owner',
+        'file-owner-hash',
+        'requested-path-hash',
+        'handle-identity-hash',
+        'final-path-hash',
+      ].includes(value.captureStage) ||
+      ![
+        'none',
+        'Win32Exception',
+        'UnauthorizedAccessException',
+        'CryptographicException',
+        'DllNotFoundException',
+        'EntryPointNotFoundException',
+        'SecurityException',
+        'ArgumentException',
+        'Exception',
+      ].includes(value.captureFailure) ||
+      (value.captureStage === 'none') !== (value.captureFailure === 'none')
+    )
+      return;
+    const result = {
+      version: 2,
+      checkedAction: value.checkedAction,
+      targetKind: value.targetKind,
+      captureStage: value.captureStage,
+      captureFailure: value.captureFailure,
+    };
+    for (const k of [
+      'helperUserHash',
+      'helperOwnerHash',
+      'fileOwnerHash',
+      'requestedPathHash',
+      'handleIdentityHash',
+      'finalPathHash',
+    ]) {
+      if (value[k] !== undefined) {
+        if (!hash(value[k])) return;
+        result[k] = value[k];
+      }
+    }
+    if (value.helperPid !== undefined) {
+      if (
+        !Number.isSafeInteger(value.helperPid) ||
+        value.helperPid <= 0 ||
+        value.helperPid > 0xffffffff
+      )
+        return;
+      result.helperPid = value.helperPid;
+    }
+    if (value.helperStartedFileTime !== undefined) {
+      if (
+        typeof value.helperStartedFileTime !== 'string' ||
+        !/^[1-9][0-9]{0,18}$/.test(value.helperStartedFileTime) ||
+        BigInt(value.helperStartedFileTime) > 0x7fffffffffffffffn
+      )
+        return;
+      result.helperStartedFileTime = value.helperStartedFileTime;
+    }
+    if (typeof value.transportPidMatches === 'boolean')
+      result.transportPidMatches = value.transportPidMatches;
+    return result;
+  }
   if (
     !value ||
     value.version !== 1 ||
@@ -173,6 +246,26 @@ export function safeWorkerFailure(error) {
       result[key] = error[key];
   const owner = ownerFailureMetadata(error);
   if (owner) result.nativeOwner = owner;
+  if (['native-serve', 'bootstrap-csharp', 'not-emitted'].includes(error?.nativeOwnerOrigin))
+    result.nativeOwnerOrigin = error.nativeOwnerOrigin;
+  if (
+    [
+      'check',
+      'protect',
+      'protect-file',
+      'create-directory',
+      'create-file',
+      'release-file',
+    ].includes(error?.privateStateAction)
+  )
+    result.privateStateAction = error.privateStateAction;
+  if (
+    typeof error?.privateStatePathHash === 'string' &&
+    /^[a-f0-9]{64}$/.test(error.privateStatePathHash)
+  )
+    result.privateStatePathHash = error.privateStatePathHash;
+  if (['notification-lock', 'notification-snapshot'].includes(error?.privateStateRole))
+    result.privateStateRole = error.privateStateRole;
   if (
     error?.nativeType === 'UnauthorizedAccessException' &&
     error?.nativeRejection === 'WRONG_FILE_OWNER' &&

@@ -76,7 +76,7 @@ internal static class PrivateState
             {
                 value += ":" + refusal;
                 string owner = CodexManagePrivateStateSecurity.OwnerFailureEvidence(error);
-                return owner == null ? value : value + ":OWNER1:" + owner;
+                return owner == null ? value : value + ":" + owner;
             }
         }
         string step = error.Data["CodexManage.NativeStep"] as string;
@@ -331,7 +331,7 @@ public static partial class CodexManagePrivateStateSecurity
             RawSecurityDescriptor created = ReadSecurity(file);
             SecurityIdentifier user;
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
-            CheckOwner(created, user);
+            CheckRetainedOwner(file, null, created, user, "create-file", path);
             CheckAccess(created, new[] { user.Value, "S-1-5-18", "S-1-5-32-544" });
             if ((created.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
                 throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");
@@ -467,41 +467,83 @@ public static partial class CodexManagePrivateStateSecurity
             value != null ? value.Frame : null;
     }
 
-    private static void CheckRetainedOwner(SafeFileHandle file, FileInformation info,
+    private static string OwnerFailureType(Exception error)
+    {
+        if (error is Win32Exception) return "Win32Exception";
+        if (error is UnauthorizedAccessException) return "UnauthorizedAccessException";
+        if (error is System.Security.Cryptography.CryptographicException) return "CryptographicException";
+        if (error is DllNotFoundException) return "DllNotFoundException";
+        if (error is EntryPointNotFoundException) return "EntryPointNotFoundException";
+        if (error is System.Security.SecurityException) return "SecurityException";
+        if (error is ArgumentException) return "ArgumentException";
+        return "Exception";
+    }
+
+    // Collect independently: an optional Win32 or hash failure must not erase
+    // all other facts or hide why evidence is partial. No policy decision uses it.
+    private static string OwnerPart(Func<string> read, string stage, ref string failedStage,
+        ref string failedType)
+    {
+        try { return read() ?? "-"; }
+        catch (Exception error)
+        {
+            if (failedStage == "none") { failedStage = stage; failedType = OwnerFailureType(error); }
+            return "-";
+        }
+    }
+
+    private static void CheckRetainedOwner(SafeFileHandle file, FileInformation? observed,
         RawSecurityDescriptor current, SecurityIdentifier sid, string action, string path)
     {
         try { CheckOwner(current, sid); }
         catch (UnauthorizedAccessException error)
         {
-            // This is the already-rejected descriptor and the very handle used by
-            // the policy check. No reopen, file-body read, ACL write or retry.
-            // Diagnostic failure must never replace the original policy refusal.
-            if (error.Message == "WRONG_FILE_OWNER") try
+            if (error.Message == "WRONG_FILE_OWNER")
             {
-                string started = "-", defaultOwner = "-", finalPath = "-";
-                long creation, exit, kernel, user;
-                if (OwnerEvidenceProcessTimes(OwnerEvidenceProcess(), out creation, out exit,
-                    out kernel, out user) && creation > 0) started = creation.ToString();
-                try
-                {
+                string stage = "none", type = "none";
+                string pid = OwnerPart(() => OwnerEvidenceProcessId().ToString(
+                    System.Globalization.CultureInfo.InvariantCulture), "process-id", ref stage, ref type);
+                string started = OwnerPart(() => {
+                    long creation, exit, kernel, user;
+                    if (!OwnerEvidenceProcessTimes(OwnerEvidenceProcess(), out creation, out exit,
+                        out kernel, out user)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                    return creation > 0 ? creation.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-";
+                }, "process-times", ref stage, ref type);
+                string userHash = OwnerPart(() => sid == null ? null : OwnerHash(sid.Value),
+                    "user-hash", ref stage, ref type);
+                string defaultOwner = OwnerPart(() => {
                     using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
-                        if (identity.Owner != null) defaultOwner = OwnerHash(identity.Owner.Value);
-                }
-                catch { /* Optional default-owner metadata does not suppress handle evidence. */ }
-                var final = new StringBuilder(32768);
-                uint length = OwnerEvidenceFinalPath(file, final, (uint)final.Capacity, 0);
-                if (length > 0 && length < final.Capacity) finalPath = OwnerPathHash(final.ToString());
-                string id = info.Volume.ToString("x8") + ":" +
-                    (((ulong)info.IndexHigh << 32) | info.IndexLow).ToString("x16");
-                string frame = String.Join("|", new[] {
-                    action, OwnerEvidenceProcessId().ToString(), started, OwnerHash(sid.Value),
-                    defaultOwner, current.Owner == null ? "-" : OwnerHash(current.Owner.Value),
-                    OwnerPathHash(path), OwnerHash(id), finalPath,
-                    (info.Attributes & (uint)FileAttributes.Directory) != 0 ? "directory" : "file"
-                });
-                error.Data["CodexManage.OwnerEvidence"] = new OwnerEvidence(frame);
+                        return identity.Owner == null ? null : OwnerHash(identity.Owner.Value);
+                }, "default-owner", ref stage, ref type);
+                string owner = OwnerPart(() => current.Owner == null ? null : OwnerHash(current.Owner.Value),
+                    "file-owner-hash", ref stage, ref type);
+                string requested = path == null ? "-" : OwnerPart(() => OwnerPathHash(path),
+                    "requested-path-hash", ref stage, ref type);
+                FileInformation? info = observed;
+                string fileId = OwnerPart(() => {
+                    FileInformation value;
+                    if (info.HasValue) value = info.Value;
+                    else {
+                        if (!GetFileInformationByHandle(file, out value)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                        info = value;
+                    }
+                    return OwnerHash(value.Volume.ToString("x8", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+                        (((ulong)value.IndexHigh << 32) | value.IndexLow).ToString("x16", System.Globalization.CultureInfo.InvariantCulture));
+                }, "handle-identity-hash", ref stage, ref type);
+                string finalPath = OwnerPart(() => {
+                    var final = new StringBuilder(32768);
+                    uint length = OwnerEvidenceFinalPath(file, final, (uint)final.Capacity, 0);
+                    if (length == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+                    if (length >= final.Capacity) throw new ArgumentException();
+                    return OwnerPathHash(final.ToString());
+                }, "final-path-hash", ref stage, ref type);
+                string kind = !info.HasValue ? "unknown" :
+                    (info.Value.Attributes & (uint)FileAttributes.Directory) != 0 ? "directory" : "file";
+                error.Data["CodexManage.OwnerEvidence"] = new OwnerEvidence("OWNER2:" + String.Join("|", new[] {
+                    action, pid, started, userHash, defaultOwner, owner, requested, fileId, finalPath,
+                    kind, stage, type
+                }));
             }
-            catch { /* Preserve the original rejection if metadata is unavailable. */ }
             throw;
         }
     }

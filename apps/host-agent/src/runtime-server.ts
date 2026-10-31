@@ -17,6 +17,7 @@ import {
   CreationError,
   makePrivateDirectorySync,
   writePrivateFileSync,
+  openPrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   assertPrivateFile,
@@ -276,9 +277,24 @@ export async function startRuntimeServer() {
   void voice.prune().catch(() => {});
   if (process.env.HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE)
     assertPrivateFile(process.env.HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE);
+  const notificationStatePath = join(directory, 'notifications.json');
+  const notificationFile = <T>(path: string, operation: () => T): T => {
+    try {
+      return operation();
+    } catch (error) {
+      if (error instanceof Error)
+        Object.assign(error, {
+          privateStateRole:
+            path === notificationStatePath + '.lock'
+              ? 'notification-lock'
+              : 'notification-snapshot',
+        });
+      throw error;
+    }
+  };
   const notifications = new NotificationPublisher({
     target: session.notificationTarget(),
-    statePath: join(directory, 'notifications.json'),
+    statePath: notificationStatePath,
     ...(process.env.HOST_NOTIFICATION_RELAY_URL
       ? { relayURL: process.env.HOST_NOTIFICATION_RELAY_URL }
       : {}),
@@ -290,7 +306,9 @@ export async function startRuntimeServer() {
           ).trim(),
         }
       : {}),
-    protectFile: protectWindowsStateFile,
+    protectFile: (path) => notificationFile(path, () => protectWindowsStateFile(path)),
+    createPrivateFile: (path) => notificationFile(path, () => openPrivateFileSync(path, 'wx')),
+    makePrivateDirectory: makePrivateDirectorySync,
   });
   const observer = new NotificationObserver(
     session.notificationTarget(),

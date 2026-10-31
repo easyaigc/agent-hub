@@ -196,6 +196,33 @@ test(
 );
 
 test(
+  'isolated notification CLI refuses unsupported OS without creating state',
+  { skip: process.platform === 'win32' },
+  () => {
+    const entry = fileURLToPath(
+      new URL('./windows-notification-state-preflight.mjs', import.meta.url),
+    );
+    const root = mkdtempSync(join(tmpdir(), 'notification-cli-')),
+      directory = join(root, 'never-created');
+    try {
+      const child = childProcess.spawnSync(
+        process.execPath,
+        [entry, '--bundle', 'unopened-bundle', '--directory', directory],
+        { encoding: 'utf8', timeout: 10000 },
+      );
+      assert.equal(child.status, 1);
+      const value = JSON.parse(child.stdout);
+      assert.equal(value.failure.code, 'WINDOWS_REQUIRED');
+      assert.equal(value.formalHostStarted, false);
+      assert.equal(value.existingStateRead, false);
+      assert(!fs.existsSync(directory));
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  },
+);
+
+test(
   'normal Main rejection fixture refuses non-Windows before creating files',
   { skip: process.platform === 'win32' },
   () => {
@@ -251,6 +278,40 @@ test('owner diagnostics project only typed hashes and retain the policy rejectio
     undefined,
   );
   assert.equal(safeWorkerFailure({ ...error, nativeType: 'IOException' }).nativeOwner, undefined);
+});
+
+test('partial owner evidence and notification role remain bounded through supervisor projection', () => {
+  const error = {
+    nativeType: 'UnauthorizedAccessException',
+    nativeRejection: 'WRONG_FILE_OWNER',
+    nativeOwnerOrigin: 'bootstrap-csharp',
+    privateStateRole: 'notification-lock',
+    privateStateAction: 'protect-file',
+    privateStatePathHash: '1'.repeat(64),
+    nativeOwner: {
+      version: 2,
+      checkedAction: 'compilation-check',
+      targetKind: 'file',
+      helperPid: 123,
+      helperUserHash: '2'.repeat(64),
+      captureStage: 'final-path-hash',
+      captureFailure: 'Win32Exception',
+      untrusted: 'NEVER_EXPOSE',
+    },
+  };
+  const value = safeWorkerFailure(error);
+  assert.equal(value.nativeOwner.version, 2);
+  assert.equal(value.nativeOwner.captureStage, 'final-path-hash');
+  assert.equal(value.privateStateRole, 'notification-lock');
+  assert.equal(value.nativeOwnerOrigin, 'bootstrap-csharp');
+  assert(!JSON.stringify(value).includes('NEVER_EXPOSE'));
+  assert.equal(
+    safeWorkerFailure({
+      ...error,
+      nativeOwner: { ...error.nativeOwner, captureFailure: 'raw-secret' },
+    }).nativeOwner,
+    undefined,
+  );
 });
 
 test('worker failures retain bounded cause/status including zero and Windows DWORDs', () => {

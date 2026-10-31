@@ -291,7 +291,7 @@ export async function runWindowsStartupPreflight({ hostConfig, bundle, workingDi
             owner.finalPathHash,
             metadata.value?.file?.finalPathHash,
           ),
-          requestedPathMatchesConfiguration: owner.requestedPathHash === pathHash(path),
+          requestedPathMatchesConfiguration: compare(owner.requestedPathHash, pathHash(path)),
           transportPidMatches: owner.transportPidMatches ?? 'unavailable',
         };
       }

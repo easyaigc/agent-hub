@@ -29,6 +29,7 @@ import {
   type PrivateStateNativeStage,
   type WindowsPrivateFileIdentity,
   parseWindowsPrivateFileIdentity,
+  parseWindowsPrivateStateRejection,
 } from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import type { TraceSnapshotItem, TraceSnapshotValue } from './desktop-trace-native.js';
@@ -106,7 +107,23 @@ function windowsPowerShellSync(args: string[], active?: () => boolean, timeoutMs
       stderr.match(
         /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_DESKTOP_NOT_RUNNING|WINDOWS_DESKTOP_PIPE_REJECTED|WRONG_DESKTOP_USER|WRONG_DESKTOP_SESSION|WINDOWS_CLI_REJECTED|UNSAFE_WINDOWS_PRIVATE_STATE)\s*$/m,
       )?.[1] ?? 'WINDOWS_HELPER_FAILED';
+    const ownerFrame = /^WINDOWS_PRIVATE_STATE_OWNER:(OWNER[12]:[^\r\n]{1,900})\r?$/m.exec(
+      stderr,
+    )?.[1];
+    const ownerRefusal = ownerFrame
+      ? parseWindowsPrivateStateRejection(
+          'UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:owner-check:' + ownerFrame,
+        )
+      : undefined;
     throw Object.assign(new Error('Windows helper failed', { cause }), {
+      ...(ownerRefusal?.nativeOwner &&
+      /^WINDOWS_PRIVATE_STATE_REJECTED:WRONG_FILE_OWNER\s*$/m.test(stderr)
+        ? {
+            nativeOwnerFrame: ownerFrame,
+            nativeOwner: ownerRefusal.nativeOwner,
+            nativeOwnerOrigin: 'bootstrap-csharp',
+          }
+        : {}),
       code,
       helperStage: stderr.match(/^WINDOWS_PRIVATE_STATE_BOOTSTRAP:(add-type|execute)\s*$/m)?.[1],
       nativeType: stderr.match(/^WINDOWS_PRIVATE_STATE_NATIVE_TYPE:([A-Za-z]{1,64})\s*$/m)?.[1],
@@ -264,7 +281,30 @@ function privateState(
   // Never retry this call, including when its operation may already have executed.
   if (privateStateBackend?.status.gone) privateStateBackend = undefined;
   privateStateBackend ??= createWindowsPrivateStateBackend();
-  return privateStateBackend.call(action, path);
+  try {
+    return privateStateBackend.call(action, path);
+  } catch (error) {
+    try {
+      if (error instanceof Error) {
+        Object.assign(error, { privateStateAction: action });
+        if (action !== 'release-file')
+          Object.assign(error, {
+            privateStatePathHash: createHash('sha256')
+              .update(
+                resolve(path)
+                  .replace(/^\\\\\?\\UNC\\/i, '\\\\')
+                  .replace(/^\\\\\?\\/, '')
+                  .replaceAll('/', '\\')
+                  .toLowerCase(),
+              )
+              .digest('hex'),
+          });
+      }
+    } catch {
+      /* Diagnostics never replace the original refusal. */
+    }
+    throw error;
+  }
 }
 export function closeWindowsPrivateStateBackend(): void {
   privateStateAsyncGeneration++;

@@ -141,6 +141,9 @@ export interface NotificationPublisherOptions {
   relayURL?: string;
   publisherToken?: string;
   protectFile?: (path: string) => void;
+  /** Host supplies its native private creator; existing objects are never adopted. */
+  createPrivateFile?: (path: string) => number;
+  makePrivateDirectory?: (path: string) => void;
 }
 /** Agent-neutral delivery boundary. It accepts domain events, never upstream RPC. */
 export class NotificationPublisher {
@@ -167,8 +170,13 @@ export class NotificationPublisher {
       )
         throw new Error('推送服务必须使用 HTTPS');
     }
-    mkdirSync(dirname(options.statePath), { recursive: true, mode: 0o700 });
-    this.releaseLease = acquireNotificationState(options.statePath, options.protectFile);
+    if (options.makePrivateDirectory) options.makePrivateDirectory(dirname(options.statePath));
+    else mkdirSync(dirname(options.statePath), { recursive: true, mode: 0o700 });
+    this.releaseLease = acquireNotificationState(
+      options.statePath,
+      options.protectFile,
+      options.createPrivateFile,
+    );
     try {
       if (existsSync(options.statePath)) {
         if (process.platform !== 'win32' && statSync(options.statePath).mode & 0o077)
@@ -223,7 +231,12 @@ export class NotificationPublisher {
         appendRecoveryV2(this.state.recoveryV2!, this.state.entries);
         validateRecoveryV2(this.state.recoveryV2, this.options.target, this.state.entries);
       }
-      writeNotificationState(this.options.statePath, this.state, this.options.protectFile);
+      writeNotificationState(
+        this.options.statePath,
+        this.state,
+        this.options.protectFile,
+        this.options.createPrivateFile,
+      );
     } catch (failure) {
       if (this.state.version === 2) this.recoveryFault = true;
       throw failure;
@@ -234,7 +247,12 @@ export class NotificationPublisher {
       throw new NotificationRecoveryError(503, '通知恢复服务不可用');
     try {
       validateRecoveryV2(next.recoveryV2, this.options.target, next.entries);
-      writeNotificationState(this.options.statePath, next, this.options.protectFile);
+      writeNotificationState(
+        this.options.statePath,
+        next,
+        this.options.protectFile,
+        this.options.createPrivateFile,
+      );
       this.state = next;
     } catch (failure) {
       this.recoveryFault = true;

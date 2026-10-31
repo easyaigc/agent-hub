@@ -193,3 +193,5 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-01 阶段47：F06/F08/F09：Source72保存连接四方法／六夹具限定通过，含生产行touch及离线／四类迟到隔离；完整P8及实际服务未封存。F51/F54/F55/F56的P9夹具known owned收尾窄修仅Source73 SDK通过，产品行为与iOS不变，Native待验。见[P8本次记录](../plans/android-alignment-20261022/records/source72-p8-saved-native.md)及[P9 SDK记录](../plans/android-alignment-20261022/records/source73-p9-fixture-owner-join.md)。
 
 2026-11-01 阶段48，F51/F54/F55/F56：Source73 原导航回调 10/10项限定通过，仅 Test 更新，App 字节不变；真实 Main 入口的本地回调、claim／ACK及失效隔离按方法限定，不新增系统通知触摸、冷 PID、完整 UI、物理 DEV 或 iOS 通过。默认启动 runtime／私有 handle／物理 executor 收尾仍未证实。见[本次原生记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。
+
+2026-11-01 阶段49，F33/F55/F64：Android原录音迁移的特殊文件非阻塞拒绝及原件保持在API33限定通过；只核对导出已返回后的读取端，不宣称全进程FD关闭、完整UI或iOS通过。完整语音迁移的未提交audio窗口及iOS音频资料范围继续待实现／验收。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。

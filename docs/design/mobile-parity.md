@@ -1550,3 +1550,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 2026-11-01 阶段47：保存连接生产行点击和迟到目标隔离限定通过，布局／token／文案未变；未补记完整截图或系统界面通过。P9新收尾仅测试所有权，不改变双端UI；真实Main默认初始化、通知tap与完整视觉仍待验。见[P8本次记录](../plans/android-alignment-20261022/records/source72-p8-saved-native.md)及[P9 SDK记录](../plans/android-alignment-20261022/records/source73-p9-fixture-owner-join.md)。
 
 2026-11-01 阶段48：P9 原导航本地回调 10/10项限定通过，保留 iOS 的原目标、原草稿及迟到隔离断言；未改页面、token或文案。实际 Main 启动不等于 UI 触摸，通知／设置完整视觉与 OS 生命周期继续待验，见[限定记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。
+
+2026-11-01 阶段49：仅Android迁移文件机制修复，无页面／token／文案变化；保留失败后原件、原稿与不可重放断言。现有错误／等待页面的完整视觉和交互未新增验收，iOS无改动。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。

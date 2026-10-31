@@ -1573,3 +1573,5 @@ Source69：主线209/实际 PID 诊断名组合 SDK 单次 Gradle exit0（16.766
 2026-11-01 阶段47：Source72 P8四方法／六夹具限定通过，480捕获、Cold62／reading13／六根及18原cipher完整核对；第一项为生产行真实touch，其余Session/Form限定，不是全屏视觉或真实issuer。Source73 P9 fixture SDK通过且未安装／执行新runner，不新增P9 Native或iOS通过。见[P8本次记录](../plans/android-alignment-20261022/records/source72-p8-saved-native.md)及[P9 SDK记录](../plans/android-alignment-20261022/records/source73-p9-fixture-owner-join.md)。
 
 2026-11-01 阶段48：Source73 Test-only 更新 155 份捕获独立读回；API33 原导航 10/10项限定通过，已通过方法共 830 份捕获，原始流／完整原件／九 stat／known owned join 均按项核对。iOS 对照断言不变；默认启动 runtime、私有 handle 和物理 executor 未证实，OS tap／消费进程冷读／供应商／权限／完整 UI／真实 DEV 继续待验，不重放原操作。见[逐项结果](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。
+
+2026-11-01 阶段49，F33/F55/F64：Android原录音迁移的特殊文件非阻塞拒绝及原件保持在API33限定通过；只核对导出已返回后的读取端，不宣称全进程FD关闭、完整UI或iOS通过。完整语音迁移的未提交audio窗口及iOS音频资料范围继续待实现／验收。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。

@@ -18658,6 +18658,16 @@
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "ea541ffb76370d3e5e1251237c7aebe10f2fb50d7bec88b6f999608f15a83100"
       }
+    },
+    {
+      "id": "android-source74-provisional-fifo-rejection-20261101",
+      "baseCommit": "fa55ab7fc7854df24db324e0b03d23a647b80f60",
+      "features": ["F33", "F55", "F64"],
+      "summary": "Android原录音迁移O_NONBLOCK先于fstat，拒绝FIFO保留原件/既有输出。Source74r4 SDK和API33实际同步拒绝/返回后ENXIO读取端/owner限定通过；全局FD旧失败、UI/低堆/物理DEV及完整24组仍待验，iOS无新增通过，未提交audio窗口下一阶段。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalFiles.kt": "b6e5d40ff746ece5aec011dec1cd36ee4f935153954bd961c54ba676f6da9831",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "d0f665a6c2c25ac81e1505e28e340e3e75d9e8e9069db2369b0ec2d0ec9158a9"
+      }
     }
   ]
 }

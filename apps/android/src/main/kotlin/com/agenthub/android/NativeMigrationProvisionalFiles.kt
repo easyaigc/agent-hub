@@ -49,7 +49,7 @@ internal class NativeMigrationProvisionalFiles(context: Context,private val stor
     private fun copy(file: File,expected: Identity,output: OutputStream) {
         writerFrozen()
         require(directory()==directory)
-        val fd=Os.open(file.path,OsConstants.O_RDONLY or OsConstants.O_NOFOLLOW,0);val buffer=ByteArray(65536)
+        val fd=Os.open(file.path,OsConstants.O_RDONLY or OsConstants.O_NONBLOCK or OsConstants.O_NOFOLLOW,0);val buffer=ByteArray(65536)
         try {
             val stat=Os.fstat(fd)
             require(OsConstants.S_ISREG(stat.st_mode)&&stat.st_uid==Process.myUid()&&stat.st_nlink==1L&&stat.st_mode and 0x3f==0&&stat.st_size in 0..NativeMigrationProvisionalVoice.MAX_RAW_BYTES.toLong()&&identity(stat)==expected)

@@ -48,3 +48,5 @@ Root adopts this 926f9cc2 inventory as a source index, not a full migration or n
 Source66补充：prepared restore与可选Boolean单调兼容已集成，六项API33 warm/首项16图边界限定通过；原Source65失败不覆盖。三个冷方法的existing-key准入、新代次和完整UI/OS/DEV继续待验，不能关闭root-claims完整验收或其余23组。
 
 Source72补充（2026-11-01）：新独立API33的writer／第二PID原候选激活和真实Session阅读恢复／第三PID原回执审计三方法限定通过；原件、完整密文及九stat独立核对，未恢复配对授权或重放原操作。只关闭此严格冷交接回归，root-claims整体及其余23组、普通恢复／故障、UI／OS／真实DEV仍待验；原Source69已发布失败代次另保留只读恢复待验。详见[三段本次记录](../../records/source72-fresh-native.md)。
+
+Source74补充（2026-11-01）：特殊文件非阻塞拒绝、原件与已发布输出保持、返回后读取端核对在独立API33限定通过；全局FD观察仍待验。音频已提交而manifest未提交窗口当前仍拒绝，下一阶段拟用显式v2惰性目录无损保留；iOS同类完整音频迁移缺口另记，不能关闭24组。见[本阶段档案](../../records/source74-provisional-fifo.md)。

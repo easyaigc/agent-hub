@@ -18681,6 +18681,16 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalContractTest.kt": "06bf60fb8bbebce74680a9b2bf2340af077ba6975cf17bb58f484c0bbe615f3f",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "a2d12afc8ce18c5e3749c3d7daf4074e594deec5fe6684533dcfb2fdfec68320"
       }
+    },
+    {
+      "id": "android-source76-real-seal-named-checkpoint-warm-20261101",
+      "baseCommit": "41422b6dbb5a6528ae8b3a5c7e88ab748fb8d6bb",
+      "features": ["F47", "F55", "F56", "F64"],
+      "summary": "保留公开双参数构造器及默认算法，仅debug独立验收包具名audio写后/row提交前callback。真实seal/标准化/单次已知IOException及惰性warm迁移一方法限定通过、199捕获；真实rowI/O/断电/进程死亡/冷PID/UI/physical/globalFD仍false，Source75格式与iOS缺口保持，不重放原操作。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "ea4b3a66991486c250416b5fb4555b179a4888fb5d4159bea48dbfc52cc087df",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSealCheckpointTest.kt": "74ecb66894a676c02c29d58a960682f73fcf6f0f7929eccfdcd98500a9d196f6"
+      }
     }
   ]
 }

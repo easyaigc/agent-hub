@@ -1577,3 +1577,5 @@ Source69：主线209/实际 PID 诊断名组合 SDK 单次 Gradle exit0（16.766
 2026-11-01 阶段49，F33/F55/F64：Android原录音迁移的特殊文件非阻塞拒绝及原件保持在API33限定通过；只核对导出已返回后的读取端，不宣称全进程FD关闭、完整UI或iOS通过。完整语音迁移的未提交audio窗口及iOS音频资料范围继续待实现／验收。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。
 
 2026-11-01 阶段50，F47/F55/F56/F64／UI21：Source75 SDK855/868及三包独立核对通过，安装100捕获；当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过，对应693份Native捕获。四新场景明确stateSeeded=true／realSealCrashProved=false，roundtrip为warm实际export/stage/activate/reexport；schema14反向、mismatch、合法legacy缺alias分别核对。原两warm和最后三纯内存各按自身范围记证；旧FIFO仅metadata，不读／peer／删，不升级旧失败或全局FD。mixed／quota低堆／真实seal中断／冷PID／完整UI／物理DEV与iOS音频资料缺口继续待验，见[逐场景记录](../plans/android-alignment-20261022/records/source75-uncommitted-audio-v2.md)。
+
+2026-11-01 阶段51：Source76 SDK856/869／三APK通过，安装100＋warm99共199捕获独立核对。真实seal一次、131116B WAV标准化／裁奇数尾实际发生；audio落盘后／row提交前单次具名已知IOException，原row/index与中断后raw/audio/stat9基线保持，freeze重取及惰性warm迁移限定通过。actualRowIoFailure／PowerLoss／ProcessDeath、全局FD／私有handle／物理executor、冷PID／UI／physical DEV仍false；旧37根与2FIFO metadata-only保持，不升级旧失败或iOS证据。见[独立记录](../plans/android-alignment-20261022/records/source76-real-seal-checkpoint-warm.md)。

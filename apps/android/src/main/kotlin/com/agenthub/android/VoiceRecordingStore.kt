@@ -48,8 +48,22 @@ internal object NativeVoiceRecordingRecord {
     }
 }
 
+/** Named observation boundary only; it grants no storage, manifest, transport or retry authority. */
+internal fun interface NativeVoiceSealAudioCommittedCheckpoint {
+    fun reached(recordingId: String)
+}
+
 /** Only this installation can decrypt sealed audio. A provisional WAV can be recovered after process death before any upload. */
 class VoiceRecordingStore(context: Context,private val storage: NativeSessionStorage) {
+    private var audioCommittedCheckpoint: NativeVoiceSealAudioCommittedCheckpoint?=null
+    /** Only an internal, independent debug acceptance caller may observe/interject at this boundary. */
+    internal constructor(context: Context,storage: NativeSessionStorage,checkpoint: NativeVoiceSealAudioCommittedCheckpoint):
+        this(context.also { supplied->
+            val actual=supplied.applicationContext;val info=actual.applicationInfo
+            require(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance"&&
+                supplied.packageName==BuildConfig.APPLICATION_ID&&actual.packageName==BuildConfig.APPLICATION_ID&&info.packageName==BuildConfig.APPLICATION_ID&&
+                (info.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&info.uid==android.os.Process.myUid())
+        },storage) {audioCommittedCheckpoint=checkpoint}
     private val directory=File(context.noBackupFilesDir,"voice-recordings-v1").apply { check(mkdirs() || isDirectory);android.system.Os.chmod(path,0x1c0) }
     private fun key(id: String)="voice-recording:$id"
     private fun rawWriter(id: String): NativeVoiceRawGate.Writer {storage.requireRawWriterOwner();return NativeVoiceRawOwnership.writer(file(id))}
@@ -103,6 +117,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
             val sealed=current.copy(manifest=manifest)
             // Commit encrypted audio before its metadata. A failed/interrupted seal retains the provisional original.
             storage.writeBinary("voice-audio:${current.id}",audio)
+            audioCommittedCheckpoint?.reached(current.id)
             val next=sealed.json().put("audioStorage","binary-chunks-v1")
             storage.write(key(current.id),next.toString())
             check(audio.delete() || !audio.exists()) { "录音已加密保存，临时文件尚未清理" };sealed

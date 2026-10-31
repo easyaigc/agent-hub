@@ -438,11 +438,24 @@ public static partial class CodexManagePrivateStateSecurity
     private static extern uint OwnerEvidenceFinalPath(SafeFileHandle file, StringBuilder path,
         uint size, uint flags);
 
-    // Private typed evidence only. Arbitrary exception Data/Message is never serialized.
+    // Framework Exception.Data rejects non-serializable values at assignment.
+    // This private value contains only the bounded frame, never native handles.
+    // Arbitrary exception Data/Message is still never serialized by the protocol.
+    [Serializable]
     private sealed class OwnerEvidence
     {
         internal readonly string Frame;
         internal OwnerEvidence(string frame) { Frame = frame; }
+    }
+
+    private static void AttachOwnerEvidence(Exception error, string frame)
+    {
+        try { error.Data["CodexManage.OwnerEvidence"] = new OwnerEvidence(frame); }
+        catch
+        {
+            // Diagnostic attachment must not replace the original owner refusal.
+            // An absent frame is reported as not-emitted, never as an acceptance.
+        }
     }
 
     private static string OwnerHash(string text)
@@ -539,7 +552,7 @@ public static partial class CodexManagePrivateStateSecurity
                 }, "final-path-hash", ref stage, ref type);
                 string kind = !info.HasValue ? "unknown" :
                     (info.Value.Attributes & (uint)FileAttributes.Directory) != 0 ? "directory" : "file";
-                error.Data["CodexManage.OwnerEvidence"] = new OwnerEvidence("OWNER2:" + String.Join("|", new[] {
+                AttachOwnerEvidence(error, "OWNER2:" + String.Join("|", new[] {
                     action, pid, started, userHash, defaultOwner, owner, requested, fileId, finalPath,
                     kind, stage, type
                 }));

@@ -1704,6 +1704,44 @@ test(
       .map((name) => join(system, 'Microsoft.NET', name, 'v4.0.30319/csc.exe'))
       .find(existsSync);
     assert(compiler, 'Native .NET compiler required');
+    const managedEvidence = join(f.directory, 'managed-owner-evidence.exe');
+    f.gate.withWindowsProcessCreation(30000, (timeout) =>
+      execFileSync(
+        compiler,
+        [
+          '/nologo',
+          '/target:exe',
+          '/langversion:5',
+          '/main:OwnerEvidenceSerializationHarness',
+          '/out:' + managedEvidence,
+          join(repository, 'packages/codex-adapter/windows/private-state.cs'),
+          join(repository, 'scripts/fixtures/private-state-owner-evidence.cs'),
+        ],
+        { stdio: 'pipe', timeout, windowsHide: true },
+      ),
+    );
+    const managedReport = JSON.parse(
+      f.gate.withWindowsProcessCreation(5000, (timeout) =>
+        execFileSync(managedEvidence, [], {
+          encoding: 'utf8',
+          stdio: 'pipe',
+          timeout,
+          windowsHide: true,
+        }),
+      ),
+    );
+    assert.equal(managedReport.kind, 'managed-owner-evidence');
+    assert.equal(managedReport.passed, true);
+    assert(
+      ['accepts-nonserializable', 'rejects-nonserializable'].includes(
+        managedReport.exceptionDataPolicy,
+      ),
+    );
+    assert.equal(managedReport.frameRoundTrip, true);
+    assert.equal(managedReport.arbitraryDataExcluded, true);
+    assert.equal(managedReport.attachmentFailurePreservesRefusal, true);
+    assert.equal(managedReport.windowsPInvokeExecuted, false);
+    t.diagnostic(JSON.stringify(managedReport));
     f.gate.withWindowsProcessCreation(30000, (timeout) =>
       execFileSync(
         compiler,

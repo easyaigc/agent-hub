@@ -18432,6 +18432,17 @@
         "scripts/windows-startup-preflight.mjs": "ae70dbe50f17ca834cc2f16402eb3f066eb62e2c6b78ce45e790cf11f6f400e8",
         "scripts/windows-startup-preflight.test.mjs": "be20418edfcb028e4d9616e4408408ff9166908995e1669c1fba0d29d117ca21"
       }
+    },
+    {
+      "id": "windows-owner-evidence-framework-storage-20261031",
+      "baseCommit": "d9b9b41aca99d4a716c22139c7e41b64b5e4f176",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Make the private bounded owner evidence value serializable for Framework Exception.Data storage; attachment failure must preserve the original owner refusal. Preserve ReadSecurity, owner/DACL, handles, execution budget, frame schema and all JS runtime behavior. Add managed-only old/new round-trip regression and actual Framework case in existing Windows test; .NET8 auxiliary execution is not Windows Framework acceptance. Prior five PR87 Windows gates and notification positive subset retain their exact old input scope; the default-owner check and formal startup remain unverified for new Native keys. No mobile UI/protocol, Android acceptance or A6 change.",
+      "files": {
+        "packages/codex-adapter/windows/private-state.cs": "c258afe1ff0810d67bb4a57e70f1f4bad15e49ce6769610742680c579ebc2524",
+        "scripts/fixtures/private-state-owner-evidence.cs": "753755b24432e09e5eec8305b7ed9ee2ad62571b3daf979d18d17fe480f2b44a",
+        "scripts/windows-private-state-native.test.mjs": "b127afe9319141ecb33353a677976be523ec5e68b094fab0640dd1b62aea21ed"
+      }
     }
   ]
 }

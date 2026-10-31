@@ -359,3 +359,5 @@ Windows 私有 Native 的 UnauthorizedAccessException 现在只对五种既定�
 `WRONG_FILE_OWNER` 现可附带拒绝时同句柄的 owner／路径／身份摘要，以及真实 helper User、PID／开始时间和传输 PID 关联。该元数据仅用于诊断，严格 User owner／DACL 和原预算不变；不可将其他进程的 `Get-Acl` 通过写成 Native 接受。官方 prepare 提供版本化固定三路径并标明 preparing Node 来源，Root 验证正式 Node 后才能以原 Principal 创建独占 Limited 只读任务；不操作正式 Host。新 Native 输入和准确的复验／清理边界见[诊断入口](acceptance/windows-native-owner-evidence-20261031.md)。实际正式拒绝原因仍待目标机证据解释。
 
 PR86 正式失败栈的 `runtime-server.js:195` 对应通知构造器，不能继续作为 publisher token 失败的证明。通知锁／临时快照现使用原 Native 私有创建接口；新 `OWNER2` 允许字段采集局部失败并保留固定阶段，bootstrap 证据经 PowerShell 与共享槽传递，Host 用固定角色／action 区分路径。新增 `windows-notification-state-preflight.mjs` 仅在自有合成目录验证真实通知模块创建／重开，不读原状态或凭据。原权限／执行时限／未知操作不重放保持，正式目标及 token 事实仍由实际回执决定。见[最小复验](acceptance/windows-notification-private-startup-20261031.md)。
+
+Framework 的 `Exception.Data` 会拒绝不可序列化的值。私有定型 owner 证据须满足该存储约束，且附加诊断失败不能替换原始 `WRONG_FILE_OWNER`；协议仍只输出显式固定 frame，不序列化任意异常 Data。编译使用 net48 引用不等于在 Windows Framework 上执行；.NET 8 的反射结果不能覆盖这一差异。详见[证据存储兼容性与复验边界](acceptance/windows-owner-evidence-serialization-20261031.md)。

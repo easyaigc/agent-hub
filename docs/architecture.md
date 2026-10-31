@@ -1451,3 +1451,5 @@ Windows 常驻私有状态通道保留五种固定 owner/DACL 拒绝分类；仅
 正式启动已取得 `WRONG_FILE_OWNER` 后，仅在该拒绝上附加实际 Native helper 与被拒绝同句柄的有界摘要。安全日志严格投影，缺失证据不推断匹配；独立只读 metadata 与 Native 判断分别记录。prepare 返回当前实际 Node、固定 Worker 和 envelope 三路径，调用方仍须验证正式 Node 和实际 Limited token，不引入 wrapper、加载器或权限放宽。见[同句柄 owner 与 Limited 探针](acceptance/windows-native-owner-evidence-20261031.md)。iOS／Android 协议和 UI 不变，A6保持暂停。
 
 通知锁和临时快照的创建也通过 Host 的 Native 私有文件工厂，而非普通创建后保护，保持通知 Runtime 与 Adapter 的窄回调边界及原原子保存／回执规则。owner 拒绝的目标、创建和编译检查均保留有界部分元数据，bootstrap 与 serve 来源分别标注，Host 记录固定通知文件角色而不猜测 publisher。源码栈映射修正、独立合成通知状态入口及正式恢复边界见[通知私有启动](acceptance/windows-notification-private-startup-20261031.md)。移动端 UI／协议、Android状态与A6暂停保持。
+
+定型 owner 证据在 Framework `Exception.Data` 中存储时满足其可序列化类型约束，附加失败保留原始拒绝，不转换为接受或覆盖成诊断异常。生产协议仍显式投影固定字段，不启用任意异常反序列化。纯托管回归使用自己构造的内存流，分别标注编译目标与实际执行 CLR，不能冒充 Windows Native 或正式初始化。

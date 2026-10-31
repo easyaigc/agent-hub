@@ -220,3 +220,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source75未提交audio的v2惰性迁移](source75-uncommitted-audio-v2.md)：保留原row/index与独立raw/audio frame；新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过，真实seal中断／冷PID／mixed／低堆／完整UI仍待验。
 
 - [Source76真实seal具名边界warm](source76-real-seal-checkpoint-warm.md)：真实seal及标准化后、row提交前的单次已知注入中断，199捕获及惰性完整warm链限定通过；真实I/O失败／崩溃／冷PID／UI继续待验。
+
+- [Source77长导入铃声动作与视口](source77-sound-actions-viewport.md)：权重／删除读屏名称／small形状修正；r3原collector和视觉失败保留，r4结果仅按当前候选逐项登记，OS字体／TalkBack及完整DEV另验。

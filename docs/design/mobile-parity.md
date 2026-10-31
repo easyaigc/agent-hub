@@ -1556,3 +1556,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 2026-11-01 阶段50，F47/F55/F56/F64／UI21：未提交audio仅进入惰性原件，目的设备不显示为可继续的活动录音，不恢复发送／重试权限；不改变现有迁移／语音页面、token或文案。当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过，完整迁移交互／语音视觉／系统生命周期和物理DEV待验。iOS音频及metadata范围缺口另记，不宣称两端已完成，见[Source75记录](../plans/android-alignment-20261022/records/source75-uncommitted-audio-v2.md)。
 
 2026-11-01 阶段51，F47/F55/F56/F64／UI21：Source76真实seal具名中断warm为内部验收边界，产品页面、token、文案与默认录音算法未改；惰性导入不恢复旧录音或重试权限。一方法本地结果不计UI触摸／完整视觉／物理DEV或iOS通过，见[限定记录](../plans/android-alignment-20261022/records/source76-real-seal-checkpoint-warm.md)。
+
+2026-11-01 阶段52，F53/F56／UI11：Android铃声长预览与删除分配独立宽度，删除AX复用现有“删除”词条＋原标题；高多行预览改用已有MaterialTheme.shapes.small，避免pill圆角裁文字，不新增颜色／字号／词条。r3实际PNG视觉失败保留；当前r4中浅／英深两项受控组件限定通过，iOS参照不改，OS字体／真实读屏与完整视觉另验，见[限定记录](../plans/android-alignment-20261022/records/source77-sound-actions-viewport.md)。

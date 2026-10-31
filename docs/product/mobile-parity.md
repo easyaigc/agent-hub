@@ -720,3 +720,5 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-01 阶段50，F47/F55/F56/F64：Android未提交audio窗口采用明确v2惰性catalog，原row/index及raw/audio两份分别封闭并计quota，v1读取保留；仅只读复制，不seal补manifest、不恢复旧recorder或重放。当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过；真实seal中断／冷PID／mixed／低堆／完整UI和物理DEV未验。iOS Payload未含PendingVoiceStore音频/metadata，缺口单列；见[Source75记录](../plans/android-alignment-20261022/records/source75-uncommitted-audio-v2.md)。
 
 2026-11-01 阶段51，F47/F55/F56/F64：Android真实seal在audio写入后／row提交前的具名已知中断及后续惰性export/stage/activate/reexport，API33一方法限定通过；真实row I/O故障、断电／进程死亡、冷PID、完整UI及物理DEV未验。公开构造器／默认算法及Source75格式保持，不seal重试或恢复活动录音；iOS音频／metadata范围缺口不变，见[Source76记录](../plans/android-alignment-20261022/records/source76-real-seal-checkpoint-warm.md)。
+
+2026-11-01 阶段52，F53/F56／UI11：Android长导入铃声动作行给预览weight、删除保留空间并提供“删除＋原标题”读屏名称，复用small shape避免高pill裁字。当前中浅／英深两项受控组件限定通过；r3方法通过但collector退出1／实际PNG视觉失败保持。Compose受控字体／组件结果不替代OS字体／TalkBack、试听／通知、完整生命周期或iOS／物理DEV；见[逐项记录](../plans/android-alignment-20261022/records/source77-sound-actions-viewport.md)。

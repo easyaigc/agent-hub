@@ -18691,6 +18691,16 @@
         "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "ea4b3a66991486c250416b5fb4555b179a4888fb5d4159bea48dbfc52cc087df",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSealCheckpointTest.kt": "74ecb66894a676c02c29d58a960682f73fcf6f0f7929eccfdcd98500a9d196f6"
       }
+    },
+    {
+      "id": "android-source77-sound-actions-viewport-20261101",
+      "baseCommit": "8c4c1ee23e3936c029049245cc840bf4ca725f4e",
+      "features": ["F53", "F56"],
+      "summary": "长导入名preview加weight保留delete宽度，删除AX含原title，small shape修高pill裁字。中浅／英深两项受控组件限定通过；r3 collector exit1/视觉失败保留，不重放原Native。受控320dp/Composefont2/synthetic删除不等于OS字体/TalkBack/试听/完整UI/物理DEV，iOS无新增通过。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "991bbcf01b9cc9c365c4c4dce5072ea456ea5abe733a7b3e6421f61bf72ab90b",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "31e0155874d2fc0a928b81faaa200882a557932e0a756ffdf180d441f5f859cc"
+      }
     }
   ]
 }

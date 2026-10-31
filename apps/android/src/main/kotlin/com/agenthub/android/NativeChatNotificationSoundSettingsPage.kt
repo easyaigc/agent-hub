@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -75,14 +76,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
         TextButton(onClick = { state.play("default") }, enabled = !busy, modifier = Modifier.testTag("chat-sound-preview-default")) { Text(productText(if (preview.playingId == "default") "停止试听" else "试听")) }
         state.items.forEach { item ->
             val title = if (item.imported) item.title else productText(item.title)
+            val deleteDescription = productText("删除") + " " + title
             ChatSoundChoice(title, selected == item.id, item.id, !busy) { state.choose(item.id) }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(onClick = { state.play(item.id) }, enabled = !busy, modifier = Modifier.testTag("chat-sound-preview-" + item.id)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = { state.play(item.id) }, enabled = !busy, shape = MaterialTheme.shapes.small, modifier = Modifier.weight(1f).testTag("chat-sound-preview-" + item.id)) {
                     Text(productText(if (preview.playingId == item.id) "停止试听" else "试听") + " · " + title)
                 }
                 if (kind == null && item.imported) TextButton(onClick = {
                     if (!busy) state.delete(item.id)
-                }, enabled = !busy, modifier = Modifier.testTag("chat-sound-delete-" + item.id)) { Text(productText("删除")) }
+                }, enabled = !busy, modifier = Modifier.testTag("chat-sound-delete-" + item.id).semantics { contentDescription = deleteDescription }) { Text(productText("删除")) }
             }
         }
         if (kind == null) Button(onClick = {

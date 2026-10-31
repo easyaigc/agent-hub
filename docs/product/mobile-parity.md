@@ -716,3 +716,5 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-01 阶段48，F51/F54/F55/F56：Source73 原导航回调 10/10项限定通过，仅 Test 更新，App 字节不变；真实 Main 入口的本地回调、claim／ACK及失效隔离按方法限定，不新增系统通知触摸、冷 PID、完整 UI、物理 DEV 或 iOS 通过。默认启动 runtime／私有 handle／物理 executor 收尾仍未证实。见[本次原生记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。
 
 2026-11-01 阶段49，F33/F55/F64：Android原录音迁移的特殊文件非阻塞拒绝及原件保持在API33限定通过；只核对导出已返回后的读取端，不宣称全进程FD关闭、完整UI或iOS通过。完整语音迁移的未提交audio窗口及iOS音频资料范围继续待实现／验收。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。
+
+2026-11-01 阶段50，F47/F55/F56/F64：Android未提交audio窗口采用明确v2惰性catalog，原row/index及raw/audio两份分别封闭并计quota，v1读取保留；仅只读复制，不seal补manifest、不恢复旧recorder或重放。当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过；真实seal中断／冷PID／mixed／低堆／完整UI和物理DEV未验。iOS Payload未含PendingVoiceStore音频/metadata，缺口单列；见[Source75记录](../plans/android-alignment-20261022/records/source75-uncommitted-audio-v2.md)。

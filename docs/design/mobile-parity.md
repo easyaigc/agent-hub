@@ -1552,3 +1552,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 2026-11-01 阶段48：P9 原导航本地回调 10/10项限定通过，保留 iOS 的原目标、原草稿及迟到隔离断言；未改页面、token或文案。实际 Main 启动不等于 UI 触摸，通知／设置完整视觉与 OS 生命周期继续待验，见[限定记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。
 
 2026-11-01 阶段49：仅Android迁移文件机制修复，无页面／token／文案变化；保留失败后原件、原稿与不可重放断言。现有错误／等待页面的完整视觉和交互未新增验收，iOS无改动。见[Source74档案](../plans/android-alignment-20261022/records/source74-provisional-fifo.md)。
+
+2026-11-01 阶段50，F47/F55/F56/F64／UI21：未提交audio仅进入惰性原件，目的设备不显示为可继续的活动录音，不恢复发送／重试权限；不改变现有迁移／语音页面、token或文案。当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过，完整迁移交互／语音视觉／系统生命周期和物理DEV待验。iOS音频及metadata范围缺口另记，不宣称两端已完成，见[Source75记录](../plans/android-alignment-20261022/records/source75-uncommitted-audio-v2.md)。

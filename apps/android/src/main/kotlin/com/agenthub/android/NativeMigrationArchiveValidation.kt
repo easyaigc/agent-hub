@@ -58,7 +58,7 @@ internal object NativeMigrationArchiveValidation {
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
         val voicePreferenceNames = NativeVoicePreferenceRecord.validate(records)
-        val provisionalBinary=streams?.filterKeys {it.startsWith(NativeMigrationProvisionalVoice.PREFIX)}?:NativeMigrationProvisionalVoice.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationProvisionalVoice.PREFIX)})
+        val provisionalBinary=streams?.filterKeys(NativeMigrationProvisionalVoice::isBinaryName)?:NativeMigrationProvisionalVoice.descriptors(binaries.filterKeys(NativeMigrationProvisionalVoice::isBinaryName))
         val provisionalNames=NativeMigrationProvisionalVoice.validate(records,provisionalBinary,clients)
         val soundBinaries = NativeMigrationSounds.validate(records,binaries,streams,verifySoundBytes)
         val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")||it.startsWith(NativeVoiceDiscardCatalog.RAW_PREFIX)}

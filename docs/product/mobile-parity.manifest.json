@@ -18668,6 +18668,19 @@
         "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalFiles.kt": "b6e5d40ff746ece5aec011dec1cd36ee4f935153954bd961c54ba676f6da9831",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "d0f665a6c2c25ac81e1505e28e340e3e75d9e8e9069db2369b0ec2d0ec9158a9"
       }
+    },
+    {
+      "id": "android-source75-uncommitted-audio-inert-v2-20261101",
+      "baseCommit": "66d03999d009c3c8d1f0c7d3673a98b7f3d0a66f",
+      "features": ["F47", "F55", "F56", "F64"],
+      "summary": "显式惰性catalog v2保留原row/index及相等raw/audio双frame、分别计quota；v1继续严格读取，缺帧/额外帧/alias/冲突拒绝。新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过；四新场景为seeded state非真实seal crash，最后三项纯内存。mixed/低堆/冷PID/UI/物理DEV及iOS音频资料缺口待验，不恢复执行或重放。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalVoice.kt": "899ed303ab07b499a92776aa5b7266917911b65e270ada0b0e963672752c19a0",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationArchiveValidation.kt": "bd81c92057a81e102f7794c2779313df2cb2d2a741e4e22aacda54703272a5b9",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationUncommittedAudioTest.kt": "68098e8b6bf1d9d96f718d48f0224e361c2ff98ec7f99dcd41614442e0d72b37",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalContractTest.kt": "06bf60fb8bbebce74680a9b2bf2340af077ba6975cf17bb58f484c0bbe615f3f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "a2d12afc8ce18c5e3749c3d7daf4074e594deec5fe6684533dcfb2fdfec68320"
+      }
     }
   ]
 }

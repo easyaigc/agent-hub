@@ -1389,6 +1389,8 @@ Android录音新二进制格式4以Keystore认证加密的逻辑名/长度头和
 
 Android内部迁移载荷v1维持纯文本兼容，v2增加分开的规范Base64二进制集合，共用原加密信封v1；根快照按同一锁区捕获文本3/二进制4及准确索引旧1/2，不恢复临时文件或跳过未知记录。封口Codex录音要求索引/元数据/原运行目标、证书/草稿、WAV/时长/摘要/清单与尝试回执字段闭合；激活将二者读回认证后一次发布代次指针。迁入voice持久只读，原状态404或awaiting-audio都不能准备/上传。初始8MiB/12MiB配额、未封口归属、子仓库/Provider/通知和产品系统迁移UI尚未全部覆盖，不能宣称完整迁移已实现验收。
 
+Android未封口原件catalog独立于活动voice index，显式读取version 1／2。v2每条增加仅含size／SHA-256的uncommittedAudio（旧条可null，至少一条非null）；只有原row的manifest仍为null、原身份/索引及未尝试状态通过既有闭合校验、raw为准确常规原件且已认证落盘audio与raw大小/摘要一致，才分别投影raw／audio frame并各自计入既有quota。原row/index字符串保留，catalog／frame集合严格闭合；缺帧、额外帧、未知字段/版本、alias或活动身份冲突均拒绝。该归档不补manifest、不seal、不恢复recorder或执行权限；copyUncommittedAudio只读复制惰性原字节。v1读取和原加密信封保持，不能把本地catalog v2等同于领域协议或完整双端迁移格式。
+
 Android语音展示按来源提供statusCopyKey：正常阶段/明确原录音恢复和类型化ImportedVoiceReceiptOnly携带App文案键；Host/OS任意error.message不做字面猜测翻译。界面与读屏共享解析后的状态文本；文案来源在新请求、结束及清空时失效，原提交/原回执和迁入禁止准备/上传的规则未放宽。
 
 Android迁移候选本机格式2采用256KiB加密块和最后发布的认证头；块逻辑名绑定随机代次/位置、块文件格式4随机头，完整SHA与原Schema通过才可激活。旧内联本机候选只读兼容，外部密码封装与载荷版本不变。读取/替换共用候选子目录锁；发布不明确时保留可能提交块，不重放原操作。当前仍8MiB/12MiB内部边界，先按二进制头核对Base64膨胀配额，文件流式满额迁移尚未完成。

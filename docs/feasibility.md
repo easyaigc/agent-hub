@@ -567,3 +567,5 @@ Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：
 2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。
 
 2026-10-31：来源 PR82 交互及独立 scheduled 八步预检通过，但 launcher EXE／payload 与失败正式启动不同，正式原因仍未知。已补常驻 Native 具体拒绝原因丢失的固定分类，不放宽 owner/DACL；新 Native/cache 及精确拒绝需复验，未变 legacy/reader 场景按输入复用。正式生命周期仅来源 Root 控制，见[诊断与回滚门禁](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。
+
+Android 已实现“audio 已认证写入、row manifest 未提交”窗口的惰性双原件投影：相等的 raw/audio 通过明确 catalog v2 分别归档和计 quota，既有 v1 继续严格读取；保存及只读复制原件不赋予目的设备录音恢复、seal、上传或重试权限。mixed catalog、多原件/低堆、真实 seal 中断、冷进程、完整 UI 与物理 DEV 仍须分别验收，不能据合成状态或 warm 迁移宣称完整 P7。iOS 当前 EncryptedMigration.Payload 未包含 PendingVoiceStore 音频及 metadata，同类完整语音迁移仍有明确缺口；Android 格式不能充当 iOS 实现或跨端互通证明。

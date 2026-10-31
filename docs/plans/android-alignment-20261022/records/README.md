@@ -216,3 +216,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source73 P9 原导航 Native 续验](source73-p9-native-navigation.md)：仅 Test 更新及独立 API33 10/10项限定通过；完整 OS／冷 PID／视觉／真实 DEV 继续待验。
 
 - [Source74 原录音特殊文件拒绝](source74-provisional-fifo.md)：限定API33真实导出／读取端通过；旧全局FD观察、完整UI与迁移仍待验。
+
+- [Source75未提交audio的v2惰性迁移](source75-uncommitted-audio-v2.md)：保留原row/index与独立raw/audio frame；新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过，真实seal中断／冷PID／mixed／低堆／完整UI仍待验。

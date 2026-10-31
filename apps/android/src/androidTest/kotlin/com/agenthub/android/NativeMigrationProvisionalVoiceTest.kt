@@ -212,7 +212,7 @@ class NativeMigrationProvisionalVoiceTest {
         val bad=File(f.folder,"damaged.migration");val raw=f.envelope().readBytes();raw[raw.lastIndex]=(raw.last().toInt() xor 1).toByte();bad.writeBytes(raw)
         assertThrows(Exception::class.java){candidates.stageFile(UUID.randomUUID().toString(),bad,f.password,receipt)}
         NativeMigrationStreamCandidate(f.context("destination"),destination).read(receipt){records->
-            val text=NativeMigrationTextMap.copy(records.text);text[NativeMigrationProvisionalVoice.RECORD]=JSONObject(text.getValue(NativeMigrationProvisionalVoice.RECORD)).put("version",2).toString()
+            val text=NativeMigrationTextMap.copy(records.text);text[NativeMigrationProvisionalVoice.RECORD]=JSONObject(text.getValue(NativeMigrationProvisionalVoice.RECORD)).put("version",3).toString()
             assertThrows(Exception::class.java){candidates.validateStreamRecords(records.copy(text=text))}
         }
         assertThrows(Exception::class.java){NativeMigrationActivation(f.context("destination"),destination).activate(receipt){if(it==0)error("Owned interruption before publication")}}

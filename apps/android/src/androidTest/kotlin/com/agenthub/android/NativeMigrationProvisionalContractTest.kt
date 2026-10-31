@@ -26,7 +26,7 @@ class NativeMigrationProvisionalContractTest {
     @Test fun unknownSchemaChangedIdentityOrAuthorityAndIncompleteInventoryReject() {
         val name=NativeMigrationProvisionalVoice.PREFIX+id;val binary=mapOf(name to blob(byteArrayOf(0,9,8,7)))
         val changes=listOf<(JSONObject)->Unit>(
-            {it.put("version",2)},{it.put("resume",true)},
+            {it.put("version",3)},{it.put("resume",true)},
             {it.getJSONArray("originals").getJSONObject(0).put("id",UUID.randomUUID().toString())},
             {it.getJSONArray("originals").getJSONObject(0).put("index","[]")},
             {it.getJSONArray("originals").getJSONObject(0).put("size",5)},

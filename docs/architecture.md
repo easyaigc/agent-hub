@@ -8,6 +8,8 @@ Windows 私有状态的 `protect` 在同一 retained handle 校验当前 User ow
 
 Windows 私有文件的创建事实由 Native 的 CREATE_NEW 句柄产生，并以通道租约交接到 Node 已打开的 FD；收到原租约释放确认前不得截断。Native 冷编译同样保留创建对象与自有编译 job 的退出边界，发布和清理均绑定句柄。既有对象的 User owner/DACL 要求不放宽。旧 Windows v1 阅读缓存不做 owner 迁移，保留后使用可重建的 v2 命名空间；主状态与操作账本位置不变，macOS 仍用 v1。实现、隔离回归、Windows 实测与 R2 集成部署门禁见 [更新恢复记录](acceptance/codex-update-resilience-20261030.md)。
 
+Windows 冷编译输出预约与 Node 交接租约按内部用途选择访问位：普通 Node lease 保持 FILE_READ_DATA 和无 DELETE 共享，编译 A 保持 metadata-only 预约及原句柄身份，目录用 FILE_LIST_DIRECTORY 实施命名空间租约，B 的发布和清理仍绑定原句柄。不得将 metadata 预约描述为文件 rename 屏障；同源冷编译、替代路径拒绝和保留句柄清理的证明范围见[专项记录](acceptance/windows-cold-compiler-reservation-20261031.md)。Windows 新输入尚待独立验收。
+
 2026-10-29 Host 诊断写入使用独立 worker 和固定事件 Schema，HTTP isolate 仅维护有界队列；Windows 辅助诊断走独立线程通道。只读连接合并并发，关闭后迟到代次不复活；命令未知状态不重放。实现与限制见[诊断与恢复](host-reconnect-diagnostics.md)，平台结果见[专项验收](research/host-reconnect-diagnostics-20261029.md)。
 
 ## Android 原录音的本机文件识别

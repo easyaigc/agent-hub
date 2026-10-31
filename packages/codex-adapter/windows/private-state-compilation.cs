@@ -213,7 +213,9 @@ public static partial class CodexManagePrivateStateSecurity
         {
             // Namespace-only ancestors are never made private or adopted. Keep
             // every component non-reparse and unrenamable until csc has exited.
-            last = CreateFile(FullPath(component), ReadControl | 0x80u, 3, IntPtr.Zero,
+            // FILE_LIST_DIRECTORY shares the FILE_READ_DATA bit. Unlike a
+            // metadata-only handle, it makes no-DELETE sharing a real barrier.
+            last = CreateFile(FullPath(component), ReadControl | 0x80u | FileReadData, 3, IntPtr.Zero,
                 3, 0x02200000u, IntPtr.Zero);
             leases.Add(last);
             if (last.IsInvalid) throw CompilationLastError("pin-directory");
@@ -354,7 +356,14 @@ public static partial class CodexManagePrivateStateSecurity
                 if (waited != 0) throw new InvalidOperationException();
                 uint code;
                 if (!CompilationExitCode(child.Process, out code)) throw CompilationLastError("compiler-exit-code");
-                if (code != 0) throw new InvalidOperationException();
+                if (code != 0)
+                {
+                    var failure = new InvalidOperationException();
+                    // A primitive UInt32 is Framework-serializable. Diagnostic
+                    // attachment is optional and never replaces the failure.
+                    try { failure.Data["CodexManage.CompilerExitCode"] = code; } catch { }
+                    throw CompilationAt(failure, "compiler-exit-code");
+                }
             }
         }
         finally
@@ -424,8 +433,9 @@ public static partial class CodexManagePrivateStateSecurity
     }
     private static SafeFileHandle OpenCompilerRead(string path, SafeFileHandle metadata, string identity)
     {
-        // A still has its original no-DELETE-share metadata lease. Identity
-        // comparison here bridges two simultaneously live handles, never an
+        // A still has its original metadata reservation. This is not a
+        // pathname lock: compare two live handles before accepting any bytes.
+        // The comparison bridges two simultaneously live handles, never an
         // ID recorded after releasing A or a pathname reopened for deletion.
         if (metadata == null || metadata.IsClosed || FileIdentity(metadata) != identity) throw new IOException();
         SafeFileHandle read = CreateFile(FullPath(path), 0x80000000u | ReadControl | 0x80u,
@@ -625,14 +635,16 @@ public static partial class CodexManagePrivateStateSecurity
             RecordCompilation(record, "{\"version\":1,\"compiler\":\"" + compilerName +
                 "\",\"publication\":\"" + publicationName + "\",\"cleanupByPath\":false}", elapsed, budgetMs);
             preparationStep = "create-compiler-output";
-            compilerMetadata = CreatePrivateFileHandle(compilerTemporary, false);
+            compilerMetadata = CreatePrivateFileHandleForPurpose(compilerTemporary, PrivateFilePurpose.CompilerOutput);
             compilerIdentity = FileIdentity(compilerMetadata);
             RecordCompilation(record, "{\"created\":\"compiler\",\"identity\":\"" + compilerIdentity + "\"}", elapsed, budgetMs);
             var compileSources = new List<string> { Path.Combine(sourceDirectory, name + ".cs") };
             if (name == "trace-state") compileSources.Add(Path.Combine(sourceDirectory, "trace-process.cs"));
             if (name == "private-state") compileSources.Add(Path.Combine(sourceDirectory, "private-state-compilation.cs"));
-            // A's original handle grants only READ_CONTROL | READ_ATTRIBUTES,
-            // so csc need not share another handle's WRITE or DELETE access.
+            // A grants only READ_CONTROL | READ_ATTRIBUTES. In particular it
+            // must not borrow NodeHandoff's FILE_READ_DATA access: Framework
+            // csc can refuse that existing output with CS0016. Publication and
+            // cleanup still use A's retained identity and B's own creation FD.
             preparationStep = "compile";
             CompileNative(name, sourceDirectory, compilerTemporary, compileSources, elapsed, budgetMs, ref compilerExited);
             preparationStep = "check-compiler-output";

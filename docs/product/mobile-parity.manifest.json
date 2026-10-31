@@ -18474,6 +18474,18 @@
         "scripts/windows-private-state-native.test.mjs": "bcf167e0690932f56ca568dfd16e0cde49a163c31df15064ce8851ea25042083",
         "scripts/history-smoke.mjs": "62cf44ea2457e8c4f681f8467b5f724d7c3be60d4d02c21f768889a16507092d"
       }
+    },
+    {
+      "id": "windows-native-cold-compiler-reservation-20261031",
+      "baseCommit": "ddbc2222c08497002288b1a9a2074d8474bee31f",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Separate compiler output metadata reservation from the Node FILE_READ_DATA creation lease; retain owner/DACL checks, A identity/read-handle cleanup and B handle-only non-replacing publication. Pin compilation namespace directories with FILE_LIST_DIRECTORY and no DELETE share. Preserve a nonzero compiler UInt32 and existing fixed compiler-exit-code step without changing public nativeStatus semantics or budgets. Add same-source C#5 cold/warm PrepareNative fixtures for all three helpers, synthetic directory/identity/cleanup boundary, and keep all original Node lease and PR91 PS5 ACL assertions. No mobile UI/protocol, Android acceptance, existing private state or A6 change. New Windows cold compile and formal acceptance pending.",
+      "files": {
+        "packages/codex-adapter/windows/private-state.cs": "98b7d499a91c06f2d180863d0e8f4b005d2029e533fda98fbe17237d495a9fc2",
+        "packages/codex-adapter/windows/private-state-compilation.cs": "48e3840589889dd2f3da7392ad907c40e27081a5356ea41f15d80f7caaf34c12",
+        "scripts/windows-private-state-native.test.mjs": "7455e6de8103499e1d4681fc51ea50fa18db8fef19d0a1d15e1f43405d068e6b",
+        "scripts/fixtures/private-state-cold-compilation.cs": "44a2b645493905b7a8f762ddb63ee7cac3d7007bed0d4cb70147fc1b629ce0c4"
+      }
     }
   ]
 }

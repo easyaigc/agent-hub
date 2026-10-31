@@ -11,7 +11,8 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
+import { tmpdir } from 'node:os';
 import { Agent, createServer, get, globalAgent } from 'node:http';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -1974,6 +1975,94 @@ test(
         existingDefaultOwnerRetained: true,
       }),
     );
+    const coldHarness = join(f.directory, 'cold-compilation.exe');
+    const framework = dirname(compiler);
+    f.gate.withWindowsProcessCreation(30000, (timeout) =>
+      execFileSync(
+        compiler,
+        [
+          '/noconfig',
+          '/nologo',
+          '/target:exe',
+          '/langversion:5',
+          '/main:PrivateStateColdCompilationHarness',
+          '/r:' + join(framework, 'System.dll'),
+          '/r:' + join(framework, 'System.Core.dll'),
+          '/out:' + coldHarness,
+          join(repository, 'packages/codex-adapter/windows/private-state.cs'),
+          join(repository, 'packages/codex-adapter/windows/private-state-compilation.cs'),
+          join(repository, 'scripts/fixtures/private-state-cold-compilation.cs'),
+        ],
+        { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
+      ),
+    );
+    // Keep Framework csc's output path independent of a long unpacked repo.
+    // Each child still receives an entirely absent cache; no shared warm cache.
+    const coldRoot = await mkdtemp(join(tmpdir(), 'ahc-'));
+    const coldRootIdentity = lstatSync(coldRoot, { bigint: true });
+    let coldComplete = false;
+    t.after(async () => {
+      if (coldComplete) {
+        const current = lstatSync(coldRoot, { bigint: true });
+        assert(current.isDirectory() && !current.isSymbolicLink());
+        assert.equal(current.dev, coldRootIdentity.dev);
+        assert.equal(current.ino, coldRootIdentity.ino);
+        await rm(coldRoot, { recursive: true });
+      } else t.diagnostic(JSON.stringify({ kind: 'cold-fixture-retained', directory: coldRoot }));
+    });
+    for (const name of ['private-state', 'trace-state', 'host-launcher']) {
+      const local = join(coldRoot, name[0]);
+      assert.equal(existsSync(local), false);
+      const coldReport = JSON.parse(
+        f.gate.withWindowsProcessCreation(30000, (timeout) =>
+          execFileSync(
+            coldHarness,
+            [join(repository, 'packages/codex-adapter/windows'), local, name],
+            { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
+          ),
+        ),
+      );
+      t.diagnostic(JSON.stringify(coldReport));
+      assert.equal(coldReport.kind, 'native-cold-compilation');
+      assert.equal(coldReport.native, name);
+      assert.equal(coldReport.passed, true);
+      assert.equal(coldReport.phase, 'complete');
+      assert.equal(coldReport.coldCacheAbsentBefore, true);
+      assert.equal(coldReport.coldPrepared, true);
+      assert.equal(coldReport.warmSameIdentity, true);
+      assert.equal(coldReport.privatePeChecked, true);
+      assert.match(coldReport.cacheDigest, /^[a-f0-9]{64}$/);
+      assert.match(coldReport.nativeIdentity, /^[a-f0-9]{8}:[a-f0-9]{16}$/);
+      const pe = lstatSync(
+        join(local, 'CodexManage/native-helpers', coldReport.cacheDigest, name + '.exe'),
+        { bigint: true },
+      );
+      assert(pe.isFile() && !pe.isSymbolicLink());
+      assert.equal(
+        (pe.dev & 0xffffffffn).toString(16).padStart(8, '0') +
+          ':' +
+          pe.ino.toString(16).padStart(16, '0'),
+        coldReport.nativeIdentity,
+      );
+      assert.equal(coldReport.identityBoundary, name === 'private-state' ? true : null);
+      assert.equal(coldReport.identityBoundarySynthetic, name === 'private-state' ? true : null);
+      assert.equal(
+        coldReport.controlledCompilerFailurePreserved,
+        name === 'private-state' ? true : null,
+      );
+      if (name === 'private-state') {
+        assert(Number.isInteger(coldReport.controlledCompilerFailureCode));
+        assert(coldReport.controlledCompilerFailureCode > 0);
+        assert(coldReport.controlledCompilerFailureCode <= 0xffffffff);
+      } else assert.equal(coldReport.controlledCompilerFailureCode, null);
+      assert.equal(coldReport.exclusiveChildLocalAppData, true);
+      assert.equal(coldReport.budgetMs, 30000);
+      assert.equal(coldReport.existingStateRead, false);
+      assert.equal(coldReport.formalHostStarted, false);
+      assert.equal(coldReport.productionHelperExecutableStarted, false);
+      assert.equal(coldReport.windowsPInvokeExecuted, true);
+    }
+    coldComplete = true;
     compare('check', relative(process.cwd(), file));
     compare('protect', file, false);
     compare('check', join(native.directory, 'missing-file'), false);

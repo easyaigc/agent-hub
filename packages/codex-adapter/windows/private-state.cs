@@ -311,8 +311,25 @@ public static partial class CodexManagePrivateStateSecurity
             index.ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
     }
 
+    private enum PrivateFilePurpose { NodeHandoff, NativeRename, CompilerOutput }
     private static SafeFileHandle CreatePrivateFileHandle(string path, bool rename = false)
     {
+        return CreatePrivateFileHandleForPurpose(path,
+            rename ? PrivateFilePurpose.NativeRename : PrivateFilePurpose.NodeHandoff);
+    }
+    private static SafeFileHandle CreatePrivateFileHandleForPurpose(string path, PrivateFilePurpose purpose)
+    {
+        uint access = ReadControl | 0x80u;
+        switch (purpose)
+        {
+            // Node's creation lease must actually participate in sharing checks.
+            case PrivateFilePurpose.NodeHandoff: access |= FileReadData; break;
+            case PrivateFilePurpose.NativeRename: access |= 0x40000000u | 0x00010000u; break;
+            // csc opens A separately. This reservation pins A's identity, not
+            // its pathname; it must not impose Node's data-access share check.
+            case PrivateFilePurpose.CompilerOutput: break;
+            default: throw new ArgumentOutOfRangeException("purpose");
+        }
         path = FullPath(path);
         Execute("check", ParentDirectory(path));
         GCHandle pinned = GCHandle.Alloc(NewDescriptor(false), GCHandleType.Pinned);
@@ -321,10 +338,7 @@ public static partial class CodexManagePrivateStateSecurity
         {
             var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
                 Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
-            // Metadata-only access does not participate in delete sharing checks.
-            // A creation lease needs FILE_READ_DATA as well as no DELETE share;
-            // Node can still open read/write before acknowledging this lease.
-            file = CreateOwnedFile(path, ReadControl | 0x80u | (rename ? 0x40000000u | 0x00010000u : FileReadData),
+            file = CreateOwnedFile(path, access,
                 3, ref security, 1, 0x00200000u, IntPtr.Zero);
             if (file.IsInvalid) {
                 int error = Marshal.GetLastWin32Error();

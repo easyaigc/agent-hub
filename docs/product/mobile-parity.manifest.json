@@ -18464,6 +18464,16 @@
         "packages/codex-adapter/windows/private-state.cs": "555399bf20435a191e5cc7419cfd875a59d4f0e30c97e943b54e689951d6fc58",
         "scripts/windows-private-state-native.test.mjs": "32d4f544192d5017ccce5f846f19689ad78b1c286546b89752c187fa8419d34d"
       }
+    },
+    {
+      "id": "windows-test-ps5-acl-oracle-binding-20261031",
+      "baseCommit": "06e39829f3dcb28015e90c04a5acaf0637fd1077",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Test infrastructure only: bind Security and Utility manifests under the launched Windows PowerShell PSHOME and qualify the original Get-Acl/ConvertTo-Json commands. Preserve real owner SID, protected DACL, default-owner difference and all rejection assertions. Do not change inherited environment, module files, identity, budget, production JS or Native bytes. The CI history fixture now waits for the existing bounded reader exit barrier before deleting its own directory; no rm retries or product lifecycle change. PR90 real managed/creation-lease subset passed; whole CLI/serve, remaining gates and formal acceptance stay pending. No mobile UI/protocol, Android acceptance or A6 change.",
+      "files": {
+        "scripts/windows-private-state-native.test.mjs": "bcf167e0690932f56ca568dfd16e0cde49a163c31df15064ce8851ea25042083",
+        "scripts/history-smoke.mjs": "62cf44ea2457e8c4f681f8467b5f724d7c3be60d4d02c21f768889a16507092d"
+      }
     }
   ]
 }

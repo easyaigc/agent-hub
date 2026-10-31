@@ -1934,6 +1934,8 @@ test(
     // Existing objects must still be refused rather than adopted by creation.
     const defaultFile = join(privateRoot, 'default-owner.json');
     await writeFile(defaultFile, 'retained');
+    // Bind the launched PS5 system modules before using the unchanged ACL
+    // oracle; an inherited PS7 module search path must not select their peers.
     const inspected = JSON.parse(
       f.gate.withWindowsProcessCreation(5000, (timeout) =>
         execFileSync(
@@ -1942,9 +1944,12 @@ test(
             '-NoProfile',
             '-NonInteractive',
             '-Command',
-            `$i=[Security.Principal.WindowsIdentity]::GetCurrent(); ` +
-              `$a=Get-Acl -LiteralPath '${file.replaceAll("'", "''")}'; ` +
-              `@{ownerIsUser=($a.GetOwner([Security.Principal.SecurityIdentifier]).Equals($i.User));protected=$a.AreAccessRulesProtected;defaultOwnerIsUser=$i.Owner.Equals($i.User)}|ConvertTo-Json -Compress`,
+            `$ErrorActionPreference='Stop'; ` +
+              String.raw`Import-Module -Name ($PSHOME + '\Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1') -ErrorAction Stop; ` +
+              String.raw`Import-Module -Name ($PSHOME + '\Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop; ` +
+              `$i=[Security.Principal.WindowsIdentity]::GetCurrent(); ` +
+              String.raw`$a=Microsoft.PowerShell.Security\Get-Acl -LiteralPath '${file.replaceAll("'", "''")}'; ` +
+              String.raw`@{ownerIsUser=($a.GetOwner([Security.Principal.SecurityIdentifier]).Equals($i.User));protected=$a.AreAccessRulesProtected;defaultOwnerIsUser=$i.Owner.Equals($i.User)}|Microsoft.PowerShell.Utility\ConvertTo-Json -Compress`,
           ],
           { encoding: 'utf8', stdio: 'pipe', timeout },
         ),

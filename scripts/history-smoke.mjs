@@ -221,6 +221,8 @@ try {
     await assert.rejects(desktop.desktopWorkspace(), /sidebar metadata unavailable/);
   } finally {
     desktop.close();
+    await desktop.closeAndWait();
+    assert.equal(desktop.process, undefined, 'Fixture reader must retire before cleanup');
   }
   const methods = (await readFile(log, 'utf8')).trim().split('\n');
   assert(
@@ -359,6 +361,10 @@ try {
   );
 } finally {
   reader.close();
+  // The synthetic CLI can still append its method log until stdio closes.
+  // Use the existing bounded exit barrier before removing its directory.
+  await reader.closeAndWait();
+  assert.equal(reader.process, undefined, 'Fixture reader must retire before cleanup');
   childProcess.spawn = originalSpawn;
   syncBuiltinESMExports();
   await rm(directory, { recursive: true, force: true });

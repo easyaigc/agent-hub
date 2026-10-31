@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "status": "implemented-source-only; Android binding/SDK/Native/OS/DEV unverified",
+  "supersedesSource": "a0cea14e6c24d0296f0cd2069c68d02f8fb8a035",
+  "request": "parent-p7-cold-boundary-revision-20261030-1",
+  "boundaries": [
+    {
+      "issue": 1,
+      "implemented": "NativeMigrationExistingPolicy exact transfer state machine + shared restoreNativeMigrationSession called by Activity and cold fixture",
+      "sequence": [
+        "Actual initial Session binds its exact strict root; actual quiesce records exact Session/lease/storage/operation and checks raw ownership",
+        "Generation creation and confirmed publication require frozen original authority; unpublished/failed/cancelled material cannot prepare normal restore ticket",
+        "Controller and fixture call prepareAndReleaseForRestore: prepare exact generation ticket while original raw lease is live, revoke old writes immediately, then release raw ownership; preparation failure still releases known raw resources",
+        "Only confirmed raw release permits the exact ticket to attach one fresh root and one actual different Session; no alias fallback or renewed expired raw lease",
+        "After Session binding, prepare all 10 fixed children, actual restoreForMigration and original selection-return reconciliation; verify actual generation on IO, then Main confirms actual restore completion",
+        "Commit authorizes normal edits only for that fresh Session/root capability; original Session retires; any failed/cancelled pending Session revokes capability; unknown exit retains original context and first error"
+      ],
+      "limit": "Failed/unpublished strict generation refuses normal creation/restore and remains an explicit restore failure after raw release; it does not silently switch to a default writer."
+    },
+    {
+      "issue": 2,
+      "implemented": "assertDestinationOriginals compares each writer proof.destinationCiphertext path/SHA after activation and again before third-phase activated snapshot checks. Original source/candidate/claims/operations/late-draft assertions remain."
+    },
+    {
+      "issue": 3,
+      "implemented": "existingMigration(context, rawBaseFile, namespace, alias) validates the raw existing base before wrapping Context. ExistingView never reads the original Context noBackup getter; decoder receives only the validated bounded wrapper. Missing-base fixture asserts zero getter calls and absent base after refusal."
+    },
+    {
+      "issue": 4,
+      "implemented": "strict migrationCopyBinaryTo, modern-name discovery and optional stream snapshot use NativeMigrationReadOnlyFile and the same NativeMigrationReadLifetime. Exact ref closures preserve noFollow/fstat/mode/UID/nlink/inode/length/mtime and original-file-set checks, full native codec authentication and streaming quotas; no ordinary inputStream/use in strict branches. Default read branches retain existing behavior."
+    },
+    {
+      "issue": 5,
+      "implemented": "Existing folder/key is not authority. Every strict write/delete/binary path checks capability; atomic text/binary writes recheck before finish. Old access is never upgraded by reopen; only the exact successful Session handoff creates normal capability. Pending child handles cannot write. Normal later edits need not match publication digest, while all writer-recorded destination originals remain protected."
+    }
+  ],
+  "stateMachine": [
+    "INITIAL -> FROZEN -> PREPARED -> RELEASED -> BOUND -> ACTIVE",
+    "revoke cancels INITIAL/FROZEN/pending states; retiring ACTIVE fresh Session revokes its normal handles",
+    "after ACTIVE, retirement/invalidation of the original Session cannot revive it or revoke the new Session; normal fresh requests do not depend on expired raw authority"
+  ],
+  "auxiliaryLimit": "Portable production state machine/key-choice/read-lifetime and fake resources only. PSI syntax is not Android binding, actual Session/Keystore/FD/kernel, native PIDs or real acceptance.",
+  "parityDelta": {
+    "featureIds": [
+      "P7 local encrypted migration",
+      "P7 private claim inert audit",
+      "P7 process-cold candidate recovery"
+    ],
+    "commonAssertions": [
+      "exact old keys and original target/scope preserved",
+      "actual owner/released lease/fresh Session/generation handoff",
+      "no authority from directory existence or captured old child",
+      "all original destination paths/SHA remain exact",
+      "zero replay/remote calls and independent late draft preserved"
+    ],
+    "android": "Internal storage/Activity restore boundary and dedicated native fixture; no UI copy/token/page change",
+    "ios": "No source change; interoperability unverified; A6 paused",
+    "centralTables": "Root owns exact ID/central product-design-acceptance merge; preserve unverified rows"
+  },
+  "preserved": [
+    "Original Source65 definite failure",
+    "Source66 warm results remain prior Root evidence",
+    "a0 commit/packet and failure receipts",
+    "original unknown/WAV/keys and task/project pause"
+  ],
+  "auxiliaryEvidence": {
+    "at": "2026-10-30T09:18:10.535920+00:00",
+    "junit": 35,
+    "PSISyntaxFiles": 14,
+    "totalSeconds": 8.158242708,
+    "manifestSha256": "b58eb7f9aff12cf877f58d5e3c0da7472f2a5c1fb61bbd05294236faeead75ee",
+    "checksSha256": "48d538811f3c395a1dc2f608ce90673b146bfcf01a047a28b06c534c77f3b25e",
+    "inputDrift": [],
+    "actualModel": "gpt-6.1-terra",
+    "actualEffort": "medium",
+    "tier": null,
+    "warningCount": 6,
+    "notVerified": [
+      "Android type binding",
+      "SDK/Gradle/APK",
+      "actual Main Session/Keystore/FD/raw kernel exit",
+      "three actual Native PIDs",
+      "OS/DEV/iOS interoperability"
+    ]
+  }
+}

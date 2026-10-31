@@ -1,0 +1,66 @@
+{
+  "version": 2,
+  "base": "a0cea14e6c24d0296f0cd2069c68d02f8fb8a035",
+  "dependencyMerge": "1ed4fbab95b320aea8344da79a450bf99e21a310",
+  "rootOperation": "parent-p7-cold-boundary-revision-20261030-1",
+  "status": "Source correction only; SDK/Native admission remains Root-owned. a0 candidate and earlier failures stay preserved.",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationColdPortPolicyTest.kt",
+      "bytes": 11006,
+      "sha256": "6dc7e7ead39b9ea0f86e952d73d4cf4c64fff9ced69d4c3db104be6ffa492d47"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdFixtures.kt",
+      "bytes": 16023,
+      "sha256": "0f6e190fc6482475a70f1946d9672242283b28f5a3132ee0a07cfd0a99c3f579"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt",
+      "bytes": 5686,
+      "sha256": "f72f1655148d1c52c37458ecad8c9541e2a7cf8b78f20a9f7e789c8831506e37"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "bytes": 13256,
+      "sha256": "78fbb70c48cbc306c7e2e96ebb3db915c03b68cb0eb10511ab02b39149166563"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "bytes": 250052,
+      "sha256": "ea18c1225bf66ca84b3afb1449e7381c5bc0ca4c57125e98fa085c89c6f74e0f"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt",
+      "bytes": 17040,
+      "sha256": "2dcc8fa6a942f1118fd7ccff43b07cbfbbb7db97af4e3f17c00fc9ac4006b57f"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt",
+      "bytes": 6074,
+      "sha256": "fdef735e27284b1236f973d7e0f1b4ef66992fe01094c7b9417fe7edab9743db"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingView.kt",
+      "bytes": 14275,
+      "sha256": "43b58fcc543e76c19aaea6504e077340ce8ba42a63d6a2b1535a41b6f613e528"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt",
+      "bytes": 7876,
+      "sha256": "a90b6eaaf10ba500da0830a5abd9b888eef5190767e08f4ef0a0c6113db85e58"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "bytes": 106700,
+      "sha256": "2c4c84dd67415262600deba1213a84855b9de7795f620fd09b195ef55d3cabcf"
+    }
+  ],
+  "protectedUnchanged": [
+    "common NativeMigrationPrivateClaimFixtures and owner helper",
+    "References narrow read-target rule and StorageTest graph assertion",
+    "Root checkout/central parity tables",
+    "mobile-core/protocol",
+    "Source65 failure and original unknown/WAV/key data"
+  ]
+}

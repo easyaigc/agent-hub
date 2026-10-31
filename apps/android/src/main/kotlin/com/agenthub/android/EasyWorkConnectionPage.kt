@@ -140,7 +140,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
                             if(client?.migrationEasyWork!=null) {
                                 // Imported rows open explicit pairing UI; no old route, credential or action is used.
                                 if(!busy&&!session.connectionBusy){name=client.name;method="扫码连接";error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide()}
-                            } else if(host.known)perform(EasyWorkConnectionInput("known","",host.endpoint,"")) { session.connectKnownEasyWork(host.endpoint) } else perform(EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { session.connectDiscoveredEasyWork(host) }
+                            } else if(host.known)perform(EasyWorkConnectionInput("saved","","",host.id)) { session.connectSavedEasyWork(host.id) } else perform(EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { session.connectDiscoveredEasyWork(host) }
                         }
                     }
                     TextButton(onClick={ discovery?.scan() },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-discovery-rescan")) { Text(productText("重新查找")) }

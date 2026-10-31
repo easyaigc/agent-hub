@@ -20,12 +20,18 @@ internal class NativeChatNotificationStore(private val storage: NativeSessionSto
         private fun decode(raw: String): State {
             require(raw.toByteArray(Charsets.UTF_8).size <= 4 * 1024 * 1024)
             val v = JSONObject(raw)
-            require(v.keys().asSequence().toSet() == setOf("version", "preferences", "leases", "receipts") && v.get("version") == 1)
+            require(v.keys().asSequence().toSet() == setOf("version", "preferences", "leases", "receipts"))
+            val version = v.get("version"); require(version == 1 || version == 2)
             val leases = v.getJSONArray("leases"); val receipts = v.getJSONArray("receipts")
             require(leases.length() <= 256 && receipts.length() <= 2048)
             return State(NativeChatNotificationCodec.preferences(v.getJSONObject("preferences")),
                 (0 until leases.length()).map { NativeChatNotificationCodec.lease(leases.getJSONObject(it)) },
-                (0 until receipts.length()).map { NativeChatNotificationCodec.receipt(receipts.getJSONObject(it)) }).also { state ->
+                (0 until receipts.length()).map {
+                    val value = receipts.getJSONObject(it)
+                    // A legacy v1 consumed receipt is terminal, never a recoverable navigation claim.
+                    require(version == 2 || !value.has("navigationClaim"))
+                    NativeChatNotificationCodec.receipt(value)
+                }).also { state ->
                 require(state.leases.map { it.target }.distinct().size == state.leases.size)
                 require(state.receipts.map { it.ticket }.distinct().size == state.receipts.size)
                 require(state.receipts.map { it.event.target to it.event.id }.distinct().size == state.receipts.size)
@@ -51,7 +57,7 @@ internal class NativeChatNotificationStore(private val storage: NativeSessionSto
         return decode(raw)
     }
     private fun save(state: State) {
-        val raw = JSONObject().put("version", 1)
+        val raw = JSONObject().put("version", 2)
         .put("preferences", NativeChatNotificationCodec.preferences(state.preferences))
         .put("leases", JSONArray(state.leases.map(NativeChatNotificationCodec::lease)))
         .put("receipts", JSONArray(state.receipts.map(NativeChatNotificationCodec::receipt))).toString()
@@ -115,6 +121,36 @@ internal class NativeChatNotificationStore(private val storage: NativeSessionSto
     }
     fun ticket(ticket: String, now: Long): NativeChatNoticeReceipt? = storage.snapshotTransaction {
         load().receipts.singleOrNull { it.ticket == ticket && !it.consumed && it.expiresAt > now && current(it.lease) }
+    }
+    /** Narrow local read-only navigation path. Generic ticket() still rejects every consumed receipt. */
+    fun navigationTicket(ticket: String, now: Long): NativeChatNoticeReceipt? = storage.snapshotTransaction {
+        val old = load()
+        old.receipts.singleOrNull { it.ticket == ticket && (!it.consumed || it.navigationClaim != null) &&
+            it.expiresAt > now && current(it.lease) && old.preferences.permits(it.event) }
+    }
+    /** Persist the original local tap before crossing dispatchers. Resume keeps its original nonce. */
+    fun claimNavigation(ticket: String, now: Long, current: () -> Boolean): NativeChatNoticeReceipt? = storage.snapshotTransaction {
+        val receipt = navigationTicket(ticket, now) ?: return@snapshotTransaction null
+        if (!current()) return@snapshotTransaction null
+        if (receipt.navigationClaim != null) return@snapshotTransaction receipt
+        check(!receipt.consumed)
+        val original = receipt.copy(consumed = true, navigationClaim = UUID.randomUUID().toString())
+        val old = load()
+        save(old.copy(receipts = old.receipts.map { if (it.ticket == ticket) original else it }))
+        original
+    }
+    /** Ack only a known synchronous local open. Its own navigation invalidates the old view lease.
+     * Compare the complete immutable receipt plus nonce; never use a late ack on a replacement.
+     * Delivery-state transitions may continue independently and do not change the original tap.
+     */
+    fun acknowledgeNavigation(original: NativeChatNoticeReceipt): Boolean = storage.snapshotTransaction {
+        require(original.consumed && original.navigationClaim != null)
+        val old = load()
+        val pending = old.receipts.singleOrNull { it.ticket == original.ticket && it.consumed &&
+            it.navigationClaim == original.navigationClaim && it.event == original.event &&
+            it.lease == original.lease && it.expiresAt == original.expiresAt } ?: return@snapshotTransaction false
+        save(old.copy(receipts = old.receipts.map { if (it === pending) it.copy(navigationClaim = null) else it }))
+        true
     }
     fun consume(ticket: String, now: Long, current: () -> Boolean = { true }): NativeChatNoticeReceipt? = storage.snapshotTransaction {
         val receipt = ticket(ticket, now) ?: return@snapshotTransaction null

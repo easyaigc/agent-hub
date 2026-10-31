@@ -694,3 +694,23 @@ Source64r2/API33：阅读旧写入隔离 3 方法、受控 IO 归属 8 方法本
 2026-10-31 F03/F31/F32：拒绝验收器按既有 check 契约只验证共享允许主体拒绝及恢复接受，移除错误的保护位拒绝假设；产品 owner/DACL、运行字节和 iOS/Android UI/协议无变化。旧脚本静态问题与合成回归不冒充 Windows 实测，见[契约修正](../acceptance/windows-formal-startup-preflight-20261031.md#验收器契约修正pr83-发布后)。
 
 2026-10-31 F02/F03：目录恢复夹具等待自身子进程消费 initialized 后再冻结无 RPC 快照，保留原 Host 游标拒绝断言；产品握手、恢复、预算、原生双端 UI/协议均不变。CI 失败与修正辅助证据分列，不新增 Windows／手机通过。
+
+Source68（F49/F50/F55/F56 及迁移资料涉及的 F06/F08/F10/F51–F54/F64）：Android 增加原租约到新 Session 的严格迁移交接、完整旧密文核对和统一只读 FD 生命周期，并新增排队阅读跨前后台组件入口。851/864 组合 SDK/三 APK 本次通过，原编译及外层记录失败保留；三 PID 冷迁移、该阅读组件 Native、完整交互/UI 与真机仍待验。iOS 共同断言和产品 UI 不变，不新增双端通过，见[限定检查点](../plans/android-alignment-20261022/records/source68-cold-migration-reading.md)。
+
+Source69：保留 main209 的全部 Host/协议与 F75 计划，冷夹具诊断按实际 PID 隔离。853/866 组合 SDK/三包独立核对通过；P9 共用未绑定采集器的 67 项、P8 窗口关联的 14 项纯回归仅为辅助。iOS/Android 产品 UI 不变；项目相关原生界面按当前暂停，三进程与完整交互/DEV仍待验，见[检查点](../plans/android-alignment-20261022/records/source69-main-cold-owner.md)。
+
+Source70（F06/F08/F09、F51/F54/F55/F56）：已保存 Relay 记录按 ID 选择；本地通知导航 v2 claim/ack、进行中的配置撤销和迁移清空已实现。853/866 SDK与三包核验通过，十项 Native 仅编译；实际 Session／页面、原始通知和真实 DEV 未验。iOS 作为行为对照、不新增通过；见[限定记录](../plans/android-alignment-20261022/records/source70-saved-relay-and-notification-navigation.md)。
+
+Source71保存连接回归已编译：实际页面在线回调、离线Session及迟到失效尚未执行，P7仅新只读基线通过；详见[档案](../plans/android-alignment-20261022/records/source71-saved-selection-and-cold-baseline.md)。
+
+Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和原回执；SDK通过，新Native／UI仍未验。Source69原失败generation不重放；详见[记录](../plans/android-alignment-20261022/records/source72-bound-reading-handoff.md)。
+
+2026-11-01 阶段45：公共Native采集工具按准确代码字段及正则类型修正辅助准入；双端产品和UI不变，公共live attestor未绑定，不新增原生通过。详见[独立记录](../plans/android-alignment-20261022/records/public-collector-code-identity-20261101.md)。
+
+2026-11-01 Source72新API33三PID冷链：writer／原候选激活与阅读恢复／第三进程原回执审计三方法限定通过；163项设备及24项本机守卫、31／61／62成员完整原件与九stat由主统筹核对，remoteCalls=0，不重放原操作。完整迁移、语音／未读生命周期、UI／物理DEV及iOS仍未新增整项通过，见[本次原生记录](../plans/android-alignment-20261022/records/source72-fresh-native.md)。
+
+2026-11-01 阶段46：F49/F50/F56：Source72真实IO队列中的旧正文跨本机生命周期换代拒绝、新正文不消费独立问题及迟到隔离，一个Native组件方法限定通过；iOS共同断言不变，无新增系统／UI／物理DEV通过。见[本次记录](../plans/android-alignment-20261022/records/source72-queued-reading.md)。
+
+2026-11-01 阶段47：F06/F08/F09：Source72保存连接四方法／六夹具限定通过，含生产行touch及离线／四类迟到隔离；完整P8及实际服务未封存。F51/F54/F55/F56的P9夹具known owned收尾窄修仅Source73 SDK通过，产品行为与iOS不变，Native待验。见[P8本次记录](../plans/android-alignment-20261022/records/source72-p8-saved-native.md)及[P9 SDK记录](../plans/android-alignment-20261022/records/source73-p9-fixture-owner-join.md)。
+
+2026-11-01 阶段48，F51/F54/F55/F56：Source73 原导航回调 10/10项限定通过，仅 Test 更新，App 字节不变；真实 Main 入口的本地回调、claim／ACK及失效隔离按方法限定，不新增系统通知触摸、冷 PID、完整 UI、物理 DEV 或 iOS 通过。默认启动 runtime／私有 handle／物理 executor 收尾仍未证实。见[本次原生记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。

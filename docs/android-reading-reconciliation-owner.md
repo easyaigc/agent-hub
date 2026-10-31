@@ -27,6 +27,14 @@ Each Native run uses only its new private `no-backup/reading-epoch-<fixture>` di
 
 ## Interaction matrix for Root
 
+### Queued visible body across foreground transitions
+
+`NativePhoneReadingStoreEpochTest#actualQueuedVisibleBodyCannotReadAfterBackgroundAndForeground` adds an executable component scenario for a different admission point: the actual Store has accepted `visible()` and its IO worker is demonstrably queued on that fixture's real encrypted-storage lock before foreground becomes false and then true. The old job remains active while queued. After release, the original plaintext, ciphertext, removed-runtime row, pending acknowledgement and Store projection must remain exact. A fresh current body then records only its own read and pending metadata acknowledgement, leaving an unseen question unread. The same ledger's P9 presentation query suppresses the read completion, still permits the question, and repeated completion/question events change no persisted state. No Host acknowledgement or approval/question decision is sent.
+
+This reuses the existing Store epoch fixture and its cleanup protocol; it adds no storage, migration or cold-restore fixture. The selector is source-ready and has not been executed on Android for this revision. Source64r2's 3 pure fence and 8 controlled IO owner results do not cover it. A parent-selected integrated app/test fingerprint and one bounded Native invocation of this selector are the next component gate; actual Session callbacks, Activity foreground, UI geometry, cold process restore and real DEV acceptance remain separate.
+
+The source comparison uses Root commit `102a8d61184563badd1a23ac43f0796280026899`. Android already rechecks the body lease inside the ledger transaction after the storage lock; no production defect was confirmed. iOS `RootView` gates its reading task on active scene, uncovered chat and latest-content visibility, `SessionStore.recordVisibleContent` supplies exact body/notice metadata, and `MobileUnreadBadge` serializes persistence with shared reconciliation rules. This Android test does not establish iOS transaction-time lease equivalence or new iOS acceptance. Root's existing directory scanner, P9 ledger footer and Native fixture cleanup fixes must remain during integration.
+
 All rows below remain pending for this integrated source fingerprint; existing historical passes are not new acceptance.
 
 | Feature | Required interaction/assertion                                                                                      | Available selector or remaining evidence                                                                                                                                |

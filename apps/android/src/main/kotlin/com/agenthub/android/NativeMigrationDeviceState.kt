@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-/** Migration-owned policy v3. Production ledgers keep their existing strict v1 schemas. */
+/** Migration-owned policy v3. Reading stays v1; local notification envelopes accept strict v1/v2. */
 internal object NativeMigrationDeviceState {
     const val READING="mobile-reading-ledger-v1"
     const val NOTIFICATIONS="native-chat-notifications-v1"
@@ -50,7 +50,7 @@ internal object NativeMigrationDeviceState {
     }
     private fun notifications(raw: String,clients: List<MobileClient>?=null) {
         val value=objectValue(raw);NativeChatNotificationStore.validateEncoded(raw)
-        exact(value,setOf("version","preferences","leases","receipts"));require(value.get("version")==1)
+        exact(value,setOf("version","preferences","leases","receipts"));require(value.get("version") in setOf(1,2))
         val prefs=value.getJSONObject("preferences")
         exact(prefs,setOf("version","revision","generation","enabled","kinds","excludedHosts","foregroundBanner","soundEnabled","badgeEnabled","showThreadTitle","timeSensitive","sound","categorySounds"));require(prefs.get("version")==1)
         val sound=Regex("default|none|[a-zA-Z0-9_-]{1,72}\\.caf")
@@ -59,7 +59,11 @@ internal object NativeMigrationDeviceState {
         fun leaseShape(lease: JSONObject) {exact(lease,setOf("target","credentialEpoch","registrationGeneration","preferenceRevision"));targetShape(lease.getJSONObject("target"))}
         value.getJSONArray("leases").objects().forEach(::leaseShape)
         value.getJSONArray("receipts").objects().forEach {receipt->
-            exact(receipt,setOf("event","lease","ticket","expiresAt","state","consumed"));leaseShape(receipt.getJSONObject("lease"))
+            val required=setOf("event","lease","ticket","expiresAt","state","consumed")
+            val fields=receipt.keys().asSequence().toSet()
+            require(fields.containsAll(required)&&fields.all {it in required||it=="navigationClaim"})
+            // The production decoder above validates v1 absence / v2 canonical nonce + consumed.
+            leaseShape(receipt.getJSONObject("lease"))
             val event=receipt.getJSONObject("event");require(event.keys().asSequence().all {it in setOf("version","id","target","kind","occurredAt","threadId","runId","requestId","operationId","threadTitle","taskSummary","readTarget","readPosition")})
             require(event.get("version")==1&&event.getString("kind") in noticeKinds);targetShape(event.getJSONObject("target"))
             event.optJSONObject("readTarget")?.let(::targetShape);event.optJSONObject("readPosition")?.let {exact(it,setOf("revision","messageId","contentVersion"))}

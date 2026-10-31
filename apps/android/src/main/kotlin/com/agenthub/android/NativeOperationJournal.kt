@@ -27,9 +27,15 @@ data class SavedOperation(val id: String, val kind: String, val target: String, 
 }
 
 /** The journal is separate from editable drafts. Successful atomic storage precedes every submit. */
-class NativeOperationJournal(private val storage: NativeSessionStorage) {
+class NativeOperationJournal private constructor(private val backing: ()->NativeSessionStorage) {
+    constructor(storage: NativeSessionStorage):this({storage})
+    private val storage get()=backing()
+
     private val mutex=Mutex()
     companion object {
+        internal fun validateExistingMigrationRecords(target: String,body: JSONObject): List<SavedOperation> =
+            NativeOperationJournal { error("Read-only operation validation cannot access storage") }.validateMigrationRecords(target,body)
+
         fun target(client: MobileClient,threadId: String?)=client.cacheKey(threadId)
         private val definitions=mapOf("reply" to "replyRequest","creation" to "creationRequest",
             "workspace-archive" to "workspaceManagementRequest","chat-action" to "chatActionRequest","fork" to "threadForkRequest","thread-create" to "createThreadRequest","open" to "openRequest","project-create" to "native-project-intent-v1")

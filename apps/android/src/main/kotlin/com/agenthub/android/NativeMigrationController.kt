@@ -183,7 +183,7 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
         if(result!=NativeMigrationResult.RESTORE_FAILED)ownerOutcome=result
         pendingOwner=lease;phase=NativeMigrationPhase.RESTORING
         try {
-            withContext(NonCancellable+Dispatchers.IO){lease.releaseRawWriters()}
+            withContext(NonCancellable+Dispatchers.IO){lease.prepareAndReleaseForRestore()}
             val owner=host?:return
             val required=lease.requiresExplicitEnrollment ?: withContext(NonCancellable+Dispatchers.IO){NativeMigrationNotificationArchives.requiresExplicitSetup(lease.storage.reopen(context))}.also {lease.requiresExplicitEnrollment=it}
             withContext(NonCancellable+Dispatchers.Main.immediate){owner.restore(lease,required)}

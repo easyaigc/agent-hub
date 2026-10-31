@@ -1525,6 +1525,10 @@ P7 的连接原意图迁移采用现有迁移页，无新增执行入口；P8 AP
 
 Source66 使用既有迁移页面，无新增交互。历史读取目标标志仅单向加强；其余客户端差异仍拒绝，不静默改变界面权限。新增16图断言随首项实际Native通过，六warm为非UI边界；完整视觉/系统交互待验。 详见[检查点](../plans/android-alignment-20261022/records/source66-migration-client-restore.md)。
 
+Source68 继续使用既有迁移和阅读界面，无新页面、token 或文案。恢复后的 Session 及子存储只能在明确交接后正常保存，旧窗口/租约不能取得新写权限；正文阅读不消耗未读问题。Android SDK 通过不证明这些实际界面与生命周期断言，三进程、排队阅读 Native、完整主题/短视口/系统矩阵仍待验；iOS 无本轮界面变化。详见[检查点](../plans/android-alignment-20261022/records/source68-cold-migration-reading.md)。
+
+Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token、页面或文案。P8 窗口身份关联及 P9 采集器修正仅增加辅助工具证据；真实系统窗口、菜单、主题/短视口、Native 生命周期和双端 UI 不升级通过。F75 项目界面仍按当前项目暂停，见[检查点](../plans/android-alignment-20261022/records/source69-main-cold-owner.md)。
+
 2026-10-30 F03：本轮仅修复 Host 的 Codex 更新恢复，不新增页面、设计 token 或端侧文案；iOS／Android 保持既有连接／目录读取失败与重试状态。Host 返回 503 和准确目录状态，原目标／缓存／草稿不变，不能将后台恢复显示为新电脑或重新登录。两端原生本轮未新增验收，A6 暂停。
 
 2026-10-30 F03/F17/F31/F32/F69 Host 边界修复：iOS 与 Android 页面、token 和文案保持；两端历史下一页均使用 Host/thread 绑定的原游标，省略 window 参数仍按有界窗口处理。400/409 使用现有历史失败与重新读取入口，不新增静默原生重试或写入。Windows 首次私有 state／新附件命名空间与冻结 R5 Trace 兼容均在共享 Host 内完成，手机交互和各端验收分别记录。
@@ -1532,3 +1536,17 @@ Source66 使用既有迁移页面，无新增交互。历史读取目标标志�
 2026-10-30 冻结 R9/R10 Host 统一升级：F03 发现重试、F69 Native 大帧分类及 F31/F32 旧附件读取仅修改 Host／辅助验收，双端页面、token 和文案均不变；发现提示仍不能代表固定证书连接或原桌面 runtime 就绪。旧附件按原 ID／目标读取，新 Windows 命名空间不展示为产品设置。真实双端 UI／手机验收不由本轮 fixture 替代。
 
 2026-10-31 F03/F31/F32/F69：Windows Native 首次私有目录路径处理仅影响 Host，双端界面/token/文案不变；保留原连接、登记附件与私有状态边界。固定内部诊断步骤不进入用户设置或授权流程；真实Windows首次创建/reader与双端UI证明分别记录。
+
+2026-11-01 Source70：EasyWork 发现页的已保存行按稳定客户端 ID 选择，显示名称与在线状态继续来自当前保存记录；仅 Relay 不要求 LAN 地址。通知后台取消只允许恢复原目标只读导航，配置撤销阻止旧回调，保留原草稿，不出现审批、恢复或重发行为。页面、设计 token 和产品文案未改；本地 claim/ack 作为内部回执，不进入用户设置。iOS 对照行为不改，新双端／系统通知 UI 仍待真实验收。
+
+2026-11-01 Source71仅新增保存连接回归：生产页面在线行点击与Session迟到断言已编译，未运行，不增加视觉通过；未新增页面、token或文案。iOS保持既有按保存ID选择行为，仍按[Source71记录](../plans/android-alignment-20261022/records/source71-saved-selection-and-cold-baseline.md)补齐双端系统／真实源矩阵。
+
+2026-11-01 Source72：严格迁移的BOUND新Session保持加载／控制关闭，未读在ACTIVE协调成功前保持未知；失败和重试沿用原状态。未新增页面、token或文案，不计界面通过；完整视觉／取消／IO故障及iOS对照见[记录](../plans/android-alignment-20261022/records/source72-bound-reading-handoff.md)。
+
+2026-11-01 阶段45：共用采集工具仅修辅助代码身份与正则常量比较；双端页面、token和文案不变，不新增UI通过。Source72新环境的安装不代表迁移加载态、未读未知／失败或原回调交互已经验收。详见[独立记录](../plans/android-alignment-20261022/records/public-collector-code-identity-20261101.md)。
+
+2026-11-01 阶段46：排队阅读组件未新增页面、token或文案；旧正文不得误清未读，正文与独立问题分别保持。此次生命周期为Store状态调用，不能替代真实前后台、未读数／错误态、主题／AX或通知交互验收。见[本次记录](../plans/android-alignment-20261022/records/source72-queued-reading.md)。
+
+2026-11-01 阶段47：保存连接生产行点击和迟到目标隔离限定通过，布局／token／文案未变；未补记完整截图或系统界面通过。P9新收尾仅测试所有权，不改变双端UI；真实Main默认初始化、通知tap与完整视觉仍待验。见[P8本次记录](../plans/android-alignment-20261022/records/source72-p8-saved-native.md)及[P9 SDK记录](../plans/android-alignment-20261022/records/source73-p9-fixture-owner-join.md)。
+
+2026-11-01 阶段48：P9 原导航本地回调 10/10项限定通过，保留 iOS 的原目标、原草稿及迟到隔离断言；未改页面、token或文案。实际 Main 启动不等于 UI 触摸，通知／设置完整视觉与 OS 生命周期继续待验，见[限定记录](../plans/android-alignment-20261022/records/source73-p9-native-navigation.md)。

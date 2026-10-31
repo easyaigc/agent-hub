@@ -712,7 +712,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         recentPhotos?.migrationIdle!=false && photoAuthorization?.migrationIdle!=false &&
         documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this) && discovery?.migrationStopPending!=true
     internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
-    internal fun invalidateMigrationLease(){migrationQuiescent=false;migrationEpoch++}
+    internal fun invalidateMigrationLease(){storage?.invalidateMigrationSession(this);migrationGenerationLease=null;migrationQuiescent=false;migrationEpoch++}
     internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
     private var migrationLocalPhotoOwners: NativeMigrationPhotoOwners?=null
     private var migrationLocalPhotoWriters: List<NativeInboxOwnership.LocalPhotoLease> = emptyList()
@@ -767,6 +767,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         finally {migrationRawPreparing=false}
     }
     internal suspend fun releaseVoiceForMigration(raw: NativeVoiceRawGate.Frozen) {
+        if(migrationRawOwner===raw)migrationGenerationLease=null
         val held=if(migrationRawOwner===raw)migrationInboxOwner else null
         withContext(NonCancellable+Dispatchers.IO){
             try{if(migrationRawOwner===raw)NativeInboxOwnership.closeLocalPhotos(migrationLocalPhotoWriters)}finally{try{if(migrationRawOwner===raw)NativeInboxOwnership.closeSelections(migrationSelectionWriters)}finally{try{held?.close()}finally{raw.close()}}}
@@ -777,6 +778,29 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             migrationSelectionOwners=null;migrationSelectionWriters=emptyList()
             migrationRawOwner=null;migrationInboxOwner=null;migrationInboxOperation=null;migrationAdmissionEpoch=null
         }
+    }
+    @Volatile private var migrationStorageRetired=false
+    internal fun requireCompletedMigrationTransfer(lease: NativeMigrationOwnerLease) {
+        check(migrationStorageRetired&&lease.storage===storage&&migrationOperation==lease.operationId&&lease.restoredStorage!=null)
+    }
+    internal val migrationAuthorityEpoch get()=migrationEpoch
+    internal fun requireMigrationStorage(actual: NativeSessionStorage) {check(storage===actual&&!migrationStorageRetired)}
+    init {storage?.bindMigrationSession(this)}
+    private var migrationReadingRestoreOwner: NativeMigrationOwnerLease?=null
+    internal fun completeMigrationStorageRestore(lease: NativeMigrationOwnerLease) {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        check(!restoring&&!localRecoveryRequired&&restoreJob?.isCompleted==true)
+        val pending=migrationReadingRestoreOwner
+        if(pending!=null)check(pending===lease)
+        migrationStorage.completeMigrationRestore(this,lease)
+        if(pending!=null) {
+            migrationReadingRestoreOwner=null
+            resumeRestoredRuntime()
+        }
+    }
+    @Volatile private var migrationGenerationLease: NativeMigrationOwnerLease?=null
+    internal fun requireMigrationGenerationOwner(lease: NativeMigrationOwnerLease) {
+        check(migrationGenerationLease===lease&&ownsMigrationLease(lease)){"Actual Session migration lease required"}
     }
     internal suspend fun quiesceForMigration(operationId: String,preparedRaw: NativeVoiceRawGate.Frozen?=null): NativeMigrationOwnerLease {
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(migrationReady)
@@ -818,8 +842,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             }
             check(migrationPaused&&migrationOperation==operationId&&migrationEpoch==epoch)
             migrationQuiescent=true
+            val lease=NativeMigrationOwnerLease(store,operationId,raw,migrationInboxOwner,migrationSelectionWriters,migrationLocalPhotoWriters) {migrationQuiescent&&migrationEpoch==epoch}
+            if(store.needsMigrationGenerationGrant) {
+                migrationGenerationLease=lease
+                withContext(Dispatchers.IO){store.authorizeMigrationGeneration(this@MobileSession,lease)}
+            }
             handedOff=true
-            return NativeMigrationOwnerLease(store,operationId,raw,migrationInboxOwner,migrationSelectionWriters,migrationLocalPhotoWriters) {migrationQuiescent&&migrationEpoch==epoch}
+            return lease
         }catch(failure: Throwable) {
             migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup();resumeMigrationEasyWorkCleanup()
             throw failure // Main resumes this same model, preserving any unsaved draft.
@@ -867,18 +896,39 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             for(owner in migrationNotificationOwners.toList()){owner.stopAndJoinForMigration();migrationNotificationOwners.remove(owner)}
         }
     }
-    internal suspend fun restoreForMigration() {
+    private suspend fun restoreMigrationModel() {
         check(restoreJob==null&&!migrationPaused)
         foreground=false
         val generation=withContext(Dispatchers.IO){migrationStorage.beginRestore()}
         restoreUsingGeneration(generation)
+        awaitRestoredModel()
+    }
+    internal suspend fun restoreForMigration() {
+        restoreMigrationModel()
         awaitMigrationRestore()
     }
-    internal suspend fun awaitMigrationRestore() {
+    /** A strict new owner remains BOUND while decoding. Reconciliation can write
+     * only after the exact lease completes the storage handoff to ACTIVE. */
+    internal suspend fun restoreBoundMigration(lease: NativeMigrationOwnerLease) {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        check(migrationReadingRestoreOwner==null)
+        migrationStorage.requireBoundMigrationSession(this,lease)
+        migrationReadingRestoreOwner=lease
+        restoreMigrationModel()
+        // Validate the imported ledger without publishing an unread count or writing
+        // scopes. ACTIVE reconciliation supplies the first authoritative projection.
+        withContext(Dispatchers.IO){requireNotNull(phoneReading.ledger).snapshot()}
+    }
+    private suspend fun awaitRestoredModel() {
         restoreJob?.join();check(!restoring&&!localRecoveryRequired)
+    }
+    internal suspend fun awaitMigrationRestore() {
+        awaitRestoredModel()
+        check(migrationReadingRestoreOwner==null) { "Reading reconciliation awaits the original migration handoff" }
         phoneReading.awaitReconciliation()
     }
     internal suspend fun abandonMigrationRestore(){
+        migrationStorageRetired=true;storage?.retireMigrationSession(this)
         migrationEasyWork.seal();easyWorkDiscovery?.stop();easyWorkSessions?.closeAll()
         discovery?.stop()
         migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin()
@@ -887,6 +937,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal fun retireForMigration(operationId: String) {
         check(migrationPaused&&migrationOperation==operationId)
+        migrationStorageRetired=true;storage?.retireMigrationSession(this)
+        migrationGenerationLease=null
         migrationSelectionOwners?.requireRetirable(operationId)
         migrationLocalPhotoOwners?.let {owners->owners.kinds.forEach {owners.requireSealed(it,operationId)}}
         migrationLocalPhotoOwners?.retire(operationId);migrationLocalPhotoOwners=null;recentPhotos=null;photoAuthorization=null
@@ -894,7 +946,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         check(discovery?.migrationStopped!=false)
         externalInbox?.retireForMigration();migrationIo.close();tasks.cancel();storage?.retireWriter()
     }
-    private val localReady get()=!restoring&&!localRecoveryRequired&&!migrationPaused
+    private val localReady get()=!restoring&&!localRecoveryRequired&&!migrationPaused&&migrationReadingRestoreOwner==null
     private var restoreJob: Job?=null
     var restoring by mutableStateOf(storage != null)
         private set
@@ -2562,6 +2614,25 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         lease.checkpoint()
         saveEasyWork(host.name,binding,candidates)
     }
+    /** A saved discovery row is selected by identity, independently of its available routes.
+     * The manual-address form keeps its separate LAN lookup contract below.
+     */
+    suspend fun connectSavedEasyWork(clientId: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("saved","","",clientId)) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+        val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
+        val known=realClients.firstOrNull { it.id==clientId&&it.agentConnection?.target?.agentId=="easywork" }?:error("原连接已移除")
+        NativeMigrationEasyWorkGate.requireReady(known)
+        // An online row opens immediately, as on iOS. Disconnected rows read the
+        // same saved target using its actual candidate set and route preference.
+        val snapshot=if(known.online)null else reads.workspace(known)
+        require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion && realClients.any { it==known }) { "所选目标、草稿或连接已改变" }
+        lease.checkpoint()
+        lease.commit {
+            val client=if(snapshot==null)known else known.copy(online=true)
+            if(snapshot!=null) {replaceClient(client);workspaces[client.cacheKey(null)]=snapshot}
+            select(client);version(targetKey);client
+        }
+    }
     suspend fun connectKnownEasyWork(address: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("known","",address,"")) { lease->
         require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
@@ -2887,8 +2958,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
-            finally { restoring=false;if(!storage.localInspectionOnly){chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences()} }
+            finally { restoring=false;if(migrationReadingRestoreOwner==null)resumeRestoredRuntime() }
             if (!storage.localInspectionOnly && preparedGeneration==null && localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
+        }
+    }
+    private fun resumeRestoredRuntime() {
+        val store=storage ?: return
+        if(!store.localInspectionOnly) {
+            chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading()
+            chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile()
+            if(localReady && foreground)voiceSettings.resumePreferences()
         }
     }
     internal val localInspectionQuiescent get()=storage?.localInspectionOnly==true&&!foreground&&!restoring&&chatNotifications==null

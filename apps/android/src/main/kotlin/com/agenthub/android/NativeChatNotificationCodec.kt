@@ -79,10 +79,11 @@ internal object NativeChatNotificationCodec {
     }
     fun receipt(v: NativeChatNoticeReceipt): JSONObject = JSONObject().put("event", event(v.event)).put("lease", lease(v.lease))
         .put("ticket", v.ticket).put("expiresAt", v.expiresAt).put("state", v.state).put("consumed", v.consumed)
+        .also { value -> v.navigationClaim?.let { value.put("navigationClaim", it) } }
     fun receipt(v: JSONObject): NativeChatNoticeReceipt {
-        objectKeys(v, setOf("event", "lease", "ticket", "expiresAt", "state", "consumed"))
+        objectKeys(v, setOf("event", "lease", "ticket", "expiresAt", "state", "consumed"), setOf("navigationClaim"))
         return NativeChatNoticeReceipt(event(v.getJSONObject("event")), lease(v.getJSONObject("lease")), string(v, "ticket"),
-            number(v, "expiresAt"), string(v, "state"), bool(v, "consumed")).also {
+            number(v, "expiresAt"), string(v, "state"), bool(v, "consumed"), optional(v, "navigationClaim")).also {
             require(it.event.target == it.lease.target && java.util.UUID.fromString(it.ticket).toString() == it.ticket && it.expiresAt > 0)
         }
     }

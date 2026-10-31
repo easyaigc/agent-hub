@@ -71,8 +71,12 @@ internal data class NativeChatNotificationEvent(
 internal data class NativeChatNoticeLease(val target: NativeChatNoticeTarget, val credentialEpoch: String,
     val registrationGeneration: String, val preferenceRevision: String)
 internal data class NativeChatNoticeReceipt(val event: NativeChatNotificationEvent, val lease: NativeChatNoticeLease,
-    val ticket: String, val expiresAt: Long, val state: String, val consumed: Boolean = false) {
-    init { require(state in setOf("claimed", "posted", "unknown")) }
+    val ticket: String, val expiresAt: Long, val state: String, val consumed: Boolean = false,
+    val navigationClaim: String? = null) {
+    init {
+        require(state in setOf("claimed", "posted", "unknown"))
+        navigationClaim?.let { require(consumed && java.util.UUID.fromString(it).toString() == it) }
+    }
 }
 
 /** P7 adapter must durably reconcile the original version before returning. No default/noop adapter. */

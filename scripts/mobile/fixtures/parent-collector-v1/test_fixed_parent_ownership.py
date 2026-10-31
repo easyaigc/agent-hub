@@ -17,7 +17,9 @@ class Ownership(unittest.TestCase):
   for fd in self.roots: os.close(fd)
   self.tmp.cleanup()
  def worker(self,code):
-  cmd=[sys.executable,'-c',code,str(self.root)]; start=time.time_ns(); p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+  module_path=str(Path(__file__).resolve().parent)
+  python_path=os.pathsep.join(value for value in (module_path,os.environ.get('PYTHONPATH','')) if value)
+  cmd=[sys.executable,'-c',code,str(self.root)]; start=time.time_ns(); p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','PYTHONPATH':python_path})
   try: stdout,stderr=p.communicate(timeout=3)
   finally:
    if p.poll() is None: p.kill(); p.communicate()

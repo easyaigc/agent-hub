@@ -83,7 +83,8 @@ internal class NativeMigrationPrivateClaimFixtures {
     /** Uses actual Main-owned quiesce, not a truthy test lease. No discovery/voice actor is started. */
     suspend fun <T> owned(root: NativeSessionStorage,consume: suspend (NativeMigrationOwnerLease)->T): T {
         val record=PrivateClaimFixtureRecord<MobileSession,NativeMigrationOwnerLease,NativeSessionStorage>(ownerToken,root,run,root.coordinationKey) {state->
-            val file=File(folder,"owner-${state.sequence}.txt")
+            // A cold reader has a fresh process counter; preserve the original writer's diagnostics.
+            val file=File(folder,"owner-${Process.myPid()}-${state.sequence}.txt")
             java.io.FileOutputStream(file).use {it.write(state.diagnostic().toByteArray(Charsets.UTF_8));it.fd.sync()}
             android.system.Os.chmod(file.path,0x180)
         }

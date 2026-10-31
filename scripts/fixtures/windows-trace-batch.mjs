@@ -429,8 +429,40 @@ async function transportMain() {
 }
 
 export async function frozenBatchFixture() {
+  const taskId = process.env.AGENT_HUB_TEST_RESOURCE_TASK;
+  const operationId = process.env.AGENT_HUB_TEST_RESOURCE_OPERATION;
+  if (taskId !== undefined || operationId !== undefined) {
+    assert(
+      typeof taskId === 'string' &&
+        taskId.length >= 1 &&
+        taskId.length <= 128 &&
+        !/[^a-z0-9-]/.test(taskId),
+    );
+    assert(
+      typeof operationId === 'string' &&
+        operationId.length >= 1 &&
+        operationId.length <= 128 &&
+        !/[^a-z0-9-]/.test(operationId),
+    );
+  }
   fs.mkdirSync(join(repository, '.local'), { recursive: true, mode: 0o700 });
   const directory = fs.realpathSync(fs.mkdtempSync(join(repository, '.local/trace-batch-')));
+  if (taskId !== undefined) {
+    fs.writeFileSync(
+      join(directory, '.task-resource.json'),
+      JSON.stringify({
+        version: 1,
+        taskId,
+        operationId,
+        creatorPid: process.pid,
+        creatorTimeOrigin: performance.timeOrigin,
+        directory,
+        purpose: 'synthetic-windows-trace-batch-fixture',
+        generatorSha256: hash(fs.readFileSync(fileURLToPath(import.meta.url))),
+      }),
+      { flag: 'wx', mode: 0o600 },
+    );
+  }
   const inputs = new Map();
   for (const name of [
     'windows-trace-diagnostics',

@@ -5,6 +5,13 @@
 - [Source67 默认密钥存在性观察](source67-default-alias-observation.md)：独立 Test 入口、842/855 输入与三 APK；设备及产品结果待验。
 - [PR70 整批超时计时观察](ci-batch-timeout-observation.md)：保留原失败断言，增加真实 Worker 计时证据；Linux 根因待核对。
 - [原录音只读读回](original-voice-readback-20261030.md)：原包单次 Native、91 调用与完整原件/WAV核对，修正离线 audit 比较；UI和清理另验。
+- [P8 API26 环境采集](p8-api26-metadata-20261030.md)：单次固定只读采集、16 条完整回执；`am help` 退出 255，后续及界面验收仍待完成。
+- [Source68 冷迁移与阅读](source68-cold-migration-reading.md)：真实恢复交接、原件/FD 保护和排队阅读入口；SDK 候选通过，三进程和完整界面待验。
+- [Source69 主线与冷验收保护](source69-main-cold-owner.md)：54 节点、三包核对、跨 PID 诊断及共用采集器修正；实际冷链/UI 待验。
+
+- [Source71 保存连接回归与冷链基线](source71-saved-selection-and-cold-baseline.md)：四项Native仅编译、新70项只读基线及七原件核对；完整冷链和实际页面待验。
+
+- [Source72 严格冷恢复阅读交接](source72-bound-reading-handoff.md)：原升级／writer限定通过、第二进程失败与已发布generation保护；顺序修复和SDK通过，新Native待验。
 
 ## 按主题查阅
 
@@ -193,3 +200,17 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source65 组合源码与 SDK](source65-composed-source-sdk.md)：惰性连接意图迁移、准确夹具退出、API26 菜单诊断和 P9 方法分组；原生/系统/DEV 继续待验。
 
 - [Source66 迁移恢复与读取标志](source66-migration-client-restore.md)：Source65实际失败、原件保持、迁移专用恢复/单调Boolean兼容和新候选真实验收。
+
+- [Source70：已保存 Relay 连接与通知导航](source70-saved-relay-and-notification-navigation.md)：八文件修复与十项 Native 回归源码，SDK／三包通过；实际源、页面和冷恢复待验。并列保留P7只读14/70中止及后续顺序修复。
+
+- [共用采集器代码身份与正则常量](public-collector-code-identity-20261101.md)：辅助工具窄修；公共实际入口与产品通过分开登记。
+
+- [Source72独立环境与冷恢复](source72-fresh-native.md)：空环境预检及准确包安装通过，三段Native逐段登记。
+
+- [Source72真实IO排队阅读](source72-queued-reading.md)：一方法限定通过；Cold62与新13成员／八步清理完整读回，系统/UI仍待验。
+
+- [Source72保存连接Native](source72-p8-saved-native.md)：四方法／六夹具、实际保存行点击和迟到隔离限定通过；完整视觉／真实源仍开放。
+
+- [Source73通知夹具owned收尾](source73-p9-fixture-owner-join.md)：35方法保留、窄收尾修正SDK通过；runner更新及P9 Native待验。
+
+- [Source73 P9 原导航 Native 续验](source73-p9-native-navigation.md)：仅 Test 更新及独立 API33 10/10项限定通过；完整 OS／冷 PID／视觉／真实 DEV 继续待验。

@@ -43,20 +43,10 @@ open class MainActivity : ComponentActivity() {
             check(lease.requiresExplicitEnrollment==requiresExplicitEnrollment)
             check(session.ownsMigrationLease(lease))
             val original=session
-            val prepared=withContext(Dispatchers.IO){
-                val value=prepareNativeMigrationStorage(runtimeContext(),lease.storage,lease.inboxWriters?.childKey)
-                Triple(value,value.migrationInboxKey(),NativeMigrationSelectionJournal.Kind.entries.associateWith(value::migrationSelectionKeys))
-            }
-            val (freshStorage,inboxKey,selectionKeys)=prepared
-            val fresh=MobileSession(freshStorage)
-            fresh.migrationController=migration
-            try {fresh.restoreForMigration();original.awaitSelectionReturnsForMigration(lease.operationId);check(!isDestroyed&&!isChangingConfigurations)}catch(failure: Throwable){fresh.abandonMigrationRestore();throw failure}
-            val selections=original.takeSelectionsForMigration(lease,selectionKeys)
-            fresh.adoptInboxForMigration(original.takeInboxForMigration(lease,inboxKey),lease.operationId)
-            fresh.adoptSelectionsForMigration(selections,lease.operationId)
-            original.retireForMigration(lease.operationId)
-            original.voice?.retireForMigration();original.questionVoice?.retireForMigration()
-            session=fresh;lease.restoredStorage=fresh.migrationStorage
+            val fresh=restoreNativeMigrationSession(runtimeContext(),original,lease,
+                create={store->MobileSession(store).also {it.migrationController=migration}},
+                beforeCommit={check(!isDestroyed&&!isChangingConfigurations)})
+            session=fresh
             configureRuntime(fresh,fresh.migrationStorage,migrationRestore=true);fresh.resumeSelectionsAfterMigration();renderSession()
             if(started)startRuntime();drainMigrationIngress()
         }

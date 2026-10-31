@@ -18486,6 +18486,178 @@
         "scripts/windows-private-state-native.test.mjs": "7455e6de8103499e1d4681fc51ea50fa18db8fef19d0a1d15e1f43405d068e6b",
         "scripts/fixtures/private-state-cold-compilation.cs": "44a2b645493905b7a8f762ddb63ee7cac3d7007bed0d4cb70147fc1b629ce0c4"
       }
+    },
+    {
+      "id": "android-source68-cold-existing-key-handoff-20261031",
+      "baseCommit": "6ca7fcb645db28b0e8cd2f2415a6406e68df9553",
+      "features": [
+        "F06",
+        "F08",
+        "F10",
+        "F49",
+        "F50",
+        "F51",
+        "F52",
+        "F53",
+        "F54",
+        "F55",
+        "F56",
+        "F64"
+      ],
+      "summary": "Android原租约到新Session的严格冷迁移交接、全10子存储、所有旧destination密文保护与existing-only/no-follow/FD生命周期；Root补齐可达的格式探测与pointer/目录关闭未知保护。两次公共SDK常量编译失败保留，Source68r3组合SDK851/864和三APK独立核对通过；外层zsh退出记录缺口保留。三PID/完整迁移/OS/UI/真实DEV未验，iOS断言和UI不变，无Host/模型或原操作查询/重放。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationColdPortPolicyTest.kt": "6dc7e7ead39b9ea0f86e952d73d4cf4c64fff9ced69d4c3db104be6ffa492d47",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdFixtures.kt": "8723d612efc3cc577985b18ba7ed8b8878348fa04949f0a13a3c94e2b033929c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt": "f72f1655148d1c52c37458ecad8c9541e2a7cf8b78f20a9f7e789c8831506e37",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "78fbb70c48cbc306c7e2e96ebb3db915c03b68cb0eb10511ab02b39149166563",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "ea18c1225bf66ca84b3afb1449e7381c5bc0ca4c57125e98fa085c89c6f74e0f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationArchiveValidation.kt": "1c7a0cbc830acfbabedd0374bacf73e961579f995ec681648eb0f41d25007059",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "6da9a110caf8a6a2fffc6dc542bed5252415e9e87ccb84e73b2d9793e42cd8a1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt": "2dcc8fa6a942f1118fd7ccff43b07cbfbbb7db97af4e3f17c00fc9ac4006b57f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingAliases.kt": "f383d00bdac5f9abdf1739a0acd4d051fe52b59c0535139fffbd7a5fae300042",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingCandidate.kt": "7ace5184fd562907d52e69f64a73c09bc8f28222454aee0431872564cec33ffd",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt": "fdef735e27284b1236f973d7e0f1b4ef66992fe01094c7b9417fe7edab9743db",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingView.kt": "43b58fcc543e76c19aaea6504e077340ce8ba42a63d6a2b1535a41b6f613e528",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "277480a5ceb7440957f61447d11d0964a5c7807f5f361c2cffe83f3c29a285bf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationKeyChoice.kt": "b07713ee2507cb092f0105f024ee689adf5e92cc36af4e343ccdf0b51840f6f3",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "a90b6eaaf10ba500da0830a5abd9b888eef5190767e08f4ef0a0c6113db85e58",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt": "74f53574cd5daa3a33ee210e59400f76e836edaaea824620f743585bea682116",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalVoice.kt": "e5e9be8bcca56ebfba8f7ef98e1ab5884d0fca02ae57540b55e76d0eeb8d7ca6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReadLifetime.kt": "b47f8c1c723e67378203e54ada4302d1a71d889a69c54b14f37c677718b3baaf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReadOnlyFile.kt": "270be9037d7ec0574943dd06d61120326cd467a3e8d9055320ebf169a7057bd6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "c106534476fbab7e0bdb72774fcb7af738195b4ab0d98a92de959515e07cd042",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "f0ab8cb3122be48fd84e91b8faf90405b658dd7152944ecc8580a06fdc1bf1da"
+      }
+    },
+    {
+      "id": "android-source68-queued-reading-lifecycle-entry-20261031",
+      "baseCommit": "6ca7fcb645db28b0e8cd2f2415a6406e68df9553",
+      "features": ["F49", "F50", "F56"],
+      "summary": "真实actualStore写入已在IO锁队列时跨本机后台/前台的组件入口：旧租约不清未读，新正文不消费独立问题，迟到通知不复活正文。Source72一Native方法及74完整捕获、Cold62/新13原件和8步清理Root限定核对通过；无生产阅读改动，实际Session/UI/系统/真实跨电脑及iOS仍待验。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePhoneReadingStoreEpochTest.kt": "1a0d91e93a4607b3591e98420ac7d50a52760c242c26e0e20bee4ce8b6a98968"
+      }
+    },
+    {
+      "id": "android-source69-cold-owner-pid-20261031",
+      "baseCommit": "5684bc3f1f864e551c5a3444d5245550bf0d1a92",
+      "features": ["F55", "F56"],
+      "summary": "仅修冷夹具跨进程owner诊断文件覆盖，加入实际PID；不对原诊断字节或stat增例外。合入main209的Host/协议增量后Source69 SDK853/866与三包Root独立核对通过、完整助手退出0；三PID、功能/交互/UI仍未验，任务项目和iOS A6暂缓。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt": "48c7a3c086adbac9eab505926de0ff617a99cc540e0731f733e258fab9ee69f6"
+      }
+    },
+    {
+      "id": "android-p9-sealed-seven-originals-tools-20261031",
+      "baseCommit": "5684bc3f1f864e551c5a3444d5245550bf0d1a92",
+      "features": ["F51", "F52", "F53", "F54", "F55"],
+      "summary": "仅纳入未绑定实际设备的共用Native协议/原上下文attestor/七原件固定采集工具；修原观察线程退出时序、捕获的seal verifier分派与Unicode field误拒。67纯离线回归通过，旧Source67固定上下文未激活且不能授权Source69；Root正式B/C与Native都待验，不新增产品或iOS通过。",
+      "files": {
+        "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_native.py": "639e25a2dd9963d2a38b59862847f743397fc4dac981694e98e817b55f61cf81",
+        "scripts/mobile/fixtures/parent-collector-v1/fixed_actual_observer.py": "d82cdad2a93782e1106d701ea923534481098db60968dd4cd37241fb57f70cee",
+        "scripts/mobile/fixtures/parent-collector-v1/fixed_seven_schedule.py": "c4b76dbeca71fe50c713dadaa3d1d7566e8b0afba590be5da492fb4844699147",
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_native.py": "329b9988ef6d0ab00d91dfc0fcf9b900d88cb2ef8c9b0da6fb0ab0f783ba9d7f",
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_actual_observer.py": "af4d942de3c093dfcf2ed6a7d526850997b5793c1e22225a1108f3a31e47a1fa",
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_seven_schedule.py": "f8dd7f35398c162736ca4e83dc7b2babc19a70fe3961c74e6f9c2b6f59f716ba"
+      }
+    },
+    {
+      "id": "trace-batch-owned-test-resource-marker-20261031",
+      "baseCommit": "5684bc3f1f864e551c5a3444d5245550bf0d1a92",
+      "features": ["F69"],
+      "summary": "辅助Trace批量夹具在明确task/operation环境下记录实际创建者、源码hash与准确目录，供阶段结束精确回收；未设置时行为不变，不修改产品、实际计时/阈值/重放断言。完整组合检查待验，不以标记作为Windows或手机通过。",
+      "files": {
+        "scripts/fixtures/windows-trace-batch.mjs": "259558bc6b256967a548292d5a0d33feb39910848fda0afcbe2984de219611ea"
+      }
+    },
+    {
+      "id": "p9-ownership-fixture-subprocess-import-context-20261031",
+      "baseCommit": "5684bc3f1f864e551c5a3444d5245550bf0d1a92",
+      "features": ["F51", "F52", "F55"],
+      "summary": "仅修辅助ownership子进程测试从仓库根启动时缺模块路径：显式继承并前置该测试模块目录，保持原cwd和全部ownership/退出断言。原67项中的4项导入失败保留，完整pnpm检查尚未启动；不改产品或Native准入，不以环境修正回填通过。",
+      "files": {
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_ownership.py": "fbb5166c882a34f9f74b4af51e73069e8e4ddcc7df5f399be3c7aa24d372646e"
+      }
+    },
+    {
+      "id": "android-source70-saved-relay-selection-20261101",
+      "baseCommit": "d33d7a466f4597c18ff587c50312eb04544a9b58",
+      "features": ["F06", "F08", "F09"],
+      "summary": "对照iOS按已保存客户端ID选择，修仅Relay发现行误走LAN地址查找；离线保留原连接候选/偏好及表单/目标/草稿栅栏。Source70 SDK/三包通过，真实Session/页面/源与真机待验，不改手动地址/QR。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "57d9f1437583018e0212a1aee8bdaf333ffe4720012d705cdeb931ed06c425f4",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "c7e74eb665e25bc16212a2d2475410451f1d7f19d63b6eff387fc2d11f198e49"
+      }
+    },
+    {
+      "id": "android-source70-local-navigation-claim-20261101",
+      "baseCommit": "d33d7a466f4597c18ff587c50312eb04544a9b58",
+      "features": ["F51", "F54", "F55", "F56"],
+      "summary": "本地通知存储v2严格兼容v1；原pending导航claim/精确ack及配置代次关闭消费后取消、claim后偏好撤销窗口。迁移原审计保留且active receipts清空；十项Native仅编译，真实回调/UI未验，iOS无新通过。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCodec.kt": "eac9f7ff64ae81a7e0c8d686fa68cd09ec82d8354855d87c46e2b85ae039e6df",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "cfab9fe4581702256b1316e980f2d8a8819c9b3980330792bd2eb31525494cf1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationModels.kt": "337bf7c419c1c5a8aed084e91c8103c6efd92aaf45b9109ee45aa1285c34f104",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "992d804fb4d2d2a4f814ee1944c01a38bd27fcc14e02e2a967c8be8e2019838b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": "b956ba404125d7d021327fbe75c972f17296fbbd2654dbed1c450736cc90cd8e",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "f149ca6a9f5b0949938bd2f2764f37a53f1b3052aed1552e141750ab5fa53bfb"
+      }
+    },
+    {
+      "id": "android-source71-saved-selection-regression-20261101",
+      "baseCommit": "20415f2bc9abcc3e905f7f0dfc3ea5f28b22413d",
+      "features": ["F06", "F08", "F09"],
+      "summary": "对照iOS按保存ID选择；Source72四Native方法/六夹具及480原始捕获Root限定通过，含生产页面在线touch、离线原候选/偏好和四类迟到隔离；Cold62/reading13/三保护cipher保持。完整视觉/真实issuer/Host/物理源与iOS未新增通过。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkSavedSelectionTest.kt": "7a92c053d0987940a0a7ae3ec7bae8b9efe0fcbe62a07b68ac92c2213ee72d5f"
+      }
+    },
+    {
+      "id": "android-source72-bound-reading-handoff-20261101",
+      "baseCommit": "8c2e7d89145d2a127d66fa71d8f5330dfb3047e2",
+      "features": [
+        "F06",
+        "F08",
+        "F10",
+        "F49",
+        "F50",
+        "F51",
+        "F52",
+        "F53",
+        "F54",
+        "F55",
+        "F56",
+        "F64"
+      ],
+      "summary": "严格BOUND先按原lease只读恢复，ACTIVE后协调阅读并发布ready，写权限不放宽；修原Native第二进程阅读失败及fixture取消丢fresh引用。五文件源码复核和Source72 SDK通过，新独立API33三PID冷链限定通过；24组完整迁移/UI/真实DEV未验；原已发布generation/回执不重放，iOS仅对照无新增通过。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "0f69728282e6fe2e4d90e50cfe436c871a03df82a4562f6b480d6bd498b85d3a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt": "46d9031f625653517c915dcc49c458a0fa1ff4d1e120b5077d87c597439c9933",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "921cb7602a595ff640f8637854dc59031b88d0062e4646fd68bda2c9573c9dca",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "aa20e454d6268b72d2e2ae1e167cfead141b4a8f74da64189264a06e66677c4d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdFixtures.kt": "fbbb185c59f6ba2ff1c5b3515bc0a37fe3b2fecb5e8d207d7baf10eaed099af3"
+      }
+    },
+    {
+      "id": "android-public-collector-code-identity-20261101",
+      "baseCommit": "f807fe22b4975b48973c64e50f3609ecf608407f",
+      "features": ["F51", "F52", "F53", "F54", "F55"],
+      "summary": "辅助公共采集库按准确类型递归比较代码字段并保留正则pattern类型/flags；原owner seal、UID、预算、权限及未绑定入口不变。72项纯回归及完整工作空间检查通过，公共live attestor/Native/完整UI未验；iOS/Android产品不变，不新增端侧通过。",
+      "files": {
+        "scripts/mobile/fixtures/parent-collector-v1/fixed_actual_observer.py": "c241570a2cefed88aee1423ccb90f02a58fb998b2e177636bc5cebb2d49d0cd6",
+        "scripts/mobile/fixtures/parent-collector-v1/fixed_seven_schedule.py": "d0936b1af067672e87604adb7537e7a7391a4c885669ccd9d44a4da16790c7a1",
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_actual_observer.py": "4d7c07544da9747b1b2e0b764e4187b5471c314241f7e2e35601f3d82d1f8013",
+        "scripts/mobile/fixtures/parent-collector-v1/test_fixed_seven_schedule.py": "04c39245e271692a989841c49760a71f8a3e54f655891a33359589b0f2fc8ef2"
+      }
+    },
+    {
+      "id": "android-source73-p9-owned-fixture-join-20261101",
+      "baseCommit": "0c8f6ddd628d7f3d270d85550add176109a87b92",
+      "features": ["F51", "F54", "F55", "F56"],
+      "summary": "仅测试fixture精确已知coordinator/scope/Session/gate收尾和IO barrier，保留35方法/全部业务断言及原异常。Source73 SDK854/867/三包及Test-only更新独立核对通过，API33原导航10/10项限定通过；默认startup/private handle/物理线程仍未证实，OS通知/冷PID/完整UI/真实DEV待验，iOS无新增通过，不重放原操作。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "ea541ffb76370d3e5e1251237c7aebe10f2fb50d7bec88b6f999608f15a83100"
+      }
     }
   ]
 }

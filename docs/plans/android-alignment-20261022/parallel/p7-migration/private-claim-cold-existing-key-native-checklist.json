@@ -1,0 +1,68 @@
+{
+  "version": 3,
+  "status": "not-executed; Root re-review, SDK then actual three-PID Native/OS/DEV",
+  "class": "com.agenthub.android.NativeMigrationPrivateClaimColdTest",
+  "stages": [
+    {
+      "selector": "stageFreshClaimCandidateForIndependentReader",
+      "expected": "Fresh approved run only: real source Session export and destination candidate stage; fixed original key/scope/digest and ciphertext maps; publish writer-v2 proof with real PID",
+      "negativeVectors": [
+        "missing existing key never creates key",
+        "missing namespace never mkdir",
+        "bak sidecar refuses without recovery/byte changes",
+        "missing raw base refuses without any original Context getter invocation or mkdir"
+      ]
+    },
+    {
+      "selector": "readSameClaimCandidateAndActivateWithoutPairingUnderDifferentPid",
+      "expected": "Different actual PID: complete original view and candidate preflight, actual Session activation, shared Controller prepare/release order, Activity shared restoreNativeMigrationSession, all 10 children after confirmed raw release, actual new Session restore/commit, stale old/pending child refusal, late normal draft; then assert every writer destination path/SHA before activated snapshot.",
+      "negativeVectors": [
+        "forged same-argument lease refuses exact Session identity",
+        "invalidated actual owner refuses and preserves old tree",
+        "checkpoint0 failure preserves original tree",
+        "new-generation candidate scope refuses, original scope remains readable",
+        "wrong receipt digest refuses",
+        "unpublished transfer preparation refuses but raw release completes",
+        "captured old root/child cannot write after transfer preparation or completion",
+        "pending new child cannot write before actual restore commit"
+      ]
+    },
+    {
+      "selector": "readActivatedClaimAuditAgainWithoutRestagingOrReplaying",
+      "expected": "Third actual PID: first compare every writer destinationCiphertext entry to current material, then activated proof; readonly original candidate/published receipt, exact source/candidate/claims/operation bytes, late draft; separate readonly proof only.",
+      "negativeVectors": [
+        "old v1 or malformed proof is rejected",
+        "original proofs cannot be overwritten"
+      ]
+    }
+  ],
+  "driverRequirements": [
+    "Root supplies real independently checked native PIDs, exact bundle/runner/source fingerprints, original existing run provenance, terminal and zero-worker/kernel-exit proof",
+    "Do not add a new real run UUID or rerun an old unknown operation without explicit Root scope",
+    "On first error preserve original Throwable and evidence; unknown exit retains original supervised context, handles and lease; never force-stop/restart/replay to manufacture completion",
+    "SDK/compile/portable/PSI success cannot stand in for any Native stage"
+  ],
+  "resultFields": [
+    "sourceFingerprint",
+    "writerPid",
+    "readerPid",
+    "thirdPid",
+    "candidateOriginGeneration",
+    "candidateReceipt",
+    "sourceCiphertext",
+    "originalDestinationCiphertext",
+    "originalCandidateCiphertext",
+    "publishedGeneration",
+    "lateDraft",
+    "remoteCalls",
+    "primaryAndSuppressedErrors",
+    "terminalAndOwnershipExit"
+  ],
+  "portableOnlyNegatives": [
+    "wrong storage/lease/operation/generation/new Session",
+    "uncommitted/cancelled publication",
+    "full child set and actual-session identity before commit",
+    "original/fresh pending new request and failed Session revoke captured child",
+    "normal ACTIVE edit independent of expired raw/old Session; active Session retirement revokes"
+  ]
+}

@@ -1459,3 +1459,7 @@ Windows 常驻私有状态通道保留五种固定 owner/DACL 拒绝分类；仅
 owner 证据读取先判定原拒绝类别，并保护 Data getter、缺键检查和定型值查找；任何可恢复的诊断读取失败均返回证据缺省，仍保留原访问拒绝。字符串或其他任意 Data 不能充当证据。原只读 Data 夹具保留，额外的故障字典与固定阶段只用于回归，不新增生产权限或错误接受分支。
 
 Windows 创建租约使用带 FILE_READ_DATA 的 CREATE_NEW 句柄参与共享冲突检查，同时继续只分享 READ|WRITE；仅 metadata 句柄的无 DELETE share 不构成同等保护。Node r+ 打开、创建 ID／路径复查、release ACK 和截断顺序不改，原 owner/DACL 与既有对象拒绝保持。真实平台的 rename/unlink 前后断言与证据边界见[创建租约专项](acceptance/windows-private-creation-lease-20261031.md)；旧 Framework managed 成功不等于租约或正式初始化通过。
+
+2026-11-01 Android 系统通知的本地导航回执采用独立 v2 存储，严格兼容 v1 已消费终态；它与通知恢复通信 v2 分开。pending claim 只为原 ticket/event/lease/到期与 nonce 恢复只读导航，精确 ack 仅结算原已知成功；配置代次在首次 IO 前捕获，撤销阻止尚未导航的旧回调。迁移保留原审计但清空 active leases/receipts，不迁移导航权限。iOS、Host 与领域 wire 契约不变；SDK 与真实 DEV 结果分列。
+
+Android严格existing-key迁移恢复先以准确Restore ticket／Session／lease验证BOUND子存储，仅读取模型和账本；此时不运行会写账本的阅读协调或发布未读就绪。完成ACTIVE移交后由新Session原后台worker协调，账本失败沿用新owner自身重试，提交后不新增可取消等待来抛弃已发布generation。普通恢复及无policy路径保持。实现已编译，Source72冷链／故障／真实DEV待验；详见[验收记录](plans/android-alignment-20261022/records/source72-bound-reading-handoff.md)。

@@ -73,6 +73,18 @@ internal object NativeMigrationPrivateClaims {
         validatePortable(source.text,source.binary)
         return archive.merge(source,projectSource(destination)).also {validatePortable(it.text,it.binary)}
     }
+    /** Inert text from a complete existing-key read-only view; no writable handle is opened. */
+    fun readOnly(records: NativeMigrationStreamRecords): Map<String,String> {
+        validatePortable(records.text,records.binary)
+        val graph=archive.validate(records.text,records.binary.filterKeys {it.startsWith(BINARY)})
+        val result=linkedMapOf<String,String>()
+        for(original in graph.originals)for(i in original.entries.indices) {
+            val entry=original.entries[i];require(entry.kind=="text")
+            val raw=records.text.getValue(original.alias(i));val prior=result.put(entry.name,raw)
+            require(prior==null||prior==raw)
+        }
+        return result
+    }
     fun read(storage: NativeSessionStorage)=archive.read(storage)
     fun text(storage: NativeSessionStorage,original: NativeMigrationInertArchive.Original,index: Int)=archive.text(storage,original,index)
 }

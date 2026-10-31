@@ -10,7 +10,7 @@ import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.security.MessageDigest
 
 /** Existing owned ciphertext only. No AtomicFile, mkdir, key generation, link following or repair. */
-internal class NativeMigrationReadOnlyFile(private val folder: File,val file: File,private val maximum: Int) {
+internal class NativeMigrationReadOnlyFile(private val folder: File,val file: File,private val maximum: Int,private val lifetime: NativeMigrationReadLifetime=NativeMigrationReadLifetime(),private val minimum: Long=29) {
     internal data class Identity(val dev: Long,val inode: Long,val uid: Int,val mode: Int,val links: Long,val size: Long,val modified: Long)
     data class Read<T>(val value: T,val ciphertextSha256: String)
     private fun identity(stat: android.system.StructStat)=Identity(stat.st_dev,stat.st_ino,stat.st_uid,stat.st_mode,stat.st_nlink,stat.st_size,stat.st_mtime)
@@ -24,13 +24,18 @@ internal class NativeMigrationReadOnlyFile(private val folder: File,val file: Fi
     private fun regular(): Identity {
         require(file.parentFile.canonicalFile==folder.canonicalFile&&!Files.isSymbolicLink(file.toPath()))
         val stat=Os.lstat(file.path)
-        require(OsConstants.S_ISREG(stat.st_mode)&&stat.st_uid==Process.myUid()&&stat.st_mode and 0x3f==0&&stat.st_nlink==1L&&stat.st_size in 29..maximum.toLong())
+        require(OsConstants.S_ISREG(stat.st_mode)&&stat.st_uid==Process.myUid()&&stat.st_mode and 0x3f==0&&stat.st_nlink==1L&&stat.st_size in minimum..maximum.toLong())
         return identity(stat)
     }
     fun unchanged(){require(directory()==directory&&regular()==identity)}
     fun <T> read(complete: Boolean=true,consume: (InputStream)->T): Read<T> {
-        unchanged();val fd=Os.open(file.path,OsConstants.O_RDONLY or OsConstants.O_NOFOLLOW,0)
-        try {
+        unchanged()
+        return lifetime.use(
+            {Os.open(file.path,OsConstants.O_RDONLY or OsConstants.O_NONBLOCK or OsConstants.O_NOFOLLOW,0)},
+            {fd->readOpened(fd,complete,consume)},{Os.close(it)})
+    }
+    private fun <T> readOpened(fd: java.io.FileDescriptor,complete: Boolean,consume: (InputStream)->T): Read<T> {
+
             require(identity(Os.fstat(fd))==identity)
             val hash=MessageDigest.getInstance("SHA-256");var count=0L
             val input=object: InputStream() {
@@ -46,11 +51,10 @@ internal class NativeMigrationReadOnlyFile(private val folder: File,val file: Fi
             if(complete)require(input.read()==-1&&count==identity.size)
             require(identity(Os.fstat(fd))==identity);unchanged()
             return Read(value,hash.digest().joinToString(""){"%02x".format(it)})
-        }finally {Os.close(fd)}
     }
 }
 
-internal class NativeMigrationReadOnlyDirectory(private val folder: File) {
+internal class NativeMigrationReadOnlyDirectory(private val folder: File,private val lifetime: NativeMigrationReadLifetime=NativeMigrationReadLifetime()) {
     private fun identity(): Pair<Long,Long> {
         require(!Files.isSymbolicLink(folder.toPath()))
         val s=Os.lstat(folder.path);require(OsConstants.S_ISDIR(s.st_mode)&&s.st_uid==Process.myUid()&&s.st_mode and 0x3f==0)
@@ -63,7 +67,7 @@ internal class NativeMigrationReadOnlyDirectory(private val folder: File) {
         return files.map {it.name.also {name->require(name.matches(Regex("[a-f0-9]{64}\\.bin")))}}.sorted()
     }
     private val names=names()
-    val files=names.associateWith {name->NativeMigrationReadOnlyFile(folder,File(folder,name),23*1024*1024)}
+    val files=names.associateWith {name->NativeMigrationReadOnlyFile(folder,File(folder,name),23*1024*1024,lifetime)}
     init {require(files.values.sumOf {it.identity.size}<=NativeMigrationStreamRecords.MAX_TOTAL_BYTES+512L*131_072)}
     fun unchanged(){require(names()==names);files.values.forEach {it.unchanged()}}
 }

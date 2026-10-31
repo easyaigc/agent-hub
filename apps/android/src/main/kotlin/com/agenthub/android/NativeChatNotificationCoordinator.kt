@@ -12,7 +12,8 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     val system: NativeChatNotificationSystem, private val commands: NativeChatNotificationCommands = NativeChatNotificationHttp(),
     private val locator: NativeChatNotificationThreadLocator = NativeChatNotificationThreadLocator(),
     private val now: () -> Long = System::currentTimeMillis, private val pollMillis: Long = 10_000,
-    private val applicationId: String, migrationEnrollmentCheck: Boolean=false) {
+    private val applicationId: String, migrationEnrollmentCheck: Boolean=false,
+    private val navigationClaimPersisted: suspend (NativeChatNoticeReceipt, Job) -> Unit = { _, _ -> }) {
     companion object {
         fun create(context: Context, scope: CoroutineScope, session: NativeChatNotificationSessionPort, language: String): NativeChatNotificationCoordinator {
             val app = context.applicationContext
@@ -43,6 +44,8 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     var unavailable by mutableStateOf(false); private set
     var opening by mutableStateOf(false); private set
     var canRetryOpen by mutableStateOf(false); private set
+    /** Local route succeeded, but its receipt ack is unconfirmed; no remote action is retried. */
+    var openReceiptPending by mutableStateOf(false); private set
     var openState by mutableStateOf<String?>(null); private set
     private var state = session.state()
     @Volatile private var readyForeground = state.ready && state.foreground
@@ -54,6 +57,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     private val actionJobs = mutableMapOf<String, Job>()
     @Volatile private var blocked = false
     private data class OpenRequest(val ticket: String, val generation: Long)
+    private data class OpenOutcome(val opened: Boolean, val receiptPending: Boolean = false)
     private val pendingTickets = ArrayDeque<OpenRequest>()
     private var openGeneration = 0L
     private var activeOpenRequest: OpenRequest? = null
@@ -331,7 +335,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
         activeOpenRequest?.let { observedTickets.remove(it.ticket) }
         pendingTickets.forEach { observedTickets.remove(it.ticket) }; pendingTickets.clear()
         openJob?.cancel(); openJob = null; openOwner = null; activeOpenRequest = null; opening = false
-        lastFailedTicket = null; canRetryOpen = false
+        lastFailedTicket = null; canRetryOpen = false; openReceiptPending = false
         if (ticket == null) { openState = "unavailable"; return true }
         observedTickets.add(ticket)
         while (observedTickets.size > 64) observedTickets.remove(observedTickets.first())
@@ -354,10 +358,11 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
                     val request = pendingTickets.removeFirst(); activeOpenRequest = request; val lease = navigation.capture()
                     val opened = try { openTicket(request.ticket, lease) }
                     catch (cancel: CancellationException) { if (request.generation == openGeneration && !blocked) pendingTickets.addFirst(request); throw cancel }
-                    catch (_: Exception) { false }
+                    catch (_: Exception) { OpenOutcome(false) }
                     if (request.generation == openGeneration) {
-                        lastFailedTicket = request.ticket.takeUnless { opened }; canRetryOpen = !opened
-                        openState = if (opened) "opened" else "unavailable"
+                        lastFailedTicket = request.ticket.takeUnless { opened.opened }; canRetryOpen = !opened.opened
+                        openState = if (opened.opened) "opened" else "unavailable"
+                        openReceiptPending = opened.receiptPending
                     }
                     if (activeOpenRequest === request) activeOpenRequest = null
                 }
@@ -368,14 +373,35 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
             }
         }
     }
-    private suspend fun openTicket(ticket: String, lease: NativeChatNotificationPresentationFence.Lease): Boolean {
-        val current = { available() && lease.current() }
-        val receipt = io { if (current()) store.ticket(ticket, now()) else null } ?: return false
-        val source = session.savedConnections().singleOrNull { it.target == receipt.event.target && it.snapshot.credentialEpoch == receipt.lease.credentialEpoch } ?: return false
-        if (!current()) return false
-        val location = locator.locate(source, receipt.event, current) ?: return false
-        val original = io { if (!current() || !store.preferences().permits(receipt.event)) null else store.consume(ticket, now(), current) } ?: return false
-        return withContext(Dispatchers.Main.immediate) { current() && original.event == receipt.event && session.openExistingThread(location, current) }
+    private suspend fun openTicket(ticket: String, lease: NativeChatNotificationPresentationFence.Lease): OpenOutcome {
+        // Capture before the first suspension. Settings revoke this pure in-memory token before
+        // their encrypted write begins; a pending original tap cannot outlive that user intent.
+        val configuration = store.configurationLease()
+        val current = { available() && lease.current() && configuration() }
+        val receipt = io { if (current()) store.navigationTicket(ticket, now()) else null } ?: return OpenOutcome(false)
+        val source = session.savedConnections().singleOrNull { it.target == receipt.event.target && it.snapshot.credentialEpoch == receipt.lease.credentialEpoch } ?: return OpenOutcome(false)
+        if (!current()) return OpenOutcome(false)
+        val location = locator.locate(source, receipt.event, current) ?: return OpenOutcome(false)
+        val originalOpenOwner = requireNotNull(currentCoroutineContext()[Job])
+        val original = withContext(Dispatchers.IO) {
+            if (!current() || !store.preferences().permits(receipt.event)) return@withContext null
+            val claimed = store.claimNavigation(ticket, now(), current) ?: return@withContext null
+            // Checkpoint is inside the original IO call, after durable save but before return.
+            navigationClaimPersisted(claimed, originalOpenOwner)
+            claimed
+        } ?: return OpenOutcome(false)
+        val opened = withContext(Dispatchers.Main.immediate) {
+            current() && original.event == receipt.event && original.lease == receipt.lease &&
+                session.openExistingThread(location, current)
+        }
+        if (!opened) return OpenOutcome(false)
+        // Keep a known successful local route distinct from an unknown receipt write. The outer
+        // NonCancellable keeps the original Main dispatcher, avoiding a cancellation check on
+        // the return from acknowledgement after our own navigation has already succeeded.
+        val acknowledged = withContext(NonCancellable) { withContext(Dispatchers.IO) {
+            try { store.acknowledgeNavigation(original) } catch (_: Exception) { false }
+        } }
+        return OpenOutcome(true, !acknowledged)
     }
     /** Migration must replace the coordinator with the newly active Session/storage/ledger. */
     /** Joins every owned worker/query/action and its actual IO completion; cancellation alone is not completion. */

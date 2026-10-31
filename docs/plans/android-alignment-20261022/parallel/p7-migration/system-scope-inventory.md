@@ -46,3 +46,5 @@ Root adopts this 926f9cc2 inventory as a source index, not a full migration or n
 `root-claims` 原基线行保留用于追溯。当前已实现闭合集合的惰性原意图归档，来源和目标原件合并；原 Session、相同 storage 与冻结 writer 共同守卫。未知记录继续拒绝，不恢复配对授权、发送或重放。Source65 组合 SDK 与三 APK 校验通过；六项 warm、三项跨进程链及实际系统/DEV 尚未通过。其余 23 行原范围及任务/项目暂停项保留，完整 P7 未完成。
 
 Source66补充：prepared restore与可选Boolean单调兼容已集成，六项API33 warm/首项16图边界限定通过；原Source65失败不覆盖。三个冷方法的existing-key准入、新代次和完整UI/OS/DEV继续待验，不能关闭root-claims完整验收或其余23组。
+
+Source72补充（2026-11-01）：新独立API33的writer／第二PID原候选激活和真实Session阅读恢复／第三PID原回执审计三方法限定通过；原件、完整密文及九stat独立核对，未恢复配对授权或重放原操作。只关闭此严格冷交接回归，root-claims整体及其余23组、普通恢复／故障、UI／OS／真实DEV仍待验；原Source69已发布失败代次另保留只读恢复待验。详见[三段本次记录](../../records/source72-fresh-native.md)。

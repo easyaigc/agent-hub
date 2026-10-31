@@ -21,3 +21,7 @@
 WAV SHA 为 `9d926e59a8259999491bddd13cd65ad6ff3f63916a9dd10a86d8594169ad9550`，完整读回收据 SHA 为 `1d18ac9fca50fb792240ce4ac0d326e2e2ceebfc2a953d60e15a74b7f00a2e50`。原始流、原密文与三份读回文件保存在对应私有证据档案。
 
 本阶段未生成或提交 cleanup ACK，未清理原 fixture 或密钥；后续须按准确原件及独立收尾协议执行，不能重跑原读取来代替核对。无新增 Host/模型或麦克风调用。F64 与完整 P7、界面和 iOS 均不因此整项关闭；任务/项目管理及 iOS A6 继续暂缓。
+
+## 主线交付
+
+阶段37的 `edf20400` 完整 `pnpm check` 退出0（616.801秒）；阶段38仅状态文档与主线合并元数据，未重复完整检查或 Native。[PR71](https://git.51easyai.com/BCAI/agent-hub-app/pulls/71) 准确 head `102a8d61` 的 Linux workspace（14分45秒）及iOS（1分31秒）CI通过，实际合入main `2c2a790d`。主统筹独立核对PR、远端main、双父与已合并引用缺失；阶段37/38的两个本地及Gitea分支已清理，四条活跃开发线和当前开发树保留。

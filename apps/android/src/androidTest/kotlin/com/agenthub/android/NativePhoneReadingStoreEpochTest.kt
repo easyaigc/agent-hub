@@ -262,6 +262,46 @@ class NativePhoneReadingStoreEpochTest {
             throw failure
         }
     }
+    /** Unlike a callback rejected before scheduling, this body write has entered the real IO queue. */
+    @Test fun actualQueuedVisibleBodyCannotReadAfterBackgroundAndForeground()=fixture("visible-background") {f->
+        val content=NativeVisiblePhoneReading(MobileClient("owner-host","Reading fixture",b),ThreadReadingIdentity.key(b,"thread"),
+            "thread",1,1,1,position(1),NativeReadingBody("owner-message-1","owner-reply-1","completed"))
+        main {f.phone.lifecycle.foreground(true);f.phone.lifecycle.uncovered(true)}
+        val old: Job
+        f.gate().use {gate->
+            old=main {checkNotNull(f.phone.visible(content,reader))}
+            val waiting=gate.awaitQueued(1)
+            main {
+                f.phone.lifecycle.foreground(false);f.phone.lifecycle.foreground(true)
+                assertTrue(old.isActive);assertFalse(old.isCompleted)
+            }
+            gate.requireQueued(waiting)
+        }
+        join(old);f.originalUnchanged() // includes exact original plaintext, ciphertext, pending row and projection
+
+        // A new current body can read, but cannot consume a separately unseen question.
+        val currentQuestion=NativeReadingEvent("current-question",b,"thread","question",runId="current-run",requestId="current-request")
+        val withQuestion=f.ledger.receive(currentQuestion)
+        main {f.phone.publish(withQuestion)}
+        join(main {checkNotNull(f.phone.visible(content,reader))})
+        val saved=checkNotNull(f.storage.read(NativeReadingLedger.STORAGE_NAME))
+        val currentRow=JSONObject(row(saved,b))
+        assertEquals(position(1),ThreadReadPosition.decode(currentRow.getJSONObject("read")))
+        assertFalse(currentRow.getBoolean("replyUnread"))
+        assertFalse(currentRow.getJSONObject("notices").getJSONObject(currentQuestion.id).getBoolean("seen"))
+        assertEquals(f.originalRow,row(saved,a))
+        val pending=f.ledger.pendingReads().single()
+        assertEquals(ThreadReadingIdentity.key(b,"thread"),ThreadReadingIdentity.key(pending.target,pending.threadId))
+        assertEquals(reader,pending.readerId);assertEquals(position(1),pending.position)
+        assertEquals(listOf(currentQuestion.id),f.ledger.notices(b,"thread").map {it.id})
+        val completed=NativeReadingEvent("current-completed",b,"thread","completed",position(1))
+        assertFalse(f.ledger.mayPresent(completed));assertTrue(f.ledger.mayPresent(currentQuestion))
+        f.ledger.receive(completed);f.ledger.receive(currentQuestion)
+        assertEquals(saved,f.storage.read(NativeReadingLedger.STORAGE_NAME)) // delayed events do not revive the read body
+        val actual=f.ledger.snapshot();assertEquals(1,actual.count);assertTrue(actual.isUnread(b,"thread"))
+        main {assertEquals(actual,f.phone.snapshot);assertTrue(f.phone.ready);assertNull(f.phone.failure);assertFalse(f.phone.busy)}
+        assertEquals(1,f.changes.get())
+    }
     @Test fun actualQueuedStoreResetPreservesOriginalLedgerAndRestoredProjection()=fixture("reset-original") {f->
         val old: Job
         f.gate().use {gate->

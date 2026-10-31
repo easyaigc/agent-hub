@@ -26,6 +26,13 @@ internal object NativeMigrationProvisionalVoice {
             require(ids.distinct().size==ids.size);ids.forEach {require(UUID.fromString(it).toString()==it)}
         }
     }
+    /** Catalog-only identity set for the pre-Session read-only original inventory. */
+    internal fun knownRawIds(records: Map<String,String>): Set<String> {
+        val active=index(records["voice-index-v1"]?:"[]")
+        val markers=records[NativeVoiceDiscardCatalog.RECORD]?.let(NativeVoiceDiscardCatalog::decode).orEmpty()
+        val results=records[NativeVoiceLocalResults.RECORD]?.let(NativeVoiceLocalResults::decode).orEmpty()
+        return (active+markers.keys+results.map {it.recordingId}).toSet()
+    }
     fun liveIds(records: Map<String,String>): List<String> {
         val markers=records[NativeVoiceDiscardCatalog.RECORD]?.let(NativeVoiceDiscardCatalog::decode).orEmpty()
         return index(records["voice-index-v1"]?:"[]").filter {id->

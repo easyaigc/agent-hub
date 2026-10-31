@@ -361,3 +361,5 @@ Windows 私有 Native 的 UnauthorizedAccessException 现在只对五种既定�
 PR86 正式失败栈的 `runtime-server.js:195` 对应通知构造器，不能继续作为 publisher token 失败的证明。通知锁／临时快照现使用原 Native 私有创建接口；新 `OWNER2` 允许字段采集局部失败并保留固定阶段，bootstrap 证据经 PowerShell 与共享槽传递，Host 用固定角色／action 区分路径。新增 `windows-notification-state-preflight.mjs` 仅在自有合成目录验证真实通知模块创建／重开，不读原状态或凭据。原权限／执行时限／未知操作不重放保持，正式目标及 token 事实仍由实际回执决定。见[最小复验](acceptance/windows-notification-private-startup-20261031.md)。
 
 Framework 的 `Exception.Data` 会拒绝不可序列化的值。私有定型 owner 证据须满足该存储约束，且附加诊断失败不能替换原始 `WRONG_FILE_OWNER`；协议仍只输出显式固定 frame，不序列化任意异常 Data。编译使用 net48 引用不等于在 Windows Framework 上执行；.NET 8 的反射结果不能覆盖这一差异。详见[证据存储兼容性与复验边界](acceptance/windows-owner-evidence-serialization-20261031.md)。
+
+诊断读取也须保留原拒绝：先确定是 owner 拒绝，再在保护内取得 Data、检查键和读取私有定型值；缺键或 Data getter／Contains／索引器异常只表示证据不可用。Framework 只读字典的缺键行为与 .NET8 不同，原只读 Data 回归保留，并加入跨 CLR 故障字典及固定阶段报告。PR88 已取得 Windows 通知 OWNER2／实际子进程／同句柄通过；managed 后续失败不撤销该范围，也不代表 CLI／serve 或 Trace 协议已验证。见[读取边界与复验](acceptance/windows-owner-evidence-data-lookup-20261031.md)。

@@ -18443,6 +18443,17 @@
         "scripts/fixtures/private-state-owner-evidence.cs": "753755b24432e09e5eec8305b7ed9ee2ad62571b3daf979d18d17fe480f2b44a",
         "scripts/windows-private-state-native.test.mjs": "b127afe9319141ecb33353a677976be523ec5e68b094fab0640dd1b62aea21ed"
       }
+    },
+    {
+      "id": "windows-owner-evidence-safe-data-lookup-20261031",
+      "baseCommit": "b855e6c482f30446797a4f2acb691af2e6bc0776",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Read optional typed owner evidence only for the relevant refusal and guard Data getter, key presence and lookup; missing/unreadable metadata must preserve rejection. Keep Serializable typed value, ReadSecurity, owner/DACL, handles, success paths, schema and budgets. Preserve original Framework ReadOnlyDictionary assertion; add portable lookup fault regressions and fixed managed phase. PR88 real notification OWNER2/actual-child/same-handle success remains old-input evidence; managed Windows failure did not reach CLI/serve API. Trace historical coverage is compile/resolve/PE/private checks only, not Native execution/protocol. No mobile UI/protocol, Android acceptance or A6 change.",
+      "files": {
+        "packages/codex-adapter/windows/private-state.cs": "b4c4ccc25071d35a06e1e4ae0a109969b0bebe07c3e17eb4acac5495381cb99c",
+        "scripts/fixtures/private-state-owner-evidence.cs": "90fa7fc5b6628a2c9f3175a2fa3ba29b8a284f433f79aa66cb7abff6258ade4c",
+        "scripts/windows-private-state-native.test.mjs": "6cd6bd6e1b4c757e93ab1ba7239a481476e7aba406f5a454b046c041af4a3ddf"
+      }
     }
   ]
 }

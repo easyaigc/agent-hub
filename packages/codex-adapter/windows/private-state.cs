@@ -475,9 +475,18 @@ public static partial class CodexManagePrivateStateSecurity
 
     public static string OwnerFailureEvidence(Exception error)
     {
-        var value = error.Data["CodexManage.OwnerEvidence"] as OwnerEvidence;
-        return error is UnauthorizedAccessException && error.Message == "WRONG_FILE_OWNER" &&
-            value != null ? value.Frame : null;
+        if (!(error is UnauthorizedAccessException)) return null;
+        try
+        {
+            if (error.Message != "WRONG_FILE_OWNER") return null;
+            var values = error.Data;
+            // Some Framework IDictionary adapters throw for a missing key.
+            // Metadata access itself is optional and must preserve the refusal.
+            if (values == null || !values.Contains("CodexManage.OwnerEvidence")) return null;
+            var value = values["CodexManage.OwnerEvidence"] as OwnerEvidence;
+            return value == null ? null : value.Frame;
+        }
+        catch { return null; }
     }
 
     private static string OwnerFailureType(Exception error)

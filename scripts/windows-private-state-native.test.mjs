@@ -1740,6 +1740,9 @@ test(
     assert.equal(managedReport.frameRoundTrip, true);
     assert.equal(managedReport.arbitraryDataExcluded, true);
     assert.equal(managedReport.attachmentFailurePreservesRefusal, true);
+    assert.equal(managedReport.optionalDataLookupProtected, true);
+    assert.equal(managedReport.irrelevantDataExcluded, true);
+    assert.equal(managedReport.phase, 'complete');
     assert.equal(managedReport.windowsPInvokeExecuted, false);
     t.diagnostic(JSON.stringify(managedReport));
     f.gate.withWindowsProcessCreation(30000, (timeout) =>

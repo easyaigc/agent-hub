@@ -13,6 +13,57 @@ function nativeStderrReason(line) {
     return 'native-assertion';
   if (/^FATAL ERROR: /.test(line)) return 'node-fatal';
 }
+function ownerFailureMetadata(error) {
+  if (
+    error?.nativeType !== 'UnauthorizedAccessException' ||
+    error?.nativeRejection !== 'WRONG_FILE_OWNER'
+  )
+    return;
+  const value = error?.nativeOwner;
+  const hash = (v) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+  if (
+    !value ||
+    value.version !== 1 ||
+    !['check', 'protect', 'protect-file'].includes(value.checkedAction) ||
+    !Number.isSafeInteger(value.helperPid) ||
+    value.helperPid <= 0 ||
+    value.helperPid > 0xffffffff ||
+    !['file', 'directory'].includes(value.targetKind) ||
+    !['helperUserHash', 'requestedPathHash', 'handleIdentityHash'].every((k) => hash(value[k]))
+  )
+    return;
+  const result = {
+    version: 1,
+    checkedAction: value.checkedAction,
+    helperPid: value.helperPid,
+    targetKind: value.targetKind,
+    helperUserHash: value.helperUserHash,
+    requestedPathHash: value.requestedPathHash,
+    handleIdentityHash: value.handleIdentityHash,
+  };
+  for (const key of ['helperOwnerHash', 'fileOwnerHash', 'finalPathHash']) {
+    if (value[key] !== undefined) {
+      if (!hash(value[key])) return;
+      result[key] = value[key];
+    }
+  }
+  if (value.helperStartedFileTime !== undefined) {
+    const time = value.helperStartedFileTime;
+    if (
+      typeof time !== 'string' ||
+      !/^[1-9][0-9]{0,18}$/.test(time) ||
+      BigInt(time) > 0x7fffffffffffffffn
+    )
+      return;
+    result.helperStartedFileTime = time;
+  }
+  if (value.transportPidMatches !== undefined) {
+    if (typeof value.transportPidMatches !== 'boolean') return;
+    result.transportPidMatches = value.transportPidMatches;
+  }
+  return result;
+}
+
 export function safeWorkerFailure(error) {
   const frames = new Set([
     'runtime-persistence.js',
@@ -120,6 +171,14 @@ export function safeWorkerFailure(error) {
   for (const key of ['nativeWin32', 'nativeCleanupWin32'])
     if (Number.isSafeInteger(error?.[key]) && error[key] >= 0 && error[key] <= 0xffffffff)
       result[key] = error[key];
+  const owner = ownerFailureMetadata(error);
+  if (owner) result.nativeOwner = owner;
+  if (
+    error?.nativeType === 'UnauthorizedAccessException' &&
+    error?.nativeRejection === 'WRONG_FILE_OWNER' &&
+    error?.nativeStep === 'owner-check'
+  )
+    result.nativeStep = 'owner-check';
   return result;
 }
 

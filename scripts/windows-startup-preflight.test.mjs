@@ -216,6 +216,43 @@ test(
   },
 );
 
+test('owner diagnostics project only typed hashes and retain the policy rejection', () => {
+  const nativeOwner = {
+    version: 1,
+    checkedAction: 'check',
+    helperPid: 123,
+    helperStartedFileTime: '179340245100000000',
+    targetKind: 'file',
+    helperUserHash: '1'.repeat(64),
+    fileOwnerHash: '2'.repeat(64),
+    requestedPathHash: '3'.repeat(64),
+    handleIdentityHash: '4'.repeat(64),
+    finalPathHash: '5'.repeat(64),
+    transportPidMatches: true,
+    privatePath: 'NEVER_LOG_OWNER_PATH',
+    privateSid: 'NEVER_LOG_OWNER_SID',
+  };
+  const error = {
+    code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
+    nativeType: 'UnauthorizedAccessException',
+    nativeRejection: 'WRONG_FILE_OWNER',
+    nativeStep: 'owner-check',
+    nativeOwner,
+  };
+  const value = safeWorkerFailure(error);
+  assert.equal(value.nativeRejection, 'WRONG_FILE_OWNER');
+  assert.equal(value.nativeStep, 'owner-check');
+  assert.equal(value.nativeOwner.helperPid, 123);
+  assert.equal(value.nativeOwner.transportPidMatches, true);
+  assert(!JSON.stringify(value).includes('NEVER_LOG'));
+  assert.equal(
+    safeWorkerFailure({ ...error, nativeOwner: { ...nativeOwner, helperUserHash: 'raw SID' } })
+      .nativeOwner,
+    undefined,
+  );
+  assert.equal(safeWorkerFailure({ ...error, nativeType: 'IOException' }).nativeOwner, undefined);
+});
+
 test('worker failures retain bounded cause/status including zero and Windows DWORDs', () => {
   for (const reason of [
     'WRONG_FILE_OWNER',
@@ -369,6 +406,20 @@ test('readonly orchestration preserves source metadata and refuses a Native fail
           throw Object.assign(new Error('private native detail'), {
             code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
             nativeType: 'UnauthorizedAccessException',
+            nativeRejection: 'WRONG_FILE_OWNER',
+            nativeStep: 'owner-check',
+            nativeOwner: {
+              version: 1,
+              checkedAction: 'check',
+              helperPid: 123,
+              helperUserHash: 'b'.repeat(64),
+              fileOwnerHash: 'c'.repeat(64),
+              requestedPathHash: 'd'.repeat(64),
+              handleIdentityHash: 'e'.repeat(64),
+              finalPathHash: 'f'.repeat(64),
+              targetKind: 'file',
+              transportPidMatches: true,
+            },
           });
       },
       inspectWindowsInstallation() {
@@ -425,7 +476,14 @@ test('readonly orchestration preserves source metadata and refuses a Native fail
         elevated: true,
         privateRawSid: 'must-not-escape',
         packageFull: { state: 'none', rawName: 'must-not-escape' },
-        file: { ownerMatchesNodeUser: true, protected: true, privateRawAcl: 'must-not-escape' },
+        file: {
+          ownerMatchesNodeUser: true,
+          ownerHash: 'c'.repeat(64),
+          identityHash: 'e'.repeat(64),
+          finalPathHash: 'f'.repeat(64),
+          protected: true,
+          privateRawAcl: 'must-not-escape',
+        },
       });
     assert(name.endsWith('private-state.ps1'));
     assert.deepEqual(args.slice(-4), ['-Action', 'check', '-Path', token]);
@@ -434,8 +492,12 @@ test('readonly orchestration preserves source metadata and refuses a Native fail
   syncBuiltinESMExports();
   Object.defineProperty(process, 'platform', { value: 'win32' });
   try {
-    const { runWindowsStartupPreflight, runWindowsStartupEnvelope, sanitizeStartupContext } =
-      await import('./windows-startup-preflight.mjs');
+    const {
+      runWindowsStartupPreflight,
+      runWindowsStartupEnvelope,
+      sanitizeStartupContext,
+      prepareWindowsStartupProbe,
+    } = await import('./windows-startup-preflight.mjs');
     assert.throws(() => sanitizeStartupContext({ pid: process.pid + 1 }, process.pid), {
       code: 'PREFLIGHT_CONTEXT_TARGET_CHANGED',
     });
@@ -448,6 +510,11 @@ test('readonly orchestration preserves source metadata and refuses a Native fail
     assert.equal(result.runtimeAdapterBinding, 'actual-host-esm-closure');
     assert.equal(result.workerBootstrapAndRuntimeShareModule, false);
     assert.equal(result.steps.find((v) => v.name === 'publisher-token-native-check').passed, false);
+    assert.equal(result.publisherOwnerBinding.helperUserMatchesNode, true);
+    assert.equal(result.publisherOwnerBinding.ownerMatchesIndependentMetadata, true);
+    assert.equal(result.publisherOwnerBinding.handleMatchesIndependentMetadata, true);
+    assert.equal(result.publisherOwnerBinding.finalPathMatchesIndependentMetadata, true);
+    assert.equal(result.publisherOwnerBinding.transportPidMatches, true);
     assert.equal(
       result.steps.find((v) => v.name === 'publisher-token-same-source-powershell-check').passed,
       true,
@@ -496,6 +563,33 @@ test('readonly orchestration preserves source metadata and refuses a Native fail
     assert(psCalls.length >= 4);
     assert(closed >= 3);
     assert(runtimeClosed >= 2);
+    const prepared = await prepareWindowsStartupProbe({
+      hostConfig,
+      bundle: join(root, 'bundle.json'),
+      directory: join(root, 'new-limited-probe'),
+      workingDirectory: probeDir,
+    });
+    assert.equal(prepared.scheduledTaskCreated, false);
+    assert.equal(prepared.formalHostStarted, false);
+    assert.equal(prepared.launcherProtocol.version, 1);
+    assert.deepEqual(prepared.launcherProtocol.arguments, [
+      process.execPath,
+      fileURLToPath(new URL('./windows-desktop-worker.mjs', import.meta.url)),
+      prepared.configuration,
+    ]);
+    assert.equal(prepared.launcherProtocol.nodeSource, 'actual-preparing-process');
+    assert.equal(prepared.launcherProtocol.formalNodeIdentityMustBeVerified, true);
+    assert.equal(prepared.launcherProtocol.worker, prepared.launcherProtocol.arguments[1]);
+    await assert.rejects(
+      prepareWindowsStartupProbe({
+        hostConfig,
+        bundle: join(root, 'bundle.json'),
+        directory: join(root, 'new-limited-probe'),
+        workingDirectory: probeDir,
+      }),
+      { code: 'PREFLIGHT_PROBE_DIRECTORY_REJECTED' },
+    );
+    assert.deepEqual([hostConfig, desktopConfig, token].map(stamp), before);
   } finally {
     Object.defineProperty(process, 'platform', descriptor);
     for (const key of Object.keys(process.env)) if (!(key in savedEnv)) delete process.env[key];

@@ -50,13 +50,70 @@ const privateStateAccessReasons = Object.freeze({
   'dacl-allow-subject-check': 'SHARED_PRIVATE_FILE',
   'dacl-protection-check': 'UNPROTECTED_PRIVATE_DACL',
 } as const);
-export function parseWindowsPrivateStateRejection(
-  value: string,
-):
-  | { nativeError: string; nativeType: string; nativeStep?: string; nativeRejection?: string }
+export interface WindowsPrivateOwnerEvidence {
+  version: 1;
+  checkedAction: 'check' | 'protect' | 'protect-file';
+  helperPid: number;
+  helperStartedFileTime?: string;
+  helperUserHash: string;
+  helperOwnerHash?: string;
+  fileOwnerHash?: string;
+  requestedPathHash: string;
+  handleIdentityHash: string;
+  finalPathHash?: string;
+  targetKind: 'file' | 'directory';
+  transportPidMatches?: boolean;
+}
+function parseOwnerEvidence(value: string): WindowsPrivateOwnerEvidence | undefined {
+  if (value.length > 1024) return;
+  const parts = value.split('|');
+  if (parts.length !== 10) return;
+  const [action, pid, started, user, owner, file, requested, identity, final, kind] = parts;
+  const hash = (v: string | undefined) => /^[a-f0-9]{64}$/.test(v ?? '');
+  const optionalHash = (v: string | undefined) => v === '-' || hash(v);
+  if (
+    !['check', 'protect', 'protect-file'].includes(action!) ||
+    !/^[1-9][0-9]{0,9}$/.test(pid!) ||
+    Number(pid) > 0xffffffff ||
+    (started !== '-' &&
+      (!/^[1-9][0-9]{0,18}$/.test(started!) || BigInt(started!) > 0x7fffffffffffffffn)) ||
+    !hash(user) ||
+    !optionalHash(owner) ||
+    !optionalHash(file) ||
+    !hash(requested) ||
+    !hash(identity) ||
+    !optionalHash(final) ||
+    !['file', 'directory'].includes(kind!)
+  )
+    return;
+  return {
+    version: 1,
+    checkedAction: action as WindowsPrivateOwnerEvidence['checkedAction'],
+    helperPid: Number(pid),
+    ...(started === '-' ? {} : { helperStartedFileTime: started }),
+    helperUserHash: user!,
+    ...(owner === '-' ? {} : { helperOwnerHash: owner }),
+    ...(file === '-' ? {} : { fileOwnerHash: file }),
+    requestedPathHash: requested!,
+    handleIdentityHash: identity!,
+    ...(final === '-' ? {} : { finalPathHash: final }),
+    targetKind: kind as WindowsPrivateOwnerEvidence['targetKind'],
+  };
+}
+export function parseWindowsPrivateStateRejection(value: string):
+  | {
+      nativeError: string;
+      nativeType: string;
+      nativeStep?: string;
+      nativeRejection?: string;
+      nativeOwner?: WindowsPrivateOwnerEvidence;
+    }
   | undefined {
+  const segments = value.split(':OWNER1:');
+  if (segments.length > 2) return;
+  const base = segments[0]!;
   const match =
-    /^UNSAFE_WINDOWS_PRIVATE_STATE:([A-Za-z][A-Za-z0-9]{0,127})(?::([a-z-]{1,40}))?$/.exec(value);
+    /^UNSAFE_WINDOWS_PRIVATE_STATE:([A-Za-z][A-Za-z0-9]{0,127})(?::([a-z-]{1,40}))?$/.exec(base);
   const step = match?.[2];
   const rejection =
     step && Object.hasOwn(privateStateAccessReasons, step)
@@ -64,18 +121,21 @@ export function parseWindowsPrivateStateRejection(
       : undefined;
   if (
     !match ||
-    match[0] !== value ||
+    match[0] !== base ||
     (step !== undefined &&
       !privateStateDirectorySteps.some((known) => known === step) &&
       !rejection) ||
     (rejection !== undefined && match[1] !== 'UnauthorizedAccessException')
   )
     return;
+  const nativeOwner = segments.length === 2 ? parseOwnerEvidence(segments[1]!) : undefined;
+  if (segments.length === 2 && (rejection !== 'WRONG_FILE_OWNER' || !nativeOwner)) return;
   return {
     nativeError: 'UNSAFE_WINDOWS_PRIVATE_STATE:' + match[1],
     nativeType: match[1]!,
     ...(match[2] === undefined ? {} : { nativeStep: match[2] }),
     ...(rejection === undefined ? {} : { nativeRejection: rejection }),
+    ...(nativeOwner === undefined ? {} : { nativeOwner }),
   };
 }
 
@@ -359,7 +419,9 @@ export function assertWindowsTraceProducerScope(
 /** Internal transport contract; no paths or permission decisions are cached. */
 export const privateStateProtocol = Object.freeze({
   words: 6,
-  responseBytes: 256,
+  // Fixed diagnostic capacity, not an execution deadline. OWNER1 is separately
+  // schema-checked; legacy responses retain their original field/length limits.
+  responseBytes: 1024,
   pathBytes: 128 * 1024,
   pathCharacters: 32767,
   frameBytes: 2 * Math.ceil((128 * 1024) / 3) * 4 + 64,
@@ -1039,6 +1101,9 @@ export function createWindowsPrivateStateBackend(
         } else if (response === 'PRIVATE_STATE_OK') return;
       }
       const refusal = parseWindowsPrivateStateRejection(response);
+      if (refusal?.nativeOwner)
+        refusal.nativeOwner.transportPidMatches =
+          refusal.nativeOwner.helperPid === Atomics.load(control, p.pid);
       if (Atomics.load(control, p.result) === p.rejected && refusal)
         throw Object.assign(new Error('Windows private state rejected'), {
           code: 'UNSAFE_WINDOWS_PRIVATE_STATE',

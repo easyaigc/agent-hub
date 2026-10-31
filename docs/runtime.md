@@ -355,3 +355,5 @@ Windows 旧附件兼容按真实登记引用、目标和稳定文件快照验证
 2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。
 
 Windows 私有 Native 的 UnauthorizedAccessException 现在只对五种既定策略原因携带固定 nativeRejection，未知类型/分类仍失败关闭，不传路径/SID/原始消息。权限算法和预算保持；新 C# 改变准备 cache key，须重新核对新输入。正式 R10 切换需完整统一包、逐文件旧 SHA 守卫与 Root 控制回滚，PR82 只读 probe 不能冒充正式初始化。见[最小诊断与复验](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。
+
+`WRONG_FILE_OWNER` 现可附带拒绝时同句柄的 owner／路径／身份摘要，以及真实 helper User、PID／开始时间和传输 PID 关联。该元数据仅用于诊断，严格 User owner／DACL 和原预算不变；不可将其他进程的 `Get-Acl` 通过写成 Native 接受。官方 prepare 提供版本化固定三路径并标明 preparing Node 来源，Root 验证正式 Node 后才能以原 Principal 创建独占 Limited 只读任务；不操作正式 Host。新 Native 输入和准确的复验／清理边界见[诊断入口](acceptance/windows-native-owner-evidence-20261031.md)。实际正式拒绝原因仍待目标机证据解释。

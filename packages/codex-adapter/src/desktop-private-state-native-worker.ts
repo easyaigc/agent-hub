@@ -274,7 +274,7 @@ try {
         return;
       }
       const match =
-        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::[a-z-]{1,40})?)$/.exec(
+        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::[a-z-]{1,40})?(?::OWNER1:[a-z0-9|-]{1,1024})?)$/.exec(
           line,
         );
       if (

@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isMainThread } from 'node:worker_threads';
 import { verifyHostRuntime } from './verify-host-runtime.mjs';
+import { safeWorkerFailure } from './host-worker-supervisor.mjs';
 
 // Fixed, fresh Main process; no Host, reader, permission mutation of the target,
 // arbitrary module entry, environment rewrite or business operation is started.
@@ -62,6 +63,8 @@ const safeFailure = (error) => {
     if (values.includes(error?.[key])) result[key] = error[key];
   for (const key of ['nativeStatus', 'nativeWin32', 'nativeCleanupWin32', 'waitMs'])
     if (typeof error?.[key] === 'number' && Number.isFinite(error[key])) result[key] = error[key];
+  const owner = safeWorkerFailure(error).nativeOwner;
+  if (owner) result.nativeOwner = owner;
   return result;
 };
 const fail = (code) => {

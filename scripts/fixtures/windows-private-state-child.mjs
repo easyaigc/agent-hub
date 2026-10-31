@@ -104,6 +104,23 @@ lines.on('line', (line) => {
     }
   }
   const ok = `${id}\t${createdIdentity ? 'PRIVATE_STATE_CREATED:' + createdIdentity : 'PRIVATE_STATE_OK'}\n`;
+  if (config.mode?.startsWith('owner-evidence') && action === 'check') {
+    const evidence = [
+      action,
+      String(process.pid + (config.mode === 'owner-evidence-wrong-pid' ? 1 : 0)),
+      '179340245100000000',
+      config.mode === 'owner-evidence-bad-hash' ? 'not-a-hash' : '1'.repeat(64),
+      '2'.repeat(64),
+      '3'.repeat(64),
+      '4'.repeat(64),
+      '5'.repeat(64),
+      '6'.repeat(64),
+      'file',
+    ].join('|');
+    return process.stdout.write(
+      `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:owner-check:OWNER1:${evidence}\n`,
+    );
+  }
   if (config.mode?.startsWith('access-step-'))
     return process.stdout.write(
       `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:${config.mode.slice('access-step-'.length)}\n`,

@@ -1447,3 +1447,5 @@ RuntimeSession 首次直接调用私有创建边界建立 state 根，Windows �
 2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。
 
 Windows 常驻私有状态通道保留五种固定 owner/DACL 拒绝分类；仅错误序列化和严格解析变化，不改变权限接受/拒绝、退出和超时边界。错误证据与正式启动成功分列，见[正式启动诊断](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。
+
+正式启动已取得 `WRONG_FILE_OWNER` 后，仅在该拒绝上附加实际 Native helper 与被拒绝同句柄的有界摘要。安全日志严格投影，缺失证据不推断匹配；独立只读 metadata 与 Native 判断分别记录。prepare 返回当前实际 Node、固定 Worker 和 envelope 三路径，调用方仍须验证正式 Node 和实际 Limited token，不引入 wrapper、加载器或权限放宽。见[同句柄 owner 与 Limited 探针](acceptance/windows-native-owner-evidence-20261031.md)。iOS／Android 协议和 UI 不变，A6保持暂停。

@@ -121,7 +121,10 @@ public static class CodexManageStartupProbe
             if (Int32.TryParse(integrity.Substring(integrity.LastIndexOf('-') + 1), out rid))
                 result["integrity"] = rid < 0x1000 ? "untrusted" : rid < 0x2000 ? "low" : rid < 0x3000 ? "medium" : rid < 0x4000 ? "high" : "system-or-higher";
             using (WindowsIdentity helper = WindowsIdentity.GetCurrent())
+            {
                 result["helperUserMatchesNode"] = helper.User != null && helper.User.Value == user;
+                if (helper.User != null) result["helperUserHash"] = Hash(helper.User.Value);
+            }
             if (String.IsNullOrEmpty(path)) return result;
             if (path.Length > 32767 || path.IndexOf('\0') >= 0) throw new ArgumentException();
             var full = new StringBuilder(32768);
@@ -151,6 +154,7 @@ public static class CodexManageStartupProbe
                     Marshal.Copy(descriptor, bytes, 0, bytes.Length);
                     var security = new RawSecurityDescriptor(bytes, 0);
                     data["ownerMatchesNodeUser"] = security.Owner != null && security.Owner.Value == user;
+                    if (security.Owner != null) data["ownerHash"] = Hash(security.Owner.Value);
                     data["protected"] = (security.ControlFlags & ControlFlags.DiscretionaryAclProtected) != 0;
                     data["daclPresent"] = security.DiscretionaryAcl != null && (security.ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0;
                     data["descriptorHash"] = Hash(Convert.ToBase64String(bytes));

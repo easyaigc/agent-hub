@@ -18388,6 +18388,24 @@
         "packages/codex-adapter/src/desktop-private-state-native.ts": "0ec3229392a793d1644a1c4c202f2a63cb0a399c9f5633daa218e606c6e4c4ec",
         "packages/codex-adapter/windows/private-state.cs": "e36cadf30534bf7d363c65b9efec63d9866ba140b0e13686f832ef9a4aa8e59e"
       }
+    },
+    {
+      "id": "windows-native-retained-owner-evidence-20261031",
+      "baseCommit": "635a0e5b911e9725793e7fd95005b801ca68257e",
+      "features": ["F03", "F31", "F32", "F69"],
+      "summary": "Windows owner refusal diagnostics bind the already-rejected retained handle to the actual Native helper User/PID and typed metadata. Keep strict owner/DACL policy, object identity, exit barriers, Native budgets and unknown-operation no-replay. Fixed-entry prepare returns actual preparing Node, candidate Worker and envelope; Root verifies formal Node and actual Limited context. Auxiliary protocol tests do not establish Windows scheduled startup or explain historical refusal. Preserve frozen R11 capabilities; no mobile UI/protocol or Android acceptance change; A6 remains paused.",
+      "files": {
+        "packages/codex-adapter/src/desktop-private-state-native-worker.ts": "584496ed00ae9b681d0026d2cbdad1b31bdfffe5fade9c6f58c77f8bdc0b573e",
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "fca14745724fcfff6a9d722a7911e268683202cf86ea138d2fde4feedb0752b2",
+        "packages/codex-adapter/windows/private-state.cs": "94e41c80bad01f967e4dbf4d3c766606384d2e27e5a60e1d7436702fb2832917",
+        "packages/codex-adapter/windows/startup-probe.cs": "1470741a1832186e9139f81af2712eebebe8c85c6ac295733ec6fe646f864f0e",
+        "scripts/fixtures/windows-private-state-child.mjs": "d2ca1897bc3d8c0b40daccbbed92153766321c303310561255e1e1219205f775",
+        "scripts/host-worker-supervisor.mjs": "735fd8c5bf849f7f54921e8252c35e9023b136910f2535d011c17feaad6d871b",
+        "scripts/windows-private-state-native.test.mjs": "03e71a2b78a4a73717fcc917d764d589a3b8ec0441f3cf934624d57f7832c4a9",
+        "scripts/windows-private-state-preflight.mjs": "c0b34b940c7575caf32dbb6f74d6542790f80ba278658c086f822f0857175205",
+        "scripts/windows-startup-preflight.mjs": "af877218524577ae947b6ed330a8d3571cc6068a1141dd42d00c0795a4005bfe",
+        "scripts/windows-startup-preflight.test.mjs": "c94b7ee579bda29752f9a6294351c98a7df93d5be0e438a5af20bd5550e15643"
+      }
     }
   ]
 }

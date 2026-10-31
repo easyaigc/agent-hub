@@ -72,7 +72,12 @@ internal static class PrivateState
                 case "SHARED_PRIVATE_FILE": refusal = "dacl-allow-subject-check"; break;
                 case "UNPROTECTED_PRIVATE_DACL": refusal = "dacl-protection-check"; break;
             }
-            if (refusal != null) return value + ":" + refusal;
+            if (refusal != null)
+            {
+                value += ":" + refusal;
+                string owner = CodexManagePrivateStateSecurity.OwnerFailureEvidence(error);
+                return owner == null ? value : value + ":OWNER1:" + owner;
+            }
         }
         string step = error.Data["CodexManage.NativeStep"] as string;
         if (step == "normalize-path" || step == "directory-attributes" || step == "directory-parent" ||
@@ -420,6 +425,87 @@ public static partial class CodexManagePrivateStateSecurity
             throw new UnauthorizedAccessException("WRONG_FILE_OWNER");
     }
 
+    [DllImport("kernel32.dll", EntryPoint = "GetCurrentProcessId")]
+    private static extern uint OwnerEvidenceProcessId();
+    [DllImport("kernel32.dll", EntryPoint = "GetCurrentProcess")]
+    private static extern IntPtr OwnerEvidenceProcess();
+    [DllImport("kernel32.dll", EntryPoint = "GetProcessTimes", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool OwnerEvidenceProcessTimes(IntPtr process, out long creation,
+        out long exit, out long kernel, out long user);
+    [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode,
+        SetLastError = true)]
+    private static extern uint OwnerEvidenceFinalPath(SafeFileHandle file, StringBuilder path,
+        uint size, uint flags);
+
+    // Private typed evidence only. Arbitrary exception Data/Message is never serialized.
+    private sealed class OwnerEvidence
+    {
+        internal readonly string Frame;
+        internal OwnerEvidence(string frame) { Frame = frame; }
+    }
+
+    private static string OwnerHash(string text)
+    {
+        using (var hash = System.Security.Cryptography.SHA256.Create())
+            return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(text)))
+                .Replace("-", "").ToLowerInvariant();
+    }
+
+    private static string OwnerPathHash(string path)
+    {
+        if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+            path = @"\\" + path.Substring(8);
+        else if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) path = path.Substring(4);
+        return OwnerHash(path.Replace('/', '\\').ToLowerInvariant());
+    }
+
+    public static string OwnerFailureEvidence(Exception error)
+    {
+        var value = error.Data["CodexManage.OwnerEvidence"] as OwnerEvidence;
+        return error is UnauthorizedAccessException && error.Message == "WRONG_FILE_OWNER" &&
+            value != null ? value.Frame : null;
+    }
+
+    private static void CheckRetainedOwner(SafeFileHandle file, FileInformation info,
+        RawSecurityDescriptor current, SecurityIdentifier sid, string action, string path)
+    {
+        try { CheckOwner(current, sid); }
+        catch (UnauthorizedAccessException error)
+        {
+            // This is the already-rejected descriptor and the very handle used by
+            // the policy check. No reopen, file-body read, ACL write or retry.
+            // Diagnostic failure must never replace the original policy refusal.
+            if (error.Message == "WRONG_FILE_OWNER") try
+            {
+                string started = "-", defaultOwner = "-", finalPath = "-";
+                long creation, exit, kernel, user;
+                if (OwnerEvidenceProcessTimes(OwnerEvidenceProcess(), out creation, out exit,
+                    out kernel, out user) && creation > 0) started = creation.ToString();
+                try
+                {
+                    using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                        if (identity.Owner != null) defaultOwner = OwnerHash(identity.Owner.Value);
+                }
+                catch { /* Optional default-owner metadata does not suppress handle evidence. */ }
+                var final = new StringBuilder(32768);
+                uint length = OwnerEvidenceFinalPath(file, final, (uint)final.Capacity, 0);
+                if (length > 0 && length < final.Capacity) finalPath = OwnerPathHash(final.ToString());
+                string id = info.Volume.ToString("x8") + ":" +
+                    (((ulong)info.IndexHigh << 32) | info.IndexLow).ToString("x16");
+                string frame = String.Join("|", new[] {
+                    action, OwnerEvidenceProcessId().ToString(), started, OwnerHash(sid.Value),
+                    defaultOwner, current.Owner == null ? "-" : OwnerHash(current.Owner.Value),
+                    OwnerPathHash(path), OwnerHash(id), finalPath,
+                    (info.Attributes & (uint)FileAttributes.Directory) != 0 ? "directory" : "file"
+                });
+                error.Data["CodexManage.OwnerEvidence"] = new OwnerEvidence(frame);
+            }
+            catch { /* Preserve the original rejection if metadata is unavailable. */ }
+            throw;
+        }
+    }
+
     private static void CheckAccess(RawSecurityDescriptor current, string[] allowed)
     {
         // A NULL DACL grants everyone access; an empty enumeration is not proof.
@@ -476,7 +562,7 @@ public static partial class CodexManagePrivateStateSecurity
             if (sid == null) throw new UnauthorizedAccessException();
             string[] allowed = { sid.Value, "S-1-5-18", "S-1-5-32-544" };
             RawSecurityDescriptor current = ReadSecurity(file);
-            CheckOwner(current, sid);
+            CheckRetainedOwner(file, info, current, sid, action, path);
             if (action != "check")
             {
                 if ((action == "protect") != directory) throw new IOException();
@@ -514,7 +600,7 @@ public static partial class CodexManagePrivateStateSecurity
                     finally { pinned.Free(); }
                 }
                 current = ReadSecurity(file);
-                CheckOwner(current, sid);
+                CheckRetainedOwner(file, info, current, sid, action, path);
                 if ((current.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
                     throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");
             }

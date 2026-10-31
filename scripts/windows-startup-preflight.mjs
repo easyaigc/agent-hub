@@ -82,7 +82,7 @@ export function sanitizeStartupContext(value, pid) {
     formalHostContext: 'not-observed',
   };
   const digest = (v) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
-  for (const key of ['userHash', 'ownerHash', 'imagePathHash'])
+  for (const key of ['userHash', 'ownerHash', 'imagePathHash', 'helperUserHash'])
     if (digest(value[key])) result[key] = value[key];
   for (const key of [
     'ownerMatchesUser',
@@ -113,7 +113,7 @@ export function sanitizeStartupContext(value, pid) {
     result.file = {};
     for (const key of ['directory', 'reparse', 'ownerMatchesNodeUser', 'protected', 'daclPresent'])
       if (typeof value.file[key] === 'boolean') result.file[key] = value.file[key];
-    for (const key of ['identityHash', 'finalPathHash', 'descriptorHash'])
+    for (const key of ['identityHash', 'finalPathHash', 'descriptorHash', 'ownerHash'])
       if (digest(value.file[key])) result.file[key] = value.file[key];
     for (const key of ['unknownAceCount', 'unsafeAllowCount'])
       if (Number.isSafeInteger(value.file[key]) && value.file[key] >= 0 && value.file[key] < 65536)
@@ -270,6 +270,31 @@ export async function runWindowsStartupPreflight({ hostConfig, bundle, workingDi
           pathHash(realpathSync.native(path)) === metadata.value.file.finalPathHash;
       }
       await step('publisher-token-native-check', () => runtimePlatform.assertPrivateFile(path));
+      const owner = report.steps.at(-1)?.failure?.nativeOwner;
+      if (owner) {
+        const compare = (actual, expected) =>
+          typeof actual === 'string' && typeof expected === 'string'
+            ? actual === expected
+            : 'unavailable';
+        report.publisherOwnerBinding = {
+          source: 'same-retained-handle-on-rejected-native-check',
+          helperUserMatchesNode: compare(owner.helperUserHash, metadata.value?.userHash),
+          ownerMatchesIndependentMetadata: compare(
+            owner.fileOwnerHash,
+            metadata.value?.file?.ownerHash,
+          ),
+          handleMatchesIndependentMetadata: compare(
+            owner.handleIdentityHash,
+            metadata.value?.file?.identityHash,
+          ),
+          finalPathMatchesIndependentMetadata: compare(
+            owner.finalPathHash,
+            metadata.value?.file?.finalPathHash,
+          ),
+          requestedPathMatchesConfiguration: owner.requestedPathHash === pathHash(path),
+          transportPidMatches: owner.transportPidMatches ?? 'unavailable',
+        };
+      }
       await step('publisher-token-same-source-powershell-check', () => {
         const value = runPowerShell(adapter, 'private-state.ps1', [
           '-Action',
@@ -359,11 +384,20 @@ export async function prepareWindowsStartupProbe({
     };
     const path = join(directory, 'windows-host.json');
     platform.writePrivateFileSync(path, JSON.stringify(value), { flag: 'wx' });
+    const worker = join(repository, 'scripts/windows-desktop-worker.mjs');
     return {
       kind: 'windows-host-startup-probe-prepared',
       configuration: path,
       report: reportPath,
       nonce: value.nonce,
+      launcherProtocol: {
+        version: 1,
+        arguments: [process.execPath, worker, path],
+        nodeSource: 'actual-preparing-process',
+        formalNodeIdentityMustBeVerified: true,
+        worker,
+        configuration: path,
+      },
       scheduledTaskCreated: false,
       formalConfigurationWritten: false,
       formalHostStarted: false,

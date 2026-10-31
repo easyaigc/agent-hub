@@ -526,6 +526,96 @@ test('unrecognized native directory stage retires rather than exposing payload o
   );
 });
 
+test('owner refusal evidence stays correlated with the real transport child and never grants or replays', async (t) => {
+  const f = await fixture(t, 'owner-evidence'),
+    backend = f.open();
+  for (let attempt = 0; attempt < 2; attempt++)
+    assert.throws(
+      () => backend.call('check', 'synthetic-target'),
+      (error) => {
+        assert(rejected(error));
+        assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+        assert.equal(error.nativeOwner.helperPid, backend.status.pid);
+        assert.equal(error.nativeOwner.transportPidMatches, true);
+        assert.equal(error.nativeOwner.helperUserHash, '1'.repeat(64));
+        assert.equal(error.nativeOwner.fileOwnerHash, '3'.repeat(64));
+        assert.equal(error.nativeOwner.targetKind, 'file');
+        return true;
+      },
+    );
+  backend.call('protect-file', 'synthetic-target');
+  assert.equal(f.events().filter((v) => v.event === 'spawn').length, 1);
+  assert.deepEqual(
+    f
+      .events()
+      .filter((v) => v.event === 'request')
+      .map((v) => v.action),
+    ['check', 'check', 'protect-file'],
+  );
+});
+
+test('owner metadata from a different PID cannot turn refusal into acceptance', async (t) => {
+  const f = await fixture(t, 'owner-evidence-wrong-pid'),
+    backend = f.open();
+  assert.throws(
+    () => backend.call('check', 'synthetic-target'),
+    (error) => {
+      assert(rejected(error));
+      assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+      assert.equal(error.nativeOwner.transportPidMatches, false);
+      return true;
+    },
+  );
+  assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
+});
+
+test('malformed owner frame retires its real channel without replaying a request', async (t) => {
+  const f = await fixture(t, 'owner-evidence-bad-hash'),
+    backend = f.open();
+  assert.throws(() => backend.call('check', 'synthetic-target'), unavailable);
+  assert.throws(() => backend.call('check', 'synthetic-target'), unavailable);
+  assert.equal(f.events().filter((v) => v.event === 'spawn').length, 1);
+  assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
+});
+
+test('owner evidence accepts only the fixed failure schema and does not expose arbitrary payload', async (t) => {
+  const f = await fixture(t),
+    parse = f.options.parseWindowsPrivateStateRejection;
+  const base = 'UNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException:owner-check';
+  const fields = [
+    'check',
+    '123',
+    '-',
+    '1'.repeat(64),
+    '-',
+    '2'.repeat(64),
+    '3'.repeat(64),
+    '4'.repeat(64),
+    '-',
+    'file',
+  ];
+  assert.equal(parse(base + ':OWNER1:' + fields.join('|')).nativeOwner.helperPid, 123);
+  for (const [index, value] of [
+    [0, 'read-secret'],
+    [1, '0001'],
+    [1, '4294967296'],
+    [2, '9223372036854775808'],
+    [3, 'private SID'],
+    [5, 'C:\\private'],
+    [9, 'other'],
+  ]) {
+    const bad = fields.slice();
+    bad[index] = value;
+    assert.equal(parse(base + ':OWNER1:' + bad.join('|')), undefined);
+  }
+  assert.equal(parse(base + ':OWNER1:' + fields.join('|') + '|private'), undefined);
+  assert.equal(parse(base + ':OWNER1:' + fields.join('|') + ':OWNER1:private'), undefined);
+  assert.equal(
+    parse(base.replace('owner-check', 'dacl-allow-subject-check') + ':OWNER1:' + fields.join('|')),
+    undefined,
+  );
+});
+
 for (const [step, reason] of [
   ['owner-check', 'WRONG_FILE_OWNER'],
   ['dacl-presence-check', 'NULL_PRIVATE_DACL'],

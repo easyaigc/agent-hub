@@ -18701,6 +18701,15 @@
         "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "991bbcf01b9cc9c365c4c4dce5072ea456ea5abe733a7b3e6421f61bf72ab90b",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "31e0155874d2fc0a928b81faaa200882a557932e0a756ffdf180d441f5f859cc"
       }
+    },
+    {
+      "id": "android-source78-seal-original-three-pid-20261101",
+      "baseCommit": "790547fc8b18b3359e51268bb0b552c3bd29bb77",
+      "features": ["F47", "F55", "F56", "F64"],
+      "summary": "同原候选writer／activate／只读audit三次Native方法本范围限定通过，397原捕获Root逐条核验；writer及activate原collector exit1保持，Root只读重核后接续，audit原collector退出0，不重跑seal／导出／暂存／激活。r2的36项与r3的33项纯检查仅辅助；真实I/O／断电／进程死亡、旧PID退出／FD／UI／物理DEV及iOS不新增通过。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSealCheckpointThreePidTest.kt": "b0cdaf21cb2afee1ea60c3e0135f560dd073fac765edff69aa10830df6f8598c"
+      }
     }
   ]
 }

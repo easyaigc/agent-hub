@@ -228,3 +228,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source79共用电脑行按钮角色与保存连接](source79-p8-discovery-row-role.md)：3原方法／4夹具／397份完整捕获限定通过；target／replacement仅Native终态0、原tar采集失败保留，完整数据读回待验，不重跑Native。
 
 - [Source80 mixed v1/v2惰性目录迁移](source80-p7-mixed-provisional.md)：SDK及单方法Native／97成员完整读回限定通过；原安装工具外层回执未知单列。Source79原件数据级核对通过、恢复外层退出未知保持，旧操作不重放。
+
+- [Source81 P9原回执跨进程只读消费](source81-p9-existing-receipt-read.md)：SDK／安装通过；不同PID只读消费限定通过。真实Main冷入口／OS点击、完整UI／生命周期与物理DEV继续待验，不升级旧失败／未知。

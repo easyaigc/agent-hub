@@ -3563,6 +3563,14 @@
       "packages/codex-adapter/windows/startup-probe.cs",
       "packages/codex-adapter/windows/startup-probe.ps1",
       "scripts/windows-control-smoke.mjs"
+    ],
+    "AndroidNotificationExistingReceiptRead": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationReceiptExistingReadTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundLibrary.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt"
     ]
   },
   "groups": [
@@ -6562,11 +6570,12 @@
         "AndroidMigrationRealSystemPickerPrepared",
         "AndroidTreeHomeReadinessPrepared",
         "AndroidDebugHomeResolverVisibility",
-        "AndroidNoticeOriginalInspection"
+        "AndroidNoticeOriginalInspection",
+        "AndroidNotificationExistingReceiptRead"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 24,
+      "revision": 25,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6675,11 +6684,12 @@
         "AndroidNotificationUpgradeGuardDiagnostics",
         "AndroidExactApiBinderMetadata",
         "AndroidKindBoundedNativeDiagnostic",
-        "AndroidOriginalBootstrapColdRead"
+        "AndroidOriginalBootstrapColdRead",
+        "AndroidNotificationExistingReceiptRead"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 40,
+      "revision": 41,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6712,11 +6722,12 @@
         "AndroidNotificationClosedEnrollmentOriginals",
         "AndroidMigrationBoundedTextFrames",
         "AndroidMigrationEasyWorkAuditArchives",
-        "AndroidNoticeOriginalInspection"
+        "AndroidNoticeOriginalInspection",
+        "AndroidNotificationExistingReceiptRead"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 18,
+      "revision": 19,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6813,11 +6824,12 @@
         "AndroidProvisionalVoiceControls",
         "AndroidInertInboxAndVoiceRecovery",
         "AndroidSystemOriginals",
-        "AndroidFixedVoiceReadback"
+        "AndroidFixedVoiceReadback",
+        "AndroidNotificationExistingReceiptRead"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 85,
+      "revision": 86,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6980,11 +6992,12 @@
         "AndroidOwnedAxAndMenuPixels",
         "AndroidExistingOriginalReadOnlyStorage",
         "AndroidProvisionalVoiceControls",
-        "AndroidInertInboxAndVoiceRecovery"
+        "AndroidInertInboxAndVoiceRecovery",
+        "AndroidNotificationExistingReceiptRead"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 164,
+      "revision": 165,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -18728,6 +18741,15 @@
       "summary": "mixed v1/v2惰性目录单方法Native及完整数据限定通过：旧null／新descriptor、三份binary393305字节、六类坏图拒绝及不同原回执两次激活；97新成员与parent共98差异，89设备＋8本地捕获完整读回，51旧根／44APK保持。SDK858/871及三包／12SDK流通过。原安装业务成功与数据已核，但工具外层退出未知单列；按具名数据级许可执行不同新Native，不重放安装、不升级旧执行。UI／物理DEV、完整24组、真实seal故障／低堆／生命周期及iOS音频资料缺口继续开放。",
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMixedProvisionalVersionTest.kt": "234592704bb171643f96b961d4600aae69d4782800070e9ef4b1eb36e51e75dc"
+      }
+    },
+    {
+      "id": "android-source81-p9-existing-receipt-read-20261101",
+      "baseCommit": "2ba69a8712293a3d1700229530187182f2f12eec",
+      "features": ["F51", "F53", "F54", "F55", "F56"],
+      "summary": "Source81新增Android分开调用的writer及existingReadOnly消费验收，不同PID只读消费限定通过；原pending nonce／terminal ACK、未知v2原intent、夹具metadata草稿字段、隐私和完整合成导入声音按阶段核对。SDK859/872及安装零数据差异通过；不同PID不证明旧进程退出或真实死亡，显式now不是实际TTL。nonce／v2原intent是Android附加恢复保障，不声称iOS同构journal；准确target、隐私及声音为共同断言。无Main／OS通知／播放／UI／真实Host或模型；完整P9、P7低堆／24组及物理DEV继续待验。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationReceiptExistingReadTest.kt": "300a1529d8bb53acbf2fb9910d6aa6205410737886d0e5a197d03602690552bb"
       }
     }
   ]

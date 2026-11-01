@@ -182,3 +182,34 @@ private struct MessageSafariView: UIViewControllerRepresentable {
     }
   }
 }
+
+/// Compatibility for cached messages and Hosts which still return desktop directives.
+enum MobileVisualizationLinks {
+  static func render(_ text: String) -> String {
+    guard text.contains("visualize"), let regex = try? NSRegularExpression(
+      pattern: "(`+)[\\s\\S]*?\\1|visualize([^]{1,16384})") else { return text }
+    var result = text
+    for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).reversed() {
+      guard match.range(at: 1).location == NSNotFound,
+        let payload = Range(match.range(at: 2), in: text),
+        let data = String(text[payload]).data(using: .utf8),
+        let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let path = object["path"] as? String, path.utf8.count <= 8192,
+        ["html", "htm"].contains((path as NSString).pathExtension.lowercased()),
+        !path.unicodeScalars.contains(where: { $0.value < 32 }),
+        path.hasPrefix("/") || path.hasPrefix("~/") || path.range(of: #"^[A-Za-z]:[/\\]"#, options: .regularExpression) != nil,
+        let range = Range(match.range, in: result) else { continue }
+      var allowed = CharacterSet.urlPathAllowed
+      allowed.remove(charactersIn: "()<>#?%")
+      guard let destination = path.addingPercentEncoding(withAllowedCharacters: allowed) else { continue }
+      let name = (path.replacingOccurrences(of: "\\", with: "/") as NSString).lastPathComponent
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "[", with: "\\[").replacingOccurrences(of: "]", with: "\\]")
+      let label = ["`", "*", "_", "~"].reduce(name) { value, character in
+        value.replacingOccurrences(of: character, with: "\\" + character)
+      }
+      result.replaceSubrange(range, with: "[" + L10n.tr("可视化") + " · " + label + "](<" + destination + ">)")
+    }
+    return result
+  }
+}

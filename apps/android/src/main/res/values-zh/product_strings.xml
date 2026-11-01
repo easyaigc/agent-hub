@@ -1662,6 +1662,10 @@
     <string name="product_0bb6ef6a18e1fb128ba84d25" formatted="false">"任一限制可用"</string>
     <string name="product_ae25ef22856b7e79855c26b5" formatted="false">"按服务端规则"</string>
     <string name="product_ba39316da2cf42a5535f02f7" formatted="false">"观察时间"</string>
+    <string name="product_9af64ccc359b745b098853b5" formatted="false">"可视化"</string>
+    <string name="product_4c98e6f040fb203b8dd80b12" formatted="false">"无法显示可视化"</string>
+    <string name="product_bb57303a7e6903ccdb7f2072" formatted="false">"此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。"</string>
+    <string name="product_9b50f54fadefae4ca3d247dc" formatted="false">"预览已中断，请关闭后重新打开。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-01 F19／F32 可视化：Adapter 将完整 visualize 指令转换为普通原消息文件链接并登记 HTML 附件；iOS 对旧缓存指令提供展示兼容，仍走准确消息具名解析。下载校验后的不可变 HTML 在无原生桥、非持久 WebKit 与 allow-scripts 沙箱 frame 中运行，固定 CSP 限制 CDN、导航、表单及嵌套页面，不给页面 Host 凭据或目录授权。Markdown F72 路径保持原生纯阅读；Android HTML 容器尚待实施。实现与本机实体结果见[专项记录](acceptance/visualization-20261101.md)。
+
 Windows 私有状态的 `protect` 在同一 retained handle 校验当前 User owner 和对象类型后，只对已 protected 且 DACL 字节与标准三 SID／完整权限／继承标志完全一致的对象跳过 `SetSecurityInfo`；仍重读并执行 owner、protected、访问主体校验。其他 DACL 沿用原保护／拒绝路径，不按 Administrators owner 或仅 trusted allow 放宽。避免重复写入可继承 DACL 对未 protected 旧 v1 子对象产生副作用；实际 Windows ctime 因果与新 Native 输入通过另行验收，见[幂等保护记录](acceptance/windows-private-dacl-idempotence-20261031.md)。
 
 2026-10-31 F69 源码候选：Windows 原桌面建议观察器在原字节管道建立并收到原执行器响应后启动固定采集 Worker。Worker 使用同一原 owner、配置和启动器链验证的持久 C# producer scope，私有快照及有界 vendor-log range 不再逐次启动进程；旧 Host reader 的接口保持。队列、帧、每次原生响应及聚合阶段均有界，六秒租期不变；观察器失败仅关闭采集，未就绪前的帧不积存或重放。建议先持久保存并读回，每会话仅留最新一条；已封口且安静的对应原始 Trace 才可回收。当前实现、辅助检查和逐机真实验收分别见 [本轮记录](acceptance/host-native-suggestions-20261031.md)，不能以源码或旧版本结果代替本次 Windows 与手机建议通过。

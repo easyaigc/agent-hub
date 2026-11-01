@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { messageLinks, localMessagePath } from '../packages/codex-adapter/dist/message-links.js';
+import {
+  messageLinks,
+  localMessagePath,
+  mobileVisualizationLinks,
+} from '../packages/codex-adapter/dist/message-links.js';
 import { renderItem } from '../packages/codex-adapter/dist/runtime.js';
 import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
 
@@ -40,6 +45,20 @@ for (const reference of [
   'C:%5Cfixture%5C%00secret',
 ])
   assert.equal(localMessagePath(reference), undefined, reference);
+
+const visualization = (path) => `visualize${JSON.stringify({ path })}`;
+for (const text of [
+  '`' + visualization('/tmp/chart.html') + '`',
+  '```html\n' + visualization('/tmp/chart.html') + '\n```',
+  'visualize{"path":',
+  'visualize{invalid}',
+])
+  assert.equal(mobileVisualizationLinks(text), text);
+for (const path of ['/tmp/a b.html', '/tmp/a#b?.html', '/tmp/a (b).html']) {
+  const links = messageLinks(mobileVisualizationLinks(visualization(path)));
+  assert.equal(links.length, 1);
+  assert.equal(localMessagePath(links[0].reference), path);
+}
 
 // Synthetic boundary regression; real desktop/native/model acceptance is separate.
 const directory = await mkdtemp(join(tmpdir(), 'message-links-'));
@@ -184,6 +203,69 @@ try {
   );
   await rm(path);
   await writeFile(path, 'version three');
+  const visualPath = join(root, 'chart #?.html');
+  const visualBytes = '<button>可视化</button>';
+  await writeFile(visualPath, visualBytes);
+  const desktop = new RuntimeSession({
+    mode: 'desktop-runtime',
+    directory: join(directory, 'desktop-state'),
+    root,
+    name: 'Visualization boundary',
+  });
+  try {
+    const visualThread = {
+      id: 'visual-thread',
+      hostId: desktop.hostId,
+      projectId: null,
+      title: 'Visualization',
+      state: 'idle',
+      turnId: null,
+      messages: [],
+      plan: [],
+      error: null,
+    };
+    desktop.state.threads.push(visualThread);
+    await desktop.upsert(visualThread, {
+      id: 'visual-message',
+      type: 'agentMessage',
+      text: visualization(visualPath),
+    });
+    const visualMessage = visualThread.messages[0];
+    assert.equal(visualMessage.attachments.length, 1);
+    const attachment = visualMessage.attachments[0];
+    assert.equal(attachment.mediaType, 'text/html');
+    assert.equal(attachment.sha256, createHash('sha256').update(visualBytes).digest('hex'));
+    assert.equal(
+      (await desktop.download(visualThread.id, attachment.id)).data.toString(),
+      visualBytes,
+    );
+    await assert.rejects(
+      desktop.resolveMessageFile(visualThread.id, 'different-message', visualPath),
+      (error) => error.status === 403,
+    );
+    await writeFile(visualPath, '<p>changed</p>');
+    await assert.rejects(
+      desktop.download(visualThread.id, attachment.id),
+      (error) => error.status === 409,
+    );
+  } finally {
+    await desktop.close();
+  }
+  // Labels must not be interpreted as markup when the filename contains punctuation.
+  for (const path of ['/tmp/a`b.html', '/tmp/a*b.html', '/tmp/a_b.html', '/tmp/a~b.html']) {
+    const rendered = mobileVisualizationLinks(visualization(path));
+    const links = messageLinks(rendered);
+    const special = path.includes('`')
+      ? '`'
+      : path.includes('*')
+        ? '*'
+        : path.includes('_')
+          ? '_'
+          : '~';
+    assert(rendered.includes('\\' + special), `Visualization label must escape ${special}`);
+    assert.equal(links.length, 1, `Visualization label must stay a link: ${path}`);
+    assert.equal(localMessagePath(links[0].reference), path);
+  }
   const options = session.options;
   await session.close();
   session = new RuntimeSession(options);

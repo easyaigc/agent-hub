@@ -2882,7 +2882,7 @@ struct MarkdownBody: View, Equatable {
     let _ = { if HistoryScrollProbe.enabled { HistoryScrollProbe.shared.markdownBodies += 1 } }()
     #endif
     VStack(alignment: .leading, spacing: 8) {
-      ForEach(Array(text.components(separatedBy: "```").enumerated()), id: \.offset) {
+      ForEach(Array(MobileVisualizationLinks.render(text).components(separatedBy: "```").enumerated()), id: \.offset) {
         index, part in
         if index % 2 == 1 {
           let lines = part.components(separatedBy: "\n")

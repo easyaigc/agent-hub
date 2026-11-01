@@ -1,5 +1,9 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-01 F19／F32 可视化验收补记：独立 iOS 模拟器原生整例 1 通过／0 失败／0 跳过，覆盖 HTML 显示、交互、双向滚动、关闭与重开；真实原 owner 保持一次输入。真机两次停在系统自动化初始化，用户要求先完成模拟器，物理保持待复验；Android 交互容器未实施。详见 [专项记录](../acceptance/visualization-20261101.md)。
+
+2026-11-01 F19／F32（UI05／UI07／UI12）可视化：Codex 完整 visualize 内容引用映射为可点击文件入口，沿用原消息／完整目标授权、文件摘要及大小校验；iOS 增加独立 HTML 沙箱预览，支持脚本图表、滚动、关闭返回和原文件分享。仅允许固定可视化 CDN，无原生桥、Host 凭据或任意电脑目录访问；Markdown 阅读页 F72 仍不执行其内嵌 HTML。Android 共用 Host 的引用投影，但交互 HTML 预览与旧 Host 缓存指令兼容待实施，不能记为双端通过。实现、辅助与物理 iPhone 结果见[专项记录](../acceptance/visualization-20261101.md)，A6 保持暂停。
+
 2026-10-30 F03／F12／F69／F75：冻结R2的Host运行能力向PR73主线做实际三方集成，保留共享发现、创建租约和既有业务；Native建议/Trace/GC、子任务及只读Git同源保留。当前iOS/Android页面不移植、不新增通过，F75当前main只登记Host兼容与原生计划；R2旧证据保持原上下文，A6暂停。见[集成记录](../acceptance/codex-update-r2-integration-20261030.md)。
 
 2026-10-30 F03／F69：既有 Windows v1 阅读缓存保留 owner 与内容，启用可重建 v2；Native 创建租约衔接 Node FD，释放确认未知不截断。编译产物由保留句柄发布。R2 与 main 尚未统一，旧 owner 包禁止覆盖已部署 R2；本机辅助不替代 Windows Native／真实更新。双端 UI 不变，A6 暂停。见[专项记录](../acceptance/codex-update-resilience-20261030.md)。

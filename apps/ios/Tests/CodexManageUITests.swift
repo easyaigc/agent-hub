@@ -894,6 +894,23 @@ final class CodexManageUITests: XCTestCase {
   private var suggestionCleanupTarget: (hostId: String, originalId: String)?
   override func setUpWithError() throws {
     continueAfterFailure = false
+    if name.contains("testVisualizationPhysicalDEV") {
+      guard let raw = ProcessInfo.processInfo.environment["VISUALIZATION_FIXTURE"],
+        let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+        let bundleId = fixture["bundleId"] as? String,
+        bundleId.hasPrefix("com.easyai.agenthub.visualization.") else {
+        throw XCTSkip("Requires the independent visualization acceptance App")
+      }
+      XCUIDevice.shared.orientation = .portrait
+      app = XCUIApplication(bundleIdentifier: bundleId)
+      addUIInterruptionMonitor(withDescription: "Visualization acceptance network permission") { alert in
+        let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow"])).firstMatch
+        guard allow.exists else { return false }; allow.tap(); return true
+      }
+      app.launchArguments = ["-ui-testing"]
+      app.launchChineseTest()
+      return
+    }
     if name.contains("testMarkdownFilePreviewPhysicalDEV") {
       guard let raw = ProcessInfo.processInfo.environment["FILE_PREVIEW_FIXTURE"],
         let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
@@ -16313,5 +16330,78 @@ extension CodexManageUITests {
     XCTAssertFalse(app.buttons["file-preview-close"].exists, "Other file types retain system preview")
     shot("markdown-preview-plain-file-system-fallback")
     done.tap()
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testVisualizationPhysicalDEV() async throws {
+    struct Fixture: Decodable {
+      let bundleId: String
+      let connection: LiveFixture
+      let visualizationLabel: String
+      let pairingUri: String?
+    }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["VISUALIZATION_FIXTURE"])
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(raw.utf8))
+    XCTAssertTrue(fixture.bundleId.hasPrefix("com.easyai.agenthub.visualization."))
+    if let pairingUri = fixture.pairingUri {
+      allowAcceptanceLocalNetworkPermission()
+      app.buttons["client-switch"].tap()
+      let add = app.buttons["add-client"]
+      for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+      XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+      selectConnectionMethod("扫码连接", agent: "codex")
+      let qr = app.textFields["codex-qr-description"]
+      XCTAssertTrue(qr.waitForExistence(timeout: 15)); qr.tap(); qr.typeText(pairingUri)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+      app.buttons["codex-connect-qr"].tap()
+      XCTAssertTrue(qr.waitForNonExistence(timeout: 90), app.debugDescription)
+      dismissSystemPasswordOffer()
+    } else {
+      connectLive(fixture.connection, supportsCreation: false, nickname: "Visualization DEV")
+    }
+    openDesktopTestConversation(fixture.connection)
+    let timeline = app.scrollViews["message-list"]
+    func openVisualization() {
+      let link = app.links.matching(NSPredicate(format: "label == %@", fixture.visualizationLabel)).firstMatch
+      let text = app.staticTexts.matching(NSPredicate(format: "label == %@", fixture.visualizationLabel)).firstMatch
+      let button = app.buttons.matching(NSPredicate(format: "label == %@", fixture.visualizationLabel)).firstMatch
+      for _ in 0..<10 where !link.isHittable && !text.isHittable && !button.isHittable { timeline.swipeUp() }
+      if link.isHittable { link.tap() }
+      else if button.isHittable { button.tap() }
+      else { XCTAssertTrue(text.isHittable, app.debugDescription); text.tap() }
+      XCTAssertTrue(app.otherElements["visualization-preview-screen"].waitForExistence(timeout: 30), app.debugDescription)
+      XCTAssertTrue(app.buttons["visualization-preview-close"].waitForExistence(timeout: 30), app.debugDescription)
+      XCTAssertTrue(app.webViews["visualization-web"].waitForExistence(timeout: 30), app.debugDescription)
+    }
+    openVisualization()
+    let web = app.webViews["visualization-web"]
+    XCTAssertTrue(web.staticTexts["可视化真机验收"].waitForExistence(timeout: 20), app.debugDescription)
+    XCTAssertTrue(web.staticTexts["当前值 80%"].waitForExistence(timeout: 10), app.debugDescription)
+    let increment = web.buttons["增加阈值"]
+    XCTAssertTrue(increment.waitForExistence(timeout: 10), app.debugDescription)
+    increment.tap()
+    XCTAssertTrue(web.staticTexts["当前值 90%"].waitForExistence(timeout: 10), app.debugDescription)
+    shot("visualization-interaction")
+    let graph = web.otherElements.matching(NSPredicate(format: "label BEGINSWITH %@", "横向图表")).firstMatch
+    XCTAssertTrue(graph.waitForExistence(timeout: 10), app.debugDescription)
+    let chart = graph.images["阈值图表"]
+    XCTAssertTrue(chart.waitForExistence(timeout: 10), app.debugDescription)
+    let initialChartX = chart.frame.minX
+    graph.swipeLeft()
+    XCTAssertLessThan(chart.frame.minX, initialChartX, "The wide chart must actually scroll horizontally")
+    let end = web.staticTexts["长内容末尾"]
+    XCTAssertTrue(end.waitForExistence(timeout: 10), app.debugDescription)
+    let initialEndY = end.frame.minY
+    for _ in 0..<8 where !web.frame.contains(CGPoint(x: end.frame.midX, y: end.frame.midY)) { web.swipeUp() }
+    XCTAssertLessThan(end.frame.minY, initialEndY, "Long content must actually scroll vertically")
+    XCTAssertTrue(web.frame.contains(CGPoint(x: end.frame.midX, y: end.frame.midY)), app.debugDescription)
+    shot("visualization-scroll")
+    app.buttons["visualization-preview-close"].tap()
+    XCTAssertTrue(app.buttons["visualization-preview-close"].waitForNonExistence(timeout: 10))
+    openVisualization()
+    XCTAssertTrue(web.staticTexts["可视化真机验收"].waitForExistence(timeout: 20), app.debugDescription)
+    app.buttons["visualization-preview-close"].tap()
+    XCTAssertTrue(app.buttons["visualization-preview-close"].waitForNonExistence(timeout: 10))
   }
 }

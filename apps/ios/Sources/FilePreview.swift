@@ -1,5 +1,6 @@
 import SwiftUI
 import QuickLook
+import WebKit
 import CryptoKit
 import MobileCore
 import FilePreviewKit
@@ -46,11 +47,12 @@ enum FilePreviewRegistry {
 extension View {
   func filePreview(_ selection: Binding<FilePreviewItem?>) -> some View {
     sheet(item: Binding(get: {
-      selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) == nil ? nil : $0 }
+      selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) != nil || VisualizationPreview.accepts($0) ? $0 : nil }
     }, set: { selection.wrappedValue = $0 })) { item in
-      if let renderer = FilePreviewRegistry.renderer(item) { DocumentFilePreview(item: item, renderer: renderer).id(item.id) }
+      if VisualizationPreview.accepts(item) { VisualizationFilePreview(item: item).id(item.id) }
+      else if let renderer = FilePreviewRegistry.renderer(item) { DocumentFilePreview(item: item, renderer: renderer).id(item.id) }
     }.quickLookPreview(Binding(get: {
-      selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) == nil ? $0.url : nil }
+      selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) == nil && !VisualizationPreview.accepts($0) ? $0.url : nil }
     }, set: { if $0 == nil { selection.wrappedValue = nil } }))
   }
 }
@@ -455,5 +457,119 @@ private struct SourcePreviewText: UIViewRepresentable {
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate: Bool) {
       if !willDecelerate { offset.wrappedValue = scrollView.contentOffset.y }
     }
+  }
+}
+
+// HTML is an immutable downloaded resource. Its scripts receive no native bridge,
+// credentials, local file access, persistent website data or top-level navigation.
+enum VisualizationPreview {
+  static let maximumBytes = 2 * 1024 * 1024
+  static func accepts(_ item: FilePreviewItem) -> Bool {
+    ["html", "htm"].contains((item.name as NSString).pathExtension.lowercased())
+      || item.mediaType.lowercased().split(separator: ";").first == "text/html"
+  }
+  static func document(_ fragment: String) -> String {
+    let sources = "https://cdnjs.cloudflare.com https://esm.sh https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://fonts.bunny.net https://persistent.oaistatic.com/plugins/visualize/"
+    let policy = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' \(sources); style-src 'unsafe-inline' \(sources); img-src data: blob: \(sources); font-src data: \(sources); connect-src \(sources); worker-src blob:; media-src data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    func escape(_ text: String) -> String {
+      text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "\"", with: "&quot;")
+        .replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+    }
+    let inner = """
+    <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="\(escape(policy))"><style>\(styles)</style></head><body>\(fragment)</body></html>
+    """
+    let outerPolicy = policy.replacingOccurrences(of: "frame-src 'none'", with: "frame-src about:")
+    return """
+    <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="\(escape(outerPolicy))"><style>html,body{margin:0;height:100%;background:transparent}iframe{display:block;width:100%;height:100%;border:0}</style></head><body><iframe title="可视化" sandbox="allow-scripts" referrerpolicy="no-referrer" srcdoc="\(escape(inner))"></iframe></body></html>
+    """
+  }
+  // The visualization fragment contract uses these semantic tokens. Keep them
+  // independent of the conversation layout so desktop fixed-width charts can scroll.
+  static let styles = """
+  :root{color-scheme:light dark;--background:light-dark(#fff,#181818);--foreground:light-dark(#1a1c1f,#fff);--card:light-dark(#f5f5f5,#242424);--card-foreground:var(--foreground);--popover:var(--background);--popover-foreground:var(--foreground);--primary:light-dark(#007aff,#83c3ff);--primary-foreground:#fff;--secondary:var(--card);--secondary-foreground:var(--foreground);--muted:light-dark(#f0f0f0,#303030);--muted-foreground:light-dark(#737373,#aaa);--accent:light-dark(#e5f2ff,#0d273f);--accent-foreground:var(--primary);--border:light-dark(#ddd,#444);--input:var(--border);--ring:var(--primary);--destructive:#e25507;--blue:#339cff;--orange:#f3883b;--green:#5dc977;--red:#eb77b1;--purple:#9b79ec;--yellow:#ffc300;--viz-series-1:var(--primary);--viz-series-2:var(--orange);--viz-series-3:var(--green);--viz-series-4:var(--red);--viz-series-5:var(--purple);--viz-series-6:#3ab9b1;--color-background-primary:var(--background);--color-background-secondary:var(--card);--color-text-primary:var(--foreground);--color-text-secondary:var(--muted-foreground);--color-border-primary:var(--border);--color-border-secondary:var(--border);--color-text-info:var(--primary);--font-sans:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;--font-mono:ui-monospace,monospace;--radius:12px}
+  *{box-sizing:border-box}body{margin:0;padding:16px;font:16px/1.5 var(--font-sans);background:var(--background);color:var(--foreground);overflow-wrap:break-word;-webkit-text-size-adjust:100%}button,input,select,textarea{font:inherit}button,select,input[type=number]{min-height:44px}button{color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;touch-action:manipulation}input[type=range]{max-width:100%}a{color:var(--primary)}svg,canvas,img{max-width:100%}pre{overflow:auto}table{border-collapse:collapse}td,th{padding:8px;border:1px solid var(--border)}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}.muted,.subtitle{color:var(--muted-foreground)}.chart-container{position:relative;width:100%}svg text{fill:var(--foreground)}.axis text{fill:var(--muted-foreground)}.axis path,.axis line,.grid line{stroke:var(--border)}
+  """
+}
+
+private struct VisualizationFilePreview: View {
+  let item: FilePreviewItem
+  @Environment(\.dismiss) private var dismiss
+  @State private var html: String?
+  @State private var failure: String?
+  @State private var share: PreparedFileShare?
+  var body: some View {
+    NavigationStack {
+      Group {
+        if let html, failure == nil { VisualizationWebView(html: html, failure: $failure) }
+        else if failure == nil { ProgressView(L10n.tr("正在准备预览…")) }
+        if let failure { ContentUnavailableView(L10n.tr("无法显示可视化"), systemImage: "chart.xyaxis.line", description: Text(failure)) }
+      }
+      .navigationTitle(item.name).navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button(L10n.tr("完成")) { dismiss() }.accessibilityIdentifier("visualization-preview-close")
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button { share = PreparedFileShare(url: item.url) } label: { Image(systemName: "square.and.arrow.up") }
+            .accessibilityLabel(L10n.tr("保存或分享文件"))
+        }
+      }
+      .sheet(item: $share) { FileShareSheet(url: $0.url) }
+      .task(id: item.id) {
+        let url = item.url
+        do {
+          let fragment = try await Task.detached(priority: .userInitiated) {
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
+            guard size <= VisualizationPreview.maximumBytes else { throw PreviewError.tooLarge }
+            let data = try Data(contentsOf: url)
+            guard data.count <= VisualizationPreview.maximumBytes else { throw PreviewError.tooLarge }
+            guard let text = String(data: data, encoding: .utf8) else { throw PreviewError.encoding }
+            return text
+          }.value
+          guard !Task.isCancelled else { return }
+          html = VisualizationPreview.document(fragment)
+        } catch {
+          guard !Task.isCancelled else { return }
+          failure = L10n.tr("此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。")
+        }
+      }
+    }.accessibilityIdentifier("visualization-preview-screen")
+  }
+}
+
+private struct VisualizationWebView: UIViewRepresentable {
+  let html: String
+  @Binding var failure: String?
+  func makeCoordinator() -> Coordinator { Coordinator(failure: $failure) }
+  func makeUIView(context: Context) -> WKWebView {
+    let configuration = WKWebViewConfiguration()
+    configuration.websiteDataStore = .nonPersistent()
+    configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+    let view = WKWebView(frame: .zero, configuration: configuration)
+    view.isOpaque = false
+    view.backgroundColor = .clear
+    view.navigationDelegate = context.coordinator
+    view.accessibilityIdentifier = "visualization-web"
+    view.loadHTMLString(html, baseURL: nil)
+    return view
+  }
+  func updateUIView(_ view: WKWebView, context: Context) {}
+  static func dismantleUIView(_ view: WKWebView, coordinator: Coordinator) {
+    view.stopLoading(); view.navigationDelegate = nil
+    view.configuration.websiteDataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {}
+  }
+  final class Coordinator: NSObject, WKNavigationDelegate {
+    let failure: Binding<String?>
+    init(failure: Binding<String?>) { self.failure = failure }
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
+      // Only WebKit's initial document and sandbox frame may navigate.
+      let url = action.request.url?.absoluteString ?? ""
+      decisionHandler(action.navigationType == .other && ["about:blank", "about:srcdoc"].contains(url) ? .allow : .cancel)
+    }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+      guard (error as NSError).code != NSURLErrorCancelled else { return }
+      failure.wrappedValue = error.localizedDescription
+    }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { failure.wrappedValue = L10n.tr("预览已中断，请关闭后重新打开。") }
   }
 }

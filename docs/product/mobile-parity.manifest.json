@@ -18751,6 +18751,27 @@
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationReceiptExistingReadTest.kt": "300a1529d8bb53acbf2fb9910d6aa6205410737886d0e5a197d03602690552bb"
       }
+    },
+    {
+      "id": "mobile-visualization-20261101",
+      "baseCommit": "332a291ffe2801ec41c1bb7f49bbed48500fb70f",
+      "features": ["F19", "F32"],
+      "summary": "Codex完整visualize引用投影为原消息授权HTML附件，iOS兼容旧缓存引用并增加无原生桥、非持久WebKit和固定CSP沙箱交互预览；文件与消息来源、摘要、字节限制保持。Android仅共用Host投影，HTML容器待实施。辅助检查及物理iPhone真实模型验收分别记录，A6暂停。组合文件指纹保留已有并行任务内容，不将其计为本项新增验收。 独立iOS模拟器原生完整用例1通过，实际双向位移、交互及关闭重开已核对；真机系统自动化初始化失败，用户要求先完成模拟器，物理保留待复验。 此为最新Gitea主线上的移植；原组合现场模拟器通过属于既有组件证据，移植后编译与辅助检查另记，物理仍待恢复。",
+      "files": {
+        "apps/ios/Sources/RootView.swift": "8b9d249b94e75cd2b67124712493ffaf8c723c55719a93a70dda82c452f0caa3",
+        "apps/ios/Sources/FilePreview.swift": "7fff016b9f494403298d7dc40fb9edd6ed9f666ad69ab8d33b11b50a752118e2",
+        "apps/ios/Sources/MessageLinks.swift": "86082c8d8e0eaaf7fbcd77b38bee9cec9215e0c499ecd2d764728f3635af93f3",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "623c48872587e528d35f4e800edcac9887c24c1c8993b529f4b6646e23fe26e5",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "bcd1c7da64b96055bd0ebf47cf9ca76de321c12cae8d1b937e57821a08b94342",
+        "packages/codex-adapter/src/message-links.ts": "c63c34da0e951e5fb842a4dc3f2e7d09174f24e489dd815210eee914ba8ebc3d",
+        "packages/codex-adapter/src/runtime-session.ts": "c8ed1f5794e2a276e31c92d8f09673bacb96d1aca9f2720ae3d2760f9bd7be62",
+        "apps/ios/Tests/CodexManageUITests.swift": "ed0f0c2ad68a54c8e1fc38f1746637020892860b4f1864ce33a6787e0aa0515c",
+        "scripts/message-links-smoke.mjs": "52222840a31ee0d81c6cc5f6ee05e09fd4926b793e0c38349de45d8fda52d528",
+        "scripts/mobile/visualization-ios-acceptance.mjs": "5a07fb28faba8047589ce578897eae725570703ef78f08140c69f24671c41994",
+        "apps/android/src/main/res/values/product_strings.xml": "55e670d36be77894ce72ff346549c925f2696fe7d235a4bb8a7cc7ac341af0fa",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "8396b42e2ea41d80044b59ae49dc8036722c157c062474279d05219fd364cd01",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "f4d69218f028d4d436033af9b5451d375bbfd8a8efaef2c05a68c217c8c67250"
+      }
     }
   ]
 }

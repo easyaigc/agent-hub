@@ -106,3 +106,34 @@ export function localMessagePath(reference: string): string | undefined {
   if (path.startsWith('~/')) path = join(homedir(), path.slice(2));
   return path;
 }
+
+/** Render desktop visualize references as ordinary authorized message-file links.
+ * Match complete directives only; quoted code and incomplete streaming payloads stay literal.
+ */
+export function mobileVisualizationLinks(text: string): string {
+  return text.replace(/(`+)[\s\S]*?\1|visualize([^]{1,16384})/g, (whole, code, payload) => {
+    if (code || !payload) return whole;
+    try {
+      const value = JSON.parse(payload);
+      if (
+        !value ||
+        typeof value.path !== 'string' ||
+        value.path.length > 8192 ||
+        !/\.html?$/i.test(value.path) ||
+        !localMessagePath(value.path) ||
+        Array.from(value.path as string).some((character) => character.charCodeAt(0) < 32)
+      )
+        return whole;
+      const destination = encodeURI(value.path).replace(
+        /[()<>#?]/g,
+        (c) => '%' + c.charCodeAt(0).toString(16),
+      );
+      return `[可视化 · ${value.path
+        .split(/[\\/]/)
+        .pop()
+        .replace(/[[\]\\`*_~]/g, '\\$&')}](<${destination}>)`;
+    } catch {
+      return whole;
+    }
+  });
+}

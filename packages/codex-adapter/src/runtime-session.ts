@@ -8,7 +8,7 @@ import { setImmediate } from 'node:timers/promises';
 import { AttachmentFiles, AttachmentFileError, attachmentFileError } from './attachment-files.js';
 import { realpath } from 'node:fs/promises';
 import { appendRuntimeDiagnostic } from './runtime-diagnostics.js';
-import { localMessagePath, messageLinks } from './message-links.js';
+import { localMessagePath, messageLinks, mobileVisualizationLinks } from './message-links.js';
 import {
   permissionModes,
   permissionSettings,
@@ -3413,8 +3413,7 @@ export class RuntimeSession {
           this.state.projects.find((p) => p.id === thread.projectId)?.roots[0] ??
           this.options.root);
     let changed = false;
-    for (const link of parsedLinks ??
-      (message.text.includes('](') ? messageLinks(message.text) : [])) {
+    for (const link of parsedLinks ?? messageLinks(mobileVisualizationLinks(message.text))) {
       const local = localMessagePath(link.reference);
       if (!local) continue;
       const sources = (this.state.messageFileLinks ??= []);
@@ -3494,6 +3493,8 @@ export class RuntimeSession {
           '.pdf': 'application/pdf',
           '.txt': 'text/plain',
           '.md': 'text/markdown',
+          '.html': 'text/html',
+          '.htm': 'text/html',
         };
         file = {
           id: randomUUID(),
@@ -3575,7 +3576,21 @@ export class RuntimeSession {
     item: unknown,
     directory?: string,
   ): Promise<void> {
+    const originalLinks = messageLinks(message.text);
+    if (message.role === 'assistant' && message.kind === 'agentMessage')
+      message.text = mobileVisualizationLinks(message.text);
     const links = messageLinks(message.text);
+    // Only the newly recognized visualization paths supplement upstream paths.
+    paths = [
+      ...new Set([
+        ...paths,
+        ...links.flatMap((link) => {
+          if (originalLinks.some((old) => old.reference === link.reference)) return [];
+          const path = localMessagePath(link.reference);
+          return path ? [path] : [];
+        }),
+      ]),
+    ];
     this.registerMessageReferences(thread, message, directory, links);
     const attachments = message.attachments;
     const root =

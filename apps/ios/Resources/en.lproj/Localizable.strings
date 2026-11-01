@@ -1785,3 +1785,11 @@
 "任一限制可用" = "Any limit may be available";
 "按服务端规则" = "Provider rules apply";
 "观察时间" = "Observed";
+
+"可视化" = "Visualization";
+
+"无法显示可视化" = "Unable to display visualization";
+
+"此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。" = "This visualization is too large, uses an unsupported encoding, or cannot be read. Save the original file to view it.";
+
+"预览已中断，请关闭后重新打开。" = "The preview was interrupted. Close it and open it again.";

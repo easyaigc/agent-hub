@@ -1662,6 +1662,10 @@
     <string name="product_0bb6ef6a18e1fb128ba84d25" formatted="false">"Any limit may be available"</string>
     <string name="product_ae25ef22856b7e79855c26b5" formatted="false">"Provider rules apply"</string>
     <string name="product_ba39316da2cf42a5535f02f7" formatted="false">"Observed"</string>
+    <string name="product_9af64ccc359b745b098853b5" formatted="false">"Visualization"</string>
+    <string name="product_4c98e6f040fb203b8dd80b12" formatted="false">"Unable to display visualization"</string>
+    <string name="product_bb57303a7e6903ccdb7f2072" formatted="false">"This visualization is too large, uses an unsupported encoding, or cannot be read. Save the original file to view it."</string>
+    <string name="product_9b50f54fadefae4ca3d247dc" formatted="false">"The preview was interrupted. Close it and open it again."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

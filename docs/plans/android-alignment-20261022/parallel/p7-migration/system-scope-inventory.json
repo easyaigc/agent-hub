@@ -330,5 +330,53 @@
     "selectionPhotoOwnerNativeComplete": 5,
     "knownOwnerFailures": 2,
     "selectionPhotoOwnerEvidence": "sixty-second-stage-p7-selection-owner-native.json"
+  },
+  "rootSource82Overlay": {
+    "record": "../../records/source82-p7-aggregate-quota.md",
+    "sourceBase": "ded38c8de10cc8bc34af61e18429434ba24f0f28",
+    "rowCount": 24,
+    "rowsAffected": [
+      "provisional-voice",
+      "root-session",
+      "cache-and-scratch",
+      "root-easywork",
+      "root-notification-owner",
+      "root-operations"
+    ],
+    "boundedOwnedQuotaAssertionsAndDataAccepted": true,
+    "nativeAssertionsPass": true,
+    "originalCollectorCaptureAccepted": false,
+    "strictOriginalEntireRootBoundaryPassed": false,
+    "completeQuotaAcceptancePending": true,
+    "quotaBoundary": {
+      "underPairs": 10,
+      "underBinaryBytes": 192000880,
+      "overPairs": 11,
+      "overBinaryBytes": 211200968,
+      "shippingQuotaBytes": 201326592,
+      "seededWindowOnly": true,
+      "ownedSourceAndOutputExternalReadbackAccepted": true,
+      "ownedMembers": 50,
+      "ownedDirectories": 5,
+      "ownedRegulars": 45,
+      "actualNativeMaxMemoryBytes": 201326592
+    },
+    "rootReviewSha256": "001c39d49f72595cb7f0d393779158ad2bd73ea876050fffe929bde492ec5eb3",
+    "newMainFrozenRange": [
+      "332a291ffe2801ec41c1bb7f49bbed48500fb70f",
+      "9492e3b7a9877d0c08615d5fd403512b1e654221"
+    ],
+    "newMainIntegratedIntoSource82": false,
+    "pendingByNode": {
+      "provisional-voice": "Original Native and owned quota data bounded accepted; original collector/worker1 and strict entire-root boundary failed remain. Extra24B ProfileVerifier cache source/format/original verified; dynamic writer/first startup/package milliseconds unproven. Real seal/row I/O/crash/death/actual48MiB/UI/physical/full24 not accepted.",
+      "root-session": "F26 iOS optional metadata.recentProjects reaches Payload.state; define navigation-history retention or explicit exclusion and old optional-field/restart/full-target tests. Existing picker navigation is separate from paused project CRUD.",
+      "cache-and-scratch": "F19/F32 interactive HTML preview needs Android-specific ephemeral website-data/resource/navigation policy and lifecycle proof; only proven rebuildable preview scratch may be excluded.",
+      "root-easywork": "c6705edb existing Android production discovery/pairing/display changes and resources need next-stage semantic integration/new SDK/Native/real target/key/UI regression; no credential/identity inheritance.",
+      "root-notification-owner": "F52 APNs topic/environment publisher scope is provider-specific shared service dependency; Android/FCM delivery and destination fresh-enrollment authority remain separate.",
+      "root-operations": "Queue/steer tool regression retains original queued-message-id and immutable input, distinct coordination operation and exact expectedTurn; unknown original not replayed."
+    },
+    "fullP7Accepted": false,
+    "newModelInputs": 0,
+    "unknownOperationsReplayed": false
   }
 }

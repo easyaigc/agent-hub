@@ -117,5 +117,50 @@
   "productionMigrationUi": false,
   "newModelInputs": 0,
   "unknownOperationsReplayed": false,
-  "updatedBy": "P7-5n"
+  "updatedBy": "P7-5n",
+  "source82Checkpoint": {
+    "record": "records/source82-p7-aggregate-quota.md",
+    "sourceBase": "ded38c8de10cc8bc34af61e18429434ba24f0f28",
+    "scope": "Documentation checkpoint only; historical source pins and entry statuses above retain their original verification scope. Use the 24-domain system inventory for current coverage.",
+    "boundedOwnedQuotaAssertionsAndDataAccepted": true,
+    "nativeAssertionsPass": true,
+    "originalCollectorCaptureAccepted": false,
+    "strictOriginalEntireRootBoundaryPassed": false,
+    "completeQuotaAcceptancePending": true,
+    "underSeededPairs": 10,
+    "underBinaryBodies": 20,
+    "underBinaryBytes": 192000880,
+    "overSeededPairs": 11,
+    "overBinaryBodies": 22,
+    "overBinaryBytes": 211200968,
+    "shippingAggregateQuotaBytes": 201326592,
+    "actualNativeMaxMemoryBytes": 201326592,
+    "ownedMembers": 50,
+    "ownedDirectories": 5,
+    "ownedRegulars": 45,
+    "originalCaptures": 90,
+    "originalFullStreams": 180,
+    "snapshotCount": 4,
+    "archiveBytes": 403498508,
+    "extraMarker": {
+      "path": "files/profileInstalled",
+      "bytes": 24,
+      "sha256": "239230d97145a83b54b38bd3784411be1779dec40194bd487a707b9ab3533789",
+      "staticSourceAndOriginalVerified": true,
+      "format": "ProfileVerifier Cache >iiqq",
+      "decoded": [1, 327680, 1793526531290, 0],
+      "dynamicWriterOrFirstStartupProven": false,
+      "packageMillisIndependentlyConfirmed": false
+    },
+    "rootReviewSha256": "001c39d49f72595cb7f0d393779158ad2bd73ea876050fffe929bde492ec5eb3",
+    "actual48MiBAccepted": false,
+    "realVoiceSealAccepted": false,
+    "productionMigrationUiAccepted": false,
+    "realHostOrModelInputs": 0,
+    "recentProjectsPolicy": {
+      "inventoryNode": "root-session",
+      "sourceCommit": "85d90f6753c57774aa6c558204768c3aee6b0000",
+      "status": "Pending explicit local navigation metadata retention or exclusion policy; iOS optional recentProjects enters Payload.state. No cross-format interoperability claim."
+    }
+  }
 }

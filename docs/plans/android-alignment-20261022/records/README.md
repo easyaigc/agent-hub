@@ -230,3 +230,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source80 mixed v1/v2惰性目录迁移](source80-p7-mixed-provisional.md)：SDK及单方法Native／97成员完整读回限定通过；原安装工具外层回执未知单列。Source79原件数据级核对通过、恢复外层退出未知保持，旧操作不重放。
 
 - [Source81 P9原回执跨进程只读消费](source81-p9-existing-receipt-read.md)：SDK／安装通过；不同PID只读消费限定通过。真实Main冷入口／OS点击、完整UI／生命周期与物理DEV继续待验，不升级旧失败／未知。
+
+- [Source82 P7多原件聚合配额与主线缺口](source82-p7-aggregate-quota.md)：SDK／fresh baseline及原Native、owned配额数据限定通过；原collector／worker1、全根严格边界失败保留，24B ProfileVerifier cache静态来源已核，动态生命周期仍待验；另登记最新main八提交／六组有限缺口，不升级旧冻结证明。

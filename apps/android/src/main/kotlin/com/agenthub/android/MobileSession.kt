@@ -287,6 +287,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val modelError get()=modelErrors[clientKey]
     private val preferredModes=mutableStateMapOf<String,String>()
     private val newProjects=mutableStateMapOf<String,String?>()
+    private val recentProjectIDs=mutableStateMapOf<String,List<String>>()
     private val operations=mutableStateMapOf<String,List<SavedOperation>>()
     // Presentation while the immutable journal is being saved/authority is read.
     // This snapshot is never used to issue, retry, or restore a command.
@@ -1027,6 +1028,22 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) });chatNotifications?.reconcile()
     }
     private val clientKey get() = selectedClient.cacheKey(null)
+    val recentProjects: List<MobileProject> get() {
+        val scope=NativeRecentProjects.scope(selectedClient) ?: return emptyList()
+        val available=projects.filter { it.hostId==selectedClient.id }.associateBy { it.id }
+        return NativeRecentProjects.visibleIDs(recentProjectIDs[scope].orEmpty(),available.keys).mapNotNull(available::get)
+    }
+    private fun rememberRecentProject(projectID: String?): Boolean {
+        val scope=NativeRecentProjects.scope(selectedClient) ?: return false
+        if(projectID.isNullOrEmpty() || projectID.length>NativeRecentProjects.MAX_PROJECT_ID ||
+            projects.none { it.id==projectID && it.hostId==selectedClient.id }) return false
+        // Reaching the existing metadata map limit must neither discard old history nor block navigation.
+        if(scope !in recentProjectIDs && recentProjectIDs.size>=NativeRecentProjects.MAX_SCOPES) return false
+        val next=NativeRecentProjects.record(recentProjectIDs[scope].orEmpty(),projectID)
+        if(recentProjectIDs[scope]==next) return false
+        recentProjectIDs[scope]=next
+        return true
+    }
     val sidebarDisplay get() = sidebarStates[clientKey] ?: SidebarDisplayState()
     fun toggleSidebarRecent() { sidebarStates[clientKey]=sidebarDisplay.copy(recentExpanded=!sidebarDisplay.recentExpanded); persistMetadata() }
     fun toggleSidebarProjects() { sidebarStates[clientKey]=sidebarDisplay.copy(projectsExpanded=!sidebarDisplay.projectsExpanded); persistMetadata() }
@@ -1520,6 +1537,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val canCompose get() = currentChat?.archived!=true && codexStorageConflictMessage == null && SessionPolicies.compose(access)
     val canCreateThread get() = codexStorageConflictMessage == null && SessionPolicies.createThread(access) && access.online
     val canCreateProjectless get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access) && access.online
+    internal val offersProjectlessChoice get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access)
     val canCreateProject get()=localReady&&codexStorageConflictMessage == null && access.online&&"projects:create" in workspace?.capabilities.orEmpty()
     val canConfigureGeneration get() = canCompose && SessionPolicies.configureGeneration(access,submission)
     val canSelectPlan get() = canCompose && SessionPolicies.selectPlan(access,submission)
@@ -1589,15 +1607,18 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(events)startEvents(initialReadGraceMillis=8_000) else loadHistory()
         loadModels()
     }
-    fun selectThread(thread: MobileThread) {
+    fun selectThread(thread: MobileThread,project: MobileProject?=null) {
         invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
+        require(project==null || project.hostId==selectedClient.id && projects.any { it.id==project.id } && thread.belongs(project))
+        val recentChanged=rememberRecentProject(project?.id ?: thread.projectId)
         if(selectedThread==thread.id) {
             // Reopening the current chat is presentation navigation. Keep its
             // read generation, in-flight GET and expanded reading window.
             error=null
             if(!selectedClient.isDemo) { loadHistory(); loadOperations() }
+            if(recentChanged) persistMetadata()
             return
         }
         selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); updateReadingSelection(thread.id)
@@ -1632,13 +1653,15 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         if(!selectedClient.isDemo) {
             if(!canCreateThread || projectId==null && !canCreateProjectless || projectId!=null && projects.none { it.id==projectId }) return
+            rememberRecentProject(projectId)
             selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); selectedThread=""; newProjects[clientKey]=projectId
             error=null; synchronizeReadingPresentation(); inheritGeneration(); persistMetadata(); loadOperations(); loadModels(); return
         }
         if (!demo) return
         selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
         selectedThread = "draft-${UUID.randomUUID()}"; histories[targetKey] = emptyList(); runtimeState = "idle"
-        synchronizeReadingPresentation()
+        rememberRecentProject(projectId)
+        synchronizeReadingPresentation();persistMetadata()
     }
     fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
         val client = selectedClient
@@ -2840,6 +2863,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             .put("sidebar", JSONObject(sidebarStates.mapValues { (_,state) -> JSONObject().put("recent",state.recentExpanded).put("projects",state.projectsExpanded).put("lists",JSONArray(state.expandedLists.toList()))
                 .put("pinnedSection",state.pinnedSectionExpanded).put("recentSection",state.recentSectionExpanded) }))
             .put("workspaces", JSONObject(workspaces.mapValues { JSONObject(it.value.wire) }))
+        if(recentProjectIDs.isNotEmpty()) json.put("recentProjects",NativeRecentProjects.encode(recentProjectIDs.toMap()))
         return json.toString()
     }
     private fun persistHistory(key: String, client: MobileClient, thread: String, result: MobileHistory, messages: List<MobileMessage>, reuseUnchangedFragments: Boolean=false) {
@@ -2888,6 +2912,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     val drafts=this@MobileSession.drafts.toMutableMap().apply { clear() }
                     val draftVersions=this@MobileSession.draftVersions.toMutableMap().apply { clear() }
                     val newProjects=this@MobileSession.newProjects.toMutableMap().apply { clear() }
+                    val recentProjectIDs=mutableMapOf<String,List<String>>()
                     val draftFiles=this@MobileSession.draftFiles.toMutableMap().apply { clear() }
                     val attachmentImportGenerations=this@MobileSession.attachmentImportGenerations.toMutableMap().apply { clear() }
                     val generation=this@MobileSession.generation.toMutableMap().apply { clear() }
@@ -2907,6 +2932,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         json.optJSONObject("draftVersions")?.let { v -> v.keys().forEach { draftVersions[it]=v.getString(it) } }
                         json.optJSONObject("attachmentImportGenerations")?.let { v -> v.keys().forEach { attachmentImportGenerations[it]=v.getString(it) } }
                         json.optJSONObject("newProjects")?.let { v -> v.keys().forEach { newProjects[it]=v.optional(it) } }
+                        recentProjectIDs.putAll(NativeRecentProjects.read(json))
                         json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> NativePhotoOrigins.attach(LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))),json.optJSONObject("photoSources")) } } }
                         NativePhotoOrigins.validate(json.optJSONObject("photoSources"),draftFiles.values.flatten())
                         json.optJSONObject("generation")?.let { v -> v.keys().forEach { key -> val s=v.getJSONObject(key); generation[key]=GenerationSettings(s.optional("model"),s.optional("effort"),s.optional("permissionMode"),s.optional("speed"),s.optional("collaborationMode")) } }
@@ -2940,6 +2966,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         this@MobileSession.drafts.apply { clear();putAll(drafts) }
                         this@MobileSession.draftVersions.apply { clear();putAll(draftVersions) }
                         this@MobileSession.newProjects.apply { clear();putAll(newProjects) }
+                        this@MobileSession.recentProjectIDs.apply { clear();putAll(recentProjectIDs) }
                         this@MobileSession.draftFiles.apply { clear();putAll(draftFiles) }
                         this@MobileSession.attachmentImportGenerations.apply { clear();putAll(attachmentImportGenerations) }
                         this@MobileSession.generation.apply { clear();putAll(generation) }
@@ -2988,6 +3015,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
         stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
+        recentProjectIDs.clear()
         aiSharing.clearAcceptance();aiSharingRequest=null
         desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
         selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false

@@ -193,5 +193,34 @@
     "fullP7Accepted": false,
     "newModelInputs": 0,
     "unknownOperationsReplayed": false
+  },
+  "source86Checkpoint": {
+    "phase": 59,
+    "source": "Source86",
+    "record": "records/source86-p7-recent-projects.md",
+    "sourcePins": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRecentProjectsTest.kt": "455e6a09c59e7f2426a304d9030b39d48030c407c91131136f08bfab57b1404b",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "82a70e353839fe75836c02edb68d5d13b52e70894c1ddfb18917b3943bd30862",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt": "2e625aae436e2812445447d45f1ae1dd0e4184eaf4a449cdd8080c400a079b24",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentProjects.kt": "3c39346f111b2c4e4226e0dade6e0fc9223de6666592f5bbf985d617e2a715e1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "6f1c2c280a53fe08fae125aa28c6cc0e3fc1edfa8f209fed06ea52d2c39d10b8",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "96ea0a07e68400c088a059ca57141d07d9824a8a7942fb1f3c7e0c1886a39776"
+    },
+    "appSha256": "9a8e85fd445d397ced958db1f3efbabc43e77524a45a722bc6e9e0e2d2686ab7",
+    "runnerSha256": "b0c963c5082265df4ce051d95042f451bfd1f11c5580d1bf9fdc01a1a825b796",
+    "nativeAuxiliaryMethodsPassed": 7,
+    "actualOriginalPngsViewed": 3,
+    "boundedVisualSourceContractAssertionsAccepted": true,
+    "sameProcessEncryptedMetadataRestore": true,
+    "maxRecentPerScope": 5,
+    "maxScopes": 10000,
+    "oldMissingOptionalFieldAccepted": true,
+    "oldStrictReaderForwardCompatibilityClaimed": false,
+    "fullP7Complete": false,
+    "physicalOrDEVOrOSColdAccepted": false,
+    "previousFailuresRetained": true,
+    "newModelInputs": 0,
+    "cumulativeConfirmedInputs": 221,
+    "finalRootReviewSha256": "04b9ab10d572e015a97fbc371c22abcf14276e12fb1a0c9d348af3dd1b15782f"
   }
 }

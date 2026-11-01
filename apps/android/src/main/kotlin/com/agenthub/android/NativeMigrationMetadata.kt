@@ -7,7 +7,7 @@ import java.util.UUID
 /** Untrusted archive metadata is closed and typed before it can become an import candidate. */
 internal object NativeMigrationMetadata {
     private val required=setOf("version","appearance","demo","selected","clients","drafts","selectedThreads","expanded","workspaces")
-    private val optional=setOf("language","draftFiles","draftVersions","attachmentImportGenerations","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","sidebar","photoSources")
+    private val optional=setOf("language","draftFiles","draftVersions","attachmentImportGenerations","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","sidebar","photoSources","recentProjects")
     private fun text(value: Any,maximum: Int,nonempty: Boolean=false): String=(value as String).also{require(it.length<=maximum&&(!nonempty||it.isNotEmpty()))}
     private fun map(value: Any): JSONObject=(value as JSONObject).also{require(it.length()<=10000);it.keys().forEach{key->text(key,16384,true)}}
     private fun strings(value: Any): List<String> {
@@ -63,6 +63,7 @@ internal object NativeMigrationMetadata {
         fields(root,"draftVersions"){text(it,1024,true)}
         fields(root,"attachmentImportGenerations"){val generation=text(it,36,true);require(UUID.fromString(generation).toString()==generation)}
         fields(root,"newProjects"){if(it!=JSONObject.NULL)text(it,16384,true)}
+        NativeRecentProjects.read(root) // Optional versioned navigation cache; no execution or file references.
         fields(root,"expanded"){strings(it)};fields(root,"dismissedReceiptFailures"){strings(it)}
         fields(root,"replyModes"){require(it in listOf("queue","steer","next-turn"))}
         for(name in listOf("generation","generationPreferences"))fields(root,name){

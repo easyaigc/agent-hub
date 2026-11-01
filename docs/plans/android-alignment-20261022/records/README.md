@@ -235,3 +235,9 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 
 - [Source83实际48MiB完整聚合配额](source83-p7-low-heap-quota.md)：公开缓存预热、独立6成员基线、实际48MiB的10对发布/11对拒绝与完整56成员通过；完整P7/真实故障/UI仍开放。
 - [旧总表过程摘录](progress-history-through-source82.md)：旧详情单独追溯，当前待验见[独立清单](../pending-acceptance.md)。
+
+- [Source84 最近项目首轮](source84-p7-recent-projects-first-run.md)：源码/SDK、7项中5通过2失败、原图读回权限限制及Source85修正候选；不关闭完整P7。
+
+- [Source85 最近项目原生结果](source85-p7-recent-projects-native.md)：7项规则/Main/加密恢复及三原图读回通过；视觉差异转Source86，完整P7仍开放。
+
+- [Source86 最近项目阶段结果](source86-p7-recent-projects.md)：六源实现、7项Native及三原图源契约限定通过；完整P7和设备矩阵继续开放。

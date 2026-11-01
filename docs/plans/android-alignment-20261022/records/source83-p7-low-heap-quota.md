@@ -31,3 +31,7 @@
 缓存采样不证明样本间无写入、跨ART稳定或原Source82首次writer；当前PackageManager毫秒值与缓存一致，不冒充第二个独立毫秒时间源。迁移密码/SAF/取消/处理中/错误/成功/冷恢复、完整视觉/AX/API26/API37/真机继续逐项对照iOS。iOS PendingVoiceStore音频/metadata缺口仍开放。
 
 下一步：最近项目导航历史的版本化资料保留与恢复，再补完整迁移/语音/未读/生命周期；P8/P9独立项继续并行。任务/项目管理、F75和iOS A6继续暂停；未知操作不重放。
+
+## 主线交付
+
+提交 `c49d5efc` 经[PR106](https://git.51easyai.com/BCAI/agent-hub-app/pulls/106)合入主线 `e1e5aaa3`。CI11072的workspace和iOS均通过；实际合并树与来源一致，阶段58本地及远端分支已清理。完整原CI日志无损压缩归档、解压摘要核对后释放重复文本，不影响原验收边界。

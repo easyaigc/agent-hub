@@ -3579,6 +3579,14 @@
       "apps/ios/Sources/Sheets.swift",
       "apps/ios/Tests/RecentProjectsUITests.swift",
       "apps/ios/Tests/RecentProjectsRules.swift"
+    ],
+    "AndroidRecentProjects": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRecentProjectsTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentProjects.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt"
     ]
   },
   "groups": [
@@ -4920,11 +4928,12 @@
         "AndroidDesktopIdentityRead",
         "AndroidMainIntegration",
         "AndroidActionCopy",
-        "IOSRecentProjects"
+        "IOSRecentProjects",
+        "AndroidRecentProjects"
       ],
       "scenarios": ["S03", "S13"],
       "ui": ["UI04", "UI02"],
-      "revision": 38,
+      "revision": 39,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6377,11 +6386,12 @@
         "AndroidMigratedEasyWorkBusinessOwners",
         "AndroidSessionOwnedConnectionForm",
         "AndroidFormLifecycleOwningComposeClock",
-        "AndroidPostWriteNativeBoundary"
+        "AndroidPostWriteNativeBoundary",
+        "AndroidRecentProjects"
       ],
       "scenarios": ["S11", "S13", "S18"],
       "ui": ["UI10"],
-      "revision": 86,
+      "revision": 87,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6834,11 +6844,12 @@
         "AndroidInertInboxAndVoiceRecovery",
         "AndroidSystemOriginals",
         "AndroidFixedVoiceReadback",
-        "AndroidNotificationExistingReceiptRead"
+        "AndroidNotificationExistingReceiptRead",
+        "AndroidRecentProjects"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 86,
+      "revision": 87,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -7002,11 +7013,12 @@
         "AndroidExistingOriginalReadOnlyStorage",
         "AndroidProvisionalVoiceControls",
         "AndroidInertInboxAndVoiceRecovery",
-        "AndroidNotificationExistingReceiptRead"
+        "AndroidNotificationExistingReceiptRead",
+        "AndroidRecentProjects"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 165,
+      "revision": 166,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -18906,6 +18918,20 @@
         "apps/android/build.gradle.kts": "f92f82d4d899b1d86d7e4ba86b365710096abb65306bd5bfdc6065af3f2aad11",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProfilePrewarmTest.kt": "e94e15e257103ffa5a1320064916960aafd7312ad5acc530bf870e15f256065a",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalAggregateQuotaTest.kt": "b50b42c4ab843fd5178a27edf678dffc07f7663c253529467808b774ee7fb7f1"
+      }
+    },
+    {
+      "id": "android-source86-p7-recent-projects-20261102",
+      "baseCommit": "c49d5efc48ae574819ddd54418cd5506042f94d7",
+      "features": ["F26", "F47", "F55", "F56"],
+      "summary": "2026-11-02 阶段59，F26/F47/F55/F56：Android最近五项目按完整运行目标保存，显式导航前移、不可用保留隐藏、旧回调失效，Codex账号策略不变；可选版本化metadata归档/替换恢复，不创建别名。对齐iOS左取消/普通17号正文及最近/全部分组。Source86官方SDK863/888、7项Native和三原图源契约对照限定通过；同进程新Session不等于OS冷入口，完整P7/UI/物理DEV仍开放，Source84失败及Source85视觉差异保留，iOS源码不变。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRecentProjectsTest.kt": "455e6a09c59e7f2426a304d9030b39d48030c407c91131136f08bfab57b1404b",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "82a70e353839fe75836c02edb68d5d13b52e70894c1ddfb18917b3943bd30862",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt": "2e625aae436e2812445447d45f1ae1dd0e4184eaf4a449cdd8080c400a079b24",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentProjects.kt": "3c39346f111b2c4e4226e0dade6e0fc9223de6666592f5bbf985d617e2a715e1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "6f1c2c280a53fe08fae125aa28c6cc0e3fc1edfa8f209fed06ea52d2c39d10b8",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "96ea0a07e68400c088a059ca57141d07d9824a8a7942fb1f3c7e0c1886a39776"
       }
     }
   ]

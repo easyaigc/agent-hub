@@ -163,12 +163,13 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
     }
     if(expanded) {
         val byId=children.associateBy { it.id }
-        items(WorkspaceSidebarRules.visibleIds(children.map { it.id },all,searching),key={ "project-${project.id}-$it" }) { id -> Box(Modifier.padding(start=24.dp)) { ThreadRow(byId.getValue(id),session,"project-thread-${project.id}",close,active) } }
+        items(WorkspaceSidebarRules.visibleIds(children.map { it.id },all,searching),key={ "project-${project.id}-$it" }) { id -> Box(Modifier.padding(start=24.dp)) { ThreadRow(byId.getValue(id),session,"project-thread-${project.id}",close,active,project) } }
         if(children.size>5&&!searching)item { TextButton(onClick={ session.toggleSidebarList(project.id) },modifier=Modifier.padding(start=24.dp).testTag("project-more-${project.id}")) { Text(productText(if(all) "收起显示" else "展开显示"),color=MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
-@Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit,active: Boolean) {
+@Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit,active: Boolean,project: MobileProject?=null) {
+    val client=session.selectedClient
     val colors=MaterialTheme.colorScheme
     val status=when {
         thread.state=="running"->productText("运行中")
@@ -177,7 +178,12 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
         else->productText(if(session.showsPhoneUnread(thread))"未读" else "已读")
     }
     val description=productText("%@，%@",thread.title,status)
-    Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription=description }.clickable { session.selectThread(thread);close() }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription=description }.clickable { if(session.selectedClient.id==client.id && sameScope(session.selectedClient.scope,client.scope)) {
+            val currentThread=session.threads.firstOrNull { it.id==thread.id && it.hostId==client.id } ?: return@clickable
+            val currentProject=project?.let { prior -> session.projects.firstOrNull { it.id==prior.id && it.hostId==client.id } ?: return@clickable }
+            if(currentProject!=null && !currentThread.belongs(currentProject)) return@clickable
+            session.selectThread(currentThread,currentProject);close()
+        } }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
         Text(thread.title,Modifier.weight(1f),fontSize=16.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         when { thread.state=="running" -> if(active) CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
                 else CircularProgressIndicator(progress={ .25f },modifier=Modifier.size(14.dp),strokeWidth=1.5.dp)

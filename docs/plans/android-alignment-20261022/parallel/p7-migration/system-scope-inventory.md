@@ -54,3 +54,5 @@ Source74补充（2026-11-01）：特殊文件非阻塞拒绝、原件与已发�
 Source75补充（2026-11-01）：未提交audio窗口已实现显式v2惰性catalog，原row/index、raw/audio分别保留且计quota，活动recorder不恢复。当前新四场景4项限定通过、原两项warm2项限定通过、纯内存契约3项辅助通过；mixed／低堆／真实seal中断／冷PID／完整UI与iOS PendingVoiceStore音频/metadata缺口继续开放，不关闭24组。见[本次场景记录](../../records/source75-uncommitted-audio-v2.md)。
 
 Source80补充（2026-11-01）：mixed v1/v2原生用例源码已采用，SDK858/871输入、三包与完整工具流、单方法Native及完整数据Root核验限定通过；原安装工具外层回执未知单列。目标是既有v1惰性原件与独立seeded未提交audio窗口合并为同一v2 catalog，原row/index、旧null／新audio descriptor及三份binary分别保持，不恢复录音或重放。两次激活为不同候选／回执的warm流程，不证明真实seal、断电／进程死亡、低堆或完整UI。97成员实际成功图及parent共98差异已独立核对，184仍仅失败诊断上界；完整24组及iOS音频资料缺口继续开放。见[本轮记录](../../records/source80-p7-mixed-provisional.md)。
+
+Source86补充（2026-11-02）：root-session增加可选版本化最近项目资料；五项/目标隔离、归档保留与同进程新Session恢复、七项Native及三原图源契约限定通过。旧reader向前兼容、完整24域/跨进程/激活/物理DEV不因此关闭，见[独立档案](../../records/source86-p7-recent-projects.md)。

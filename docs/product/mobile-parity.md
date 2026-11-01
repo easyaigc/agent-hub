@@ -724,3 +724,5 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-01 阶段52，F53/F56／UI11：Android长导入铃声动作行给预览weight、删除保留空间并提供“删除＋原标题”读屏名称，复用small shape避免高pill裁字。当前中浅／英深两项受控组件限定通过；r3方法通过但collector退出1／实际PNG视觉失败保持。Compose受控字体／组件结果不替代OS字体／TalkBack、试听／通知、完整生命周期或iOS／物理DEV；见[逐项记录](../plans/android-alignment-20261022/records/source77-sound-actions-viewport.md)。
 
 2026-11-01 阶段53，F47/F55/F56/F64：Android新增同一原候选的writer／activate／只读audit三次独立原生方法，SDK与同原候选三次Native方法按本范围限定通过，397份原捕获经独立读回；writer／activate两个原collector退出1保持，Root只读重核后接续，audit原collector退出0，不重跑seal／export／stage／activate。具名注入IOException不等于真实row I/O、断电或进程死亡，三PID不证明旧PID退出；UI／物理DEV、iOS音频缺口及完整24组保持待验。见[Source78原候选记录](../plans/android-alignment-20261022/records/source78-seal-original-three-pid.md)。
+
+2026-11-01 阶段54，F06/F09／UI03：共用发现电脑行补Role.Button，对齐iOS EasyWork／Codex的Button语义，布局和原callback保持；原online方法增加角色断言、4原方法保持。Source79当前3方法／4夹具／397份完整捕获限定通过；第4方法仅Native终态0，tar采集关闭导致完整数据读回待验，不重跑Native。共用Codex角色受影响但不增加真实DEV通过，完整P8／系统读屏／截图原点／API26及真实服务另验，见[本轮记录](../plans/android-alignment-20261022/records/source79-p8-discovery-row-role.md)。

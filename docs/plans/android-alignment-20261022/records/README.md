@@ -224,3 +224,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source77长导入铃声动作与视口](source77-sound-actions-viewport.md)：权重／删除读屏名称／small形状修正；r3原collector和视觉失败保留，r4结果仅按当前候选逐项登记，OS字体／TalkBack及完整DEV另验。
 
 - [Source78真实seal具名中断的原候选三PID](source78-seal-original-three-pid.md)：同原候选三次Native方法／397份捕获本范围限定通过；writer与activate两个原collector退出1保持，audit退出0，三PID不证明旧PID退出。
+
+- [Source79共用电脑行按钮角色与保存连接](source79-p8-discovery-row-role.md)：3原方法／4夹具／397份完整捕获限定通过；target／replacement仅Native终态0、原tar采集失败保留，完整数据读回待验，不重跑Native。

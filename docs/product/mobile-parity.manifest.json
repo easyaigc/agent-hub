@@ -18710,6 +18710,16 @@
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSealCheckpointThreePidTest.kt": "b0cdaf21cb2afee1ea60c3e0135f560dd073fac765edff69aa10830df6f8598c"
       }
+    },
+    {
+      "id": "android-source79-p8-discovery-row-role-20261101",
+      "baseCommit": "63f64dd8f303b99198cb0f73d19dde6a959dcab4",
+      "features": ["F06", "F09"],
+      "summary": "共用电脑行补Role.Button对齐iOS Button，EasyWork／Codex语义受影响、布局与callback保持；online原方法增role断言，4原方法保持。当前3Native方法／4夹具／397完整捕获限定通过；target-replacement仅Native终态0、原tar关闭exit255／collector exit1，完整数据读回待验，先只读恢复不重跑Native。29pure仅辅助，完整P8／系统读屏／视觉／真实服务及DEV仍开放。",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "dfc1fe6c90911e8486de1da597dea569bbd4fed9e2f1c68f1f8bb72b71f389f3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkSavedSelectionTest.kt": "61d63d0a5ff963c15671a7a37e8579c760206ab504f4bae873c103aa0e32182e"
+      }
     }
   ]
 }

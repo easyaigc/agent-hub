@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
@@ -234,7 +235,7 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
 }
 /** Both provider discovery pages share the iOS desktop/name/detail/checkmark layout. */
 @Composable internal fun DiscoveredComputerRow(name: String, detail: String, tag: String, connected: Boolean, enabled: Boolean, connect: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min=56.dp).testTag(tag).clickable(enabled=enabled,onClick=connect).padding(horizontal=16.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min=56.dp).testTag(tag).clickable(enabled=enabled,role=Role.Button,onClick=connect).padding(horizontal=16.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
         ProductIcon("desktop",Modifier.size(22.dp).testTag("$tag-icon"))
         Column(Modifier.weight(1f).padding(horizontal=12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             Text(name,fontSize=17.sp)

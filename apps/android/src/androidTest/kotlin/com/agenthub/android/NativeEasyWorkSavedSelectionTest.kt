@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -252,6 +254,7 @@ class NativeEasyWorkSavedSelectionTest {
             if(visible.value)ConnectionPage(f.session,f.saved) {savedCount.incrementAndGet();visible.value=false}
         }}}}}
         ui.onNodeWithTag("easywork-discovered-${f.saved.id}").performScrollTo().assertIsDisplayed().assertIsEnabled()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role,Role.Button))
             .performTouchInput {click(center)}
         ui.waitUntil(10_000){savedCount.get()==1}
         main {

@@ -162,5 +162,36 @@
       "sourceCommit": "85d90f6753c57774aa6c558204768c3aee6b0000",
       "status": "Pending explicit local navigation metadata retention or exclusion policy; iOS optional recentProjects enters Payload.state. No cross-format interoperability claim."
     }
+  },
+  "source83Checkpoint": {
+    "record": "records/source83-p7-low-heap-quota.md",
+    "sourceBase": "08e895c3dc4643adf60549be893b6055ba91fd72",
+    "boundedSeededAggregateQuotaAccepted": true,
+    "originalCollectorCaptureAccepted": true,
+    "strictEntireRootBoundaryPassed": true,
+    "actual48MiBAccepted": true,
+    "actualNativeMaxMemoryBytes": 50331648,
+    "underBinaryBytes": 192000880,
+    "overBinaryBytes": 211200968,
+    "shippingAggregateQuotaBytes": 201326592,
+    "beforeRootMembers": 6,
+    "afterRootMembers": 56,
+    "ownedMembers": 50,
+    "sourceMembers": 44,
+    "captures": 90,
+    "fullStreams": 180,
+    "tarBytes": 403512320,
+    "rootReviewSha256": "971df0052d13aaf8e94b310832623bbef5d17f63f6866cf742bcd5724d3ed41b",
+    "readbackReportSha256": "3a8417621e4f75ec83cdf75c80e605933bd7d6bd9bbb94fec3169cb0a488486f",
+    "originalSource82FailureUnchanged": true,
+    "fullQuotaMatrixPending": true,
+    "realVoiceSealFaultAccepted": false,
+    "realRowIOFaultAccepted": false,
+    "processDeathAccepted": false,
+    "activationAccepted": false,
+    "productionMigrationUiAccepted": false,
+    "fullP7Accepted": false,
+    "newModelInputs": 0,
+    "unknownOperationsReplayed": false
   }
 }

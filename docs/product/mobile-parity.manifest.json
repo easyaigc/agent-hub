@@ -18896,6 +18896,17 @@
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalAggregateQuotaTest.kt": "04385d0f5d96059728c09189db305296dda8fb82dc656ee8aee04e92eb51ce4b"
       }
+    },
+    {
+      "id": "android-source83-p7-low-heap-aggregate-20261102",
+      "baseCommit": "08e895c3dc4643adf60549be893b6055ba91fd72",
+      "features": ["F47", "F55", "F56", "F64"],
+      "summary": "2026-11-02 阶段58，F47/F55/F56/F64：Source83新增公开ProfileVerifier预热与独立实际48MiB方法，使用非传递compile-only公开API，不重复打包库。SDK861/886、完整预热/基线/配额原始与独立回读通过：files6→56、原6保护、owned50/44source、10对192000880字节sealFile发布1、11对211200968字节越过201326592上限发布0，实际maxMemory50331648。90捕获/180完整流、全部tar403512320字节。旧Source82严格失败不变；seeded不代表真实seal/rowIO故障、死亡/激活/完整24域/UI/物理DEV，iOS源码不变。",
+      "files": {
+        "apps/android/build.gradle.kts": "f92f82d4d899b1d86d7e4ba86b365710096abb65306bd5bfdc6065af3f2aad11",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProfilePrewarmTest.kt": "e94e15e257103ffa5a1320064916960aafd7312ad5acc530bf870e15f256065a",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalAggregateQuotaTest.kt": "b50b42c4ab843fd5178a27edf678dffc07f7663c253529467808b774ee7fb7f1"
+      }
     }
   ]
 }

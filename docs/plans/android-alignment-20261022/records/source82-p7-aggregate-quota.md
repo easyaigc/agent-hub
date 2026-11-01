@@ -67,6 +67,10 @@ Root最终有界决策SHA-256：`001c39d49f72595cb7f0d393779158ad2bd73ea876050ff
 
 先保存、提交当前Source82准确源码及分层结果，再由主统筹在下一独立Android阶段分支处理上游语义集成、冻结、回归和Gitea→main交付；新main不能追认旧候选通过。
 
+## 合并交付
+
+[PR105](https://git.51easyai.com/BCAI/agent-hub-app/pulls/105) 已于2026-11-01合入Gitea main `08e895c3`；源提交`72f0b487`及同步main后的`1d8709db`，CI11048 workspace／iOS同源通过。唯一manifest冲突保留main全部记录并附加Source82验收类的准确变更记录；纯文档主线缺口不放入只允许源码路径的manifest files。阶段57本地／远端分支已清理，同一隔离工作树转入阶段58。Source82原Native／owned数据限定通过、原collector1／全根严格边界失败及全部未验范围不变；main集成与CI不能升级旧冻结SDK或代替新生产指纹的Android界面验收。
+
 ## 后续与资源
 
 P7完整24域、更广多原件与迁移流程、真实row I/O／seal故障、冷读取／实际48MiB、完整语音／未读／生命周期、iOS音频资料缺口及迁移系统UI／物理DEV继续开放。原全根严格边界与动态Profile时序待验不能因owned数据限定通过而关闭。P9真实Main冷入口、实际OS点击和通知完整生命周期继续待验。F65–67、UI14–19、UM06业务、UM07–08、F75原生项目UI及iOS A6暂停，不因F26导航或Host共享限制恢复。

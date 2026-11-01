@@ -18720,6 +18720,15 @@
         "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "dfc1fe6c90911e8486de1da597dea569bbd4fed9e2f1c68f1f8bb72b71f389f3",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkSavedSelectionTest.kt": "61d63d0a5ff963c15671a7a37e8579c760206ab504f4bae873c103aa0e32182e"
       }
+    },
+    {
+      "id": "android-source80-mixed-provisional-v1-v2-20261101",
+      "baseCommit": "dd087e2d9cbe9ef4a1e70568830055b62c357196",
+      "features": ["F47", "F55", "F56", "F64"],
+      "summary": "mixed v1/v2惰性目录单方法Native及完整数据限定通过：旧null／新descriptor、三份binary393305字节、六类坏图拒绝及不同原回执两次激活；97新成员与parent共98差异，89设备＋8本地捕获完整读回，51旧根／44APK保持。SDK858/871及三包／12SDK流通过。原安装业务成功与数据已核，但工具外层退出未知单列；按具名数据级许可执行不同新Native，不重放安装、不升级旧执行。UI／物理DEV、完整24组、真实seal故障／低堆／生命周期及iOS音频资料缺口继续开放。",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMixedProvisionalVersionTest.kt": "234592704bb171643f96b961d4600aae69d4782800070e9ef4b1eb36e51e75dc"
+      }
     }
   ]
 }

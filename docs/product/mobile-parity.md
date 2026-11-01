@@ -726,3 +726,5 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-01 阶段53，F47/F55/F56/F64：Android新增同一原候选的writer／activate／只读audit三次独立原生方法，SDK与同原候选三次Native方法按本范围限定通过，397份原捕获经独立读回；writer／activate两个原collector退出1保持，Root只读重核后接续，audit原collector退出0，不重跑seal／export／stage／activate。具名注入IOException不等于真实row I/O、断电或进程死亡，三PID不证明旧PID退出；UI／物理DEV、iOS音频缺口及完整24组保持待验。见[Source78原候选记录](../plans/android-alignment-20261022/records/source78-seal-original-three-pid.md)。
 
 2026-11-01 阶段54，F06/F09／UI03：共用发现电脑行补Role.Button，对齐iOS EasyWork／Codex的Button语义，布局和原callback保持；原online方法增加角色断言、4原方法保持。Source79当前3方法／4夹具／397份完整捕获限定通过；第4方法仅Native终态0，tar采集关闭导致完整数据读回待验，不重跑Native。共用Codex角色受影响但不增加真实DEV通过，完整P8／系统读屏／截图原点／API26及真实服务另验，见[本轮记录](../plans/android-alignment-20261022/records/source79-p8-discovery-row-role.md)。
+
+2026-11-01 阶段55，F47/F55/F56/F64：Android新增mixed v1/v2惰性目录原生验收方法，保留既有v1原件并将独立seeded未提交audio窗口合成同一v2 catalog；旧项显式null、新项独立audio descriptor、三份binary分别核对，不恢复recorder或重放。SDK及本轮单方法Native／完整数据核对限定通过：97新成员、三份binary、六类坏图拒绝与原回执保持；原安装工具外层退出未知单列，未重放。同进程warm、seeded状态不证明真实seal故障、低堆或生命周期。iOS PendingVoiceStore音频／metadata缺口、完整24组及UI／物理DEV继续待验，见[本轮记录](../plans/android-alignment-20261022/records/source80-p7-mixed-provisional.md)。

@@ -26,6 +26,13 @@ export interface APNsSigningKey {
   keyPath: string;
 }
 type APNsEnvironment = 'development' | 'production';
+interface HostPublisherConfiguration {
+  hostId: string;
+  token: string;
+  topic?: string;
+  allowedTargets?: RuntimeTarget[];
+  environments?: APNsEnvironment[];
+}
 export interface PushConfiguration {
   statePath: string;
   topic: string;
@@ -34,7 +41,9 @@ export interface PushConfiguration {
   keyId?: string;
   keyPath?: string;
   keys?: Partial<Record<APNsEnvironment, APNsSigningKey>>;
-  hosts: { hostId: string; token: string }[];
+  /** Non-default topics are explicit and never fall back to the default topic's key. */
+  topicKeys?: Record<string, Partial<Record<APNsEnvironment, APNsSigningKey>>>;
+  hosts: HostPublisherConfiguration[];
   businessPublishers?: BusinessPublisherConfiguration[];
 }
 interface Binding {
@@ -47,6 +56,7 @@ interface Binding {
   managementHash: string;
   enabled: boolean;
   generation: number;
+  topic?: string;
 }
 interface Delivery {
   fingerprint: string;
@@ -74,7 +84,12 @@ const equal = (a: string, b: string) => {
     right = Buffer.from(b);
   return left.length === right.length && timingSafeEqual(left, right);
 };
-function configuredAPNsKey(config: PushConfiguration, environment: APNsEnvironment) {
+function configuredAPNsKey(
+  config: PushConfiguration,
+  environment: APNsEnvironment,
+  topic = config.topic,
+) {
+  if (topic !== config.topic) return config.topicKeys?.[topic]?.[environment];
   return (
     config.keys?.[environment] ??
     (config.keyId && config.keyPath ? { keyId: config.keyId, keyPath: config.keyPath } : undefined)
@@ -84,22 +99,32 @@ function configuredAPNsKey(config: PushConfiguration, environment: APNsEnvironme
 export function createAPNsAuthorizer(config: PushConfiguration) {
   if (Boolean(config.keyId) !== Boolean(config.keyPath)) throw new Error('APNs 密钥配置不完整');
   const credentials = new Map<
-    APNsEnvironment,
+    string,
     { keyId: string; key: ReturnType<typeof createPrivateKey>; jwt: string; created: number }
   >();
-  for (const environment of ['development', 'production'] as const) {
-    const signing = configuredAPNsKey(config, environment);
-    if (!signing) continue;
-    if (!signing.keyId || !signing.keyPath) throw new Error('APNs 密钥配置不完整');
-    assertPushPrivateFile(signing.keyPath);
-    const key = createPrivateKey(readFileSync(signing.keyPath));
-    if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1')
-      throw new Error('APNs 需要 ES256 P-256 私钥');
-    credentials.set(environment, { keyId: signing.keyId, key, jwt: '', created: 0 });
+  for (const topic of [config.topic, ...Object.keys(config.topicKeys ?? {})]) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9.-]{2,199}$/.test(topic)) throw new Error('无效 APNs topic');
+    if (topic === config.topic && config.topicKeys?.[topic])
+      throw new Error('默认 APNs topic 必须使用原环境密钥配置');
+    for (const environment of ['development', 'production'] as const) {
+      const signing = configuredAPNsKey(config, environment, topic);
+      if (!signing) continue;
+      if (!signing.keyId || !signing.keyPath) throw new Error('APNs 密钥配置不完整');
+      assertPushPrivateFile(signing.keyPath);
+      const key = createPrivateKey(readFileSync(signing.keyPath));
+      if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1')
+        throw new Error('APNs 需要 ES256 P-256 私钥');
+      credentials.set(topic + ':' + environment, {
+        keyId: signing.keyId,
+        key,
+        jwt: '',
+        created: 0,
+      });
+    }
   }
   if (!credentials.size) throw new Error('尚未配置 APNs 环境密钥');
-  return (environment: APNsEnvironment): string | undefined => {
-    const signing = credentials.get(environment);
+  return (environment: APNsEnvironment, topic = config.topic): string | undefined => {
+    const signing = credentials.get(topic + ':' + environment);
     if (!signing) return undefined;
     if (Date.now() - signing.created > 3_000_000 || !signing.jwt) {
       const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: signing.keyId })).toString(
@@ -146,7 +171,7 @@ export function createAPNsSender(config: PushConfiguration) {
     binding: Pick<Binding, 'id' | 'environment' | 'deviceToken'> & { topic?: string },
     envelope: NotificationEnvelope,
   ): Promise<APNsResult> => {
-    const jwt = authorize(binding.environment);
+    const jwt = authorize(binding.environment, binding.topic ?? config.topic);
     if (!jwt) return { state: 'rejected', reason: 'APNsEnvironmentNotConfigured' };
     const data = JSON.stringify(notificationAPNsPayload(envelope, binding.id));
     if (Buffer.byteLength(data) > 4096) return { state: 'rejected', reason: 'PayloadTooLarge' };
@@ -241,6 +266,39 @@ export async function startPushServer(
     new Set(config.hosts.map((host) => host.token)).size !== config.hosts.length
   )
     throw new Error('无效推送服务配置');
+  for (const host of config.hosts) {
+    if (
+      (host.topic !== undefined && !/^[A-Za-z0-9][A-Za-z0-9.-]{2,199}$/.test(host.topic)) ||
+      (host.environments !== undefined &&
+        (!Array.isArray(host.environments) ||
+          !host.environments.length ||
+          host.environments.some((value) => !['development', 'production'].includes(value)))) ||
+      (host.allowedTargets !== undefined &&
+        (!Array.isArray(host.allowedTargets) ||
+          !host.allowedTargets.length ||
+          host.allowedTargets.some(
+            (target) => parseNotificationTarget(target).hostId !== host.hostId,
+          )))
+    )
+      throw new Error('无效推送发布目标限制');
+  }
+  const acceptsTarget = (host: HostPublisherConfiguration, target: RuntimeTarget) =>
+    target.hostId === host.hostId &&
+    (!host.allowedTargets ||
+      host.allowedTargets.some(
+        (allowed) => notificationTargetKey(allowed) === notificationTargetKey(target),
+      ));
+  const ownsBinding = (
+    host: HostPublisherConfiguration,
+    binding: Binding | undefined,
+  ): binding is Binding =>
+    Boolean(
+      binding &&
+      binding.hostId === host.hostId &&
+      acceptsTarget(host, binding.target) &&
+      (binding.topic ?? config.topic) === (host.topic ?? config.topic) &&
+      (!host.environments || host.environments.includes(binding.environment)),
+    );
   const publishers = config.businessPublishers ?? [];
   const publisherKeys = publishers.map((p) =>
     JSON.stringify([p.deploymentId, p.serverInstanceId, p.primaryHostId]),
@@ -325,6 +383,7 @@ export async function startPushServer(
         if (
           delivery.cancelled ||
           !binding?.enabled ||
+          !config.hosts.some((host) => ownsBinding(host, binding)) ||
           Date.parse(delivery.envelope.expiresAt) < Date.now()
         ) {
           delivery.state = 'rejected';
@@ -434,6 +493,7 @@ export async function startPushServer(
         if (
           row.hostId !== host.hostId ||
           target.hostId !== host.hostId ||
+          !acceptsTarget(host, target) ||
           typeof row.deviceId !== 'string' ||
           !/^[A-Za-z0-9._-]{1,128}$/.test(row.deviceId) ||
           ['__proto__', 'prototype', 'constructor'].includes(row.deviceId) ||
@@ -448,7 +508,13 @@ export async function startPushServer(
           json(403, { error: 'TargetDenied' });
           return;
         }
-        if (!configuredAPNsKey(config, row.environment as APNsEnvironment)) {
+        if (host.environments && !host.environments.includes(row.environment as APNsEnvironment)) {
+          json(403, { error: 'TargetDenied' });
+          return;
+        }
+        if (
+          !configuredAPNsKey(config, row.environment as APNsEnvironment, host.topic ?? config.topic)
+        ) {
           json(503, { error: 'APNsEnvironmentNotConfigured' });
           return;
         }
@@ -474,6 +540,7 @@ export async function startPushServer(
             !binding ||
             binding.deviceToken !== row.deviceToken ||
             binding.environment !== row.environment ||
+            (binding.topic ?? config.topic) !== (host.topic ?? config.topic) ||
             !equal(binding.managementHash, hash(managementToken))
           ) {
             json(409, { error: 'SubscriptionConflict' });
@@ -483,6 +550,7 @@ export async function startPushServer(
           return;
         }
         binding = {
+          topic: host.topic ?? config.topic,
           id: binding?.id ?? randomUUID(),
           hostId: host.hostId,
           deviceId: row.deviceId,
@@ -505,6 +573,7 @@ export async function startPushServer(
         if (
           row.hostId !== host.hostId ||
           target.hostId !== host.hostId ||
+          !acceptsTarget(host, target) ||
           typeof row.deviceId !== 'string' ||
           !/^[A-Za-z0-9._-]{1,128}$/.test(row.deviceId) ||
           ['__proto__', 'prototype', 'constructor'].includes(row.deviceId) ||
@@ -537,7 +606,7 @@ export async function startPushServer(
       if (path === '/v1/push/binding-status') {
         const row = notificationObject(data, ['bindingId']);
         const binding = state.bindings[String(row.bindingId)];
-        if (!binding || binding.hostId !== host.hostId) {
+        if (!ownsBinding(host, binding)) {
           json(403, { error: 'BindingDenied' });
           return;
         }
@@ -565,7 +634,7 @@ export async function startPushServer(
         const binding = state.bindings[String(row.bindingId)];
         if (
           !binding ||
-          binding.hostId !== host.hostId ||
+          !ownsBinding(host, binding) ||
           typeof row.eventId !== 'string' ||
           !/^[a-f0-9]{64}$/.test(row.eventId)
         ) {
@@ -596,7 +665,7 @@ export async function startPushServer(
       if (path === '/v1/push/publish') {
         const envelope = parseNotificationEnvelope(data),
           binding = state.bindings[envelope.bindingId];
-        if (!binding?.enabled || binding.hostId !== host.hostId) {
+        if (!binding?.enabled || !ownsBinding(host, binding)) {
           json(403, { error: 'BindingDenied' });
           return;
         }

@@ -52,9 +52,37 @@
 4. 默认调用 `create --host-id HOST_ID --operation-id CREATE_ID --project-id PROJECT_ID --no-suitable-reason "用户明确要求的独立任务，按默认策略新建专用对话，无明确的同任务延续" --text-file PRIVATE_FIRST_TASK_FILE --effort xhigh`。`--no-suitable-reason` 是现有工具的选择理由参数名，不意味着必须遍历或尝试旧聊天。PROJECT_ID 来自刚查询的该机列表。任务确实无项目或没有合适项目时才省略 project-id，并记录理由。创建并发送真实首条任务，不发送占位消息，不反归档旧聊天；新建不可用时报告阻塞，不自动转投无关旧聊天。
 5. `create-status --host-id HOST_ID --operation-id CREATE_ID` 查询创建回执。confirmed 后核对准确 Thread/owner，并用 `receipt --host-id HOST_ID --thread-id CONFIRMED_THREAD_ID --operation-id first-CREATE_ID` 及真实交付判断首条任务是否完成。创建确认不等于模型任务完成。同一任务后续在该专用对话内跟进，不为每条消息重复新建。
 6. 仅在用户明确指定旧对话，或最近上下文能明确证明延续同一个任务、交付物与责任范围时复用未归档对话；先核对归属、最近上下文和实际运行状态，记录连续性依据。标题相似、同项目、空闲、历史 `coordinationThreadId` 可写、曾做 Host 安装或其他验收均不足以复用。上下文从固定 `/v1/history?hostId=HOST_ID&threadId=THREAD_ID` 响应按需读取；拿不到时不宣称已核对。
-7. 复用或新建确认后，`history --host-id HOST_ID --thread-id THREAD_ID` 核对准确原 owner 的 ready/canControl、实际运行状态及模型档位。存储可读不代表运行时可控；符合复用条件但未加载时可具名 `open`，随后查询 `open-status` 和准确 history。后续 `send --host-id HOST_ID --thread-id THREAD_ID --operation-id MESSAGE_ID --text-file PRIVATE_TASK_FILE --effort xhigh` 在提交前再次查询当前列表与准确 owner；空闲用 next-turn，否则 queue，不停止或 steer。
+7. 复用或新建确认后，`history --host-id HOST_ID --thread-id THREAD_ID` 核对准确原 owner 的 ready/canControl、实际运行状态及模型档位。存储可读不代表运行时可控；符合复用条件但未加载时可具名 `open`，随后查询 `open-status` 和准确 history。后续 `send --host-id HOST_ID --thread-id THREAD_ID --operation-id MESSAGE_ID --text-file PRIVATE_TASK_FILE --effort xhigh` 在提交前再次查询当前列表与准确 owner；由模型根据任务优先级、时效、依赖和当前运行状态显式选择 next-turn、queue、steer 或原队列提升，不固定要求忙时排队，不为选择即时追加另行确认；按下节核对能力、原 owner、当前 Turn 和原消息 ID。
 
 `probe --host-id HOST_ID` 只读核对 HTTPS、鉴权、真实 Host ID、desktop-runtime 和能力。`create-submit` 仅继续本机已有且远端明确 prepared、尚未尝试执行的创建草稿；已经尝试提交的同 ID 只查询。
+
+## 发送模式与原队列立即执行
+
+以下操作直接调用已有 Codex Host HTTPS 接口，不依赖手机 App。先 `probe`／`history` 核对完整目标、能力与准确原 owner；工具在写入前再次查询。原有跨电脑授权、任务专用对话与来源头规则继续适用。已获授权任务的发送模式由模型依据任务优先级、时效、依赖和实际运行状态决定，可排队、即时追加或提升原队列项；不固定要求排队，不以用户另行说“立即追加／执行”为前置条件。模型应显式传入所选模式并简要记录理由。省略 mode 的 auto 仅是工具兼容行为，不是模型必须遵循的调度策略。安装或更新本 SKILL 不授权给真实对话发测试消息。
+
+| 目的                 | 工具参数                                                                             | Host 行为与条件                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 工具缺省兼容模式     | `send` 或 `send --mode auto`                                                         | 省略 mode 时空闲用 `next-turn`、其他状态按能力排队；模型应按优先级显式选择模式，此缺省不限制模型决策。                                                                                    |
+| 空闲立即发送         | `send --mode next-turn`                                                              | 当前必须空闲且无活动 Turn；状态变化被 Host 拒绝时不改成其他模式重发。                                                                                                                     |
+| 明确排队             | `send --mode queue`                                                                  | 必须声明 `queue`，进入原桌面官方队列；空闲时也保持 queue 请求，不改成直接发送。                                                                                                           |
+| 新消息立即追加       | `send --mode steer --expected-turn-id TURN_ID`                                       | 必须声明 `steer`、准确 owner 正在运行且轮次匹配；Host 再核对轮次。追加到当前轮，不代表强行中断正在执行的工具。                                                                            |
+| 查询队列             | `queue [--limit 1..50] [--offset N]`                                                 | 从准确 history 的 `runtime.receipts` 输出有界 ID、顺序、状态、原文 SHA-256 与 `queueSource/queuePresent/canExecuteNow`；不输出正文、不写入。旧 Host 队列保留可见但不可自动执行。          |
+| 原队列立即执行／追加 | `queue-execute --operation-id NEW_ACTION_ID --queued-message-id ORIGINAL_MESSAGE_ID` | 必须声明 `queue:execute`，原项为 `native`、`queued`、在场且可执行、无同步错误；运行时必须另带匹配的 `--expected-turn-id TURN_ID`。Host 空闲时启动新轮，运行时追加到原轮；审批等待时拒绝。 |
+
+所有命令显式带 `--host-id HOST_ID --thread-id THREAD_ID`。先查询，再使用返回的完整 ID；不按队列序号、标题或过期缓存定位消息。例如，在已授权目标及专用对话中：
+
+```bash
+node ~/.config/agent-hub/contact-host.mjs history --host-id HOST_ID --thread-id THREAD_ID
+node ~/.config/agent-hub/contact-host.mjs send --host-id HOST_ID --thread-id THREAD_ID --operation-id MESSAGE_ID --text-file PRIVATE_TASK_FILE --mode queue --effort xhigh
+node ~/.config/agent-hub/contact-host.mjs send --host-id HOST_ID --thread-id THREAD_ID --operation-id NEW_MESSAGE_ID --text-file PRIVATE_TASK_FILE --mode steer --expected-turn-id TURN_ID
+node ~/.config/agent-hub/contact-host.mjs queue --host-id HOST_ID --thread-id THREAD_ID
+node ~/.config/agent-hub/contact-host.mjs queue-execute --host-id HOST_ID --thread-id THREAD_ID --operation-id NEW_ACTION_ID --queued-message-id ORIGINAL_MESSAGE_ID --expected-turn-id TURN_ID
+node ~/.config/agent-hub/contact-host.mjs receipt --host-id HOST_ID --thread-id THREAD_ID --operation-id ORIGINAL_MESSAGE_ID
+```
+
+Windows 使用原生用户目录中的同名工具与本机 Node 路径。`send`／`create` 默认请求 xhigh；`steer` 必须省略 `--effort`，不发送模型／推理／权限／速度设置，继续当前轮原设置。`queue-execute` 不接受正文或 effort，按原项执行，不修改其原 mode、正文、附件、消息 ID 或指纹。空闲执行时省略 expected-turn-id，Host 会按实际状态选择新轮／追加；该接口没有“必须保持空闲”的条件参数，不能把查询时空闲当作执行时仍空闲的保证。
+
+`queue-execute` 使用一个新的本地 action operation ID，payload 的 `clientMessageId` 始终为原队列消息 ID。Host 此接口返回 `{ok}`，没有独立 action 回执；工具保存动作意图与响应，之后同 action ID **只查原消息回执，绝不再次 POST**。`actionOutcome: query-only` 仅表示只读核对，不证明该次提升动作完成，原消息可能由桌面自然消费。响应丢失、404 或状态未知时保留原操作，只核对原回执／原 owner／队列，不换 ID 重试、不复制正文发送。状态／轮次／能力不符时直接报告，不降级或自动换模式；mode 与 expected-turn-id 也是本地不可变意图的一部分。
 
 ## 沟通恢复与执行记录
 
@@ -62,7 +90,7 @@
 
 原沟通超时、未知、失效或归档后，先核对旧回执和实际任务状态，再重新查询项目/会话列表；恢复仅限原明确授权范围，换入口默认新建专用对话，复用仍须满足上述连续性条件。新的核对或幂等配置补齐消息写明 task ID、原 operation ID、已知结果和负责人；已完成项跳过，可能仍在运行的工作先协调归属。旧记录保留未知且可查询，不冒充成功，不盲目重新分派或复制会产生副作用的任务。原授权内必要恢复无需重复询问，不因旧回执缺失扩大授权。
 
-任务文件先按上述格式标明来源身份，再写当前人类授权、准确目标、范围、交付物、验收条件和产物/代码指纹。保持目标现有模型，实际请求 xhigh 并核对回执；排队或提交成功不代表完成。只在必要变化时汇报，不反复催促或向第三台转发。
+任务文件先按上述格式标明来源身份，再写当前人类授权、准确目标、范围、交付物、验收条件和产物/代码指纹。保持目标现有模型，普通新轮／排队请求 xhigh 并核对回执；立即追加沿用当前轮设置，原队列执行沿用其原意图。排队或提交成功不代表完成。只在必要变化时汇报，不反复催促或向第三台转发。
 
 ## 私有与接口边界
 
@@ -70,6 +98,6 @@
 
 文件工具仅额外访问固定 `GET/POST /v1/file-transfers` 和 `POST /v1/file-transfers/content`。不增加任意方法或目录代理，不传密钥参数，不跟随重定向。安装后逐机核对工具 SHA-256，Windows 同时实际验证私有 DACL；程序和工具必须来自主开发仓库同一统一产物。
 
-工具仅访问固定具名 HTTPS 接口：healthz、workspace、history、replies、receipts、desktop/open、desktop/open-status、desktop/creations、desktop/creations/submit、desktop/creation-receipts。验证 TLS 证书且不跟随重定向，不支持远端 shell、任意 IPC、审批、停止或 steer。
+工具仅访问固定具名 HTTPS 接口：healthz、workspace、history、replies、receipts、queue/execute、desktop/open、desktop/open-status、desktop/creations、desktop/creations/submit、desktop/creation-receipts。`steer` 通过 replies 的严格模式字段提交，不增加任意方法转发。验证 TLS 证书且不跟随重定向，不支持远端 shell、任意 IPC、审批或停止。队列取消／重排不在此工具入口中，不能把已支持立即执行说成支持全部队列编辑。
 
 私有账本在 `.config/agent-hub/operations/`。macOS 目录 0700、文件 0600；Windows 目录/文件须实际验证本用户私有 DACL，后续文件继承同样权限。清单不能覆盖任何电脑自身 Host 身份、密钥或桥接配置。全局指令只保存位置、流程与触发条件，不包含密钥。

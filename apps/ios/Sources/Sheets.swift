@@ -414,6 +414,20 @@ struct ProjectPickerView: View {
                         }.foregroundStyle(Color.primary).accessibilityIdentifier("choose-projectless")
                     }
                 }
+                if !store.recentProjects.isEmpty {
+                    Section {
+                        ForEach(store.recentProjects) { project in
+                            Button {
+                                store.newConversation(in: project)
+                            } label: {
+                                Label(project.name, systemImage: "clock")
+                            }.foregroundStyle(Color.primary).accessibilityIdentifier(
+                                "choose-recent-project-\(project.id)")
+                        }
+                    } header: {
+                        Text(L10n.tr("最近使用"))
+                    }
+                }
                 Section {
                     ForEach(store.projects) { project in
                         Button {

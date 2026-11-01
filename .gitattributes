@@ -1,0 +1,2 @@
+# Unified patches require a space on empty context lines.
+docs/integrations/easywork-discovery-v1/implementation.patch whitespace=-blank-at-eol

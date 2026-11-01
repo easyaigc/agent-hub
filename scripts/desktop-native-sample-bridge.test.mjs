@@ -25,10 +25,11 @@ import { syncBuiltinESMExports } from 'node:module';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
+import * as realBridge from '../packages/codex-adapter/dist/desktop-native-sample-bridge.js';
 import {
-  createDesktopNativeSampleBridge,
-  desktopNativeSampleBridgeTesting as testing,
-} from '../packages/codex-adapter/dist/desktop-native-sample-bridge.js';
+  loadSyntheticWindowsBridge,
+  registerSyntheticLogRoot,
+} from './fixtures/desktop-native-sample-synthetic-log-range.mjs';
 import { DesktopNativeSampleCapture } from '../packages/codex-adapter/dist/desktop-native-sample-capture.js';
 import { DesktopSuggestionStore } from '../packages/codex-adapter/dist/desktop-suggestion-store.js';
 import {
@@ -40,6 +41,11 @@ import {
 // byte forwarding, native parent/start validation, or real Electron/iPhone use.
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const windows = process.platform === 'win32';
+let syntheticBridge;
+test.after(() => syntheticBridge?.close());
+if (windows) syntheticBridge = await loadSyntheticWindowsBridge();
+const { createDesktopNativeSampleBridge, desktopNativeSampleBridgeTesting: testing } =
+  syntheticBridge?.module ?? realBridge;
 const implementationSha256 = 'a'.repeat(64);
 function directory(path) {
   mkdirSync(path, { recursive: true, mode: 0o700 });
@@ -55,9 +61,21 @@ function privateFile(path, text) {
 }
 function fixture(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'native-bridge-fixture-')));
+  const instances = [];
+  let nativeLogRanges;
+  t.after(() => {
+    try {
+      for (const bridge of instances) bridge.close();
+    } finally {
+      nativeLogRanges?.unregister();
+      // This exact fresh fixture directory contains synthetic files only.
+      rmSync(root, { recursive: true });
+    }
+  });
   directory(root);
   const traceRoot = directory(join(root, 'trace'));
   const logDirectory = directory(join(root, 'logs'));
+  if (windows) nativeLogRanges = registerSyntheticLogRoot(root, logDirectory);
   const app = directory(join(root, 'Original.app'));
   const configPath = join(root, 'native.json');
   let at = Date.parse('2026-10-30T12:00:00.000Z');
@@ -87,8 +105,7 @@ function fixture(t) {
   };
   privateFile(configPath, JSON.stringify(config));
   const store = new DesktopSuggestionStore(traceRoot, machineRuntimeTargetKey(target));
-  const codes = [],
-    instances = [];
+  const codes = [];
   const nativeIdentity = (pid) => {
     if (pid === process.pid) return { ...identity };
     throw new Error('Synthetic unknown identity, not proof of exit');
@@ -103,6 +120,7 @@ function fixture(t) {
     target,
     store,
     codes,
+    nativeLogRanges,
     ownerPath: join(store.directory, 'producer-owner.json'),
     now: () => at,
     advance: (delta = 1) => (at += delta),
@@ -170,11 +188,6 @@ function fixture(t) {
       at++;
     },
   };
-  t.after(() => {
-    for (const bridge of instances) bridge.close();
-    // This exact fresh fixture directory contains synthetic files only.
-    rmSync(root, { recursive: true });
-  });
   return f;
 }
 function request(fields = {}) {
@@ -962,15 +975,54 @@ test(
 );
 
 test(
-  'Windows cannot bypass the native prefix-only helper with unchecked large-file reads',
+  'Windows synthetic native ranges resume beyond 1 MiB without a prefix fallback',
   { skip: !windows },
   (t) => {
-    const f = fixture(t),
-      path = f.log();
-    privateFile(path, Buffer.alloc(testing.limits.bytesPerTick + 1, 120));
-    assert.equal(f.start(), undefined);
-    assert.ok(f.codes.includes('native_bridge_windows_log_range_unavailable'));
-    assert.equal(existsSync(f.ownerPath), false);
+    const f = fixture(t);
+    assert.ok(f.start());
+    const req = request();
+    const text = 'Synthetic native range suggestion 保留完整正文';
+    f.send(req, text);
+    const path = f.log();
+    const filler = ('x'.repeat(8192) + '\n').repeat(128);
+    const decision = f.decision(req);
+    const content = filler + decision + '\n';
+    assert(Buffer.byteLength(content) > testing.limits.bytesPerTick);
+    privateFile(path, content);
+    f.nativeLogRanges.takeCalls();
+    f.tick();
+    assert.equal(f.row(req).state, 'pending');
+    const first = f.nativeLogRanges.takeCalls().filter((call) => call.count > 0);
+    assert.equal(first.length, 1, 'one actual kernel range in the first tick');
+    assert.equal(first[0].path, path);
+    assert.equal(first[0].offset, 0);
+    assert.equal(first[0].count, testing.limits.bytesPerTick);
+    assert.equal(first[0].bytes, testing.limits.bytesPerTick);
+    f.tick();
+    const second = f.nativeLogRanges.takeCalls().filter((call) => call.count > 0);
+    assert.equal(second.length, 1, 'one actual kernel range in the continuation tick');
+    assert.equal(second[0].path, path);
+    assert.equal(
+      second[0].offset,
+      testing.limits.bytesPerTick - 64,
+      'continuation reads only the predecessor guard and remaining bytes',
+    );
+    assert(second[0].offset + second[0].bytes > testing.limits.bytesPerTick);
+    assert.equal(second[0].bytes, Buffer.byteLength(content) - second[0].offset);
+    for (const calls of [first, second]) {
+      assert(
+        calls.every(
+          (call) => call.bytes === call.count && call.count <= testing.limits.bytesPerTick,
+        ),
+      );
+      assert(calls.reduce((sum, call) => sum + call.bytes, 0) <= testing.limits.bytesPerTick);
+    }
+    assert.equal(f.row(req).state, 'completed');
+    assert.equal(f.row(req).result.text, text);
+    assert.equal(f.row(req).result.safety.evidenceSha256, hash(decision));
+    assert.equal(f.codes.includes('native_bridge_windows_log_range_unavailable'), false);
+    assert.equal(f.codes.includes('native_bridge_log_truncated'), false);
+    assert.equal(f.store.readProducer().phase, 'listening');
   },
 );
 

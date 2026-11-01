@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "baseCommit": "dbff1626bf05b652d8ebef4ba7a192d31ab98dfa",
+  "patchSha256": "bc8dc15674b5abfc500a390dce9177879f5b928b51cda831f917247542eedbac",
+  "files": [
+    {
+      "path": "apps/desktop/src/main/remote-access/embedded-lan-host.ts",
+      "beforeSha256": "82cfa7d7da6306dba0a8b527a9b1b71a37c5eef75faff69d43b30cc99762b805",
+      "afterSha256": "52bc1ee14ff629fa6abae8f17e69ed1a1469e581c9799d7a150b6c0e7c9ab099"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/local-computer.ts",
+      "beforeSha256": null,
+      "afterSha256": "029bab32291458700da7b7d305f1e2d2363bda3b093cec0dcd6d4ac1acb370af"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/embedded-lan-host.test.ts",
+      "beforeSha256": "ff44f1c19c3a9ab6e065cd6f835ea3c08666fb289b09cdb0dde01812ef531b78",
+      "afterSha256": "ae27fa8f04b57d47b1ca6ea880d09b2140363b57e2d82a3fe24423d5afab37ad"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/local-computer.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "1fbb4e9f6255c47c4b31d5bf02644573d0d910e8b27e792720503141032cea6e"
+    },
+    {
+      "path": "packages/shared/src/ipc/remote-access.ts",
+      "beforeSha256": "f3813ad9266b0b6f5526db421cacb2f99af886c92de38dc1c6a74ae1f0b46a30",
+      "afterSha256": "b56feb03177c9e7af5c73070c9579239b0bbb57cab632536631b7420a06e2662"
+    }
+  ]
+}

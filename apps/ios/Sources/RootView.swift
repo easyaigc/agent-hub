@@ -4303,8 +4303,14 @@ private struct ComposerView: View {
   private func toolbarGenerationButton(_ density: ToolbarDensity) -> some View {
     Button { composerFocused = false; store.sheet = .generation } label: {
       HStack(spacing: density == .minimal ? 2 : 4) {
-        Image(systemName: store.selectedSpeed == "ultrafast" ? "bolt.badge.clock.fill" : "bolt.fill")
-          .foregroundStyle(store.selectedSpeed == "fast" || store.selectedSpeed == "ultrafast" ? Color.blue : Color.primary)
+        if store.selectedSpeed == "fast" || store.selectedSpeed == "ultrafast" {
+          HStack(spacing: 1) {
+            Image(systemName: "bolt.fill")
+            if store.selectedSpeed == "ultrafast" { Image(systemName: "bolt.fill") }
+          }.foregroundStyle(Color.blue).accessibilityHidden(true)
+        } else if density == .icons {
+          Image(systemName: "slider.horizontal.3").accessibilityHidden(true)
+        }
         if density != .icons {
           Text(density == .full ? store.displayedModelLabel : density == .minimal ? String(compactModelLabel.prefix(6)) : compactModelLabel)
             .lineLimit(1)

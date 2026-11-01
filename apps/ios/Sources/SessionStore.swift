@@ -545,6 +545,24 @@ private var userRequestedWorkspaceGeneration: UUID?
         + (saved.workspaces[client.id]?.projects ?? []).filter { !(saved.demoDeletedProjectIds ?? []).contains($0.id) }
       : saved.workspaces[client.id]?.projects ?? []
   }
+  private var recentProjectScope: String? {
+    guard let host = client else { return nil }
+    if host.isDemo { return "recent-projects-demo:" + host.id }
+    return SharedMobileRules.nativeReadingKey(mobileReadingTarget(host), threadId: nil)
+  }
+  var recentProjects: [Project] {
+    guard let scope = recentProjectScope, let history = saved.recentProjects else { return [] }
+    let available = projects.filter { $0.hostId == client?.id }
+    return history.recentIDs(in: scope, availableIDs: Set(available.map(\.id))).compactMap { id in
+      available.first { $0.id == id }
+    }
+  }
+  private func rememberRecentProject(_ id: String?) {
+    guard let id, let scope = recentProjectScope,
+      projects.contains(where: { $0.id == id && $0.hostId == client?.id }) else { return }
+    if saved.recentProjects == nil { saved.recentProjects = RecentProjects() }
+    saved.recentProjects?.record(id, in: scope)
+  }
   var threads: [Conversation] {
     guard let client else { return [] }
     return client.isDemo
@@ -1967,6 +1985,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard thread.hostId == client?.id else { return }
     if let project, !thread.belongs(to: project) { return }
     selectedProjectId = thread.projectId ?? project?.id
+    rememberRecentProject(project?.id ?? selectedProjectId)
     if saved.lastThreadProjects == nil { saved.lastThreadProjects = [:] }
     saved.lastThreadProjects?[thread.hostId] = selectedProjectId
     saved.lastThreads[thread.hostId] = thread.id
@@ -2009,12 +2028,14 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func newConversation(in project: Project) {
-    guard project.hostId == client?.id, canCreateThread, client?.online == true else {
+    guard project.hostId == client?.id, projects.contains(where: { $0.id == project.id }),
+      canCreateThread, client?.online == true else {
       return
     }
     historyGeneration = UUID()
     selectedThreadId = nil
     selectedProjectId = project.id
+    rememberRecentProject(project.id)
     saved.newProjects[project.hostId] = project.id
     applyNewConversationDefaults()
     drawerOpen = false

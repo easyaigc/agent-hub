@@ -718,6 +718,7 @@ struct SessionHistoryPage: Codable {
 }
 
 struct SavedSession: Codable {
+  var recentProjects: RecentProjects? = nil
   var workspaceManagement: [WorkspaceManagementOperation]? = nil
   var demoDeletedProjectIds: [String]? = nil
   var demoArchivedThreadIds: [String]? = nil

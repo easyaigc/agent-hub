@@ -291,6 +291,8 @@ Codex 公开描述可声明 `connectionMode: automatic`。此时私网 `POST /co
 
 EasyWork 局域网接入通过 HTTPS `GET /host` 获取 `connectionMode: automatic`、完整目标、公钥与证书摘要；`POST /connections` 只接受手机设备 ID、公钥及名称，不要求配对码或桌面确认。服务仅接受本地网络来源，拒绝网页 Origin 和额外字段，保留输入大小及频率限制。手机首次自动保存同一连接取得的证书，后续使用证书固定校验；不允许跳转到其他地址。二维码还须核对其中的目标、公钥和证书。既有配对接口保持兼容，撤销设备不能通过自动连接重新授权。
 
+2026-10-31 发现展示扩展：v1 `/host` 与直连二维码描述可选提供 `computer: { name, username?, platform }`，分别来自电脑主机名、运行桌面进程的系统用户名及平台；`name` 保留兼容。手机只读描述并显示电脑／用户名称及入口地址，不由这些展示字段生成授权目标，不把系统用户名当作 EasyWork 登录账号。未声明 `connectionMode: automatic` 时不提交自动连接申请，提示使用既有扫码配对；不能仅由该缺省值推断具体安装包版本。实现与逐环境结果见[专项记录](acceptance/easywork-discovery-20261031.md)。
+
 中继固定连接密码沿用既有 `/pairing/claim` 契约；已激活绑定直接返回，不进入临时配对的等待确认流程。手机首次保存绑定及私有身份，重启后恢复连接，无需再次输入固定密码。上述为已实现行为，当前验收范围见 局域网连接验收（本地文件 `docs/acceptance/lan-connection.md`）。
 
 2026-10-10：`generation-speed` 声明速度设置已接入回复、排队及桌面首条创建。领域 `speed` 为 `standard`、`fast` 或 `ultrafast`，省略继承电脑；模型目录返回 `supportedSpeeds` / `defaultSpeed`。Adapter 按当前模型目录将档位映射为上游 serviceTier（例如 Fast 的 priority），关闭时明确提交 default，不能用省略表示关闭。无效类型、模型未提供的档位及 steer 改档均在提交前拒绝；创建／回复指纹包含所选速度，未知结果恢复保留原意图。owner 快照中的速度只表示该线程设置，不承诺实际加速倍数。

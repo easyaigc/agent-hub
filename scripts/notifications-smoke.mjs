@@ -1183,3 +1183,155 @@ test('out-of-order registration cannot restore an old token or revoke a newer su
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('topic-specific Sandbox routing and complete EasyWork publisher isolation preserve defaults', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'notification-topic-scope-'));
+  const topic = 'test.independent.acceptance';
+  const easywork = {
+    agentId: 'easywork',
+    hostId: 'fixture-device',
+    workspaceId: 'fixture-workspace',
+    runtimeId: 'local',
+    account: { authority: 'https://acceptance.example.test', subject: 'fixture-user' },
+  };
+  const credential = 'e'.repeat(48),
+    legacyCredential = 'c'.repeat(48);
+  const keyPath = join(directory, 'sandbox.p8');
+  const signingPair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  await writeFile(keyPath, signingPair.privateKey.export({ type: 'pkcs8', format: 'pem' }), {
+    mode: 0o600,
+  });
+  const config = {
+    statePath: join(directory, 'state.json'),
+    topic: 'test.default',
+    teamId: 'FIXTURETEAM',
+    keys: {
+      development: { keyId: 'DEFAULT', keyPath },
+      production: { keyId: 'PRODUCTION', keyPath },
+    },
+    topicKeys: { [topic]: { development: { keyId: 'INDEPENDENT', keyPath } } },
+    hosts: [
+      { hostId: target.hostId, token: legacyCredential },
+      {
+        hostId: easywork.hostId,
+        token: credential,
+        topic,
+        allowedTargets: [easywork],
+        environments: ['development'],
+      },
+    ],
+  };
+  let relay;
+  try {
+    const authorize = createAPNsAuthorizer(config);
+    const kid = (jwt) => JSON.parse(Buffer.from(jwt.split('.')[0], 'base64url')).kid;
+    assert.equal(kid(authorize('development')), 'DEFAULT');
+    assert.equal(kid(authorize('production')), 'PRODUCTION');
+    const jwt = authorize('development', topic);
+    assert.equal(kid(jwt), 'INDEPENDENT');
+    const [header, payload, signature] = jwt.split('.');
+    assert(
+      verify(
+        'sha256',
+        Buffer.from(header + '.' + payload),
+        { key: signingPair.publicKey, dsaEncoding: 'ieee-p1363' },
+        Buffer.from(signature, 'base64url'),
+      ),
+    );
+    assert.equal(authorize('production', topic), undefined);
+    assert.equal(authorize('development', 'test.unknown'), undefined);
+    assert.equal(
+      (await createAPNsSender(config)({ environment: 'production', topic }, {})).reason,
+      'APNsEnvironmentNotConfigured',
+    );
+    const sent = [];
+    relay = await startPushServer(config, {
+      port: 0,
+      send: async (binding) => {
+        sent.push(binding);
+        return { state: 'accepted' };
+      },
+    });
+    const post = (path, body, token = credential) =>
+      fetch('http://127.0.0.1:' + relay.server.address().port + path, {
+        method: 'POST',
+        headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const registration = {
+      hostId: easywork.hostId,
+      target: easywork,
+      deviceId: 'fixture-phone',
+      deviceToken: 'a'.repeat(64),
+      environment: 'development',
+      generation: 1,
+      managementToken: 'm'.repeat(43),
+    };
+    for (const wrong of [
+      { ...easywork, agentId: 'codex' },
+      { ...easywork, workspaceId: 'other' },
+      { ...easywork, runtimeId: 'other' },
+      { ...easywork, account: { ...easywork.account, subject: 'other' } },
+      { ...easywork, account: { ...easywork.account, authority: 'https://other.example.test' } },
+      { ...easywork, account: undefined },
+    ])
+      assert.equal(
+        (await post('/v1/push/register', { ...registration, target: wrong })).status,
+        403,
+      );
+    assert.equal(
+      (await post('/v1/push/register', { ...registration, environment: 'production' })).status,
+      403,
+    );
+    const response = await post('/v1/push/register', registration);
+    assert.equal(response.status, 200);
+    const binding = await response.json();
+    const stored = JSON.parse(await readFile(config.statePath));
+    assert.equal(stored.bindings[binding.bindingId].topic, topic);
+    const legacy = await post(
+      '/v1/push/register',
+      { ...registration, hostId: target.hostId, target, deviceId: 'legacy-phone' },
+      legacyCredential,
+    );
+    assert.equal(legacy.status, 200);
+    const legacyBinding = await legacy.json();
+    assert.equal(
+      (await post('/v1/push/binding-status', { bindingId: legacyBinding.bindingId })).status,
+      403,
+    );
+    const envelope = {
+      version: 1,
+      bindingId: binding.bindingId,
+      eventId: 'a'.repeat(64),
+      nonce: Buffer.alloc(12).toString('base64'),
+      ciphertext: Buffer.from('ciphertext').toString('base64'),
+      tag: Buffer.alloc(16).toString('base64'),
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+      sound: 'none',
+      timeSensitive: false,
+    };
+    assert.equal((await post('/v1/push/publish', envelope)).status, 200);
+    await waitFor(() => sent.length === 1);
+    assert.equal(sent[0].topic, topic);
+    assert.equal(sent[0].environment, 'development');
+    assert.deepEqual(sent[0].target, easywork);
+    assert.equal(
+      (await post('/v1/push/register', { ...registration, topic: 'test.default' })).status,
+      400,
+    );
+    assert.equal(
+      (
+        await post('/v1/push/unregister', {
+          hostId: easywork.hostId,
+          target: { ...easywork, workspaceId: 'other' },
+          deviceId: 'fixture-phone',
+          generation: 2,
+        })
+      ).status,
+      403,
+    );
+  } finally {
+    await relay?.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

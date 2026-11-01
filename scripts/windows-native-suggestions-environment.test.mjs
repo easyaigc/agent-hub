@@ -1,4 +1,3 @@
-// Source-only delivery. Run later with pnpm exec node --test on the selected executor.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
@@ -54,22 +53,15 @@ function fixture(overrides = {}) {
     ...overrides,
   };
   const calls = [];
-  let compileError, validateError, beforeRegistry;
+  let beforeRegistry, beforePublish;
   const run = (action, request) => {
     calls.push({ action, request: clone(request) });
-    if (action === 'read') return clone(data);
+    if (action === 'readManifest') return { manifest: clone(data.manifest) };
     if (action === 'environment') return clone(environment);
-    if (action === 'prepare') return { ok: true };
     if (action === 'publish') {
-      data[request.name === 'config.json' ? 'config' : 'manifest'] = clone(request.value);
-      return { ok: true };
-    }
-    if (action === 'compile') {
-      if (compileError) throw Object.assign(new Error(compileError), { code: compileError });
-      return { sourceSha256: request.sourceSha256, shimSha256: digest };
-    }
-    if (action === 'validate') {
-      if (validateError) throw Object.assign(new Error(validateError), { code: validateError });
+      beforePublish?.();
+      assert.equal(request.name, 'environment.json');
+      data.manifest = clone(request.value);
       return { ok: true };
     }
     if (action === 'registry') {
@@ -78,93 +70,210 @@ function fixture(overrides = {}) {
         throw Object.assign(new Error('WINDOWS_NATIVE_OVERRIDE_CONFLICT'), {
           code: 'WINDOWS_NATIVE_OVERRIDE_CONFLICT',
         });
+      assert.deepEqual(request.value, { value: null, kind: null });
       environment.user = clone(request.value);
       return clone(environment);
     }
-    throw new Error('Unexpected fixture operation');
+    throw new Error('Unexpected fixture operation: ' + action);
   };
-  const tool = windowsNativeSuggestionsEnvironment({ state, platform: 'win32', entry, run });
+  const tool = windowsNativeSuggestionsEnvironment({ state, platform: 'win32', run });
   return {
     tool,
     data,
     environment,
     calls,
-    failCompile(code) {
-      compileError = code;
-    },
-    failValidate(code) {
-      validateError = code;
-    },
     beforeRegistry(callback) {
       beforeRegistry = callback;
     },
+    beforePublish(callback) {
+      beforePublish = callback;
+    },
   };
 }
+function legacy(f) {
+  f.data.config = { ...config(), shimSha256: digest };
+  f.data.manifest = {
+    version: 1,
+    kind: 'windows-native-suggestions',
+    phase: 'ready',
+    enabled: true,
+    configPath: win32.join(state, 'config.json'),
+    shimPath: config().shimPath,
+    sourceSha256: 'b'.repeat(64),
+    shimSha256: digest,
+    configSha256: 'c'.repeat(64),
+    previous: { value: null, kind: null },
+  };
+  f.environment.user = { value: config().shimPath, kind: 'String' };
+  return f;
+}
 
-test('install records source/exe separately, fills digest, is idempotent, and disables only its HKCU value', () => {
+test('fresh and repeated install never acquire the desktop executable override or compile a shim', () => {
   const f = fixture();
-  const installed = f.tool.install(config());
-  assert.equal(installed.configured, true);
-  assert.equal(installed.currentInstanceVerified, false);
-  assert.equal(installed.requiresFreshLauncher, true);
-  assert.equal(installed.desktopRestarted, false);
-  assert.equal(f.data.config.shimSha256, digest);
-  assert.match(f.data.manifest.sourceSha256, /^[a-f0-9]{64}$/u);
-  assert.notEqual(f.data.manifest.sourceSha256, digest);
-  assert.equal(f.data.config.sourceSha256, undefined);
-  assert.deepEqual(f.environment.user, { value: config().shimPath, kind: 'String' });
-  f.tool.install(Object.fromEntries(Object.entries(config()).reverse()));
-  const historical = clone(f.data.config);
-  f.tool.install({
-    ...config(),
-    applicationPath: String.raw`C:\New Store version\Codex.exe`,
-    executable: String.raw`C:\New Store version\resources\codex.exe`,
-  });
-  assert.deepEqual(f.data.config, historical);
-  assert.equal(f.calls.filter(({ action }) => action === 'compile').length, 1);
-  const saved = clone(f.data.config);
-  assert.equal(f.tool.disable().configured, false);
-  assert.deepEqual(f.environment.user, { value: null, kind: null });
-  assert.deepEqual(f.data.config, saved);
-  assert.equal(f.tool.install(config()).configured, true);
-  assert(
-    f.calls.every(({ action }) =>
-      ['read', 'environment', 'prepare', 'publish', 'compile', 'validate', 'registry'].includes(
-        action,
-      ),
-    ),
+  // Even an obsolete/missing installation input must not block safety recovery.
+  const unreadableInput = new Proxy(
+    {},
+    {
+      get() {
+        throw Error('input must not be read');
+      },
+    },
   );
+  for (let i = 0; i < 2; i++) {
+    const result = f.tool.install(unreadableInput);
+    assert.equal(result.code, 'WINDOWS_NATIVE_INSTALLATION_SUSPENDED');
+    assert.equal(result.configured, false);
+    assert.equal(result.desktopRestarted, false);
+    assert.equal(result.modelInputsSubmitted, 0);
+  }
+  assert.deepEqual(f.environment.user, { value: null, kind: null });
+  assert.equal(f.data.manifest, null);
+  assert(f.calls.every(({ action }) => ['environment', 'readManifest'].includes(action)));
 });
 
-test('explicit user/process/machine CLI overrides and a conflicting config environment are preserved', () => {
-  for (const override of [
-    { user: { value: 'original.exe', kind: 'String' } },
-    { user: { value: '%ORIGINAL%\\codex.exe', kind: 'ExpandString' } },
-    { process: String.raw`C:\Other\codex.exe` },
-    { machine: String.raw`C:\Other\codex.exe` },
-    { process: config().shimPath }, // An unmanaged value is not ownership proof.
-    { config: String.raw`C:\Other\config.json` },
-  ]) {
-    const f = fixture(override),
-      before = clone(f.environment);
-    assert.throws(() => f.tool.install(config()), { code: 'WINDOWS_NATIVE_OVERRIDE_CONFLICT' });
-    assert.deepEqual(f.environment, before);
-    assert.equal(
-      f.calls.some(({ action }) => ['prepare', 'compile', 'publish', 'registry'].includes(action)),
-      false,
+test('upgrade removes the recorded HKCU override and disables its marker without touching artifacts', () => {
+  const f = legacy(fixture());
+  const configBefore = clone(f.data.config),
+    manifestBefore = clone(f.data.manifest);
+  const result = f.tool.install();
+  assert.equal(result.configured, false);
+  assert.equal(result.userOverrideRemoved, true);
+  assert.equal(result.managedUserOverridePresent, false);
+  assert.equal(result.currentInstanceVerified, false);
+  assert.deepEqual(f.environment.user, { value: null, kind: null });
+  assert.deepEqual(f.data.config, configBefore);
+  assert.deepEqual(f.data.manifest, { ...manifestBefore, enabled: false });
+  f.tool.install(config());
+  f.tool.disable();
+  assert.equal(f.calls.filter(({ action }) => action === 'registry').length, 1);
+  assert.equal(f.calls.filter(({ action }) => action === 'publish').length, 1);
+});
+
+test('broken, missing or replaced config and historical source hashes cannot prevent recovery', () => {
+  for (const broken of [null, '{bad json', { target: { hostId: 'edited' } }]) {
+    const f = legacy(fixture());
+    f.data.config = broken;
+    assert.equal(f.tool.disable().userOverrideRemoved, true);
+    assert.deepEqual(f.data.config, broken);
+    assert.equal(f.data.manifest.sourceSha256, 'b'.repeat(64));
+    assert(
+      f.calls.every(({ action }) =>
+        ['readManifest', 'environment', 'registry', 'publish'].includes(action),
+      ),
     );
   }
 });
 
-test('later overrides fail CAS and are never restored over on disable', () => {
-  const f = fixture();
+test('manual removal is durable across install and disabled recovery is idempotent', () => {
+  const f = legacy(fixture());
+  f.environment.user = { value: null, kind: null };
+  assert.equal(f.tool.install().userOverrideRemoved, false);
+  assert.equal(f.data.manifest.enabled, false);
+  f.tool.install();
+  assert.equal(f.calls.filter(({ action }) => action === 'registry').length, 0);
+  assert.equal(f.calls.filter(({ action }) => action === 'publish').length, 1);
+});
+
+test('unrelated user/machine/process/config overrides are preserved on install and disable', () => {
+  for (const override of [
+    { user: { value: 'original.exe', kind: 'String' } },
+    { user: { value: '%ORIGINAL%\\codex.exe', kind: 'ExpandString' } },
+    { user: { value: config().shimPath, kind: 'ExpandString' } },
+    { machine: String.raw`C:\Other\codex.exe` },
+    { process: String.raw`C:\Other\codex.exe` },
+    { config: String.raw`C:\Other\config.json` },
+  ]) {
+    const f = fixture(override),
+      before = clone(f.environment);
+    assert.equal(f.tool.install().configured, false);
+    f.tool.disable();
+    assert.deepEqual(f.environment, before);
+    assert(f.calls.every(({ action }) => ['environment', 'readManifest'].includes(action)));
+    const old = legacy(fixture());
+    Object.assign(old.environment, override);
+    const oldBefore = clone(old.environment);
+    old.tool.disable();
+    assert.equal(old.data.manifest.enabled, false);
+    if (override.user) assert.deepEqual(old.environment, oldBefore);
+    else {
+      assert.deepEqual(old.environment, { ...oldBefore, user: { value: null, kind: null } });
+    }
+  }
+});
+
+test('removing HKCU never claims an already inherited override was removed from running processes', () => {
+  const f = legacy(fixture({ process: config().shimPath }));
+  const result = f.tool.disable();
+  assert.equal(result.userOverrideRemoved, true);
+  assert.equal(result.inheritedManagedOverride, true);
+  assert.equal(f.environment.process, config().shimPath);
+  assert.equal(result.desktopRestarted, false);
+  assert.equal(result.currentInstanceVerified, false);
+});
+
+test('later user changes refuse the checked removal and are never overwritten', () => {
+  const f = legacy(fixture());
   f.beforeRegistry((environment) => {
     environment.user = { value: 'later.exe', kind: 'String' };
   });
-  assert.throws(() => f.tool.install(config()), { code: 'WINDOWS_NATIVE_OVERRIDE_CONFLICT' });
-  assert.equal(f.tool.status().configured, false);
   assert.throws(() => f.tool.disable(), { code: 'WINDOWS_NATIVE_OVERRIDE_CONFLICT' });
   assert.equal(f.environment.user.value, 'later.exe');
+  assert.equal(f.data.manifest.enabled, true);
+});
+
+test('recovery resumes safely after HKCU removal succeeds but marker publication fails', () => {
+  const f = legacy(fixture());
+  f.beforePublish(() => {
+    throw Error('disk unavailable');
+  });
+  assert.throws(() => f.tool.disable(), /disk unavailable/);
+  assert.deepEqual(f.environment.user, { value: null, kind: null });
+  assert.equal(f.data.manifest.enabled, true);
+  f.beforePublish(undefined);
+  assert.equal(f.tool.disable().userOverrideRemoved, false);
+  assert.equal(f.data.manifest.enabled, false);
+  assert.equal(f.calls.filter(({ action }) => action === 'registry').length, 1);
+});
+
+test('missing or foreign ownership evidence never clears an existing user override', () => {
+  const missing = fixture({ user: { value: config().shimPath, kind: 'String' } });
+  assert.throws(() => missing.tool.disable(), { code: 'WINDOWS_NATIVE_MANIFEST_REQUIRED' });
+  for (const change of [
+    { previous: { value: 'old-wrapper.cmd', kind: 'String' } },
+    { shimPath: String.raw`C:\Other\launcher.exe` },
+    { configPath: String.raw`C:\Other\config.json` },
+    { kind: 'other-tool' },
+    { version: 2 },
+    { sourceSha256: 'bad' },
+  ]) {
+    const f = legacy(fixture());
+    Object.assign(f.data.manifest, change);
+    assert.throws(() => f.tool.disable(), { code: 'WINDOWS_NATIVE_MANIFEST_INVALID' });
+    assert(f.calls.every(({ action }) => ['readManifest'].includes(action)));
+    assert.equal(f.environment.user.value, config().shimPath);
+  }
+});
+
+test('case-insensitive managed paths and interrupted preparing records remain recoverable', () => {
+  const f = legacy(fixture());
+  f.environment.user.value = config().shimPath.toUpperCase();
+  assert.equal(f.tool.disable().userOverrideRemoved, true);
+  const preparing = legacy(fixture());
+  Object.assign(preparing.data.manifest, {
+    phase: 'preparing',
+    enabled: false,
+    configSha256: null,
+    shimSha256: null,
+  });
+  assert.equal(preparing.tool.disable().userOverrideRemoved, true);
+});
+
+test('status is read-only and never reports the suspended startup path as configured', () => {
+  const f = legacy(fixture());
+  assert.equal(f.tool.status().configured, false);
+  assert.equal(f.tool.status().managedUserOverridePresent, true);
+  assert.equal(f.data.manifest.enabled, true);
+  assert(f.calls.every(({ action }) => ['environment', 'readManifest'].includes(action)));
 });
 
 test('invalid state roots are rejected before touching the native filesystem', () => {
@@ -180,49 +289,12 @@ test('invalid state roots are rejected before touching the native filesystem', (
           state: root,
           platform: 'win32',
           run() {
-            throw new Error('must not be called');
+            throw Error('must not be called');
           },
         }),
       { code: 'WINDOWS_NATIVE_PLATFORM_UNAVAILABLE' },
     );
   }
-});
-
-test('missing compiler never configures an environment; preparing intent permits a later retry', () => {
-  const f = fixture();
-  f.failCompile('WINDOWS_NATIVE_COMPILER_UNAVAILABLE');
-  const result = f.tool.install(config());
-  assert.equal(result.configured, false);
-  assert.equal(result.code, 'WINDOWS_NATIVE_COMPILER_UNAVAILABLE');
-  assert.equal(f.data.manifest.phase, 'preparing');
-  assert.equal(f.data.manifest.enabled, false);
-  assert.equal(
-    f.calls.some(({ action }) => action === 'registry'),
-    false,
-  );
-  f.failCompile(undefined);
-  assert.equal(f.tool.install(config()).configured, true);
-});
-
-test('trust/digest failures and an older or edited manifest do not acquire environment ownership', () => {
-  const f = fixture();
-  f.failValidate('WINDOWS_NATIVE_SHIM_CHANGED');
-  assert.throws(() => f.tool.install(config()), { code: 'WINDOWS_NATIVE_SHIM_CHANGED' });
-  assert.equal(
-    f.calls.some(({ action }) => action === 'registry'),
-    false,
-  );
-  const old = fixture();
-  old.data.manifest = {
-    version: 1,
-    enabled: true,
-    previous: { value: 'old-wrapper.cmd', kind: 'String' },
-  };
-  assert.throws(() => old.tool.install(config()), { code: 'WINDOWS_NATIVE_MANIFEST_INVALID' });
-  const changed = fixture();
-  changed.tool.install(config());
-  changed.data.config.target.hostId = 'other-host';
-  assert.equal(changed.tool.status().code, 'WINDOWS_NATIVE_MANIFEST_INVALID');
 });
 
 test('config denies unknown/credential keys, unknown log location, noncanonical paths and extra launch arguments', () => {
@@ -250,13 +322,28 @@ test('config denies unknown/credential keys, unknown log location, noncanonical 
     });
   const f = fixture();
   assert.equal(f.tool.status().logDirectoryKnown, false);
-  assert.throws(() => f.tool.install({ ...config(), shimSha256: 'b'.repeat(64) }), {
-    code: 'WINDOWS_NATIVE_SHIM_CHANGED',
-  });
 });
 
 // Native boundary checks compile the unchanged package source and run ONLY a local
 // byte/argv fixture Node entry. No Codex, models, desktop restart or registry writes.
+test(
+  'native registry boundary refuses re-enabling before any registry mutation',
+  {
+    skip: process.platform !== 'win32',
+  },
+  () => {
+    assert.throws(
+      () =>
+        windowsNativeSuggestionsNativeOperation('registry', {
+          state,
+          expected: { value: null, kind: null },
+          value: { value: config().shimPath, kind: 'String' },
+        }),
+      { code: 'WINDOWS_NATIVE_INSTALLATION_SUSPENDED' },
+    );
+  },
+);
+
 test(
   'Windows PS5 compilation, CRT argv, binary stdio, EOF, nonzero exits and private process rejection',
   { skip: process.platform !== 'win32', timeout: 120000 },

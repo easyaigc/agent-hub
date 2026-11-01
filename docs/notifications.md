@@ -121,3 +121,11 @@ xcodebuild -project apps/ios/CodexManage.xcodeproj -scheme CodexManage \
 `CODEX_EXECUTABLE=<installed-official-cli> IOS_SIMULATOR_ID=<dedicated-simulator> pnpm exec node scripts/notification-creation-ios-acceptance.mjs` 使用隔离 Host、真实桌面和模型核对正常创建的通知抑制，再注入对应已成功操作的旧本地通知，通过原生系统通知中心点击核对 Host 回执导航、草稿保留和不重复输入。通知注入不等于真实 APNs 投递；指定 `NOTIFICATION_CREATION_OUTPUT` 可以复用该目录中已独立核对完成的任务进行原生复验，未知提交禁止自动重放。
 
 这些检查不能证明后台、锁屏收到 APNs。正式验收见 任务通知验收清单（本地文件 `docs/acceptance/task-notifications.md`），每项分别记录实现／环境指纹、本次通过、复用通过、失败或未验收。APNs 接受与手机实际收到必须是不同证据。
+
+## 独立 topic 与发布目标隔离
+
+默认 `keys`、`keyId/keyPath` 只用于配置的默认 `topic`。独立 App 使用 `topicKeys["<independent-bundle-id>"].development`，其中仍是 `keyId/keyPath`；省略 production 就不支持该独立 topic 的生产投递，不会借用默认 topic 的密钥。默认 topic 不能重复放进 topicKeys。
+
+`hosts` 的发布者项可增加 `topic`、非空 `allowedTargets` 和非空 `environments`。allowedTargets 使用完整领域目标；EasyWork 包含 account 的 authority/subject，Codex 沿用机器身份规则。新独立发布者配置精确白名单及 development 环境，不能只使用本机 Codex 的 publisher。注册时服务决定 topic，客户端不能提供任意 topic；后续操作和待投递项重新检查 publisher、目标、topic 与环境。省略限制字段的既有发布者与旧默认绑定保持兼容。
+
+上述配置扩展属于服务侧，手机不持有 APNs 私钥。上线前须对正式 topic/密钥、既有 publisher、状态和服务配置保存私有指纹及回滚资料，追加独立项后正常重启原服务；本地签名、服务健康、Apple 接受和手机到达分别记载，不把配置成功视为端到端通过。

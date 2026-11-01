@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { createHash, X509Certificate } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import https from 'node:https';
+import http from 'node:http';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -17,6 +18,8 @@ const env = {
 await mkdir('.local/vpn-discovery-20261011', { recursive: true });
 const directory = await mkdtemp(path.resolve('.local/vpn-discovery-20261011/native-'));
 let server;
+let control;
+let legacy = false;
 let connectionRequests = 0;
 let pairingClaims = 0;
 let hostRequests = 0;
@@ -71,7 +74,12 @@ try {
         maxReads = Math.max(maxReads, ++activeReads);
         await new Promise((resolve) => setTimeout(resolve, 500));
         activeReads--;
-        response.end(JSON.stringify(descriptor));
+        const value = { ...descriptor };
+        if (legacy) {
+          delete value.computer;
+          delete value.connectionMode;
+        }
+        response.end(JSON.stringify(value));
         return;
       }
       if (request.url === '/connections' || request.url === '/pairing/claim') {
@@ -102,10 +110,18 @@ try {
     },
   );
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  control = http.createServer((request, response) => {
+    if (request.url === '/legacy') legacy = true;
+    if (request.url === '/modern') legacy = false;
+    response.end(JSON.stringify({ connectionRequests, pairingClaims }));
+  });
+  await new Promise((resolve) => control.listen(0, '127.0.0.1', resolve));
+  const controlEndpoint = `http://127.0.0.1:${control.address().port}`;
   const endpoint = `https://127.0.0.1:${server.address().port}`;
   descriptor = {
     version: 1,
     name: 'fixture',
+    computer: { name: 'Studio', username: 'alice', platform: 'macOS' },
     fingerprint: pin,
     publicKey,
     target,
@@ -147,6 +163,7 @@ try {
     block(client, 'enum AgentConnectionPreference:'),
     block(client, 'struct AgentConnection:'),
     block(transport, 'struct EasyWorkTarget:'),
+    block(transport, 'struct EasyWorkDeviceBindingAuthorization:'),
     block(transport, 'struct EasyWorkBinding:'),
     block(transport, 'struct EasyWorkCredential:'),
     block(transport, 'extension Data {'),
@@ -193,6 +210,29 @@ actor EasyWorkSessions { static let shared = EasyWorkSessions(); func updateCand
 @main struct Check {
   @MainActor static func main() async throws {
     let endpoint = CommandLine.arguments[1], pin = CommandLine.arguments[2], uri = CommandLine.arguments[3]
+    let control = CommandLine.arguments[5]
+    func fixture(_ route: String) async throws -> [String: Int] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: control + route)!)
+      return try JSONDecoder().decode([String: Int].self, from: data)
+    }
+    let initial = try await fixture("/counts")
+    let named = try await EasyWorkPairing.readHost(endpoint: endpoint)
+    precondition(named.displayName == "EasyWork Studio · alice" && named.computer?.platform == "macOS")
+    let afterName = try await fixture("/counts"); precondition(afterName == initial, "reading name sent a POST")
+    do { _ = try await EasyWorkPairing.connectDiscovered(endpoint: endpoint, name: "phone", expectedDeviceId: "wrong"); fatalError("accepted wrong device") }
+    catch HostServiceError.wrongHost {}
+    let afterWrong = try await fixture("/counts"); precondition(afterWrong == initial, "wrong device sent a POST")
+    _ = try await fixture("/legacy")
+    let oldHost = try await EasyWorkPairing.readHost(endpoint: endpoint)
+    precondition(oldHost.displayName == "EasyWork fixture" && oldHost.computer == nil && oldHost.connectionMode == nil)
+    do { _ = try await EasyWorkPairing.connectDiscovered(endpoint: endpoint, name: "phone", expectedDeviceId: "desktop"); fatalError("accepted legacy automatic connection") }
+    catch HostServiceError.message(let message) { precondition(message.contains("扫描") || message.localizedCaseInsensitiveContains("scan")) }
+    let afterLegacyReject = try await fixture("/counts"); precondition(afterLegacyReject == initial, "legacy discovery sent a POST")
+    let (legacyOnly, _) = try await EasyWorkPairing.lan(CommandLine.arguments[4], name: "phone")
+    precondition(legacyOnly.desktopDeviceId == "desktop", "legacy QR failed")
+    let afterLegacy = try await fixture("/counts")
+    precondition(afterLegacy["pairingClaims"] == 1 && afterLegacy["connectionRequests"] == 0)
+    _ = try await fixture("/modern")
     let accepted = ["https://100.64.0.0:4319", "https://100.127.255.255:4319", "https://[::ffff:100.100.1.2]:4319", "https://[::ffff:6440:1]:4319", "https://[0:0:0:0:0:ffff:100.64.0.1]:4319", "https://[fd7a:115c:a1e0::1]:4319", "https://Office.Example.ts.net.:4319/"]
     for address in accepted { _ = try EasyWorkPairing.localEndpoint(address) }
     for address in ["https://100.63.255.255:4319", "https://100.128.0.0:4319", "https://[::ffff:8.8.8.8]:4319", "https://8.8.8.8", "https://fake.ts.net.evil.example", "https://user@office.example.ts.net", "https://office.example.ts.net/path", "https://office.example.ts.net?x=1", "http://100.64.0.1"] {
@@ -209,7 +249,7 @@ actor EasyWorkSessions { static let shared = EasyWorkSessions(); func updateCand
     var wrongOffer = offer; wrongOffer.fingerprint = String(repeating: "0", count: 64)
     do { _ = try await EasyWorkPairing.connect(endpoint: endpoint, name: "phone", offer: wrongOffer); fatalError("accepted other certificate") } catch {}
     let (binding, candidates) = try await EasyWorkPairing.lan(uri, name: "phone")
-    let (automatic, automaticCandidates) = try await EasyWorkPairing.connectDiscovered(endpoint: endpoint, name: "phone")
+    let (automatic, automaticCandidates) = try await EasyWorkPairing.connectDiscovered(endpoint: endpoint, name: "phone", expectedDeviceId: "desktop")
     precondition(automatic.target == binding.target && automaticCandidates.count == 4)
     precondition(candidates.count == 4 && Set(candidates.map(\\.id)).count == 4)
     precondition(candidates.allSatisfy { $0.peerFingerprint == pin })
@@ -251,14 +291,17 @@ actor EasyWorkSessions { static let shared = EasyWorkSessions(); func updateCand
     ['swiftc', '-parse-as-library', swift, 'apps/ios/Sources/Localization.swift', '-o', executable],
     { env },
   );
-  const result = await exec(executable, [endpoint, pin, uri, legacyURI], { env, timeout: 45000 });
+  const result = await exec(executable, [endpoint, pin, uri, legacyURI, controlEndpoint], {
+    env,
+    timeout: 45000,
+  });
   assert.equal(
     connectionRequests,
     2,
     'Pinned discovery and rejected peers must not create bindings',
   );
   assert.ok(hostRequests >= 3);
-  assert.equal(pairingClaims, 1, 'Legacy QR is the only pairing claim');
+  assert.equal(pairingClaims, 2, 'Both legacy QR claims must succeed');
   assert.equal(maxReads, 4, 'Discovery and reconnects share the four-read limit');
   assert.match(result.stdout, /passed/);
   console.log(
@@ -272,6 +315,10 @@ actor EasyWorkSessions { static let shared = EasyWorkSessions(); func updateCand
     }),
   );
 } finally {
+  if (control) {
+    control.closeAllConnections();
+    await new Promise((resolve) => control.close(resolve));
+  }
   if (server) {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));

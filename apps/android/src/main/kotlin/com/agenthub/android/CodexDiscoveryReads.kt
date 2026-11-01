@@ -16,6 +16,6 @@ internal object NativeCodexDiscoveryReads: CodexDiscoveryReads {
     override suspend fun savedDescriptor(client: MobileClient,token: String)=NativeHostReads { token }.descriptor(client)
     override suspend fun easyWork(endpoint: String): DiscoveredEasyWorkHost {
         val host=EasyWorkPairing.readHost(endpoint)
-        return DiscoveredEasyWorkHost("vpn-"+host.target.desktopDeviceId,host.value.getString("name"),endpoint,host.target.desktopDeviceId,networkKind="vpn")
+        return DiscoveredEasyWorkHost("vpn-"+host.target.desktopDeviceId,host.displayName,endpoint,host.target.desktopDeviceId,networkKind="vpn",requiresPairing=host.value.optString("connectionMode")!="automatic")
     }
 }

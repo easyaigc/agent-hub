@@ -1,5 +1,7 @@
 # 完整运行时连接与开发验收
 
+2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](acceptance/windows-codex-startup-safety-20261101.md)。
+
 2026-10-31 Windows 建议采集候选：原执行器的输入、输出先建立管道，收到原响应后才启动固定采集 Worker 的身份检查。配置与实际 Node→启动器→原桌面链、原 IPC owner、固定私有根和 vendor-log 根由原生 scope 验证；持久读取不改变六秒 producer 租期。启动、每次原生响应、阶段及最终发布均有期限；队列超限、坏帧、原生错误或未知退出关闭观察器并保留可核对状态，原字节继续转发，未就绪前的帧不重放。当前仅为源码候选，真实部署及验收状态见 [专项记录](acceptance/host-native-suggestions-20261031.md)。
 
 2026-10-29 Host 错误响应现在附诊断 ID 和具体分类，HTTP 存活、bridge／reader 就绪与存储状态分开；日志异步有界写入、只读恢复与显式停止边界见[诊断与恢复](host-reconnect-diagnostics.md)。本次为源码候选，Windows 与手机未验收，不能将所有 503 显示成 Codex 断开。
@@ -336,7 +338,7 @@ Windows 双通道配置沿 service → 私有配置 → worker 的严格环境�
 
 ## 原生建议采集配置（2026-10-30，候选）
 
-Host 可显式配置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG 指向本机私有配置；配置路径与身份不能跨电脑复制。macOS 使用 scripts/desktop-native-suggestions-environment.mjs install，参数为 --program <program> --executable <original-cli> --trace-root <private-root> --target-file <private-target.json>，复用已有共享环境 URL；Windows 使用 scripts/windows-native-suggestions-environment.mjs install --config <private-input.json>，仅管理有不可变清单证明的当前用户 CODEX_CLI_PATH。配置不退出、不重启原桌面。待用户保存工作并正常重开后，核对当前 producer、原生父链、实际实现指纹及 Host 能力。Windows 日志使用有界原生 offset/count 读取，允许追加、保持对象身份，不能把文件大小超过 1 MiB 当作失败。
+Host 可显式配置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG 指向本机私有配置；配置路径与身份不能跨电脑复制。macOS 使用 scripts/desktop-native-suggestions-environment.mjs install，参数为 --program <program> --executable <original-cli> --trace-root <private-root> --target-file <private-target.json>，复用已有共享环境 URL；Windows 旧 shim 安装已于 2026-11-01 停用。使用 `scripts/windows-native-suggestions-environment.mjs disable [--state <原私有安装目录>]` 解除已核对的旧覆盖；兼容 `install` 入口只执行同样的恢复，并以 `WINDOWS_NATIVE_INSTALLATION_SUSPENDED` 和非零退出码报告采集不可安装，不读取旧 `--config` 输入、不重新注册环境变量。配置不退出、不重启原桌面。待用户保存工作并正常重开后，核对当前 producer、原生父链、实际实现指纹及 Host 能力。Windows 日志使用有界原生 offset/count 读取，允许追加、保持对象身份，不能把文件大小超过 1 MiB 当作失败。
 
 ### 统一升级保持既有配置
 

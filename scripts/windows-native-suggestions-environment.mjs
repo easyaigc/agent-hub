@@ -1,6 +1,4 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { win32, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -13,17 +11,7 @@ export const nativeSuggestionsEntry = fileURLToPath(
   new URL('./desktop-native-suggestions-runtime.mjs', import.meta.url),
 );
 const limit = 16384;
-const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const stableJson = (value) =>
-  JSON.stringify(value, function (_key, item) {
-    return item && typeof item === 'object' && !Array.isArray(item)
-      ? Object.fromEntries(
-          Object.keys(item)
-            .sort()
-            .map((key) => [key, item[key]]),
-        )
-      : item;
-  });
+export const nativeSuggestionsSuspended = 'WINDOWS_NATIVE_INSTALLATION_SUSPENDED';
 const failure = (code) => Object.assign(new Error(code), { code });
 const samePath = (a, b) =>
   typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase();
@@ -178,6 +166,13 @@ try {
  $out=switch([string]$request.action) {
   'environment' {EnvironmentSnapshot;break}
   'readInput' {ReadJson ([string]$request.path);break}
+  'readManifest' {
+   if(!(Test-Path -LiteralPath $state)){@{manifest=$null};break}
+   Private $state $true
+   $manifest=Join-Path $state 'environment.json'
+   # Recovery must not parse config.json or inspect Node/CLI/Trace paths.
+   @{manifest=if(Test-Path -LiteralPath $manifest){ReadJson $manifest}else{$null}};break
+  }
   'read' {
    if(!(Test-Path -LiteralPath $state)){@{manifest=$null;config=$null};break}
    Private $state $true
@@ -241,15 +236,27 @@ try {
    @{ok=$true};break
   }
   'registry' {
+   # Safety retirement: this boundary can ONLY remove our exact former HKCU
+   # String value. No caller (including old install code) may re-enable it.
+   if($null -ne $request.value.value -or $null -ne $request.value.kind -or
+      $request.expected.kind -cne 'String' -or
+      $request.expected.value -ine (Join-Path $state 'launcher.exe')){throw 'WINDOWS_NATIVE_INSTALLATION_SUSPENDED'}
+   Private $state $true
+   $m=ReadJson (Join-Path $state 'environment.json')
+   if($m.version -ne 1 -or $m.kind -cne 'windows-native-suggestions' -or
+      $m.phase -notin @('preparing','ready') -or
+      $m.shimPath -ine (Join-Path $state 'launcher.exe') -or
+      $m.configPath -ine (Join-Path $state 'config.json') -or
+      $null -eq $m.previous -or $null -ne $m.previous.value -or $null -ne $m.previous.kind){throw 'WINDOWS_NATIVE_MANIFEST_INVALID'}
    $before=EnvironmentSnapshot
-   if($before.user.value -cne $request.expected.value -or $before.user.kind -cne $request.expected.kind -or ($request.value.value -and $before.machine)){throw 'WINDOWS_NATIVE_OVERRIDE_CONFLICT'}
-   $key=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment')
+   if($before.user.value -cne $request.expected.value -or $before.user.kind -cne $request.expected.kind){throw 'WINDOWS_NATIVE_OVERRIDE_CONFLICT'}
+   $key=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment',$true)
    try {
-    if($null -eq $request.value.value){$key.DeleteValue('CODEX_CLI_PATH',$false)}else{
-     $kind=[string]$request.value.kind
-     if($kind -notin @('String','ExpandString')){throw 'WINDOWS_NATIVE_OPERATION_REJECTED'}
-     $key.SetValue('CODEX_CLI_PATH',[string]$request.value.value,[Microsoft.Win32.RegistryValueKind]::$kind)
-    }
+    if(!$key){throw 'WINDOWS_NATIVE_OVERRIDE_CONFLICT'}
+    # Recheck the same opened key immediately before removing the value.
+    if($key.GetValue('CODEX_CLI_PATH',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) -cne $request.expected.value -or
+       $key.GetValueKind('CODEX_CLI_PATH').ToString() -cne $request.expected.kind){throw 'WINDOWS_NATIVE_OVERRIDE_CONFLICT'}
+    $key.DeleteValue('CODEX_CLI_PATH',$false)
     $key.Flush()
    } finally {$key.Dispose()}
    # Notify Explorer about this one persisted value; never quit/restart Codex.
@@ -311,40 +318,26 @@ export function windowsNativeSuggestionsNativeOperation(action, data) {
   }
 }
 
-/** Injectable fixed-operation boundary for offline fixtures. No tests run on import. */
+/** Recovery only. Windows observation must not replace the desktop startup executable. */
 export function windowsNativeSuggestionsEnvironment({
   state = process.env.USERPROFILE &&
     win32.join(process.env.USERPROFILE, '.config', 'agent-hub', 'native-suggestions'),
   run = windowsNativeSuggestionsNativeOperation,
   platform = process.platform,
-  entry = nativeSuggestionsEntry,
-  node = process.execPath,
 } = {}) {
   if (platform !== 'win32' || !canonicalPath(state))
     throw failure('WINDOWS_NATIVE_PLATFORM_UNAVAILABLE');
-  const source = nativeSuggestionsSource;
   const configPath = win32.join(state, 'config.json'),
     shimPath = win32.join(state, 'launcher.exe');
   const call = (action, data = {}) => run(action, { ...data, state });
-  const owned = { value: shimPath, kind: 'String' };
-  const equalEnvironment = (a, b) => a?.value === b?.value && a?.kind === b?.kind;
-  const checkOverrides = (environment, manifest) => {
-    if (
-      environment.machine ||
-      (environment.process && !samePath(environment.process, shimPath)) ||
-      (environment.config && !samePath(environment.config, configPath)) ||
-      (!manifest && environment.process) ||
-      (!manifest && environment.user.value !== null) ||
-      (manifest &&
-        !equalEnvironment(environment.user, owned) &&
-        !equalEnvironment(environment.user, manifest.previous))
-    )
-      throw failure('WINDOWS_NATIVE_OVERRIDE_CONFLICT');
-  };
-  const load = () => {
-    const value = call('read');
-    const m = value.manifest;
-    if (!m) return value;
+  const empty = { value: null, kind: null };
+  const isOwned = (value) => value?.kind === 'String' && samePath(value.value, shimPath);
+  const isEmpty = (value) => value?.value === null && value?.kind === null;
+  const loadManifest = () => {
+    // A broken/missing config, old source digest or removed Store installation
+    // must never prevent restoration of the original desktop's launch path.
+    const { manifest: m } = call('readManifest');
+    if (!m) return null;
     if (
       !keys(m, [
         'version',
@@ -366,62 +359,35 @@ export function windowsNativeSuggestionsEnvironment({
       !samePath(m.shimPath, shimPath) ||
       !/^[a-f0-9]{64}$/u.test(m.sourceSha256) ||
       !keys(m.previous, ['value', 'kind']) ||
-      !(m.previous.value === null && m.previous.kind === null) || // Never adopt an unrelated previous override.
+      !isEmpty(m.previous) ||
       (m.phase === 'preparing' &&
         (m.enabled ||
           m.configSha256 !== null ||
-          (m.shimSha256 !== null && !/^[a-f0-9]{64}$/u.test(m.shimSha256))))
+          (m.shimSha256 !== null && !/^[a-f0-9]{64}$/u.test(m.shimSha256)))) ||
+      (m.phase === 'ready' &&
+        (!/^[a-f0-9]{64}$/u.test(m.shimSha256) || !/^[a-f0-9]{64}$/u.test(m.configSha256)))
     )
       throw failure('WINDOWS_NATIVE_MANIFEST_INVALID');
-    if (m.phase === 'ready') {
-      validateNativeSuggestionsConfig(value.config);
-      if (
-        !samePath(value.config.shimPath, shimPath) ||
-        m.shimSha256 !== value.config.shimSha256 ||
-        m.configSha256 !== sha(stableJson(value.config))
-      )
-        throw failure('WINDOWS_NATIVE_MANIFEST_INVALID');
-    }
-    return value;
+    return m;
   };
-  const save = (name, value) => call('publish', { name, value });
   const status = () => {
     try {
-      const { manifest, config } = load();
       const environment = call('environment');
-      checkOverrides(environment, manifest);
-      if (!manifest)
-        return {
-          configured: false,
-          code: 'WINDOWS_NATIVE_NOT_CONFIGURED',
-          variable: nativeSuggestionsVariable,
-          logDirectoryKnown: false,
-        };
-      if (manifest.sourceSha256 !== sha(readFileSync(source)))
-        throw failure('WINDOWS_NATIVE_SOURCE_CHANGED');
-      if (manifest.phase !== 'ready')
-        return {
-          configured: false,
-          code: 'WINDOWS_NATIVE_PREPARING',
-          phase: manifest.phase,
-          logDirectoryKnown: false,
-        };
-      call('validate', { value: config });
+      const manifest = loadManifest();
       return {
-        configured: manifest.enabled && equalEnvironment(environment.user, owned),
-        phase: manifest.phase,
+        configured: false,
+        code: nativeSuggestionsSuspended,
+        installed: !!manifest,
+        enabled: manifest?.enabled ?? false,
         variable: nativeSuggestionsVariable,
         configPath,
         shimPath,
-        sourceSha256: manifest.sourceSha256,
-        shimSha256: manifest.shimSha256,
-        traceRoot: config.traceRoot,
-        logDirectory: config.logDirectory,
-        logDirectoryKnown: true,
-        requiresFreshLauncher: true,
+        managedUserOverridePresent: isOwned(environment.user),
+        inheritedManagedOverride: samePath(environment.process, shimPath),
+        unrelatedUserOverridePresent: !isEmpty(environment.user) && !isOwned(environment.user),
+        machineOverridePresent: !!environment.machine,
+        logDirectoryKnown: false,
         currentInstanceVerified: false,
-        originalCliResolution: 'current-trusted-pipe-owner',
-        historicalInstallationPaths: true,
         modelInputsSubmitted: 0,
         desktopRestarted: false,
       };
@@ -433,102 +399,33 @@ export function windowsNativeSuggestionsEnvironment({
       };
     }
   };
+  const disable = () => {
+    const manifest = loadManifest();
+    const current = call('environment');
+    let removed = false;
+    if (isOwned(current.user)) {
+      if (!manifest) throw failure('WINDOWS_NATIVE_MANIFEST_REQUIRED');
+      call('registry', { expected: current.user, value: empty });
+      removed = true;
+    }
+    // Later explicit overrides, machine/process environment and existing
+    // binaries/configs are preserved. Only our private enabled marker changes.
+    if (manifest?.enabled)
+      call('publish', {
+        name: 'environment.json',
+        value: { ...manifest, enabled: false },
+      });
+    const result = status();
+    if (result.code !== nativeSuggestionsSuspended) throw failure(result.code);
+    if (result.managedUserOverridePresent) throw failure('WINDOWS_NATIVE_OVERRIDE_CONFLICT');
+    return { ...result, userOverrideRemoved: removed };
+  };
   return {
     status,
-    install(input) {
-      const environment = call('environment'),
-        previous = load();
-      checkOverrides(environment, previous.manifest);
-      const config = { node, entry, ...input, shimPath: input?.shimPath ?? shimPath };
-      validateNativeSuggestionsConfig(config, { allowMissingDigest: true });
-      if (!samePath(config.shimPath, shimPath) || !samePath(config.entry, entry))
-        throw failure('WINDOWS_NATIVE_CONFIG_INVALID');
-      const sourceSha256 = sha(readFileSync(source));
-      let manifest = previous.manifest;
-      if (manifest && manifest.sourceSha256 !== sourceSha256)
-        throw failure('WINDOWS_NATIVE_SOURCE_CHANGED');
-      if (manifest?.phase === 'ready') {
-        config.shimSha256 ??= manifest.shimSha256;
-        const launchFields = (value) =>
-          Object.fromEntries(
-            Object.entries(value).filter(
-              ([key]) => !['applicationPath', 'executable', 'entry'].includes(key),
-            ),
-          );
-        if (stableJson(launchFields(config)) !== stableJson(launchFields(previous.config)))
-          throw failure('WINDOWS_NATIVE_EXISTING_STATE');
-        // Store paths are history only. A reinstall may supply refreshed hints,
-        // but must not rewrite the original private target/config or its digest.
-        call('validate', { value: previous.config });
-        if (!samePath(previous.config.entry, config.entry)) {
-          const updated = { ...previous.config, entry: config.entry };
-          call('validate', { value: updated });
-          save('config.json', updated);
-          manifest = { ...manifest, configSha256: sha(stableJson(updated)) };
-        }
-      } else {
-        call('prepare');
-        manifest ??= {
-          version: 1,
-          kind: 'windows-native-suggestions',
-          phase: 'preparing',
-          enabled: false,
-          configPath,
-          shimPath,
-          sourceSha256,
-          shimSha256: null,
-          configSha256: null,
-          previous: environment.user,
-        };
-        save('environment.json', manifest);
-        let compiled;
-        try {
-          compiled = call('compile', { source, sourceSha256, shimSha256: manifest.shimSha256 });
-        } catch (error) {
-          if (error.code === 'WINDOWS_NATIVE_COMPILER_UNAVAILABLE')
-            return { ...status(), code: error.code };
-          throw error;
-        }
-        if (compiled.sourceSha256 !== sourceSha256 || !/^[a-f0-9]{64}$/u.test(compiled.shimSha256))
-          throw failure('WINDOWS_NATIVE_SOURCE_CHANGED');
-        // A recorded executable can be reused after interrupted configuration;
-        // an unrecorded existing executable is never adopted or overwritten.
-        manifest.shimSha256 = compiled.shimSha256;
-        save('environment.json', manifest);
-        if (config.shimSha256 !== undefined && config.shimSha256 !== compiled.shimSha256)
-          throw failure('WINDOWS_NATIVE_SHIM_CHANGED');
-        config.shimSha256 = compiled.shimSha256;
-        call('validate', { value: config });
-        save('config.json', config);
-        manifest = {
-          ...manifest,
-          phase: 'ready',
-          shimSha256: config.shimSha256,
-          configSha256: sha(stableJson(config)),
-        };
-      }
-      // Save intent before the CAS; an interrupted registry write remains recoverable.
-      manifest.enabled = true;
-      save('environment.json', manifest);
-      const current = call('environment');
-      checkOverrides(current, manifest);
-      call('registry', { expected: current.user, value: owned });
-      return status();
-    },
-    disable() {
-      const { manifest } = load();
-      if (!manifest) return status();
-      const current = call('environment');
-      // Disable concerns HKCU only: do not overwrite a later explicit user value.
-      if (equalEnvironment(current.user, owned))
-        call('registry', { expected: current.user, value: manifest.previous });
-      else if (!equalEnvironment(current.user, manifest.previous))
-        throw failure('WINDOWS_NATIVE_OVERRIDE_CONFLICT');
-      manifest.enabled = false;
-      save('environment.json', manifest);
-      // Keep the managed binary/config for already-running desktops and audit/rollback.
-      return status();
-    },
+    // Retain the old entry point for upgrades: retire a known old override,
+    // report the unavailable capability, and NEVER compile/re-enable a shim.
+    install: disable,
+    disable,
     readInput(path) {
       return call('readInput', { path });
     },
@@ -547,11 +444,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
         throw failure('WINDOWS_NATIVE_ARGUMENTS_INVALID');
       options[key] = args[i + 1];
     }
-    if ((action === 'install') !== !!options['--config'])
+    if (action !== 'install' && options['--config'])
       throw failure('WINDOWS_NATIVE_ARGUMENTS_INVALID');
     const tool = windowsNativeSuggestionsEnvironment({ state: options['--state'] });
-    const result =
-      action === 'install' ? tool.install(tool.readInput(options['--config'])) : tool[action]();
+    const result = tool[action]();
     console.log(JSON.stringify(result));
     if (action === 'install' && !result.configured) process.exitCode = 1;
   } catch (error) {

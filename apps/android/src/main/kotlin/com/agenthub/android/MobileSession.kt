@@ -2548,7 +2548,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         } finally { incoming.close() }
         lease.checkpoint()
         require((revisions[id]?:0L)==revision) { "连接已改变，请重试" }
-        var client=MobileClient(id,name.trim(),scope,candidates.first().endpoint,false,"easywork-runtime",false,requiresReadTarget=true,agentConnection=connection)
+        var displayName=name.trim()
+        if(displayName=="EasyWork"||displayName.startsWith("EasyWork device-")) {
+            candidates.firstOrNull { it.transportId=="lan-wss"&&it.peerFingerprint!=null }?.let { candidate->
+                try { displayName=EasyWorkPairing.readHost(candidate.endpoint,candidate.peerFingerprint,binding.target,binding.desktopPublicKey).displayName }
+                catch(cancel: CancellationException) { throw cancel } catch(_: Exception) {}
+            }
+        }
+        lease.checkpoint()
+        require((revisions[id]?:0L)==revision) { "连接已改变，请重试" }
+        var client=MobileClient(id,displayName,scope,candidates.first().endpoint,false,"easywork-runtime",false,requiresReadTarget=true,agentConnection=connection)
         val credentialBody=credential.json().toString();var credentialWritten=false
         try {
             withContext(Dispatchers.IO) {EasyWorkConnectionCredentialWrites.write(store,"easywork-credential:$ref",credentialBody,lease);credentialWritten=true}
@@ -2587,7 +2596,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(name.isBlank()||name.length>256)return
         realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name));persistMetadata() }
     }
-    internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
+    internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>,displayName: String?=null): Boolean {
         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false
         if(!sameScope(connection.target,binding.target.scope()))return false
         val revision=revisions[client.id]?:0L
@@ -2598,10 +2607,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val live=latest.agentConnection?:return false
         if((revisions[client.id]?:0L)!=revision||!sameScope(live.target,connection.target)||live.credentialRef!=connection.credentialRef||live.preference!=connection.preference)return false
         val merged=(candidates+live.candidates).distinctBy { it.transportId to it.endpoint }.take(32)
-        if(merged!=live.candidates) { replaceClient(latest.copy(agentConnection=live.copy(candidates=merged)));persistMetadata() }
+        val refreshedName=if(latest.name=="EasyWork"||latest.name.startsWith("EasyWork device-"))displayName?:latest.name else latest.name
+        if(merged!=live.candidates||refreshedName!=latest.name) { replaceClient(latest.copy(name=refreshedName,agentConnection=live.copy(candidates=merged)));persistMetadata() }
         return true
     }
-    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { lease->
+    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost,name: String?=null): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",name?.trim()?.takeIf { it.isNotEmpty()&&it!="EasyWork" }?:host.name,host.endpoint,host.deviceId.orEmpty())) { lease->
         require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
@@ -2612,7 +2622,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         require(host.deviceId==null||host.deviceId==binding.target.desktopDeviceId) { "发现的电脑身份已变化" }
         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未替换连接" }
         lease.checkpoint()
-        saveEasyWork(host.name,binding,candidates)
+        saveEasyWork(name?.trim()?.takeIf { it.isNotEmpty()&&it!="EasyWork" }?:host.name,binding,candidates)
     }
     /** A saved discovery row is selected by identity, independently of its available routes.
      * The manual-address form keeps its separate LAN lookup contract below.

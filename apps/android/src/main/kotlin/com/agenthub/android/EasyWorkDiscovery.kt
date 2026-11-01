@@ -8,7 +8,9 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 import org.json.JSONObject
 
-data class DiscoveredEasyWorkHost(val id: String,val name: String,val endpoint: String,val deviceId: String?,val known: Boolean=false,val reachable: Boolean=false,val networkKind: String?=null)
+data class DiscoveredEasyWorkHost(val id: String,val name: String,val endpoint: String,val deviceId: String?,val known: Boolean=false,val reachable: Boolean=false,val networkKind: String?=null,val requiresPairing: Boolean=false) {
+    val address: String get()=runCatching { java.net.URI(endpoint).let { uri->uri.host?.let { host->host+(if(uri.port>=0) ":${uri.port}" else "") }?:endpoint } }.getOrDefault(endpoint)
+}
 
 /** TXT records only suggest routes. Saved routes are refreshed by pinned target-bound reads. */
 class EasyWorkDiscovery(context: Context,private val session: MobileSession,private val storage: NativeSessionStorage) {
@@ -52,11 +54,20 @@ class EasyWorkDiscovery(context: Context,private val session: MobileSession,priv
     }
     fun stop() {current?.retirement?.retire()}
     private fun resolvedHost(info: NsdServiceInfo) {
+        val generation=current?:return
         try {
             @Suppress("DEPRECATION") val address=info.host?.hostAddress?:error("缺少地址");require(info.port in 1..65535)
             val endpoint=CodexEndpoints.local("https://"+if(':' in address)"[$address]:${info.port}" else "$address:${info.port}")
             val id=info.attributes["deviceId"]?.toString(Charsets.UTF_8)?.takeIf {it.isNotBlank()&&it.length<=512}
             advertised[info.serviceName]=DiscoveredEasyWorkHost(info.serviceName,info.serviceName.take(256),endpoint,id);rebuild();scan()
+            generation.tasks.launch {
+                try {
+                    val host=EasyWorkPairing.readHost(endpoint)
+                    if(current===generation&&!generation.sdk.isRetiring&&(id==null||host.target.desktopDeviceId==id)&&advertised[info.serviceName]?.endpoint==endpoint) {
+                        advertised[info.serviceName]=DiscoveredEasyWorkHost(info.serviceName,host.displayName,endpoint,host.target.desktopDeviceId,requiresPairing=host.value.optString("connectionMode")!="automatic");rebuild()
+                    }
+                } catch(cancel: CancellationException) { throw cancel } catch(_: Exception) {}
+            }
         }catch(_: Exception){}
     }
     private fun rebuild() {
@@ -77,8 +88,8 @@ class EasyWorkDiscovery(context: Context,private val session: MobileSession,priv
                     val reachable=EasyWorkPairing.reachable(candidates,credential.binding)
                     val first=reachable.firstOrNull { it.transportId=="lan-wss" }?:return@async
                     // Recheck the winning candidate because unchanged candidates alone do not prove reachability.
-                    EasyWorkPairing.readHost(first.endpoint,first.peerFingerprint,credential.binding.target,credential.binding.desktopPublicKey)
-                    if(current===generation&&!generation.sdk.isRetiring&&session.updateEasyWorkCandidates(client,credential.binding,reachable))hosts=hosts.map { if(it.id==client.id)it.copy(endpoint=first.endpoint,reachable=true) else it }
+                    val host=EasyWorkPairing.readHost(first.endpoint,first.peerFingerprint,credential.binding.target,credential.binding.desktopPublicKey)
+                    if(current===generation&&!generation.sdk.isRetiring&&session.updateEasyWorkCandidates(client,credential.binding,reachable,host.displayName))hosts=hosts.map { if(it.id==client.id)it.copy(name=session.clients.firstOrNull { c->c.id==client.id }?.name?:it.name,endpoint=first.endpoint,reachable=true) else it }
                 } catch(cancel: CancellationException) { throw cancel } catch(_: Exception) { if(current===generation&&!generation.sdk.isRetiring)hosts=hosts.map { if(it.id==client.id)it.copy(reachable=false) else it } }
             } }.awaitAll()
         }

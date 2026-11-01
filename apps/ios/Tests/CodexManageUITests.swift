@@ -1417,6 +1417,276 @@ final class CodexManageUITests: XCTestCase {
     try await persisted(newAccount: true, queriedAfter: beforeQuery)
     shot("legacy-ios-account-change-relaunch-original-query")
   }
+  @MainActor func testEasyWorkRealDEVMacBookReadOnly() throws {
+    guard let raw = ProcessInfo.processInfo.environment["EASYWORK_MACBOOK_READONLY_JSON"] else { throw XCTSkip("Requires MacBook preflight configuration") }
+    let c = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: String])
+    try easyWorkRealReadOnlyConnect(c)
+  }
+  @MainActor private func easyWorkRealReadOnlyConnect(_ c: [String: String]) throws {
+    let keys = ["bundleId", "name", "osUser", "address", "endpoint", "projectId", "threadId"]
+    guard keys.allSatisfy({ !(c[$0] ?? "").isEmpty }), c["bundleId"] == "com.easyai.agenthub.externalattachments.acceptance" else { throw NSError(domain: "MacBookReadOnly", code: 1) }
+    app = XCUIApplication(bundleIdentifier: c["bundleId"]!)
+    app.launchArguments = []
+    app.activate()
+    if !app.navigationBars["添加客户端"].exists {
+      if !app.buttons["add-client"].exists {
+        guard app.buttons["client-switch"].waitForExistence(timeout: 30) else { throw NSError(domain: "MacBookReadOnly", code: 2) }
+        app.buttons["client-switch"].tap()
+      }
+      guard app.buttons["add-client"].waitForExistence(timeout: 15), app.buttons["add-client"].isHittable else { throw NSError(domain: "MacBookReadOnly", code: 3) }
+      app.buttons["add-client"].tap()
+    }
+    guard app.buttons["EasyWork"].firstMatch.waitForExistence(timeout: 15) else { throw NSError(domain: "MacBookReadOnly", code: 4) }
+    app.buttons["EasyWork"].firstMatch.tap()
+    let routes: [String: String]
+    if let rawRoutes = c["allowedRoutes"] {
+      routes = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(rawRoutes.utf8)) as? [String: String])
+      guard !routes.isEmpty, routes[c["endpoint"]!] == c["address"]! else { throw NSError(domain: "MacBookReadOnly", code: 6) }
+    } else { routes = [c["endpoint"]!: c["address"]!] }
+    let matches = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@ AND value IN %@", "easywork-discovered-", c["name"]!, Array(routes.keys)))
+    let row = matches.firstMatch
+    guard row.waitForExistence(timeout: 90) else { throw NSError(domain: "MacBookReadOnly", code: 5) }
+    let resolved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      guard let endpoint = row.value as? String, let address = routes[endpoint] else { return false }
+      return matches.count == 1 && row.label.contains(c["osUser"]!) && row.label.contains(address)
+    }, object: row)
+    guard XCTWaiter.wait(for: [resolved], timeout: 45) == .completed else { throw NSError(domain: "MacBookReadOnly", code: 6) }
+    print("MACBOOK_READONLY_DISCOVERY_CONFIRMED"); fflush(stdout)
+    row.tap()
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      let button = self.app.buttons["client-switch"]
+      return button.label.contains(c["name"]!) && (button.value as? String ?? "").contains("实时连接")
+    }, object: app.buttons["client-switch"])
+    guard XCTWaiter.wait(for: [selected], timeout: 90) == .completed else { throw NSError(domain: "MacBookReadOnly", code: 7) }
+    print("MACBOOK_READONLY_CONNECTED"); fflush(stdout)
+    guard app.buttons["open-sidebar"].waitForExistence(timeout: 20) else { throw NSError(domain: "MacBookReadOnly", code: 8) }
+    app.buttons["open-sidebar"].tap()
+    let list = app.scrollViews["sidebar-list"]
+    guard list.waitForExistence(timeout: 15) else { throw NSError(domain: "MacBookReadOnly", code: 9) }
+    let toggle = app.buttons["sidebar-projects-toggle"]
+    if toggle.exists, (toggle.value as? String) == "已折叠" { toggle.tap() }
+    let project = app.buttons["project-" + c["projectId"]!]
+    for _ in 0..<8 where !project.isHittable { list.swipeUp() }
+    guard project.waitForExistence(timeout: 30), project.isHittable else { throw NSError(domain: "MacBookReadOnly", code: 10) }
+    if (project.value as? String) == "已折叠" { project.tap() }
+    let thread = app.buttons["thread-" + c["threadId"]!]
+    for _ in 0..<8 where !thread.isHittable { list.swipeUp() }
+    guard thread.waitForExistence(timeout: 30), thread.isHittable else { throw NSError(domain: "MacBookReadOnly", code: 11) }
+    thread.tap()
+    guard app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch.waitForExistence(timeout: 30) else { throw NSError(domain: "MacBookReadOnly", code: 12) }
+    print("MACBOOK_READONLY_PROJECT_THREAD_OPENED " + c["projectId"]! + " " + c["threadId"]!); fflush(stdout)
+  }
+  @MainActor func testEasyWorkRealDEVUpdatedRepliesReadOnly() throws {
+    guard let raw = ProcessInfo.processInfo.environment["EASYWORK_UPDATED_TWO_HOSTS_JSON"] else { throw XCTSkip("Requires verified completed two-host inputs") }
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["bundleId"] as? String == "com.easyai.agenthub.externalattachments.acceptance",
+      let hosts = config["hosts"] as? [[String: String]], hosts.count == 2 else { throw NSError(domain: "UpdatedRepliesReadOnly", code: 1) }
+    for host in hosts {
+      let keys = ["displayName", "osUser", "address", "endpoint", "projectId", "threadId", "nonce", "deviceId"]
+      guard keys.allSatisfy({ !(host[$0] ?? "").isEmpty }) else { throw NSError(domain: "UpdatedRepliesReadOnly", code: 2) }
+      try easyWorkRealReadOnlyConnect(["bundleId": "com.easyai.agenthub.externalattachments.acceptance",
+        "name": host["displayName"]!, "osUser": host["osUser"]!, "address": host["address"]!,
+        "endpoint": host["endpoint"]!, "projectId": host["projectId"]!, "threadId": host["threadId"]!,
+        "allowedRoutes": host["allowedRoutes"] ?? "{}"])
+      let reply = app.staticTexts[host["nonce"]!]
+      guard reply.waitForExistence(timeout: 45) else { throw NSError(domain: "UpdatedRepliesReadOnly", code: 3) }
+      shot("easywork-model-reply-" + host["deviceId"]!, fullScreen: true)
+      print("EASYWORK_MODEL_REPLY_READ_ONLY " + host["threadId"]! + " " + host["nonce"]!); fflush(stdout)
+    }
+  }
+  @MainActor func testEasyWorkRealDEVUpdatedDiscoveryBothHosts() throws {
+    guard let raw = ProcessInfo.processInfo.environment["EASYWORK_UPDATED_TWO_HOSTS_JSON"] else {
+      throw XCTSkip("Requires the final private two-host configuration")
+    }
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["bundleId"] as? String == "com.easyai.agenthub.externalattachments.acceptance",
+      let hosts = config["hosts"] as? [[String: String]], hosts.count == 2 else {
+      throw NSError(domain: "UpdatedTwoHosts", code: 1)
+    }
+    let required = ["displayName", "osUser", "address", "endpoint", "deviceId", "workspaceId", "runtimeId", "pin", "projectId", "threadId", "nonce"]
+    guard hosts.allSatisfy({ h in required.allSatisfy { !(h[$0] ?? "").isEmpty } }),
+      hosts[0]["deviceId"] != hosts[1]["deviceId"], hosts[0]["threadId"] != hosts[1]["threadId"],
+      hosts[0]["nonce"] != hosts[1]["nonce"] else { throw NSError(domain: "UpdatedTwoHosts", code: 2) }
+    // Each route must be independently verified against this host's target, public key and pin.
+    let routes = try hosts.map { host -> [String: String] in
+      guard let rawRoutes = host["allowedRoutes"] else { return [host["endpoint"]!: host["address"]!] }
+      guard let data = rawRoutes.data(using: .utf8),
+        let entries = try JSONSerialization.jsonObject(with: data) as? [String: String],
+        !entries.isEmpty, entries.allSatisfy({ !$0.key.isEmpty && !$0.value.isEmpty }),
+        entries[host["endpoint"]!] == host["address"]! else { throw NSError(domain: "UpdatedTwoHosts", code: 17) }
+      return entries
+    }
+    guard Set(routes[0].keys).isDisjoint(with: Set(routes[1].keys)) else { throw NSError(domain: "UpdatedTwoHosts", code: 17) }
+    app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.externalattachments.acceptance")
+    app.launchArguments = []
+    app.activate()
+    let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let systemAlert = system.alerts.firstMatch
+    if systemAlert.exists {
+      let speechRequest = systemAlert.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "语音识别")).firstMatch
+      let ourApp = systemAlert.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Agent Hub")).firstMatch
+      let decline = systemAlert.buttons.matching(NSPredicate(format: "label IN %@", ["不允许", "Don't Allow"])).firstMatch
+      guard speechRequest.exists, ourApp.exists, decline.isHittable else { throw NSError(domain: "UpdatedTwoHosts", code: 20) }
+      decline.tap()
+    }
+    let voiceCancel = app.buttons["cancel-dictation"]
+    if voiceCancel.waitForExistence(timeout: 2) { voiceCancel.tap() }
+    let sharingAllow = app.buttons["ai-sharing-allow"]
+    if sharingAllow.exists {
+      guard app.staticTexts[hosts[0]["displayName"]!].exists else { throw NSError(domain: "UpdatedTwoHosts", code: 18) }
+      shot("easywork-prior-unsubmitted-consent", fullScreen: true)
+      sharingAllow.tap()
+    }
+    guard app.buttons["client-switch"].waitForExistence(timeout: 30) else { XCTFail("Client picker unavailable"); return }
+    func openDiscovery() throws {
+      guard app.buttons["client-switch"].waitForExistence(timeout: 20) else { throw NSError(domain: "UpdatedTwoHosts", code: 3) }
+      app.buttons["client-switch"].tap()
+      guard app.buttons["add-client"].waitForExistence(timeout: 15) else { throw NSError(domain: "UpdatedTwoHosts", code: 4) }
+      app.buttons["add-client"].tap()
+      guard app.buttons["EasyWork"].firstMatch.waitForExistence(timeout: 15) else { throw NSError(domain: "UpdatedTwoHosts", code: 5) }
+      app.buttons["EasyWork"].firstMatch.tap()
+    }
+    func rows(_ host: [String: String], _ allowed: [String: String]) -> XCUIElementQuery {
+      app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@ AND value IN %@", "easywork-discovered-", host["displayName"]!, Array(allowed.keys)))
+    }
+    func matchesIdentity(_ item: XCUIElement, _ host: [String: String], _ allowed: [String: String]) -> Bool {
+      guard let endpoint = item.value as? String, let address = allowed[endpoint] else { return false }
+      return item.label.contains(host["displayName"]!) && item.label.contains(host["osUser"]!) && item.label.contains(address)
+    }
+    try openDiscovery()
+    for (index, host) in hosts.enumerated() {
+      let matching = rows(host, routes[index])
+      let item = matching.firstMatch
+      guard item.waitForExistence(timeout: 90), matching.count == 1 else { XCTFail("Expected unique discovery row missing or ambiguous"); return }
+      let resolved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        matching.count == 1 && matchesIdentity(item, host, routes[index])
+      }, object: item)
+      guard XCTWaiter.wait(for: [resolved], timeout: 45) == .completed else { XCTFail("Discovery identity or endpoint mismatch"); return }
+    }
+    shot("easywork-updated-two-hosts-discovery", fullScreen: true)
+    func selectAndRead(_ host: [String: String], _ allowed: [String: String], discoveryOpen: Bool) throws {
+      if !discoveryOpen { try openDiscovery() }
+      let matching = rows(host, allowed)
+      let item = matching.firstMatch
+      guard item.waitForExistence(timeout: 45), matching.count == 1, matchesIdentity(item, host, allowed) else { throw NSError(domain: "UpdatedTwoHosts", code: 6) }
+      item.tap()
+      let selected = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        self.app.buttons["client-switch"].label.contains(host["displayName"]!) && (self.app.buttons["client-switch"].value as? String ?? "").contains("实时连接") && !self.app.buttons["easywork-connecting"].exists
+      }, object: app.buttons["client-switch"])
+      guard XCTWaiter.wait(for: [selected], timeout: 90) == .completed else { throw NSError(domain: "UpdatedTwoHosts", code: 7) }
+      guard app.buttons["open-sidebar"].waitForExistence(timeout: 20) else { throw NSError(domain: "UpdatedTwoHosts", code: 8) }
+      app.buttons["open-sidebar"].tap()
+      let list = app.scrollViews["sidebar-list"]
+      guard list.waitForExistence(timeout: 15) else { throw NSError(domain: "UpdatedTwoHosts", code: 8) }
+      let toggle = app.buttons["sidebar-projects-toggle"]
+      if toggle.exists, (toggle.value as? String) == "已折叠" { toggle.tap() }
+      let project = app.buttons["project-" + host["projectId"]!]
+      for _ in 0..<8 where !project.isHittable { list.swipeUp() }
+      guard project.waitForExistence(timeout: 60), project.isHittable else { throw NSError(domain: "UpdatedTwoHosts", code: 9) }
+      if (project.value as? String) == "已折叠" { project.tap() }
+      let thread = app.buttons["thread-" + host["threadId"]!]
+      for _ in 0..<8 where !thread.isHittable { list.swipeUp() }
+      guard thread.waitForExistence(timeout: 30), thread.isHittable else { throw NSError(domain: "UpdatedTwoHosts", code: 10) }
+      thread.tap()
+      print("EASYWORK_UPDATED_WORKSPACE_READ " + host["deviceId"]! + " " + host["workspaceId"]! + " " + host["runtimeId"]!)
+    }
+    try selectAndRead(hosts[0], routes[0], discoveryOpen: true)
+    try selectAndRead(hosts[1], routes[1], discoveryOpen: false)
+    try selectAndRead(hosts[0], routes[0], discoveryOpen: false)
+    func persistSubmissionMarker(_ host: [String: String], suffix: String) throws {
+      let documents = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+      let ledger = documents.appendingPathComponent("easywork-updated-two-hosts", isDirectory: true)
+      try FileManager.default.createDirectory(at: ledger, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+      let marker = ledger.appendingPathComponent(host["nonce"]! + suffix).path
+      let fd = open(marker, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, S_IRUSR | S_IWUSR)
+      guard fd >= 0 else { throw NSError(domain: "UpdatedTwoHosts", code: 15) }
+      let markerData = Data((host["threadId"]! + "\n" + host["nonce"]! + "\n").utf8)
+      let written = markerData.withUnsafeBytes { bytes in write(fd, bytes.baseAddress!, bytes.count) }
+      let flushed = fsync(fd); close(fd)
+      let dirFD = open(ledger.path, O_RDONLY)
+      guard dirFD >= 0 else { throw NSError(domain: "UpdatedTwoHosts", code: 16) }
+      let dirFlushed = fsync(dirFD); close(dirFD)
+      guard written == markerData.count, flushed == 0, dirFlushed == 0 else { throw NSError(domain: "UpdatedTwoHosts", code: 16) }
+    }
+    for (index, host) in hosts.enumerated() {
+      if index == 1 { try selectAndRead(host, routes[index], discoveryOpen: false) }
+      let input = app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch
+      guard input.waitForExistence(timeout: 30), input.isEnabled,
+        let value = input.value as? String, value.isEmpty else { throw NSError(domain: "UpdatedTwoHosts", code: 11) }
+      let message = "请只回复 " + host["nonce"]! + "，不要使用工具。"
+      input.tap(); input.typeText(message)
+      guard input.value as? String == message else { throw NSError(domain: "UpdatedTwoHosts", code: 11) }
+      if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+      let send = app.buttons["send-message"]
+      guard send.waitForExistence(timeout: 15), send.isEnabled, send.isHittable else { throw NSError(domain: "UpdatedTwoHosts", code: 12) }
+      guard host["nonce"]!.range(of: "^[A-Za-z0-9_-]{8,80}$", options: .regularExpression) != nil else { throw NSError(domain: "UpdatedTwoHosts", code: 14) }
+      try persistSubmissionMarker(host, suffix: ".submitted")
+      print("EASYWORK_UPDATED_SEND_ONCE " + host["threadId"]! + " " + host["nonce"]!); fflush(stdout)
+      send.tap()
+      if sharingAllow.waitForExistence(timeout: 5) {
+        guard app.staticTexts[host["displayName"]!].exists else { throw NSError(domain: "UpdatedTwoHosts", code: 18) }
+        // This gate returns before creating a PendingReply. Granting never submits the draft.
+        shot("easywork-unsubmitted-consent-" + host["nonce"]!, fullScreen: true)
+        try persistSubmissionMarker(host, suffix: ".consent-gate")
+        sharingAllow.tap()
+        guard input.waitForExistence(timeout: 15), input.value as? String == message,
+          send.isEnabled, send.isHittable else { throw NSError(domain: "UpdatedTwoHosts", code: 19) }
+        try persistSubmissionMarker(host, suffix: ".dispatch-after-consent")
+        print("EASYWORK_UPDATED_DISPATCH_AFTER_CONSENT " + host["threadId"]! + " " + host["nonce"]!); fflush(stdout)
+        send.tap()
+      }
+      guard app.staticTexts[message].waitForExistence(timeout: 45) else { throw NSError(domain: "UpdatedTwoHosts", code: 13) }
+      print("EASYWORK_UPDATED_SEND_OBSERVED " + host["threadId"]!); fflush(stdout)
+    }
+  }
+  @MainActor func testEasyWorkRealDEVDiscoveryIdentity() throws {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["EASYWORK_DISCOVERY_IDENTITY_JSON"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let bundleId = try XCTUnwrap(config["bundleId"] as? String)
+    let prefix = "com.easyai.agenthub.easyworkdiscovery."
+    guard bundleId.hasPrefix(prefix), bundleId.count > prefix.count,
+      bundleId.range(of: "^com\\.easyai\\.agenthub\\.easyworkdiscovery\\.[A-Za-z0-9-]+$", options: .regularExpression) != nil else {
+      throw NSError(domain: "DiscoveryIdentity", code: 1)
+    }
+    let hosts = try XCTUnwrap(config["hosts"] as? [[String: String]])
+    guard hosts.count == 2, hosts.allSatisfy({ host in
+      ["serviceName", "displayName", "address"].allSatisfy { !(host[$0] ?? "").isEmpty }
+    }) else { throw NSError(domain: "DiscoveryIdentity", code: 2) }
+    app = XCUIApplication(bundleIdentifier: bundleId)
+    app.launchArguments = ["-ui-testing"]
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30))
+    app.buttons["client-switch"].tap()
+    XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 10))
+    app.buttons["add-client"].tap()
+    XCTAssertTrue(app.buttons["EasyWork"].firstMatch.waitForExistence(timeout: 10))
+    app.buttons["EasyWork"].firstMatch.tap()
+    for host in hosts {
+      let id = try XCTUnwrap(host["serviceName"])
+      let display = try XCTUnwrap(host["displayName"])
+      let address = try XCTUnwrap(host["address"])
+      let row = app.buttons["easywork-discovered-" + id]
+      XCTAssertTrue(row.waitForExistence(timeout: 90), "Missing Bonjour row: " + id)
+      let resolved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        row.label.contains(display) && row.label.contains(address) && row.label.contains("需扫码配对")
+      }, object: row)
+      XCTAssertEqual(XCTWaiter.wait(for: [resolved], timeout: 45), .completed, row.debugDescription)
+      XCTAssertTrue((row.value as? String ?? "").contains(address), row.debugDescription)
+    }
+    shot("easywork-real-discovery-identities", fullScreen: true)
+    app.buttons["easywork-discovered-" + (try XCTUnwrap(hosts.first?["serviceName"]))].tap()
+    let error = app.staticTexts["easywork-pair-error"]
+    XCTAssertTrue(error.waitForExistence(timeout: 30))
+    XCTAssertTrue(error.label.contains("请扫描桌面配对二维码"), error.label)
+    let useQR = app.buttons["easywork-use-qr"]
+    XCTAssertTrue(useQR.waitForExistence(timeout: 10))
+    shot("easywork-real-legacy-scan-prompt", fullScreen: true)
+    useQR.tap()
+    XCTAssertTrue(app.textFields["easywork-qr-description"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["easywork-scan"].exists)
+    XCTAssertFalse(app.buttons["easywork-pair-lan"].isEnabled)
+    shot("easywork-real-scan-form", fullScreen: true)
+  }
   @MainActor func testEasyWorkRealDEVDeviceGrant() async throws {
     guard let configPath = ProcessInfo.processInfo.environment["EASYWORK_GRANT_EXAMINER_CONFIG"] else { throw XCTSkip("Dedicated EWDAP examiner required") }
     let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: configPath))) as? [String: Any])

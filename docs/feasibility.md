@@ -1,5 +1,11 @@
 # 技术可行性与 PoC 验收
 
+2026-11-01 F69 目标继续：完整保留 Windows 原桌面建议采集，先证明独立于 Codex 启动的只读数据源，再开发并实机验证。固定上游代码发现既有 Trace 的完整响应可能先于 sample 清理保存，但原机来源及安全决定的一对一关联仍缺，不能放宽取消守卫。当前 Windows 入口拒绝连接，本轮未开发或部署新采集器；详见[独立采集可行性研究](research/windows-suggestion-independent.md)。
+
+2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](acceptance/windows-codex-startup-safety-20261101.md)。
+
+2026-10-31 F02/F03：EasyWork发现候选显示电脑名、系统用户名及地址，读取验证后的/host可选computer元数据并兼容旧name；名称不作授权目标。旧Host缺自动直连声明时明确提示扫码并提供入口，不盲目POST或绕过原配对。桌面自动直连/VPN历史增量同步至EasyWork源码，保留较新TLS；两端源码、辅助检查、实体iPhone、真实Electron/模型和实际部署分别记于docs/acceptance/easywork-discovery-20261031.md，A6暂停保持。
+
 2026-11-01 F19／F32 可视化：已增加 Codex visualize 引用的手机文件投影和 iOS 独立 HTML 沙箱容器，真实模型、原 Electron owner、下载与物理 iPhone XCTest 按[专项记录](acceptance/visualization-20261101.md)分别核对，不以编译替代真机交互。原电脑文件需仍可读取；相对资源、Host API、任意外网和桌面窗口专属组件不保证可运行，Android HTML 容器待实施，A6 保持暂停。
 
 2026-10-31 F69：真实时钟辅助诊断已证明，Windows 逐次原生进程读取可使空闲 tick 约十一秒，触发现有六秒租期失效。R11 当前为实现候选：原通信先转发，固定采集 Worker 复用真实原 owner 绑定的持久 C# scope，沿用私有根与 vendor-log 的独立权限检查，并在最终原子发布前重验原阶段期限。完整检查、Windows 冷热耗时、逐机原进程链、真实模型建议与手机采用/撤销、对应 Trace 回收尚须按新指纹验证，见 [本轮记录](acceptance/host-native-suggestions-20261031.md)。R10 的 iPhone Windows 发现与连接已单独通过，不能升级为建议通过；Android 与 A6 状态保持。

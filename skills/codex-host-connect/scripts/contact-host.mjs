@@ -172,6 +172,12 @@ const summary = (value) =>
       'phase',
       'turnId',
       'effort',
+      'mode',
+      'expectedTurnId',
+      'queueSource',
+      'queuePresent',
+      'canExecuteNow',
+      'queueDisposition',
       'status',
       'error',
       'detached',
@@ -213,7 +219,10 @@ export async function main(args = process.argv.slice(2), options = {}) {
       'text-file': { type: 'string' },
       'project-id': { type: 'string' },
       'no-suitable-reason': { type: 'string' },
-      effort: { type: 'string', default: 'xhigh' },
+      effort: { type: 'string' },
+      mode: { type: 'string', default: 'auto' },
+      'expected-turn-id': { type: 'string' },
+      'queued-message-id': { type: 'string' },
       limit: { type: 'string', default: '20' },
       offset: { type: 'string', default: '0' },
       help: { type: 'boolean' },
@@ -222,7 +231,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
   const command = positionals[0];
   if (values.help) {
     writeOutput(
-      'probe|workspace|history|send|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--effort xhigh] [--limit 1..50] [--offset N]; text <=8192 UTF-8 bytes; files: transfer-host.mjs',
+      'probe|workspace|history|queue|send|queue-execute|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--mode auto|next-turn|queue|steer] [--expected-turn-id ID] [--queued-message-id ID] [--effort xhigh (send/create default; forbidden for steer)] [--limit 1..50] [--offset N]; queue-execute uses a NEW operation ID and the ORIGINAL queued-message-id; text <=8192 UTF-8 bytes; files: transfer-host.mjs',
     );
     return;
   }
@@ -232,7 +241,9 @@ export async function main(args = process.argv.slice(2), options = {}) {
         'probe',
         'workspace',
         'history',
+        'queue',
         'send',
+        'queue-execute',
         'receipt',
         'open',
         'open-status',
@@ -242,6 +253,30 @@ export async function main(args = process.argv.slice(2), options = {}) {
       ].includes(command),
     'UNKNOWN_NAMED_OPERATION',
   );
+  requireValue(['auto', 'next-turn', 'queue', 'steer'].includes(values.mode), 'INVALID_SEND_MODE');
+  requireValue(command === 'send' || values.mode === 'auto', 'MODE_ONLY_FOR_SEND');
+  requireValue(
+    values['expected-turn-id'] === undefined ||
+      ((command === 'queue-execute' || (command === 'send' && values.mode === 'steer')) &&
+        values['expected-turn-id'].trim()),
+    'EXPECTED_TURN_ONLY_FOR_IMMEDIATE_INPUT',
+  );
+  requireValue(
+    command === 'queue-execute' || values['queued-message-id'] === undefined,
+    'QUEUED_MESSAGE_ONLY_FOR_QUEUE_EXECUTE',
+  );
+  if (command === 'queue-execute') {
+    requireValue(values['queued-message-id']?.trim(), 'ORIGINAL_QUEUED_MESSAGE_ID_REQUIRED');
+    requireValue(
+      values['text-file'] === undefined && values.effort === undefined,
+      'QUEUE_EXECUTE_REUSES_ORIGINAL_INPUT',
+    );
+  }
+  if (command === 'send' && values.mode === 'steer') {
+    requireValue(values['expected-turn-id']?.trim(), 'EXPECTED_TURN_ID_REQUIRED');
+    requireValue(values.effort === undefined, 'STEER_CANNOT_CHANGE_GENERATION_SETTINGS');
+  }
+  const effort = values.effort ?? 'xhigh';
   requireValue(values['host-id'], 'EXPLICIT_HOST_ID_REQUIRED');
   await privatePath(root, true);
   const registryPath = join(root, 'hosts.json');
@@ -359,6 +394,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
         request.end(bytes);
       }));
   const threadId = values['thread-id'] ?? host.coordinationThreadId;
+  if (command === 'queue-execute') requireValue(values['thread-id'], 'EXPLICIT_THREAD_ID_REQUIRED');
   if (!['probe', 'workspace', 'create', 'create-status', 'create-submit'].includes(command))
     requireValue(
       typeof threadId === 'string' && threadId.length > 0,
@@ -366,9 +402,16 @@ export async function main(args = process.argv.slice(2), options = {}) {
     );
   const operationId = values['operation-id'];
   if (
-    ['send', 'receipt', 'open', 'open-status', 'create', 'create-status', 'create-submit'].includes(
-      command,
-    )
+    [
+      'send',
+      'queue-execute',
+      'receipt',
+      'open',
+      'open-status',
+      'create',
+      'create-status',
+      'create-submit',
+    ].includes(command)
   )
     requireValue(
       typeof operationId === 'string' && /^[a-zA-Z0-9_-]{8,100}$/.test(operationId),
@@ -414,12 +457,12 @@ export async function main(args = process.argv.slice(2), options = {}) {
   if (command === 'send' || command === 'create') {
     requireValue(values['text-file'], 'PRIVATE_TEXT_FILE_REQUIRED');
     requireValue(
-      ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(values.effort),
+      ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(effort),
       'INVALID_EFFORT',
     );
   }
   let ledgerPath, saved;
-  if (['send', 'open', 'create', 'create-submit'].includes(command)) {
+  if (['send', 'queue-execute', 'open', 'create', 'create-submit'].includes(command)) {
     const directory = join(root, 'operations');
     await mkdir(directory, { recursive: true, mode: 0o700 });
     if (process.platform !== 'win32') await chmod(directory, 0o700);
@@ -447,7 +490,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
         saved.hostId === host.hostId &&
           (command === 'create-submit' ||
             (saved.textSha256 === digest(text) &&
-              saved.payload.effort === values.effort &&
+              saved.payload.effort === effort &&
               saved.payload.projectId === (values['project-id'] ?? null))),
         'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
       );
@@ -486,18 +529,32 @@ export async function main(args = process.argv.slice(2), options = {}) {
           saved.hostId === host.hostId &&
           saved.threadId === threadId &&
           (command !== 'send' ||
-            (saved.textSha256 === digest(text) && saved.payload.effort === values.effort)),
+            (saved.textSha256 === digest(text) &&
+              saved.payload.effort === (values.mode === 'steer' ? undefined : effort) &&
+              (saved.requestedMode ?? 'auto') === values.mode &&
+              saved.payload.expectedTurnId === values['expected-turn-id'])) &&
+          (command !== 'queue-execute' ||
+            (saved.payload.clientMessageId === values['queued-message-id'] &&
+              saved.payload.expectedTurnId === values['expected-turn-id'])),
         'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
       );
       const path =
-        command === 'send'
-          ? '/v1/receipts?' + new URLSearchParams({ hostId: host.hostId, id: operationId })
+        command === 'send' || command === 'queue-execute'
+          ? '/v1/receipts?' +
+            new URLSearchParams({
+              hostId: host.hostId,
+              id: command === 'queue-execute' ? saved.payload.clientMessageId : operationId,
+            })
           : '/v1/desktop/open-status?' +
             new URLSearchParams({ hostId: host.hostId, threadId, id: operationId });
       const response = await request(path);
       if (response.http === 200)
         requireValue(
-          response.value.hostId === host.hostId && response.value.threadId === threadId,
+          response.value.hostId === host.hostId &&
+            response.value.threadId === threadId &&
+            (!['send', 'queue-execute'].includes(command) ||
+              response.value.clientMessageId ===
+                (command === 'queue-execute' ? saved.payload.clientMessageId : operationId)),
           'RECEIPT_TARGET_MISMATCH',
         );
       saved.latestReceipt = { http: response.http, result: summary(response.value) };
@@ -509,6 +566,9 @@ export async function main(args = process.argv.slice(2), options = {}) {
           operationId,
           hostId: host.hostId,
           threadId,
+          ...(command === 'queue-execute'
+            ? { queuedMessageId: saved.payload.clientMessageId, actionOutcome: 'query-only' }
+            : {}),
           queriedExistingOperation: true,
           replayed: false,
           ...saved.latestReceipt,
@@ -620,7 +680,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
         projectId,
         text,
         attachments: [],
-        effort: values.effort,
+        effort,
       };
       saved = {
         kind: 'create',
@@ -742,8 +802,87 @@ export async function main(args = process.argv.slice(2), options = {}) {
     );
     return;
   }
-  if (command === 'send')
+  if (command === 'queue') {
+    const receipts = (runtime?.receipts ?? []).filter(
+      (item) => item.state === 'queued' || (item.queueSource === 'native' && item.queuePresent),
+    );
+    requireValue(
+      receipts.every((item) => item.hostId === host.hostId && item.threadId === threadId),
+      'QUEUE_TARGET_MISMATCH',
+    );
+    const items = receipts.slice(offset, offset + limit).map((item, index) => ({
+      position: offset + index + 1,
+      ...summary(item),
+      ...(typeof item.text === 'string' ? { textSha256: digest(item.text) } : {}),
+    }));
+    const page = {
+      operation: command,
+      hostId: host.hostId,
+      threadId,
+      ready: history.value.ready,
+      canControl: runtime?.canControl,
+      state: runtime?.state,
+      turnId: runtime?.turnId,
+      offset,
+      total: receipts.length,
+      items,
+      nextOffset: null,
+    };
+    const updateOffset = () => {
+      page.nextOffset = offset + items.length < receipts.length ? offset + items.length : null;
+    };
+    updateOffset();
+    while (Buffer.byteLength(serialize(page)) + 1 > CONTEXT_LIMITS.outputBytes) {
+      items.pop();
+      updateOffset();
+    }
+    output(JSON.stringify(page));
+    return;
+  }
+  if (command === 'send' || command === 'queue-execute')
     requireValue(history.value.ready && runtime?.canControl, 'VERIFIED_ORIGINAL_OWNER_REQUIRED');
+  const capabilities = history.value.capabilities ?? workspace.value.capabilities;
+  const mode =
+    values.mode === 'auto' ? (runtime?.state === 'idle' ? 'next-turn' : 'queue') : values.mode;
+  if (command === 'send') {
+    requireValue(capabilities.includes('reply'), 'REPLY_UNAVAILABLE');
+    if (mode === 'queue') requireValue(capabilities.includes('queue'), 'NATIVE_QUEUE_UNAVAILABLE');
+    if (mode === 'next-turn')
+      requireValue(runtime.state === 'idle' && !runtime.turnId, 'IDLE_THREAD_REQUIRED');
+    if (mode === 'steer') {
+      requireValue(capabilities.includes('steer'), 'STEER_UNAVAILABLE');
+      requireValue(
+        runtime.state === 'running' && runtime.turnId === values['expected-turn-id'],
+        'CURRENT_TURN_MISMATCH',
+      );
+    }
+  }
+  if (command === 'queue-execute') {
+    requireValue(capabilities.includes('queue:execute'), 'QUEUE_EXECUTE_UNAVAILABLE');
+    requireValue(
+      runtime.state === 'idle' || runtime.state === 'running',
+      'QUEUE_EXECUTE_REQUIRES_IDLE_OR_RUNNING',
+    );
+    requireValue(
+      runtime.state === 'running'
+        ? runtime.turnId && runtime.turnId === values['expected-turn-id']
+        : !runtime.turnId && values['expected-turn-id'] === undefined,
+      'CURRENT_TURN_MISMATCH',
+    );
+    const item = runtime.receipts?.find(
+      (item) => item.clientMessageId === values['queued-message-id'],
+    );
+    requireValue(
+      item?.hostId === host.hostId &&
+        item.threadId === threadId &&
+        item.state === 'queued' &&
+        item.queueSource === 'native' &&
+        item.queuePresent === true &&
+        item.canExecuteNow === true &&
+        !item.queueSyncError,
+      'EXECUTABLE_ORIGINAL_QUEUE_ITEM_REQUIRED',
+    );
+  }
   if (command === 'open')
     requireValue(
       workspace.value.capabilities.includes('desktop:open'),
@@ -757,10 +896,17 @@ export async function main(args = process.argv.slice(2), options = {}) {
           clientMessageId: operationId,
           text,
           attachmentIds: [],
-          mode: runtime.state === 'idle' ? 'next-turn' : 'queue',
-          effort: values.effort,
+          mode,
+          ...(mode === 'steer' ? { expectedTurnId: values['expected-turn-id'] } : { effort }),
         }
-      : { hostId: host.hostId, threadId, clientOperationId: operationId };
+      : command === 'queue-execute'
+        ? {
+            hostId: host.hostId,
+            threadId,
+            clientMessageId: values['queued-message-id'],
+            ...(values['expected-turn-id'] ? { expectedTurnId: values['expected-turn-id'] } : {}),
+          }
+        : { hostId: host.hostId, threadId, clientOperationId: operationId };
   saved = {
     kind: command,
     hostId: host.hostId,
@@ -768,6 +914,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
     operationId,
     ...(text === undefined ? {} : { textSha256: digest(text) }),
     payload,
+    ...(command === 'send' ? { requestedMode: values.mode } : {}),
     status: 'intent-saved',
     createdAt: new Date().toISOString(),
   };
@@ -775,16 +922,27 @@ export async function main(args = process.argv.slice(2), options = {}) {
   await writeFile(ledgerPath, JSON.stringify(saved, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
   try {
     const response = await request(
-      command === 'send' ? '/v1/replies' : '/v1/desktop/open',
+      command === 'send'
+        ? '/v1/replies'
+        : command === 'queue-execute'
+          ? '/v1/queue/execute'
+          : '/v1/desktop/open',
       payload,
     );
-    if (response.http === 200)
+    if (response.http === 200 && command !== 'queue-execute')
       requireValue(
         response.value.hostId === host.hostId && response.value.threadId === threadId,
         'SUBMISSION_TARGET_MISMATCH',
       );
-    saved.response = { http: response.http, result: summary(response.value) };
-    saved.status = response.http === 200 ? 'submitted' : 'query-before-retry';
+    saved.response = {
+      http: response.http,
+      result:
+        command === 'queue-execute' ? { ok: response.value?.ok === true } : summary(response.value),
+    };
+    saved.status =
+      response.http === 200 && (command !== 'queue-execute' || response.value?.ok === true)
+        ? 'submitted'
+        : 'query-before-retry';
   } catch {
     saved.status = 'uncertain-query-required';
   }
@@ -796,6 +954,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
       operationId,
       hostId: host.hostId,
       threadId,
+      ...(command === 'queue-execute' ? { queuedMessageId: values['queued-message-id'] } : {}),
       status: saved.status,
       ...saved.response,
       replayed: false,

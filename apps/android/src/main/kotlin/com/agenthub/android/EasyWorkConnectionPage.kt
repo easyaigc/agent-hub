@@ -116,6 +116,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
             }
             if(busy&&pairingStatus!=null)EasyWorkConnectionStatus(pairingStatus!!)
             error?.let { EasyWorkConnectionFailure(it) }
+            if(error!=null&&method in listOf("自动发现","手动连接"))TextButton(onClick={ method="扫码连接";error=null },modifier=Modifier.testTag("easywork-use-qr")) { Text(productText("改用扫码连接")) }
         }
         (editing?.agentConnection?.target?:editing?.migrationEasyWork?.target)?.let { target->
             GroupTitle(productText("连接目标"))
@@ -135,12 +136,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
                     if(rows.isEmpty())Text(productText("正在查找同一网络的电脑…"),Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
                     rows.forEach { host->
                         val client=known.firstOrNull { it.id==host.id }
-                        val detail=(if(host.networkKind=="vpn") productText("VPN · ") else "") + if(client==null) productText("未连接 · 点选连接") else if(client.online) productText("已连接") else productText("未连接 · %@",clientConnectionText(client))
+                        val detail=(if(host.networkKind=="vpn") productText("VPN · ") else "") + (if(client==null) { if(host.requiresPairing) productText("需扫码配对") else productText("未连接 · 点选连接") } else if(client.online) productText("已连接") else productText("未连接 · %@",clientConnectionText(client))) + "\n" + host.address
+                        val requestedName=name.trim().takeIf { it.isNotEmpty()&&it!="EasyWork" }?:host.name
                         DiscoveredComputerRow(host.name,detail,"easywork-discovered-${host.id}",client?.online==true,!busy) {
                             if(client?.migrationEasyWork!=null) {
                                 // Imported rows open explicit pairing UI; no old route, credential or action is used.
                                 if(!busy&&!session.connectionBusy){name=client.name;method="扫码连接";error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide()}
-                            } else if(host.known)perform(EasyWorkConnectionInput("saved","","",host.id)) { session.connectSavedEasyWork(host.id) } else perform(EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { session.connectDiscoveredEasyWork(host) }
+                            } else if(host.known)perform(EasyWorkConnectionInput("saved","","",host.id)) { session.connectSavedEasyWork(host.id) } else perform(EasyWorkConnectionInput("discovered",requestedName,host.endpoint,host.deviceId.orEmpty())) { session.connectDiscoveredEasyWork(host,requestedName) }
                         }
                     }
                     TextButton(onClick={ discovery?.scan() },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-discovery-rescan")) { Text(productText("重新查找")) }

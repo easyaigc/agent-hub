@@ -1,0 +1,175 @@
+diff --git a/apps/desktop/src/main/remote-access/embedded-lan-host.ts b/apps/desktop/src/main/remote-access/embedded-lan-host.ts
+--- a/apps/desktop/src/main/remote-access/embedded-lan-host.ts
++++ b/apps/desktop/src/main/remote-access/embedded-lan-host.ts
+@@ -3,7 +3,6 @@
+ import { mkdir, readFile, writeFile, rename } from "node:fs/promises"
+ import { createServer, type Server } from "node:https"
+ import type { IncomingMessage } from "node:http"
+-import { hostname } from "node:os"
+ import path from "node:path"
+ import { WebSocketServer, WebSocket } from "ws"
+ import { remoteBindingSchema, type RemoteBinding } from "@easyai-desktop/remote-access"
+@@ -11,6 +10,7 @@
+ import { z } from "zod"
+ import type { DesktopRemoteAccessController } from "./desktop-remote-access-controller.js"
+ import { ensureLanTlsIdentity } from "./lan-tls-identity.js"
++import { localComputer, computerDisplayName, computerServiceName } from "./local-computer.js"
+ 
+ import {
+   DirectEndpointRegistry,
+@@ -39,6 +39,8 @@
+ const connectSchema = claimSchema.omit({ offerId: true, code: true })
+ export type LanHostDescriptor = {
+   enabled: boolean
++  name?: string
++  computer?: ReturnType<typeof localComputer>
+   endpoints: readonly string[]
+   endpointHints?: readonly DirectEndpoint[]
+   connectionMode?: "automatic"
+@@ -139,6 +141,8 @@
+     }
+     try {
+       const context = await this.options.controller.localContext()
++      const computer = localComputer()
++      const name = computerDisplayName(computer)
+       const { key, cert, fingerprint } = await ensureLanTlsIdentity(this.options.directory)
+       const server = createServer({ key, cert, minVersion: "TLSv1.2" }, (request, response) => {
+         void (async () => {
+@@ -158,7 +162,8 @@
+             response.end(
+               JSON.stringify({
+                 version: 1,
+-                name: hostname(),
++                name,
++                computer,
+                 publicKey: context.identity.publicKey,
+                 target: context.target,
+                 fingerprint,
+@@ -345,6 +350,8 @@
+         address && typeof address === "object" ? address.port : (this.options.port ?? 4319)
+       this.#descriptor = {
+         enabled: true,
++        name,
++        computer,
+         connectionMode: "automatic",
+         endpoints: [],
+         fingerprint,
+@@ -362,7 +369,7 @@
+           "/usr/bin/dns-sd",
+           [
+             "-R",
+-            `EasyWork ${hostname()}`,
++            computerServiceName(name, context.target.desktopDeviceId),
+             "_easywork-host._tcp",
+             "local",
+             String(port),
+diff --git a/apps/desktop/src/main/remote-access/local-computer.ts b/apps/desktop/src/main/remote-access/local-computer.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/desktop/src/main/remote-access/local-computer.ts
+@@ -0,0 +1,26 @@
++import { hostname, platform, userInfo } from "node:os"
++
++/** Display metadata only; authorization remains bound to the original runtime target. */
++export function localComputer() {
++  let username: string | undefined
++  try {
++    username = userInfo().username || undefined
++  } catch {
++    // Hosts without a resolvable OS user still advertise their computer name.
++  }
++  return { name: hostname(), username, platform: platform() }
++}
++
++export function computerDisplayName(computer: ReturnType<typeof localComputer>): string {
++  return `EasyWork ${computer.name}${computer.username ? ` · ${computer.username}` : ""}`
++}
++
++export function computerServiceName(name: string, deviceId: string): string {
++  const suffix = ` [${deviceId.slice(-8)}]`
++  let prefix = ""
++  for (const character of name) {
++    if (Buffer.byteLength(prefix + character + suffix, "utf8") > 63) break
++    prefix += character
++  }
++  return prefix + suffix
++}
+diff --git a/apps/desktop/test/main/remote-access/embedded-lan-host.test.ts b/apps/desktop/test/main/remote-access/embedded-lan-host.test.ts
+--- a/apps/desktop/test/main/remote-access/embedded-lan-host.test.ts
++++ b/apps/desktop/test/main/remote-access/embedded-lan-host.test.ts
+@@ -1,6 +1,6 @@
+ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+ import { request } from "node:https"
+-import { tmpdir } from "node:os"
++import { hostname, platform, tmpdir, userInfo } from "node:os"
+ import path from "node:path"
+ import { createPrivateKey, randomUUID, X509Certificate } from "node:crypto"
+ import { runtimeTargetSchema } from "@easyai-desktop/agent-protocol"
+@@ -90,6 +90,8 @@
+       expect(parseHostResponse(reply)).toMatchObject({
+         fingerprint: descriptor.fingerprint,
+         target,
++        name: `EasyWork ${hostname()} · ${userInfo().username}`,
++        computer: { name: hostname(), username: userInfo().username, platform: platform() },
+       })
+       await host.configure(false)
+       expect((await host.configure(true)).fingerprint).toBe(descriptor.fingerprint)
+@@ -527,6 +529,10 @@
+     )
+     expect(descriptor.endpoints).toEqual(current.endpoints)
+     expect(descriptor.version).toBe(1)
++    expect(descriptor).toMatchObject({
++      name: `EasyWork ${hostname()} · ${userInfo().username}`,
++      computer: { name: hostname(), username: userInfo().username, platform: platform() },
++    })
+     expect(current.endpoints).toContain(`https://100.65.0.2:${port}`)
+     expect(register).not.toHaveBeenCalled()
+   } finally {
+diff --git a/apps/desktop/test/main/remote-access/local-computer.test.ts b/apps/desktop/test/main/remote-access/local-computer.test.ts
+new file mode 100644
+--- /dev/null
++++ b/apps/desktop/test/main/remote-access/local-computer.test.ts
+@@ -0,0 +1,30 @@
++import { hostname, platform, userInfo } from "node:os"
++import { expect, test } from "vitest"
++import {
++  computerDisplayName,
++  computerServiceName,
++  localComputer,
++} from "../../../src/main/remote-access/local-computer.js"
++
++test("local computer display associates the OS hostname and username", () => {
++  const computer = localComputer()
++  expect(computer).toEqual({ name: hostname(), username: userInfo().username, platform: platform() })
++  expect(computerDisplayName(computer)).toBe(`EasyWork ${hostname()} · ${userInfo().username}`)
++  expect(computerDisplayName({ name: "Workstation", username: undefined, platform: platform() })).toBe(
++    "EasyWork Workstation"
++  )
++})
++
++test("Bonjour names fit 63 UTF-8 bytes without splitting characters and distinguish device suffixes", () => {
++  const display = `EasyWork ${"电脑😀".repeat(30)}`
++  const first = computerServiceName(display, "device-8-00000001")
++  const second = computerServiceName(display, "device-8-00000002")
++  expect(first).not.toBe(second)
++  expect(first.endsWith(" [00000001]")).toBe(true)
++  expect(second.endsWith(" [00000002]")).toBe(true)
++  for (const name of [first, second]) {
++    expect(Buffer.byteLength(name, "utf8")).toBeLessThanOrEqual(63)
++    expect(name).not.toContain("\uFFFD")
++    expect(display.startsWith(name.slice(0, -11))).toBe(true)
++  }
++})
+diff --git a/packages/shared/src/ipc/remote-access.ts b/packages/shared/src/ipc/remote-access.ts
+--- a/packages/shared/src/ipc/remote-access.ts
++++ b/packages/shared/src/ipc/remote-access.ts
+@@ -84,6 +84,9 @@
+ export type RemoteAccessStateDto = {
+   readonly lan?: {
+     readonly enabled: boolean
++    readonly name?: string
++    readonly computer?: { readonly name: string; readonly username?: string; readonly platform: string }
++    readonly connectionMode?: "automatic"
+     readonly endpoints: readonly string[]
+     readonly endpointHints?: readonly { endpoint: string; networkKind: "lan" | "vpn" | "unknown" }[]
+     readonly fingerprint?: string

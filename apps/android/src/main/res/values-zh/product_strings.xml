@@ -761,6 +761,7 @@
     <string name="product_37d0814da03b8f7aa09b8dd9" formatted="false">"最终提交"</string>
     <string name="product_c31dbb8e20e22af5e1a0e4ad" formatted="false">"最终提交引用"</string>
     <string name="product_997a5e6e513f2a90797b2637" formatted="false">"最近"</string>
+    <string name="product_39a9046f9c8c993d39435343" formatted="false">"最近使用"</string>
     <string name="product_bc4419fd19d80cfbbe7b286d" formatted="false">"最近投递："</string>
     <string name="product_7992604ca67dd6aa713f4db3" formatted="false">"最近投递：%@"</string>
     <string name="product_8672864e9041713891eb1fdd" formatted="false">"最高"</string>
@@ -1666,6 +1667,9 @@
     <string name="product_4c98e6f040fb203b8dd80b12" formatted="false">"无法显示可视化"</string>
     <string name="product_bb57303a7e6903ccdb7f2072" formatted="false">"此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。"</string>
     <string name="product_9b50f54fadefae4ca3d247dc" formatted="false">"预览已中断，请关闭后重新打开。"</string>
+    <string name="product_56c719be060ad74c5ec555e0" formatted="false">"需扫码配对"</string>
+    <string name="product_f2916483f7b224ba572d9eb3" formatted="false">"改用扫码连接"</string>
+    <string name="product_0d4432b4cf6213d854489227" formatted="false">"这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

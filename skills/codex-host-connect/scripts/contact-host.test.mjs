@@ -40,11 +40,19 @@ async function fixture(t, defaultTransport = false) {
   const catalog = {
     hostId,
     connectionMode: 'desktop-runtime',
-    capabilities: ['desktop:open', 'desktop:creations', 'desktop:creations:projectless'],
+    capabilities: [
+      'desktop:open',
+      'desktop:creations',
+      'desktop:creations:projectless',
+      'reply',
+      'queue',
+      'steer',
+      'queue:execute',
+    ],
     projects: [],
     threads: [{ id: threadId, hostId, title: '协调', projectId: null }],
   };
-  const runtime = { canControl: true, state: 'idle' };
+  const runtime = { canControl: true, state: 'idle', turnId: null, receipts: [] };
   let failNextReply = false;
   const transport = async (path, body, authenticated = true) => {
     calls.push({ path, body });
@@ -63,6 +71,17 @@ async function fixture(t, defaultTransport = false) {
         throw Error('Simulated response loss after acceptance');
       }
       return { http: 200, value: receipts.get(body.clientMessageId) };
+    }
+    if (path === '/v1/queue/execute') {
+      const item = runtime.receipts.find((item) => item.clientMessageId === body.clientMessageId);
+      receipts.set(body.clientMessageId, {
+        ...item,
+        state: 'submitted',
+        turnId: runtime.turnId ?? 'fixture-new-turn',
+        queuePresent: false,
+        canExecuteNow: false,
+      });
+      return { http: 200, value: { ok: true } };
     }
     const id = new URL(path, 'https://fixture.invalid').searchParams.get('id');
     if (path.startsWith('/v1/receipts?'))
@@ -116,6 +135,250 @@ test('fresh catalog excludes archived and stale registered targets before any wr
     code: 'SELECT_CURRENT_UNARCHIVED_THREAD_OR_CREATE',
   });
   assert.equal(f.calls.filter((c) => c.body).length, 0);
+});
+
+test('send selects auto, explicit next-turn and explicit queue without silently changing modes', async (t) => {
+  const f = await fixture(t);
+  await f.run('send', 'mode-auto-idle', ['--text-file', f.taskFile]);
+  assert.equal(f.receipts.get('mode-auto-idle').mode, 'next-turn');
+  await f.run('send', 'mode-explicit-queue', ['--text-file', f.taskFile, '--mode', 'queue']);
+  assert.equal(f.receipts.get('mode-explicit-queue').mode, 'queue');
+  f.runtime.state = 'running';
+  f.runtime.turnId = 'turn-current';
+  await f.run('send', 'mode-auto-running', ['--text-file', f.taskFile]);
+  assert.equal(f.receipts.get('mode-auto-running').mode, 'queue');
+  await assert.rejects(
+    f.run('send', 'mode-reject-next', ['--text-file', f.taskFile, '--mode', 'next-turn']),
+    { code: 'IDLE_THREAD_REQUIRED' },
+  );
+  f.runtime.state = 'idle';
+  f.runtime.turnId = null;
+  await f.run('send', 'mode-explicit-next', ['--text-file', f.taskFile, '--mode', 'next-turn']);
+  assert.equal(f.receipts.get('mode-explicit-next').mode, 'next-turn');
+  f.catalog.capabilities = f.catalog.capabilities.filter((capability) => capability !== 'queue');
+  await assert.rejects(
+    f.run('send', 'mode-missing-queue', ['--text-file', f.taskFile, '--mode', 'queue']),
+    { code: 'NATIVE_QUEUE_UNAVAILABLE' },
+  );
+  assert.equal(f.calls.filter((call) => call.body).length, 4);
+});
+
+test('steer binds the observed Turn, omits generation settings and keeps retries query-only', async (t) => {
+  const f = await fixture(t);
+  f.runtime.state = 'running';
+  f.runtime.turnId = 'turn-current';
+  const args = ['--text-file', f.taskFile, '--mode', 'steer', '--expected-turn-id', 'turn-current'];
+  await f.run('send', 'steer-current-001', args);
+  assert.deepEqual(f.receipts.get('steer-current-001'), {
+    hostId,
+    threadId,
+    clientMessageId: 'steer-current-001',
+    text: await readFile(f.taskFile, 'utf8'),
+    attachmentIds: [],
+    mode: 'steer',
+    expectedTurnId: 'turn-current',
+    state: 'submitted',
+  });
+  f.runtime.turnId = 'turn-later';
+  await f.run('send', 'steer-current-001', args);
+  assert.equal(f.outputs.at(-1).queriedExistingOperation, true);
+  await assert.rejects(f.run('send', 'steer-current-001', [...args.slice(0, -1), 'turn-later']), {
+    code: 'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
+  });
+  await assert.rejects(
+    f.run('send', 'steer-current-001', ['--text-file', f.taskFile, '--mode', 'queue']),
+    { code: 'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT' },
+  );
+  assert.equal(f.calls.filter((call) => call.body).length, 1);
+});
+
+test('steer rejects stale or missing Turns, settings changes, approvals and unavailable capability before POST', async (t) => {
+  const f = await fixture(t);
+  const base = ['--text-file', f.taskFile, '--mode', 'steer'];
+  await assert.rejects(f.run('send', 'steer-no-turn-001', base), {
+    code: 'EXPECTED_TURN_ID_REQUIRED',
+  });
+  const args = [...base, '--expected-turn-id', 'turn-current'];
+  await assert.rejects(f.run('send', 'steer-settings-001', [...args, '--effort', 'xhigh']), {
+    code: 'STEER_CANNOT_CHANGE_GENERATION_SETTINGS',
+  });
+  for (const state of ['idle', 'waiting-for-approval', 'running']) {
+    f.runtime.state = state;
+    f.runtime.turnId = 'turn-other';
+    await assert.rejects(f.run('send', 'steer-stale-' + state, args), {
+      code: 'CURRENT_TURN_MISMATCH',
+    });
+  }
+  f.runtime.state = 'running';
+  f.runtime.turnId = 'turn-current';
+  f.catalog.capabilities = f.catalog.capabilities.filter((capability) => capability !== 'steer');
+  await assert.rejects(f.run('send', 'steer-no-cap-001', args), { code: 'STEER_UNAVAILABLE' });
+  assert.equal(f.calls.filter((call) => call.body).length, 0);
+});
+
+const queuedItem = (id = 'queued-original-001') => ({
+  hostId,
+  threadId,
+  clientMessageId: id,
+  text: 'Original queued input',
+  state: 'queued',
+  mode: 'queue',
+  queueSource: 'native',
+  queuePresent: true,
+  canExecuteNow: true,
+});
+
+test('queue listing preserves native order and legacy visibility with bounded metadata and no writes', async (t) => {
+  const f = await fixture(t);
+  f.runtime.receipts = [
+    queuedItem('queued-first'),
+    queuedItem('queued-second'),
+    {
+      ...queuedItem('legacy-queue'),
+      queueSource: 'host',
+      queuePresent: false,
+      canExecuteNow: false,
+      queueDisposition: 'legacy-review',
+    },
+    { ...queuedItem('completed-recent'), state: 'completed', queuePresent: false },
+  ];
+  await f.run('queue', undefined, ['--limit', '2']);
+  assert.deepEqual(
+    f.outputs.at(-1).items.map((item) => item.clientMessageId),
+    ['queued-first', 'queued-second'],
+  );
+  assert.equal(f.outputs.at(-1).nextOffset, 2);
+  assert.equal(f.outputs.at(-1).total, 3);
+  assert(!JSON.stringify(f.outputs).includes('Original queued input'));
+  await f.run('queue', undefined, ['--offset', '2']);
+  assert.equal(f.outputs.at(-1).items[0].canExecuteNow, false);
+  f.runtime.receipts[0].threadId = 'different-thread';
+  await assert.rejects(f.run('queue'), { code: 'QUEUE_TARGET_MISMATCH' });
+  assert.equal(f.calls.filter((call) => call.body).length, 0);
+});
+
+test('queue-execute promotes the original ID and never posts another reply or mutates the original intent', async (t) => {
+  const f = await fixture(t);
+  await f.run('send', 'queued-original-001', ['--text-file', f.taskFile, '--mode', 'queue']);
+  const originalPath = join(f.directory, 'operations', 'queued-original-001.json');
+  const original = await readFile(originalPath, 'utf8');
+  f.runtime.state = 'running';
+  f.runtime.turnId = 'turn-current';
+  f.runtime.receipts = [queuedItem()];
+  const args = [
+    '--thread-id',
+    threadId,
+    '--queued-message-id',
+    'queued-original-001',
+    '--expected-turn-id',
+    'turn-current',
+  ];
+  await f.run('queue-execute', 'promote-action-001', args);
+  assert.deepEqual(f.calls.find((call) => call.path === '/v1/queue/execute').body, {
+    hostId,
+    threadId,
+    clientMessageId: 'queued-original-001',
+    expectedTurnId: 'turn-current',
+  });
+  assert.equal(await readFile(originalPath, 'utf8'), original);
+  f.runtime.turnId = 'turn-later';
+  await f.run('queue-execute', 'promote-action-001', args);
+  assert.equal(f.outputs.at(-1).actionOutcome, 'query-only');
+  assert.equal(f.outputs.at(-1).result.clientMessageId, 'queued-original-001');
+  await assert.rejects(
+    f.run('queue-execute', 'promote-action-001', [...args.slice(0, -1), 'turn-later']),
+    {
+      code: 'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
+    },
+  );
+  assert.equal(f.calls.filter((call) => call.path === '/v1/queue/execute').length, 1);
+  assert.equal(f.calls.filter((call) => call.path === '/v1/replies').length, 1);
+});
+
+test('idle queue-execute uses the existing Host execution contract without inventing a Turn', async (t) => {
+  const f = await fixture(t);
+  f.runtime.receipts = [queuedItem()];
+  await f.run('queue-execute', 'promote-idle-001', [
+    '--thread-id',
+    threadId,
+    '--queued-message-id',
+    'queued-original-001',
+  ]);
+  assert.deepEqual(f.calls.find((call) => call.path === '/v1/queue/execute').body, {
+    hostId,
+    threadId,
+    clientMessageId: 'queued-original-001',
+  });
+});
+
+test('queue-execute refuses legacy, absent, changed, unready or blocked queue items before POST', async (t) => {
+  const f = await fixture(t);
+  const args = ['--thread-id', threadId, '--queued-message-id', 'queued-original-001'];
+  for (const override of [
+    { queueSource: 'host' },
+    { queuePresent: false },
+    { canExecuteNow: false },
+    { queueSyncError: 'sync failed' },
+    { state: 'uncertain' },
+    { threadId: 'other-thread' },
+  ]) {
+    f.runtime.receipts = [{ ...queuedItem(), ...override }];
+    await assert.rejects(f.run('queue-execute', 'promote-rejected-001', args), {
+      code: 'EXECUTABLE_ORIGINAL_QUEUE_ITEM_REQUIRED',
+    });
+  }
+  f.runtime.receipts = [queuedItem()];
+  f.runtime.state = 'waiting-for-approval';
+  await assert.rejects(f.run('queue-execute', 'promote-blocked-001', args), {
+    code: 'QUEUE_EXECUTE_REQUIRES_IDLE_OR_RUNNING',
+  });
+  f.runtime.state = 'running';
+  f.runtime.turnId = 'turn-current';
+  await assert.rejects(f.run('queue-execute', 'promote-no-turn-001', args), {
+    code: 'CURRENT_TURN_MISMATCH',
+  });
+  await assert.rejects(
+    f.run('queue-execute', 'promote-stale-001', [...args, '--expected-turn-id', 'turn-other']),
+    { code: 'CURRENT_TURN_MISMATCH' },
+  );
+  await assert.rejects(
+    f.run('queue-execute', 'promote-settings-001', [...args, '--effort', 'xhigh']),
+    { code: 'QUEUE_EXECUTE_REUSES_ORIGINAL_INPUT' },
+  );
+  assert.equal(f.calls.filter((call) => call.body).length, 0);
+});
+
+test('lost queue-execute response and a missing original receipt never trigger action replay', async (t) => {
+  const f = await fixture(t);
+  f.runtime.receipts = [queuedItem()];
+  const args = [
+    'queue-execute',
+    '--host-id',
+    hostId,
+    '--thread-id',
+    threadId,
+    '--operation-id',
+    'promote-lost-001',
+    '--queued-message-id',
+    'queued-original-001',
+  ];
+  const run = () =>
+    main(args, {
+      directory: f.directory,
+      output: (text) => f.outputs.push(JSON.parse(text)),
+      transport: async (path, body, authenticated) => {
+        const response = await f.transport(path, body, authenticated);
+        if (path === '/v1/queue/execute') throw Error('response lost');
+        return response;
+      },
+    });
+  await run();
+  assert.equal(f.outputs.at(-1).status, 'uncertain-query-required');
+  f.receipts.clear();
+  await run();
+  assert.equal(f.outputs.at(-1).http, 404);
+  assert.equal(f.outputs.at(-1).replayed, false);
+  assert.equal(f.calls.filter((call) => call.path === '/v1/queue/execute').length, 1);
 });
 
 // Exercise the production default HTTPS transport; only the socket boundary is mocked.

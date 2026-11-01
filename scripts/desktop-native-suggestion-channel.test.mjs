@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import { DesktopSuggestionStore } from '../packages/codex-adapter/dist/desktop-suggestion-store.js';
 import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
 import { protectWindowsStateDirectory } from '../packages/codex-adapter/dist/desktop-platform.js';
+import { now as syntheticNow, advance } from './fixtures/desktop-native-sample-synthetic-clock.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const target = {
@@ -19,38 +20,48 @@ const target = {
   runtimeId: 'desktop-runtime',
 };
 const fixture = mkdtempSync(join(tmpdir(), 'native-channel-boundary-'));
+test.after(() => rmSync(fixture, { recursive: true }));
 const platform = join(fixture, 'platform.mjs');
-// Synthetic kernel proof only; the storage and channel implementation are real.
+// Synthetic producer proof and clock only; Store, native DACL/snapshots and
+// native process deadlines remain real. This is not original-desktop evidence.
 writeFileSync(
   platform,
   `export let identity; export function setIdentity(v){identity=v;}
-export function inspectNativeSuggestionProducer(){if(!identity)throw Error('dead');return identity;}
+let afterInspect; export function setAfterInspect(v){afterInspect=v;}
+export function inspectNativeSuggestionProducer(){if(!identity)throw Error('dead');const value=identity;afterInspect?.();return value;}
 export function nativeSuggestionImplementationFingerprint(){return '${digest('implementation')}';}`,
 );
 let source = readFileSync(
   new URL('../packages/codex-adapter/dist/desktop-native-suggestion-channel.js', import.meta.url),
   'utf8',
 );
-source = source
-  .replaceAll(
+function replaceExactly(input, from, to, count = 1) {
+  assert.equal(input.split(from).length - 1, count, `exact synthetic channel replacement: ${from}`);
+  return input.replaceAll(from, to);
+}
+for (const [from, to] of [
+  [
     "'@codex-manage/protocol'",
     JSON.stringify(new URL('../packages/protocol/dist/index.js', import.meta.url).href),
-  )
-  .replaceAll(
+  ],
+  [
     "'./desktop-suggestion-store.js'",
     JSON.stringify(
       new URL('../packages/codex-adapter/dist/desktop-suggestion-store.js', import.meta.url).href,
     ),
-  )
-  .replaceAll(
-    "'./desktop-native-sample-platform.js'",
-    JSON.stringify(pathToFileURL(platform).href),
-  );
+  ],
+  ["'./desktop-native-sample-platform.js'", JSON.stringify(pathToFileURL(platform).href)],
+])
+  source = replaceExactly(source, from, to);
+source = replaceExactly(source, 'Date.now()', 'syntheticNow()', 3);
+source = `import { now as syntheticNow } from ${JSON.stringify(
+  new URL('./fixtures/desktop-native-sample-synthetic-clock.mjs', import.meta.url).href,
+)};\n${source}`;
 writeFileSync(join(fixture, 'channel.mjs'), source);
 const { DesktopNativeSuggestionChannel } = await import(
   pathToFileURL(join(fixture, 'channel.mjs'))
 );
-const { setIdentity } = await import(pathToFileURL(platform));
+const { setIdentity, setAfterInspect } = await import(pathToFileURL(platform));
 
 test('native channel fences source, producer, implementation, lease and two-stage reads', async (t) => {
   const traceRoot = realpathSync(mkdtempSync(join(tmpdir(), 'native-channel-store-')));
@@ -58,7 +69,7 @@ test('native channel fences source, producer, implementation, lease and two-stag
   protectWindowsStateDirectory(traceRoot);
   const key = machineRuntimeTargetKey(target);
   const store = new DesktopSuggestionStore(traceRoot, key);
-  const now = Date.now();
+  const now = syntheticNow();
   const producer = {
     epoch: randomUUID(),
     pid: process.pid,
@@ -172,6 +183,7 @@ test('native channel fences source, producer, implementation, lease and two-stag
   assert.equal(response.source, 'native-trace');
   assert.equal(response.suggestion.text, text);
   assert.equal(response.suggestion.validity, 'native-version');
+  assert.equal(response.suggestion.expiresAt, new Date(syntheticNow() + 6000).toISOString());
   assert.equal(channel.read(target, thread, randomUUID()).suggestion, null);
   assert.throws(() => channel.read({ ...target, hostId: 'other' }, thread, turn), { status: 400 });
   const pending = channel.prepare(target, thread, turn);
@@ -194,6 +206,29 @@ test('native channel fences source, producer, implementation, lease and two-stag
   assert.equal(channel.available, false);
   store.saveProducer({ ...state, checkedAt: now - 7000 });
   assert.equal(channel.available, false);
+  store.saveProducer(state);
+  const expiredBetweenStages = channel.prepare(target, thread, turn);
+  advance(6001);
+  assert.throws(() => expiredBetweenStages.commit(), { status: 503 });
+  assert.equal(channel.available, false, 'two-stage reads cannot renew an expired lease');
+
+  state.checkedAt = syntheticNow();
+  store.saveProducer(state);
+  const expiredDuringNativeProof = channel.prepare(target, thread, turn);
+  let nativeChecks = 0;
+  setAfterInspect(() => {
+    nativeChecks++;
+    advance(6001);
+  });
+  try {
+    assert.throws(() => expiredDuringNativeProof.commit(), { status: 503 });
+    assert.equal(nativeChecks, 1, 'commit reached native identity before the final lease check');
+  } finally {
+    setAfterInspect(undefined);
+  }
+  state.checkedAt = syntheticNow();
+  store.saveProducer(state);
+  assert.equal(channel.available, true, 'only a new producer publication restores availability');
   store.saveProducer({ ...state, implementationSha256: digest('old') });
   assert.equal(channel.available, false);
   store.saveProducer(state);
@@ -390,5 +425,3 @@ test('native acknowledgement rejects invalid retained-body ranges even in a vali
       assert.deepEqual(readFileSync(slot), bytes);
     });
 });
-
-test.after(() => rmSync(fixture, { recursive: true }));

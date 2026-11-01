@@ -760,6 +760,7 @@
 "最终提交" = "Final commit";
 "最终提交引用" = "Final commit reference";
 "最近" = "Recent";
+"最近使用" = "Recently used";
 "最近投递：" = "Last delivery: ";
 "最近投递：%@" = "Last delivery: %@";
 "最高" = "Maximum";
@@ -1793,3 +1794,9 @@
 "此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。" = "This visualization is too large, uses an unsupported encoding, or cannot be read. Save the original file to view it.";
 
 "预览已中断，请关闭后重新打开。" = "The preview was interrupted. Close it and open it again.";
+
+"需扫码配对" = "Scan the desktop QR code to pair";
+
+"改用扫码连接" = "Connect with a QR code";
+
+"这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。" = "This computer does not offer automatic connections. Scan its pairing QR code, or update EasyWork to connect by tapping.";

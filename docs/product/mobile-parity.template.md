@@ -1,5 +1,19 @@
 # iOS / Android 功能与一致性清单
 
+共同断言：手机只读准确原桌面最新完成轮建议，安全抑制/空结果/取消/离线/换目标即清除显示；采用和撤销只修改本地草稿，刷新不生成模型轮。共享 Host 增加被动结果来源、单会话最新正文保存及 Windows 当前可信 CLI 重定位。iOS 复用既有 native-version 接口与来源校验；Android 尚未实现建议 UI，需后续按同一来源、摘要及租期契约实现，不计新增通过。辅助检查、Windows 原生及实体 iPhone 结果分别登记；A6 保持暂停。
+
+2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](../acceptance/windows-codex-startup-safety-20261101.md)。
+
+## F52：按 topic 隔离 APNs 与 EasyWork publisher（2026-11-01）
+
+Relay 源码支持非默认 `topicKeys` 的逐环境密钥，未知 topic 或缺少的环境不回退到正式 topic。Host publisher 可配置 `topic`、`allowedTargets` 和 `environments`；EasyWork 的完整 Agent、Host、workspace、runtime、account authority/subject 在注册、撤销、状态读取、发布与待投递检查中核对。旧 publisher 省略这些字段时沿用原配置，旧绑定缺少 topic 时仅解释为原默认 topic。
+
+iOS 独立 development 验收环境可据此使用单独 Sandbox 授权；Android/FCM 本轮无实现或配置变化，不能复用 iOS 结果。当前新增辅助边界检查与实际部署、Apple 接受、手机到达分别留证；配置完成不代表 F52 全项通过。
+
+2026-10-31 F36／UI07／UI08 速度图标：模型按钮在标准或未确认加速时不显示闪电，快速显示一个蓝色闪电，极速显示两个相邻蓝色闪电；纯图标紧凑布局的标准速度使用设置图标，入口保持可见。iOS 已修改，Android 对应展示待对齐；速度目录、选择与提交语义不变，原生结果见[专项验收记录](../acceptance/speed-indicator-20261031.md)，A6 既有暂停范围保持。
+
+2026-11-01 F26／UI02／UI04：iOS“选择项目”在“不选择项目”后增加“最近使用”，仅在有记录时显示最近五项；显式选项目或打开项目聊天后前移，按完整目标隔离、重启保留、移除项目隐藏。记录只保存在手机本地，Android待对齐；实现、辅助检查和真机结果见[专项记录](../acceptance/recent-projects-20261101.md)，A6其他暂停项保持。
+
 2026-11-01 F19／F32 可视化验收补记：独立 iOS 模拟器原生整例 1 通过／0 失败／0 跳过，覆盖 HTML 显示、交互、双向滚动、关闭与重开；真实原 owner 保持一次输入。真机两次停在系统自动化初始化，用户要求先完成模拟器，物理保持待复验；Android 交互容器未实施。详见 [专项记录](../acceptance/visualization-20261101.md)。
 
 2026-11-01 F19／F32（UI05／UI07／UI12）可视化：Codex 完整 visualize 内容引用映射为可点击文件入口，沿用原消息／完整目标授权、文件摘要及大小校验；iOS 增加独立 HTML 沙箱预览，支持脚本图表、滚动、关闭返回和原文件分享。仅允许固定可视化 CDN，无原生桥、Host 凭据或任意电脑目录访问；Markdown 阅读页 F72 仍不执行其内嵌 HTML。Android 共用 Host 的引用投影，但交互 HTML 预览与旧 Host 缓存指令兼容待实施，不能记为双端通过。实现、辅助与物理 iPhone 结果见[专项记录](../acceptance/visualization-20261101.md)，A6 保持暂停。

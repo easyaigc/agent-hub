@@ -1,6 +1,6 @@
 ---
 name: codex-host-connect
-description: 将 macOS 或 Windows 的原 Codex 桌面接入 Agent Hub 手机 App，默认安装 Host 登录自启，按实际配置与运行时就绪开放新建、主动打开和原 owner 控制；交付连接参数，真实验收结果单列。适用于首次接入、增加电脑、修复和升级；使用随包 Host Agent，默认局域网与 Tailscale HTTPS 双通道；Tailscale 可选，支持纯局域网，不部署公网 Relay。
+description: 将 macOS 或 Windows 的原 Codex 桌面接入 Agent Hub，或让已获授权的 Agent 通过 Host 发送、排队、立即追加与执行原队列消息。接入默认安装 Host 自启，按运行时就绪开放新建、主动打开和原 owner 控制，分列连接参数与真实验收。适用于首次接入、增加电脑、修复、升级及具名协作；支持局域网与可选 Tailscale HTTPS，不部署公网 Relay。
 ---
 
 # 接入一台 Codex 电脑
@@ -70,6 +70,8 @@ macOS 默认使用随包持久环境工具及 `status`，将其实际目录配�
 本接入同时提供基于 Host 协议的协作入口：同类场景可让一台电脑的 Codex 分派给另一台 Codex；异类场景由来源侧协议调用端和目标 Host 适配器连接，例如 Claude Code ↔ Codex 或 Codex ↔ EasyWork。客户端使用各自的模型与登录，任务固定目标机器、项目与会话，通过具名操作提交、排队、查询进度和回执。
 
 用户明确要求协作、询问协作方式或需要扩展其他客户端时，读取 [跨 Agent 协作说明](references/agent-collaboration.md)，按其中的实现状态和 [协调流程](references/coordination-guide.md) 选择调用端。已有 `contact-host.mjs` 面向 Codex `desktop-runtime`；不能把它当成所有客户端的通用执行器，也不能将 Claude Code 等尚未内置的目标适配宣称为已完成。只修改文档或安装接入不触发协作，不发送验收消息。
+
+Agent 可调用同一 Host 能力：`send --mode next-turn` 空闲立即发送，`send --mode queue` 排入原桌面队列，`send --mode steer --expected-turn-id TURN_ID` 向准确运行轮次立即追加；省略 mode 时仍为空闲发送、忙时排队。`queue` 查询原队列 ID／可执行状态，`queue-execute --operation-id NEW_ACTION_ID --queued-message-id ORIGINAL_MESSAGE_ID` 将该原消息立即执行，运行时另带准确 `--expected-turn-id`，效果对应桌面队列的“引导”。消息执行时机由模型根据已授权任务的优先级、时效、依赖和实际运行状态决定，显式选择排队、即时追加或提升原队列项，不固定要求忙时排队，也不因选择即时追加另行确认。核对能力、原 owner、当前 Turn 和原消息 ID，记录选择理由；不重发队列正文、不修改原提交意图，即时追加不等于强制终止工具。追加不携带模型、推理或速度设置；状态、能力、完整命令与未知结果处理见[发送模式与原队列立即执行](references/coordination-guide.md#发送模式与原队列立即执行)。
 
 ## 执行顺序
 
@@ -149,3 +151,7 @@ macOS 默认使用随包持久环境工具及 `status`，将其实际目录配�
 新版本同时提供原 CLI 被动结果观察器。修复手机无建议时，按 [建议采集](references/desktop-suggestions.md) 配置对应平台的 native-suggestions-environment，并将同机私有配置路径保存为 Host 的 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG；保留原 Node、身份、凭据、服务路径及共享通道。只观察原桌面已有 thread/sample 请求/返回，并等待同来源的原安全判定，不调用 getter 或启动预测轮。
 
 配置未来启动后，由用户保存工作并正常退出、从原图标重开原桌面一次；不得自动强退或重开。原桌面未重开或 producer 实现指纹不符时，记录“配置就绪，待正常重开”，不宣称建议已恢复。每会话只保存一条最新提取正文；Trace 仅在保存确认、来源绑定、执行封闭、静默和无占用核对通过后回收。Windows 被动 producer 另外核对 ChatGPT.exe/Codex.exe 的实际 Codex 产品和可信签名，以及独立更新的签名 CLI；该要求仅属于 producer 自身的契约。通用桌面连接继续按上文的用户／会话、管道持有进程、路径／SHA 和 IPC 协议核对，不恢复全局 Publisher 字段。
+
+## Windows 原桌面启动安全（2026-11-01）
+
+Windows 被动结果采集的全局 CODEX_CLI_PATH 垫片安装已停用；本节优先于旧候选中的对应 Windows 安装指引。安装或升级不得手动恢复该变量。使用同包 windows-native-suggestions-environment.mjs disable（自定义目录加 --state）恢复经私有清单核对的原 HKCU 覆盖；兼容 install 仅恢复并明确报采集不可安装，不因失败退出改用手写注册表。保留旧垫片、配置和运行进程，当前已继承环境与未来图标启动分别核对，不强退。详见[建议采集](references/desktop-suggestions.md#原生结果采集升级2026-10-30候选)。其他 Host 功能按各自实际结果交付，Windows 建议与双端真机结果不得标为已通过。

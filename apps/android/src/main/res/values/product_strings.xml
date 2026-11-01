@@ -761,6 +761,7 @@
     <string name="product_37d0814da03b8f7aa09b8dd9" formatted="false">"Final commit"</string>
     <string name="product_c31dbb8e20e22af5e1a0e4ad" formatted="false">"Final commit reference"</string>
     <string name="product_997a5e6e513f2a90797b2637" formatted="false">"Recent"</string>
+    <string name="product_39a9046f9c8c993d39435343" formatted="false">"Recently used"</string>
     <string name="product_bc4419fd19d80cfbbe7b286d" formatted="false">"Last delivery: "</string>
     <string name="product_7992604ca67dd6aa713f4db3" formatted="false">"Last delivery: %@"</string>
     <string name="product_8672864e9041713891eb1fdd" formatted="false">"Maximum"</string>
@@ -1666,6 +1667,9 @@
     <string name="product_4c98e6f040fb203b8dd80b12" formatted="false">"Unable to display visualization"</string>
     <string name="product_bb57303a7e6903ccdb7f2072" formatted="false">"This visualization is too large, uses an unsupported encoding, or cannot be read. Save the original file to view it."</string>
     <string name="product_9b50f54fadefae4ca3d247dc" formatted="false">"The preview was interrupted. Close it and open it again."</string>
+    <string name="product_56c719be060ad74c5ec555e0" formatted="false">"Scan the desktop QR code to pair"</string>
+    <string name="product_f2916483f7b224ba572d9eb3" formatted="false">"Connect with a QR code"</string>
+    <string name="product_0d4432b4cf6213d854489227" formatted="false">"This computer does not offer automatic connections. Scan its pairing QR code, or update EasyWork to connect by tapping."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

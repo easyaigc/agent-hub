@@ -1,5 +1,19 @@
 # 架构设计
 
+原桌面的自有 CLI 启动器被动观察已有 thread/sample 请求及其匹配返回；不调用建议 getter、不启动模型轮、不修改 Electron。只有同一 sourceThread/sourceTurn 的原桌面 safety_decision 明确 suppressed=false 后，才保存并发布准确正文。Host 按完整机器目标、原 owner、当前完成轮、原生进程链、producer epoch、实现摘要和短期租约复核；失败关闭当前显示，历史 latestExtracted 不回退显示。macOS 使用既有共享启动器，Windows 原候选使用当前用户私有固定 C# shim→Node→实际签名 CLI；该路径会把可选采集的失败放进原桌面启动边界，2026-11-01 已停用未来安装并提供旧覆盖恢复，不能再作为默认接入路径。Windows 每次重连元数据 reader 重新定位当前可信原桌面的 CLI，确认旧 reader 退出后再启动；历史路径仅为提示。统一包、逐机部署及实体手机验收仍须分别记录。
+
+2026-11-01 F69 目标继续：完整保留 Windows 原桌面建议采集，先证明独立于 Codex 启动的只读数据源，再开发并实机验证。固定上游代码发现既有 Trace 的完整响应可能先于 sample 清理保存，但原机来源及安全决定的一对一关联仍缺，不能放宽取消守卫。当前 Windows 入口拒绝连接，本轮未开发或部署新采集器；详见[独立采集可行性研究](research/windows-suggestion-independent.md)。
+
+2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](acceptance/windows-codex-startup-safety-20261101.md)。
+
+## F52：按 topic 隔离 APNs 与 EasyWork publisher（2026-11-01）
+
+Relay 源码支持非默认 `topicKeys` 的逐环境密钥，未知 topic 或缺少的环境不回退到正式 topic。Host publisher 可配置 `topic`、`allowedTargets` 和 `environments`；EasyWork 的完整 Agent、Host、workspace、runtime、account authority/subject 在注册、撤销、状态读取、发布与待投递检查中核对。旧 publisher 省略这些字段时沿用原配置，旧绑定缺少 topic 时仅解释为原默认 topic。
+
+iOS 独立 development 验收环境可据此使用单独 Sandbox 授权；Android/FCM 本轮无实现或配置变化，不能复用 iOS 结果。当前新增辅助边界检查与实际部署、Apple 接受、手机到达分别留证；配置完成不代表 F52 全项通过。
+
+2026-10-31 F02/F03：EasyWork发现候选显示电脑名、系统用户名及地址，读取验证后的/host可选computer元数据并兼容旧name；名称不作授权目标。旧Host缺自动直连声明时明确提示扫码并提供入口，不盲目POST或绕过原配对。桌面自动直连/VPN历史增量同步至EasyWork源码，保留较新TLS；两端源码、辅助检查、实体iPhone、真实Electron/模型和实际部署分别记于docs/acceptance/easywork-discovery-20261031.md，A6暂停保持。
+
 2026-11-01 F19／F32 可视化：Adapter 将完整 visualize 指令转换为普通原消息文件链接并登记 HTML 附件；iOS 对旧缓存指令提供展示兼容，仍走准确消息具名解析。下载校验后的不可变 HTML 在无原生桥、非持久 WebKit 与 allow-scripts 沙箱 frame 中运行，固定 CSP 限制 CDN、导航、表单及嵌套页面，不给页面 Host 凭据或目录授权。Markdown F72 路径保持原生纯阅读；Android HTML 容器尚待实施。实现与本机实体结果见[专项记录](acceptance/visualization-20261101.md)。
 
 Windows 私有状态的 `protect` 在同一 retained handle 校验当前 User owner 和对象类型后，只对已 protected 且 DACL 字节与标准三 SID／完整权限／继承标志完全一致的对象跳过 `SetSecurityInfo`；仍重读并执行 owner、protected、访问主体校验。其他 DACL 沿用原保护／拒绝路径，不按 Administrators owner 或仅 trusted allow 放宽。避免重复写入可继承 DACL 对未 protected 旧 v1 子对象产生副作用；实际 Windows ctime 因果与新 Native 输入通过另行验收，见[幂等保护记录](acceptance/windows-private-dacl-idempotence-20261031.md)。

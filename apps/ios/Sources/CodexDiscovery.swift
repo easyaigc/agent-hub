@@ -505,7 +505,7 @@ struct VPNPeerSnapshot: Decodable, Sendable {
             }
             EasyWorkKnownHosts.shared.offerBonjour(endpoint: probe.endpoint, deviceId: host.target.desktopDeviceId)
             if !easyworkRows.contains(where: { $0.deviceId == host.target.desktopDeviceId }) {
-              easyworkRows.append(.init(id: "vpn-" + host.target.desktopDeviceId, name: host.name, endpoint: probe.endpoint, knownClientId: known?.id, detail: "VPN · " + (known == nil ? L10n.tr("点选连接") : L10n.tr("已发现")), deviceId: host.target.desktopDeviceId))
+              easyworkRows.append(.init(id: "vpn-" + host.target.desktopDeviceId, name: host.displayName, endpoint: probe.endpoint, knownClientId: known?.id, detail: "VPN · " + (known == nil ? L10n.tr("点选连接") : L10n.tr("已发现")), deviceId: host.target.desktopDeviceId))
             }
           }
         case nil: break

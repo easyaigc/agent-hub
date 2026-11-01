@@ -9,6 +9,12 @@ import java.net.URI
 import java.time.Instant
 
 data class EasyWorkHostDescriptor(val value: JSONObject) {
+    val displayName: String get() {
+        val computer=value.optJSONObject("computer")
+        if(computer!=null) return "EasyWork "+computer.getString("name")+computer.optString("username").takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
+        val name=value.getString("name")
+        return if(name.startsWith("EasyWork "))name else "EasyWork $name"
+    }
     val target get()=EasyWorkTarget.decode(value.getJSONObject("target"))
     val fingerprint get()=value.getString("fingerprint").lowercase()
     val publicKey get()=value.getString("publicKey")
@@ -64,7 +70,7 @@ object EasyWorkPairing {
         val base=CodexEndpoints.local(endpoint)
         val host=readHost(base,timeout=5)
         require(expectedDeviceId==null||host.target.desktopDeviceId==expectedDeviceId) { "发现的电脑身份已变化，未申请凭据" }
-        require(host.value.optString("connectionMode")=="automatic") { "请更新电脑端后使用直接连接" }
+        require(host.value.optString("connectionMode")=="automatic") { "这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。" }
         val offer=EasyWorkLANOffer(JSONObject(host.value.toString()).put("endpoints",org.json.JSONArray(listOf(base))))
         return connectOffer(offer,name,identity,accept)
     }
@@ -76,7 +82,7 @@ object EasyWorkPairing {
                 val base=CodexEndpoints.local(endpoint)
                 val host=readHost(base,expected.fingerprint,expected.target,expected.publicKey,5)
                 val automatic=offer.value.optString("connectionMode")=="automatic"
-                if(automatic)require(host.value.optString("connectionMode")=="automatic") { "请更新电脑端后使用直接连接" }
+                if(automatic)require(host.value.optString("connectionMode")=="automatic") { "这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。" }
                 accept()
                 val body=JSONObject().put("mobileDeviceId",identity.deviceId).put("publicKey",identity.publicKey).put("name",name)
                 if(!automatic)body.put("offerId",offer.value.getString("offerId")).put("code",offer.value.getString("pairingCode"))

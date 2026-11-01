@@ -231,7 +231,7 @@ desktop-runtime 的 HOST_AGENT_ROOT 只保留历史默认 cwd 语义，不参与
 
 ## 原生结果采集升级（2026-10-30，候选）
 
-若原始 Trace 只有内部取消而桌面稍后存在建议，部署统一包中的被动原 CLI 结果观察器。macOS 通过 desktop-native-suggestions-environment.mjs 复用共享通道；Windows 通过 windows-native-suggestions-environment.mjs 安装私有已校验 C# shim。Host 显式设置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG，保留原身份、Trace 路径、原 Node 和服务端口。该路径观察原请求/返回并等待原安全判定，不触发建议生成。先准备未来启动配置，再由用户正常重开原桌面；不自动强退或重启。原进程仍使用旧观察器时必须报告未生效。
+若原始 Trace 只有内部取消而桌面稍后存在建议，部署统一包中的被动原 CLI 结果观察器。macOS 通过 desktop-native-suggestions-environment.mjs 复用共享通道；Windows 的 C# shim 安装已因阻断原 Codex 启动风险停用（2026-11-01），不得再设置用户或系统级 `CODEX_CLI_PATH` 指向它。升级先运行同包 `windows-native-suggestions-environment.mjs disable`（自定义目录加 `--state <原目录>`），仅删除经私有清单核对的原 HKCU 覆盖。`install` 兼容入口也只恢复旧覆盖，报告 `WINDOWS_NATIVE_INSTALLATION_SUSPENDED` 并非零退出；不得绕过该拒绝手写注册表。配置损坏、旧摘要或旧应用路径不妨碍有归属证明的恢复；缺少或不可信清单则保留现场并报告。保留垫片及配置以照顾已继承旧环境的进程，不改名或删除、不强退桌面。Windows 被动结果采集暂不可安装，不能报告建议已恢复；已有 Trace 读取按原实际能力核对。恢复 HKCU 不会修改运行中进程的环境，分别核对未来启动与当前原桌面。Host 显式设置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG，保留原身份、Trace 路径、原 Node 和服务端口。该路径观察原请求/返回并等待原安全判定，不触发建议生成。先准备未来启动配置，再由用户正常重开原桌面；不自动强退或重启。原进程仍使用旧观察器时必须报告未生效。
 
 ### 冻结 R2 与更新恢复包的升级边界
 

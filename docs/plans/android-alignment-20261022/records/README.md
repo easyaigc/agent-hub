@@ -2,6 +2,11 @@
 
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
+- [Source94 Main冷入口限定通过](source94-main-cold-entry-accepted.md)：API33三项Native、两原图、真实STOP/DESTROY及归档读回；OS/SystemUI/真实Host/完整UI/physical DEV仍待验。
+- [Source91原Main reader失败](source91-main-cold-entry.md)：SDK/writer限定通过，reader close的JUnit失败及原材料保留，后续不升级原失败。
+- [Source88 SDK与writer预检](source88-main-graph-sdk-and-preflight.md)：SDK/APK/原位更新通过；writer父目录前置拒绝，Native未启动，原回执保留。
+- [Source87 SDK编译失败](source87-main-graph-sdk-failure.md)：原编译失败及等待/输出保留，不计Native通过。
+
 - [Source67 默认密钥存在性观察](source67-default-alias-observation.md)：独立 Test 入口、842/855 输入与三 APK；设备及产品结果待验。
 - [PR70 整批超时计时观察](ci-batch-timeout-observation.md)：保留原失败断言，增加真实 Worker 计时证据；Linux 根因待核对。
 - [原录音只读读回](original-voice-readback-20261030.md)：原包单次 Native、91 调用与完整原件/WAV核对，修正离线 audit 比较；UI和清理另验。

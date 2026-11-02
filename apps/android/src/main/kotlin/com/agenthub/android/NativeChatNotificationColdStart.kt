@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /** Debug acceptance-only first-Activity selection. The opaque product Intent carries no lease/configuration. */
 internal object NativeChatNotificationColdStart {
     const val HOOK_VERSION = 1
+    const val GRAPH_HOOK_VERSION = 1
     private const val ROUTER_NAMESPACE = NativeChatNotificationColdRouterFiles.NAMESPACE
     private const val ROUTER_RECORD = NativeChatNotificationColdRouterFiles.RECORD
     val processNonce = UUID.randomUUID().toString()
@@ -154,6 +155,13 @@ internal object NativeChatNotificationColdStart {
         if(!eligible(context))return null
         activityEntries.incrementAndGet()
         active?.let { current -> require(retained === current.session); return current }
+        if (NativeChatNotificationGraphColdStart.hasMaterial(context)) {
+            // A separate debug-only closed graph; the legacy v1 validator remains unchanged.
+            require(permit == null && !naturalExistingKeyOnly)
+            require(!NativeChatNotificationColdRouterFiles.hasReadableMarker(context.noBackupFilesDir))
+            return NativeChatNotificationGraphColdStart.selectForActivity(context, intent, retained, restoredActivity)
+                .also { active = it }
+        }
         val marker = readMarker(context) ?: return null
         require(marker.getString("phase") == "armed")
         val plan = checkNotNull(permit) { "A fresh reader process must complete the fixed lease preflight before its first Activity" }

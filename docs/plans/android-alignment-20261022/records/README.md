@@ -2,8 +2,9 @@
 
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
-- [阶段65 Android旧候选冷恢复](stage65-p7-legacy-cold-recovery.md)：本地v1/v2固定候选只读兼容；1项内存校验与2项实际存储/Controller Native限定通过，严格owner发布后恢复、UI/物理及完整24域待验。
-- [阶段65 / PR114：冷分帧预算夹具与CI修订](stage65-pr114-ci-fixture.md)：保留原失败、真实时钟/超时观测、有效负对照及完整检查；不计作Windows Native或产品DEV通过。
+- [阶段66 Android严格首次交接](stage66-p7-strict-first-prepare.md)：严格owner/实际MobileSession首次prepare与独立PID只读审计2项Native限定通过；三次原失败保留，Controller/UI、自然故障、完整24域与物理DEV待验。
+- [阶段65 Android旧候选冷恢复](stage65-p7-legacy-cold-recovery.md)：本地v1/v2固定候选只读兼容；3项Native限定通过，PR114已合入main `c36a5267`，UI/物理及完整24域仍待验。
+- [阶段65 / PR114：冷分帧预算夹具与CI修订](stage65-pr114-ci-fixture.md)：原CI11151失败保留；修订head CI11154及实际合并/分支清理已核对，不计作Windows Native或产品DEV通过。
 - [阶段64 iOS SessionStore](stage64-p7-ios-sessionstore.md)：同步写入失败补偿已接入；actualSessionStore成功/非regular预检/真实写失败补偿3项限定通过；PR113已合入主线，完整24域/补偿失败恢复/UI/物理仍待验。
 - [阶段64 iOS Native环境](stage64-ios-native-harness.md)：unhosted/Scene/容器准入过程与原失败单列；签名host、环境probe及运行时双绑定不替代业务或物理DEV通过。
 - [阶段63 iOS Payload原生组件](stage63-p7-ios-native-payload.md)：实际SDK/arm64 Simulator 9项组件用例通过；首次链接0tests失败保留，actualSessionStore恢复/回滚、UI/物理及完整P7未验。

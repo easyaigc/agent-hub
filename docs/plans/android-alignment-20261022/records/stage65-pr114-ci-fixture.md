@@ -4,7 +4,7 @@
 
 ## 原始失败与修订范围
 
-阶段65提交 `93c44ed7c0f04935b60a102694ac7d7dfec251be` 已进入 [PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114)。精确head的CI11151：workspace26939失败，ios26940成功，未合并或重跑原操作。失败为 `windows-trace-worker.test.mjs` 的 `cold-shared-budget` 用例：子进程记录实际1个request，期望2个；不能由此推断后端从未尝试第二次调用。私有官方日志为HTTP206尾段 `177827-243362/243363`，SHA-256 `ad719bdd8c70cb4c391373a26653cc5260fafad8c375409a9e991e04a286cb8b`，不是完整日志。
+阶段65提交 `93c44ed7c0f04935b60a102694ac7d7dfec251be` 已进入 [PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114)。原精确head的CI11151：workspace26939失败，ios26940成功；原失败保持，不以修订后的成功覆盖。失败为 `windows-trace-worker.test.mjs` 的 `cold-shared-budget` 用例：子进程记录实际1个request，期望2个；不能由此推断后端从未尝试第二次调用。私有官方日志为HTTP206尾段 `177827-243362/243363`，SHA-256 `ad719bdd8c70cb4c391373a26653cc5260fafad8c375409a9e991e04a286cb8b`，不是完整日志。
 
 原夹具两帧均延迟200ms，聚合预算300ms；调度余量不足是代码分析得到的可能原因，尚无证据证明它是原CI运行的唯一根因。修订让真实首帧立即发布、第二帧保持等待至原聚合预算到期；仍保留原300ms预算、每帧Native750ms计时器、owner1000ms上限、原2个request、无局部结果、完整退休及650ms总耗时断言。
 
@@ -22,7 +22,7 @@
 
 ## 交付、收尾与未验收
 
-修订将追加原阶段65分支及PR114，随后核对新的精确head CI、实际合并与分支清理；当前不把本机通过写成Linux CI通过。MacBook128已收到新的失败证据通知；其原专用对话仍有未决人工授权，未代答，也未重复分派已合入主线的旧修复。
+修订源 `c7fad315c1c0f235ad8ac3c020ec5ad28d70cc35` 的CI11154：workspace26943与ios26944均成功；[PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114)已实际合入main `c36a5267c31d5af7adc3334061d04b2765e87f5a`，parents为 `6adc9ff9` 与 `c7fad315`，合并tree与源head tree一致。本地/origin/tracking阶段65分支已逐项核对并清理；原CI11151失败不被覆盖。MacBook128原专用对话的未决人工授权未代答；本轮仅发交付通知，其最终回执仍待核对，不宣称远端修改代码或完成当地验收。
 
 本轮私有Gradle daemon经正常wrapper停止并独立确认退出；本轮Swift辅助可重建产物已退休，旧T的同类已完成产物亦核验无占用后清理。原日志、回执、源码及当前/回退APK保留；交付后继续清理不再需要的私有依赖和工作树。
 

@@ -82,9 +82,36 @@ internal suspend fun restoreNativeMigrationSession(context: android.content.Cont
     create: (NativeSessionStorage)->MobileSession={MobileSession(it)},beforeCommit: suspend ()->Unit={}): MobileSession {
     check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
     check(original.ownsMigrationLease(lease))
-    val store=kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO){lease.storage.openMigrationRestore(context,lease)}
+    var opened: NativeSessionStorage?=null
+    val store=try {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable+kotlinx.coroutines.Dispatchers.IO) {
+            // Capture ownership before a cancelled return to Main can discard the result.
+            lease.storage.openMigrationRestore(context,lease).also {opened=it}
+        }
+    }catch(error: Throwable) {
+        opened?.let {captured->
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    if(captured.needsMigrationGenerationGrant)NativeMigrationReadLifetime().hold(captured,error)
+                    try{captured.retireWriter()}catch(close: Throwable) {
+                        if(close!==error)error.addSuppressed(close)
+                        NativeMigrationReadLifetime().hold(captured,error)
+                    }
+                }
+            }
+        }
+        throw error
+    }
     val fresh=try{create(store)}catch(error: Throwable){
-        if(store.needsMigrationGenerationGrant)kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable+kotlinx.coroutines.Dispatchers.IO){NativeMigrationReadLifetime().hold(store,error)}
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if(store.needsMigrationGenerationGrant)NativeMigrationReadLifetime().hold(store,error)
+                try{store.retireWriter()}catch(close: Throwable) {
+                    if(close!==error)error.addSuppressed(close)
+                    NativeMigrationReadLifetime().hold(store,error)
+                }
+            }
+        }
         throw error
     }
     try {

@@ -38,6 +38,8 @@ Windows GUI launcher、后台 helper、保留任务生命周期的迁移、逐�
 
 完整 Android 原生版本与 KMP 公共核心的实施见[开发计划](plans/android-native.md)。早期计划阶段尚无 Android 工程、Gradle Wrapper 或安卓验收命令；下述阶段已建立对应工程，计划中的 `pnpm build:android` 等入口建立后再加入本指南的可执行命令表。JS 工作空间继续只使用 pnpm，Android／KMP 使用固定版本 Gradle Wrapper，iOS 保留 Xcode。任一端功能变更需更新[双端清单](product/mobile-parity.md)、[UI 状态](design/mobile-parity.md)和[逐平台验收](acceptance/mobile-parity.md)；KMP 接入后的 iOS 回归是交付必需项。
 
+Android严格发布后交接的辅助编排使用 `python3 scripts/mobile/android-postpointer-handoff.py <admission.json> <private-output-parent>`，需先准入准确SDK产物、验收独占安装与源码摘要。它只运行一次首次交接和一次独立冷只读方法，要求原PID实际退出后才准入冷读；未知结果停止，不安装/清数据/停止App或重放操作。准入和原typed回执留在私有目录；本工具不是Host服务。当前限定Native结果与未验边界见[阶段66档案](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)，Controller/UI、自然故障、24域及物理DEV另验。
+
 ## 工具版本
 
 本机工具、SDK、模拟器及 USB 真机调试的实际准备记录见[移动开发环境](mobile-development-environment.md)。`pnpm check:mobile-env` 为已实现的工具盘点入口，独立环境样例与产品工程分别记录。

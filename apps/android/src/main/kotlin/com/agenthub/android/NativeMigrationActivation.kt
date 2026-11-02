@@ -6,7 +6,8 @@ import java.util.UUID
 
 /** Internal activation boundary. UI must retire the old session and restore a newly opened handle. */
 internal class NativeMigrationActivation(private val context: Context,private val storage: NativeSessionStorage,
-    private val notificationLease: NativeMigrationNotificationActivationLease?=null,private val owner: NativeMigrationOwnerLease?=null) {
+    private val notificationLease: NativeMigrationNotificationActivationLease?=null,private val owner: NativeMigrationOwnerLease?=null,
+    private val publicationObserver: NativeSessionStorage.PublicationObserver?=null) {
     internal class ExistingInstallation: Exception("请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。")
     fun activate(receipt: NativeMigrationCandidateStore.Receipt,checkpoint: (Int)->Unit={}): String=storage.snapshotTransaction {storage.operationTransaction {
         storage.publishedMigration(receipt.id,receipt.sha256,receipt.recordCount)?.let{return@operationTransaction it}
@@ -29,7 +30,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
             val merged=NativeMigrationOriginals.merge(records,originals)
             NativeMigrationCandidateStore(context,storage).validateStreamRecords(merged)
             return withPrepared(receipt,merged.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {prepared->
-                storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,merged.binary,4),receipt.recordCount,guarded(records.text)).also(publication::confirm)
+                storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,merged.binary,4),receipt.recordCount,publicationObserver=publicationObserver,checkpoint=guarded(records.text)).also(publication::confirm)
             }
         }
         val stream=NativeMigrationStreamCandidate(context,storage)
@@ -40,6 +41,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
     /** Only transformed values use encrypted scratch cells; root generations receive independent text. */
     private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,consume: (Map<String,String>)->T): T {
         val scratch=storage.child(context,"migration-candidates");val prefix="migration-text-transform:"+UUID.randomUUID();val created=mutableListOf<String>()
+        var primaryFailure: Throwable?=null
         try {
             val prepared=prepare(receipt,original,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {_,raw->
                 val bytes=NativeMigrationTextFrames.bytes(raw);val size=bytes.size;val name="$prefix:${created.size}";created.add(name)
@@ -50,7 +52,20 @@ internal class NativeMigrationActivation(private val context: Context,private va
                 }finally {bytes.fill(0)}
             }
             return consume(prepared)
-        }finally {created.forEach(scratch::remove)}
+        }catch(failure: Throwable) {
+            primaryFailure=failure
+            throw failure
+        }finally {
+            var firstCleanupFailure: Throwable?=null
+            created.forEach {name->
+                try {scratch.remove(name)}catch(cleanupFailure: Throwable) {
+                    val first=primaryFailure?:firstCleanupFailure
+                    if(first==null)firstCleanupFailure=cleanupFailure
+                    else if(first!==cleanupFailure)first.addSuppressed(cleanupFailure)
+                }
+            }
+            if(primaryFailure==null)firstCleanupFailure?.let {throw it}
+        }
     }
     private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
         val records=NativeMigrationTextMap.copy(NativeSelectionReturnAudit.merge(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),localRecords),persist);val metadata=JSONObject(records.getValue("metadata"))

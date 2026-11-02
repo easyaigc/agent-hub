@@ -1485,3 +1485,9 @@ Windows 创建租约使用带 FILE_READ_DATA 的 CREATE_NEW 句柄参与共享�
 2026-11-01 Android 系统通知的本地导航回执采用独立 v2 存储，严格兼容 v1 已消费终态；它与通知恢复通信 v2 分开。pending claim 只为原 ticket/event/lease/到期与 nonce 恢复只读导航，精确 ack 仅结算原已知成功；配置代次在首次 IO 前捕获，撤销阻止尚未导航的旧回调。迁移保留原审计但清空 active leases/receipts，不迁移导航权限。iOS、Host 与领域 wire 契约不变；SDK 与真实 DEV 结果分列。
 
 Android严格existing-key迁移恢复先以准确Restore ticket／Session／lease验证BOUND子存储，仅读取模型和账本；此时不运行会写账本的阅读协调或发布未读就绪。完成ACTIVE移交后由新Session原后台worker协调，账本失败沿用新owner自身重试，提交后不新增可取消等待来抛弃已发布generation。普通恢复及无policy路径保持。实现已编译，Source72冷链／故障／真实DEV待验；详见[验收记录](plans/android-alignment-20261022/records/source72-bound-reading-handoff.md)。
+
+### Android 同 owner 的首次迁移恢复
+
+严格原件 writer 只在原实际 Frozen lease、owner/session 约束仍成立，且本实例记忆的已提交 publication tuple 与当前 authority 原值及稳定 sidecar 完全一致时，在首次 prepare 确认并转交新 Session。冷进程只读核对同一原 candidate/receipt，不获得旧 writer 的写权限，也不重新激活或重放未知输入。打开 storage 时在不可取消 IO 范围内先登记所有权；失败清理保持原首错；Activation scratch逐项清理互不跳过，无法确认释放则保留原对象等待原进程退出。
+
+内部同步标量 publication observer 仅用于受信验收代码，属于非沙箱观察点；命名异常注入不能替代真实 I/O 故障、OS 崩溃或掉电原子性证明。当前有限 Native 结果与剩余 UI/24域范围见[阶段66档案](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)。

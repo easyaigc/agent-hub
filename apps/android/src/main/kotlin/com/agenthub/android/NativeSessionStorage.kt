@@ -30,6 +30,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     private var migrationScope: String?=null
     private var migrationAccess: Any=this
     private var restoreVerified=false
+    private var migrationPublicationIntent: String?=null
     private var creationCheck: (()->Unit)?=null
     private var capturedMigrationKey: SecretKey?=null
     private val migrationReads=NativeMigrationReadLifetime()
@@ -260,7 +261,13 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     internal fun prepareMigrationRestore(lease: NativeMigrationOwnerLease): NativeMigrationExistingPolicy.Restore? = ioLock.withLock {
         val policy=migrationPolicy?:return@withLock null
         check(this===migrationRoot&&lease.storage===this)
-        val generation=requireNotNull(activeGeneration()) {"Failed/unpublished generation cannot authorize normal restore"}
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+        val raw=requireNotNull(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)) {
+            "Failed/unpublished generation cannot authorize normal restore"
+        }
+        val generation=generationFromRaw(raw)
+        check(raw==requireNotNull(migrationPublicationIntent)) {"Restore must audit this original publication intent"}
+        policy.confirmCommittedPublicationForRestore(this,lease,lease.operationId,generation)
         policy.prepareRestore(this,lease,lease.operationId,generation)
     }
     internal fun openMigrationRestore(context: Context,lease: NativeMigrationOwnerLease): NativeSessionStorage {
@@ -576,6 +583,13 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         generation
     }
 
+    /** Per-call observation only; no storage/owner authority or external command is granted. */
+    internal enum class PublicationPoint { AFTER_POINTER,BEFORE_CONFIRMATION,AFTER_CONFIRMATION }
+    internal data class PublicationIdentity(val receipt: NativeMigrationCandidateStore.Receipt,val generation: String,
+        val actualRecords: Int,val recordsSha256: String)
+    internal class PublicationObserver(val expected: NativeMigrationCandidateStore.Receipt,
+        val observe: (PublicationPoint,PublicationIdentity)->Unit)
+
     /** One authenticated pointer is the commit point; staged generations are never active on failure. */
     internal fun publishMigration(candidateId: String,sha256: String,records: Map<String,String>,checkpoint: (Int)->Unit={}): String =
         publishMigrationRecords(candidateId,sha256,NativeMigrationRecords(records),checkpoint)
@@ -611,16 +625,16 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
 
     internal fun publishStreamMigration(candidateId: String, sha256: String, archive: NativeMigrationStreamRecords, checkpoint: (Int) -> Unit = {}): String =
-        publishPreparedStreamMigration(candidateId,sha256,archive,archive.size,checkpoint)
+        publishPreparedStreamMigration(candidateId,sha256,archive,archive.size,checkpoint=checkpoint)
 
-    internal fun publishPreparedStreamMigration(candidateId: String, sha256: String, archive: NativeMigrationStreamRecords,sourceRecordCount: Int, checkpoint: (Int) -> Unit = {}): String = ioLock.withLock {
+    internal fun publishPreparedStreamMigration(candidateId: String, sha256: String, archive: NativeMigrationStreamRecords,sourceRecordCount: Int, publicationObserver: PublicationObserver?=null, checkpoint: (Int) -> Unit = {}): String = ioLock.withLock {
         require(sourceRecordCount in 1..archive.size&&archive.size<=1024)
         require(java.util.UUID.fromString(candidateId).toString()==candidateId && sha256.matches(Regex("[a-f0-9]{64}")))
         require("metadata" in archive.text && migrationPointerName !in archive.text && migrationPointerName !in archive.binary)
         val digest=MessageDigest.getInstance("SHA-256")
         NativeMigrationStreamArchive.write(java.security.DigestOutputStream(nullOutputStreamCompat(),digest),archive,"local-generation-v3")
         val recordsSha256=digest.digest().joinToString(""){"%02x".format(it)}
-        publishMigrationGeneration(candidateId,sha256,sourceRecordCount,recordsSha256,archive.size,checkpoint) { folder ->
+        publishMigrationGeneration(candidateId,sha256,sourceRecordCount,recordsSha256,archive.size,checkpoint,publicationObserver) { folder ->
             archive.text.keys.sorted().forEachIndexed { index,name ->
                 val text=archive.text.getValue(name);val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
             }
@@ -632,7 +646,13 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         }
     }
 
-    private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,actualRecordCount: Int,checkpoint: (Int)->Unit,write: (File)->Unit): String {
+    private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,actualRecordCount: Int,checkpoint: (Int)->Unit,publicationObserver: PublicationObserver?=null,write: (File)->Unit): String {
+        val identity=publicationObserver?.let {
+            check(migrationPolicy!=null) {"Publication observation requires the strict existing writer"}
+            val receipt=NativeMigrationCandidateStore.Receipt(candidateId,sha256,recordCount)
+            require(it.expected==receipt) {"Publication observation must name this exact receipt"}
+            receipt
+        }
         requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
         val active=activeGeneration()
         if(active!=null) {
@@ -651,6 +671,12 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         require(!folder.exists()&&folder.mkdir()&&folder.canonicalFile==File(root.canonicalFile,folder.name))
         var published=false
         var authorityFailure=false
+        var observationFailure=false
+        fun observe(point: PublicationPoint) {
+            val observer=publicationObserver?:return
+            try {observer.observe(point,PublicationIdentity(requireNotNull(identity),generation,actualRecordCount,recordsSha256))}
+            catch(error: Throwable){observationFailure=true;throw error}
+        }
         fun authority(){try{migrationPolicy?.publication(this,generation)}catch(error: Throwable){authorityFailure=true;throw error}}
         return try {
             write(folder)
@@ -658,14 +684,19 @@ class NativeSessionStorage private constructor(context: Context, private val nam
             val pointer=JSONObject().put("version",if(actualRecordCount==recordCount)1 else 2).put("generation",generation).put("candidateId",candidateId).put("sha256",sha256).put("records",actualRecordCount).put("recordsSha256",recordsSha256)
             if(actualRecordCount!=recordCount)pointer.put("sourceRecords",recordCount)
             authority()
-            encodeAtomic(atomic(root,migrationPointerName),migrationPointerName,pointer.toString())
+            val pointerText=pointer.toString()
+            if(migrationPolicy!=null)migrationPublicationIntent=pointerText
+            encodeAtomic(atomic(root,migrationPointerName),migrationPointerName,pointerText)
+            observe(PublicationPoint.AFTER_POINTER)
             authority()
+            observe(PublicationPoint.BEFORE_CONFIRMATION)
             migrationPolicy?.confirmPublication(this,generation)
+            observe(PublicationPoint.AFTER_CONFIRMATION)
             published=true;synchronized(recovery.publicationLock){recovery.generation++};generation
         } catch(failure: Throwable) {
             // A finish acknowledgement can fail after the atomic pointer reached disk. Never delete a committed generation.
             val observed=runCatching {activeGeneration()}
-            if(observed.isSuccess&&observed.getOrNull()==generation&&!authorityFailure) {
+            if(observed.isSuccess&&observed.getOrNull()==generation&&!authorityFailure&&!observationFailure) {
                 try{authority()}catch(authorityError: Throwable){if(authorityError!==failure)failure.addSuppressed(authorityError);throw failure}
                 migrationPolicy?.confirmPublication(this,generation)
                 published=true;synchronized(recovery.publicationLock){recovery.generation++};generation

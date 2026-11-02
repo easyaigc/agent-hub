@@ -45,6 +45,6 @@ Root复核SDK：`stage65-root-legacy-fix-sdk-review.json` 4937B / `71ceac6fed286
 
 ## 剩余与交付
 
-严格ExistingView.writer的发布后authority/confirmation故障、实际MobileSession交接、OS自然故障/崩溃、24域完整矩阵、旧portable archive binary内容专项、UI与物理DEV均继续开放。P9的OS零进程/SystemUI实际点击另行执行；P8原待验项不由本轮关闭。
+本阶段结束时严格ExistingView.writer首次prepare与实际MobileSession交接尚未验收；后续两项限定结果见[阶段66](stage66-p7-strict-first-prepare.md)，不回写本阶段3项证据。Controller恢复映射、OS自然故障/崩溃、24域完整矩阵、旧portable archive binary内容专项、UI与物理DEV仍开放。P9的OS零进程/SystemUI实际点击另行执行；P8原待验项不由本轮关闭。
 
-阶段65提交 `93c44ed7` 已进入 [PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114)；原精确head的workspace CI失败，修订与后续核对见[CI夹具档案](stage65-pr114-ci-fixture.md)，尚未合并。最近主线PR113/main `6adc9ff9`及其CI与分支清理已独立核对。两个本轮独占合成AVD已由官方avdmanager正常删除，data/ini均独立确认不存在，删除前合计2116206592B allocated；新runtime正常kill及Root原工具/child实际wait均0，旧缺失wait保持未知。当前APK与最小充分证据保留，无全盘副本或活跃模拟器。Root收尾索引 `stage65-root-owned-avd-cleanup-review.json` / `935cad6129638238e397281e5adbd3dd57d2cacbdc20b7b94628d65904bb56bf`。任务/项目业务、F75和iOS A6继续暂停；Host/model本轮+0、累计221，P4为205另1个未知原操作封存不查询或重放。
+阶段65原提交 `93c44ed7` 的CI11151失败保持；修订源 `c7fad315c1c0f235ad8ac3c020ec5ad28d70cc35` 的CI11154已成功，[PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114)已合入main `c36a5267c31d5af7adc3334061d04b2765e87f5a`，本地/origin/tracking阶段65分支均已清理。实际合并、CI及失败边界见[CI夹具档案](stage65-pr114-ci-fixture.md)。两个本轮独占合成AVD已由官方avdmanager正常删除，data/ini均独立确认不存在，删除前合计2116206592B allocated；新runtime正常kill及Root原工具/child实际wait均0，旧缺失wait保持未知。当前APK与最小充分证据保留，无全盘副本或活跃模拟器。Root收尾索引 `stage65-root-owned-avd-cleanup-review.json` / `935cad6129638238e397281e5adbd3dd57d2cacbdc20b7b94628d65904bb56bf`。任务/项目业务、F75和iOS A6继续暂停；Host/model本轮+0、累计221，P4为205另1个未知原操作封存不查询或重放。

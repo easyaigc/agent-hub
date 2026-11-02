@@ -3622,6 +3622,14 @@
       "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
       "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingCandidate.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationRestorePortAckTest.kt"
+    ],
+    "AndroidMigrationStrictFirstPrepare": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt",
+      "scripts/mobile/android-postpointer-handoff.py"
     ]
   },
   "groups": [
@@ -6891,11 +6899,12 @@
         "IOSPendingVoiceMigrationOriginals",
         "IOSPendingVoiceMigrationNativePayload",
         "IOSMigrationSessionStoreErrorAtomic",
-        "AndroidMigrationLegacyColdReceipt"
+        "AndroidMigrationLegacyColdReceipt",
+        "AndroidMigrationStrictFirstPrepare"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 92,
+      "revision": 93,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -7065,11 +7074,12 @@
         "IOSPendingVoiceMigrationOriginals",
         "IOSPendingVoiceMigrationNativePayload",
         "IOSMigrationSessionStoreErrorAtomic",
-        "AndroidMigrationLegacyColdReceipt"
+        "AndroidMigrationLegacyColdReceipt",
+        "AndroidMigrationStrictFirstPrepare"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 171,
+      "revision": 172,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -19066,6 +19076,20 @@
         "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "393c8aa81b1bacdedfb6c886f4f8712a2602b9ee9fa17372ea33a090861c5844",
         "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingCandidate.kt": "e6cff1e2f48ed7f36853c28e02175a43573413bef3e9e2b810f7f4c9fb565680",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationRestorePortAckTest.kt": "0357ae45f5dd47521de9d28e7a1d64a01aa83329ed0abbe828f32dccf5928f7c"
+      }
+    },
+    {
+      "id": "stage66-p7-android-strict-first-prepare",
+      "baseCommit": "c36a5267c31d5af7adc3334061d04b2765e87f5a",
+      "features": ["F55", "F56"],
+      "summary": "Android same-instance strict owner may reconcile only its exact remembered committed publication tuple on first prepare; actual Frozen/MobileSession handoff and distinct-PID existing-only original candidate/receipt audit each1 Native pass on API33. Preserve immutable unknown/noReplay and original/source/candidate ciphertext; new independent draft survives cold. Internal AFTER_POINTER scalar exception injection is not natural I/O/crash/power failure. NC acquisition and failure cleanup retain original error, scratch cleanup independent; cancel-failure runtime branch not separately verified. Reproducible bounded Host verifier now tracked; tool AST matches actual Native helper except module docstring. P7 complete24-row system inventory/Controller/UI/physical and P8/P9 whole stages remain open; iOS and KMP/contract states unchanged. Host/model+0; task/project/F75/A6 remain paused.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "7248a18e7999cddc03c64ab418ce8e9636028a6dfe7d5da75d36d4bdc8d96a0f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "9f8239e40506ace7686675f5e40aa700ae27c475e991fd326d33b37d0d4c93b1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt": "2084dbd91f3032bf07e68d1b3cec37ab0774415faf8ba9f4d15537325d41aa66",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "4a37504cca06a536376e9b52aa829e02834537630d676b03beac886100005b24",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt": "49b8f6a20665c43285fa8bfe1f28eb86d2b9ff20130d53b27ca77e6bd0f37f44",
+        "scripts/mobile/android-postpointer-handoff.py": "0ad525a3ca87fd3b3f61d631221e065ce1c8ed4560440331af16c12fb99ca512"
       }
     }
   ]

@@ -51,6 +51,15 @@ internal class NativeMigrationExistingPolicy(val storage: Any,val originalGenera
         check(actualStorage===storage&&created==generation);requireFrozen()
     }
     fun confirmPublication(actualStorage: Any,generation: String) {publication(actualStorage,generation);confirmed=generation}
+    /** Storage calls only after authenticating its exact original pointer intent on IO.
+     * This is a same-owner confirmation, never a cold-start or transferable grant. */
+    fun confirmCommittedPublicationForRestore(actualStorage: Any,lease: Any,operationId: String,generation: String) {
+        check(actualStorage===storage&&lease===actualLease&&operationId==operation&&created==generation)
+        if(confirmed==generation)return
+        check(confirmed==null&&ticket==null)
+        requireFrozen();oldPending!!()
+        confirmPublication(actualStorage,generation)
+    }
     fun prepareRestore(actualStorage: Any,lease: Any,operationId: String,generation: String): Restore {
         check(actualStorage===storage&&lease===actualLease&&operationId==operation&&created==generation&&confirmed==generation)
         ticket?.let {check(phase in setOf(Phase.PREPARED,Phase.RELEASED,Phase.BOUND,Phase.ACTIVE));return it}

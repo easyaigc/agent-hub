@@ -68,3 +68,5 @@ Stage63补充（2026-11-02）：iOS真实production Payload/types的9项原生�
 Stage64补充（2026-11-02）：iOS SessionPersistenceWriter已在backup/legacy/state三个固定路径预检regular/absence并保存原bytes，写入抛错后逆序补偿；补偿不全则同实例保留原snapshot并禁写，load只在只读核对完整三元组一致后解除gate。实际production SessionStore/default Keychain及通知I/O的成功、原件发布后state非regular预检、regular state不可变标志真实写失败补偿各1项Native限定通过，不把预检拒绝写成writer补偿通过；补偿失败恢复分支仍待验。无OS崩溃/journal持久性、权限元数据或销毁实例后的snapshot恢复承诺。Android源码对照为完整独立代次写入/验证后单authenticated AtomicFile指针发布，未确认同类双文件混写P1；仅源码审查，Source75/80/83历史结果按各自旧范围保留，发布后权威/确认故障与完整UI仍待验。24组没有整组关闭，P7/P8/P9仍部分完成。见[阶段结果](../../records/stage64-p7-ios-sessionstore.md)与[环境过程](../../records/stage64-ios-native-harness.md)。
 
 Stage65：Android旧本地v1/v2候选只读兼容已补齐，1项内存严格校验与2项真实存储/Controller恢复/冷回执限定通过；24组均未整组关闭，严格owner发布后故障、UI/物理仍待验。过程见[独立档案](../../records/stage65-p7-legacy-cold-recovery.md)。
+
+Stage66补充（2026-11-02）：严格ExistingView.writer在自身已提交pointer的首次prepare中同owner核对/确认，释放Frozen后由实际MobileSession完成BOUND→ACTIVE和10个旧child owner交接；API33两方法首次交接/独立PID原候选只读审计限定通过。样本为7条原text及附件/缩略图，非24域完整矩阵；AFTER_POINTER为命名异常注入，Controller/UI、真实全局通知端口、取消失败分支、自然I/O/崩溃与物理DEV仍待验。iOS阶段64补偿失败恢复分支不由本轮关闭，见[限定档案](../../records/stage66-p7-strict-first-prepare.md)。

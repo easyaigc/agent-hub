@@ -38,7 +38,9 @@ Windows GUI launcher、后台 helper、保留任务生命周期的迁移、逐�
 
 完整 Android 原生版本与 KMP 公共核心的实施见[开发计划](plans/android-native.md)。早期计划阶段尚无 Android 工程、Gradle Wrapper 或安卓验收命令；下述阶段已建立对应工程，计划中的 `pnpm build:android` 等入口建立后再加入本指南的可执行命令表。JS 工作空间继续只使用 pnpm，Android／KMP 使用固定版本 Gradle Wrapper，iOS 保留 Xcode。任一端功能变更需更新[双端清单](product/mobile-parity.md)、[UI 状态](design/mobile-parity.md)和[逐平台验收](acceptance/mobile-parity.md)；KMP 接入后的 iOS 回归是交付必需项。
 
-Android严格发布后交接的辅助编排使用 `python3 scripts/mobile/android-postpointer-handoff.py <admission.json> <private-output-parent>`，需先准入准确SDK产物、验收独占安装与源码摘要。它只运行一次首次交接和一次独立冷只读方法，要求原PID实际退出后才准入冷读；未知结果停止，不安装/清数据/停止App或重放操作。准入和原typed回执留在私有目录；本工具不是Host服务。当前限定Native结果与未验边界见[阶段66档案](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)，Controller/UI、自然故障、24域及物理DEV另验。
+Android严格发布后交接使用 `python3 scripts/mobile/android-postpointer-handoff.py <admission.json> <private-output-parent>`，仅收两个位置参数；先准入准确SDK、独占安装及source guard。v2保留原direct限定语义；v3另绑定实际Controller方法及Documents精确目录身份。一次首次交接后，必须独立确认原PID退出才准入一次cold只读；未知结果停止，不安装/清数据/停止App或重放。Controller完成、worker join与物理FD关闭分别取证。原typed回执留私有目录；本工具不是Host服务。[阶段66](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)与[阶段68](plans/android-alignment-20261022/records/stage68-p7-controller-strict-restore.md)保留各自指纹，完整UI、自然故障、非空资料完整迁移及物理DEV另验。
+
+P9 scoped bootstrap只建立正常Storage的独占scope/key/write准入，不能替代自然OS/SystemUI。public producer必须匹配当前NativePublicProcessNaturalOsProducerTest契约，observer ready前拒绝时不启动producer或点击；命令exit0不覆盖typed failed。API33跨UID进程可见性实际拒绝与API36启动阻塞见[阶段67档案](plans/android-alignment-20261022/records/stage67-p9-bootstrap-public-visibility.md)，不得通过升权或放宽guard改写结果。
 
 ## 工具版本
 

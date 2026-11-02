@@ -13,9 +13,13 @@ internal enum class NativeMigrationResult { SAVED,CANCELLED,READY,IMPORTED,PREVI
 internal enum class NativeMigrationPickerKind { IMPORT,EXPORT }
 internal data class NativeMigrationPicker(val id: String,val kind: NativeMigrationPickerKind,val launched: Boolean=false)
 internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,val operations: Int,val attachments: Int,val notificationArchives: Int)
+internal enum class NativeMigrationControllerRestorePoint { PREPARE_RETURNED,ENROLLMENT_AUDIT_OPENED,ENROLLMENT_AUDIT_RETIRE_RETURNED,CANDIDATE_CACHE_PREPARED }
 
 /** Main state owner. The existing exporter/candidate/activation are the only data/migration rules. */
-@Stable internal class NativeMigrationController(context: Context) {
+@Stable internal class NativeMigrationController(context: Context,
+    private val publicationObserver: NativeSessionStorage.PublicationObserver?=null,
+    // Trusted internal synchronous scalar observation only: no IO, wait, re-entry or mutation.
+    private val restoreObserver: ((NativeMigrationControllerRestorePoint)->Unit)?=null) {
     private val context=context.applicationContext
     private val documents=NativeMigrationDocuments(this.context)
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
@@ -157,7 +161,7 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
             try {
                 val held=owner.quiesce(id);lease=held;held.requireCurrent();check(held.storage===expected)
                 val caller=currentCoroutineContext()
-                withContext(Dispatchers.IO){NativeMigrationActivation(context,held.storage,held.notification(receipt),held).activate(receipt){caller.ensureActive();check(!cancelRequested);held.requireCurrent()}}
+                withContext(Dispatchers.IO){NativeMigrationActivation(context,held.storage,held.notification(receipt),held,publicationObserver).activate(receipt){caller.ensureActive();check(!cancelRequested);held.requireCurrent()}}
                 candidate=null;preview=null;result=NativeMigrationResult.IMPORTED;afterRestore={phase=NativeMigrationPhase.DONE}
             }catch(failure: Exception) {
                 val held=lease;val observed=if(held!=null)withContext(NonCancellable+Dispatchers.IO){runCatching {held.storage.migrationPublicationReceipt()}}else Result.success(null)
@@ -184,14 +188,29 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
         pendingOwner=lease;phase=NativeMigrationPhase.RESTORING
         try {
             withContext(NonCancellable+Dispatchers.IO){lease.prepareAndReleaseForRestore()}
+            restoreObserver?.invoke(NativeMigrationControllerRestorePoint.PREPARE_RETURNED)
             val owner=host?:return
-            val required=lease.requiresExplicitEnrollment ?: withContext(NonCancellable+Dispatchers.IO){NativeMigrationNotificationArchives.requiresExplicitSetup(lease.storage.reopen(context))}.also {lease.requiresExplicitEnrollment=it}
+            val required=lease.requiresExplicitEnrollment ?: withContext(NonCancellable+Dispatchers.IO){
+                NativeMigrationReadLifetime().use({lease.storage.reopen(context)},{audit->
+                    restoreObserver?.invoke(NativeMigrationControllerRestorePoint.ENROLLMENT_AUDIT_OPENED)
+                    NativeMigrationNotificationArchives.requiresExplicitSetup(audit)
+                },{audit->
+                    audit.retireWriter()
+                    restoreObserver?.invoke(NativeMigrationControllerRestorePoint.ENROLLMENT_AUDIT_RETIRE_RETURNED)
+                })
+            }.also {lease.requiresExplicitEnrollment=it}
             withContext(NonCancellable+Dispatchers.Main.immediate){owner.restore(lease,required)}
             if(host!==owner)return
             // Candidate slots belong to the installation generation. Rebind only an exact,
             // fully validated original after the Activity replaces the storage handle.
             val fresh=owner.currentStorage()
-            val observed=withContext(NonCancellable+Dispatchers.IO){NativeMigrationCandidateStore(context,fresh).currentReceipt()}
+            val observed=withContext(NonCancellable+Dispatchers.IO){
+                // Both candidate readers borrow the same prepared runtime-owned child.
+                // The fresh Session retains it for later import UI; no unowned reader writers.
+                fresh.prepareChild(context,"migration-candidates")
+                restoreObserver?.invoke(NativeMigrationControllerRestorePoint.CANDIDATE_CACHE_PREPARED)
+                NativeMigrationCandidateStore(context,fresh).currentReceipt()
+            }
             candidate=observed;candidateStorage=if(observed!=null)fresh else null
             preview=observed?.let {withContext(NonCancellable+Dispatchers.IO){preview(it,fresh)}}
             pendingOwner=null

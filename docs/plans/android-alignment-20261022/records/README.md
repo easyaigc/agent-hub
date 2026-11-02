@@ -2,7 +2,9 @@
 
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
-- [阶段66 Android严格首次交接](stage66-p7-strict-first-prepare.md)：严格owner/实际MobileSession首次prepare与独立PID只读审计2项Native限定通过；三次原失败保留，Controller/UI、自然故障、完整24域与物理DEV待验。
+- [阶段68 Android实际Controller交接](stage68-p7-controller-strict-restore.md)：schema v3首次交接/独立冷读2项Native限定通过，Controller worker join未证明；非空资料完整迁移/完整范围/UI/物理待验。
+- [阶段67 P9 bootstrap与public可见性](stage67-p9-bootstrap-public-visibility.md)：scoped bootstrap 1项Native通过；public observer ready前拒绝，producer/SystemUI未执行，原权限已恢复。
+- [阶段66 Android严格首次交接](stage66-p7-strict-first-prepare.md)：direct v2两项原证据保留；已提交推送 `a87cc37a`，PR115已合入main `c9ee1893`、三类分支引用已清理/CI未核实；三次原失败不升级。
 - [阶段65 Android旧候选冷恢复](stage65-p7-legacy-cold-recovery.md)：本地v1/v2固定候选只读兼容；3项Native限定通过，PR114已合入main `c36a5267`，UI/物理及完整24域仍待验。
 - [阶段65 / PR114：冷分帧预算夹具与CI修订](stage65-pr114-ci-fixture.md)：原CI11151失败保留；修订head CI11154及实际合并/分支清理已核对，不计作Windows Native或产品DEV通过。
 - [阶段64 iOS SessionStore](stage64-p7-ios-sessionstore.md)：同步写入失败补偿已接入；actualSessionStore成功/非regular预检/真实写失败补偿3项限定通过；PR113已合入主线，完整24域/补偿失败恢复/UI/物理仍待验。

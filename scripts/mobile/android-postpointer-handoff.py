@@ -20,6 +20,8 @@ import time
 import uuid
 
 FIRST = 'actualStrictPostPointerFirstPrepareReconcilesAndTransfersOnce'
+CONTROLLER = 'actualControllerStrictPostPointerFirstPrepareReconcilesAndTransfersOnce'
+FIRSTS = {FIRST, CONTROLLER}
 COLD = 'distinctPidReadOnlyAuditsExactModernCandidateReceiptAndPostRestoreBaseline'
 TEST_CLASS = 'com.agenthub.android.NativeMigrationPostPointerStrictHandoffTest'
 PACKAGE = 'com.easyai.agenthub.android.acceptance'
@@ -35,6 +37,17 @@ REQUIRED_SOURCE_FILES = {'apps/android/src/main/kotlin/com/agenthub/android/'+na
     'NativeSessionStorage','NativeMigrationLifecycle','NativeMigrationExistingView','NativeMigrationExistingPolicy',
     'NativeMigrationActivation','MobileSession','NativeMigrationReadLifetime','NativeMigrationOriginals',
     'NativeDocumentRecovery','NativeRecentPhotos','NativeRecentPhotoLibrary','NativePhotoAuthorization','NativeInboxOwnership')}
+
+def first_method(binding):
+    method=binding.get('firstMethod',FIRST)
+    demand(method in FIRSTS,'Explicit first-method allowlist')
+    return method
+
+
+def controller_mode(binding):return first_method(binding)==CONTROLLER
+
+def evidence_version(binding):return 3 if controller_mode(binding) else 2
+
 
 def demand(ok, why):
     if not ok:
@@ -219,17 +232,22 @@ def runner_success(raw,method):
 
 def admission(raw):
     a=keys(decode(raw),ADMISSION_KEYS)
-    demand(exact(a['schemaVersion'],int)==2 and a['kind']=='root-sdk-admission-v2','Root SDK admission v2 required')
+    demand(a['firstMethod'] in FIRSTS,'First method allowlist')
+    version=3 if a['firstMethod']==CONTROLLER else 2
+    demand(exact(a['schemaVersion'],int)==version and a['kind']=='root-sdk-admission-v'+str(version),'Root SDK admission/version required')
     demand(exact(a['sdkAdmitted'],bool) and exact(a['exclusivePackageFixture'],bool),'No unadmitted/shared package run')
     for name in ADMISSION_KEYS-{'schemaVersion','uid','sourceFiles','sdkAdmitted','exclusivePackageFixture'}:exact(a[name],str)
-    demand(a['package']==PACKAGE and a['testClass']==TEST_CLASS and a['firstMethod']==FIRST and a['coldMethod']==COLD,'Admission target mismatch')
+    demand(a['package']==PACKAGE and a['testClass']==TEST_CLASS and a['firstMethod'] in FIRSTS and a['coldMethod']==COLD,'Admission target mismatch')
     demand(str(uuid.UUID(a['run']))==a['run'] and exact(a['uid'],int)>0,'Fresh canonical run/UID required')
     demand(re.fullmatch(r'[A-Za-z0-9._:-]{1,128}',a['serial']) is not None,'Explicit device serial required')
     demand(re.fullmatch(r'[A-Za-z0-9._]+/[A-Za-z0-9._]+',a['runner']) is not None,'Explicit instrumentation runner required')
     for path_key,hash_key in [('appApk','appApkSha256'),('testApk','testApkSha256'),('testSource','testSourceSha256'),('compileReceipt','compileReceiptSha256')]:
         demand(file_hash(Path(a[path_key]).resolve(strict=True))==pin(a[hash_key]),'Admitted file hash mismatch: '+path_key)
     root=Path(a['sourceRoot']).resolve(strict=True);exact(a['sourceFiles'],dict)
-    demand(REQUIRED_SOURCE_FILES <= set(a['sourceFiles']) and len(a['sourceFiles'])<=256,'Source guard lacks required actual boundaries')
+    controller_files={'apps/android/src/main/kotlin/com/agenthub/android/'+name+'.kt' for name in (
+        'NativeMigrationController','NativeMigrationCandidate','NativeMigrationStreamCandidate','NativeMigrationNotificationArchives','NativeMigrationDocuments')}
+    required=REQUIRED_SOURCE_FILES|(controller_files if a['firstMethod']==CONTROLLER else set())
+    demand(required <= set(a['sourceFiles']) and len(a['sourceFiles'])<=256,'Source guard lacks required actual boundaries')
     for relative,wanted in a['sourceFiles'].items():
         exact(relative,str);path=Path(relative)
         demand(not path.is_absolute() and '..' not in path.parts,'Source guard relative path required')
@@ -260,7 +278,12 @@ CLEAN_KEYS=COMMON|TARGET|set('''bodyCompleted testWorkersJoined sessionWorkersJo
 COLD_KEYS=COMMON|RECEIPT|set('''originalPid originalStartTicks generation candidateVersion existingOnlyReadOnly newWriterHandles
     newSessionConstructions newFrozenAcquisitions activationCalls prepareRestoreCalls controllerInstantiated
     originalPidExitIndependentlyChecked postRestoreCiphertextUnchanged'''.split())
+CONTROLLER_PROOF_KEYS=(PROOF_KEYS-{'activationAttempts','firstPrepareCalls'})|set('''controllerOperationId controllerStates controllerPreview quiesceCalls restoreCalls prepareReturns enrollmentAuditOpened
+    enrollmentAuditRetireReturns candidateCachePrepared activationCallsSourceDerived prepareCallsSourceDerived controllerWorkerJoinClaimed controllerScopeDisposed'''.split())
+CONTROLLER_CLEAN_KEYS=CLEAN_KEYS|{'controllerCompletionObserved','controllerWorkerJoinClaimed','controllerScopeDisposed','controllerDocumentsInventory'}
 SCOPE='actual-strict-postpointer-modern-v4-only'
+CONTROLLER_SCOPE='actual-controller-strict-postpointer-modern-v4-only'
+CONTROLLER_SOURCE_DERIVED='Controller activate/prepare call counts and cached-child identity are source-backed; scalar retire return is not OS-FD closure; ready/canDismiss is not worker join; no Activity/system UI or natural crash'
 RETAIN='exact cold audit and Root collection acknowledgement; no replay'
 SOURCE_DERIVED='absence of later observer events is publication source order; no recovery.generation counter observed; Controller mapping not exercised'
 ORIGINALS_RETAINED='test-owned authenticated source + exact original candidate; no plaintext proof export'
@@ -295,14 +318,15 @@ def absolute(value):
 
 
 def binding_schema(value,expected):
-    keys(value,BIND_KEYS)
+    keys(value,BIND_KEYS|({'firstMethod'} if controller_mode(expected) else set()))
+    if controller_mode(expected):literal(value['firstMethod'],CONTROLLER)
     for name in BIND_KEYS-{'uid','run','bootUuid','package'}:pin(value[name])
     integer(value['uid'],1);uuid_text(value['run']);uuid_text(value['bootUuid']);literal(value['package'],PACKAGE)
     demand(canonical(value)==canonical(expected),'Full source/APK/boot/run/package/UID binding mismatch')
 
 
 def common_doc(value,expected_keys,binding,method,target=True):
-    keys(value,expected_keys);literal(value['schemaVersion'],2);literal(value['selectedMethod'],method)
+    keys(value,expected_keys);literal(value['schemaVersion'],evidence_version(binding));literal(value['selectedMethod'],method)
     binding_schema(value['binding'],binding);literal(value['run'],binding['run'])
     integer(value['pid'],1);ticks(value['startTicks'])
     if target:literal(value['uid'],binding['uid']);literal(value['package'],binding['package'])
@@ -404,21 +428,27 @@ def aliases_schema(value,run,origin,generation):
     literal(value[base],True);literal(value[source],True);literal(value[child_alias(base,'migration-candidates',origin)],True)
 
 
-def ledger_expected():
+def ledger_expected(controller=False):
     children=['child:'+path for path in sorted(PATHS,key=lambda path:(path.count('/'),path))]
     labels=['source-root','source-candidate-cache','seed-root','published-seed-root']+children+['seed-origin-candidate-cache','strict-original-root','original-Session']+children+[
         'strict-origin-candidate-cache','Frozen+actual-lease','production-helper-root+children','fresh-Session']+children+children
+    if controller:
+        labels.insert(labels.index('production-helper-root+children'),'controller-enrollment-audit')
+        labels.insert(len(labels)-len(children),'controller-generation-candidate-cache')
     return {str(index)+':'+label:'registered' for index,label in enumerate(labels,1)}
 
 
 def cleanup_schema(value,binding,method,identity,anchor,origin,generation,baseline=None,directories=None):
-    common_doc(value,CLEAN_KEYS,binding,method);same_process(value,identity)
+    common_doc(value,CONTROLLER_CLEAN_KEYS if controller_mode(binding) else CLEAN_KEYS,binding,method);same_process(value,identity)
     for name in ('bodyCompleted','testWorkersJoined','sessionWorkersJoined','writersRetired','outerProcessExitRequired'):literal(value[name],True)
-    for name in ('controllerInstantiated','fallbackRequired'):literal(value[name],False)
-    for name in ('quiesceAttempted','releaseAttempted','frozenReleaseReturned'):literal(value[name],method==FIRST)
+    literal(value['controllerInstantiated'],method==CONTROLLER);literal(value['fallbackRequired'],False)
+    if controller_mode(binding):
+        literal(value['controllerCompletionObserved'],method==CONTROLLER)
+        literal(value['controllerWorkerJoinClaimed'],False);literal(value['controllerScopeDisposed'],False)
+    for name in ('quiesceAttempted','releaseAttempted','frozenReleaseReturned'):literal(value[name],method in FIRSTS)
     for name in ('cleanupFailureCount','unknownAcquisitions'):literal(value[name],0)
     literal(value['retainedFor'],RETAIN)
-    ledger=ledger_expected() if method==FIRST else {}
+    ledger=ledger_expected(controller_mode(binding)) if method in FIRSTS else {}
     keys(value['acquisitions'],set(ledger))
     for key,expected in ledger.items():literal(value['acquisitions'][key],expected)
     # Every family path belongs to the exact old/new installation or original candidate;
@@ -436,10 +466,16 @@ def cleanup_schema(value,binding,method,identity,anchor,origin,generation,baseli
         'no_backup/installation/migration-generation-'+origin,'no_backup/installation/migration-generation-'+generation}
     required|={'no_backup/installation-'+version+'-'+path.replace('/','-') for version in (origin,generation) for path in PATHS}
     required.add('no_backup/installation-'+origin+'-migration-candidates')
+    if controller_mode(binding):required|={'no_backup/installation-'+generation+'-migration-candidates','cache/migration-ui-v1'}
     demand(required<=set(dirs)<=required|{'no_backup/voice-recordings-v1'},'Closed owned directory graph')
     for name,identity_stat in dirs.items():text(name,8192,True);stat_id(identity_stat,binding['uid'],True)
     for name,key in (('','runDirectory'),('no_backup','no_backup'),('cache','cache'),('files','files')):
         demand(dirs[name]==anchor[key],'Cleanup/fixture directory identity join')
+    if controller_mode(binding):
+        documents=keys(value['controllerDocumentsInventory'],{'path','empty','identity'})
+        literal(documents['path'],'cache/migration-ui-v1');literal(documents['empty'],True)
+        stat_id(documents['identity'],binding['uid'],True)
+        literal(documents['identity'],dirs['cache/migration-ui-v1'])
     if directories is not None:demand(dirs==directories,'Cold directory baseline changed')
     return family,dirs
 
@@ -449,13 +485,34 @@ def document(raw):
     return decode(raw)
 
 
+def controller_proof(proof):
+    for name in ('quiesceCalls','restoreCalls','prepareReturns','enrollmentAuditOpened','enrollmentAuditRetireReturns',
+                 'candidateCachePrepared','activationCallsSourceDerived','prepareCallsSourceDerived'):literal(proof[name],1)
+    for name in ('controllerWorkerJoinClaimed','controllerScopeDisposed'):literal(proof[name],False)
+    summary=keys(proof['controllerPreview'],{'computers','drafts','operations','attachments','notificationArchives'})
+    for name in ('computers','drafts','operations','attachments'):literal(summary[name],1)
+    literal(summary['notificationArchives'],0)
+    states=keys(proof['controllerStates'],{'preview','applying','restoring','done','closed'})
+    shapes={
+        'preview':('PREVIEW','READY',True,False,True,True,True,False,True),
+        'applying':('APPLYING','NONE',False,True,False,False,True,False,True),
+        'restoring':('RESTORING','IMPORTED',False,True,False,False,True,True,False),
+        'done':('DONE','IMPORTED',True,False,True,False,True,False,False),
+        'closed':('DONE','IMPORTED',True,False,True,False,False,False,False)}
+    names=('phase','result','ready','busy','canDismiss','canImport','presented','needsOwnerRestore','hasPreview')
+    for name,expected in shapes.items():
+        state=keys(states[name],set(names))
+        for key,wanted in zip(names,expected):literal(state[key],wanted)
+
+
 def validate_docs(raws,binding):
     keys(raws,{'fixture-intent','publication-intent','handoff-complete','case1-cleanup'})
     docs={name:document(raw) for name,raw in raws.items()}
     intent=docs['fixture-intent'];publication=docs['publication-intent'];proof=docs['handoff-complete'];clean=docs['case1-cleanup']
-    for value,shape in ((intent,INTENT_KEYS),(publication,PUBLICATION_KEYS),(proof,PROOF_KEYS)):
-        common_doc(value,shape,binding,FIRST);same_process(value,intent)
-    literal(intent['namespace'],'installation');literal(intent['keyAlias'],'p7-postpointer-'+binding['run']);literal(intent['scope'],SCOPE)
+    method=first_method(binding);controller=controller_mode(binding)
+    for value,shape in ((intent,INTENT_KEYS),(publication,PUBLICATION_KEYS),(proof,CONTROLLER_PROOF_KEYS if controller else PROOF_KEYS)):
+        common_doc(value,shape,binding,method);same_process(value,intent)
+    literal(intent['namespace'],'installation');literal(intent['keyAlias'],'p7-postpointer-'+binding['run']);literal(intent['scope'],CONTROLLER_SCOPE if controller else SCOPE)
     data,folder=anchor_schema(intent['anchor'],binding)
     for value in (publication,proof):
         demand(value['anchor']==intent['anchor'],'Publication/handoff anchor drift')
@@ -469,26 +526,34 @@ def validate_docs(raws,binding):
     receipt_schema(proof,publication)
     for name in ('originGeneration','sourceRecordsSha256','sourceCiphertext','oldGenerationCiphertext','originalCandidateCiphertext'):
         demand(proof[name]==publication[name],'Before/after immutable publication join: '+name)
-    literal(publication['operationId'],binding['run']);literal(publication['faultPoint'],'AFTER_POINTER')
+    if controller:
+        uuid_text(publication['operationId']);literal(proof['controllerOperationId'],publication['operationId'])
+    else:literal(publication['operationId'],binding['run'])
+    literal(publication['faultPoint'],'AFTER_POINTER')
     for name in ('activationBudget','prepareBudget'):literal(publication[name],1)
     literal(publication['originalsRetainedIn'],ORIGINALS_RETAINED)
     generation=uuid_text(proof['generation']);origin=proof['originGeneration'];demand(generation!=origin,'Original/new generation must differ')
     integer(proof['observerActualRecords'],proof['records'],1024);pin(proof['observerRecordsSha256'])
-    for name in ('afterPointer','activationAttempts','namedFaultThrows','firstPrepareCalls','freshConstructions','beforeCommitCalls','boundValidationReturns','completedTransferReturns'):literal(proof[name],1)
+    for name in ('afterPointer','namedFaultThrows','freshConstructions','beforeCommitCalls','boundValidationReturns','completedTransferReturns'):literal(proof[name],1)
+    if controller:controller_proof(proof)
+    else:
+        for name in ('activationAttempts','firstPrepareCalls'):literal(proof[name],1)
     for name in ('beforeConfirmation','afterConfirmation','portsAttempts','localSystemPortAttempts'):literal(proof[name],0)
     literal(proof['releaseReturnedBeforeFreshConstruction'],True)
-    for name in ('controllerInstantiated','notificationCoordinatorInstantiated','realResolverExternalIsolationVerified'):literal(proof[name],False)
+    literal(proof['controllerInstantiated'],controller)
+    for name in ('notificationCoordinatorInstantiated','realResolverExternalIsolationVerified'):literal(proof[name],False)
     integer(proof['oldEpochBefore'],0,9223372036854775806);literal(proof['oldEpochFrozen'],proof['oldEpochBefore']+1)
     for name in ('oldSessionReference','freshSessionReference','oldStorageReference','freshStorageReference'):integer(proof[name],-2147483648,2147483647)
     # identityHashCode is diagnostic; collisions are legal. Actual assertNotSame is
     # justified only by the exact admitted Test's raw JUnit success, not hash inequality.
-    literal(proof['actualDataScope'],data);literal(proof['sourceDerived'],SOURCE_DERIVED)
+    literal(proof['actualDataScope'],data);literal(proof['sourceDerived'],CONTROLLER_SOURCE_DERIVED if controller else SOURCE_DERIVED)
     paths=keys(proof['preparedPaths'],PATHS)
     for path in PATHS:literal(paths[path],folder+'/no_backup/installation-'+generation+'-'+path.replace('/','-'))
     aliases_schema(proof['aliases'],binding['run'],origin,generation)
+    if controller:literal(proof['aliases'][child_alias('p7-postpointer-'+binding['run'],'migration-candidates',generation)],True)
     graph=source_graph(proof['sourceRecordsSha256']);text(proof['newDraftTarget'])
     demand(proof['newDraftTarget']!=graph['originalTarget'],'Independent draft must not reuse immutable operation target')
-    family,dirs=cleanup_schema(clean,binding,FIRST,intent,intent['anchor'],origin,generation)
+    family,dirs=cleanup_schema(clean,binding,method,intent,intent['anchor'],origin,generation)
     old_expected={'installation/'+key:value for key,value in proof['oldGenerationCiphertext'].items()}
     candidate_expected={'installation-'+origin+'-migration-candidates/'+key:value for key,value in proof['originalCandidateCiphertext'].items()}
     old_prefix='installation/migration-generation-'+origin+'/'
@@ -515,9 +580,9 @@ def validate_cold_docs(raws,binding,first,outer,outer_raw,outer_sha,first_raws):
     cleanup_schema(clean,binding,COLD,audit,intent['anchor'],proof['originGeneration'],proof['generation'],first['family'],first['directories'])
     # Rejoin the exact original immutable Host receipt and retained raw originals;
     # app cold flags alone never create this admission.
-    keys(outer,OUTER_KEYS);binding_schema(outer['binding'],binding);literal(outer['schemaVersion'],2)
+    keys(outer,OUTER_KEYS);binding_schema(outer['binding'],binding);literal(outer['schemaVersion'],evidence_version(binding))
     literal(outer['originalPid'],intent['pid']);literal(outer['originalStartTicks'],intent['startTicks'])
-    literal(outer['firstMethod'],FIRST);literal(outer['coldMethod'],COLD)
+    literal(outer['firstMethod'],first_method(binding));literal(outer['coldMethod'],COLD)
     literal(outer['verification'],'exact-pid-start-exit-same-boot')
     for name in ('originalProcessExitObserved','bodyAndCleanupRunnerSucceeded'):literal(outer[name],True)
     for name in ('runnerRawSha256','fixtureIntentSha256','handoffSha256','cleanupSha256','sourceAdmissionSha256'):pin(outer[name])
@@ -541,15 +606,17 @@ def main():
         listed=d.shell(['pm','list','instrumentation']).decode('ascii').splitlines()
         demand('instrumentation:'+a['runner']+' (target='+a['package']+')' in listed,'Instrumentation target mismatch')
         binding={key:a[key] for key in ('appApkSha256','testApkSha256','testSourceSha256','sourceGuardSha256','package','uid','run')}
-        binding.update(bootUuid=boot,sourceAdmissionSha256=sha(raw));keys(binding,BIND_KEYS)
+        if a['firstMethod']==CONTROLLER:binding['firstMethod']=CONTROLLER
+        binding.update(bootUuid=boot,sourceAdmissionSha256=sha(raw));keys(binding,BIND_KEYS|({'firstMethod'} if a['firstMethod']==CONTROLLER else set()))
         common={'postPointerRun':a['run'],'postPointerAppApkSha256':a['appApkSha256'],'postPointerTestApkSha256':a['testApkSha256'],
-            'postPointerTestSourceSha256':a['testSourceSha256'],'postPointerSourceGuardSha256':a['sourceGuardSha256'],'postPointerSourceAdmissionSha256':sha(raw)}
-        e.save('first-invocation-intent.json',canonical({'schemaVersion':2,'binding':binding,'selectedMethod':FIRST,'noReplay':True}))
-        first=d.instrument(FIRST,common,raw_name='first-junit.raw');runner_success(first,FIRST)
+            'postPointerTestSourceSha256':a['testSourceSha256'],'postPointerSourceGuardSha256':a['sourceGuardSha256'],'postPointerSourceAdmissionSha256':sha(raw),'postPointerFirstMethod':a['firstMethod']}
+        method=a['firstMethod']
+        e.save('first-invocation-intent.json',canonical({'schemaVersion':evidence_version(binding),'binding':binding,'selectedMethod':method,'noReplay':True}))
+        first=d.instrument(method,common,raw_name='first-junit.raw');runner_success(first,method)
         raws={name:d.fixture(name) for name in ('fixture-intent','publication-intent','handoff-complete','case1-cleanup')}
         for name,value in raws.items():e.save(name+'.json',value)
         first_docs=validate_docs(raws,binding);pid=first_docs['intent']['pid'];ticks=first_docs['intent']['startTicks']
-        first_validation=e.save('first-doc-validation.json',canonical({'schemaVersion':2,'binding':binding,'publicationIntentSha256':sha(raws['publication-intent']),
+        first_validation=e.save('first-doc-validation.json',canonical({'schemaVersion':evidence_version(binding),'binding':binding,'publicationIntentSha256':sha(raws['publication-intent']),
             'fixtureIntentSha256':sha(raws['fixture-intent']),'handoffSha256':sha(raws['handoff-complete']),'cleanupSha256':sha(raws['case1-cleanup']),
             'runnerRawSha256':sha(first),'originalTarget':first_docs['graph']['originalTarget'],'originalOperationId':first_docs['graph']['operationId'],
             'originalFileId':first_docs['graph']['fileId'],'validated':True}))
@@ -561,7 +628,7 @@ def main():
             if current is None or current!=ticks:break
             demand(time.monotonic()<deadline,'Original PID still alive; Root exact-process fallback required; no cold')
             time.sleep(0.25)
-        outer={'schemaVersion':2,'binding':binding,'originalPid':pid,'originalStartTicks':ticks,'firstMethod':FIRST,'coldMethod':COLD,
+        outer={'schemaVersion':evidence_version(binding),'binding':binding,'originalPid':pid,'originalStartTicks':ticks,'firstMethod':method,'coldMethod':COLD,
             'runnerRawSha256':sha(first),'fixtureIntentSha256':sha(raws['fixture-intent']),'handoffSha256':sha(raws['handoff-complete']),
             'cleanupSha256':sha(raws['case1-cleanup']),'sourceAdmissionSha256':sha(raw),'originalProcessExitObserved':True,
             'bodyAndCleanupRunnerSucceeded':True,'verification':'exact-pid-start-exit-same-boot'}
@@ -579,7 +646,7 @@ def main():
         current_cold=d.proc_start(audit['pid'])
         demand(current_cold is None or current_cold==audit['startTicks'],'Live cold PID/start mismatch')
         demand(d.boot()==boot,'Boot changed during post-cold proc observation')
-        complete={'schemaVersion':2,'binding':binding,'outerReceiptSha256':outer_sha,'coldRunnerRawSha256':sha(cold),
+        complete={'schemaVersion':evidence_version(binding),'binding':binding,'outerReceiptSha256':outer_sha,'coldRunnerRawSha256':sha(cold),
             'coldAuditRawSha256':sha(cold_raws['cold-audit-complete']),'coldCleanupRawSha256':sha(cold_raws['case2-cleanup']),
             'publicationIntentRawSha256':sha(raws['publication-intent']),'firstValidationSha256':first_validation,
             'firstRunnerRawSha256':sha(first),'originalPid':pid,'originalStartTicks':ticks,'coldPid':audit['pid'],'coldStartTicks':audit['startTicks'],

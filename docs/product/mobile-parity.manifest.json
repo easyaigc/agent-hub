@@ -3630,6 +3630,17 @@
       "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt",
       "scripts/mobile/android-postpointer-handoff.py"
+    ],
+    "AndroidMigrationControllerRestoreOwnership": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt",
+      "scripts/mobile/android-postpointer-handoff.py",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReadLifetime.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDocuments.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt"
     ]
   },
   "groups": [
@@ -6900,11 +6911,12 @@
         "IOSPendingVoiceMigrationNativePayload",
         "IOSMigrationSessionStoreErrorAtomic",
         "AndroidMigrationLegacyColdReceipt",
-        "AndroidMigrationStrictFirstPrepare"
+        "AndroidMigrationStrictFirstPrepare",
+        "AndroidMigrationControllerRestoreOwnership"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 93,
+      "revision": 94,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -7075,11 +7087,12 @@
         "IOSPendingVoiceMigrationNativePayload",
         "IOSMigrationSessionStoreErrorAtomic",
         "AndroidMigrationLegacyColdReceipt",
-        "AndroidMigrationStrictFirstPrepare"
+        "AndroidMigrationStrictFirstPrepare",
+        "AndroidMigrationControllerRestoreOwnership"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 172,
+      "revision": 173,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -19090,6 +19103,17 @@
         "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "4a37504cca06a536376e9b52aa829e02834537630d676b03beac886100005b24",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt": "49b8f6a20665c43285fa8bfe1f28eb86d2b9ff20130d53b27ca77e6bd0f37f44",
         "scripts/mobile/android-postpointer-handoff.py": "0ad525a3ca87fd3b3f61d631221e065ce1c8ed4560440331af16c12fb99ca512"
+      }
+    },
+    {
+      "id": "stage68-p7-android-controller-strict-restore",
+      "baseCommit": "c9ee18939da46a0b9243bc4925f5dd39dbf820c8",
+      "features": ["F55", "F56"],
+      "summary": "Android Controller now owns its enrollment audit handle with first-error-preserving retirement and prepares its runtime-owned candidate cache only after ACTIVE restore. Actual API33 Controller show/recover/confirm/import/close plus distinct-PID exact original candidate/receipt and post-draft ciphertext read-only audit each1 Native pass. First53 known acquisitions, cold0 new owners; no Controller Job.join/scope-disposal or OS-FD assertion from scalar events. New v3 firstMethod/18 source bindings keep direct v2 separate. Sample7text/10emptychildren is not complete24-row system inventory, whole UI, physical, natural I/O/crash or cancellation failure proof. iOS unchanged; task/project/F75/A6 paused; Host/model+0. Current full pnpm check passed775.008s (1518 reported/1456pass/62skip/0fail); delivery pending.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt": "329236edcac18f8663250080abd1e18b8f2a4d63bd6efb5ec93a08f0f46f4224",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPostPointerStrictHandoffTest.kt": "d76fba1665925a9241029f8b2eb348ffa5aaa134940fb3a2489ac39b3830e6cc",
+        "scripts/mobile/android-postpointer-handoff.py": "4f3c3247dd33d4f212ea86af108a1cd7c1f0965726a764ca4942a17265808c91"
       }
     }
   ]

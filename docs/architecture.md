@@ -1491,3 +1491,5 @@ Android严格existing-key迁移恢复先以准确Restore ticket／Session／leas
 严格原件 writer 只在原实际 Frozen lease、owner/session 约束仍成立，且本实例记忆的已提交 publication tuple 与当前 authority 原值及稳定 sidecar 完全一致时，在首次 prepare 确认并转交新 Session。冷进程只读核对同一原 candidate/receipt，不获得旧 writer 的写权限，也不重新激活或重放未知输入。打开 storage 时在不可取消 IO 范围内先登记所有权；失败清理保持原首错；Activation scratch逐项清理互不跳过，无法确认释放则保留原对象等待原进程退出。
 
 内部同步标量 publication observer 仅用于受信验收代码，属于非沙箱观察点；命名异常注入不能替代真实 I/O 故障、OS 崩溃或掉电原子性证明。当前有限 Native 结果与剩余 UI/24域范围见[阶段66档案](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)。
+
+Android 阶段68：Controller 的通知恢复审计临时句柄由现有 ReadLifetime.use 独占，读取失败保留首错、关闭失败附加并保留原句柄；不把关闭未确认写为释放。实际新 Session 恢复到 ACTIVE 后，Controller 在 IO 准备其 runtime 所有的 migration-candidates 缓存，候选与流式读者共用该句柄，BOUND 阶段授权不扩大。内部标量观察点不开放外部能力；有限原生结果见[阶段68](plans/android-alignment-20261022/records/stage68-p7-controller-strict-restore.md)。

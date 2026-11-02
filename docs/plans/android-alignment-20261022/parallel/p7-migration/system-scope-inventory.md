@@ -70,3 +70,5 @@ Stage64补充（2026-11-02）：iOS SessionPersistenceWriter已在backup/legacy/
 Stage65：Android旧本地v1/v2候选只读兼容已补齐，1项内存严格校验与2项真实存储/Controller恢复/冷回执限定通过；24组均未整组关闭，严格owner发布后故障、UI/物理仍待验。过程见[独立档案](../../records/stage65-p7-legacy-cold-recovery.md)。
 
 Stage66补充（2026-11-02）：严格ExistingView.writer在自身已提交pointer的首次prepare中同owner核对/确认，释放Frozen后由实际MobileSession完成BOUND→ACTIVE和10个旧child owner交接；API33两方法首次交接/独立PID原候选只读审计限定通过。样本为7条原text及附件/缩略图，非24域完整矩阵；AFTER_POINTER为命名异常注入，Controller/UI、真实全局通知端口、取消失败分支、自然I/O/崩溃与物理DEV仍待验。iOS阶段64补偿失败恢复分支不由本轮关闭，见[限定档案](../../records/stage66-p7-strict-first-prepare.md)。
+
+Stage68补充（2026-11-02）：actual Controller经show/recoverCandidate/confirmImport完成PREVIEW READY→APPLYING→RESTORING IMPORTED→DONE IMPORTED→close，API33首次交接与独立PID原candidate/receipt及密文基线只读审计2项Native限定通过。首次53个登记acquisitions、未知/cleanup失败0；Controller completion不等于worker join/scope disposed。仍仅7条text及10个空child，未覆盖非空资料完整迁移；24项为系统范围清单，非共同wire域；MainActivity/UI、真实全局通知端口、自然I/O故障/崩溃/物理及iOS补偿失败恢复继续待验，见[阶段68档案](../../records/stage68-p7-controller-strict-restore.md)。

@@ -29,7 +29,7 @@ first PID7904/startTicks382902，独立同boot退出核对后cold PID8003/startT
 
 ## 指纹与私有证据
 
-| 当前源码                                         |  bytes | SHA-256                                                            |
+| 阶段66源码                                       |  bytes | SHA-256                                                            |
 | ------------------------------------------------ | -----: | ------------------------------------------------------------------ |
 | `NativeSessionStorage.kt`                        | 109166 | `7248a18e7999cddc03c64ab418ce8e9636028a6dfe7d5da75d36d4bdc8d96a0f` |
 | `NativeMigrationActivation.kt`                   |   8313 | `9f8239e40506ace7686675f5e40aa700ae27c475e991fd326d33b37d0d4c93b1` |
@@ -44,6 +44,8 @@ App 70495033B / `941df6427c16e592b9f5ef4799e882ef3437ceebca8a9a48e28039953ab249a
 
 ## 剩余与交付
 
-本阶段完整 `pnpm check` 实际exit0、714.042秒；原始日志190347B / `1261b50301c32060965dac767b2d3276c62b39dd96a5b0d16c4c838cb305b0c4`。各次Node汇总1518项（含脚本重复），1456pass/62skip/0fail；Gradle两次成功，Swift辅助检查通过。Native五文件前后指纹相同；生成、限定格式化、Python AST等价及diff检查通过。尚待提交/PR及实际交付核对，没有沿用阶段65检查。R6 SDK、Native及完整检查执行方均已读回官方turn_context，实际为gpt-6.1-terra / medium；入口无速度参数，实际速度未核验。
+本阶段完整 `pnpm check` 实际exit0、714.042秒；原始日志190347B / `1261b50301c32060965dac767b2d3276c62b39dd96a5b0d16c4c838cb305b0c4`。各次Node汇总1518项（含脚本重复），1456pass/62skip/0fail；Gradle两次成功，Swift辅助检查通过。Native五文件前后指纹相同；生成、限定格式化、Python AST等价及diff检查通过。阶段66提交 `a87cc37a46b1549f69c7a696abc15b8b5a0c5e1e` 已推送并独立核对远端同SHA；[PR115](https://git.51easyai.com/BCAI/agent-hub-app/pulls/115)的exact head/main、open且未合并已只读确认。首次POST客户端超时，但原操作效果已确认，不重放POST；最新三次CI读取各120秒无响应，先前combined pending/0与branch-filtered空列表不代表无CI或通过，当前CI待核。没有沿用阶段65检查。R6 SDK、Native及完整检查执行方均已读回官方turn_context，实际为gpt-6.1-terra / medium；入口无速度参数，实际速度未核验。
 
-Controller映射/完整MobileSession UI、真实全局通知端口隔离、24域/自然I/O故障/崩溃/断电、取消失败恢复、物理DEV与双端整包互通均未验。P8剩余、P9 OS/SystemUI及所有单列待验项继续；任务/项目业务、F75与iOS A6仍暂停。Host/model本轮+0、累计221，P4为205，另1个未知原操作封存不查询或重放。原Run材料保留用于只读取证；设备资源与正式交付收尾由Root按实际状态独立核对，不把测试内cleanup当作AVD/安装数据已删除。
+本阶段未验实际Controller；后续schema v3的两项限定结果见[阶段68](stage68-p7-controller-strict-restore.md)，不重跑或改写本阶段direct v2原证据。完整MobileSession UI、真实全局通知端口隔离、非空资料完整迁移/24项范围、自然I/O故障/崩溃/断电、取消失败恢复、物理DEV与双端整包互通仍未验。P8剩余、P9 OS/SystemUI及所有单列待验项继续；任务/项目业务、F75与iOS A6仍暂停。Host/model本轮+0、累计221，P4为205，另1个未知原操作封存不查询或重放。原Run材料保留用于只读取证；设备资源与正式交付收尾由Root按实际状态独立核对，不把测试内cleanup当作AVD/安装数据已删除。
+
+交付更新：PR115 已实际合入 Gitea main `c9ee18939da46a0b9243bc4925f5dd39dbf820c8`；parents 为 `c36a5267`、源 `a87cc37a`，tree 与源 `ca5899ee4d53876d91d1f6db8dc5323d06e3516c` 一致。绑定源SHA、按仓库保护规则即时合并，未强制/未排队；本地/origin/tracking阶段66引用均实际缺席。CI状态仍未核实，不记通过。

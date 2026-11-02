@@ -16,6 +16,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 private const val FIRST_METHOD="actualStrictPostPointerFirstPrepareReconcilesAndTransfersOnce"
+private const val CONTROLLER_METHOD="actualControllerStrictPostPointerFirstPrepareReconcilesAndTransfersOnce"
 private const val COLD_METHOD="distinctPidReadOnlyAuditsExactModernCandidateReceiptAndPostRestoreBaseline"
 private fun JSONObject.p7String(name: String): String=(get(name) as? String) ?: error("Expected JSON string: $name")
 private fun JSONObject.p7Boolean(name: String): Boolean=(get(name) as? Boolean) ?: error("Expected JSON boolean: $name")
@@ -37,7 +38,9 @@ private fun p7Canonical(v: Any): String=when(v) {
 /** R2 PROPOSED: uncompiled/unexecuted; stable exclusive fixture only; requires Stage66 production B, never observer-only A.
  * Two individually selected instrumentation methods; explicit fresh canonical postPointerRun.
  * Actual ExistingView.writer + MobileSession + Frozen/lease + production restore helper.
- * No Activity, Controller, live Host/model, notification coordinator, global hook or reflection.
+ * Original direct v2 method has no Controller. New explicitly bound Controller v3 method
+ * exercises real commands/state and production restoration; still no Activity, live
+ * Host/model, notification coordinator, global hook or reflection.
  * One modern streaming envelope/local v4 candidate; this does not claim legacy acceptance.
  * Retain this exact run/keys on success for cold audit and collection; retain failures forever
  * until Root acknowledges collection. No app clear, default family or alias enumeration.
@@ -46,8 +49,14 @@ class NativeMigrationPostPointerStrictHandoffTest {
     private class Fixture {
         val args = InstrumentationRegistry.getArguments()
         val selectedMethod = requireNotNull(args.getString("postPointerSelectedMethod")).also {
-            require(it in setOf(FIRST_METHOD, COLD_METHOD))
+            require(it in setOf(FIRST_METHOD, CONTROLLER_METHOD, COLD_METHOD))
         }
+        val firstMethod = (args.getString("postPointerFirstMethod") ?: FIRST_METHOD).also {
+            require(it in setOf(FIRST_METHOD,CONTROLLER_METHOD))
+            require(selectedMethod==COLD_METHOD || selectedMethod==it)
+        }
+        val controllerMode get()=firstMethod==CONTROLLER_METHOD
+        val schemaVersion get()=if(controllerMode)3 else 2
         val boot = File("/proc/sys/kernel/random/boot_id").readText().trim().also { require(UUID.fromString(it).toString() == it) }
         private fun apkHash(context: Context): String {
             require(context.applicationInfo.splitSourceDirs.isNullOrEmpty()) { "Split APK admission is not defined" }
@@ -67,6 +76,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
                 .put("sourceGuardSha256",pin("postPointerSourceGuardSha256"))
                 .put("sourceAdmissionSha256",pin("postPointerSourceAdmissionSha256"))
                 .put("bootUuid",boot).put("package",app.packageName).put("uid",Process.myUid()).put("run",run)
+                .also {if(controllerMode)it.put("firstMethod",firstMethod)}
         }
         fun requireBinding(value: JSONObject) {
             require(value.keys().asSequence().toSet()==binding.keys().asSequence().toSet())
@@ -184,7 +194,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
             expectedAnchor = snapshot()
             publish("fixture-intent", JSONObject().put("run", run).put("pid", Process.myPid()).put("startTicks", processStartTicks(Process.myPid()))
                 .put("uid", Process.myUid()).put("package", app.packageName).put("namespace", namespace)
-                .put("keyAlias", alias).put("scope", "actual-strict-postpointer-modern-v4-only").put("anchor", anchor()))
+                .put("keyAlias", alias).put("scope", if(controllerMode)"actual-controller-strict-postpointer-modern-v4-only" else "actual-strict-postpointer-modern-v4-only").put("anchor", anchor()))
         }
         fun store(source: Boolean = false): NativeSessionStorage {
             guard(); val opened = NativeSessionStorage(context, if(source) sourceNamespace else namespace, if(source) sourceAlias else alias)
@@ -204,7 +214,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
         fun publish(name: String, value: JSONObject) {
             require(name in setOf("fixture-intent", "handoff-complete", "case1-cleanup", "cold-audit-complete", "case2-cleanup", "failure", "publication-intent"))
             guard(); val file = File(folder, name + ".json")
-            value.put("schemaVersion",2).put("binding",binding).put("selectedMethod",selectedMethod)
+            value.put("schemaVersion",schemaVersion).put("binding",binding).put("selectedMethod",selectedMethod)
             val bytes = value.toString().toByteArray(Charsets.UTF_8); require(bytes.size in 1..131072)
             withOwnedFd(file, android.system.OsConstants.O_WRONLY or android.system.OsConstants.O_CREAT or
                 android.system.OsConstants.O_EXCL or android.system.OsConstants.O_NOFOLLOW, 0x180) { fd ->
@@ -241,7 +251,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
             require(statIdentity(android.system.Os.lstat(file.path)) == statIdentity(before) && android.system.Os.lstat(file.path).st_size == before.st_size)
             require(snapshot() == beforeAnchor)
             val parsed = StrictMigrationJson.parse(bytes)
-            require(parsed.p7Int("schemaVersion")==2); requireBinding(parsed.getJSONObject("binding"))
+            require(parsed.p7Int("schemaVersion")==schemaVersion); requireBinding(parsed.getJSONObject("binding"))
             readDigests[name] = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
             return parsed
         }
@@ -249,13 +259,13 @@ class NativeMigrationPostPointerStrictHandoffTest {
         fun retained(name: String): JSONObject = read(name)
         fun admitCold(): Pair<JSONObject, JSONObject> {
             val current = snapshot(); val intent = read("fixture-intent")
-            require(intent.p7String("selectedMethod")==FIRST_METHOD)
+            require(intent.p7String("selectedMethod")==firstMethod)
             require(intent.p7String("run") == run && intent.p7Int("uid") == Process.myUid() &&
                 intent.p7String("package") == app.packageName && intent.p7String("namespace") == namespace &&
                 intent.p7String("keyAlias") == alias && strings(intent.getJSONObject("anchor")) == current)
             expectedAnchor = current; guard()
             val proof = read("handoff-complete"); val cleanup = read("case1-cleanup")
-            require(proof.p7String("selectedMethod")==FIRST_METHOD && cleanup.p7String("selectedMethod")==FIRST_METHOD)
+            require(proof.p7String("selectedMethod")==firstMethod && cleanup.p7String("selectedMethod")==firstMethod)
             require(proof.p7String("run") == run && proof.p7Int("pid") == intent.p7Int("pid") &&
                 proof.p7Int("uid") == Process.myUid() && proof.p7String("package") == app.packageName &&
                 strings(proof.getJSONObject("anchor")) == current)
@@ -265,13 +275,25 @@ class NativeMigrationPostPointerStrictHandoffTest {
                 cleanup.p7Boolean("bodyCompleted") && cleanup.p7Boolean("testWorkersJoined") &&
                 cleanup.p7Boolean("sessionWorkersJoined") && cleanup.p7Boolean("frozenReleaseReturned") &&
                 cleanup.p7Boolean("writersRetired") && !cleanup.p7Boolean("fallbackRequired") &&
-                cleanup.p7Boolean("outerProcessExitRequired") && !cleanup.p7Boolean("controllerInstantiated") &&
+                cleanup.p7Boolean("outerProcessExitRequired") && cleanup.p7Boolean("controllerInstantiated")==controllerMode &&
                 cleanup.p7Int("unknownAcquisitions")==0 && cleanup.p7Int("cleanupFailureCount")==0)
+            if(controllerMode)require(cleanup.p7Boolean("controllerCompletionObserved") &&
+                !cleanup.p7Boolean("controllerWorkerJoinClaimed") && !cleanup.p7Boolean("controllerScopeDisposed"))
             return proof to cleanup
+        }
+        /** Exact production Documents constructor path; this mode never launches a picker. */
+        fun controllerDocumentsInventory(): JSONObject {
+            require(controllerMode);guard()
+            val file=File(ownedDirectory("cache"),"migration-ui-v1")
+            val identity=directory(file,true,true)
+            require(requireNotNull(file.listFiles()).isEmpty()) {"Controller Documents cache must stay empty"}
+            require(directory(file,true,true)==identity);guard()
+            return JSONObject().put("path","cache/migration-ui-v1").put("empty",true).put("identity",identity)
         }
         /** Inspect only the owned fixture; never enter a symlink or enumerate Keystore. */
         fun treeAnchors(): Map<String, String> {
-            guard(); val result = linkedMapOf<String, String>(); var count = 0
+            guard();if(controllerMode)controllerDocumentsInventory()
+            val result = linkedMapOf<String, String>(); var count = 0
             folder.walkTopDown().onEnter { dir ->
                 require(++count <= 256); result[dir.relativeTo(folder).path] = directory(dir, true, true); true
             }.filter { !android.system.OsConstants.S_ISDIR(android.system.Os.lstat(it.path).st_mode) }.forEach { file ->
@@ -456,6 +478,14 @@ class NativeMigrationPostPointerStrictHandoffTest {
         @Volatile var releaseReturned=false
         @Volatile var completed=false
         @Volatile var successfulGeneration: String?=null
+        @Volatile var controllerInstantiated=false
+        @Volatile var controllerCompletionObserved=false
+        private var controllerAuditId: String?=null
+        private var controllerCandidateId: String?=null
+        fun controllerAuditOpened(){check(controllerAuditId==null);controllerAuditId=begin("controller-enrollment-audit")}
+        fun controllerAuditRetired(){resolved(requireNotNull(controllerAuditId))}
+        fun controllerCandidatePrepared(){check(controllerCandidateId==null);controllerCandidateId=begin("controller-generation-candidate-cache")}
+        fun ownControllerCandidate(store: NativeSessionStorage){own(store);resolved(requireNotNull(controllerCandidateId))}
         fun own(store: NativeSessionStorage)=synchronized(lock) { if(stores.none {it===store})stores.add(store); store }
         fun own(session: MobileSession)=synchronized(lock) { if(sessions.none {it===session})sessions.add(session); session }
         private fun begin(label: String)=synchronized(lock) { (++serial).toString()+":"+label }.also { synchronized(lock){attempts[it]="unknown"} }
@@ -525,14 +555,18 @@ class NativeMigrationPostPointerStrictHandoffTest {
         fun remember(error: Throwable){failures++;if(first==null)first=error else if(first!==error)first!!.addSuppressed(error)}
         suspend fun attempt(action: suspend ()->Unit): Boolean=try {action();true}catch(error: Throwable){remember(error);false}
         testJoined=attempt {r.callbackSnapshot().forEach {it.cancel()};r.callbackSnapshot().forEach {it.join()};r.job.cancelAndJoin()}
+        // The separate Controller owns its work. Failed/unknown completion never races
+        // known Session/store cleanup or retries its possibly attempted native release.
+        val controllerSafe=!r.controllerInstantiated||r.controllerCompletionObserved
+        if(!controllerSafe){sessionJoined=false;retired=false;remember(IOException("Controller completion unknown; no native close retry; exact original PID fallback required"))}
         // Release failure does not skip otherwise independent Session/store attempts.
-        if(!r.releaseAttempted&&r.lease!=null)attempt {withContext(Dispatchers.IO){
+        if(controllerSafe&&!r.releaseAttempted&&r.lease!=null)attempt {withContext(Dispatchers.IO){
             r.releaseAttempted=true;r.lease!!.releaseRawWriters();r.releaseReturned=true
         }}
         if(r.quiesceAttempted&&r.lease==null)remember(IOException("Actual quiesce unknown; exact original process fallback required"))
         if(r.releaseAttempted&&!r.releaseReturned)remember(IOException("Attempted raw close unconfirmed; never retry"))
-        for(session in r.sessionSnapshot())if(!attempt {withContext(Dispatchers.Main.immediate){session.abandonMigrationRestore()}})sessionJoined=false
-        for(store in r.storeSnapshot()) {
+        if(controllerSafe)for(session in r.sessionSnapshot())if(!attempt {withContext(Dispatchers.Main.immediate){session.abandonMigrationRestore()}})sessionJoined=false
+        if(controllerSafe)for(store in r.storeSnapshot()) {
             // Queue wait failure must not skip that independent known writer's one close attempt.
             if(!r.isRetired(store))if(!attempt {withContext(Dispatchers.IO){store.awaitQueuedWrites()}})retired=false
             if(!attempt {withContext(Dispatchers.IO){r.retire(store)}})retired=false
@@ -547,20 +581,27 @@ class NativeMigrationPostPointerStrictHandoffTest {
             .put("uid",Process.myUid()).put("package",f.app.packageName).put("bodyCompleted",r.completed)
             .put("testWorkersJoined",testJoined).put("sessionWorkersJoined",sessionJoined).put("writersRetired",retired)
             .put("quiesceAttempted",r.quiesceAttempted).put("releaseAttempted",r.releaseAttempted)
-            .put("frozenReleaseReturned",r.releaseReturned).put("controllerInstantiated",false)
+            .put("frozenReleaseReturned",r.releaseReturned).put("controllerInstantiated",r.controllerInstantiated)
             .put("outerProcessExitRequired",true).put("fallbackRequired",first!=null).put("cleanupFailureCount",failures)
             .put("unknownAcquisitions",r.unknownCount()).put("acquisitions",r.attemptSnapshot())
             .put("retainedFor","exact cold audit and Root collection acknowledgement; no replay")
+        if(f.controllerMode)cleanup.put("controllerCompletionObserved",r.controllerCompletionObserved)
+            .put("controllerWorkerJoinClaimed",false).put("controllerScopeDisposed",false)
         baseline?.let {cleanup.put("postRestoreCiphertext",JSONObject(it))}
-        if(r.completed&&first==null)attempt {withContext(Dispatchers.IO){cleanup.put("directoryAnchors",JSONObject(f.treeAnchors()))}}
+        if(r.completed&&first==null)attempt {withContext(Dispatchers.IO){
+            cleanup.put("directoryAnchors",JSONObject(f.treeAnchors()))
+            if(f.controllerMode)cleanup.put("controllerDocumentsInventory",f.controllerDocumentsInventory())
+        }}
         // A guard failure above must not publish stale success booleans.
         cleanup.put("fallbackRequired",first!=null).put("cleanupFailureCount",failures)
         attempt {withContext(Dispatchers.IO){f.publish(if(cold)"case2-cleanup" else "case1-cleanup",cleanup)}}
         first?.let {throw IOException("Owned cleanup incomplete; preserve fixture/keys; exact original process fallback; no cold",it)}
     }
 
-    @Test fun actualStrictPostPointerFirstPrepareReconcilesAndTransfersOnce() = runBlocking {
-        val f = Fixture(); require(f.selectedMethod==FIRST_METHOD); f.fresh()
+    @Test fun actualStrictPostPointerFirstPrepareReconcilesAndTransfersOnce() = firstPrepare(FIRST_METHOD)
+    @Test fun actualControllerStrictPostPointerFirstPrepareReconcilesAndTransfersOnce() = firstPrepare(CONTROLLER_METHOD)
+    private fun firstPrepare(method: String) = runBlocking {
+        val f = Fixture(); require(f.selectedMethod==method && f.firstMethod==method); f.fresh()
         ownedCase(f) { r ->
             val ctx = f.context; val ports = Ports(); val pid = Process.myPid(); val ticks = startTicks(pid)
             val payload = MigrationActivationFixtures.payload(); val entries = payload.getJSONObject("records")
@@ -662,6 +703,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
             val staleChild=oldPaths.getValue("external-inbox")
             val media=DeniedMedia(); val camera=DeniedCamera()
             r.main {
+                if(f.controllerMode)assertSame(f.app.contentResolver,ctx.contentResolver)
                 original.configureExternalInbox(ctx)
                 original.configureDocumentPicker(ctx); original.configurePhotoPicker(ctx)
                 original.configureCameraCapture(ctx,camera); original.configureRecentPhotos(ctx,media)
@@ -674,10 +716,16 @@ class NativeMigrationPostPointerStrictHandoffTest {
                 assertTrue(original.migrationCanImport)
                 assertNull(original.documentPicker!!.pending);assertNull(original.photoPicker!!.pending);assertNull(original.cameraCapture!!.pending)
                 assertFalse(original.externalInbox!!.available) // Empty producer graph; no deferred URI/OS return.
-                r.captureLease { original.quiesceForMigration(f.run) }
+                if(!f.controllerMode)r.captureLease { original.quiesceForMigration(f.run) }
+                if(!f.controllerMode) {
                 val lease = requireNotNull(r.lease); assertSame(old, lease.storage); assertEquals(f.run, lease.operationId)
                 assertTrue(original.ownsMigrationLease(lease)); original.requireMigrationGenerationOwner(lease)
                 epochFrozen = original.migrationAuthorityEpoch
+                }
+            }
+            if(f.controllerMode) {
+                controllerFirst(f,r,ctx,ports,pid,ticks,sourceMap,sourceCipher,origin,candidate,original,old,oldPaths,media,camera,epochBefore)
+                return@ownedCase
             }
             val lease = requireNotNull(r.lease)
             withContext(Dispatchers.IO) {
@@ -823,6 +871,208 @@ class NativeMigrationPostPointerStrictHandoffTest {
         }
     }
 
+    /** v3 adds actual Controller ownership; all port/record/replay assertions stay bounded. */
+    private suspend fun controllerFirst(f: Fixture,r: Resources,ctx: Context,ports: Ports,pid: Int,ticks: String,
+        sourceMap: Map<String,String>,sourceCipher: Map<String,String>,origin: String,candidate: NativeMigrationCandidateStore.Receipt,
+        original: MobileSession,old: NativeSessionStorage,oldPaths: Map<String,NativeSessionStorage>,media: DeniedMedia,camera: DeniedCamera,epochBefore: Long) {
+        // Actual quiesce persists its last metadata snapshot. Capture immutable old
+        // ciphertext only after that operation returns, just as direct v2 does.
+        var oldBefore: Map<String,String> = emptyMap();var candidateBefore: Map<String,String> = emptyMap()
+        val fault=PostPointerFault();val points=IntArray(NativeSessionStorage.PublicationPoint.entries.size)
+        var observerGeneration: String?=null;var observerRecords=0;var observerSha: String?=null;var faults=0
+        val observer=NativeSessionStorage.PublicationObserver(candidate){point,identity->
+            // Same bounded synchronous publication fault as direct v2. No IO/re-entry.
+            points[point.ordinal]++;require(identity.receipt==candidate)
+            observerGeneration=identity.generation;observerRecords=identity.actualRecords;observerSha=identity.recordsSha256
+            if(point==NativeSessionStorage.PublicationPoint.AFTER_POINTER){faults++;throw fault}
+        }
+        var prepareReturns=0;var auditOpens=0;var auditRetires=0;var candidatePrepares=0
+        var order=0;var releaseOrder=0;var createOrder=0;var quiesces=0;var restores=0
+        var constructions=0;var beforeCommits=0;var boundChecks=0;var transfers=0;var epochFrozen=-1L
+        var controllerOperationId="";var current=original
+        lateinit var fresh: MobileSession;lateinit var freshStore: NativeSessionStorage
+        lateinit var controller: NativeMigrationController
+        val states=JSONObject()
+        fun state()=JSONObject().put("phase",controller.phase.name).put("result",controller.result?.name?:"NONE")
+            .put("ready",controller.ready).put("busy",controller.busy).put("canDismiss",controller.canDismiss)
+            .put("canImport",controller.canImport).put("presented",controller.presented)
+            .put("needsOwnerRestore",controller.needsOwnerRestore).put("hasPreview",controller.preview!=null)
+        val lifecycle=object:NativeMigrationLifecycle {
+            override val ready get()=current.migrationReady
+            override val canImport get()=current.migrationCanImport
+            override fun currentStorage()=current.migrationStorage
+            override suspend fun quiesce(operationId: String): NativeMigrationOwnerLease {
+                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+                quiesces++;assertEquals(1,quiesces);require(UUID.fromString(operationId).toString()==operationId)
+                controllerOperationId=operationId
+                assertEquals(NativeMigrationPhase.APPLYING,controller.phase);assertNull(controller.result)
+                assertTrue(controller.busy);assertFalse(controller.ready);assertFalse(controller.canDismiss);assertFalse(controller.canImport)
+                assertFalse(controller.needsOwnerRestore);assertNotNull(controller.preview)
+                controller.close();assertTrue(controller.presented);states.put("applying",state())
+                val held=r.captureLease {original.quiesceForMigration(operationId)}
+                assertSame(old,held.storage);assertEquals(operationId,held.operationId)
+                assertTrue(original.ownsMigrationLease(held));original.requireMigrationGenerationOwner(held)
+                epochFrozen=original.migrationAuthorityEpoch
+                withContext(Dispatchers.IO){
+                    held.requireRawWriters()
+                    assertSame(original.externalInbox,held.requireInboxWriters(old.migrationInboxKey()).owner)
+                    val actualSelections=mapOf(NativeMigrationSelectionJournal.Kind.DOCUMENT to original.documentPicker!!.recovery,
+                        NativeMigrationSelectionJournal.Kind.PHOTO to original.photoPicker!!.recovery,NativeMigrationSelectionJournal.Kind.CAMERA to original.cameraCapture!!.recovery)
+                    for((kind,owner)in actualSelections){val writer=held.requireSelectionWriters(kind);assertSame(owner,writer.owner);assertEquals(old.migrationSelectionKeys(kind),writer.keys)}
+                    for(kind in NativeMigrationPhotoLocalKind.entries)held.requireLocalPhotoWriters(kind,old.migrationPhotoLocalKey(kind))
+                    assertEquals(3,held.selectionWriters.size);assertEquals(2,held.localPhotoWriters.size)
+                    val beforePublication=f.view().using {saved->
+                        saved.originalCandidate(origin,candidate){assertEquals(sourceMap,materialize(it))}
+                        oldCipher(saved.ciphertext(),origin) to saved.originalCandidateCiphertext(origin)
+                    }
+                    oldBefore=beforePublication.first;candidateBefore=beforePublication.second
+                    f.publish("publication-intent",receiptJson(candidate).put("run",f.run).put("pid",pid).put("startTicks",ticks)
+                        .put("uid",Process.myUid()).put("package",f.app.packageName).put("anchor",f.anchor())
+                        .put("originGeneration",origin).put("operationId",operationId).put("candidateVersion",4)
+                        .put("sourceRecordsSha256",JSONObject(textDigests(sourceMap))).put("sourceCiphertext",JSONObject(sourceCipher))
+                        .put("oldGenerationCiphertext",JSONObject(oldBefore)).put("originalCandidateCiphertext",JSONObject(candidateBefore))
+                        .put("faultPoint","AFTER_POINTER").put("activationBudget",1).put("prepareBudget",1)
+                        .put("originalsRetainedIn","test-owned authenticated source + exact original candidate; no plaintext proof export"))
+                }
+                return held
+            }
+            override suspend fun restore(lease: NativeMigrationOwnerLease,requiresExplicitEnrollment: Boolean) {
+                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+                restores++;assertEquals(1,restores);assertSame(requireNotNull(r.lease),lease)
+                assertEquals(1,prepareReturns);assertTrue(r.releaseReturned)
+                assertEquals(1,auditOpens);assertEquals(1,auditRetires)
+                assertFalse(requiresExplicitEnrollment);assertEquals(requiresExplicitEnrollment,lease.requiresExplicitEnrollment)
+                assertEquals(NativeMigrationPhase.RESTORING,controller.phase);assertEquals(NativeMigrationResult.IMPORTED,controller.result)
+                assertTrue(controller.busy);assertFalse(controller.ready);assertFalse(controller.canDismiss);assertFalse(controller.canImport)
+                assertTrue(controller.needsOwnerRestore);assertNull(controller.preview)
+                controller.close();assertTrue(controller.presented);states.put("restoring",state())
+                val generation=withContext(Dispatchers.IO){f.view().using {it.published(candidate)}}
+                assertEquals(observerGeneration,generation);assertNotEquals(origin,generation);r.successfulGeneration=generation
+                val ticket=requireNotNull(lease.strictRestore)
+                assertSame(lease,ticket.lease);assertEquals(controllerOperationId,ticket.operation);assertEquals(generation,ticket.generation)
+                val beforeRestoreRoot=withContext(Dispatchers.IO){f.view().using {saved->
+                    assertEquals(generation,saved.published(candidate));assertEquals(oldBefore,oldCipher(saved.ciphertext(),origin))
+                    assertEquals(candidateBefore,saved.originalCandidateCiphertext(origin));saved.ciphertext()
+                }}
+                withContext(Dispatchers.IO){check(runCatching {old.write("metadata","stale root before Controller restore")}.isFailure)}
+                r.restore {
+                    fresh=restoreNativeMigrationSession(ctx,original,lease,create={store->
+                        constructions++;createOrder=++order;freshStore=r.own(store)
+                        r.construct("fresh-Session"){MobileSession(store,ports,ports)}.also {fresh=it}
+                    },beforeCommit={
+                        beforeCommits++;assertTrue(releaseOrder<createOrder)
+                        freshStore.requireBoundMigrationSession(fresh,lease);boundChecks++
+                        assertEquals(NativeMigrationExistingPolicy.paths,ticket.prepared)
+                        assertFalse(fresh.phoneUnreadKnown);assertNull(fresh.visiblePhoneReading)
+                        withContext(NonCancellable+Dispatchers.IO){
+                            val bound=r.cacheGraph(ctx,freshStore,prepare=false)
+                            check(runCatching {bound.getValue("external-inbox").write("metadata","BOUND child must not write")}.isFailure)
+                            check(runCatching {freshStore.write("metadata","BOUND root must not write")}.isFailure)
+                            assertEquals(beforeRestoreRoot,f.view().using {it.ciphertext()})
+                        }
+                    })
+                }
+                current=fresh
+                fresh.awaitMigrationRestore();assertTrue(fresh.phoneReading.ready);assertFalse(fresh.phoneReading.busy)
+                assertNull(fresh.phoneReading.failure);assertNull(fresh.error);assertNull(fresh.chatNotifications)
+                original.requireCompletedMigrationTransfer(lease);transfers++
+                assertSame(freshStore,lease.restoredStorage);assertNotSame(original,fresh);assertTrue(fresh.aiSharing.grants.isEmpty())
+                r.markRetired(old);oldPaths.values.forEach {r.markRetired(it)}
+            }
+        }
+        r.main {
+            r.controllerInstantiated=true
+            controller=NativeMigrationController(ctx,observer){point->
+                // Scalar/order/ledger observations only. No IO, waits or storage/lease calls.
+                when(point){
+                    NativeMigrationControllerRestorePoint.PREPARE_RETURNED->{prepareReturns++;r.releaseAttempted=true;r.releaseReturned=true;releaseOrder=++order}
+                    NativeMigrationControllerRestorePoint.ENROLLMENT_AUDIT_OPENED->{auditOpens++;r.controllerAuditOpened()}
+                    NativeMigrationControllerRestorePoint.ENROLLMENT_AUDIT_RETIRE_RETURNED->{auditRetires++;r.controllerAuditRetired()}
+                    NativeMigrationControllerRestorePoint.CANDIDATE_CACHE_PREPARED->{candidatePrepares++;r.controllerCandidatePrepared()}
+                }
+            }
+            withContext(Dispatchers.IO){f.controllerDocumentsInventory()}
+            controller.attach(lifecycle)
+            suspend fun previewReady(){withTimeout(40_000){while(controller.phase!=NativeMigrationPhase.PREVIEW||!controller.ready){
+                check(controller.phase!=NativeMigrationPhase.FAILED);delay(10)
+            }};assertEquals(NativeMigrationResult.READY,controller.result);assertEquals(NativeMigrationPreview(1,1,1,1,0),controller.preview)
+                assertTrue(controller.canDismiss);assertTrue(controller.canImport);assertFalse(controller.busy);assertFalse(controller.needsOwnerRestore)}
+            controller.show();previewReady();controller.recoverCandidate();previewReady()
+            controller.password="owned controller replacement password";assertTrue(controller.passwordValid)
+            controller.chooseImport();assertTrue(controller.replaceConfirmation);assertNull(controller.picker)
+            controller.declineReplacement();assertFalse(controller.replaceConfirmation);controller.password=""
+            states.put("preview",state());controller.confirmImport()
+            withTimeout(40_000){while(controller.phase!=NativeMigrationPhase.DONE||!controller.ready||!controller.canDismiss){
+                check(controller.phase!=NativeMigrationPhase.FAILED&&controller.phase!=NativeMigrationPhase.UNKNOWN);delay(10)
+            }}
+            assertEquals(NativeMigrationResult.IMPORTED,controller.result);assertFalse(controller.busy);assertFalse(controller.canImport)
+            assertFalse(controller.needsOwnerRestore);assertNull(controller.preview);assertNull(controller.picker)
+            // ready/canDismiss expose working=false; this observes completion, not Job.join.
+            r.controllerCompletionObserved=true;states.put("done",state())
+            controller.close();assertFalse(controller.presented);assertEquals("",controller.password);states.put("closed",state())
+        }
+        assertEquals(0,fault.suppressed.size);assertEquals(1,faults);assertEquals(1,points[0]);assertEquals(0,points[1]);assertEquals(0,points[2])
+        assertEquals(1,quiesces);assertEquals(1,restores);assertEquals(1,prepareReturns);assertEquals(1,auditOpens);assertEquals(1,auditRetires);assertEquals(1,candidatePrepares)
+        assertEquals(1,constructions);assertEquals(1,beforeCommits);assertEquals(1,boundChecks);assertEquals(1,transfers)
+        val generation=requireNotNull(r.successfulGeneration)
+        withContext(NonCancellable+Dispatchers.IO){
+            // Controller already opened/cached this ACTIVE child. The prepared-cache
+            // return is source-backed; the scalar observer alone is not handle identity.
+            val child=freshStore.prepareChild(ctx,"migration-candidates");r.ownControllerCandidate(child)
+            assertEquals(File(ctx.noBackupFilesDir,f.namespace+"-"+generation+"-migration-candidates").canonicalPath,child.coordinationKey)
+            assertTrue(requireNotNull(File(child.coordinationKey).listFiles()).isEmpty())
+        }
+        val preparedPaths=withContext(NonCancellable+Dispatchers.IO){r.cacheGraph(ctx,freshStore,prepare=false).mapValues {(path,child)->
+            val expected=File(ctx.noBackupFilesDir,f.namespace+"-"+generation+"-"+path.replace('/','-')).canonicalFile
+            assertEquals(expected.path,child.coordinationKey);child.coordinationKey
+        }}
+        withContext(Dispatchers.IO){
+            assertEquals(candidate,freshStore.migrationPublicationReceipt())
+            assertEquals(generation,freshStore.publishedMigration(candidate.id,candidate.sha256,candidate.recordCount))
+            noReplay(freshStore,sourceMap,ports)
+            assertEquals(oldBefore,f.view().using {oldCipher(it.ciphertext(),origin)})
+            assertEquals(candidateBefore,f.view().using {it.originalCandidateCiphertext(origin)})
+            f.view(source=true).using {assertEquals(sourceMap,materialize(it.records));assertEquals(sourceCipher,it.familyCiphertext())}
+            check(runCatching {old.write("metadata","late old root callback")}.isFailure)
+            check(runCatching {oldPaths.getValue("external-inbox").write("metadata","late old child callback")}.isFailure)
+        }
+        var newTarget=""
+        r.main {
+            newTarget=fresh.targetKey
+            assertNotEquals(sourceMap.keys.single {it.startsWith("operations:")}.removePrefix("operations:"),newTarget)
+            fresh.text="independent draft after strict B1";controller.detach(lifecycle)
+        }
+        withContext(Dispatchers.IO){
+            freshStore.awaitQueuedWrites();assertEquals("independent draft after strict B1",freshStore.metadata()!!.getJSONObject("drafts").p7String(newTarget))
+            noReplay(freshStore,sourceMap,ports,afterLocalDraftSave=true)
+            assertEquals(4,candidateHeader(f,origin));assertEquals(0,ports.attempts.get());assertEquals(0,media.attempts.get()+camera.attempts.get())
+            val proof=receiptJson(candidate).put("run",f.run).put("pid",pid).put("startTicks",ticks)
+                .put("uid",Process.myUid()).put("package",f.app.packageName).put("anchor",f.anchor())
+                .put("originGeneration",origin).put("generation",generation).put("candidateVersion",4)
+                .put("observerActualRecords",observerRecords).put("observerRecordsSha256",observerSha)
+                .put("afterPointer",points[0]).put("beforeConfirmation",points[1]).put("afterConfirmation",points[2])
+                .put("namedFaultThrows",faults).put("freshConstructions",constructions).put("beforeCommitCalls",beforeCommits).put("boundValidationReturns",boundChecks)
+                .put("completedTransferReturns",transfers).put("releaseReturnedBeforeFreshConstruction",releaseOrder<createOrder)
+                .put("oldEpochBefore",epochBefore).put("oldEpochFrozen",epochFrozen)
+                .put("oldSessionReference",System.identityHashCode(original)).put("freshSessionReference",System.identityHashCode(fresh))
+                .put("oldStorageReference",System.identityHashCode(old)).put("freshStorageReference",System.identityHashCode(freshStore))
+                .put("sourceRecordsSha256",JSONObject(textDigests(sourceMap))).put("sourceCiphertext",JSONObject(sourceCipher))
+                .put("oldGenerationCiphertext",JSONObject(oldBefore)).put("originalCandidateCiphertext",JSONObject(candidateBefore))
+                .put("preparedPaths",JSONObject(preparedPaths)).put("newDraftTarget",newTarget).put("aliases",knownAliases(f,origin,generation))
+                .put("portsAttempts",ports.attempts.get()).put("controllerInstantiated",true).put("notificationCoordinatorInstantiated",false)
+                .put("localSystemPortAttempts",media.attempts.get()+camera.attempts.get()).put("realResolverExternalIsolationVerified",false)
+                .put("actualDataScope",File(ctx.applicationInfo.dataDir).canonicalPath)
+                .put("controllerOperationId",controllerOperationId).put("controllerStates",states)
+                .put("controllerPreview",JSONObject().put("computers",1).put("drafts",1).put("operations",1).put("attachments",1).put("notificationArchives",0))
+                .put("quiesceCalls",quiesces).put("restoreCalls",restores).put("prepareReturns",prepareReturns)
+                .put("enrollmentAuditOpened",auditOpens).put("enrollmentAuditRetireReturns",auditRetires).put("candidateCachePrepared",candidatePrepares)
+                .put("activationCallsSourceDerived",1).put("prepareCallsSourceDerived",1)
+                .put("controllerWorkerJoinClaimed",false).put("controllerScopeDisposed",false)
+                .put("sourceDerived","Controller activate/prepare call counts and cached-child identity are source-backed; scalar retire return is not OS-FD closure; ready/canDismiss is not worker join; no Activity/system UI or natural crash")
+            namespaceInventory(f,origin,generation);f.treeAnchors();f.publish("handoff-complete",proof)
+        }
+    }
+
     @Test fun distinctPidReadOnlyAuditsExactModernCandidateReceiptAndPostRestoreBaseline() = runBlocking {
         val f = Fixture(); require(f.selectedMethod==COLD_METHOD)
         val (proof, cleanup) = withContext(Dispatchers.IO) { f.admitCold() }
@@ -831,7 +1081,7 @@ class NativeMigrationPostPointerStrictHandoffTest {
             val intent = f.retained("publication-intent")
             assertEquals(receipt(proof), receipt(intent)); assertEquals(proof.p7String("originGeneration"), intent.p7String("originGeneration"))
             assertEquals(originalPid, intent.p7Int("pid")); assertEquals(originalTicks, intent.p7String("startTicks"))
-            assertEquals(f.run, intent.p7String("operationId")); assertEquals("AFTER_POINTER", intent.p7String("faultPoint"))
+            if(f.controllerMode)assertEquals(proof.p7String("controllerOperationId"),intent.p7String("operationId"))else assertEquals(f.run, intent.p7String("operationId")); assertEquals("AFTER_POINTER", intent.p7String("faultPoint"))
         }
         assertNotEquals(originalPid, Process.myPid())
         withContext(Dispatchers.IO) {
@@ -841,10 +1091,10 @@ class NativeMigrationPostPointerStrictHandoffTest {
             require(outer.keys().asSequence().toSet()==setOf("schemaVersion","binding","originalPid","originalStartTicks","firstMethod",
                 "coldMethod","runnerRawSha256","fixtureIntentSha256","handoffSha256","cleanupSha256","sourceAdmissionSha256",
                 "originalProcessExitObserved","bodyAndCleanupRunnerSucceeded","verification"))
-            require(outer.p7Int("schemaVersion")==2 && raw==p7Canonical(outer) && sha(raw.toByteArray(Charsets.UTF_8))==expectedOuter)
+            require(outer.p7Int("schemaVersion")==f.schemaVersion && raw==p7Canonical(outer) && sha(raw.toByteArray(Charsets.UTF_8))==expectedOuter)
             f.requireBinding(outer.getJSONObject("binding"))
             require(outer.p7Int("originalPid")==originalPid && outer.p7String("originalStartTicks")==originalTicks)
-            require(outer.p7String("firstMethod")==FIRST_METHOD && outer.p7String("coldMethod")==COLD_METHOD)
+            require(outer.p7String("firstMethod")==f.firstMethod && outer.p7String("coldMethod")==COLD_METHOD)
             for(key in listOf("runnerRawSha256","fixtureIntentSha256","handoffSha256","cleanupSha256","sourceAdmissionSha256"))
                 require(outer.p7String(key).matches(Regex("[a-f0-9]{64}")))
             require(outer.p7String("sourceAdmissionSha256")==requireNotNull(f.args.getString("postPointerSourceAdmissionSha256")))

@@ -1602,3 +1602,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段65 F55/F56／UI06/UI12：旧候选读取与typed恢复/cold receipt数据断言限定通过；页面、文案、token未修改，不能计作迁移窗口/密码/取消/错误成功呈现或真实MobileSession/UI通过。iOS无改动；见[独立档案](../plans/android-alignment-20261022/records/stage65-p7-legacy-cold-recovery.md)。
 
 阶段66 F55/F56／UI06/UI12：Android 严格原件 owner 的首次恢复与冷回执边界有限 Native 通过；本轮页面、布局、token、文案与 iOS 界面未改。迁移密码/错误/取消/成功呈现、全部方向/字体/AX、完整界面与物理 DEV 仍待验。见[阶段66档案](../plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)。
+
+阶段68 F55/F56／UI06/UI12：真实 Controller 的预览、确认、导入、恢复、完成与关闭字段流转已有限 Native 核对；界面布局、token、文案与 iOS 均未修改。该状态证据不代替 MainActivity/Dialog 视觉、字体/方向/AX、全局通知端口或物理 DEV。见[独立档案](../plans/android-alignment-20261022/records/stage68-p7-controller-strict-restore.md)。

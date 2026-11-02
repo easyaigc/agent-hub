@@ -37,6 +37,8 @@ class NativeMigrationDeviceStateTest {
         val lifecycle=NativeReadingLifecycle();lifecycle.present(target,thread,read,setOf(event.id));lifecycle.foreground(true);lifecycle.uncovered(true)
         val visible=lifecycle.visible(target,thread,read.messageId,"Old visible reply","completed",true)!!
         ledger.readVisible(target,thread,reader,lifecycle,visible)
+        val noticeVisible=requireNotNull(lifecycle.visibleNotices(target,thread,setOf(event.id)))
+        requireNotNull(ledger.readVisible(target,thread,reader,lifecycle,noticeVisible))
         ledger.receive(NativeReadingEvent(readingSHA("new-completed"),target,thread,"completed",latest))
         return Seed(source,client,event,lease,receipt,read,latest,reader,source.read(NativeMigrationDeviceState.READING)!!,source.read(NativeMigrationDeviceState.NOTIFICATIONS)!!)
     }

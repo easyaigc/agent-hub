@@ -1604,3 +1604,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段66 F55/F56／UI06/UI12：Android 严格原件 owner 的首次恢复与冷回执边界有限 Native 通过；本轮页面、布局、token、文案与 iOS 界面未改。迁移密码/错误/取消/成功呈现、全部方向/字体/AX、完整界面与物理 DEV 仍待验。见[阶段66档案](../plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)。
 
 阶段68 F55/F56／UI06/UI12：真实 Controller 的预览、确认、导入、恢复、完成与关闭字段流转已有限 Native 核对；界面布局、token、文案与 iOS 均未修改。该状态证据不代替 MainActivity/Dialog 视觉、字体/方向/AX、全局通知端口或物理 DEV。见[独立档案](../plans/android-alignment-20261022/records/stage68-p7-controller-strict-restore.md)。
+
+阶段69 F55/F56／UI06/UI12：实际普通Session非空资料恢复只验数据、就绪、未读及原unknown不可变回执；本轮未改页面、布局、token、文案或iOS界面。原生组件通过不代替Main迁移入口、密码/取消/错误/成功呈现、方向/字体/AX、系统通知和物理DEV逐项对照；cold与pristine首次导入单列。见[阶段69档案](../plans/android-alignment-20261022/records/stage69-p7-nonempty-device-session.md)。

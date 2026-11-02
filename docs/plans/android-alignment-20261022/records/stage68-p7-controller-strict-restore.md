@@ -42,3 +42,13 @@ R2静态review未余P0/P1/P2；R1漏Documents目录导致的确定性false-fail�
 最高下一项为P7非空资料域完整迁移，再推进语音、未读和生命周期；iOS补偿失败恢复、自然故障/崩溃/断电、取消失败Runtime、完整UI/物理与双端整包互通继续。P9阻塞不关闭P7，也不阻塞独立开发；P8原待验保持。任务/项目CRUD、F75及iOS A6继续暂停；Host/model本轮+0、累计221，P4 205另1未知原操作封存不查询或重放。
 
 本轮重启的原Native66独占API33 runtime已由Root正常console停止，原工具实际wait exit0，本任务当前无运行VM；原receipt存于stage66-owned-api33-runtime/stage68-normal-stop。磁盘仅为本阶段源码提交/证据收尾及下一具名P7非空域复用暂留，未删除，依赖解除后复核。测试内cleanup不等于Controller job已join或安装数据已删除。
+
+交付更新：源 `7685fff35cf74f5bbe0cef11edeeaac5599e41aa` 经PR116合入main `bd07913cb6ac5d618698234a0f658765c357f955`；parents为 `c9ee1893`、源 `7685fff3`，tree `34e88e18f4d53b8a87748068901bb635d80f74ff` 与源一致。绑定已验SHA按仓库保护即时合并，未强制/未排队；stage68本地/origin/tracking均已实际缺席。主线 `c9ee1893` 的CI11173 iOS26975成功、workspace26974先前仍运行，公开同步11174/26976失败且日志404；未记全CI通过，已向指定MacBook128新专用任务投递排查。
+
+## CI交付核对补充
+
+2026-11-02按准确SHA独立核对官方API：main `bd07913c` 的CI11177 workspace26980（Runner6）/ios26981均success；同步11178/26982（Runner7）success。公开GitHub提交`9a321ed4c5ac74f022b706eff110be6ce9686165`的来源trailer为`bd07913c`，tree同`34e88e18f4d53b8a87748068901bb635d80f74ff`。没有手动推送或重跑。
+
+指定MacBook128的独立CI任务交回原始配置操作回执/验收、关键日志和资源回收证据。Runner6领取请求曾在5.004秒被客户端取消，原任务未产生步骤日志后被清理；11174/26976失败保留，不写成三步分别执行失败。原11173双任务与既有定时11175已成功；后者公开`7bc90e59`的来源与tree匹配c9ee。唯一配置缓解为领取超时30秒，原身份、凭据与其他服务保持；14:27:13Z正常重载，之后14:31:40Z开始的新workspace26980于14:57:07Z成功。该实际后续任务证明配置后正常领取/执行，不证明消除所有响应遗失窗口；没有故障注入。
+
+私有最小证据包10233B / `888531ed1177fcdcf24f3d03b47393da1c1fdc664aa7d02d2de935378f9f0695`已通过准确原Host/Thread的固定附件接口取得，未重试另一个TLS预检失败的上传。Android验收Host/model计数仍+0；跨机CI协调单独登记。新CI专用聊天已完成，但当前原owner仍加载、能力仅`threads:archive:unloaded`，暂保留到原桌面释放后归档；旧CI人工审批聊天不动。原始操作、未知和失败回执不改写。

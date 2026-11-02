@@ -1493,3 +1493,5 @@ Android严格existing-key迁移恢复先以准确Restore ticket／Session／leas
 内部同步标量 publication observer 仅用于受信验收代码，属于非沙箱观察点；命名异常注入不能替代真实 I/O 故障、OS 崩溃或掉电原子性证明。当前有限 Native 结果与剩余 UI/24域范围见[阶段66档案](plans/android-alignment-20261022/records/stage66-p7-strict-first-prepare.md)。
 
 Android 阶段68：Controller 的通知恢复审计临时句柄由现有 ReadLifetime.use 独占，读取失败保留首错、关闭失败附加并保留原句柄；不把关闭未确认写为释放。实际新 Session 恢复到 ACTIVE 后，Controller 在 IO 准备其 runtime 所有的 migration-candidates 缓存，候选与流式读者共用该句柄，BOUND 阶段授权不扩大。内部标量观察点不开放外部能力；有限原生结果见[阶段68](plans/android-alignment-20261022/records/stage68-p7-controller-strict-restore.md)。
+
+Android 阶段69只增加非空资料普通Session的验收入口及独立准入工具：已初始化空目的root经真实Session/export/stage/activate/恢复和不可变unknown只读核对有限通过；未新增产品UI或放宽existing-only读策略。调用计数不承诺OS FD、executor或Controller worker已退出。iOS保留迁入设备身份/绑定并排队revoke，Android将设备authority重置为失效审计/tombstones，不能宣称相同存储政策；pristine无root KEY、paired cold、全局通知owner/端口与完整24项继续开放。见[阶段69](plans/android-alignment-20261022/records/stage69-p7-nonempty-device-session.md)。

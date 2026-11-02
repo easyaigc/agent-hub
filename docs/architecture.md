@@ -32,6 +32,10 @@ Windows 冷编译输出预约与 Node 交接租约按内部用途选择访问位
 
 Android 以窄接口 `NativeSavedVoiceSpeech` 分离资源检查、显式模型下载与原录音文件识别；当前接入 Vosk/JNA，固定中英模型清单及完整指纹校验，资源检查不下载、不打开麦克风。识别仅消费封存的单声道 PCM16/16k WAV。原录音、原桌面操作与回执保持不可变，本机结果写入版本化私有目录；准确草稿或非敏感问题答案的持久化和读回收据成功后才能标记 applied，失败或结果未知保持 staged，晚到结果不能覆盖新 owner。关闭和迁移须等实际 worker 退出，迁移保留离开 active index 的原件与结果引用。该目录是 Android 本机格式，未据此宣称双端 KMP 规则完整迁移；真实引擎、系统与物理 DEV 的状态以[验收档案](acceptance/mobile-parity.md)为准。
 
+## iOS 迁移容器的语音原件
+
+2026-11-02 阶段61：iOS既有迁移container增加可选语音原件，空原件继续Envelope/Payload v1，非空使用v2与独立AAD、严格闭合解码及原source witness；这不是新的双端整包格式。原音频与metadata/control进入独立惰性档案，不接入普通恢复/prepare/upload/replay/许可。active/cold/saved/incoming共同受64MiB/128文件物理预检和copy前持久journal约束；有效发布原件在业务回滚后仍保留计quota并可再导出，partial/unknown等保留阻断。iOS SDK本次通过，四源macOS CLI匹配复用；运行态/双端DEV与完整迁移仍待验，见[阶段61档案](plans/android-alignment-20261022/records/stage61-p7-voice-originals.md)。
+
 ## F74：显式开启的 Host 模型代理
 
 2026-10-29 图像扩展：显式图像模型清单增加 OpenAI 格式的生成与 JSON／multipart 编辑，Codex Adapter 负责固定图像上游和参数偏好转换；Host 负责独立图像预算、实际文件头校验、最终图片 SSE 及元数据回执。当前仅 gpt-image-2，尺寸／编码偏好不冒充硬参数，未知不重放。移动 UI 不新增入口，逐项范围见[图像接口](host-images-proxy.md)与[专项验收](acceptance/host-images-proxy-20261029.md)。

@@ -1861,14 +1861,16 @@ private var userRequestedWorkspaceGeneration: UUID?
     for item in TaskNotificationSoundLibrary.sounds where item.imported {
       sounds[item.id] = try Data(contentsOf: TaskNotificationSoundLibrary.directory.appendingPathComponent(item.id))
     }
-    return EncryptedMigration.Payload(bundleIdentifier: Bundle.main.bundleIdentifier ?? "", state: snapshot,
+    let voiceSource = try PendingVoiceMigration.capture(), voiceOriginals = voiceSource.bundle
+    return EncryptedMigration.Payload(version: voiceOriginals == nil ? 1 : 2, bundleIdentifier: Bundle.main.bundleIdentifier ?? "", state: snapshot,
       credentials: credentials, attachments: attachments, notificationPreferences: TaskNotificationShared.preferences,
       notificationKey: TaskNotificationShared.secret("device-key"), notificationDeviceId: TaskNotificationShared.read(String.self, name: "device-id.json"),
       notificationBindings: TaskNotificationShared.bindings, notificationSounds: TaskNotificationSoundLibrary.sounds.filter(\.imported), soundFiles: sounds,
-      notificationSeen: TaskNotificationShared.read([String].self, name: "seen.json"), notificationNotices: TaskNotificationShared.notices, notificationHostRevocations: hostRevocations)
+      notificationSeen: TaskNotificationShared.read([String].self, name: "seen.json"), notificationNotices: TaskNotificationShared.notices, notificationHostRevocations: hostRevocations, pendingVoiceOriginals: voiceOriginals, pendingVoiceSource: voiceSource)
   }
 
   func restoreMigration(_ payload: EncryptedMigration.Payload) throws {
+    try EncryptedMigration.validateOriginals(payload)
     guard MigrationIdentityPolicy.accepts(source: payload.bundleIdentifier, destination: Bundle.main.bundleIdentifier) else {
       throw HostServiceError.message(L10n.tr("这份备份不属于当前 App 或受支持的旧版本，现有数据未更改。"))
     }
@@ -1898,6 +1900,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     if let detached = payload.state.detachedDesktopCreations { for pendingList in detached.values { for pending in pendingList { attachmentReferences.append(contentsOf: pending.attachments) } } }
     guard attachmentReferences.allSatisfy({ EncryptedMigration.safeFilename($0.fileName) && payload.attachments[$0.fileName]?.count == $0.size }) else { throw HostServiceError.invalidResponse }
     for data in payload.soundFiles.values { try TaskNotificationSoundLibrary.validateArchiveSound(data) }
+    let voiceRestore = try PendingVoiceMigration.prepareRestore(payload.pendingVoiceOriginals)
     let previous = Dictionary(uniqueKeysWithValues: payload.credentials.keys.map { ($0, CredentialVault.token($0)) })
     let previousSecrets = ["device-key", "bindings"].map { ($0, TaskNotificationShared.secret($0)) }
     var importedState = payload.state
@@ -1930,12 +1933,14 @@ private var userRequestedWorkspaceGeneration: UUID?
       try TaskNotificationShared.write(prefs, name: "preferences.json")
       let data = try importedState.clients.contains(where: { $0.agentConnection != nil }) ? AgentCache.encode(importedState) : JSONEncoder().encode(importedState)
       try MobileUnreadBadge.reset()
+      try voiceRestore?.publish()
       try persistenceWriter.replaceLegacy(data)
     } catch {
+      let migrationFailure = voiceRestore?.preserveEvidenceAfterFailure(error) ?? error
       for (url, data) in rollback.reversed() { if let data { try? data.write(to: url, options: [.atomic]) } else { try? FileManager.default.removeItem(at: url) } }
       for (id, value) in previous { try? CredentialVault.set(value, id: id) }
       for (account, data) in previousSecrets { if let data { try? TaskNotificationShared.setSecret(data, account: account) } else { TaskNotificationShared.removeSecret(account) } }
-      throw error
+      throw migrationFailure
     }
     eventTask?.cancel(); saved = importedState; drafts.values = saved.drafts; saved.drafts = [:]; captureCodexStorageKeys(); preserveCodexReaderScopeIds()
     saved.historyCacheNamespace = UUID().uuidString

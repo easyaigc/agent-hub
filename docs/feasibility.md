@@ -576,4 +576,6 @@ Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：
 
 2026-10-31：来源 PR82 交互及独立 scheduled 八步预检通过，但 launcher EXE／payload 与失败正式启动不同，正式原因仍未知。已补常驻 Native 具体拒绝原因丢失的固定分类，不放宽 owner/DACL；新 Native/cache 及精确拒绝需复验，未变 legacy/reader 场景按输入复用。正式生命周期仅来源 Root 控制，见[诊断与回滚门禁](acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。
 
-Android 已实现“audio 已认证写入、row manifest 未提交”窗口的惰性双原件投影：相等的 raw/audio 通过明确 catalog v2 分别归档和计 quota，既有 v1 继续严格读取；保存及只读复制原件不赋予目的设备录音恢复、seal、上传或重试权限。mixed catalog、多原件/低堆、真实 seal 中断、冷进程、完整 UI 与物理 DEV 仍须分别验收，不能据合成状态或 warm 迁移宣称完整 P7。iOS 当前 EncryptedMigration.Payload 未包含 PendingVoiceStore 音频及 metadata，同类完整语音迁移仍有明确缺口；Android 格式不能充当 iOS 实现或跨端互通证明。
+Android 已实现“audio 已认证写入、row manifest 未提交”窗口的惰性双原件投影：相等的 raw/audio 通过明确 catalog v2 分别归档和计 quota，既有 v1 继续严格读取；保存及只读复制原件不赋予目的设备录音恢复、seal、上传或重试权限。mixed catalog、多原件/低堆、真实 seal 中断、冷进程、完整 UI 与物理 DEV 仍须分别验收，不能据合成状态或 warm 迁移宣称完整 P7。该 Android 证据形成时，iOS EncryptedMigration.Payload 尚未包含 PendingVoiceStore 音频及 metadata；Android 格式不能充当 iOS 实现或跨端互通证明。
+
+2026-11-02 阶段61：iOS可选惰性原件已接入既有container；空原件保留v1，非空Envelope/Payload v2采用独立AAD并拒绝未知/重复字段，旧reader显式拒绝。完整ownership/content journal在copy前fsync，64MiB/128文件共同预检；完整cold场景可恢复，partial/unknown/missing journal/link/conflict保留阻断，既有finalized不补journal，只有原journal完整byteproof的exact duplicate可清。业务失败恢复原业务状态，已有效发布原件保留计quota/可再导出，不授予自动恢复或发送许可。iOS SDK本次通过、macOS四源CLI精确匹配复用，尚不证明Payload/SessionStore运行态、双端Native/DEV、真实I/O崩溃、完整UI/物理或整包互通，见[阶段61档案](plans/android-alignment-20261022/records/stage61-p7-voice-originals.md)。

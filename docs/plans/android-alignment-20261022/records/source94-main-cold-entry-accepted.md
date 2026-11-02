@@ -1,6 +1,6 @@
 # Source94：Main 冷入口限定验收通过
 
-2026-11-02，阶段60；F50/F51/F54/F55/F56、UI11。本轮 Android 专用分支交付中，完整 P7/P9 仍为部分完成。iOS 源码不改；本档只登记 API33 arm64 的合成加密既有回执图及 instrumented FIRST Main，不是完整产品或真机 DEV 通过。
+2026-11-02，阶段60；F50/F51/F54/F55/F56、UI11。已由[PR108](https://git.51easyai.com/BCAI/agent-hub-app/pulls/108)合入 main `8ff12d7d21b28c86a131984e415f99d80ec576ce`，CI11104的workspace26844/ios26845成功；阶段60本地及origin分支已清理。合并父提交为`7b779d5d`与`e9257cb253b62fbfb95e62a371b00853b1563edc`，合并tree与后者相同。完整 P7/P9 仍为部分完成。iOS 源码不改；本档只登记 API33 arm64 的合成加密既有回执图及 instrumented FIRST Main，不是完整产品或真机 DEV 通过。
 
 ## 功能、交互与界面对照
 

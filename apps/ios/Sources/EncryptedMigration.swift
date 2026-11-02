@@ -25,19 +25,26 @@ enum EncryptedMigrationCrypto {
     guard status == kCCSuccess else { throw NSError(domain: "Migration", code: 2) }
     return SymmetricKey(data: result)
   }
-  static func seal(_ data: Data, password: String) throws -> Data {
+  static func seal(_ data: Data, password: String, version: Int = 1) throws -> Data {
+    guard version == 1 || version == 2 else { throw NSError(domain: "Migration", code: 6) }
     guard data.count <= 256 * 1024 * 1024 else { throw NSError(domain: "Migration", code: 3) }
     var bytes = [UInt8](repeating: 0, count: 16)
     guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw NSError(domain: "Migration", code: 4) }
     let salt = Data(bytes), secret = try key(password, salt: salt)
-    guard let combined = try AES.GCM.seal(data, using: secret, authenticating: context).combined else { throw NSError(domain: "Migration", code: 5) }
-    return try JSONEncoder().encode(Envelope(salt: salt, ciphertext: combined))
+    guard let combined = try AES.GCM.seal(data, using: secret, authenticating: version == 1 ? context : Data("codex-manage/encrypted-migration/v2".utf8)).combined else { throw NSError(domain: "Migration", code: 5) }
+    let result = try JSONEncoder().encode(Envelope(version: version, salt: salt, ciphertext: combined))
+    guard result.count <= 256 * 1024 * 1024 else { throw NSError(domain: "Migration", code: 3) }
+    return result
   }
-  static func open(_ data: Data, password: String) throws -> Data {
+  static func open(_ data: Data, password: String) throws -> Data { try openVersioned(data, password: password).bytes }
+  static func openVersioned(_ data: Data, password: String) throws -> (version: Int, bytes: Data) {
     guard data.count <= 256 * 1024 * 1024 else { throw NSError(domain: "Migration", code: 3) }
+    guard try VoiceMigrationJSON.topLevelKeys(data) == ["version", "salt", "ciphertext"] else { throw NSError(domain: "Migration", code: 6) }
     let envelope = try JSONDecoder().decode(Envelope.self, from: data)
-    guard envelope.version == 1 else { throw NSError(domain: "Migration", code: 6) }
-    return try AES.GCM.open(AES.GCM.SealedBox(combined: envelope.ciphertext), using: key(password, salt: envelope.salt), authenticating: context)
+    guard envelope.version == 1 || envelope.version == 2 else { throw NSError(domain: "Migration", code: 6) }
+    let authentication = envelope.version == 1 ? Self.context : Data("codex-manage/encrypted-migration/v2".utf8)
+    let clear = try AES.GCM.open(AES.GCM.SealedBox(combined: envelope.ciphertext), using: key(password, salt: envelope.salt), authenticating: authentication)
+    return (envelope.version, clear)
   }
 }
 
@@ -62,16 +69,38 @@ enum EncryptedMigration {
     var notificationSeen: [String]? = nil
     var notificationNotices: [TaskNotificationEvent]? = nil
     var notificationHostRevocations: [String: TaskHostNotificationRevocation]? = nil
+    var pendingVoiceOriginals: PendingVoiceMigration.Bundle? = nil
+    // Export-only stable source witness; never appears in the encrypted wire payload.
+    var pendingVoiceSource: PendingVoiceMigration.Capture? = nil
+    enum CodingKeys: String, CodingKey {
+      case version, bundleIdentifier, state, credentials, attachments, notificationPreferences
+      case notificationKey, notificationDeviceId, notificationBindings, notificationSounds, soundFiles
+      case notificationSeen, notificationNotices, notificationHostRevocations, pendingVoiceOriginals
+    }
+  }
+  static func validateOriginals(_ payload: Payload) throws {
+    guard (payload.version == 1 && payload.pendingVoiceOriginals == nil) ||
+      (payload.version == 2 && payload.pendingVoiceOriginals != nil) else { throw HostServiceError.invalidResponse }
+    if let source = payload.pendingVoiceSource { guard source.bundle?.id == payload.pendingVoiceOriginals?.id else { throw HostServiceError.invalidResponse } }
+    try payload.pendingVoiceOriginals?.validate()
   }
   static func seal(_ payload: Payload, password: String) throws -> Data {
-    try EncryptedMigrationCrypto.seal(JSONEncoder().encode(payload), password: password)
+    try validateOriginals(payload)
+    try payload.pendingVoiceSource?.unchanged()
+    let result = try EncryptedMigrationCrypto.seal(JSONEncoder().encode(payload), password: password, version: payload.version)
+    try payload.pendingVoiceSource?.unchanged()
+    return result
   }
   static func open(_ data: Data, password: String) throws -> Payload {
     guard data.count <= 256 * 1024 * 1024 else { throw HostServiceError.message(L10n.tr("迁移文件过大。")) }
     do {
-      let bytes = try EncryptedMigrationCrypto.open(data, password: password)
-      let payload = try JSONDecoder().decode(Payload.self, from: bytes)
-      guard payload.version == 1, MigrationIdentityPolicy.accepts(source: payload.bundleIdentifier, destination: Bundle.main.bundleIdentifier),
+      let clear = try EncryptedMigrationCrypto.openVersioned(data, password: password)
+      let keys = try VoiceMigrationJSON.topLevelKeys(clear.bytes)
+      let known: Set<String> = ["version", "bundleIdentifier", "state", "credentials", "attachments", "notificationPreferences", "notificationKey", "notificationDeviceId", "notificationBindings", "notificationSounds", "soundFiles", "notificationSeen", "notificationNotices", "notificationHostRevocations", "pendingVoiceOriginals"]
+      guard keys.isSubset(of: known), clear.version != 1 || !keys.contains("pendingVoiceOriginals") else { throw HostServiceError.invalidResponse }
+      let payload = try JSONDecoder().decode(Payload.self, from: clear.bytes)
+      try validateOriginals(payload)
+      guard payload.version == clear.version, MigrationIdentityPolicy.accepts(source: payload.bundleIdentifier, destination: Bundle.main.bundleIdentifier),
         payload.attachments.keys.allSatisfy(safeFilename), payload.soundFiles.keys.allSatisfy(safeFilename) else { throw HostServiceError.invalidResponse }
       return payload
     } catch { throw HostServiceError.message(L10n.tr("密码错误或迁移文件已损坏，原有数据未更改。")) }

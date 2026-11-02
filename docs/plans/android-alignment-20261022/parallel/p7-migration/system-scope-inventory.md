@@ -60,3 +60,5 @@ Source86补充（2026-11-02）：root-session增加可选版本化最近项目�
 Source94补充（2026-11-02）：加密既有通知回执图在API33实际Main、三项Native、两图/真实生命周期及归档读回限定通过；原ACK、unknown/identity密文与alias保持，不等于真实I/O崩溃或24域完整迁移/激活。24域/激活/真实故障与其他域继续开放；语音原件后续见阶段61增量，原图范围见[限定档案](../../records/source94-main-cold-entry-accepted.md)。
 
 Stage61补充（2026-11-02）：iOS既有container的可选原件Envelope/Payload v2已接入，空原件仍v1；独立惰性档案覆盖pending/terminal/expired/orphan，active/cold/saved/incoming共同物理预检64MiB/128文件，完整journal在copy前fsync。不向普通恢复/prepare/upload/replay/许可注入原件。iOS SDK本次通过，macOS四源CLI结果匹配复用；Payload/SessionStore运行态、24域/激活/真实故障、完整UI、双端整包互通与物理DEV仍开放，Android既有sealed/provisional边界不变，见[阶段61档案](../../records/stage61-p7-voice-originals.md)。
+
+Stage62对应P8增量（2026-11-02）：完整target/replacement方法1的两case在isolated Compose/typed fake ports下限定通过；两组退役合成fixture完成全原件取证后，独立Native精确清理两alias/两目录。此为迟到选择隔离及该pair资源收尾，不关闭root-easywork迁移、shared default family独核或完整P7/A5；原Source79/80/91等其他材料与key未查询/触碰，见[阶段62档案](../../records/stage62-p8-target-replacement.md)。

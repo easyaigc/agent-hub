@@ -29,7 +29,7 @@
 
 私有原件 `source90-r4-root-boundary-cli-review.json`：918B，SHA-256 `48660f6ce4496c60d371b49c90e634360ef782507a8d0bd9c5836393615a87e2`。匹配四源为下表的 EncryptedMigration、PendingVoiceMigration、PendingVoiceMigrationStages 与 CLI 脚本。
 
-**本次 iOS SDK 构建。** 正式 `pnpm build:ios` 原 PID17241、wait0／BUILD SUCCEEDED；六文件构建前后精确匹配，主 target Sources58→60，两 helper 各一次，四份 production Swift 实际编译。Root 已核完整约1.55MB stdout、261B stderr、chunk H、Info.plist、当前 binary 与源六份。产物为 `com.codexmanage.ios`、`iphonesimulator27.1`、arm64+x86_64，binary 119231376B，SHA-256 `e38ee94cb323f8b9348f5cd0b93f24df71f76e4dcf1bf9f7949855866e83958a`。
+**本次 iOS SDK 构建。** 正式 `pnpm build:ios` 原 PID17241、wait0／BUILD SUCCEEDED；六文件构建前后精确匹配，主 target Sources59→61，两 helper 各一次，四份 production Swift 实际编译。Root 已核完整约1.55MB stdout、261B stderr、chunk H、Info.plist、当前 binary 与源六份。产物为 `com.codexmanage.ios`、`iphonesimulator27.1`、arm64+x86_64，binary 119231376B，SHA-256 `e38ee94cb323f8b9348f5cd0b93f24df71f76e4dcf1bf9f7949855866e83958a`。
 
 私有原件 `stage61-root-ios-sdk-review.json`：862B，SHA-256 `232f9f4ccb4d4d12d2dbf6ff9b0154af0a2693860011a232ca643a6246909a9f`。Simulator **未启动**，构建不算 Native 方法、交互、界面或真实 DEV 通过。本次 focused 检查亦已完成：`generate:mobile-parity`、限定文件 Prettier、`check:mobile-parity`、`git diff --check` 原 child 分别 PID34446／34512／34553／34634，实际 wait0；六源前后不变。Root 已核9个检查/状态 child及18条完整 raw，复核原件 `stage61-root-focused-checks-review.json` 为1602B、SHA-256 `06396ce6f167dc5345eef9c184dd8a449916eb168fcb222cd930d96cd0db75f1`。未改 TypeScript/工具实现，阶段60已成功的全仓检查按原范围保留，不重跑冒充本轮结果；本阶段提交继续单独核对。
 
@@ -48,8 +48,10 @@ Root 接入记录 `stage61-root-source-application.json`：1501B，SHA-256 `2d85
 
 ## 交付、失败保留与资源
 
-上一阶段 [Source94](source94-main-cold-entry-accepted.md) 已由 [PR108](https://git.51easyai.com/BCAI/agent-hub-app/pulls/108) 合入 main `8ff12d7d21b28c86a131984e415f99d80ec576ce`，CI11104 workspace26844／ios26845 成功，阶段60本地及 origin 分支已清理。本阶段仍在专用分支交付中。
+上一阶段 [Source94](source94-main-cold-entry-accepted.md) 已由 [PR108](https://git.51easyai.com/BCAI/agent-hub-app/pulls/108) 合入 main `8ff12d7d21b28c86a131984e415f99d80ec576ce`，CI11104 workspace26844／ios26845 成功，阶段60本地及 origin 分支已清理。本阶段已由[PR109](https://git.51easyai.com/BCAI/agent-hub-app/pulls/109)合入 main `0d966ddb8b389a4e1093b515fcac8ac1af07a410`，CI11111 workspace26855／ios26856成功，阶段61本地及origin分支已清理；既有运行态与双端DEV未验边界保持。
 
 原 Source91 reader 失败及原图/namespace/key 保持原记录，不升级、不重放。本阶段的 partial/unknown/缺失 journal/冲突材料保留阻断；已有效发布的惰性原件不因业务回滚被删除。任务和项目管理、F75、iOS A6 保持暂停。Host/模型新增0、累计221，P4为205，另1个未知原操作封存，不查询或重放。
 
 Root 核完整 SDK 原件及当前 binary 后，已在无 open FD 下回收四根可重建 cache（7019文件/links、547900KiB）；当前 Products app/dSYM、六源与必要证明保留。重复 stdout 无损 gzip 为76916B并逐字解压核对，known/stderr/meta不动。收尾回执 SHA-256 `2aee51d161cca39eac3f85171c23cc831b41f1c251891459b4268278d86e20a8`。
+
+计数更正：后续独立审查发现既有 UsageViews 的 PBXBuildFile ID 为23位；旧24位正则统计漏计一项。实际 App 来源从59增至61，两 helper 归属及本次真实 SDK 构建结论保持；原私有回执不改写，后续目标按完整 PBX 引用集合核对。

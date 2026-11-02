@@ -57,6 +57,39 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             exact(saved,setOf("version","id","sha256","payload"));val encoded=saved.getString("payload")
             require(encoded.length<=((MAX_PAYLOAD_BYTES+2)/3)*4);return NativeMigrationRecords.bytes(encoded)
         }
+        private fun chunkName(generation: String,index: Int)="migration-candidate:$generation:$index"
+
+        /** Shared bounded legacy decoder. The supplied reader has no publication authority. */
+        internal fun readExistingArchive(applicationId: String,saved: JSONObject,receipt: Receipt,
+                                         readChunk: (String,Int)->ByteArray): NativeMigrationRecords {
+            require(UUID.fromString(receipt.id).toString()==receipt.id&&receipt.sha256.matches(Regex("[a-f0-9]{64}"))&&receipt.recordCount in 1..1024)
+            require(saved.getString("id")==receipt.id&&saved.getString("sha256")==receipt.sha256)
+            val clear=when(saved.get("version")) {
+                1 -> legacyPayload(saved)
+                2 -> {
+                    exact(saved,setOf("version","id","sha256","size","records","generation","chunks"))
+                    val size=saved.get("size") as Int;require(size in 1..MAX_PAYLOAD_BYTES&&saved.get("records")==receipt.recordCount)
+                    val generation=saved.getString("generation");require(UUID.fromString(generation).toString()==generation)
+                    val chunks=saved.getJSONArray("chunks");require(chunks.length()==(size+CANDIDATE_CHUNK_BYTES-1)/CANDIDATE_CHUNK_BYTES)
+                    val bytes=ByteArray(size)
+                    try {
+                        var offset=0
+                        for(index in 0 until chunks.length()) {
+                            val row=chunks.getJSONObject(index);exact(row,setOf("size","sha256"))
+                            val count=minOf(CANDIDATE_CHUNK_BYTES,size-offset);require(row.get("size")==count)
+                            val digest=row.getString("sha256");require(digest.matches(Regex("[a-f0-9]{64}")))
+                            val chunk=readChunk(chunkName(generation,index),count)
+                            try {require(chunk.size==count&&sha(chunk)==digest);System.arraycopy(chunk,0,bytes,offset,count)}finally {chunk.fill(0)}
+                            offset+=count
+                        }
+                        bytes
+                    }catch(failure: Throwable){bytes.fill(0);throw failure}
+                }
+                else -> error("Unsupported candidate version")
+            }
+            try {require(sha(clear)==receipt.sha256);return NativeMigrationArchiveValidation.archive(clear,applicationId).also {require(it.size==receipt.recordCount)}}
+            finally {clear.fill(0)}
+        }
     }
 
     /** Small authenticated header is the sole publication; encrypted chunks are immutable per generation. */
@@ -114,42 +147,15 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         } finally { clear.fill(0) }
     } catch (_: Exception) { throw InvalidCandidate() }
 
-    private fun chunkName(generation: String,index: Int)="migration-candidate:$generation:$index"
-
     /** A cold reader names the original ID/digest and reads all chunks under one pointer lock. */
     fun read(receipt: Receipt): Map<String,String> = readArchive(receipt).also {require(it.binary.isEmpty())}.text
 
     internal fun readArchive(receipt: Receipt): NativeMigrationRecords = storage.operationTransaction {
         require(UUID.fromString(receipt.id).toString() == receipt.id && receipt.sha256.matches(Regex("[a-f0-9]{64}"))&&receipt.recordCount in 1..1024)
         val saved = objectValue(storage.migrationReadTextRecords(setOf(SLOT))[SLOT] ?: error("Migration candidate unavailable"))
-        require(saved.getString("id") == receipt.id && saved.getString("sha256") == receipt.sha256)
-        val clear=when(saved.get("version")) {
-            1 -> {
-                legacyPayload(saved)
-            }
-            2 -> {
-                exact(saved,setOf("version","id","sha256","size","records","generation","chunks"))
-                val size=saved.get("size") as Int;require(size in 1..MAX_PAYLOAD_BYTES&&saved.get("records")==receipt.recordCount)
-                val generation=saved.getString("generation");require(UUID.fromString(generation).toString()==generation)
-                val chunks=saved.getJSONArray("chunks");require(chunks.length()==(size+CANDIDATE_CHUNK_BYTES-1)/CANDIDATE_CHUNK_BYTES)
-                val bytes=ByteArray(size)
-                try {
-                    var offset=0
-                    for(index in 0 until chunks.length()) {
-                        val row=chunks.getJSONObject(index);exact(row,setOf("size","sha256"))
-                        val count=minOf(CANDIDATE_CHUNK_BYTES,size-offset);require(row.get("size")==count)
-                        val digest=row.getString("sha256");require(digest.matches(Regex("[a-f0-9]{64}")))
-                        val chunk=storage.migrationReadBinary(chunkName(generation,index),count,CANDIDATE_CHUNK_BYTES)
-                        try {require(sha(chunk)==digest);System.arraycopy(chunk,0,bytes,offset,count)}finally {chunk.fill(0)}
-                        offset+=count
-                    }
-                    bytes
-                }catch(failure: Throwable){bytes.fill(0);throw failure}
-            }
-            else -> error("Unsupported candidate version")
+        readExistingArchive(applicationId,saved,receipt) {name,count->
+            storage.migrationReadBinary(name,count,CANDIDATE_CHUNK_BYTES)
         }
-        try { require(sha(clear) == receipt.sha256); validateArchive(clear).also { require(it.size == receipt.recordCount) } }
-        finally { clear.fill(0) }
     }
 
     internal fun validate(clear: ByteArray): Map<String,String> = validateArchive(clear).also {require(it.binary.isEmpty())}.text

@@ -112,8 +112,11 @@ async function stdioChild() {
   const { createHash } = await import('node:crypto');
   const { win32 } = await import('node:path');
   const mode = process.env.TRACE_BATCH_MODE;
-  const record = (event) =>
-    appendFileSync(process.env.TRACE_BATCH_LOG, JSON.stringify({ event, pid: process.pid }) + '\n');
+  const record = (event, fields = {}) =>
+    appendFileSync(
+      process.env.TRACE_BATCH_LOG,
+      JSON.stringify({ event, pid: process.pid, ...fields }) + '\n',
+    );
   const digest = (value) => createHash('sha256').update(value).digest('base64');
   const send = (value) => process.stdout.write(JSON.stringify(value) + '\n');
   const snapshot = (item) => {
@@ -147,6 +150,12 @@ async function stdioChild() {
       if (!line.startsWith('B\t')) break assertLine;
       const request = JSON.parse(Buffer.from(line.slice(2), 'base64'));
       batchCount++;
+      if (mode === 'cold-shared-budget')
+        record('cold-frame', {
+          id: request.id,
+          items: request.items.length,
+          receivedAt: performance.timeOrigin + performance.now(),
+        });
       const value = {
         schemaVersion: 1,
         kind: 'snapshot-many',
@@ -195,7 +204,12 @@ async function stdioChild() {
         return;
       }
       if (mode === 'cold-shared-budget') {
-        setTimeout(() => send(value), 200);
+        // Publish the real cold prefix immediately. The next frame stays pending
+        // until the original owner budget closes it; no timer races the prefix.
+        if (batchCount === 1) {
+          send(value);
+          record('cold-prefix-written', { id: request.id });
+        } else record('cold-response-withheld', { id: request.id });
         return;
       }
       if (mode === 'owner-close') {
@@ -229,28 +243,61 @@ async function transportOwner() {
   const started = performance.now();
   const originalNow = Date.now;
   const originalWait = Atomics.wait;
+  const sharedBudget = workerData.mode === 'cold-shared-budget';
+  const nowDescriptor = Object.getOwnPropertyDescriptor(performance, 'now');
+  const originalPerformanceNow = performance.now;
+  const clockNow = () => Reflect.apply(originalPerformanceNow, performance, []);
+  let observedNow;
+  if (sharedBudget)
+    // Observe the actual clock samples used by budget() and Atomics.wait's
+    // timeout arithmetic. Return each raw value unchanged; never advance a clock.
+    Object.defineProperty(performance, 'now', {
+      configurable: true,
+      value() {
+        const value = clockNow();
+        observedNow = value;
+        return value;
+      },
+    });
   const timing =
-    workerData.mode === 'batch-timeout'
-      ? { timeOrigin: performance.timeOrigin, waits: [] }
+    workerData.mode === 'batch-timeout' || sharedBudget
+      ? {
+          timeOrigin: performance.timeOrigin,
+          waits: [],
+          ...(sharedBudget ? { omittedWaits: 0 } : {}),
+        }
       : undefined;
   if (timing)
     Atomics.wait = function (view, index, expected, timeout) {
-      const sample = { entered: performance.now(), timeout, before: Atomics.load(view, index) };
-      timing.waits.push(sample);
+      const sample = {
+        entered: clockNow(),
+        timeout,
+        before: Atomics.load(view, index),
+        ...(sharedBudget ? { timeoutComputedAt: observedNow } : {}),
+      };
+      if (!sharedBudget || timing.waits.length < 64) timing.waits.push(sample);
+      else timing.omittedWaits++;
       try {
         const status = Reflect.apply(originalWait, this, [view, index, expected, timeout]);
-        sample.returned = performance.now();
+        sample.returned = clockNow();
         sample.status = status;
         sample.after = Atomics.load(view, index);
         return status;
       } catch (error) {
-        sample.threwAt = performance.now();
+        sample.threwAt = clockNow();
         throw error;
       }
     };
   try {
     backend.budget(1800);
-    if (workerData.mode === 'cold-shared-budget') backend.budget(300);
+    if (sharedBudget) {
+      backend.budget(300);
+      timing.phaseBudget = {
+        milliseconds: 300,
+        startedAt: observedNow,
+        deadlineAt: observedNow + 300,
+      };
+    }
     if (workerData.mode === 'clock-forward') Date.now = () => originalNow() + 60_000;
     if (workerData.mode === 'clock-backward') {
       backend.budget(100);
@@ -281,6 +328,10 @@ async function transportOwner() {
   } finally {
     Atomics.wait = originalWait;
     Date.now = originalNow;
+    if (sharedBudget) {
+      if (nowDescriptor) Object.defineProperty(performance, 'now', nowDescriptor);
+      else delete performance.now;
+    }
     if (timing) timing.closeEntered = performance.now();
     try {
       backend.close();
@@ -379,8 +430,15 @@ async function transportMain() {
       requests: rows().filter((row) => row.event === 'request').length,
       partialExecuted: rows().some((row) => row.event === 'first-item'),
       allRetired: true,
+      ...(mode === 'cold-shared-budget'
+        ? {
+            requestFrames: rows()
+              .filter((row) => row.event === 'cold-frame')
+              .map(({ id, items, receivedAt }) => ({ id, items, receivedAt })),
+          }
+        : {}),
     };
-    if (mode === 'batch-timeout') {
+    if (mode === 'batch-timeout' || mode === 'cold-shared-budget') {
       result.nativeTimers = [];
       result.diagnosticIncomplete = false;
       try {
@@ -517,7 +575,7 @@ import child from 'node:child_process';import {fileURLToPath} from 'node:url';
 import {syncBuiltinESMExports} from 'node:module';
 import {writeFileSync} from 'node:fs';import {dirname,join} from 'node:path';
 import {threadId} from 'node:worker_threads';
-if(process.env.TRACE_BATCH_MODE==='batch-timeout'){
+if(['batch-timeout','cold-shared-budget'].includes(process.env.TRACE_BATCH_MODE)){
  const originalSet=globalThis.setTimeout,originalClear=globalThis.clearTimeout,rows=[],handles=new Map();
  let omitted=0;
  globalThis.setTimeout=function(callback,delay,...args){

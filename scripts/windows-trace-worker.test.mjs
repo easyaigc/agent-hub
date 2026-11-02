@@ -1654,8 +1654,21 @@ for (const mode of [
   });
 
 for (const mode of ['cold-second-timeout', 'cold-shared-budget'])
-  test(`actual cold subframes retain Native750ms and the original aggregate phase budget: ${mode}`, async () => {
+  test(`actual cold subframes retain Native750ms and the original aggregate phase budget: ${mode}`, async (t) => {
     const result = await batchTransportFixture(mode, {}, 64);
+    if (mode === 'cold-shared-budget') {
+      t.diagnostic(
+        'cold-shared-budget observation: ' +
+          JSON.stringify({
+            requests: result.requests,
+            frames: result.requestFrames,
+            incomplete: result.diagnosticIncomplete,
+          }),
+      );
+      t.diagnostic('cold-shared-budget owner: ' + JSON.stringify(result.answer.timing));
+      for (const [index, timer] of (result.nativeTimers ?? []).entries())
+        t.diagnostic(`cold-shared-budget native[${index}]: ` + JSON.stringify(timer));
+    }
     assert.equal(result.allRetired, true);
     assert.equal(result.requests, 2);
     assert.equal(result.answer.passed, false);
@@ -1665,6 +1678,43 @@ for (const mode of ['cold-second-timeout', 'cold-shared-budget'])
       assert.equal(result.partialExecuted, true);
       assert(result.answer.elapsed < 1100, 'The second frame still expires at750ms');
     } else {
+      const { timing } = result.answer;
+      assert.equal(timing.phaseBudget.milliseconds, 300);
+      assert.equal(timing.omittedWaits, 0, 'All original owner waits were recorded');
+      assert.equal(timing.waits.length, 2, 'Both original subframes reached the owner wait');
+      const [prefix, remainder] = timing.waits;
+      assert.equal(prefix.after, 1, 'The actual cold prefix was published before the remainder');
+      assert.notEqual(prefix.status, 'timed-out');
+      assert.equal(
+        remainder.status,
+        'timed-out',
+        'The original aggregate budget ends the pending frame',
+      );
+      for (const sample of timing.waits)
+        assert.equal(
+          sample.timeout,
+          Math.min(1000, timing.phaseBudget.deadlineAt - sample.timeoutComputedAt),
+          'Every owner wait must use the same original monotonic deadline without renewal',
+        );
+      assert(
+        remainder.timeout < prefix.timeout,
+        'The second frame consumes the original phase remainder',
+      );
+      assert.deepEqual(
+        result.requestFrames.map(({ id, items }) => ({ id, items })),
+        [
+          { id: 1, items: 8 },
+          { id: 2, items: 56 },
+        ],
+        'Exactly the original cold prefix and remaining guards reach the child once',
+      );
+      assert.equal(result.diagnosticIncomplete, false);
+      assert.equal(result.nativeTimers.length, 1);
+      assert.equal(
+        result.nativeTimers[0].rows.length,
+        2,
+        'Each frame arms its actual unchanged750ms timer',
+      );
       assert(
         result.answer.elapsed < 650,
         'The remaining frame receives only the original300ms phase remainder',

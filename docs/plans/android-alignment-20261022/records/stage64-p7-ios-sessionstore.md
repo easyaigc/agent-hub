@@ -44,8 +44,8 @@ source alias `IOSMigrationSessionStoreErrorAtomic`、change ID `stage64-p7-ios-s
 
 ## 交付与资源状态
 
-前阶段[PR112](https://git.51easyai.com/BCAI/agent-hub-app/pulls/112)已合入main `d1a7c6295fc2928fa8b5797c239b66e6ee0ee9bf`，CI11140 workspace26924／ios26925成功，阶段63本地/origin/tracking已清理；本阶段Git交付仍待Root实际核对，不把前阶段CI记为本阶段通过。
+本阶段[PR113](https://git.51easyai.com/BCAI/agent-hub-app/pulls/113)已合入main `6adc9ff93d46d38e554943088913d348d25751c4`，head `99598238417e5b04f49e24db7671e9459dca08f7`，CI11145 workspace26931/ios26932成功，阶段64本地/origin/tracking分支已清理。Root已核对远端merge双亲与tree等于head；不复用前阶段CI冒充本次通过。
 
-成功、B1和B2 Simulator均已正常shutdown/delete，Root逐项确认registry与实际device root不存在；更早unhosted Simulator亦已清理，临时runner均已清。故障pair收尾复核 `stage64-root-passed-pair-sim-cleanup-review.json`（453B），SHA-256 `41c7ef1c68c18e2fdbbd26c5dc51f73d73432763e73baf1f82f410ac30b43495`，8份实际wait/16份full raw读取，两个delete退出0。current App/Native Products及framework因PR和当前包匹配复验的具体依赖继续保留；Xcode可重建intermediates/caches待本阶段代码commit后由Root核对无active FD再精确回收，暂不声称已清，按私有资源台账复核。失败raw/crash与两份closed xcresult无损归档索引保留；正式App、R/W保护现场、配置与原指纹不动，无新用户独立聊天。
+成功、B1和B2 Simulator均已正常shutdown/delete，Root逐项确认registry与实际device root不存在；更早unhosted Simulator亦已清理，临时runner均已清。故障pair收尾复核 `stage64-root-passed-pair-sim-cleanup-review.json`（453B），SHA-256 `41c7ef1c68c18e2fdbbd26c5dc51f73d73432763e73baf1f82f410ac30b43495`，8份实际wait/16份full raw读取，两个delete退出0。current App/Native Products及framework因PR和当前包匹配复验的具体依赖继续保留；提交后Root核对无active FD，已回收609112064B allocated的本阶段可重建Xcode intermediates/caches；实际包及必要证据保持，私有收尾回执另存。失败raw/crash与两份closed xcresult无损归档索引保留；正式App、R/W保护现场、配置与原指纹不动，无新用户独立聊天。
 
 本轮Host/model输入+0，累计221、P4为205，另1个未知原操作封存不查询或重放。任务/项目F65–F67、UM06后续业务/UM07–08、F75及iOS A6物理暂停；API37横屏、蜂窝/VPN和其他系统依赖仍单列，不阻塞本机可执行工作。

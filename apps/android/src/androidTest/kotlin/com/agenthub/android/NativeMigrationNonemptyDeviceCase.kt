@@ -14,7 +14,7 @@ import java.util.UUID
 
 /**
  * Bounded paired real producer -> export -> Session restore -> existing-only cold case.
- * The dedicated SessionTest exposes only the two closed first/cold selectors.
+ * The dedicated SessionTest keeps paired first/cold and pristine Controller selectors separate.
  * Host admission must independently establish exact original-process exit and the fresh cold tuple.
  * Ordinary owners only; this does not prove Controller/strict-generation handoff or OS delivery.
  */
@@ -22,6 +22,8 @@ internal object NativeMigrationNonemptyDeviceCase {
     const val SCHEMA = "p7-nonempty-device-session-v2"
     const val COLD_METHOD = "nonemptyReadOnlyColdAfterExactOriginalExit"
     const val FIRST_METHOD = "nonemptyDeviceProducersRestoreActualSession"
+    const val PRISTINE_SCHEMA = "p7-nonempty-pristine-controller-v1"
+    const val PRISTINE_METHOD = "pristineNonemptyControllerImportsWithoutPrecreatedRootKey"
     private const val SOURCE = "source"
     private const val DESTINATION = "installation"
     private const val PASSWORD = "owned nonempty native device migration password"
@@ -90,6 +92,20 @@ internal object NativeMigrationNonemptyDeviceCase {
         val activeTextSha256: Map<String, String>, val activeBinarySha256: Map<String, String>, val acquiredStores: Int, val acquiredSessions: Int,
         val actualSessionJoinReturns: Int, val actualWriterRetireReturns: Int,
         val actualLeaseReleaseReturns: Int, val unknownAcquisitions: Int, val forbiddenPortAttempts: Int)
+
+    /** IO observations bracket Controller confirm/restore; first KEY trigger is unobserved. */
+    data class KeyWindow(val point: String, val rootAliasPresent: Boolean, val rootCiphertextCount: Int,
+        val destinationCiphertext: Map<String, String>)
+    data class PristineProof(val completed: Proof, val keyWindows: List<KeyWindow>,
+        val restorePoints: List<String>, val controllerQuiesceReturns: Int, val controllerRestoreReturns: Int,
+        val newSessionPublished: Boolean, val freshReady: Boolean, val controllerReady: Boolean,
+        val explicitEnrollmentRequired: Boolean, val phase: String, val result: String)
+
+    fun pristineScenario(scope: Scope): JSONObject = JSONObject()
+        .put("entryPath", "already-staged-production-candidate-controller")
+        .put("rootAlias", scope.alias).put("sourceAlias", scope.sourceAlias)
+        .put("rootNamespace", DESTINATION).put("sourceNamespace", SOURCE)
+        .put("safPickerCovered", false).put("uiCovered", false).put("coldProcessCovered", false)
 
     private class Ports : HostReads, CodexCommands {
         val attempts = java.util.concurrent.atomic.AtomicInteger()
@@ -184,9 +200,15 @@ internal object NativeMigrationNonemptyDeviceCase {
                 constructingRoots.remove(store); unknown.remove(attempt)
             }
         }
-        suspend fun freeze(session: MobileSession): Held = withContext(NonCancellable + Dispatchers.Main.immediate) {
+        suspend fun freeze(session: MobileSession, operationId: String = UUID.randomUUID().toString()): Held = withContext(NonCancellable + Dispatchers.Main.immediate) {
             val attempt = begin("actual-quiesce+Frozen")
-            Held(session.quiesceForMigration(UUID.randomUUID().toString())).also { leases.add(it); unknown.remove(attempt) }
+            Held(session.quiesceForMigration(operationId)).also { leases.add(it); unknown.remove(attempt) }
+        }
+        /** Controller's scalar callback is called only after the production release returned. */
+        fun controllerPrepared(held: Held) {
+            check(android.os.Looper.myLooper() == android.os.Looper.getMainLooper())
+            check(leases.any { it === held } && !held.attempted && !held.returned)
+            held.attempted = true; held.returned = true; released++
         }
         suspend fun release(held: Held) = withContext(NonCancellable + Dispatchers.IO) {
             check(!held.attempted); held.attempted = true
@@ -401,6 +423,231 @@ internal object NativeMigrationNonemptyDeviceCase {
             val scope = ThreadReadingIdentity.scopeKey(requireNotNull(client.scope))
             require(reading.getJSONArray("scopes").length() == 1 && reading.getJSONArray("scopes").getString(0) == scope)
             require(row.getBoolean("replyUnread") || row.getJSONObject("notices").keys().asSequence().any { !row.getJSONObject("notices").getJSONObject(it).getBoolean("seen") })
+        }
+    }
+
+    /** Task-owned ciphertext inventory only: never asks an existing-only root reader to open a missing KEY. */
+    private fun pristineWindow(scope: Scope, point: String): KeyWindow {
+        check(android.os.Looper.myLooper() != android.os.Looper.getMainLooper()); scope.checkScope()
+        val keys = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val present = keys.containsAlias(scope.alias)
+        val base = scope.context.noBackupFilesDir
+        val inventory = linkedMapOf<String, String>(); var directories = 0; var totalBytes = 0L
+        fun identity(stat: android.system.StructStat) = listOf(stat.st_dev, stat.st_ino, stat.st_uid.toLong(), stat.st_mode.toLong(), stat.st_mtime, stat.st_ctime)
+        fun walk(folder: File) {
+            require(++directories <= 64)
+            val before = android.system.Os.lstat(folder.path)
+            require(android.system.OsConstants.S_ISDIR(before.st_mode) && before.st_uid == Process.myUid() &&
+                before.st_mode and 0x1ff == 0x1c0 && folder.canonicalFile == folder)
+            NativeMigrationReadLifetime().use({ android.system.Os.open(folder.path,
+                android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NONBLOCK or android.system.OsConstants.O_NOFOLLOW, 0) },
+                { require(identity(android.system.Os.fstat(it)) == identity(before)) }, { android.system.Os.close(it) })
+            val names = requireNotNull(folder.list()).sorted(); require(names.size <= 128)
+            for (name in names) {
+                val file = File(folder, name); val stat = android.system.Os.lstat(file.path)
+                if (android.system.OsConstants.S_ISDIR(stat.st_mode)) {
+                    require(folder.name == DESTINATION && name.startsWith("migration-generation-"))
+                    val generation = name.removePrefix("migration-generation-"); require(UUID.fromString(generation).toString() == generation)
+                    walk(file)
+                } else {
+                    require(name.matches(Regex("[a-f0-9]{64}\\.bin")) && inventory.size < 256)
+                    val ref = NativeMigrationReadOnlyFile(folder, file, 23 * 1024 * 1024)
+                    require(ref.identity.mode and 0x1ff == 0x180)
+                    totalBytes += ref.identity.size; require(totalBytes <= 64L * 1024 * 1024)
+                    inventory[file.relativeTo(base).path] = ref.read { it.copyTo(nullOutputStreamCompat()) }.ciphertextSha256
+                }
+            }
+            require(requireNotNull(folder.list()).sorted() == names && identity(android.system.Os.lstat(folder.path)) == identity(before))
+        }
+        val beforeNames = requireNotNull(base.list()).sorted()
+        beforeNames.filter { it == DESTINATION || it.startsWith("$DESTINATION-") }.forEach { walk(File(base, it)) }
+        require(requireNotNull(base.list()).sorted() == beforeNames && keys.containsAlias(scope.alias) == present)
+        scope.guard()
+        val rootCount = inventory.keys.count { it.startsWith("$DESTINATION/") && it.removePrefix("$DESTINATION/").count { c -> c == '/' } == 0 }
+        return KeyWindow(point, present, rootCount, inventory)
+    }
+
+    /** Focused normal Controller path. No MainActivity, chooser URI, remote call, strict writer or OS-cold claim. */
+    suspend fun pristine(scope: Scope): PristineProof {
+        require(!scope.existingOnly)
+        val owners = Owners(); val ports = Ports(); val windows = mutableListOf<KeyWindow>()
+        val restorePoints = java.util.Collections.synchronizedList(mutableListOf<String>())
+        var controller: NativeMigrationController? = null; var lifecycle: NativeMigrationLifecycle? = null
+        var controllerHeld: Owners.Held? = null; var controllerQuiesces = 0; var controllerRestores = 0
+        var enrollmentRequired: Boolean? = null; var failure: Throwable? = null
+        suspend fun before(point: String) = withContext(Dispatchers.IO) {
+            pristineWindow(scope, point).also { require(!it.rootAliasPresent && it.rootCiphertextCount == 0); windows.add(it) }
+        }
+        try {
+            withContext(Dispatchers.IO) {
+                scope.checkScope(); require(!scope.archive.exists())
+                for (namespace in listOf(SOURCE, DESTINATION)) require(java.nio.file.Files.notExists(
+                    File(scope.context.noBackupFilesDir, namespace).toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            }
+            before("BEFORE_CONSTRUCTION")
+            val source = owners.open("pristine-normal-source") { NativeSessionStorage(scope.context, SOURCE, scope.sourceAlias) }
+            val destination = owners.open("pristine-normal-destination") { NativeSessionStorage(scope.context, DESTINATION, scope.alias) }
+            withContext(NonCancellable + Dispatchers.IO) {
+                val records = MigrationActivationFixtures.payload().getJSONObject("records")
+                for (name in records.keys()) source.write(name, records.getString(name))
+            }
+            owners.open("pristine-source-candidate-cache", source) { source.prepareChild(scope.context, "migration-candidates") }
+            owners.open("pristine-destination-candidate-cache", destination) { destination.prepareChild(scope.context, "migration-candidates") }
+            val sourceOwner = withContext(NonCancellable + Dispatchers.Main.immediate) {
+                owners.session(source, ports).also {
+                    it.restoreForMigration(); require(it.chatNotifications == null && it.migrationReady)
+                    it.voiceSettings.bind(NativeEncryptedVoicePreferenceStore(source))
+                    it.voiceSettings.resumePreferences()?.join(); require(it.voiceSettings.persisted)
+                }
+            }
+            withContext(Dispatchers.IO) { seed(scope.context, source, sourceOwner) }
+            val destinationOwner = withContext(NonCancellable + Dispatchers.Main.immediate) {
+                owners.session(destination, ports).also {
+                    it.restoreForMigration(); require(it.chatNotifications == null && it.migrationCanImport)
+                    it.voiceSettings.bind(NativeEncryptedVoicePreferenceStore(destination))
+                    it.voiceSettings.resumePreferences()?.join(); require(it.voiceSettings.persisted)
+                }
+            }
+            // Fixture must not preinitialize this destination. Normal confirm quiesce may persist metadata and create KEY.
+            before("AFTER_EMPTY_SESSION_RESTORE")
+            val sourceHeld = owners.freeze(sourceOwner)
+            val sourceCipher = withContext(Dispatchers.IO) {
+                sourceHeld.lease.requireRawWriters(); requireSourceNonempty(source)
+                scope.view(true).using { it.familyCiphertext() }
+            }
+            val receipt = withContext(Dispatchers.IO) {
+                NativeMigrationExport(scope.context, source).sealFile(scope.archive, PASSWORD, sourceHeld.lease)
+                NativeMigrationCandidateStore(scope.context, destination).stageFile(UUID.randomUUID().toString(), scope.archive, PASSWORD)
+            }
+            lateinit var original: Map<String, String>; lateinit var textPins: Map<String, String>; lateinit var binaryPins: Map<String, String>
+            val candidateCipher = withContext(Dispatchers.IO) {
+                // Ordinary prepared candidate child needs only its own KEY. Never call scope.view() here.
+                NativeMigrationStreamCandidate(scope.context, destination).read(receipt) { records ->
+                    NativeMigrationNonemptyPairContract.requireNine(records)
+                    original = materialize(records); textPins = textDigests(original); binaryPins = binaryDigests(records)
+                    require(original.keys.intersect(NativeMigrationForeground.ACTIVE_NAMES).isEmpty())
+                    require(NativeMigrationNotificationArchives.RECORD !in original)
+                    for (name in listOf(NativeMigrationDeviceState.READING, NativeMigrationDeviceState.NOTIFICATIONS, NativeMigrationSounds.RECORD))
+                        assertEquals(source.read(name), original.getValue(name))
+                }
+                val folder = File(scope.context.noBackupFilesDir, "$DESTINATION-migration-candidates")
+                val directory = NativeMigrationReadOnlyDirectory(folder)
+                directory.files.mapValues { (_, file) -> file.read { it.copyTo(nullOutputStreamCompat()) }.ciphertextSha256 }.also { directory.unchanged() }
+            }
+            before("AFTER_CANDIDATE_STAGE")
+            owners.release(sourceHeld)
+            val (sourceFresh, _) = owners.restore(scope, sourceOwner, sourceHeld, ports)
+            owners.stop(sourceFresh)
+            withContext(Dispatchers.IO) { assertEquals(sourceCipher, scope.view(true).using { it.familyCiphertext() }) }
+            var activeSession = destinationOwner; var activeStorage = destination
+            val ownedController = withContext(Dispatchers.Main.immediate) {
+                NativeMigrationController(scope.context, restoreObserver = { point ->
+                    // Synchronous scalar bookkeeping only; no IO or wait at either observer boundary.
+                    restorePoints.add(point.name)
+                    if (point == NativeMigrationControllerRestorePoint.PREPARE_RETURNED) owners.controllerPrepared(requireNotNull(controllerHeld))
+                }).also { controller = it; destinationOwner.migrationController = it }
+            }
+            val ownedLifecycle = object : NativeMigrationLifecycle {
+                override val ready get() = activeSession.migrationReady
+                override val canImport get() = activeSession.migrationCanImport
+                override fun currentStorage() = activeStorage
+                override suspend fun quiesce(operationId: String): NativeMigrationOwnerLease {
+                    check(controllerHeld == null && activeSession === destinationOwner && activeStorage === destination)
+                    return owners.freeze(activeSession, operationId).also { controllerHeld = it; controllerQuiesces++ }.lease
+                }
+                override suspend fun restore(lease: NativeMigrationOwnerLease, requiresExplicitEnrollment: Boolean) {
+                    val held = requireNotNull(controllerHeld); check(held.lease === lease && held.returned)
+                    check(lease.requiresExplicitEnrollment == requiresExplicitEnrollment && activeSession.ownsMigrationLease(lease))
+                    enrollmentRequired = requiresExplicitEnrollment
+                    val (fresh, store) = owners.restore(scope, activeSession, held, ports)
+                    // Register before Controller borrows this same prepared child on return.
+                    owners.open("pristine-fresh-candidate-cache", store) { store.prepareChild(scope.context, "migration-candidates") }
+                    fresh.migrationController = ownedController
+                    activeSession = fresh; activeStorage = store; fresh.resumeSelectionsAfterMigration(); controllerRestores++
+                }
+            }
+            lifecycle = ownedLifecycle
+            suspend fun awaitController(wanted: NativeMigrationPhase) = withContext(Dispatchers.Main.immediate) {
+                withTimeout(30_000) {
+                    while (ownedController.busy || !ownedController.canDismiss) {
+                        if (ownedController.phase == NativeMigrationPhase.UNKNOWN ||
+                            ownedController.phase == NativeMigrationPhase.FAILED && ownedController.needsOwnerRestore)
+                            error("Controller owner unresolved; original operation is retained, never repeated")
+                        delay(10)
+                    }
+                    require(ownedController.phase == wanted) { "Controller phase=${ownedController.phase}; result=${ownedController.result}" }
+                }
+            }
+            withContext(Dispatchers.Main.immediate) { ownedController.attach(ownedLifecycle); ownedController.show() }
+            awaitController(NativeMigrationPhase.PREVIEW)
+            withContext(Dispatchers.Main.immediate) {
+                require(ownedController.ready && ownedController.canImport && ownedController.result == NativeMigrationResult.READY)
+                val preview = requireNotNull(ownedController.preview)
+                require(preview.computers == 1 && preview.operations == 1 && preview.attachments == 1 && preview.notificationArchives == 0 &&
+                    preview.drafts == JSONObject(original.getValue("metadata")).getJSONObject("drafts").length())
+            }
+            before("AFTER_CONTROLLER_PREVIEW")
+            before("BEFORE_CONFIRM_IMPORT")
+            withContext(Dispatchers.Main.immediate) { ownedController.confirmImport() } // Exactly once; UNKNOWN is never reissued.
+            awaitController(NativeMigrationPhase.DONE)
+            val ready = withContext(Dispatchers.Main.immediate) {
+                require(ownedController.result == NativeMigrationResult.IMPORTED && ownedController.ready && !ownedController.needsOwnerRestore)
+                require(activeSession !== destinationOwner && activeStorage !== destination && activeSession.migrationStorage === activeStorage)
+                activeSession.awaitMigrationRestore()
+                require(activeSession.migrationReady && activeSession.phoneReading.ready && activeSession.phoneReading.failure == null)
+                require(activeSession.chatNotifications == null && activeSession.aiSharing.grants.isEmpty())
+                activeSession.migrationReady to ownedController.ready
+            }
+            val after = withContext(Dispatchers.IO) { pristineWindow(scope, "AFTER_CONTROLLER_DONE").also { windows.add(it) } }
+            require(after.rootAliasPresent && after.rootCiphertextCount > 0)
+            require(restorePoints.toList() == NativeMigrationControllerRestorePoint.entries.map { it.name })
+            require(controllerQuiesces == 1 && controllerRestores == 1 && ports.attempts.get() == 0)
+            val generation = withContext(Dispatchers.IO) {
+                require(activeStorage.migrationPublicationReceipt() == receipt)
+                verifyDomain(scope.context, activeStorage, original, receipt, true); verifyUnknown(activeStorage, original)
+                // The first destination existing-only open occurs strictly after normal Controller publication and restore.
+                scope.view().using { saved ->
+                    assertEquals(candidateCipher, saved.originalCandidateCiphertext(null))
+                    saved.originalCandidate(null, receipt) { require(textPins == textDigests(materialize(it)) && binaryPins == binaryDigests(it)) }
+                    saved.published(receipt)
+                }
+            }
+            val draftKey = withContext(Dispatchers.Main.immediate) { activeSession.text = DRAFT; activeSession.targetKey }
+            withContext(Dispatchers.IO) { activeStorage.awaitQueuedWrites(); require(activeStorage.metadata()!!.getJSONObject("drafts").getString(draftKey) == DRAFT) }
+            withContext(Dispatchers.Main.immediate) { ownedController.detach(ownedLifecycle); ownedController.close() }
+            owners.close()
+            // Formula follows the actual two restore graphs plus the Controller's retained candidate cache.
+            require(owners.stores.size == 4 + 2 * (1 + NativeMigrationExistingPolicy.paths.size) + 1 && owners.sessions.size == 4)
+            require(owners.joined == owners.sessions.size && owners.retiredReturns + 2 == owners.stores.size && owners.released == 2 && owners.unknownCount == 0)
+            val finalSource = withContext(Dispatchers.IO) { scope.view(true).using {
+                NativeMigrationSounds.validate(materialize(it.records), emptyMap(), it.records.binary)
+                Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
+            } }
+            val finalActive = withContext(Dispatchers.IO) { scope.view().using {
+                verifyDomainRecords(materialize(it.records), original, receipt, true); verifyUnknownRecords(materialize(it.records), original)
+                require(JSONObject(it.records.text.getValue("metadata")).getJSONObject("drafts").getString(draftKey) == DRAFT)
+                Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
+            } }
+            require(finalSource.first == sourceCipher && finalSource.third == binaryPins && finalActive.third == binaryPins && ports.attempts.get() == 0)
+            withContext(Dispatchers.IO) { scope.binding.requireCurrent() }
+            val completed = withContext(Dispatchers.IO) { Proof(PRISTINE_SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt,
+                generation, sha(scope.archive), sourceCipher, candidateCipher, finalActive.first, textPins, binaryPins, draftKey,
+                sha(DRAFT.toByteArray(Charsets.UTF_8)), finalSource.second, finalSource.third, finalActive.second, finalActive.third,
+                owners.stores.size, owners.sessions.size, owners.joined, owners.retiredReturns, owners.released, owners.unknownCount, ports.attempts.get()) }
+            return PristineProof(completed, windows.toList(), restorePoints.toList(), controllerQuiesces, controllerRestores,
+                true, ready.first, ready.second, requireNotNull(enrollmentRequired), NativeMigrationPhase.DONE.name, NativeMigrationResult.IMPORTED.name)
+        } catch (error: Throwable) { failure = error; throw error }
+        finally {
+            val unresolved = withContext(NonCancellable + Dispatchers.Main.immediate) {
+                controller?.let { it.busy || !it.canDismiss || it.needsOwnerRestore || it.phase == NativeMigrationPhase.UNKNOWN } == true
+            }
+            if (unresolved) withContext(NonCancellable + Dispatchers.IO) {
+                // Do not cancel Controller work, release its unknown lease, stop its Session or erase the original candidate.
+                NativeMigrationReadLifetime().hold(listOf(owners, requireNotNull(controller), lifecycle, controllerHeld, scope),
+                    failure ?: IllegalStateException("Unresolved pristine Controller owner; retain exact run until original PID exit"))
+            }
+            withContext(NonCancellable + Dispatchers.Main.immediate) { controller?.let { value -> lifecycle?.let(value::detach); value.close() } }
+            try { owners.close(failure) } catch (close: Throwable) { if (failure == null) throw close else if (failure !== close) failure.addSuppressed(close) }
         }
     }
 

@@ -21,6 +21,9 @@ APK_CAP = 256 * 1024 * 1024
 _LIVE = {}  # Exact Popen owners are retained before any fallible owner/marker/raw operation.
 APP = "com.easyai.agenthub.android.acceptance"
 PROFILES = {
+    "p7-pristine": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
     "p7": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
@@ -428,6 +431,9 @@ def _review(api, path, expected_sha, profile):
     rows = value["sourceOverlay"]; require(type(rows) is dict and len(rows) <= 64, "Reviewed overlay bound")
     if profile == "p7":
         require(set(rows) == set(api.DYNAMIC_SOURCES), "P7 allows only the six reviewed test/tool overlays")
+    elif profile == "p7-pristine":
+        require(set(rows) == set(api.DYNAMIC_SOURCES) | {"scripts/mobile/android-nonempty-pristine-first.py"},
+            "Pristine P7 allows exactly six existing overlays plus its closed first-only adapter")
     else:
         # The exact Root-approved P9 list is data, never inferred from dirty status or a broad glob.
         # Product main/Core/build entries remain immutable; the authorized debug/examiner/tests are finite.

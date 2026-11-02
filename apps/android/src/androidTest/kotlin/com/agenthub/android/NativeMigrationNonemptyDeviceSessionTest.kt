@@ -16,7 +16,7 @@ import org.junit.Test
 import java.io.File
 import java.util.UUID
 
-/** Exactly two test-only selectors. A paired run never reuses an earlier APK/proof scope. */
+/** Three closed test-only selectors; pristine Controller and paired initialized/cold scopes stay distinct. */
 class NativeMigrationNonemptyDeviceSessionTest {
     private class Fixture {
         private val arguments = InstrumentationRegistry.getArguments()
@@ -32,15 +32,20 @@ class NativeMigrationNonemptyDeviceSessionTest {
             argument("nonemptySourceAdmissionSha256"), argument("nonemptyBootUuid"), app.packageName,
             argument("nonemptyUid").toInt().also { require(it.toString() == argument("nonemptyUid")) })
         val mode = argument("nonemptyMode")
+        val pristine get() = mode == "pristine-first"
+        val selectedMethod get() = when (mode) {
+            "pristine-first" -> NativeMigrationNonemptyDeviceCase.PRISTINE_METHOD
+            "first" -> NativeMigrationNonemptyDeviceCase.FIRST_METHOD
+            else -> NativeMigrationNonemptyDeviceCase.COLD_METHOD
+        }
         init {
             val common = setOf("class", "nonemptyMode", "nonemptyRun", "nonemptyAppApkSha256", "nonemptyTestApkSha256",
                 "nonemptyCaseSourceSha256", "nonemptyWrapperSourceSha256", "nonemptySourceGuardSha256",
                 "nonemptySourceAdmissionSha256", "nonemptyBootUuid", "nonemptyUid")
             val extras = setOf("nonemptyFirstIntentSha256", "nonemptyFirstProofSha256", "nonemptyExitAdmissionSha256", "nonemptyExitAdmissionJson")
-            require(mode in setOf("first", "readonly-cold"))
-            require(arguments.keySet() == if(mode == "first") common else common + extras)
-            val method = if(mode == "first") NativeMigrationNonemptyDeviceCase.FIRST_METHOD else NativeMigrationNonemptyDeviceCase.COLD_METHOD
-            require(argument("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + method)
+            require(mode in setOf("first", "readonly-cold", "pristine-first"))
+            require(arguments.keySet() == if(mode == "readonly-cold") common + extras else common)
+            require(argument("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + selectedMethod)
             require(app.packageName == "com.easyai.agenthub.android.acceptance" && app.applicationInfo.uid == Process.myUid())
             require(filesRoot == File(File(app.applicationInfo.dataDir).canonicalFile, "files"))
         }
@@ -93,6 +98,7 @@ class NativeMigrationNonemptyDeviceSessionTest {
             override fun startForegroundService(service: android.content.Intent): android.content.ComponentName = error("Fixture forbids foreground service")
         } }
         fun fresh() {
+            require(mode in setOf("first", "pristine-first"))
             binding.requireCurrent()
             require(java.nio.file.Files.notExists(folder.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS))
             val keys = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -110,9 +116,12 @@ class NativeMigrationNonemptyDeviceSessionTest {
             for (name in listOf("no_backup", "cache", "files")) { val child = File(folder, name); check(child.mkdir()); Os.chmod(child.path, 0x1c0) }
             expectedAnchor = snapshot(); guard()
             val raw = File("/proc/${Process.myPid()}/stat").readText()
-            publish("first-intent", JSONObject().put("schema", NativeMigrationNonemptyDeviceCase.SCHEMA).put("run", run)
+            val intent = JSONObject().put("schema", if(pristine) NativeMigrationNonemptyDeviceCase.PRISTINE_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA).put("run", run)
                 .put("binding", bindingJson(binding)).put("pid", Process.myPid()).put("startTicks", raw.substringAfterLast(") ").split(' ')[19])
-                .put("selectedMethod", NativeMigrationNonemptyDeviceCase.FIRST_METHOD).put("anchor", JSONObject(expectedAnchor!!)))
+                .put("selectedMethod", selectedMethod).put("anchor", JSONObject(expectedAnchor!!))
+            if(pristine) intent.put("scenario", NativeMigrationNonemptyDeviceCase.pristineScenario(
+                NativeMigrationNonemptyDeviceCase.Scope(context, run, binding, this::guard)))
+            publish("first-intent", intent)
         }
         fun publish(name: String, value: JSONObject) {
             require(name in setOf("first-intent", "first-proof", "cold-intent", "cold-proof")); guard()
@@ -170,7 +179,7 @@ class NativeMigrationNonemptyDeviceSessionTest {
             .put("exitAdmissionSha256",exitSha).put("firstPid",first.pid).put("firstStartTicks",first.startTicks)
         fun proof(value: NativeMigrationNonemptyDeviceCase.Proof): JSONObject = JSONObject()
             .put("schema", value.schema).put("run", value.run).put("binding", bindingJson(value.binding))
-            .put("pid", value.pid).put("startTicks", value.startTicks).put("selectedMethod", NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
+            .put("pid", value.pid).put("startTicks", value.startTicks).put("selectedMethod", selectedMethod)
             .put("receipt", JSONObject().put("candidateId", value.receipt.id).put("sha256", value.receipt.sha256).put("records", value.receipt.recordCount))
             .put("generation", value.generation).put("archiveSha256", value.archiveSha256)
             .put("sourceCiphertext", JSONObject(value.sourceCiphertext)).put("originalCandidateCiphertext", JSONObject(value.originalCandidateCiphertext))
@@ -190,6 +199,26 @@ class NativeMigrationNonemptyDeviceSessionTest {
         val scope = withContext(Dispatchers.IO) { NativeMigrationNonemptyDeviceCase.Scope(fixture.context, fixture.run, fixture.binding, fixture::guard) }
         val proof = NativeMigrationNonemptyDeviceCase.first(scope)
         withContext(Dispatchers.IO) { fixture.publish("first-proof", fixture.proof(proof)) }
+    }
+    @Test fun pristineNonemptyControllerImportsWithoutPrecreatedRootKey() = runBlocking {
+        val fixture = withContext(Dispatchers.IO) { Fixture().also { require(it.pristine); it.fresh() } }
+        withContext(Dispatchers.IO) { delay(NativeMigrationNonemptyPairContract.WINDOW_MILLIS) }
+        val scope = withContext(Dispatchers.IO) { NativeMigrationNonemptyDeviceCase.Scope(fixture.context, fixture.run, fixture.binding, fixture::guard) }
+        val value = NativeMigrationNonemptyDeviceCase.pristine(scope)
+        withContext(Dispatchers.IO) {
+            val proof = fixture.proof(value.completed).put("scenario", NativeMigrationNonemptyDeviceCase.pristineScenario(scope))
+                .put("keyWindows", org.json.JSONArray(value.keyWindows.map { window -> JSONObject()
+                    .put("point", window.point).put("rootAliasPresent", window.rootAliasPresent).put("rootCiphertextCount", window.rootCiphertextCount)
+                    .put("destinationCiphertext", JSONObject(window.destinationCiphertext)) }))
+                .put("restorePoints", org.json.JSONArray(value.restorePoints))
+                .put("controllerQuiesceReturns", value.controllerQuiesceReturns).put("controllerRestoreReturns", value.controllerRestoreReturns)
+                .put("newSessionPublished", value.newSessionPublished).put("freshReady", value.freshReady).put("controllerReady", value.controllerReady)
+                .put("explicitEnrollmentRequired", value.explicitEnrollmentRequired).put("phase", value.phase).put("result", value.result)
+                .put("preSessionResetObserved", false).put("directKeyGeneratorObserved", false)
+                .put("controllerWorkerJoinClaimed", false).put("physicalDescriptorExitClaimed", false)
+            fixture.publish("first-proof", proof)
+            fixture.requireNames(false)
+        }
     }
     @Test fun nonemptyReadOnlyColdAfterExactOriginalExit() = runBlocking {
         withContext(NonCancellable + Dispatchers.IO) {

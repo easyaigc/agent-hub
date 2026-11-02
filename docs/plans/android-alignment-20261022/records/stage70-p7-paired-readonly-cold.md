@@ -41,6 +41,10 @@ Python3.9辅助：R3所有权/大小/超时边界、R4 adb与SDK工具绑定、�
 
 ## 阶段交付
 
-完整`pnpm check`以子进程umask022实际退出0/733.06s；42组Node汇总1518 tests、1456pass、62skip、0fail，不是1518个独立产品场景。原始日志198579B，H`d12786b1b6f14de22cb57c0b231482f5eb780ff76dbb97f02215f43ed85a7eaf`，Root直接重算42组与原退出回执，见`stage70-root-full-workspace-review.json`。生成/限定格式通过，源码六项及legacy指纹不变；全检查后仅补本交付段与总表，再做聚焦格式/一致性。
+完整`pnpm check`以子进程umask022实际退出0/733.06s，42组汇总1518 tests、1456pass、62skip、0fail；Root直接重算原198579B日志，H`d12786b1b6f14de22cb57c0b231482f5eb780ff76dbb97f02215f43ed85a7eaf`。全检查后仅补交付段/总表，聚焦格式、parity与diff检查通过。
 
-安卓专用分支`codex/android-parallel-stage70-20261103`的提交与PR正在办理；本地通过不等于远端CI/合并通过，实际交付回执另登记。
+源`95e9628159359bb92e86ed267ce88bf5590c7186`经[PR118](https://git.51easyai.com/BCAI/agent-hub-app/pulls/118)普通合入main`6f9fa9cfab00b91bb337da95a02b7283dfaa6862`，双parent为原main`f4d389f1`和source；tree`690f165a6cf40ea3d20b6958f00a62f1f2270849`与source相同。Root逐个读17 Git blobs核六源码/manifest状态及实际graph，非仅采信提交摘要。PR与remote核对、原操作wait/不可变intent在`stage70-pr118-merge-cleanup-execution`，三类stage70分支引用均已清，T切下一stage71，生命周期check通过。
+
+准确main的CI11199成功：workspace27015在runner6、iOS模拟器27016在runner4；公开同步11200/27017在runner7成功。GitHub官方ref/commit独立确认公开`62494057737d4e501a5ff26bf9d98919072fb3d3`的Gitea来源trailer为本main且tree相同。Root逐项核原gzip响应/H和终态，入口`pr118-ci-sync-terminal-review`与`stage70-root-ci-terminal-review.json`；不将iOS CI模拟器结果迁成暂停的A6真机通过。
+
+提交节点后正常停止仅本任务私有IDLE Gradle daemon，正式`--stop`调用实际wait0；不把daemon观察退出写成child wait。精确回收4个已完T编译/transform缓存（另2个原不存在），allocated上界1223696384B，六源码/92封存/36Native文件及当前两APK不变，见`stage70-owned-cache-retirement-after-idle`。完整旧8GiB全attempt allocated基线缺失如实保留，不以卷free变化伪称任务累计或因改名重置；下一已合并后新phase的预算/依赖另登记。

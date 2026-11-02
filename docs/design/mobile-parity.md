@@ -1608,3 +1608,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段69 F55/F56／UI06/UI12：实际普通Session非空资料恢复只验数据、就绪、未读及原unknown不可变回执；本轮未改页面、布局、token、文案或iOS界面。原生组件通过不代替Main迁移入口、密码/取消/错误/成功呈现、方向/字体/AX、系统通知和物理DEV逐项对照；cold与pristine首次导入单列。见[阶段69档案](../plans/android-alignment-20261022/records/stage69-p7-nonempty-device-session.md)。
 
 阶段70（F55/F56）：没有产品页面/token/文案或iOS变化。功能与进程切换有限通过不代表迁移Main窗口、密码/预览/错误/短视口/AX或双端交互已验；这些界面仍按iOS逐项核对，见[阶段70档案](../plans/android-alignment-20261022/records/stage70-p7-paired-readonly-cold.md)。
+
+阶段71 F55/F56：新增普通Controller未预建root KEY目标的组件验收，没有产品页面/token/文案或iOS界面变化。功能/Session交接通过，SAF、Main密码/预览/错误/成功窗口、方向/短视口/字体/AX与pristine冷入口仍按iOS逐项待验，见[阶段71](../plans/android-alignment-20261022/records/stage71-p7-pristine-controller.md)。

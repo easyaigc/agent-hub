@@ -1596,3 +1596,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 2026-11-02 阶段62，F02/F03/F04／UI01/UI03：原生isolated Compose下验证切换target/替换saved connection后旧read不选择旧行、不覆盖当前草稿/目标/新client。完整方法1含两case；此层不提供Main菜单点击、正式页面截图或真实issuer/网络/桌面/物理DEV证明，不据夹具资源清理关闭完整UI或shared default family矩阵。生产页面、iOS代码与设计token不改，见[阶段62档案](../plans/android-alignment-20261022/records/stage62-p8-target-replacement.md)。
 
 2026-11-02 阶段63，F55/F56/F64／UI06/UI12/UI21：新增的是独立原生组件测试target与scheme，App生产成员/设置和页面/token不变；真实Payload九项通过不代表Main UI、SessionStore恢复/回滚或完整迁入/失败返回交互。惰性原件不新增自动恢复/发送/许可入口；完整方向/字体/AX、物理及Android对应UI仍待验，iOS A6暂停。见[阶段63档案](../plans/android-alignment-20261022/records/stage63-p7-ios-native-payload.md)。
+
+2026-11-02 阶段64，F55/F56/F64／UI06/UI12/UI21：新增同步写入失败保护及独立hosted Native入口；生产App 61个Sources成员/设置、页面、布局、token与文案不变。实际SessionStore成功/非regular预检/真实写失败补偿3项只核对数据、原件及不可重放边界，补偿失败恢复分支仍待验；不记作迁移入口、密码/取消/错误成功呈现、新草稿交互或完整UI通过。Android对应界面状态保持，方向/字体/AX、双端物理DEV与完整迁移仍待验，iOS A6暂停。环境准入不进入产品用户流程，见[阶段结果](../plans/android-alignment-20261022/records/stage64-p7-ios-sessionstore.md)与[环境过程](../plans/android-alignment-20261022/records/stage64-ios-native-harness.md)。

@@ -4,6 +4,11 @@ import Foundation
 
 enum SessionPersistenceError: Error { case recoveryRequired, notLoaded }
 
+struct SessionPersistenceReplacementRollbackError: Error {
+  let writeFailure: Error
+  let rollbackFailures: [Error]
+}
+
 // Value snapshots cross the queues unchanged. The UI owns subsequent mutations.
 struct SessionPersistenceSnapshot<State, Page>: @unchecked Sendable {
   let state: State
@@ -27,6 +32,7 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   private let backupURL: URL
   private let previousURL: URL
   private var writesAuthorized = false // Accessed only on stateQueue.
+  private var replacementRecovery: [(url: URL, bytes: Data?)]?
   private var lastGoodBytes: Data?
   private var validatedBackupBytes: Data?
   private var loadedDigest: String?
@@ -58,6 +64,13 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   func loadInitialState() throws -> State? {
     try stateQueue.sync {
       writesAuthorized = false
+      if let recovery = replacementRecovery {
+        // Reconcile all original destinations without replaying a failed replacement.
+        guard try recovery.allSatisfy({ try replacementBytes($0.url) == $0.bytes }) else {
+          throw SessionPersistenceError.recoveryRequired
+        }
+        replacementRecovery = nil
+      }
       var failures: [Error] = []
       var damaged: [(URL, Data)] = []
       for url in [stateURL, backupURL, previousURL, legacyURL] {
@@ -272,13 +285,54 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
 
   // Import is a one-time replacement. Drain previous writes before installing
   // the legacy-format payload; the next snapshot gets a fresh cache namespace.
+  // Atomic file replacement keeps a mapped snapshot alive after renaming its old inode.
+  // Reject unreadable/nonregular originals before changing any migration destination.
+  private func replacementBytes(_ url: URL) throws -> Data? {
+    var attributes = stat()
+    if Darwin.lstat(url.path, &attributes) != 0 {
+      let code = errno
+      if code == ENOENT { return nil }
+      throw NSError(domain: NSPOSIXErrorDomain, code: Int(code), userInfo: [NSFilePathErrorKey: url.path])
+    }
+    guard attributes.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
+      throw NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError, userInfo: [NSFilePathErrorKey: url.path])
+    }
+    return try Data(contentsOf: url, options: .mappedIfSafe)
+  }
+
   func replaceLegacy(_ data: Data) throws {
     try stateQueue.sync {
       historyQueue.sync {}
+      guard replacementRecovery == nil else { throw SessionPersistenceError.recoveryRequired }
       _ = try decodeState(data)
-      if let lastGoodBytes { try atomicWrite(lastGoodBytes, to: backupURL) }
-      try atomicWrite(data, to: legacyURL)
-      try atomicWrite(data, to: stateURL)
+      let previous = try [backupURL, legacyURL, stateURL].map { (url: $0, bytes: try replacementBytes($0)) }
+      do {
+        if let lastGoodBytes { try atomicWrite(lastGoodBytes, to: backupURL) }
+        try atomicWrite(data, to: legacyURL)
+        try atomicWrite(data, to: stateURL)
+      } catch {
+        let writeFailure = error
+        var rollbackFailures: [Error] = []
+        for original in previous.reversed() {
+          do {
+            // An unchanged, inaccessible-for-writing primary needs no compensating write.
+            let current = try replacementBytes(original.url)
+            if current == original.bytes { continue }
+            if let bytes = original.bytes { try atomicWrite(bytes, to: original.url) }
+            else { try FileManager.default.removeItem(at: original.url) }
+            guard try replacementBytes(original.url) == original.bytes else {
+              throw SessionPersistenceError.recoveryRequired
+            }
+          } catch { rollbackFailures.append(error) }
+        }
+        if !rollbackFailures.isEmpty {
+          writesAuthorized = false; replacementRecovery = previous
+          let failure = SessionPersistenceReplacementRollbackError(writeFailure: writeFailure, rollbackFailures: rollbackFailures)
+          recordRecoveryFailure(failure)
+          throw failure
+        }
+        throw writeFailure
+      }
       lastGoodBytes = data; writesAuthorized = true
     }
   }

@@ -3610,6 +3610,13 @@
       "apps/ios/CodexManage.xcodeproj/project.pbxproj",
       "apps/ios/Tests/Stage61VoiceNativeTests.swift",
       "apps/ios/CodexManage.xcodeproj/xcshareddata/xcschemes/Stage61VoiceNativeTests.xcscheme"
+    ],
+    "IOSMigrationSessionStoreErrorAtomic": [
+      "apps/ios/Sources/SessionPersistence.swift",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+      "apps/ios/Tests/Stage64SessionStoreNativeTests.swift",
+      "apps/ios/Tests/Stage64StoreTestHost.swift",
+      "apps/ios/CodexManage.xcodeproj/xcshareddata/xcschemes/Stage64SessionStoreNativeTests.xcscheme"
     ]
   },
   "groups": [
@@ -6877,11 +6884,12 @@
         "AndroidRecentProjects",
         "AndroidNotificationMainGraphColdEntry",
         "IOSPendingVoiceMigrationOriginals",
-        "IOSPendingVoiceMigrationNativePayload"
+        "IOSPendingVoiceMigrationNativePayload",
+        "IOSMigrationSessionStoreErrorAtomic"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 90,
+      "revision": 91,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -7049,11 +7057,12 @@
         "AndroidRecentProjects",
         "AndroidNotificationMainGraphColdEntry",
         "IOSPendingVoiceMigrationOriginals",
-        "IOSPendingVoiceMigrationNativePayload"
+        "IOSPendingVoiceMigrationNativePayload",
+        "IOSMigrationSessionStoreErrorAtomic"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 169,
+      "revision": 170,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -7336,12 +7345,13 @@
         "AndroidInertInboxAndVoiceRecovery",
         "AndroidFixedVoiceReadback",
         "IOSPendingVoiceMigrationOriginals",
-        "IOSPendingVoiceMigrationNativePayload"
+        "IOSPendingVoiceMigrationNativePayload",
+        "IOSMigrationSessionStoreErrorAtomic"
       ],
       "androidStages": ["A6"],
       "scenarios": ["S04", "S11", "S17", "S18"],
       "ui": ["UI06", "UI21"],
-      "revision": 101,
+      "revision": 102,
       "implementation": {
         "ios": "implemented",
         "android": "in-progress"
@@ -19025,6 +19035,19 @@
         "apps/ios/CodexManage.xcodeproj/project.pbxproj": "07ba009cfcfa1bdc5edaf969f96dbb8fa49c48b4de6911b93423a805750aca53",
         "apps/ios/Tests/Stage61VoiceNativeTests.swift": "b15d66287701069748ae1ef88366dc8be800567a1ecd0e46fc1dc81bc4c0e6b0",
         "apps/ios/CodexManage.xcodeproj/xcshareddata/xcschemes/Stage61VoiceNativeTests.xcscheme": "1d0148f6eaac62c0ee5c19268389bf388f0412bb6973a44f360f39078a52d44c"
+      }
+    },
+    {
+      "id": "stage64-p7-ios-sessionstore-error-atomic",
+      "baseCommit": "d7181f9ed9f20981a2e6954c9ebd4055921a2979",
+      "features": ["F55", "F56", "F64"],
+      "summary": "2026-11-02 Stage64: iOS fixed backup/legacy/state byte-or-absence snapshot and nonregular preflight; synchronous failure reverse compensation, incomplete compensation retains same-instance snapshot and disables writes until readonly full-tuple reconciliation. Three actual production SessionStore/default Keychain/notification IO Native cases each 1pass/0fail/0skip: success, post-original-publication nonregular preflight, and true UF_IMMUTABLE regular-state CocoaNoPermission/POSIX EPERM catch with legacy/backup compensation and original backup absence. Old state/resources/badge9/credentials/bindings/voice reexport/immutable unknown outbox target/body/opID/fingerprint/retryConsumed noReplay assertions passed. B1 does not enter writer catch. No OS-crash/journal durability/metadata rollback/new-instance snapshot recovery guarantee; incomplete-compensation recovery branch, large/memory/quota/full24domains/UI/physical/cross-platform wholearchive remain open. Signed empty SwiftUI Scene host and runtime-container admission do not alter production App61Sources/settings or Stage61 nine-test target/scheme. Android complete-generation then single authenticated AtomicFile pointer source review found no equivalent P1; no new Android Native closure. All implementation/verification/shared states retained; Host/model +0 total221/P4205+1sealedunknown untouched; task/project/F75/A6 paused. Current App61 production inputs byte-match SceneR2 official SDK reuse after test-only final guard; App SDK not rerun after that guard, while three Native cases compiled actual0582 test source. Do not equate their full-source closures.",
+      "files": {
+        "apps/ios/Sources/SessionPersistence.swift": "34686f2d4406b750881ac13cff7626abb6eb21c306de30990578a0b8edc0efa2",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "b73125b5ca7bfce23c69a21be9bf06dec82fea3f4c61d2f17bdea71d7086e3e6",
+        "apps/ios/Tests/Stage64SessionStoreNativeTests.swift": "0582dadde4ea9196715c44c53b80796d352e3e143b02b6594a1039b7b5a3b3d9",
+        "apps/ios/Tests/Stage64StoreTestHost.swift": "87bd8b4d92d739c16caa64156931ec5d4d9db2a82062da3f2a571315cdb20f93",
+        "apps/ios/CodexManage.xcodeproj/xcshareddata/xcschemes/Stage64SessionStoreNativeTests.xcscheme": "e3b9412d08926ad5ba5ed54c1a1ae3909ade564f7e3817fed39392b781df2eff"
       }
     }
   ]

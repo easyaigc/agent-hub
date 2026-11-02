@@ -1124,3 +1124,72 @@ test('unknown trace schema is rejected and a newer cancelled v2 prediction canno
     writeJson(join(newer.fixture.directory, 'manifest.json'), newer.fixture.manifest);
     assert.equal(read(), null);
   }));
+
+test('a closed v2 composer trace with no inference response cannot restore an older suggestion', () =>
+  setup((root) => {
+    const previous = recoverableFixture(root);
+    const { sourceThreadId, sourceTurnId } = previous.fixture;
+    const reader = new DesktopPredictionTraceReader(root);
+    const latest = () => reader.readSourcePredictions(sourceThreadId, sourceTurnId, 0, true);
+    assert.equal(latest()?.[0]?.text, 'Synthetic follow-up suggestion.');
+
+    const current = bundle(root, execution({ sourceThreadId, sourceTurnId }));
+    current.manifest.schema_version = 2;
+    writeJson(join(current.directory, 'manifest.json'), current.manifest);
+    current.protocolEvent('session_configured', {
+      type: 'session_configured',
+      thread_id: current.predictionThreadId,
+      thread_source: 'composer_predictions',
+      forked_from_id: sourceThreadId,
+      cwd: root,
+    });
+    const request = current.addRequest({ recovery: true });
+    const started = request.event;
+    started.wall_time_unix_ms = 5;
+    const requestLength = current.events.length;
+    current.events.push({
+      ...started,
+      seq: current.events.length + 1,
+      wall_time_unix_ms: 6,
+      payload: {
+        type: 'inference_cancelled',
+        inference_call_id: started.payload.inference_call_id,
+        upstream_request_id: null,
+        partial_response_payload: null,
+      },
+    });
+    current.endTurn('cancelled').wall_time_unix_ms = 7;
+    // The outer lifecycle can finish successfully after the prediction was cancelled.
+    for (const payload of [
+      { type: 'thread_ended', thread_id: current.predictionThreadId, status: 'completed' },
+      { type: 'rollout_ended', status: 'completed' },
+    ]) {
+      current.events.push({
+        ...started,
+        seq: current.events.length + 1,
+        wall_time_unix_ms: 8,
+        thread_id: null,
+        codex_turn_id: null,
+        payload,
+      });
+    }
+    for (const event of current.events) event.schema_version = 2;
+    current.saveEvents();
+    assert.equal(latest(), null);
+
+    // Keep the exact same request and provenance, but supply a real completed fixture.
+    // This distinguishes rejecting a cancellation from rejecting a malformed source.
+    current.events.length = requestLength;
+    const text = 'Synthetic latest suggestion.';
+    current.addResponse(request, { text }).event.wall_time_unix_ms = 6;
+    current.endTurn().wall_time_unix_ms = 7;
+    current.protocolEvent('turn_complete', {
+      type: 'task_complete',
+      turn_id: current.predictionTurnId,
+      root_turn_id: current.predictionTurnId,
+      last_agent_message: JSON.stringify({ suggestion: text }),
+    }).event.wall_time_unix_ms = 8;
+    for (const event of current.events) event.schema_version = 2;
+    current.saveEvents();
+    assert.equal(latest()?.[0]?.text, text);
+  }));

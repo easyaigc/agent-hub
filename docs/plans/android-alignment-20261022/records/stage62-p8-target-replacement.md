@@ -41,8 +41,10 @@ Root 已核42个原 wait 与84份完整 raw；私有原件 `p8-root-fresh-target
 
 ## 交付与下一步
 
-阶段61 [PR109](https://git.51easyai.com/BCAI/agent-hub-app/pulls/109) 已合入 main `0d966ddb8b389a4e1093b515fcac8ac1af07a410`，CI11111 workspace26855／ios26856成功，本地及origin阶段61分支已清。Root合并收尾原件379B，SHA-256 `039647586386178de14459f5c4797965dec30f7b248556a2750e41aaaca68722`。本阶段正式生成、限定文件格式化、`check:mobile-parity`、`git diff --check` 已各实际 wait0（PID57112／57209／57252／57351），10项相关检查测试通过。Root 核四条完整 merged raw；复核原件 `stage62-root-focused-checks-review.json` 为677B、SHA-256 `e9d874ca4780cd7151c9797c7942e8c64cbc611086ee9ff168360983186829bb`。本阶段没有 JS/TypeScript/工具实现变化，基线90ae的全仓CI11111成功结果保持原范围；本阶段提交继续独立核对。
+阶段61 [PR109](https://git.51easyai.com/BCAI/agent-hub-app/pulls/109) 已合入 main `0d966ddb8b389a4e1093b515fcac8ac1af07a410`，CI11111 workspace26855／ios26856成功，本地及origin阶段61分支已清。Root合并收尾原件379B，SHA-256 `039647586386178de14459f5c4797965dec30f7b248556a2750e41aaaca68722`。本阶段正式生成、限定文件格式化、`check:mobile-parity`、`git diff --check` 已各实际 wait0（PID57112／57209／57252／57351），10项相关检查测试通过。Root 核四条完整 merged raw；复核原件 `stage62-root-focused-checks-review.json` 为677B、SHA-256 `e9d874ca4780cd7151c9797c7942e8c64cbc611086ee9ff168360983186829bb`。本阶段没有 JS/TypeScript/工具实现变化，基线90ae的全仓CI11111成功结果保持原范围；随后主线整合及交付见本档后续记录。
 
 继续 P8 恢复采集退出、Main菜单、真实issuer/网络/模型/桌面/物理、双通道信任、shared default family独核与完整界面/七组封存；P7原生Payload/SessionStore、24域/激活/真实故障及完整UI仍开放。任务与项目、F75、iOS A6继续暂停。Host/模型本轮新增0、累计221；P4为205，另1个未知原操作封存，不查询或重放。
 
 主线同步：提交 `e176294e14820e0a2ed066a159605a5f5d1e40ea` 推送后，main 经 PR110 前进至 `f149a1dfbb66bcb0ecd82974214c4e61c8845fd4`，新增 F69 的 cancelled-composer 合成边界测试。Root 只合并清单中的独立 F69 与本阶段 F02/F03/F04 关联、保留双方状态与源码，不改其已合入测试。该整合版本已正式执行一次全仓 `pnpm check`（PID62978，694.311s，实际 wait0），各 suite 汇总1518项、1456通过、62跳过、0失败；Windows原生等跳过项不算通过。生成、四文件格式化、两项差异检查均 wait0，Root 已核五条完整 merged raw/分块。复核原件 `stage62-root-main-integration-checks-review.json` 为2830B、SHA-256 `46dddf5f0faf57193b4484c4cf415b56c46b7643c6291152c1e8a51860d20c2f`；原有限验收结果不扩大。
+
+阶段62交付：[PR111](https://git.51easyai.com/BCAI/agent-hub-app/pulls/111)已合入 main `c6ab99b7aa5ddf090ed3decc8c1bd6b40adbdc6c`，CI11119 workspace26868／ios26869成功，本地分支、origin tracking与远端ref已清理。Root复核原件 `stage62-root-merge-and-cleanup-review.json` 412B，SHA-256 `52620d5bb27a75e7986a20c887206b85ab8e732c6554a78c8d7cc64d104df767`；原限定范围与失败状态保持。

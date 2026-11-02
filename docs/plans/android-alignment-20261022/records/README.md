@@ -2,6 +2,7 @@
 
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
+- [阶段63 iOS Payload原生组件](stage63-p7-ios-native-payload.md)：实际SDK/arm64 Simulator 9项组件用例通过；首次链接0tests失败保留，actualSessionStore恢复/回滚、UI/物理及完整P7未验。
 - [阶段62 P8 target/replacement与夹具收尾](stage62-p8-target-replacement.md)：完整方法1内两case通过，两组退役合成夹具只读取证后独立Native资源清理；Main菜单/issuer/真实网络与桌面/物理/全A5/default family独核未验。
 - [阶段61 iOS语音原件迁移](stage61-p7-voice-originals.md)：惰性原件档案与版本边界已接入，iOS SDK本次通过、macOS CLI四源匹配复用；运行态/双端互通/完整UI/物理DEV待验。
 - [Source94 Main冷入口限定通过](source94-main-cold-entry-accepted.md)：API33三项Native、两原图、真实STOP/DESTROY及归档读回；OS/SystemUI/真实Host/完整UI/physical DEV仍待验。

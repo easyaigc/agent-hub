@@ -1594,3 +1594,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 2026-11-02 阶段61，F55/F56/F64／UI06/UI12/UI21：新增的是iOS迁移container内的惰性原件保留，不新增普通语音自动恢复、发送、录音或许可入口；原草稿和目标边界保持。SDK构建与匹配CLI不算页面或交互通过，迁出/迁入的Payload/SessionStore运行态、文案/失败提示/完整UI及双端物理DEV仍待逐项对照；Android sealed/provisional原件域不变，不宣称整包互通。见[阶段61档案](../plans/android-alignment-20261022/records/stage61-p7-voice-originals.md)。
 
 2026-11-02 阶段62，F02/F03/F04／UI01/UI03：原生isolated Compose下验证切换target/替换saved connection后旧read不选择旧行、不覆盖当前草稿/目标/新client。完整方法1含两case；此层不提供Main菜单点击、正式页面截图或真实issuer/网络/桌面/物理DEV证明，不据夹具资源清理关闭完整UI或shared default family矩阵。生产页面、iOS代码与设计token不改，见[阶段62档案](../plans/android-alignment-20261022/records/stage62-p8-target-replacement.md)。
+
+2026-11-02 阶段63，F55/F56/F64／UI06/UI12/UI21：新增的是独立原生组件测试target与scheme，App生产成员/设置和页面/token不变；真实Payload九项通过不代表Main UI、SessionStore恢复/回滚或完整迁入/失败返回交互。惰性原件不新增自动恢复/发送/许可入口；完整方向/字体/AX、物理及Android对应UI仍待验，iOS A6暂停。见[阶段63档案](../plans/android-alignment-20261022/records/stage63-p7-ios-native-payload.md)。

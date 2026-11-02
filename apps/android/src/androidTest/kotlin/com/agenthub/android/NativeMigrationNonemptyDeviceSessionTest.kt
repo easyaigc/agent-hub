@@ -7,18 +7,23 @@ import android.system.Os
 import android.system.OsConstants
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 import org.junit.Test
 import java.io.File
 import java.util.UUID
 
-/** First-case native entry only. Cold is intentionally not exposed by this wrapper. */
+/** Exactly two test-only selectors. A paired run never reuses an earlier APK/proof scope. */
 class NativeMigrationNonemptyDeviceSessionTest {
     private class Fixture {
         private val arguments = InstrumentationRegistry.getArguments()
         val app: Context = InstrumentationRegistry.getInstrumentation().targetContext
         val run = requireNotNull(arguments.getString("nonemptyRun")).also { require(UUID.fromString(it).toString() == it) }
-        private val filesRoot = app.filesDir.canonicalFile
+        private val filesRoot = if(arguments.getString("nonemptyMode") == "readonly-cold")
+            File(File(app.applicationInfo.dataDir).canonicalFile,"files") else app.filesDir.canonicalFile
         val folder = File(filesRoot, "P7-nonempty-$run")
         private var expectedAnchor: Map<String, String>? = null
         private fun argument(name: String) = requireNotNull(arguments.getString(name))
@@ -26,24 +31,21 @@ class NativeMigrationNonemptyDeviceSessionTest {
             argument("nonemptyCaseSourceSha256"), argument("nonemptyWrapperSourceSha256"), argument("nonemptySourceGuardSha256"),
             argument("nonemptySourceAdmissionSha256"), argument("nonemptyBootUuid"), app.packageName,
             argument("nonemptyUid").toInt().also { require(it.toString() == argument("nonemptyUid")) })
+        val mode = argument("nonemptyMode")
         init {
-            val required = setOf("class", "nonemptyMode", "nonemptyRun", "nonemptyAppApkSha256", "nonemptyTestApkSha256",
+            val common = setOf("class", "nonemptyMode", "nonemptyRun", "nonemptyAppApkSha256", "nonemptyTestApkSha256",
                 "nonemptyCaseSourceSha256", "nonemptyWrapperSourceSha256", "nonemptySourceGuardSha256",
                 "nonemptySourceAdmissionSha256", "nonemptyBootUuid", "nonemptyUid")
-            require(arguments.keySet() == required)
-            require(argument("nonemptyMode") == "first")
-            require(argument("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
+            val extras = setOf("nonemptyFirstIntentSha256", "nonemptyFirstProofSha256", "nonemptyExitAdmissionSha256", "nonemptyExitAdmissionJson")
+            require(mode in setOf("first", "readonly-cold"))
+            require(arguments.keySet() == if(mode == "first") common else common + extras)
+            val method = if(mode == "first") NativeMigrationNonemptyDeviceCase.FIRST_METHOD else NativeMigrationNonemptyDeviceCase.COLD_METHOD
+            require(argument("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + method)
             require(app.packageName == "com.easyai.agenthub.android.acceptance" && app.applicationInfo.uid == Process.myUid())
             require(filesRoot == File(File(app.applicationInfo.dataDir).canonicalFile, "files"))
         }
-        private inline fun <T> withFd(file: File, flags: Int, mode: Int = 0, block: (java.io.FileDescriptor) -> T): T {
-            val fd = Os.open(file.path, flags, mode); var primary: Throwable? = null
-            try { return block(fd) } catch (error: Throwable) { primary = error; throw error }
-            finally { try { Os.close(fd) } catch (close: Throwable) {
-                val original = primary
-                if (original == null) throw close else if (original !== close) original.addSuppressed(close)
-            } }
-        }
+        private fun <T> withFd(file: File, flags: Int, mode: Int = 0, block: (java.io.FileDescriptor) -> T): T =
+            NativeMigrationReadLifetime().use({ Os.open(file.path,flags,mode) },block,{ Os.close(it) })
         private fun identity(stat: android.system.StructStat) = listOf(stat.st_dev, stat.st_ino, stat.st_uid.toLong(), stat.st_mode.toLong()).joinToString(":")
         private fun directory(file: File, owned: Boolean, privateScope: Boolean): String {
             val before = Os.lstat(file.path)
@@ -113,13 +115,59 @@ class NativeMigrationNonemptyDeviceSessionTest {
                 .put("selectedMethod", NativeMigrationNonemptyDeviceCase.FIRST_METHOD).put("anchor", JSONObject(expectedAnchor!!)))
         }
         fun publish(name: String, value: JSONObject) {
-            require(name in setOf("first-intent", "first-proof")); guard()
+            require(name in setOf("first-intent", "first-proof", "cold-intent", "cold-proof")); guard()
             val bytes = value.toString().toByteArray(Charsets.UTF_8); require(bytes.size in 1..131072)
             withFd(File(folder, "$name.json"), OsConstants.O_WRONLY or OsConstants.O_CREAT or OsConstants.O_EXCL or OsConstants.O_NOFOLLOW, 0x180) { fd ->
-                java.io.FileOutputStream(fd).use { output -> Os.fchmod(fd, 0x180); output.write(bytes); output.fd.sync() }
+                Os.fchmod(fd,0x180); var offset=0
+                while(offset<bytes.size) { val count=Os.write(fd,bytes,offset,bytes.size-offset); require(count>0); offset+=count }
+                Os.fsync(fd)
             }
             guard()
         }
+        private fun document(name: String): ByteArray {
+            require(name in setOf("first-intent", "first-proof")); guard()
+            return NativeMigrationReadOnlyFile(folder,File(folder,"$name.json"),131072,minimum=1).read { it.readBytes() }.value
+        }
+        fun requireNames(coldWritten: Boolean, proofWritten: Boolean = false) {
+            val expected = setOf("no_backup", "cache", "files", "first-intent.json", "first-proof.json") +
+                (if(coldWritten)setOf("cold-intent.json")else emptySet()) + (if(proofWritten)setOf("cold-proof.json")else emptySet())
+            require(requireNotNull(folder.list()).toSet() == expected); guard()
+        }
+        fun existing(): Triple<NativeMigrationNonemptyDeviceCase.Proof, JSONObject, String> {
+            require(mode == "readonly-cold"); binding.requireCurrent()
+            expectedAnchor = snapshot(); guard(); requireNames(false)
+            val intentBytes = document("first-intent"); val proofBytes = document("first-proof")
+            require(NativeMigrationNonemptyPairContract.sha(intentBytes) == argument("nonemptyFirstIntentSha256"))
+            require(NativeMigrationNonemptyPairContract.sha(proofBytes) == argument("nonemptyFirstProofSha256"))
+            val intent = NativeMigrationNonemptyPairContract.parse(intentBytes)
+            NativeMigrationNonemptyPairContract.exact(intent,setOf("schema","run","binding","pid","startTicks","selectedMethod","anchor"))
+            val raw = NativeMigrationNonemptyPairContract.parse(proofBytes)
+            val first = NativeMigrationNonemptyPairContract.first(raw)
+            require(first.run == run) { "Original run mismatch" }
+            require(first.binding == binding) { "Original SDK binding mismatch" }
+            val priorAnchor = NativeMigrationNonemptyPairContract.anchor(raw.getJSONObject("anchor"))
+            val currentAnchor = requireNotNull(expectedAnchor)
+            val changedAnchorKeys = (priorAnchor.keys + currentAnchor.keys).filter { priorAnchor[it] != currentAnchor[it] }.sorted()
+            require(changedAnchorKeys.isEmpty()) {
+                changedAnchorKeys.joinToString(prefix="Original anchor mismatch: ", separator="; ") {
+                    "$it: ${priorAnchor[it]} -> ${currentAnchor[it]}"
+                }.take(16384)
+            }
+            for (name in intent.keys()) require(canonical(intent.get(name)) == canonical(raw.get(name)))
+            val exitBytes = argument("nonemptyExitAdmissionJson").toByteArray(Charsets.UTF_8); require(exitBytes.size <= 8192)
+            val exitSha = NativeMigrationNonemptyPairContract.sha(exitBytes)
+            require(exitSha == argument("nonemptyExitAdmissionSha256"))
+            val exit = NativeMigrationNonemptyPairContract.parse(exitBytes)
+            NativeMigrationNonemptyPairContract.exit(exit,first,argument("nonemptyFirstIntentSha256"),argument("nonemptyFirstProofSha256"))
+            NativeMigrationNonemptyPairContract.requireOriginalExited(first)
+            return Triple(first,exit,exitSha)
+        }
+        fun coldDocument(first: NativeMigrationNonemptyDeviceCase.Proof,exitSha: String): JSONObject = JSONObject()
+            .put("schema",NativeMigrationNonemptyPairContract.COLD_SCHEMA).put("run",run).put("binding",bindingJson(binding))
+            .put("pid",Process.myPid()).put("startTicks",NativeMigrationNonemptyPairContract.startTicks(Process.myPid()))
+            .put("selectedMethod",NativeMigrationNonemptyDeviceCase.COLD_METHOD).put("anchor",JSONObject(expectedAnchor!!))
+            .put("firstIntentSha256",argument("nonemptyFirstIntentSha256")).put("firstProofSha256",argument("nonemptyFirstProofSha256"))
+            .put("exitAdmissionSha256",exitSha).put("firstPid",first.pid).put("firstStartTicks",first.startTicks)
         fun proof(value: NativeMigrationNonemptyDeviceCase.Proof): JSONObject = JSONObject()
             .put("schema", value.schema).put("run", value.run).put("binding", bindingJson(value.binding))
             .put("pid", value.pid).put("startTicks", value.startTicks).put("selectedMethod", NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
@@ -128,18 +176,57 @@ class NativeMigrationNonemptyDeviceSessionTest {
             .put("sourceCiphertext", JSONObject(value.sourceCiphertext)).put("originalCandidateCiphertext", JSONObject(value.originalCandidateCiphertext))
             .put("destinationCiphertext", JSONObject(value.destinationCiphertext)).put("originalTextSha256", JSONObject(value.originalTextSha256))
             .put("originalBinarySha256", JSONObject(value.originalBinarySha256)).put("draftKey", value.draftKey)
+            .put("draftTextSha256", value.draftTextSha256).put("sourceTextSha256", JSONObject(value.sourceTextSha256))
+            .put("sourceBinarySha256", JSONObject(value.sourceBinarySha256)).put("activeTextSha256", JSONObject(value.activeTextSha256))
+            .put("activeBinarySha256", JSONObject(value.activeBinarySha256))
             .put("acquiredStores", value.acquiredStores).put("acquiredSessions", value.acquiredSessions)
             .put("actualSessionJoinReturns", value.actualSessionJoinReturns).put("actualWriterRetireReturns", value.actualWriterRetireReturns)
             .put("actualLeaseReleaseReturns", value.actualLeaseReleaseReturns).put("unknownAcquisitions", value.unknownAcquisitions)
             .put("forbiddenPortAttempts", value.forbiddenPortAttempts).put("anchor", JSONObject(expectedAnchor!!))
     }
     @Test fun nonemptyDeviceProducersRestoreActualSession() = runBlocking {
-        val fixture = Fixture(); fixture.fresh()
-        val scope = NativeMigrationNonemptyDeviceCase.Scope(fixture.context, fixture.run, fixture.binding, fixture::guard)
+        val fixture = withContext(Dispatchers.IO) { Fixture().also { it.fresh() } }
+        withContext(Dispatchers.IO) { delay(NativeMigrationNonemptyPairContract.WINDOW_MILLIS) }
+        val scope = withContext(Dispatchers.IO) { NativeMigrationNonemptyDeviceCase.Scope(fixture.context, fixture.run, fixture.binding, fixture::guard) }
         val proof = NativeMigrationNonemptyDeviceCase.first(scope)
-        fixture.publish("first-proof", fixture.proof(proof))
+        withContext(Dispatchers.IO) { fixture.publish("first-proof", fixture.proof(proof)) }
+    }
+    @Test fun nonemptyReadOnlyColdAfterExactOriginalExit() = runBlocking {
+        withContext(NonCancellable + Dispatchers.IO) {
+            val fixture = Fixture(); val (first, _, exitSha) = fixture.existing()
+            val scope = NativeMigrationNonemptyDeviceCase.Scope(fixture.context,fixture.run,fixture.binding,fixture::guard,existingOnly=true)
+            val before = NativeMigrationNonemptyPairContract.protected(fixture.folder)
+            val aliases = NativeMigrationNonemptyPairContract.aliasPins(scope,first.generation)
+            val intent = fixture.coldDocument(first,exitSha)
+            fixture.publish("cold-intent",intent); fixture.requireNames(true)
+            delay(NativeMigrationNonemptyPairContract.WINDOW_MILLIS) // Bounded independent host-observation window, no ack/file exemption.
+            NativeMigrationNonemptyPairContract.requireOriginalExited(first)
+            val pins = NativeMigrationNonemptyDeviceCase.cold(scope,first) // Includes all successful reader closes.
+            require(before == NativeMigrationNonemptyPairContract.protected(fixture.folder))
+            require(aliases == NativeMigrationNonemptyPairContract.aliasPins(scope,first.generation))
+            fixture.binding.requireCurrent(); NativeMigrationNonemptyPairContract.requireOriginalExited(first)
+            val proof = fixture.coldDocument(first,exitSha)
+                .put("clearFramingSha256",pins.clearSha256).put("sealedArchiveSha256",pins.sealedSha256).put("generation",pins.generation)
+                .put("draftKey",pins.draftKey).put("draftTextSha256",pins.draftTextSha256)
+                .put("activeTextSha256",JSONObject(pins.activeTextSha256)).put("activeBinarySha256",JSONObject(pins.activeBinarySha256))
+                .put("protectedDataSha256",NativeMigrationNonemptyPairContract.sha(canonical(JSONObject(before)).toByteArray(Charsets.UTF_8)))
+                .put("fixtureAliasesSha256",NativeMigrationNonemptyPairContract.sha(canonical(JSONObject(aliases)).toByteArray(Charsets.UTF_8)))
+                .put("readerCloseReturns",pins.readerCloseReturns).put("protectedDataUnchanged",true).put("fixtureAliasesUnchanged",true)
+            for(name in intent.keys()) require(canonical(intent.get(name)) == canonical(proof.get(name)))
+            fixture.publish("cold-proof",proof); fixture.requireNames(true,true)
+            require(before == NativeMigrationNonemptyPairContract.protected(fixture.folder))
+        }
     }
     private companion object {
+        fun canonical(value: Any): String = when(value) {
+            is JSONObject -> value.keys().asSequence().sorted().joinToString(",","{","}") { JSONObject.quote(it)+":"+canonical(value.get(it)) }
+            is org.json.JSONArray -> (0 until value.length()).joinToString(",","[","]") { canonical(value.get(it)) }
+            is String -> JSONObject.quote(value)
+            is Boolean, is Int, is Long -> value.toString()
+            JSONObject.NULL -> "null"
+            else -> error("Invalid paired scalar")
+        }
+
         fun bindingJson(value: NativeMigrationNonemptyDeviceCase.Binding) = JSONObject()
             .put("appApkSha256", value.appApkSha256).put("testApkSha256", value.testApkSha256)
             .put("caseSourceSha256", value.caseSourceSha256).put("wrapperSourceSha256", value.wrapperSourceSha256)

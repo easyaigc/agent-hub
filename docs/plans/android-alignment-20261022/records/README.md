@@ -1,8 +1,10 @@
 # Android 分阶段过程档案
 
+- [阶段70 P7同包首次/只读cold](stage70-p7-paired-readonly-cold.md)：普通已初始化空目标9条资料、原PID自然退出/不同PID恢复两方法有限通过；旧cold anchor失败单列，pristine/完整范围/UI/物理仍开放。
+
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
-- [阶段69 P7非空资料实际Session](stage69-p7-nonempty-device-session.md)：已初始化空目标、8文本+1CAF的普通Session闭环1项Native限定通过；cold尚未实现，新安装/完整24项/UI/物理待验，工作区检查与提交/PR待执行。
+- [阶段69 P7非空资料实际Session](stage69-p7-nonempty-device-session.md)：已初始化空目标、8文本+1CAF的普通Session闭环1项Native限定通过；本阶段cold未验（后续见阶段70），新安装/完整24项/UI/物理待验；PR117已合并且CI通过。
 - [阶段68 Android实际Controller交接](stage68-p7-controller-strict-restore.md)：schema v3首次交接/独立冷读2项Native限定通过，Controller worker join未证明；非空资料完整迁移/完整范围/UI/物理待验。
 - [阶段67 P9 bootstrap与public可见性](stage67-p9-bootstrap-public-visibility.md)：scoped bootstrap 1项Native通过；public observer ready前拒绝，producer/SystemUI未执行，原权限已恢复。
 - [阶段66 Android严格首次交接](stage66-p7-strict-first-prepare.md)：direct v2两项原证据保留；已提交推送 `a87cc37a`，PR115已合入main `c9ee1893`、三类分支引用已清理/CI未核实；三次原失败不升级。

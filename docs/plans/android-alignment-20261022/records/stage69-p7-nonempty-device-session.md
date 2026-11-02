@@ -87,3 +87,15 @@ PR116与准确CI/公开同步保留在[阶段68](stage68-p7-controller-strict-re
 首次完整检查exit1/120.01s：公共日志拒绝测试等待超时，已完成Node组32项/31pass/1fail，后续未执行。原driver的私有证据umask077透传给子进程，将fixture要求的0644掩成0600；实际077/022权限探针分别为0600/0644，077单项再次复现同一5秒超时。仅恢复workspace子进程正常umask022、继续保护证据0700/0600后，该文件10项全部通过，未改产品代码、断言或等待上限。原失败及解析器首次只识别TAP而漏Node24摘要的证据缺口保留，未改写旧回执。
 
 正式完整`pnpm check`以umask022实际wait exit0/720.77s，42个Node组摘要合计1518 tests、1456pass、62skip、0fail；不是1518个独立产品场景。原始日志198563B/H `70a2bed5a28b0c370725bcc3470b7150238eef9dd5b06b744b6312df5a591e1c`，索引`stage69-umask-recheck-execution/evidence-index.json`；Root重算组摘要并核原始退出，见`stage69-root-workspace-check-review.json`。15项工作树状态与四源H前后一致。workspace检查独立空间准入未改变Native16GiB门，未运行新SDK/Native或iOS工程build；本轮无iOS工程/源变化。文档交付更新后另执行生成/格式与一致性聚焦检查。
+
+## 主线交付
+
+[PR117](https://git.51easyai.com/BCAI/agent-hub-app/pulls/117)已普通合并，source `40d325555798ff72cc79072b60ba0f2cb10e4507`、main `f4d389f119bcae69cdcb2793ecf5afdb4b5a8338`，两parent为`bd07913cb6ac5d618698234a0f658765c357f955`及source，tree `e8e26bf723497a91fb3b65ba2e319a66ae1e2260`等于source tree。Root读实际Git blobs核四源码H、状态及merge graph；独立PR merged与origin/main回执保存在`stage69-merge-cleanup-execution`。未force/autoqueue或直接推main。PR描述澄清两Native尝试是保留失败、24项为domain库存及API33口径，未升级失败为通过。
+
+阶段69local/origin/tracking refs均已核不存在，T切阶段70基线；C只FF同main，10份P9WIP字节/status不变，R/W固定树不动，task lifecycle check通过。原始Git/API的actual wait回执逐项保存；早期source commit/push缺树外独立Popen回执，actual Git objects、官方工具记录及远端SHA/PR graph可核，不伪造历史wait。阶段69主线CI与公共同步另按新SHA对账，不能拿阶段68的CI11177/同步11178代替。
+
+合并后一次官方快照：主线`f4d389f1`的同步run11185/job26991成功，GitHub main `23905bc4459bd0fdfd1fd17626291ba72d9a8332`的Gitea trailer指向该main，actual tree等于`e8e26bf7`完整tree。本轮CI11184在快照时仍in_progress，iOS26990已成功、Linux26989仍pnpm check；未重试工作流，不宣称整体CI成功。原始响应与Root核对索引`pr117-ci-sync-independent-snapshot`。
+
+随后按同一main SHA复核CI终态：run11184/workspace26989（runner6）实际18:28:43Z–18:44:41Z成功；iOS26990（runner4）18:28:39Z–18:31:25Z成功，run11184整体completed/success。官方gzip原始响应、实际收据和摘要索引`pr117-ci-terminal-recheck`，Root解压并核exactSHA/两个job。先前in_progress快照保留，未改写或重试。
+
+阶段结束精确回收本轮完整检查新增的118个trace-batch合成fixture，原差集125项含另7项未动；旧“120”分类已由原始before/after清单纠正。逐项源码对应、inode/全fileSHA/lsof/真实删除核对，逻辑26,870,692B/allocated33,308,672B均为上界，磁盘变化非精准回收量。原始intent/inventory/receipt见`stage69-trace-fixture-retirement`，四源、两MD及R5的33+2证据前后hash不变。3份旧APK因完整源码恢复/历史反汇编材料仍待核而留存，不假称删除。

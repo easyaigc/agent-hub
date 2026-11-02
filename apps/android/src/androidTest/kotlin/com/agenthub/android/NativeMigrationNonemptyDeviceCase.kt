@@ -13,13 +13,14 @@ import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * Source-only Stage 69 proposal: a bounded, real producer -> export -> Session restore case.
- * The dedicated SessionTest exposes only FIRST_METHOD through closed native/host admission.
- * Cold is not implemented here; exact-original-PID exit and a separate cold contract remain pending.
+ * Bounded paired real producer -> export -> Session restore -> existing-only cold case.
+ * The dedicated SessionTest exposes only the two closed first/cold selectors.
+ * Host admission must independently establish exact original-process exit and the fresh cold tuple.
  * Ordinary owners only; this does not prove Controller/strict-generation handoff or OS delivery.
  */
 internal object NativeMigrationNonemptyDeviceCase {
-    const val SCHEMA = "p7-nonempty-device-session-v1"
+    const val SCHEMA = "p7-nonempty-device-session-v2"
+    const val COLD_METHOD = "nonemptyReadOnlyColdAfterExactOriginalExit"
     const val FIRST_METHOD = "nonemptyDeviceProducersRestoreActualSession"
     private const val SOURCE = "source"
     private const val DESTINATION = "installation"
@@ -48,7 +49,7 @@ internal object NativeMigrationNonemptyDeviceCase {
     }
 
     /** guard must revalidate NOFOLLOW inode/owner/mode ancestry; it is never a no-op admission. */
-    class Scope(val context: Context, val run: String, val binding: Binding, val guard: () -> Unit) {
+    class Scope(val context: Context, val run: String, val binding: Binding, val guard: () -> Unit, val existingOnly: Boolean = false) {
         private val admittedBinding by lazy { binding.requireCurrent(); true }
         val alias = "p7-nonempty-$run"
         val sourceAlias = "$alias-source"
@@ -57,12 +58,15 @@ internal object NativeMigrationNonemptyDeviceCase {
             require(UUID.fromString(run).toString() == run)
             require(admittedBinding && currentBoot() == binding.bootUuid); guard()
             val target = InstrumentationRegistry.getInstrumentation().targetContext
-            val root = File(target.filesDir.canonicalFile, "P7-nonempty-$run")
+            val targetData = File(target.applicationInfo.dataDir).canonicalFile
+            val targetFiles = if(existingOnly) File(targetData,"files") else target.filesDir.canonicalFile
+            val targetNoBackup = if(existingOnly) File(targetData,"no_backup") else target.noBackupFilesDir.canonicalFile
+            val root = File(targetFiles, "P7-nonempty-$run")
             require(context.applicationContext === context)
             require(context.noBackupFilesDir.canonicalFile == File(root, "no_backup"))
             require(context.filesDir.canonicalFile == File(root, "files"))
             require(context.cacheDir.canonicalFile == File(root, "cache"))
-            require(context.noBackupFilesDir.canonicalFile != target.noBackupFilesDir.canonicalFile)
+            require(context.noBackupFilesDir.canonicalFile != targetNoBackup)
         }
         fun view(source: Boolean = false): NativeMigrationExistingView {
             checkScope()
@@ -75,13 +79,15 @@ internal object NativeMigrationNonemptyDeviceCase {
         }
     }
 
-    /** First-case wrapper persists this as a closed object; cold decoding/admission remains pending. */
+    /** Persisted pins describe actual final readback, including the independent new draft. */
     data class Proof(val schema: String, val run: String, val binding: Binding, val pid: Int,
         val startTicks: String, val receipt: NativeMigrationCandidateStore.Receipt, val generation: String,
         val archiveSha256: String, val sourceCiphertext: Map<String, String>,
         val originalCandidateCiphertext: Map<String, String>, val destinationCiphertext: Map<String, String>,
         val originalTextSha256: Map<String, String>, val originalBinarySha256: Map<String, String>,
-        val draftKey: String, val acquiredStores: Int, val acquiredSessions: Int,
+        val draftKey: String, val draftTextSha256: String,
+        val sourceTextSha256: Map<String, String>, val sourceBinarySha256: Map<String, String>,
+        val activeTextSha256: Map<String, String>, val activeBinarySha256: Map<String, String>, val acquiredStores: Int, val acquiredSessions: Int,
         val actualSessionJoinReturns: Int, val actualWriterRetireReturns: Int,
         val actualLeaseReleaseReturns: Int, val unknownAcquisitions: Int, val forbiddenPortAttempts: Int)
 
@@ -331,30 +337,10 @@ internal object NativeMigrationNonemptyDeviceCase {
 
     private fun verifyDomain(context: Context, current: NativeSessionStorage, original: Map<String, String>,
         receipt: NativeMigrationCandidateStore.Receipt, afterReconciliation: Boolean) {
-        val sourceReading = JSONObject(original.getValue(NativeMigrationDeviceState.READING))
-        val reading = JSONObject(requireNotNull(current.read(NativeMigrationDeviceState.READING)))
-        require(reading.getLong("revision") >= sourceReading.getLong("revision") + 1)
-        if (!afterReconciliation) require(reading.getJSONArray("scopes").length() == 0 &&
-            reading.getLong("revision") == sourceReading.getLong("revision") + 1)
-        val sourceRow = sourceReading.getJSONArray("rows").getJSONObject(0)
-        val row = reading.getJSONArray("rows").getJSONObject(0)
-        require(reading.getJSONArray("rows").length() == 1 && !row.has("pendingReader"))
-        for (field in listOf("target", "threadId", "read", "latest", "replyUnread", "notices"))
-            assertEquals(field, canonical(sourceRow.get(field)), canonical(row.get(field)))
-        val notifications = JSONObject(requireNotNull(current.read(NativeMigrationDeviceState.NOTIFICATIONS)))
+        verifyDomainRecords(original.keys.plus(listOf(NativeMigrationDeviceState.AUDIT, NativeMigrationNotificationTombstones.RECORD))
+            .associateWith { requireNotNull(current.read(it)) }, original, receipt, afterReconciliation)
         val sourceNotifications = JSONObject(original.getValue(NativeMigrationDeviceState.NOTIFICATIONS))
-        val preferences = notifications.getJSONObject("preferences"); val prior = sourceNotifications.getJSONObject("preferences")
-        require(!preferences.getBoolean("enabled") && preferences.getLong("generation") == prior.getLong("generation") + 1)
-        require(preferences.getString("revision") != prior.getString("revision"))
-        for (field in prior.keys().asSequence().filter { it !in setOf("enabled", "generation", "revision") })
-            assertEquals(field, canonical(prior.get(field)), canonical(preferences.get(field)))
-        require(notifications.getJSONArray("leases").length() == 0 && notifications.getJSONArray("receipts").length() == 0)
-        val audit = JSONObject(requireNotNull(current.read(NativeMigrationDeviceState.AUDIT))).getJSONArray("entries")
-        require(audit.length() == 1)
-        val entry = audit.getJSONObject(0)
-        assertEquals(receipt.id, entry.getString("candidateId")); assertEquals(receipt.sha256, entry.getString("archiveSha256"))
-        assertEquals(original.getValue(NativeMigrationDeviceState.READING), entry.getString("reading"))
-        assertEquals(original.getValue(NativeMigrationDeviceState.NOTIFICATIONS), entry.getString("notifications"))
+        val reading = JSONObject(requireNotNull(current.read(NativeMigrationDeviceState.READING)))
         val store = NativeChatNotificationStore(current)
         for (i in 0 until sourceNotifications.getJSONArray("receipts").length()) {
             val old = NativeChatNotificationCodec.receipt(sourceNotifications.getJSONArray("receipts").getJSONObject(i))
@@ -375,10 +361,54 @@ internal object NativeMigrationNonemptyDeviceCase {
         finally { bytes.fill(0) }
     }
 
+    private fun verifyDomainRecords(active: Map<String, String>, original: Map<String, String>,
+        receipt: NativeMigrationCandidateStore.Receipt, afterReconciliation: Boolean) {
+        val sourceReading = JSONObject(original.getValue(NativeMigrationDeviceState.READING))
+        val reading = JSONObject(active.getValue(NativeMigrationDeviceState.READING))
+        require(reading.getLong("revision") >= sourceReading.getLong("revision") + 1)
+        if (!afterReconciliation) require(reading.getJSONArray("scopes").length() == 0 &&
+            reading.getLong("revision") == sourceReading.getLong("revision") + 1)
+        val sourceRow = sourceReading.getJSONArray("rows").getJSONObject(0)
+        val row = reading.getJSONArray("rows").getJSONObject(0)
+        require(reading.getJSONArray("rows").length() == 1 && !row.has("pendingReader"))
+        for (field in listOf("target", "threadId", "read", "latest", "replyUnread", "notices"))
+            assertEquals(field, canonical(sourceRow.get(field)), canonical(row.get(field)))
+        val notifications = JSONObject(active.getValue(NativeMigrationDeviceState.NOTIFICATIONS))
+        val sourceNotifications = JSONObject(original.getValue(NativeMigrationDeviceState.NOTIFICATIONS))
+        val preferences = notifications.getJSONObject("preferences"); val prior = sourceNotifications.getJSONObject("preferences")
+        require(!preferences.getBoolean("enabled") && preferences.getLong("generation") == prior.getLong("generation") + 1)
+        require(preferences.getString("revision") != prior.getString("revision"))
+        for (field in prior.keys().asSequence().filter { it !in setOf("enabled", "generation", "revision") })
+            assertEquals(field, canonical(prior.get(field)), canonical(preferences.get(field)))
+        require(notifications.getJSONArray("leases").length() == 0 && notifications.getJSONArray("receipts").length() == 0)
+        val audit = JSONObject(active.getValue(NativeMigrationDeviceState.AUDIT)).getJSONArray("entries")
+        require(audit.length() == 1)
+        val entry = audit.getJSONObject(0)
+        assertEquals(receipt.id, entry.getString("candidateId")); assertEquals(receipt.sha256, entry.getString("archiveSha256"))
+        assertEquals(original.getValue(NativeMigrationDeviceState.READING), entry.getString("reading"))
+        assertEquals(original.getValue(NativeMigrationDeviceState.NOTIFICATIONS), entry.getString("notifications"))
+        NativeReadingLedger.validateEncoded(active.getValue(NativeMigrationDeviceState.READING))
+        NativeChatNotificationStore.validateEncoded(active.getValue(NativeMigrationDeviceState.NOTIFICATIONS))
+        val auditRoot = JSONObject(active.getValue(NativeMigrationDeviceState.AUDIT))
+        NativeMigrationNotificationTombstones.validate(active, auditRoot)
+        val expectedKeys = (0 until sourceNotifications.getJSONArray("receipts").length()).map {
+            NativeMigrationNotificationTombstones.key(NativeChatNotificationCodec.receipt(sourceNotifications.getJSONArray("receipts").getJSONObject(it)).event)
+        }.toSet()
+        require(NativeMigrationNotificationTombstones.decode(active.getValue(NativeMigrationNotificationTombstones.RECORD)) == expectedKeys)
+        assertEquals(original.getValue(NativeMigrationSounds.RECORD), active.getValue(NativeMigrationSounds.RECORD))
+        if (afterReconciliation) {
+            val client = decodeClient(JSONObject(active.getValue("metadata")).getJSONArray("clients").getJSONObject(0))
+            val scope = ThreadReadingIdentity.scopeKey(requireNotNull(client.scope))
+            require(reading.getJSONArray("scopes").length() == 1 && reading.getJSONArray("scopes").getString(0) == scope)
+            require(row.getBoolean("replyUnread") || row.getJSONObject("notices").keys().asSequence().any { !row.getJSONObject("notices").getJSONObject(it).getBoolean("seen") })
+        }
+    }
+
     suspend fun first(scope: Scope): Proof {
-        scope.checkScope()
-        require(!scope.archive.exists())
-        for (namespace in listOf(SOURCE, DESTINATION)) require(!File(scope.context.noBackupFilesDir, namespace).exists())
+        withContext(Dispatchers.IO) {
+            scope.checkScope(); require(!scope.archive.exists())
+            for (namespace in listOf(SOURCE, DESTINATION)) require(!File(scope.context.noBackupFilesDir, namespace).exists())
+        }
         val owners = Owners(); val ports = Ports(); var result: Proof? = null; var failure: Throwable? = null
         try {
             val source = owners.open("normal-source") { NativeSessionStorage(scope.context, SOURCE, scope.sourceAlias) }
@@ -427,7 +457,7 @@ internal object NativeMigrationNonemptyDeviceCase {
             lateinit var original: Map<String, String>; lateinit var textPins: Map<String, String>; lateinit var binaryPins: Map<String, String>
             val candidateCipher = withContext(Dispatchers.IO) { scope.view().using { saved ->
                 saved.originalCandidate(null, receipt) { records ->
-                    require(records.version == 4); original = materialize(records); textPins = textDigests(original); binaryPins = binaryDigests(records)
+                    NativeMigrationNonemptyPairContract.requireNine(records); original = materialize(records); textPins = textDigests(original); binaryPins = binaryDigests(records)
                     require(original.keys.intersect(NativeMigrationForeground.ACTIVE_NAMES).isEmpty())
                     require(NativeMigrationNotificationArchives.RECORD !in original)
                     for (name in listOf(NativeMigrationDeviceState.READING, NativeMigrationDeviceState.NOTIFICATIONS, NativeMigrationSounds.RECORD))
@@ -472,18 +502,77 @@ internal object NativeMigrationNonemptyDeviceCase {
             owners.close()
             require(owners.stores.size == 27 && owners.sessions.size == 4 && owners.joined == 4 &&
                 owners.retiredReturns == 25 && owners.released == 2 && owners.unknownCount == 0)
-            val destinationCipher = withContext(Dispatchers.IO) { scope.view().using { it.familyCiphertext() } }
+            val finalSource = withContext(Dispatchers.IO) { scope.view(true).using {
+                NativeMigrationSounds.validate(materialize(it.records), emptyMap(), it.records.binary)
+                Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
+            } }
+            val finalActive = withContext(Dispatchers.IO) { scope.view().using {
+                verifyDomainRecords(materialize(it.records), original, receipt, true)
+                verifyUnknownRecords(materialize(it.records), original)
+                require(JSONObject(it.records.text.getValue("metadata")).getJSONObject("drafts").getString(draftKey) == DRAFT)
+                Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
+            } }
+            val destinationCipher = finalActive.first
+            require(finalSource.first == sourceCipher && finalSource.third == binaryPins && finalActive.third == binaryPins)
             withContext(Dispatchers.IO) { assertEquals(sourceCipher, scope.view(true).using { it.familyCiphertext() }) }
-            scope.binding.requireCurrent()
-            result = Proof(SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt, generation,
-                sha(scope.archive), sourceCipher, candidateCipher, destinationCipher, textPins, binaryPins, draftKey,
-                owners.stores.size, owners.sessions.size, owners.joined, owners.retiredReturns, owners.released, owners.unknownCount, ports.attempts.get())
+            withContext(Dispatchers.IO) { scope.binding.requireCurrent() }
+            val sealedHash = withContext(Dispatchers.IO) { sha(scope.archive) }
+            result = withContext(Dispatchers.IO) { Proof(SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt, generation,
+                sealedHash, sourceCipher, candidateCipher, destinationCipher, textPins, binaryPins, draftKey,
+                sha(DRAFT.toByteArray(Charsets.UTF_8)), finalSource.second, finalSource.third, finalActive.second, finalActive.third,
+                owners.stores.size, owners.sessions.size, owners.joined, owners.retiredReturns, owners.released, owners.unknownCount, ports.attempts.get()) }
         } catch (error: Throwable) { failure = error; throw error }
         finally {
             try { owners.close(failure) } catch (close: Throwable) { if (failure == null) throw close else if (failure !== close) failure.addSuppressed(close) }
         }
         return requireNotNull(result)
     }
+
+    /** IO only. Returned ExistingViews are cleaned once; a constructor that never returned remains UNKNOWN. */
+    suspend fun cold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins =
+        withContext(NonCancellable + Dispatchers.IO) {
+            scope.checkScope(); require(scope.existingOnly); require(first.schema == SCHEMA && first.run == scope.run && first.binding == scope.binding)
+            val owners = NativeMigrationNonemptyPairContract.ReadOwners(scope)
+            var primary: Throwable? = null
+            var result: NativeMigrationNonemptyPairContract.ColdPins? = null
+            try {
+                val archived = NativeMigrationNonemptyPairContract.readArchive(scope, PASSWORD, first)
+                val original = archived.text
+                owners.read(true) { source ->
+                    assertEquals(first.sourceCiphertext, source.familyCiphertext())
+                    assertEquals(first.sourceTextSha256, textDigests(materialize(source.records)))
+                    assertEquals(first.sourceBinarySha256, binaryDigests(source.records))
+                    NativeMigrationSounds.validate(materialize(source.records), emptyMap(), source.records.binary)
+                    for (name in listOf(NativeMigrationDeviceState.READING, NativeMigrationDeviceState.NOTIFICATIONS, NativeMigrationSounds.RECORD))
+                        assertEquals(original.getValue(name), source.records.text.getValue(name))
+                    source.unchanged()
+                } // Original assertion is passed to source close; its real close returns before destination acquisition.
+                result = owners.read(false) { current ->
+                    assertEquals(first.generation, current.published(first.receipt))
+                    assertEquals(first.originalCandidateCiphertext, current.originalCandidateCiphertext(null))
+                    current.originalCandidate(null, first.receipt) { records ->
+                        NativeMigrationNonemptyPairContract.requireNine(records)
+                        assertEquals(first.originalTextSha256, textDigests(materialize(records)))
+                        assertEquals(first.originalBinarySha256, binaryDigests(records))
+                        assertEquals(original, materialize(records))
+                }
+                val active = materialize(current.records)
+                assertEquals(first.destinationCiphertext, current.familyCiphertext())
+                assertEquals(first.activeTextSha256, textDigests(active))
+                assertEquals(first.activeBinarySha256, binaryDigests(current.records))
+                verifyDomainRecords(active, original, first.receipt, true); verifyUnknownRecords(active, original)
+                val draft = JSONObject(active.getValue("metadata")).getJSONObject("drafts").get(first.draftKey) as String
+                require(draft == DRAFT && sha(draft.toByteArray(Charsets.UTF_8)) == first.draftTextSha256)
+                NativeMigrationSounds.validate(active, emptyMap(), current.records.binary)
+                current.unchanged()
+                NativeMigrationNonemptyPairContract.ColdPins(archived.clearSha256, archived.sealedSha256,
+                    first.generation, first.draftKey, first.draftTextSha256, textDigests(active), binaryDigests(current.records))
+                }
+            } catch (error: Throwable) { primary = error; throw error }
+            finally { owners.close(primary) }
+            require(owners.closeReturns == 2)
+            requireNotNull(result).copy(readerCloseReturns=owners.closeReturns)
+        }
 
     private suspend fun verifyUnknown(current: NativeSessionStorage, original: Map<String, String>) {
         val name = original.keys.single { it.startsWith("operations:") }

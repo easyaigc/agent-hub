@@ -16,8 +16,15 @@ try {
     [Console]::Error.WriteLine('WINDOWS_POWERSHELL_MODULE_UNAVAILABLE')
     exit 1
 }
+$privateBootstrapScratch=$null
 try {
     $privateStateStage = 'add-type'
+    if($null -ne [Environment]::GetEnvironmentVariable('CODEX_MANAGE_WINDOWS_NATIVE_STORAGE')) {
+        $privateStateStage = 'private-bootstrap'
+        . (Join-Path $PSScriptRoot 'private-bootstrap.ps1')
+        $privateBootstrapScratch=Open-HostBootstrapScratch $PSScriptRoot
+        $privateStateStage = 'add-type'
+    }
     $privateStateSources = @((Join-Path $PSScriptRoot 'private-state.cs'))
     if ($Action -eq 'prepare-native') {
         $privateStateSources += (Join-Path $PSScriptRoot 'private-state-compilation.cs')
@@ -81,4 +88,6 @@ try {
     }
     if ($detail.Message -in @('WRONG_FILE_OWNER', 'NULL_PRIVATE_DACL', 'UNKNOWN_PRIVATE_ACE', 'SHARED_PRIVATE_FILE', 'UNPROTECTED_PRIVATE_DACL')) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_REJECTED:' + $detail.Message) }
     exit 1
+} finally {
+    if($null -ne $privateBootstrapScratch){Close-HostBootstrapScratch $privateBootstrapScratch}
 }

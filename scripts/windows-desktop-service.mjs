@@ -14,15 +14,33 @@ import {
 import { withWindowsProcessCreation } from '../packages/codex-adapter/dist/windows-process.js';
 
 import { inspectWindowsInstallation } from './windows-desktop-recovery.mjs';
+import { applyProtectedHostEnvironment } from './windows-host-regular-layout.mjs';
+import { routeRegularService } from './windows-host-regular-installed.mjs';
 
 if (process.platform !== 'win32') throw new Error('Use this service on native Windows');
 const action = process.argv[2] ?? 'status';
 if (!['preflight', 'start', 'stop', 'status', 'restart'].includes(action))
   throw new Error('Use preflight/start/stop/status/restart');
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const directory = join(repository, '.local/desktop-runtime');
-const jobConfig = join(directory, 'windows-host.json');
+const protectedDeployment = applyProtectedHostEnvironment(repository);
+const regular = routeRegularService(repository, action);
+if (protectedDeployment && !regular) throw new Error('Protected Host is not activated');
+const directory = regular ? regular.state : join(repository, '.local/desktop-runtime');
+const jobConfig = regular ? regular.configuration : join(directory, 'windows-host.json');
 const desktopConfig = join(directory, 'windows-desktop.json');
+const taskNode = protectedDeployment ? join(repository, 'bin/node.exe') : process.execPath;
+if (regular) {
+  assertPrivateFile(jobConfig);
+  assertPrivateFile(join(directory, 'runtime.json'));
+  const state = JSON.parse(readFileSync(join(directory, 'runtime.json'), 'utf8'));
+  const config = JSON.parse(readFileSync(jobConfig, 'utf8'));
+  if (
+    state.hostId !== regular.hostId ||
+    resolve(config.environment.HOST_AGENT_STATE_DIR).toLowerCase() !==
+      resolve(directory).toLowerCase()
+  )
+    throw new Error('Regular Host identity changed');
+}
 const powershell = join(
   process.env.SystemRoot ?? 'C:\\Windows',
   'System32/WindowsPowerShell/v1.0/powershell.exe',
@@ -146,6 +164,12 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     environment.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG = resolve(
       process.env.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG,
     );
+  if (protectedDeployment) {
+    environment.CODEX_MANAGE_WINDOWS_NATIVE_STORAGE = 'profile-v1';
+    environment.CODEX_DESKTOP_SUGGESTION_OBSERVER = '0';
+    environment.CODEX_DESKTOP_TRACE_RETENTION = '0';
+    delete environment.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG;
+  }
   writePrivateFileSync(desktopConfig, JSON.stringify(desktop, null, 2) + '\n', { mode: 0o600 });
   writePrivateFileSync(
     jobConfig,
@@ -170,7 +194,7 @@ const result = withWindowsProcessCreation(commandBudgetMs + 15_000, (timeout) =>
       '-Action',
       action,
       '-NodePath',
-      process.execPath,
+      taskNode,
       '-LauncherPath',
       launcher.executable,
       '-LauncherRootsBase64',

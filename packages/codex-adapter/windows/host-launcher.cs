@@ -2,11 +2,58 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text.RegularExpressions;
 
 // Built as winexe: Task Scheduler itself must never allocate a console.
 // No shell, detach or input dispatch; the sole child is the fixed Host worker.
 internal static class HostLauncher
 {
+    [DataContract] private sealed class RuntimeFile { [DataMember] public int bytes=0; [DataMember] public string sha256=null; }
+    [DataContract] private sealed class RuntimeManifest { [DataMember] public string format=null; [DataMember] public string sourceCommit=null; [DataMember] public Dictionary<string,RuntimeFile> files=null; }
+    private static void Inventory(string root, string directory, HashSet<string> names, ref int count)
+    {
+        if(++count>25000) throw new InvalidOperationException();
+        foreach(string path in Directory.GetFileSystemEntries(directory)) {
+            FileAttributes attributes=File.GetAttributes(path);
+            if((attributes&FileAttributes.ReparsePoint)!=0) throw new InvalidOperationException();
+            if((attributes&FileAttributes.Directory)!=0) Inventory(root,path,names,ref count);
+            else { string name=path.Substring(root.Length+1); if(name!="runtime-manifest.json" && !names.Remove(name)) throw new InvalidOperationException(); }
+        }
+    }
+    private static void GuardProtectedRuntime(string[] args, List<IDisposable> leases)
+    {
+        string anchor=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".config","agent-hub","windows-host-v1","programs")+Path.DirectorySeparatorChar;
+        string worker=Path.GetFullPath(args[1]);
+        if(!worker.StartsWith(anchor,StringComparison.OrdinalIgnoreCase)) return;
+        string root=Path.GetDirectoryName(Path.GetDirectoryName(worker));
+        string manifestSha=Path.GetFileName(root);
+        if(!Regex.IsMatch(manifestSha,"^[a-f0-9]{64}$") || !String.Equals(Path.GetDirectoryName(root)+Path.DirectorySeparatorChar,anchor,StringComparison.OrdinalIgnoreCase) ||
+            !String.Equals(worker,Path.Combine(root,"scripts","windows-desktop-worker.mjs"),StringComparison.OrdinalIgnoreCase) ||
+            !String.Equals(Path.GetFullPath(args[0]),Path.Combine(root,"bin","node.exe"),StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException();
+        var manifestLease=CodexManagePrivateStateSecurity.OpenRecoveryRuntimeRead(Path.Combine(root,"runtime-manifest.json"),2097152,manifestSha); leases.Add(manifestLease);
+        RuntimeManifest manifest;
+        using(var input=new MemoryStream(manifestLease.Bytes)) manifest=(RuntimeManifest)new DataContractJsonSerializer(typeof(RuntimeManifest),new DataContractJsonSerializerSettings{UseSimpleDictionaryFormat=true}).ReadObject(input);
+        if(manifest==null || manifest.format!="windows-host-regular-runtime-v1" || !Regex.IsMatch(manifest.sourceCommit??"","^[a-f0-9]{40}$") || manifest.files==null || manifest.files.Count>20000 ||
+            !manifest.files.ContainsKey("bin/node.exe") || !manifest.files.ContainsKey("scripts/windows-desktop-worker.mjs") || !manifest.files.ContainsKey("apps/host-agent/dist/runtime-entry.js")) throw new InvalidOperationException();
+        var inventory=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach(var entry in manifest.files) {
+            string name=entry.Key;
+            if(!Regex.IsMatch(name,"^[a-zA-Z0-9@._/-]+$") || name.StartsWith("/") || entry.Value==null || entry.Value.bytes<0 || entry.Value.bytes>134217728) throw new InvalidOperationException();
+            foreach(string part in name.Split('/')) if(part.Length==0 || part=="." || part=="..") throw new InvalidOperationException();
+            if(!inventory.Add(name.Replace('/',Path.DirectorySeparatorChar))) throw new InvalidOperationException();
+            var lease=CodexManagePrivateStateSecurity.OpenRecoveryRuntimeRead(Path.Combine(root,name.Replace('/',Path.DirectorySeparatorChar)),134217728,entry.Value.sha256); leases.Add(lease);
+            if(lease.Bytes.Length!=entry.Value.bytes) throw new InvalidOperationException();
+        }
+        int directoryCount=0; Inventory(root,root,inventory,ref directoryCount);
+        if(inventory.Count!=0) throw new InvalidOperationException();
+        Environment.SetEnvironmentVariable("CODEX_MANAGE_WINDOWS_NATIVE_STORAGE","profile-v1");
+        Environment.SetEnvironmentVariable("CODEX_DESKTOP_SUGGESTION_OBSERVER","0");
+        Environment.SetEnvironmentVariable("CODEX_DESKTOP_TRACE_RETENTION","0");
+        Environment.SetEnvironmentVariable("CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG",null);
+    }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct StartupInfo
     {
@@ -80,6 +127,7 @@ internal static class HostLauncher
         IntPtr job = IntPtr.Zero;
         var child = new ProcessInfo();
         bool completed = false;
+        var leases = new List<IDisposable>();
         try
         {
             AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
@@ -89,6 +137,11 @@ internal static class HostLauncher
                 !String.Equals(Path.GetFileName(args[0]), "node.exe", StringComparison.OrdinalIgnoreCase) ||
                 !String.Equals(Path.GetFileName(args[1]), "windows-desktop-worker.mjs", StringComparison.OrdinalIgnoreCase) ||
                 !String.Equals(Path.GetFileName(args[2]), "windows-host.json", StringComparison.OrdinalIgnoreCase)) return 64;
+            // Scheduler launch must not load a user/global Node preloader
+            // before the fixed worker can validate its configuration.
+            Environment.SetEnvironmentVariable("NODE_OPTIONS", null);
+            Environment.SetEnvironmentVariable("NODE_PATH", null);
+            GuardProtectedRuntime(args,leases);
             job = CreateJobObject(IntPtr.Zero, null);
             var limits = new ExtendedLimits();
             limits.Basic.Flags = 0x2000; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
@@ -119,6 +172,7 @@ internal static class HostLauncher
             // Only descendants of this invocation belong to the unnamed job;
             // the official desktop and the user's terminals are never included.
             if (job != IntPtr.Zero) CloseHandle(job);
+            for(int i=leases.Count-1;i>=0;i--) leases[i].Dispose();
         }
     }
 }

@@ -12,8 +12,13 @@ import {
 import { refreshWindowsHostConfiguration } from './windows-desktop-recovery.mjs';
 import { safeWorkerFailure, superviseWorker } from './host-worker-supervisor.mjs';
 import { validateWindowsHostEnvironment } from './windows-host-environment.mjs';
+import { applyProtectedHostEnvironment } from './windows-host-regular-layout.mjs';
 
 if (process.platform !== 'win32') throw new Error('Native Windows required');
+const protectedProgram = fileURLToPath(new URL('..', import.meta.url));
+// Select the protected native cache before the first private-file assertion.
+// This only affects the Host process and descendants, never the desktop.
+applyProtectedHostEnvironment(protectedProgram);
 if (process.argv[3] === '--host-child')
   process.on('uncaughtExceptionMonitor', (error) => {
     console.error(
@@ -51,6 +56,7 @@ if (configuration.format === 'windows-host-startup-preflight-v1') {
       );
   }
   for (const [key, value] of Object.entries(configuration.environment)) process.env[key] = value;
+  applyProtectedHostEnvironment(protectedProgram);
   if (process.argv[3] === '--host-child') {
     // Monitoring records the crash; it never catches or suppresses it.
     const stop = () => {

@@ -317,7 +317,7 @@ export const privateStateNativeDiagnostics = Object.freeze({
     'ERR_ACCESS_DENIED',
     'WINDOWS_NATIVE_OUTPUT_CHANGED',
   ] as const,
-  helperStages: ['add-type', 'execute'] as const,
+  helperStages: ['private-bootstrap', 'add-type', 'execute'] as const,
   nativeTypes: [
     'Win32Exception',
     'UnauthorizedAccessException',

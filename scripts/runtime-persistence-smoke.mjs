@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { fsyncSync, renameSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { join } from 'node:path';
@@ -7,6 +8,16 @@ import { tmpdir } from 'node:os';
 import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
 import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
 import { privateStateProtocol } from '../packages/codex-adapter/dist/desktop-private-state-native.js';
+import {
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+} from '../packages/codex-adapter/dist/desktop-platform.js';
+
+function fixtureDirectory(prefix) {
+  const directory = join(tmpdir(), prefix + randomUUID());
+  makePrivateDirectorySync(directory);
+  return directory;
+}
 
 // Background correctness waits include the existing native helper cold-start
 // budget. They are not HTTP latency assertions and do not change production limits.
@@ -14,8 +25,11 @@ const backgroundSettleMs =
   process.platform === 'win32'
     ? privateStateProtocol.startupMs + privateStateProtocol.operationMs + 5000
     : 5000;
+// Windows keeps legacy v1 cache bytes untouched and writes its User-owned v2
+// namespace. Exercise the actual platform cache for corruption and cleanup.
+const historyCacheName = process.platform === 'win32' ? 'runtime-history-v2' : 'runtime-history-v1';
 
-const directory = await mkdtemp(join(tmpdir(), 'codex-runtime-persistence-'));
+const directory = fixtureDirectory('codex-runtime-persistence-');
 const file = join(directory, 'runtime.json');
 let store;
 try {
@@ -25,7 +39,7 @@ try {
     receipts: [{ id: 'stable-operation', state: 'uncertain' }],
     attachments: [{ id: 'attachment-a', threadId: 'thread-a' }],
   };
-  await writeFile(file, JSON.stringify(legacy), { mode: 0o600 });
+  writePrivateFileSync(file, JSON.stringify(legacy), { flag: 'wx' });
   store = new RuntimePersistence(file, directory);
   const migrated = store.load();
   assert.deepEqual(migrated, legacy);
@@ -62,7 +76,7 @@ try {
   const restored = new RuntimePersistence(file, directory).load();
   assert.equal(restored.threads[1].messages[0].text, 'latest history');
   assert.equal(restored.receipts[0].state, 'submitted');
-  const cacheDirectory = join(directory, 'runtime-history-v1');
+  const cacheDirectory = join(directory, historyCacheName);
   const files = await readdir(cacheDirectory);
   assert(files.every((name) => /^[a-f0-9]{64}\.json$/.test(name)));
 
@@ -93,7 +107,7 @@ try {
 
 // A read-only save can coalesce only an already durable, byte-identical head.
 // Real temporary files/renames/fsyncs exercise the command durability boundary.
-const coalescingDirectory = await mkdtemp(join(tmpdir(), 'codex-persistence-coalescing-'));
+const coalescingDirectory = fixtureDirectory('codex-persistence-coalescing-');
 const coalescingFile = join(coalescingDirectory, 'runtime.json');
 let coalescing;
 try {
@@ -178,7 +192,7 @@ try {
 }
 
 // Exercise actual desktop projection without connecting or submitting model input.
-const projectionDirectory = await mkdtemp(join(tmpdir(), 'codex-projection-coalescing-'));
+const projectionDirectory = fixtureDirectory('codex-projection-coalescing-');
 let session;
 try {
   session = new RuntimeSession({
@@ -279,7 +293,7 @@ try {
 
 // A readonly deadline must not compete with scheduled cache writes on Main.
 // Explicit command/read barriers and the real writer/head guards remain active.
-const deferredDirectory = await mkdtemp(join(tmpdir(), 'codex-deferred-cache-'));
+const deferredDirectory = fixtureDirectory('codex-deferred-cache-');
 let deferredStore;
 try {
   const deferredFile = join(deferredDirectory, 'runtime.json');
@@ -426,7 +440,7 @@ try {
 
 // Real asynchronous temp-file I/O, with only the native ACL response held by
 // this fixture. A Windows cache completion must never overwrite a newer command.
-const asyncDirectory = await mkdtemp(join(tmpdir(), 'codex-windows-background-'));
+const asyncDirectory = fixtureDirectory('codex-windows-background-');
 const gates = [];
 let asyncStore;
 try {
@@ -603,7 +617,7 @@ try {
     new RuntimePersistence(asyncFile, asyncDirectory).load().threads[0].messages,
     [],
   );
-  for (const directory of [asyncDirectory, join(asyncDirectory, 'runtime-history-v1')])
+  for (const directory of [asyncDirectory, join(asyncDirectory, historyCacheName)])
     assert(
       (await readdir(directory)).every((name) => !name.endsWith('.tmp')),
       'All owned obsolete temporary files must be removed',

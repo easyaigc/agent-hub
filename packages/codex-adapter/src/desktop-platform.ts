@@ -19,10 +19,11 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { lstat, open as openFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { Duplex } from 'node:stream';
+import { homedir } from 'node:os';
 import { isMainThread } from 'node:worker_threads';
 import {
   createWindowsPrivateStateBackend,
@@ -125,7 +126,9 @@ function windowsPowerShellSync(args: string[], active?: () => boolean, timeoutMs
           }
         : {}),
       code,
-      helperStage: stderr.match(/^WINDOWS_PRIVATE_STATE_BOOTSTRAP:(add-type|execute)\s*$/m)?.[1],
+      helperStage: stderr.match(
+        /^WINDOWS_PRIVATE_STATE_BOOTSTRAP:(private-bootstrap|add-type|execute)\s*$/m,
+      )?.[1],
       nativeType: stderr.match(/^WINDOWS_PRIVATE_STATE_NATIVE_TYPE:([A-Za-z]{1,64})\s*$/m)?.[1],
       nativeWin32:
         Number(stderr.match(/^WINDOWS_PRIVATE_STATE_WIN32:([1-9][0-9]{0,9})\s*$/m)?.[1]) ||
@@ -161,6 +164,17 @@ export function inspectWindowsCli(path: string): { sha256: string } {
 }
 
 const nativeExecutables = new Map<string, string>();
+/** A Host-only opt-in. Never substitute LOCALAPPDATA or accept a caller path. */
+export function windowsNativeStorageRoot(environment = process.env, profile = homedir()): string {
+  const mode = environment.CODEX_MANAGE_WINDOWS_NATIVE_STORAGE;
+  if (mode === 'profile-v1') {
+    if (!profile || !isAbsolute(profile)) throw new Error('Windows user profile missing');
+    return join(profile, '.config/agent-hub/windows-native-v1/native-helpers');
+  }
+  if (mode !== undefined) throw new Error('Unknown Windows native storage mode');
+  if (!environment.LOCALAPPDATA) throw new Error('Windows local user data directory missing');
+  return join(environment.LOCALAPPDATA, 'CodexManage/native-helpers');
+}
 function windowsPrivateStateExecutable(
   name: 'private-state' | 'trace-state' | 'host-launcher' = 'private-state',
   active?: () => boolean,
@@ -168,8 +182,8 @@ function windowsPrivateStateExecutable(
 ): string {
   observeStage?.('environment');
   if (active && !active()) throw new Error('Native owner closed before bootstrap');
-  if (!process.env.LOCALAPPDATA) throw new Error('Windows local user data directory missing');
-  const cacheKey = name + '\n' + process.env.LOCALAPPDATA;
+  const storageRoot = windowsNativeStorageRoot();
+  const cacheKey = name + '\n' + storageRoot;
   const cached = nativeExecutables.get(cacheKey);
   if (cached) return cached;
   observeStage?.('source');
@@ -180,10 +194,11 @@ function windowsPrivateStateExecutable(
     ...sources,
     windowsHelper('private-state.cs'),
     windowsHelper('private-state-compilation.cs'),
+    ...(name === 'host-launcher' ? [windowsHelper('private-state-recovery.cs')] : []),
   ]))
     hash.update(readFileSync(path));
   const digest = hash.digest('hex');
-  const directory = join(process.env.LOCALAPPDATA, 'CodexManage/native-helpers', digest);
+  const directory = join(storageRoot, digest);
   observeStage?.('directory');
   // Bootstrap is performed once per helper isolate. Per-snapshot writes then
   // use the same fixed native ACL implementation without starting PowerShell.
@@ -258,6 +273,18 @@ function windowsPrivateStateExecutable(
 export function windowsHostLauncherExecutable(): string {
   return windowsPrivateStateExecutable('host-launcher');
 }
+/** Preparation compiles/checks helpers, but never executes the Host launcher. */
+export function prepareWindowsProtectedHostHelpers(): { privateState: string; launcher: string } {
+  if (
+    process.platform !== 'win32' ||
+    process.env.CODEX_MANAGE_WINDOWS_NATIVE_STORAGE !== 'profile-v1'
+  )
+    throw new Error('Protected Windows Host preparation required');
+  return {
+    privateState: windowsPrivateStateExecutable('private-state'),
+    launcher: windowsPrivateStateExecutable('host-launcher'),
+  };
+}
 /** Only the private-state transport Worker bootstraps this fixed local binary. */
 export function windowsPrivateStateNativeExecutable(
   active?: () => boolean,
@@ -318,6 +345,11 @@ export function closeWindowsPrivateStateBackend(): void {
 /** Explicit, verified aliases for the same product's helper storage only. */
 export function windowsHostLauncherConfiguration(): { executable: string; roots: string[] } {
   const executable = windowsHostLauncherExecutable();
+  if (process.env.CODEX_MANAGE_WINDOWS_NATIVE_STORAGE === 'profile-v1') {
+    // A separate product namespace, not an exception for the rejected aliases.
+    // Existing tasks still must match this exact action before service control.
+    return { executable, roots: [windowsNativeStorageRoot()] };
+  }
   const digest = basename(dirname(executable));
   const local = process.env.LOCALAPPDATA!;
   const roots = new Set([dirname(dirname(executable))]);

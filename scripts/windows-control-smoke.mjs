@@ -134,6 +134,10 @@ try {
     ['./windows-desktop-recovery.mjs', 'scripts/windows-desktop-recovery.mjs'],
     ['./windows-desktop-worker.mjs', 'scripts/windows-desktop-worker.mjs'],
     ['./windows-host-environment.mjs', 'scripts/windows-host-environment.mjs'],
+    ['./windows-host-regular-layout.mjs', 'scripts/windows-host-regular-layout.mjs'],
+    ['./windows-host-regular-installed.mjs', 'scripts/windows-host-regular-installed.mjs'],
+    ['./windows-host-regular-runtime.mjs', 'scripts/windows-host-regular-runtime.mjs'],
+    ['./windows-host-regular-recovery.mjs', 'scripts/windows-host-regular-recovery.mjs'],
     ['./host-worker-supervisor.mjs', 'scripts/host-worker-supervisor.mjs'],
     [
       './fixtures/windows-private-state-boundary.mjs',
@@ -168,6 +172,10 @@ try {
       'packages/codex-adapter/windows/host-launcher.cs',
     ],
     [
+      '../packages/codex-adapter/windows/private-state-recovery.cs',
+      'packages/codex-adapter/windows/private-state-recovery.cs',
+    ],
+    [
       '../packages/codex-adapter/windows/private-state.ps1',
       'packages/codex-adapter/windows/private-state.ps1',
     ],
@@ -182,6 +190,7 @@ try {
 import childProcess from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import fs from 'node:fs';
+import os from 'node:os';
 import { dirname, join, relative, sep } from 'node:path';
 import { syncBuiltinESMExports } from 'node:module';
 import {installWindowsPrivateStateFixture} from './scripts/fixtures/windows-private-state-boundary.mjs';
@@ -193,6 +202,8 @@ assert.equal(process.env.LOCALAPPDATA, ${JSON.stringify(previousLocalData)}, 'No
 // Apply synthetic paths only after Node and its native crypto initialization are ready.
 process.env.LOCALAPPDATA = ${JSON.stringify(localData)};
 process.env.SystemRoot = ${JSON.stringify(systemRoot)};
+// Keep installation routing entirely inside this synthetic child fixture.
+os.homedir=()=>${JSON.stringify(join(directory, 'fixture-profile'))};
 Object.defineProperty(process, 'platform', {value:'win32'});
 const logicalRoot=join(process.env.LOCALAPPDATA,'CodexManage/native-helpers');
 const physicalRoot=join(process.env.LOCALAPPDATA,'Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local/CodexManage/native-helpers');

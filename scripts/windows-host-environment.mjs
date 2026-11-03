@@ -1,6 +1,7 @@
 const windowsHostEnvironmentKeys = new Set([
   'AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS',
   'CODEX_RUNTIME_MODE',
+  'CODEX_MANAGE_WINDOWS_NATIVE_STORAGE',
   'CODEX_DESKTOP_VERSION',
   'CODEX_EXECUTABLE',
   'CODEX_DESKTOP_WINDOWS_CONFIG',
@@ -33,6 +34,8 @@ export function validateWindowsHostEnvironment(configuration) {
       throw new Error('Invalid Host environment');
     if (key === 'AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS' && value !== '0' && value !== '1')
       throw new Error('Invalid Windows Trace diagnostic mode');
+    if (key === 'CODEX_MANAGE_WINDOWS_NATIVE_STORAGE' && value !== 'profile-v1')
+      throw new Error('Invalid Windows native storage mode');
   }
   return configuration.environment;
 }

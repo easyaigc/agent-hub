@@ -30,10 +30,21 @@ export class FileTransfers {
     this.records = join(stateDirectory, 'file-transfers');
   }
   private async directory(path: string) {
-    makePrivateDirectorySync(path);
-    if (!(await lstat(path)).isDirectory() || (await realpath(path)) !== resolve(path))
-      throw new RuntimeError(409, '文件接收目录已变化或包含符号链接，请在电脑上检查');
-    protectWindowsStateDirectory(path);
+    try {
+      makePrivateDirectorySync(path);
+      if (!(await lstat(path)).isDirectory() || (await realpath(path)) !== resolve(path))
+        throw new RuntimeError(409, '文件接收目录已变化或包含符号链接，请在电脑上检查');
+      protectWindowsStateDirectory(path);
+    } catch (error) {
+      // Windows can reject a reparse point before the portable lstat check.
+      // Keep that refusal and the same transfer-level conflict contract.
+      if ((error as { code?: string }).code === 'UNSAFE_WINDOWS_PRIVATE_STATE')
+        throw Object.assign(
+          new RuntimeError(409, '文件接收目录已变化或包含符号链接，请在电脑上检查'),
+          { cause: error },
+        );
+      throw error;
+    }
   }
   private recordPath(id: string) {
     if (!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id))

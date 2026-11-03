@@ -247,3 +247,11 @@ Source72修复严格冷恢复中BOUND写账本的顺序冲突，保持权限和�
 2026-11-02 阶段64，F55/F56/F64：iOS SessionPersistenceWriter已接入三个固定路径原bytes/absence快照、写前非regular拒绝及同步写入失败逆序补偿；补偿不全保留同实例snapshot并禁写，只读核对完整三元组一致后才解除gate。actual production SessionStore/default Keychain/通知I/O的成功、非regular预检和真实写失败补偿各1项Native限定通过，旧/新草稿附件、惰性语音原件再导出与immutable unknown outbox不重放保持；B1在写前预检拒绝，B2以真实UF_IMMUTABLE regular state的CocoaNoPermission/POSIX EPERM进入catch并补偿legacy/backup，原backup absence保持；补偿失败恢复分支仍待验。无OS崩溃/journal持久性、权限元数据或实例销毁后snapshot恢复承诺。独立hosted入口与环境失败另记，不新增UI/物理DEV通过。Android完整代次/单认证指针源码对照未确认同类P1，未新增Android验收；24域/完整UI/双端整包互通及P7仍未完成，所有implementation/verification/shared状态保持，A6暂停。见[阶段64档案](../plans/android-alignment-20261022/records/stage64-p7-ios-sessionstore.md)。
 
 阶段65 F55/F56：Android固定既有候选补本地v1/v2只读兼容，共用原strict receipt/chunk/来源与资料图校验；1项内存校验及2项实际存储/Controller恢复与冷回执Native限定通过。iOS与既有状态不变；严格owner故障/完整UI/物理/24域开放，见[阶段档案](../plans/android-alignment-20261022/records/stage65-p7-legacy-cold-recovery.md)。
+
+F03 Windows 常规 Host 恢复续接：新增私有冻结运行包、原身份/状态绑定、准备及正式任务切换/回滚候选；建议观察和保留关闭。真实 Scheduler 只读启动八项通过，UAC 关闭现场仍是高完整性用户上下文，不计 Limited 隔离通过。共同断言为原 Host/workspace/runtime、设备凭据和未知操作不重放保持；iOS/Android UI、协议及连接资料结构不变。正式服务与跨机 HTTPS、双端手机均尚未验收，不新增原生手机通过，A6保持暂停。见[恢复契约和分层结果](../windows-host-regular-recovery.md)。
+
+F31/F32 Windows 启动诊断：HTTP错误诊断在原64项队列内预留容量，并使用独立限速，防止权限检查事件洪峰挤掉已返回客户端的诊断ID；不扩大日志字段、保留正文或放宽私人数据权限。当前为本地候选，双端UI/协议不变，正式Host和手机验收另计。
+
+F59 Windows 文件接收：原生目录安全检查对重解析点等拒绝保持，转换为已有的409目录冲突契约并保留内部原因；不创建或跟随受拒目标，不放宽owner/DACL。双端既有错误处理和20 MiB/摘要/未知操作规则保持，未新增手机验收。
+
+F03 Windows 常规恢复整合：Windows交付记录正式Host免重启启用，Mac独立核对原证书钉扎的LAN/Tailscale鉴权和准确Host/desktop-runtime工作区。旧合成操作仍pending/历史未确认；当前运行包不在本次整合中替换，建议调研仍停止。此项不升级登录自启、回滚或双端手机验收，iOS/Android UI与wire不变。见[本次整合证据](../acceptance/windows-regular-host-recovery-20261103.md)。

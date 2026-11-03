@@ -17,8 +17,8 @@ const { CodexHistoryReader } = await import(
 );
 const base = join(program, '.local');
 fs.mkdirSync(base, { recursive: true });
-const dir = fs.mkdtempSync(join(base, 'native-stdin-fixture-'));
-platform.protectWindowsStateDirectory(dir);
+const dir = join(base, 'native-stdin-fixture-' + randomUUID());
+platform.makePrivateDirectorySync(dir);
 const nonce = randomUUID();
 const cs = String.raw`
 using System;using System.IO;using System.Text;using System.Net;using System.Net.Sockets;using System.Runtime.InteropServices;using System.Web.Script.Serialization;using Microsoft.Win32.SafeHandles;using System.Collections.Generic;
@@ -46,17 +46,18 @@ class NativeStdinFixture {
 }`;
 const source = join(dir, 'fixture.cs'),
   exe = join(dir, 'fixture.exe');
-fs.writeFileSync(source, cs, { flag: 'wx', mode: 0o600 });
-platform.protectWindowsStateFile(source);
+platform.writePrivateFileSync(source, cs, { flag: 'wx', mode: 0o600 });
 const compile = spawnSync(
   join(process.env.SystemRoot, 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'),
   ['/nologo', '/platform:x64', '/r:System.Web.Extensions.dll', '/out:' + exe, source],
   { windowsHide: true, stdio: 'pipe', timeout: 30000 },
 );
-fs.writeFileSync(join(dir, 'compile.stdout'), compile.stdout ?? '');
-fs.writeFileSync(join(dir, 'compile.stderr'), compile.stderr ?? '');
+platform.writePrivateFileSync(join(dir, 'compile.stdout'), compile.stdout ?? '', { flag: 'wx' });
+platform.writePrivateFileSync(join(dir, 'compile.stderr'), compile.stderr ?? '', { flag: 'wx' });
 assert.equal(compile.status, 0, 'Native fake must compile');
-platform.protectWindowsStateFile(exe);
+// This fixed compiler output is public test code inside the new private
+// directory. Its trusted Administrators owner is not a private-data owner;
+// do not adopt it or apply the private-data owner assertion to the executable.
 const oldNonce = process.env.NATIVE_STDIN_FIXTURE_NONCE;
 process.env.NATIVE_STDIN_FIXTURE_NONCE = nonce;
 const reader = new CodexHistoryReader('owned-fixture-host', 'Native closed pipe', exe);
@@ -152,7 +153,7 @@ try {
   report.pending = reader.pending.size;
   report.actualStreamErrors = streamErrors;
   report.finishedAt = new Date().toISOString();
-  fs.writeFileSync(join(dir, 'result.json'), JSON.stringify(report, null, 2), {
+  platform.writePrivateFileSync(join(dir, 'result.json'), JSON.stringify(report, null, 2), {
     mode: 0o600,
     flag: 'wx',
   });

@@ -286,7 +286,7 @@ public static partial class CodexManagePrivateStateSecurity
         }
         if (compiler == null) throw new FileNotFoundException();
         var command = new StringBuilder(CompilationQuote(compiler) + " /noconfig /nologo /target:" +
-            (name == "host-launcher" ? "winexe" : "exe") + " /optimize+");
+            (name == "host-launcher" || name == "host-domain" ? "winexe" : "exe") + " /optimize+");
         // Disable implicit response files and reference only the selected
         // system Framework directory, never a cwd/LIB-supplied assembly.
         string frameworkDirectory = Path.GetDirectoryName(compiler);
@@ -294,7 +294,13 @@ public static partial class CodexManagePrivateStateSecurity
             command.Append(" ").Append(CompilationQuote("/r:" + Path.Combine(frameworkDirectory, assembly)));
         if (name != "host-launcher")
             command.Append(" ").Append(CompilationQuote("/r:" + Path.Combine(frameworkDirectory, "System.Web.Extensions.dll")));
+        if (name == "host-domain" || name == "host-launcher")
+            command.Append(" ").Append(CompilationQuote("/r:" + Path.Combine(frameworkDirectory, "System.Xml.dll")));
+        if (name == "host-domain" || name == "host-launcher")
+            command.Append(" ").Append(CompilationQuote("/r:" + Path.Combine(frameworkDirectory, "System.Runtime.Serialization.dll")));
         command.Append(" ").Append(CompilationQuote("/out:" + output));
+        if (name == "host-domain") command.Append(" /main:CodexManageHostDomain");
+        if (name == "host-launcher") command.Append(" /main:HostLauncher");
         foreach (string source in sources) command.Append(" ").Append(CompilationQuote(source));
         IntPtr job = IntPtr.Zero, attributes = IntPtr.Zero, jobValue = IntPtr.Zero, handlesValue = IntPtr.Zero;
         var child = new CompilationProcessInfo();
@@ -557,8 +563,10 @@ public static partial class CodexManagePrivateStateSecurity
     public static string PrepareNative(string name, string sourceDirectory, string cacheDirectory, int budgetMs)
     {
         var elapsed = Stopwatch.StartNew();
-        if ((name != "private-state" && name != "trace-state" && name != "host-launcher") ||
+        if ((name != "private-state" && name != "trace-state" && name != "host-launcher" && name != "host-domain") ||
             budgetMs <= 0 || budgetMs > 30000) throw new ArgumentException();
+        if (name == "host-domain" && Environment.GetEnvironmentVariable("CODEX_MANAGE_WINDOWS_NATIVE_STORAGE") != "profile-v1")
+            throw new UnauthorizedAccessException();
         sourceDirectory = CompilationDirectory(sourceDirectory);
         cacheDirectory = CompilationDirectory(cacheDirectory);
         var directories = new List<SafeFileHandle>();
@@ -576,6 +584,7 @@ public static partial class CodexManagePrivateStateSecurity
             // Exactly the Node Set insertion order; raw bytes, no separators.
             if (name != "private-state") sourceNames.Add("private-state.cs");
             sourceNames.Add("private-state-compilation.cs");
+            if (name == "host-domain" || name == "host-launcher") sourceNames.Add("private-state-recovery.cs");
             preparationStep = "hash-source";
             string digest;
             using (var hash = SHA256.Create())
@@ -605,8 +614,16 @@ public static partial class CodexManagePrivateStateSecurity
                 hash.TransformFinalBlock(new byte[0], 0, 0);
                 digest = BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
             }
-            string local = CompilationDirectory(Environment.GetEnvironmentVariable("LOCALAPPDATA"));
-            string expected = Path.Combine(local, "CodexManage", "native-helpers", digest);
+            string mode = Environment.GetEnvironmentVariable("CODEX_MANAGE_WINDOWS_NATIVE_STORAGE");
+            string storage;
+            if (mode == "profile-v1")
+                storage = Path.Combine(CompilationDirectory(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)),
+                    ".config", "agent-hub", "windows-native-v1", "native-helpers");
+            else if (mode == null)
+                storage = Path.Combine(CompilationDirectory(Environment.GetEnvironmentVariable("LOCALAPPDATA")),
+                    "CodexManage", "native-helpers");
+            else throw new ArgumentException();
+            string expected = Path.Combine(storage, digest);
             if (!String.Equals(cacheDirectory, expected, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException();
             CheckCompilationBudget(elapsed, budgetMs);
             preparationStep = "create-cache";
@@ -641,6 +658,12 @@ public static partial class CodexManagePrivateStateSecurity
             var compileSources = new List<string> { Path.Combine(sourceDirectory, name + ".cs") };
             if (name == "trace-state") compileSources.Add(Path.Combine(sourceDirectory, "trace-process.cs"));
             if (name == "private-state") compileSources.Add(Path.Combine(sourceDirectory, "private-state-compilation.cs"));
+            if (name == "host-domain" || name == "host-launcher")
+            {
+                compileSources.Add(Path.Combine(sourceDirectory, "private-state.cs"));
+                compileSources.Add(Path.Combine(sourceDirectory, "private-state-compilation.cs"));
+                compileSources.Add(Path.Combine(sourceDirectory, "private-state-recovery.cs"));
+            }
             // A grants only READ_CONTROL | READ_ATTRIBUTES. In particular it
             // must not borrow NodeHandoff's FILE_READ_DATA access: Framework
             // csc can refuse that existing output with CS0016. Publication and

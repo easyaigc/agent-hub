@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,8 +9,10 @@ import test from 'node:test';
 import {
   assertPrivateFile,
   closeWindowsPrivateStateBackend,
+  makePrivateDirectorySync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
+  writePrivateFileSync,
   windowsPowerShellEnvironment,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 
@@ -35,11 +37,15 @@ test(
   'bootstrap and native worker repeatedly protect ordinary-user state and reject unsafe targets',
   native,
   () => {
-    const directory = mkdtempSync(join(tmpdir(), 'codex-private-acl-'));
+    // Elevated Windows creates ordinary fs fixtures with Administrators as
+    // owner. Construct this new ordinary-user fixture through the private-state
+    // creation contract; protect must still reject unrelated/wrong-owner data.
+    const directory = join(tmpdir(), 'codex-private-acl-' + randomUUID());
+    makePrivateDirectorySync(directory);
     const file = join(directory, 'private.json');
     const junction = directory + '-junction';
     try {
-      writeFileSync(file, '{}');
+      writePrivateFileSync(file, '{}', { flag: 'wx' });
       for (let index = 0; index < 3; index++) {
         assert.match(bootstrap('protect', directory), /PRIVATE_STATE_OK/);
         assert.match(bootstrap('protect-file', file), /PRIVATE_STATE_OK/);
@@ -58,9 +64,9 @@ test(
       protectWindowsStateFile(file);
       assert.match(bootstrap('check', file), /PRIVATE_STATE_OK/);
       const longDirectory = join(directory, 'a'.repeat(120), 'b'.repeat(120));
-      mkdirSync(longDirectory, { recursive: true });
+      makePrivateDirectorySync(longDirectory);
       const longFile = join(longDirectory, 'private.json');
-      writeFileSync(longFile, '{}');
+      writePrivateFileSync(longFile, '{}', { flag: 'wx' });
       assert(longFile.length > 260);
       assert.match(bootstrap('protect', longDirectory), /PRIVATE_STATE_OK/);
       assert.match(bootstrap('protect-file', longFile), /PRIVATE_STATE_OK/);

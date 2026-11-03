@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,6 +9,7 @@ import { channel } from 'node:diagnostics_channel';
 import { setTimeout as delay } from 'node:timers/promises';
 import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
 import {
+  makePrivateDirectorySync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   assertPrivateFile,
@@ -17,9 +19,11 @@ import { createWindowsTraceDiagnostics } from '../packages/codex-adapter/dist/wi
 
 // An independently created state and ephemeral localhost port only. On native
 // Windows successful writes use the actual private ACL helper, never a stub.
-const directory = await mkdtemp(join(tmpdir(), 'codex-host-lifecycle-'));
+const directory = join(tmpdir(), 'codex-host-lifecycle-' + randomUUID());
+makePrivateDirectorySync(directory);
 protectWindowsStateDirectory(directory);
 const file = join(directory, 'runtime.json');
+const historyCacheName = process.platform === 'win32' ? 'runtime-history-v2' : 'runtime-history-v1';
 const reports = [];
 let fault;
 let protectedFiles = 0;
@@ -117,7 +121,7 @@ try {
   state.threads = [bad, good];
   store.save(state);
   await waitUntil(() => reports.filter((entry) => entry.scope === 'history-save').length === 3);
-  const historyFiles = await readdir(join(directory, 'runtime-history-v1'));
+  const historyFiles = await readdir(join(directory, historyCacheName));
   assert.equal(historyFiles.length, 1, 'Healthy history commits even while another cache fails');
   fault = 'protect';
   store.schedule(() => state);
@@ -140,9 +144,7 @@ try {
       cooldownMs: 100,
       protect(path) {
         const selected =
-          scope === 'history'
-            ? path.includes('runtime-history-v1')
-            : !path.includes('runtime-history-v1');
+          scope === 'history' ? path.includes(historyCacheName) : !path.includes(historyCacheName);
         if (failing && selected)
           throw Object.assign(new Error('synthetic disk full'), { code: 'ENOSPC' });
         protectWindowsStateFile(path);
@@ -182,7 +184,7 @@ try {
       );
       assert.equal(JSON.parse(await readFile(idleFile, 'utf8')).receipts[0].state, 'uncertain');
       if (scope === 'history')
-        assert.equal((await readdir(join(idleDirectory, 'runtime-history-v1'))).length, 1);
+        assert.equal((await readdir(join(idleDirectory, historyCacheName))).length, 1);
       // Cancel while cooling and ensure no timer survives close, including a failed final flush.
       failing = true;
       const before = attempts.length;

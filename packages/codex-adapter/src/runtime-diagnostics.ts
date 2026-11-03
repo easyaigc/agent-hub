@@ -147,9 +147,15 @@ export function startRuntimeDiagnostics(
     dropped = 0,
     windowAt = Date.now(),
     count = 0,
+    priorityCount = 0,
     retryAt = 0;
   const queue: Record<string, unknown>[] = [];
   const recent: Record<string, unknown>[] = [];
+  const priority = (value: Record<string, unknown>) =>
+    value.scope === 'http' &&
+    typeof value.status === 'number' &&
+    value.status >= 400 &&
+    value.status <= 599;
   const flush = () => {
     if (pending || failed || !queue.length) return;
     pending = true;
@@ -177,12 +183,27 @@ export function startRuntimeDiagnostics(
     if (Date.now() - windowAt >= 1000) {
       windowAt = Date.now();
       count = 0;
+      priorityCount = 0;
     }
-    if (++count > 200 || queue.length >= 64) {
+    const urgent = priority(row);
+    // Windows startup can produce many permission/transport events while the
+    // asynchronous writer is busy. Reserve capacity and a separate rate limit
+    // for the HTTP error whose diagnostic ID was returned to the caller.
+    if (urgent ? ++priorityCount > 32 : ++count > 200 || queue.length >= 48) {
       dropped++;
       return;
     }
-    queue.push(row);
+    if (queue.length >= 64) {
+      const replace = queue.findLastIndex((value) => !priority(value));
+      if (replace < 0) {
+        dropped++;
+        return;
+      }
+      queue.splice(replace, 1);
+      dropped++;
+    }
+    if (urgent) queue.unshift(row);
+    else queue.push(row);
     flush();
   };
   runtimeDiagnosticChannel.subscribe(receive);

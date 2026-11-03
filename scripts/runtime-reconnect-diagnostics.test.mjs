@@ -18,6 +18,10 @@ import {
 } from '../packages/codex-adapter/dist/runtime-diagnostics.js';
 import { DesktopRuntime } from '../packages/codex-adapter/dist/desktop-ipc.js';
 import { startRuntimeServer } from '../apps/host-agent/dist/runtime-server.js';
+import {
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+} from '../packages/codex-adapter/dist/desktop-platform.js';
 
 // Resolve the Host's real ESM copy. A deployed bundle can contain a distinct
 // node_modules Adapter alongside its nominal source/compiled tree.
@@ -107,13 +111,14 @@ test('real eval caller starts a nonrecursive diagnostic writer', async (t) => {
 });
 
 test('real writer rotates, expires, suppresses floods, preserves privacy and private permissions', async (t) => {
-  const directory = await mkdtemp(join(tmpdir(), 'reconnect-diagnostics-'));
+  const directory = join(tmpdir(), 'reconnect-diagnostics-' + randomUUID());
+  makePrivateDirectorySync(directory);
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = join(directory, 'diagnostics');
-  await mkdir(root, { mode: 0o700 });
+  makePrivateDirectorySync(root);
   const file = join(root, 'errors.jsonl');
-  await writeFile(file, Buffer.alloc(2 * 1024 * 1024, 32), { mode: 0o600 });
-  await writeFile(file + '.2', 'expired', { mode: 0o600 });
+  writePrivateFileSync(file, Buffer.alloc(2 * 1024 * 1024, 32), { mode: 0o600 });
+  writePrivateFileSync(file + '.2', 'expired', { mode: 0o600 });
   await utimes(file + '.2', new Date(0), new Date(0));
   const hostId = randomUUID();
   const logger = startRuntimeDiagnostics(directory, hostId);
@@ -157,6 +162,25 @@ test('real writer rotates, expires, suppresses floods, preserves privacy and pri
     assert(logger.status().dropped > 0);
     assert(logger.recent().length <= 64);
     assert((await stat(file)).size <= 2 * 1024 * 1024);
+    const errorId = randomUUID();
+    appendRuntimeDiagnostic(
+      directory,
+      {
+        scope: 'http',
+        hostId,
+        requestId: errorId,
+        status: 503,
+        code: 'HOST_STATE_SAVE_FAILED',
+        route: '/v1/replies',
+      },
+      {},
+    );
+    const afterFlood = await until(
+      () => readFile(file, 'utf8'),
+      (value) => value?.includes(errorId),
+    );
+    assert(afterFlood.includes(errorId), 'HTTP diagnostic ID must survive ordinary event floods');
+    assert(logger.status().pending <= 64);
   } finally {
     await logger.close();
   }
@@ -284,7 +308,8 @@ test(
 );
 
 test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 reports runtime false', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'diagnostic-http-'));
+  const directory = join(tmpdir(), 'diagnostic-http-' + randomUUID());
+  makePrivateDirectorySync(directory);
   const token = 'private-http-test-token-never-logged-0123456789';
   const saved = { ...process.env };
   const original = RuntimeSession.prototype.connect;
@@ -298,6 +323,7 @@ test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 
     HOST_AGENT_DISCOVERY: '0',
   });
   let service;
+  let completed = false;
   try {
     service = await startRuntimeServer();
     const endpoint = `http://127.0.0.1:${service.server.address().port}`;
@@ -308,7 +334,15 @@ test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 
     const rejected = await unauthorized.json();
     const authLog = await until(
       () => readFile(join(directory, 'diagnostics/errors.jsonl'), 'utf8'),
-      (value) => value?.includes(rejected.requestId),
+      (value) => {
+        const status = service.diagnostics.status();
+        assert.equal(
+          status.failed,
+          false,
+          'HTTP diagnostic writer failed: ' + JSON.stringify(status),
+        );
+        return value?.includes(rejected.requestId);
+      },
     );
     const authRow = authLog
       .trim()
@@ -449,12 +483,22 @@ test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 
       assert.equal(row.route, '/healthz');
       assert(!content.includes(token) && !content.includes('NEVER_LOG_QUERY'));
     }
+    completed = true;
   } finally {
+    if (!completed && service)
+      console.error(
+        JSON.stringify({
+          diagnosticFixtureFailure: true,
+          directory,
+          status: service.diagnostics.status(),
+          recent: service.diagnostics.recent(),
+        }),
+      );
     service?.close();
     RuntimeSession.prototype.connect = original;
     for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
     Object.assign(process.env, saved);
     await service?.diagnostics.close();
-    await rm(directory, { recursive: true, force: true });
+    if (completed) await rm(directory, { recursive: true, force: true });
   }
 });

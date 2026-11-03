@@ -16,6 +16,7 @@ public static partial class CodexManagePrivateStateSecurity
         if (name == "trace-state") names.Add("trace-process.cs");
         if (name != "private-state") names.Add("private-state.cs");
         names.Add("private-state-compilation.cs");
+        if (name == "host-launcher") names.Add("private-state-recovery.cs");
         using (var hash = SHA256.Create())
         {
             foreach (string item in names)

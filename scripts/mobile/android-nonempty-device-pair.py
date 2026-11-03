@@ -78,7 +78,8 @@ def junit(raw, method):
     return {"schema": "p7-nonempty-junit-parse-v1", "method": method, "rawSha256": sha(raw), "namedCaseCount": 1, "statuses": rows, "passed": True}
 
 
-def worker_receipt(path, invocation, raw_path, junit_path, mode, repo):
+def worker_receipt(path, invocation, raw_path, junit_path, mode, repo, *, selected_method=None):
+    selected_method = worker_method(mode, invocation["arguments"], selected_method)
     output=Path(path).parent; value_raw,value=first.read_document(path)
     first.exact(value,{"schema","run","mode","invocationSha256","hostWorkerPid","actualWaitReturned","returnCode","rawSha256","junitSha256","rawBytes","status","stderrSha256","stderrBytes","captureWaitSha256"})
     prefix=mode+"-runner"
@@ -97,7 +98,7 @@ def worker_receipt(path, invocation, raw_path, junit_path, mode, repo):
     raw=captured["stdout"]; stderr=captured["stderr"]
     require(not stderr and type(value["rawBytes"]) is int and value["rawBytes"]==len(raw) and value["rawSha256"]==sha(raw) and type(value["stderrBytes"]) is int and value["stderrBytes"]==0 and value["stderrSha256"]==sha(stderr),"Original dual stream join")
     junit_raw=capture.private_bytes(junit_path,131072); parsed=capture.parse_json(junit_raw)
-    require(value["junitSha256"]==sha(junit_raw) and first.same(parsed,junit(raw,first.METHOD if mode=="first" else first.COLD_METHOD)),"Exact named JUnit/raw join")
+    require(value["junitSha256"]==sha(junit_raw) and first.same(parsed,junit(raw,selected_method)),"Exact named JUnit/raw join")
     return value,sha(value_raw)
 
 
@@ -317,7 +318,18 @@ class Device:
         return result
 
 
-def worker(args, device, mode, arguments, admission_sha, observed):
+def worker_method(mode, arguments, selected_method=None):
+    require(mode in {"first", "readonly-cold"}, "Closed worker phase")
+    expected = first.METHOD if mode == "first" else first.COLD_METHOD
+    if selected_method is not None:
+        expected = "nonemptyForegroundControllerProducesPortableArchives" if mode == "first" else "nonemptyForegroundReadOnlyColdAfterExactOriginalExit"
+        require(selected_method == expected, "Closed foreground worker selector")
+    require(arguments.get("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + expected, "Worker method/actual class mismatch")
+    return expected
+
+
+def worker(args, device, mode, arguments, admission_sha, observed, *, selected_method=None):
+    selected_method = worker_method(mode, arguments, selected_method)
     output=Path(args.output_dir); intent=invocation(args,mode,arguments,admission_sha)
     first.write_new(output/f"{mode}-invocation.json",intent)
     native=["am","instrument","-w","-r"]
@@ -340,7 +352,7 @@ def worker(args, device, mode, arguments, admission_sha, observed):
     result=capture.run_process(output,mode+"-runner",device.prefix+["shell","-T",shlex.join(native)],
         Path(args.repo).resolve(),environment={},timeout=300,child_umask=0o077,tick=tick)
     require(observation and not result["stderr"],"Live original tuple and separate clean stderr required")
-    raw=result["stdout"]; parsed=junit(raw,first.METHOD if mode=="first" else first.COLD_METHOD)
+    raw=result["stdout"]; parsed=junit(raw,selected_method)
     first.write_new(output/f"{mode}-junit.json",parsed)
     receipt={"schema":WORKER_SCHEMA,"run":args.run,"mode":mode,"invocationSha256":sha(encoded(intent)),
         "hostWorkerPid":result["receipt"]["childPid"],"actualWaitReturned":True,"returnCode":result["receipt"]["returnCode"],

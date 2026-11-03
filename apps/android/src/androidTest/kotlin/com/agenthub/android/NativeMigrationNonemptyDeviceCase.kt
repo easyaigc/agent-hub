@@ -24,6 +24,9 @@ internal object NativeMigrationNonemptyDeviceCase {
     const val FIRST_METHOD = "nonemptyDeviceProducersRestoreActualSession"
     const val PRISTINE_SCHEMA = "p7-nonempty-pristine-controller-v1"
     const val PRISTINE_METHOD = "pristineNonemptyControllerImportsWithoutPrecreatedRootKey"
+    const val FOREGROUND_SCHEMA = "p7-nonempty-foreground-controller-v1"
+    const val FOREGROUND_METHOD = "nonemptyForegroundControllerProducesPortableArchives"
+    const val FOREGROUND_COLD_METHOD = "nonemptyForegroundReadOnlyColdAfterExactOriginalExit"
     private const val SOURCE = "source"
     private const val DESTINATION = "installation"
     private const val PASSWORD = "owned nonempty native device migration password"
@@ -306,7 +309,7 @@ internal object NativeMigrationNonemptyDeviceCase {
         }
     }
 
-    private fun seed(context: Context, source: NativeSessionStorage, owner: MobileSession) {
+    private suspend fun seed(context: Context, source: NativeSessionStorage, owner: MobileSession, foreground: Boolean = false) {
         val client = CodexConnectionVault(source).clients().single()
         val target = requireNotNull(client.scope)
         val ledger = requireNotNull(owner.phoneReading.ledger)
@@ -335,6 +338,75 @@ internal object NativeMigrationNonemptyDeviceCase {
         val lease = notices.bind(seen.target, "synthetic-${UUID.randomUUID()}")
         for (event in listOf(seen, unseen)) notices.finish(requireNotNull(notices.claim(event, lease, now)).ticket, false)
         requireSourceNonempty(source)
+        if (foreground) seedForeground(source)
+    }
+
+    /** Real local producers only. No notification command/HTTP implementation is constructed. */
+    private suspend fun seedForeground(source: NativeSessionStorage) {
+        val vault = CodexConnectionVault(source); val client = vault.clients().single()
+        require(client.endpoint == "https://127.0.0.1:1" && !client.isDemo)
+        val saved = NativeChatNotificationSavedConnection.capture(client, requireNotNull(vault.token(client.id)))
+        NativeChatNotificationAuthorizations(source).retain(saved)
+        val identity = NativeChatNotificationIdentity.load(source)
+        val preferences = NativeChatNotificationStore(source).preferences()
+        val operation = NativeChatNotificationForegroundStore(source).beginMutation(identity, saved.snapshot, "register", preferences, now)
+        val recovery = NativeChatNotificationRecoveryStore(source).reserve(identity, saved.snapshot, UUID.randomUUID().toString(),
+            preferences, "register", current = { true })
+        // Intentionally no confirm/settle/query/replay. Both originals remain immutable unknown.
+        val v1 = NativeChatNotificationForegroundStore(source).view(identity, saved.target)
+        val v2 = NativeChatNotificationRecoveryStore(source).view(identity, saved.target)
+        require(v1.unknown == operation && v1.mutations.size == 1 && v1.outcomes.isEmpty())
+        require(v2.operations.single().let { it.state == "unknown" && it.receipt == null && it.original.encoded() == recovery.encoded() })
+        requireForegroundSource(NativeMigrationForeground.ACTIVE_NAMES.associateWith { requireNotNull(source.read(it)) })
+    }
+
+    /** Raw inspection never loads an identity, reconstructs a command port or claims a Host response. */
+    private fun requireForegroundSource(source: Map<String, String>) {
+        require(NativeMigrationForeground.ACTIVE_NAMES.all { it in source })
+        val state = NativeMigrationForeground.validateActive(source)
+        require(state.nonempty && state.references.size == 1 && state.available == state.references)
+        val identity = JSONObject(source.getValue(NativeMigrationForeground.IDENTITY)); require(identity.getBoolean("journalBound"))
+        val v1 = JSONObject(source.getValue(NativeMigrationForeground.JOURNAL)).getJSONArray("subscriptions")
+        require(v1.length() == 1)
+        val mutation = v1.getJSONObject(0).getJSONArray("mutations").also { require(it.length() == 1) }.getJSONObject(0)
+        require(mutation.getString("state") == "unknown" && v1.getJSONObject(0).getJSONArray("outcomes").length() == 0)
+        val v2 = NativeMigrationForegroundV2.decodeEncoded(source.getValue(NativeMigrationForeground.RECOVERY)).getJSONArray("targets")
+        require(v2.length() == 1)
+        val operation = v2.getJSONObject(0).getJSONArray("operations").also { require(it.length() == 1) }.getJSONObject(0)
+        require(operation.getString("state") == "unknown" && operation.isNull("receipt"))
+        require(JSONObject(source.getValue(NativeMigrationForeground.AUTHORIZATIONS)).getJSONArray("authorizations").length() == 1)
+    }
+
+    private fun verifyForegroundArchives(source: Map<String, String>, portable: Map<String, String>) {
+        requireForegroundSource(source)
+        require(NativeMigrationForeground.ACTIVE_NAMES.none { it in portable })
+        require(NativeMigrationNotificationArchives.validatePortable(portable).size == 4)
+        val rows = JSONObject(portable.getValue(NativeMigrationNotificationArchives.RECORD)).getJSONArray("installations")
+        require(rows.length() == 1); val row = rows.getJSONObject(0)
+        require(row.getBoolean("requiresOriginalInstallation") && row.getJSONArray("missingAuthorizations").length() == 0)
+        val identity = JSONObject(source.getValue(NativeMigrationForeground.IDENTITY))
+        require(row.getString("originalIdentitySha256") == sha(source.getValue(NativeMigrationForeground.IDENTITY).toByteArray(Charsets.UTF_8)))
+        val context = row.getJSONObject("installation")
+        require(context.getString("deviceId") == identity.getString("deviceId") && context.getString("publicKey") == identity.getString("publicKey"))
+        for ((kind, name) in listOf("foreground-v1" to NativeMigrationForeground.JOURNAL,
+            "recovery-v2" to NativeMigrationForeground.RECOVERY, "authorizations-v1" to NativeMigrationForeground.AUTHORIZATIONS)) {
+            val original = source.getValue(name)
+            require(row.getString(kind) == sha(original.toByteArray(Charsets.UTF_8)))
+            require(portable.getValue(NativeMigrationNotificationArchives.PREFIX + row.getString("archiveId") + ":" + kind) == original)
+        }
+    }
+
+    private fun verifyForegroundDestination(storage: NativeSessionStorage, source: Map<String, String>, original: Map<String, String>) {
+        val active = original.keys.associateWith { requireNotNull(storage.read(it)) }
+        verifyForegroundArchives(source, active)
+        require(NativeMigrationForeground.ACTIVE_NAMES.all { storage.read(it) == null })
+        require(NativeMigrationNotificationArchives.requiresExplicitSetup(storage))
+        val audit = NativeMigrationNotificationArchives.readOnlyArchives(storage).single()
+        require(audit.requiresOriginalInstallation && audit.missingAuthorizations.isEmpty())
+        for ((kind, name) in listOf(NativeMigrationNotificationArchives.Original.FOREGROUND_V1 to NativeMigrationForeground.JOURNAL,
+            NativeMigrationNotificationArchives.Original.RECOVERY_V2 to NativeMigrationForeground.RECOVERY,
+            NativeMigrationNotificationArchives.Original.AUTHORIZATIONS_V1 to NativeMigrationForeground.AUTHORIZATIONS))
+            require(audit.readOnly(kind) == source.getValue(name))
     }
 
     private fun requireSourceNonempty(source: NativeSessionStorage) {
@@ -468,13 +540,16 @@ internal object NativeMigrationNonemptyDeviceCase {
     }
 
     /** Focused normal Controller path. No MainActivity, chooser URI, remote call, strict writer or OS-cold claim. */
-    suspend fun pristine(scope: Scope): PristineProof {
+    suspend fun pristine(scope: Scope): PristineProof = controllerFirst(scope, false)
+    suspend fun foregroundFirst(scope: Scope): PristineProof = controllerFirst(scope, true)
+    private suspend fun controllerFirst(scope: Scope, foreground: Boolean): PristineProof {
         require(!scope.existingOnly)
         val owners = Owners(); val ports = Ports(); val windows = mutableListOf<KeyWindow>()
         val restorePoints = java.util.Collections.synchronizedList(mutableListOf<String>())
         var controller: NativeMigrationController? = null; var lifecycle: NativeMigrationLifecycle? = null
         var controllerHeld: Owners.Held? = null; var controllerQuiesces = 0; var controllerRestores = 0
         var enrollmentRequired: Boolean? = null; var failure: Throwable? = null
+        var sourceForeground: Map<String, String> = emptyMap()
         suspend fun before(point: String) = withContext(Dispatchers.IO) {
             pristineWindow(scope, point).also { require(!it.rootAliasPresent && it.rootCiphertextCount == 0); windows.add(it) }
         }
@@ -500,7 +575,7 @@ internal object NativeMigrationNonemptyDeviceCase {
                     it.voiceSettings.resumePreferences()?.join(); require(it.voiceSettings.persisted)
                 }
             }
-            withContext(Dispatchers.IO) { seed(scope.context, source, sourceOwner) }
+            withContext(Dispatchers.IO) { seed(scope.context, source, sourceOwner, foreground) }
             val destinationOwner = withContext(NonCancellable + Dispatchers.Main.immediate) {
                 owners.session(destination, ports).also {
                     it.restoreForMigration(); require(it.chatNotifications == null && it.migrationCanImport)
@@ -513,6 +588,8 @@ internal object NativeMigrationNonemptyDeviceCase {
             val sourceHeld = owners.freeze(sourceOwner)
             val sourceCipher = withContext(Dispatchers.IO) {
                 sourceHeld.lease.requireRawWriters(); requireSourceNonempty(source)
+                if (foreground) sourceForeground = NativeMigrationForeground.ACTIVE_NAMES.associateWith { requireNotNull(source.read(it)) }
+                    .also(::requireForegroundSource)
                 scope.view(true).using { it.familyCiphertext() }
             }
             val receipt = withContext(Dispatchers.IO) {
@@ -523,10 +600,12 @@ internal object NativeMigrationNonemptyDeviceCase {
             val candidateCipher = withContext(Dispatchers.IO) {
                 // Ordinary prepared candidate child needs only its own KEY. Never call scope.view() here.
                 NativeMigrationStreamCandidate(scope.context, destination).read(receipt) { records ->
-                    NativeMigrationNonemptyPairContract.requireNine(records)
+                    if (foreground) NativeMigrationNonemptyPairContract.requireForeground(records)
+                    else NativeMigrationNonemptyPairContract.requireNine(records)
                     original = materialize(records); textPins = textDigests(original); binaryPins = binaryDigests(records)
                     require(original.keys.intersect(NativeMigrationForeground.ACTIVE_NAMES).isEmpty())
-                    require(NativeMigrationNotificationArchives.RECORD !in original)
+                    if (foreground) verifyForegroundArchives(sourceForeground, original)
+                    else require(NativeMigrationNotificationArchives.RECORD !in original)
                     for (name in listOf(NativeMigrationDeviceState.READING, NativeMigrationDeviceState.NOTIFICATIONS, NativeMigrationSounds.RECORD))
                         assertEquals(source.read(name), original.getValue(name))
                 }
@@ -583,7 +662,7 @@ internal object NativeMigrationNonemptyDeviceCase {
             withContext(Dispatchers.Main.immediate) {
                 require(ownedController.ready && ownedController.canImport && ownedController.result == NativeMigrationResult.READY)
                 val preview = requireNotNull(ownedController.preview)
-                require(preview.computers == 1 && preview.operations == 1 && preview.attachments == 1 && preview.notificationArchives == 0 &&
+                require(preview.computers == 1 && preview.operations == 1 && preview.attachments == 1 && preview.notificationArchives == (if (foreground) 1 else 0) &&
                     preview.drafts == JSONObject(original.getValue("metadata")).getJSONObject("drafts").length())
             }
             before("AFTER_CONTROLLER_PREVIEW")
@@ -605,6 +684,7 @@ internal object NativeMigrationNonemptyDeviceCase {
             val generation = withContext(Dispatchers.IO) {
                 require(activeStorage.migrationPublicationReceipt() == receipt)
                 verifyDomain(scope.context, activeStorage, original, receipt, true); verifyUnknown(activeStorage, original)
+                if (foreground) verifyForegroundDestination(activeStorage, sourceForeground, original)
                 // The first destination existing-only open occurs strictly after normal Controller publication and restore.
                 scope.view().using { saved ->
                     assertEquals(candidateCipher, saved.originalCandidateCiphertext(null))
@@ -629,8 +709,14 @@ internal object NativeMigrationNonemptyDeviceCase {
                 Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
             } }
             require(finalSource.first == sourceCipher && finalSource.third == binaryPins && finalActive.third == binaryPins && ports.attempts.get() == 0)
+            if (foreground) {
+                require(enrollmentRequired == true)
+                withContext(Dispatchers.IO) { scope.view(true).using { sourceView ->
+                    scope.view().using { activeView -> verifyForegroundArchives(materialize(sourceView.records), materialize(activeView.records)) }
+                } }
+            }
             withContext(Dispatchers.IO) { scope.binding.requireCurrent() }
-            val completed = withContext(Dispatchers.IO) { Proof(PRISTINE_SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt,
+            val completed = withContext(Dispatchers.IO) { Proof(if (foreground) FOREGROUND_SCHEMA else PRISTINE_SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt,
                 generation, sha(scope.archive), sourceCipher, candidateCipher, finalActive.first, textPins, binaryPins, draftKey,
                 sha(DRAFT.toByteArray(Charsets.UTF_8)), finalSource.second, finalSource.third, finalActive.second, finalActive.third,
                 owners.stores.size, owners.sessions.size, owners.joined, owners.retiredReturns, owners.released, owners.unknownCount, ports.attempts.get()) }
@@ -776,15 +862,18 @@ internal object NativeMigrationNonemptyDeviceCase {
     }
 
     /** IO only. Returned ExistingViews are cleaned once; a constructor that never returned remains UNKNOWN. */
-    suspend fun cold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins =
+    suspend fun cold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, false)
+    suspend fun foregroundCold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, true)
+    private suspend fun coldRead(scope: Scope, first: Proof, foreground: Boolean): NativeMigrationNonemptyPairContract.ColdPins =
         withContext(NonCancellable + Dispatchers.IO) {
-            scope.checkScope(); require(scope.existingOnly); require(first.schema == SCHEMA && first.run == scope.run && first.binding == scope.binding)
+            scope.checkScope(); require(scope.existingOnly); require(first.schema == (if (foreground) FOREGROUND_SCHEMA else SCHEMA) && first.run == scope.run && first.binding == scope.binding)
             val owners = NativeMigrationNonemptyPairContract.ReadOwners(scope)
             var primary: Throwable? = null
             var result: NativeMigrationNonemptyPairContract.ColdPins? = null
             try {
                 val archived = NativeMigrationNonemptyPairContract.readArchive(scope, PASSWORD, first)
                 val original = archived.text
+                var sourceForeground: Map<String, String> = emptyMap()
                 owners.read(true) { source ->
                     assertEquals(first.sourceCiphertext, source.familyCiphertext())
                     assertEquals(first.sourceTextSha256, textDigests(materialize(source.records)))
@@ -792,13 +881,15 @@ internal object NativeMigrationNonemptyDeviceCase {
                     NativeMigrationSounds.validate(materialize(source.records), emptyMap(), source.records.binary)
                     for (name in listOf(NativeMigrationDeviceState.READING, NativeMigrationDeviceState.NOTIFICATIONS, NativeMigrationSounds.RECORD))
                         assertEquals(original.getValue(name), source.records.text.getValue(name))
+                    if (foreground) sourceForeground = materialize(source.records).also { verifyForegroundArchives(it, original) }
                     source.unchanged()
                 } // Original assertion is passed to source close; its real close returns before destination acquisition.
                 result = owners.read(false) { current ->
                     assertEquals(first.generation, current.published(first.receipt))
                     assertEquals(first.originalCandidateCiphertext, current.originalCandidateCiphertext(null))
                     current.originalCandidate(null, first.receipt) { records ->
-                        NativeMigrationNonemptyPairContract.requireNine(records)
+                        if (foreground) NativeMigrationNonemptyPairContract.requireForeground(records)
+                        else NativeMigrationNonemptyPairContract.requireNine(records)
                         assertEquals(first.originalTextSha256, textDigests(materialize(records)))
                         assertEquals(first.originalBinarySha256, binaryDigests(records))
                         assertEquals(original, materialize(records))
@@ -808,6 +899,7 @@ internal object NativeMigrationNonemptyDeviceCase {
                 assertEquals(first.activeTextSha256, textDigests(active))
                 assertEquals(first.activeBinarySha256, binaryDigests(current.records))
                 verifyDomainRecords(active, original, first.receipt, true); verifyUnknownRecords(active, original)
+                if (foreground) verifyForegroundArchives(sourceForeground, active)
                 val draft = JSONObject(active.getValue("metadata")).getJSONObject("drafts").get(first.draftKey) as String
                 require(draft == DRAFT && sha(draft.toByteArray(Charsets.UTF_8)) == first.draftTextSha256)
                 NativeMigrationSounds.validate(active, emptyMap(), current.records.binary)

@@ -17,6 +17,7 @@ import java.util.UUID
 internal object NativeMigrationNonemptyPairContract {
     const val EXIT_SCHEMA = "p7-nonempty-original-exit-v1"
     const val COLD_SCHEMA = "p7-nonempty-readonly-cold-v1"
+    const val FOREGROUND_COLD_SCHEMA = "p7-nonempty-foreground-readonly-cold-v1"
     const val WINDOW_MILLIS = 15_000L
     private const val CAP = 1024 * 1024
     private val firstKeys = setOf("schema", "run", "binding", "pid", "startTicks", "selectedMethod", "anchor",
@@ -64,18 +65,64 @@ internal object NativeMigrationNonemptyPairContract {
         require(UUID.fromString(id).toString() == id)
     }
     fun requireNine(records: NativeMigrationStreamRecords) { require(records.version == 4 && records.size == 9); requireNineNames(records.text.keys, records.binary.keys) }
-    fun first(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof {
-        exact(value,firstKeys); require(string(value,"schema") == NativeMigrationNonemptyDeviceCase.SCHEMA)
-        require(string(value,"selectedMethod") == NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
+    fun requireForegroundNames(text: Set<String>, binary: Set<String>) {
+        val archiveNames = text.filter { it == NativeMigrationNotificationArchives.RECORD || it.startsWith(NativeMigrationNotificationArchives.PREFIX) }.toSet()
+        require(text.size == 12 && archiveNames.size == 4 && NativeMigrationNotificationArchives.RECORD in archiveNames)
+        val originals = archiveNames - NativeMigrationNotificationArchives.RECORD
+        val suffixes = setOf("foreground-v1", "recovery-v2", "authorizations-v1")
+        require(originals.map { it.substringAfterLast(':') }.toSet() == suffixes)
+        val ids = originals.map { name ->
+            val body = name.removePrefix(NativeMigrationNotificationArchives.PREFIX)
+            require(body.substringBefore(':').matches(shaPattern) && body.count { it == ':' } == 1)
+            body.substringBefore(':')
+        }
+        require(ids.distinct().size == 1 && NativeMigrationForeground.ACTIVE_NAMES.none { it in text })
+        requireNineNames(text - archiveNames, binary)
+    }
+    fun requireForeground(records: NativeMigrationStreamRecords) {
+        require(records.version == 4 && records.size == 13); requireForegroundNames(records.text.keys, records.binary.keys)
+    }
+    fun first(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof = parseFirst(value, false)
+    fun foregroundFirst(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof = parseFirst(value, true)
+    private fun parseFirst(value: JSONObject, foreground: Boolean): NativeMigrationNonemptyDeviceCase.Proof {
+        val controllerKeys = setOf("scenario", "keyWindows", "restorePoints", "controllerQuiesceReturns", "controllerRestoreReturns",
+            "newSessionPublished", "freshReady", "controllerReady", "explicitEnrollmentRequired", "phase", "result",
+            "preSessionResetObserved", "directKeyGeneratorObserved", "controllerWorkerJoinClaimed", "physicalDescriptorExitClaimed")
+        exact(value, if (foreground) firstKeys + controllerKeys else firstKeys)
+        require(string(value,"schema") == if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA)
+        require(string(value,"selectedMethod") == if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_METHOD else NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
+        if (foreground) {
+            val scenario = value.getJSONObject("scenario")
+            exact(scenario, setOf("entryPath", "rootAlias", "sourceAlias", "rootNamespace", "sourceNamespace", "safPickerCovered", "uiCovered", "coldProcessCovered"))
+            require(string(scenario,"entryPath") == "already-staged-production-candidate-controller" && string(scenario,"rootNamespace") == "installation" && string(scenario,"sourceNamespace") == "source")
+            require(string(scenario,"rootAlias") == "p7-nonempty-${uuid(value,"run")}" && string(scenario,"sourceAlias") == string(scenario,"rootAlias") + "-source")
+            for (name in listOf("safPickerCovered", "uiCovered", "coldProcessCovered")) require(scenario.get(name) == false)
+            require(number(value,"controllerQuiesceReturns") == 1 && number(value,"controllerRestoreReturns") == 1)
+            for (name in listOf("newSessionPublished", "freshReady", "controllerReady", "explicitEnrollmentRequired")) require(value.get(name) == true)
+            for (name in listOf("preSessionResetObserved", "directKeyGeneratorObserved", "controllerWorkerJoinClaimed", "physicalDescriptorExitClaimed")) require(value.get(name) == false)
+            require(string(value,"phase") == "DONE" && string(value,"result") == "IMPORTED")
+            require(value.getJSONArray("restorePoints").strings() == NativeMigrationControllerRestorePoint.entries.map { it.name })
+            val windows = value.getJSONArray("keyWindows")
+            val points = listOf("BEFORE_CONSTRUCTION", "AFTER_EMPTY_SESSION_RESTORE", "AFTER_CANDIDATE_STAGE", "AFTER_CONTROLLER_PREVIEW", "BEFORE_CONFIRM_IMPORT", "AFTER_CONTROLLER_DONE")
+            require(windows.length() == points.size)
+            for ((index, point) in points.withIndex()) {
+                val window = windows.getJSONObject(index); exact(window, setOf("point", "rootAliasPresent", "rootCiphertextCount", "destinationCiphertext"))
+                require(string(window,"point") == point && window.get("rootAliasPresent") == (index == points.lastIndex))
+                require(number(window,"rootCiphertextCount") == 0 || index == points.lastIndex)
+                if (index == points.lastIndex) require(number(window,"rootCiphertextCount") > 0)
+                maps(window,"destinationCiphertext",256,empty = index < 2)
+            }
+        }
         anchor(value.getJSONObject("anchor")); val receipt = value.getJSONObject("receipt")
-        exact(receipt,setOf("candidateId", "sha256", "records")); require(number(receipt,"records") == 9)
-        val text = maps(value,"originalTextSha256",8); val binary = maps(value,"originalBinarySha256",1); requireNineNames(text.keys,binary.keys)
+        exact(receipt,setOf("candidateId", "sha256", "records")); val recordCount = if (foreground) 13 else 9; require(number(receipt,"records") == recordCount)
+        val text = maps(value,"originalTextSha256",if (foreground) 12 else 8); val binary = maps(value,"originalBinarySha256",1)
+        if (foreground) requireForegroundNames(text.keys,binary.keys) else requireNineNames(text.keys,binary.keys)
         for ((name,count) in mapOf("acquiredStores" to 27, "acquiredSessions" to 4, "actualSessionJoinReturns" to 4,
             "actualWriterRetireReturns" to 25, "actualLeaseReleaseReturns" to 2, "unknownAcquisitions" to 0, "forbiddenPortAttempts" to 0))
             require(number(value,name) == count)
         val draft = string(value,"draftKey"); require(draft.startsWith("codex-machine-v2:"))
         return NativeMigrationNonemptyDeviceCase.Proof(string(value,"schema"),uuid(value,"run"),binding(value.getJSONObject("binding")),
-            number(value,"pid",1),ticks(value,"startTicks"), NativeMigrationCandidateStore.Receipt(uuid(receipt,"candidateId"),hash(receipt,"sha256"),9),
+            number(value,"pid",1),ticks(value,"startTicks"), NativeMigrationCandidateStore.Receipt(uuid(receipt,"candidateId"),hash(receipt,"sha256"),recordCount),
             uuid(value,"generation"),hash(value,"archiveSha256"), maps(value,"sourceCiphertext",64),maps(value,"originalCandidateCiphertext",64),
             maps(value,"destinationCiphertext",128),text,binary,draft,hash(value,"draftTextSha256"),maps(value,"sourceTextSha256",32),
             maps(value,"sourceBinarySha256",1),maps(value,"activeTextSha256",32),maps(value,"activeBinarySha256",1),27,4,4,25,2,0,0)
@@ -126,7 +173,8 @@ internal object NativeMigrationNonemptyPairContract {
             val ref = NativeMigrationReadOnlyFile(scope.context.filesDir,scope.archive,CAP,lifetime,40)
             val read = ref.read { encrypted -> NativeMigrationStreamCrypto.read(encrypted,password) { clear ->
                 val digest = MessageDigest.getInstance("SHA-256"); val input = DigestInputStream(clear,digest)
-                val records = NativeMigrationStreamArchive.readHeader(input,scope.context.packageName); requireNine(records)
+                val records = NativeMigrationStreamArchive.readHeader(input,scope.context.packageName)
+                if (first.schema == NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA) requireForeground(records) else requireNine(records)
                 require(records.frames().values.sumOf { it.size.toLong() } <= CAP)
                 val text = linkedMapOf<String,String>(); val binaries = linkedMapOf<String,ByteArray>()
                 try {
@@ -141,6 +189,8 @@ internal object NativeMigrationNonemptyPairContract {
                     }
                     require(input.read() == -1)
                     val clearSha = digest.digest().joinToString("") { "%02x".format(it) }; require(clearSha == first.receipt.sha256)
+                    if (first.schema == NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA)
+                        require(NativeMigrationNotificationArchives.validatePortable(text).size == 4)
                     val inventory = NativeChatNotificationSoundLibrary.binaryInventory(text.getValue(NativeMigrationSounds.RECORD))
                     require(inventory.keys == binaries.keys)
                     for ((name,bytes) in binaries) NativeChatNotificationSoundLibrary.validateBinary(inventory.getValue(name),bytes)

@@ -52,25 +52,33 @@ def scenario(run):
         "rootNamespace": "installation", "sourceNamespace": "source", "safPickerCovered": False, "uiCovered": False, "coldProcessCovered": False}
 
 
-def admitted(args):
+def admitted(args, *, foreground=False):
+    require(type(foreground) is bool, "Closed P7 Controller profile")
+    profile = "p7-foreground" if foreground else PROFILE
+    tool = "scripts/mobile/android-nonempty-foreground-pair.py" if foreground else TOOL
+    method = "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
+    schema = "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
+    mode = "foreground-first" if foreground else MODE
     first.canonical_uuid(args.run); first.canonical_uuid(args.boot_uuid); first.integer(args.uid, 1, 2147483647)
     repo = Path(args.repo).resolve(); require(Path(__file__).resolve() == repo / TOOL, "Run only the reviewed in-repo adapter")
     # _review and verify_build_bundle enforce the finite seven-entry Root before/after overlay,
     # full source inventory, real build waits, original tools, artifacts, certificates and seal.
-    build = capture.verify_build_bundle(args.build_bundle, first, repo, PROFILE)
+    build = capture.verify_build_bundle(args.build_bundle, first, repo, profile)
     bundle = Path(args.build_bundle)
     guard = first.read_guard(bundle / "source-before.json")
-    require(set(guard["sourceOverlay"]) == set(first.DYNAMIC_SOURCES) | {TOOL}, "Explicit pristine overlay inventory required")
+    require(set(guard["sourceOverlay"]) == set(first.DYNAMIC_SOURCES) | {TOOL, tool}, "Explicit Controller profile overlay inventory required")
     require(first.same(guard, first.source_guard(repo, guard["sourceOverlay"])), "Pristine sources drifted")
     for role, path in (("app", args.app_apk), ("test", args.test_apk)):
         require(Path(path).resolve() == Path(build["artifacts"][role]["path"]).resolve() and first.digest(path) == build["artifacts"][role]["sha256"], "Only exact controlled output APKs admitted")
     require(Path(args.adb).resolve() == Path(build["tools"]["adb"]["path"]).resolve() and first.digest(args.adb) == build["tools"]["adb"]["sha256"], "Admitted SDK ADB only")
-    value = {"schema": ADMISSION_SCHEMA, "caseSchema": SCHEMA, "run": args.run, "selectedMethod": METHOD, "selector": SELECTOR,
-        "mode": MODE, "package": first.PACKAGE, "uid": args.uid, "bootUuid": args.boot_uuid,
+    value = {"schema": "p7-nonempty-foreground-first-admission-v1" if foreground else ADMISSION_SCHEMA,
+        "caseSchema": schema, "run": args.run, "selectedMethod": method,
+        "selector": "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + method,
+        "mode": mode, "package": first.PACKAGE, "uid": args.uid, "bootUuid": args.boot_uuid,
         "appApkSha256": build["artifacts"]["app"]["sha256"], "testApkSha256": build["artifacts"]["test"]["sha256"],
         "caseSourceSha256": guard["sources"][first.CASE], "wrapperSourceSha256": guard["sources"][first.WRAPPER],
         "sourceGuardSha256": sha(encoded(guard)), "buildSealSha256": build["sealSha256"],
-        "adapterSourceSha256": guard["sources"][TOOL], "adbSha256": first.digest(args.adb), "deviceSerialSha256": sha(args.serial.encode())}
+        "adapterSourceSha256": guard["sources"][tool], "adbSha256": first.digest(args.adb), "deviceSerialSha256": sha(args.serial.encode())}
     return guard, value, build
 
 
@@ -95,12 +103,15 @@ def anchor(value, run, uid):
         require(owner == uid and stat.S_ISDIR(mode) and stat.S_IMODE(mode) in ({0o700, 0o771} if name == "dataScopeIdentity" else {0o700}), "Anchor directory owner/mode")
 
 
-def verify_native(intent_raw, proof_raw, args, admission, observed):
+def verify_native(intent_raw, proof_raw, args, admission, observed, *, foreground=False):
+    require(type(foreground) is bool, "Closed P7 Controller proof profile")
+    schema = "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
+    method = "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
     intent = capture.parse_json(intent_raw); proof = capture.parse_json(proof_raw)
     first.exact(intent, SHARED); first.exact(proof, SHARED | PIN_KEYS | CONTROLLER_KEYS)
     require(all(first.same(intent[name], proof[name]) for name in SHARED), "Immutable intent/proof changed")
     bound = first.binding(admission, sha(encoded(admission)))
-    require(proof["schema"] == SCHEMA and proof["selectedMethod"] == METHOD and proof["run"] == args.run and
+    require(proof["schema"] == schema and proof["selectedMethod"] == method and proof["run"] == args.run and
         first.same(proof["binding"], bound) and first.same(proof["scenario"], scenario(args.run)), "Pristine target/mode/binding")
     pair.process(observed, bound)
     require(type(proof["pid"]) is int and proof["pid"] == observed["pid"] and type(proof["startTicks"]) is str and
@@ -108,15 +119,28 @@ def verify_native(intent_raw, proof_raw, args, admission, observed):
     anchor(proof["anchor"], args.run, args.uid)
     first.exact(proof["receipt"], {"candidateId", "sha256", "records"}); first.canonical_uuid(proof["receipt"]["candidateId"])
     first.sha(proof["receipt"]["sha256"]); first.canonical_uuid(proof["generation"]); first.sha(proof["archiveSha256"])
-    require(type(proof["receipt"]["records"]) is int and proof["receipt"]["records"] == 9, "Nine source records")
+    require(type(proof["receipt"]["records"]) is int and proof["receipt"]["records"] == (13 if foreground else 9), "Closed source record count")
     for name, cap in (("sourceCiphertext", 64), ("originalCandidateCiphertext", 64), ("destinationCiphertext", 128),
-        ("originalTextSha256", 8), ("originalBinarySha256", 1), ("sourceTextSha256", 32), ("sourceBinarySha256", 1),
+        ("originalTextSha256", 12 if foreground else 8), ("originalBinarySha256", 1), ("sourceTextSha256", 32), ("sourceBinarySha256", 1),
         ("activeTextSha256", 32), ("activeBinarySha256", 1)):
         first.digests(proof[name], cap)
     text = proof["originalTextSha256"]
     fixed = {"metadata", "codex-private-connections-v1", "mobile-reading-ledger-v1", "native-chat-notifications-v1", "native-chat-notification-sounds-v1"}
-    extra = set(text) - fixed
-    require(fixed <= set(text) and len(text) == 8 and len(extra) == 3 and all(sum(name.startswith(prefix) for name in extra) == 1 for prefix in ("operations:", "submission:", "draft-file:")), "Eight exact nonempty text records")
+    archives = {name for name in text if name == "migration-notification-archives-v1" or name.startswith("migration-notification-original-v1:")}
+    if foreground:
+        require(len(archives) == 4 and "migration-notification-archives-v1" in archives and len(text) == 12, "Finite nonempty notification archive profile")
+        originals = archives - {"migration-notification-archives-v1"}
+        require({name.rsplit(":", 1)[-1] for name in originals} == {"foreground-v1", "recovery-v2", "authorizations-v1"}, "Three exact archived original kinds")
+        identities = {name.removeprefix("migration-notification-original-v1:").split(":")[0] for name in originals}
+        require(len(identities) == 1 and all(re.fullmatch(r"migration-notification-original-v1:[a-f0-9]{64}:(foreground-v1|recovery-v2|authorizations-v1)", name) for name in originals), "One archive installation")
+        active = {"native-chat-notification-identity-v1", "native-chat-notification-foreground-v1", "native-chat-notification-recovery-v2", "native-chat-notification-authorizations-v1"}
+        require(active <= set(proof["sourceTextSha256"]) and not active.intersection(text) and not active.intersection(proof["activeTextSha256"]), "Source active identity/authority remain excluded from destination")
+        require(proof["explicitEnrollmentRequired"] is True, "Fresh enrollment remains mandatory")
+    else:
+        require(not archives, "Original nine-record profile cannot contain notification archives")
+    base_text = set(text) - archives
+    extra = base_text - fixed
+    require(fixed <= base_text and len(base_text) == 8 and len(extra) == 3 and all(sum(name.startswith(prefix) for name in extra) == 1 for prefix in ("operations:", "submission:", "draft-file:")), "Eight exact base text records")
     sound = next(iter(proof["originalBinarySha256"]))
     require(sound.startswith("native-chat-notification-sound-v1:") and sound.endswith(".caf"), "Normalized CAF record")
     first.canonical_uuid(sound.removeprefix("native-chat-notification-sound-v1:").removesuffix(".caf"))

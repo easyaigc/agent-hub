@@ -1610,3 +1610,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段70（F55/F56）：没有产品页面/token/文案或iOS变化。功能与进程切换有限通过不代表迁移Main窗口、密码/预览/错误/短视口/AX或双端交互已验；这些界面仍按iOS逐项核对，见[阶段70档案](../plans/android-alignment-20261022/records/stage70-p7-paired-readonly-cold.md)。
 
 阶段71 F55/F56：新增普通Controller未预建root KEY目标的组件验收，没有产品页面/token/文案或iOS界面变化。功能/Session交接通过，SAF、Main密码/预览/错误/成功窗口、方向/短视口/字体/AX与pristine冷入口仍按iOS逐项待验，见[阶段71](../plans/android-alignment-20261022/records/stage71-p7-pristine-controller.md)。
+
+阶段72 F55/F56：13条通知原件/历史归档first与同boot只读cold仅增加组件证据，没有产品页面/token/文案或iOS界面变化。Android fresh setup/archive-only与iOS身份恢复策略差异、Main迁移窗口/短视口/字体/AX、系统通知与物理界面仍单列，见[阶段72](../plans/android-alignment-20261022/records/stage72-p7-foreground-paired.md)。

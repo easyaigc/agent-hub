@@ -21,6 +21,9 @@ APK_CAP = 256 * 1024 * 1024
 _LIVE = {}  # Exact Popen owners are retained before any fallible owner/marker/raw operation.
 APP = "com.easyai.agenthub.android.acceptance"
 PROFILES = {
+    "p7-foreground": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
     "p7-pristine": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
@@ -431,6 +434,9 @@ def _review(api, path, expected_sha, profile):
     rows = value["sourceOverlay"]; require(type(rows) is dict and len(rows) <= 64, "Reviewed overlay bound")
     if profile == "p7":
         require(set(rows) == set(api.DYNAMIC_SOURCES), "P7 allows only the six reviewed test/tool overlays")
+    elif profile == "p7-foreground":
+        require(set(rows) == set(api.DYNAMIC_SOURCES) | {"scripts/mobile/android-nonempty-pristine-first.py", "scripts/mobile/android-nonempty-foreground-pair.py"},
+            "Foreground P7 requires exactly the existing Controller profile plus its finite paired adapter")
     elif profile == "p7-pristine":
         require(set(rows) == set(api.DYNAMIC_SOURCES) | {"scripts/mobile/android-nonempty-pristine-first.py"},
             "Pristine P7 allows exactly six existing overlays plus its closed first-only adapter")

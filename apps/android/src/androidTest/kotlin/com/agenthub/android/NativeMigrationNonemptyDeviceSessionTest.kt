@@ -22,7 +22,7 @@ class NativeMigrationNonemptyDeviceSessionTest {
         private val arguments = InstrumentationRegistry.getArguments()
         val app: Context = InstrumentationRegistry.getInstrumentation().targetContext
         val run = requireNotNull(arguments.getString("nonemptyRun")).also { require(UUID.fromString(it).toString() == it) }
-        private val filesRoot = if(arguments.getString("nonemptyMode") == "readonly-cold")
+        private val filesRoot = if(arguments.getString("nonemptyMode") in setOf("readonly-cold", "foreground-cold"))
             File(File(app.applicationInfo.dataDir).canonicalFile,"files") else app.filesDir.canonicalFile
         val folder = File(filesRoot, "P7-nonempty-$run")
         private var expectedAnchor: Map<String, String>? = null
@@ -33,9 +33,13 @@ class NativeMigrationNonemptyDeviceSessionTest {
             argument("nonemptyUid").toInt().also { require(it.toString() == argument("nonemptyUid")) })
         val mode = argument("nonemptyMode")
         val pristine get() = mode == "pristine-first"
+        val foreground get() = mode in setOf("foreground-first", "foreground-cold")
+        val cold get() = mode in setOf("readonly-cold", "foreground-cold")
         val selectedMethod get() = when (mode) {
             "pristine-first" -> NativeMigrationNonemptyDeviceCase.PRISTINE_METHOD
             "first" -> NativeMigrationNonemptyDeviceCase.FIRST_METHOD
+            "foreground-first" -> NativeMigrationNonemptyDeviceCase.FOREGROUND_METHOD
+            "foreground-cold" -> NativeMigrationNonemptyDeviceCase.FOREGROUND_COLD_METHOD
             else -> NativeMigrationNonemptyDeviceCase.COLD_METHOD
         }
         init {
@@ -43,8 +47,8 @@ class NativeMigrationNonemptyDeviceSessionTest {
                 "nonemptyCaseSourceSha256", "nonemptyWrapperSourceSha256", "nonemptySourceGuardSha256",
                 "nonemptySourceAdmissionSha256", "nonemptyBootUuid", "nonemptyUid")
             val extras = setOf("nonemptyFirstIntentSha256", "nonemptyFirstProofSha256", "nonemptyExitAdmissionSha256", "nonemptyExitAdmissionJson")
-            require(mode in setOf("first", "readonly-cold", "pristine-first"))
-            require(arguments.keySet() == if(mode == "readonly-cold") common + extras else common)
+            require(mode in setOf("first", "readonly-cold", "pristine-first", "foreground-first", "foreground-cold"))
+            require(arguments.keySet() == if(cold) common + extras else common)
             require(argument("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + selectedMethod)
             require(app.packageName == "com.easyai.agenthub.android.acceptance" && app.applicationInfo.uid == Process.myUid())
             require(filesRoot == File(File(app.applicationInfo.dataDir).canonicalFile, "files"))
@@ -98,7 +102,7 @@ class NativeMigrationNonemptyDeviceSessionTest {
             override fun startForegroundService(service: android.content.Intent): android.content.ComponentName = error("Fixture forbids foreground service")
         } }
         fun fresh() {
-            require(mode in setOf("first", "pristine-first"))
+            require(mode in setOf("first", "pristine-first", "foreground-first"))
             binding.requireCurrent()
             require(java.nio.file.Files.notExists(folder.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS))
             val keys = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -116,10 +120,10 @@ class NativeMigrationNonemptyDeviceSessionTest {
             for (name in listOf("no_backup", "cache", "files")) { val child = File(folder, name); check(child.mkdir()); Os.chmod(child.path, 0x1c0) }
             expectedAnchor = snapshot(); guard()
             val raw = File("/proc/${Process.myPid()}/stat").readText()
-            val intent = JSONObject().put("schema", if(pristine) NativeMigrationNonemptyDeviceCase.PRISTINE_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA).put("run", run)
+            val intent = JSONObject().put("schema", if(foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA else if(pristine) NativeMigrationNonemptyDeviceCase.PRISTINE_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA).put("run", run)
                 .put("binding", bindingJson(binding)).put("pid", Process.myPid()).put("startTicks", raw.substringAfterLast(") ").split(' ')[19])
                 .put("selectedMethod", selectedMethod).put("anchor", JSONObject(expectedAnchor!!))
-            if(pristine) intent.put("scenario", NativeMigrationNonemptyDeviceCase.pristineScenario(
+            if(pristine || foreground) intent.put("scenario", NativeMigrationNonemptyDeviceCase.pristineScenario(
                 NativeMigrationNonemptyDeviceCase.Scope(context, run, binding, this::guard)))
             publish("first-intent", intent)
         }
@@ -143,15 +147,15 @@ class NativeMigrationNonemptyDeviceSessionTest {
             require(requireNotNull(folder.list()).toSet() == expected); guard()
         }
         fun existing(): Triple<NativeMigrationNonemptyDeviceCase.Proof, JSONObject, String> {
-            require(mode == "readonly-cold"); binding.requireCurrent()
+            require(cold); binding.requireCurrent()
             expectedAnchor = snapshot(); guard(); requireNames(false)
             val intentBytes = document("first-intent"); val proofBytes = document("first-proof")
             require(NativeMigrationNonemptyPairContract.sha(intentBytes) == argument("nonemptyFirstIntentSha256"))
             require(NativeMigrationNonemptyPairContract.sha(proofBytes) == argument("nonemptyFirstProofSha256"))
             val intent = NativeMigrationNonemptyPairContract.parse(intentBytes)
-            NativeMigrationNonemptyPairContract.exact(intent,setOf("schema","run","binding","pid","startTicks","selectedMethod","anchor"))
+            NativeMigrationNonemptyPairContract.exact(intent,setOf("schema","run","binding","pid","startTicks","selectedMethod","anchor") + if(foreground) setOf("scenario") else emptySet())
             val raw = NativeMigrationNonemptyPairContract.parse(proofBytes)
-            val first = NativeMigrationNonemptyPairContract.first(raw)
+            val first = if(foreground) NativeMigrationNonemptyPairContract.foregroundFirst(raw) else NativeMigrationNonemptyPairContract.first(raw)
             require(first.run == run) { "Original run mismatch" }
             require(first.binding == binding) { "Original SDK binding mismatch" }
             val priorAnchor = NativeMigrationNonemptyPairContract.anchor(raw.getJSONObject("anchor"))
@@ -172,9 +176,9 @@ class NativeMigrationNonemptyDeviceSessionTest {
             return Triple(first,exit,exitSha)
         }
         fun coldDocument(first: NativeMigrationNonemptyDeviceCase.Proof,exitSha: String): JSONObject = JSONObject()
-            .put("schema",NativeMigrationNonemptyPairContract.COLD_SCHEMA).put("run",run).put("binding",bindingJson(binding))
+            .put("schema",if(foreground) NativeMigrationNonemptyPairContract.FOREGROUND_COLD_SCHEMA else NativeMigrationNonemptyPairContract.COLD_SCHEMA).put("run",run).put("binding",bindingJson(binding))
             .put("pid",Process.myPid()).put("startTicks",NativeMigrationNonemptyPairContract.startTicks(Process.myPid()))
-            .put("selectedMethod",NativeMigrationNonemptyDeviceCase.COLD_METHOD).put("anchor",JSONObject(expectedAnchor!!))
+            .put("selectedMethod",selectedMethod).put("anchor",JSONObject(expectedAnchor!!))
             .put("firstIntentSha256",argument("nonemptyFirstIntentSha256")).put("firstProofSha256",argument("nonemptyFirstProofSha256"))
             .put("exitAdmissionSha256",exitSha).put("firstPid",first.pid).put("firstStartTicks",first.startTicks)
         fun proof(value: NativeMigrationNonemptyDeviceCase.Proof): JSONObject = JSONObject()
@@ -200,11 +204,13 @@ class NativeMigrationNonemptyDeviceSessionTest {
         val proof = NativeMigrationNonemptyDeviceCase.first(scope)
         withContext(Dispatchers.IO) { fixture.publish("first-proof", fixture.proof(proof)) }
     }
-    @Test fun pristineNonemptyControllerImportsWithoutPrecreatedRootKey() = runBlocking {
-        val fixture = withContext(Dispatchers.IO) { Fixture().also { require(it.pristine); it.fresh() } }
+    @Test fun pristineNonemptyControllerImportsWithoutPrecreatedRootKey() = runBlocking { controllerFirst(false) }
+    @Test fun nonemptyForegroundControllerProducesPortableArchives() = runBlocking { controllerFirst(true) }
+    private suspend fun controllerFirst(foreground: Boolean) {
+        val fixture = withContext(Dispatchers.IO) { Fixture().also { require(if(foreground) it.mode == "foreground-first" else it.pristine); it.fresh() } }
         withContext(Dispatchers.IO) { delay(NativeMigrationNonemptyPairContract.WINDOW_MILLIS) }
         val scope = withContext(Dispatchers.IO) { NativeMigrationNonemptyDeviceCase.Scope(fixture.context, fixture.run, fixture.binding, fixture::guard) }
-        val value = NativeMigrationNonemptyDeviceCase.pristine(scope)
+        val value = if(foreground) NativeMigrationNonemptyDeviceCase.foregroundFirst(scope) else NativeMigrationNonemptyDeviceCase.pristine(scope)
         withContext(Dispatchers.IO) {
             val proof = fixture.proof(value.completed).put("scenario", NativeMigrationNonemptyDeviceCase.pristineScenario(scope))
                 .put("keyWindows", org.json.JSONArray(value.keyWindows.map { window -> JSONObject()
@@ -220,9 +226,11 @@ class NativeMigrationNonemptyDeviceSessionTest {
             fixture.requireNames(false)
         }
     }
-    @Test fun nonemptyReadOnlyColdAfterExactOriginalExit() = runBlocking {
+    @Test fun nonemptyReadOnlyColdAfterExactOriginalExit() = runBlocking { readOnlyCold(false) }
+    @Test fun nonemptyForegroundReadOnlyColdAfterExactOriginalExit() = runBlocking { readOnlyCold(true) }
+    private suspend fun readOnlyCold(foreground: Boolean) {
         withContext(NonCancellable + Dispatchers.IO) {
-            val fixture = Fixture(); val (first, _, exitSha) = fixture.existing()
+            val fixture = Fixture(); require(fixture.mode == if(foreground) "foreground-cold" else "readonly-cold"); val (first, _, exitSha) = fixture.existing()
             val scope = NativeMigrationNonemptyDeviceCase.Scope(fixture.context,fixture.run,fixture.binding,fixture::guard,existingOnly=true)
             val before = NativeMigrationNonemptyPairContract.protected(fixture.folder)
             val aliases = NativeMigrationNonemptyPairContract.aliasPins(scope,first.generation)
@@ -230,7 +238,8 @@ class NativeMigrationNonemptyDeviceSessionTest {
             fixture.publish("cold-intent",intent); fixture.requireNames(true)
             delay(NativeMigrationNonemptyPairContract.WINDOW_MILLIS) // Bounded independent host-observation window, no ack/file exemption.
             NativeMigrationNonemptyPairContract.requireOriginalExited(first)
-            val pins = NativeMigrationNonemptyDeviceCase.cold(scope,first) // Includes all successful reader closes.
+            val pins = if(foreground) NativeMigrationNonemptyDeviceCase.foregroundCold(scope,first)
+                else NativeMigrationNonemptyDeviceCase.cold(scope,first) // Includes all successful reader closes.
             require(before == NativeMigrationNonemptyPairContract.protected(fixture.folder))
             require(aliases == NativeMigrationNonemptyPairContract.aliasPins(scope,first.generation))
             fixture.binding.requireCurrent(); NativeMigrationNonemptyPairContract.requireOriginalExited(first)

@@ -1,6 +1,6 @@
 # 阶段71：未预建根密钥的普通 Controller 导入
 
-功能 ID：F55、F56。状态：1 项 Android 原生组件验收有限通过；全量检查通过，进入 PR 交付。P7 未关闭。
+功能 ID：F55、F56。状态：1 项 Android 原生组件验收有限通过；全量检查通过，已通过 [PR119](https://git.51easyai.com/BCAI/agent-hub-app/pulls/119) 合入 main `49d5ad0d`；主线 CI11204 与公开同步11205均成功，阶段71本地/远端/tracking分支已清理。P7 未关闭。
 
 ## 功能、交互与界面边界
 

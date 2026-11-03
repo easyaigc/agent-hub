@@ -1,5 +1,9 @@
 # 架构设计
 
+2026-11-04 F34／F36：按最新交互要求，输入区立即预览下一轮草稿模型／推理／速度，未覆盖字段回落到准确 owner 已知值；设置页“电脑当前设置”继续只读显示真实运行参数。iOS／Android 共用 KMP 展示规则，沿用原目标隔离、持久化和实际发送边界，选择本身不写入电脑任务。此修订取代 2026-10-26 的输入区只显示当前 owner 设计；历史验收不自动升级，见[本轮记录](acceptance/next-turn-generation-display-20261104.md)。
+
+2026-11-03 F59／F19／F32：移除独立文件互传与聊天资源下载预览的 20 MiB 固定上限。新 Codex Host 的文件目录以 `maxFileBytes: null` 表示未配置大小上限，iOS 兼容旧 Host 的有限值；Host、电脑发送 CLI 与 iOS／Android 下载不再按 20 MiB 拒绝。仍验证准确目标、原消息授权、普通文件、不可变长度和 SHA-256，未知传输只查询原回执。大文件仍受可用存储、内存、网络及系统格式支持影响；Markdown／HTML 渲染预算不改变下载与分享能力。双端影响、辅助检查、物理设备与真实桌面证据分列于[专项记录](acceptance/file-size-limits-20261103.md)。
+
 原桌面的自有 CLI 启动器被动观察已有 thread/sample 请求及其匹配返回；不调用建议 getter、不启动模型轮、不修改 Electron。只有同一 sourceThread/sourceTurn 的原桌面 safety_decision 明确 suppressed=false 后，才保存并发布准确正文。Host 按完整机器目标、原 owner、当前完成轮、原生进程链、producer epoch、实现摘要和短期租约复核；失败关闭当前显示，历史 latestExtracted 不回退显示。macOS 使用既有共享启动器，Windows 原候选使用当前用户私有固定 C# shim→Node→实际签名 CLI；该路径会把可选采集的失败放进原桌面启动边界，2026-11-01 已停用未来安装并提供旧覆盖恢复，不能再作为默认接入路径。Windows 每次重连元数据 reader 重新定位当前可信原桌面的 CLI，确认旧 reader 退出后再启动；历史路径仅为提示。统一包、逐机部署及实体手机验收仍须分别记录。
 
 2026-11-01 F69 目标继续：完整保留 Windows 原桌面建议采集，先证明独立于 Codex 启动的只读数据源，再开发并实机验证。固定上游代码发现既有 Trace 的完整响应可能先于 sample 清理保存，但原机来源及安全决定的一对一关联仍缺，不能放宽取消守卫。当前 Windows 入口拒绝连接，本轮未开发或部署新采集器；详见[独立采集可行性研究](research/windows-suggestion-independent.md)。

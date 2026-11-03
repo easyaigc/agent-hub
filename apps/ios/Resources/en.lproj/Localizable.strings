@@ -591,7 +591,7 @@
 "所选照片格式暂不支持" = "Selected photo format unsupported";
 "手动探测" = "Manual probe";
 "手动连接" = "Manual connection";
-"手机 → 电脑 · 每个文件最多 20 MB。同名文件会保留独立副本。" = "Phone → Computer · Up to 20 MB per file. Files with the same name are kept as separate copies.";
+"手机 → 电脑 · 同名文件会保留独立副本。" = "Phone → Computer · Files with the same name are kept as separate copies.";
 "手机与电脑共用一套任务库。发现服务后，核对电脑上的实例信息和证书指纹，再点选连接。" = "Phone and computer share one task database. After discovering a service, verify its instance and certificate fingerprint on the computer, then tap to connect.";
 "手机主动停止" = "Stopped from phone";
 "手机保存的文件已变化，请保留原记录并重新选择文件。" = "The file saved on this phone changed. Keep the original record and select the file again.";
@@ -1516,7 +1516,7 @@
 
 "手机上没有可打开此链接的应用。" = "No app on this phone can open this link.";
 
-"这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在、位于电脑授权目录内且不超过 20 MB，才能下载预览。" = "This file is on the computer and cannot be opened directly on your phone. Refresh the conversation. To download and preview it, the file must exist, be within the computer’s authorized directories, and be no larger than 20 MB.";
+"这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在且获得当前聊天的读取授权，才能下载预览。" = "This file is on the computer and cannot be opened directly on your phone. Refresh the conversation. To download and preview it, the file must exist and have read permission for this conversation.";
 
 "此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。" = "This URL points to the computer’s loopback address. Use a LAN or VPN URL that your phone can reach.";
 
@@ -1800,3 +1800,7 @@
 "改用扫码连接" = "Connect with a QR code";
 
 "这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。" = "This computer does not offer automatic connections. Scan its pairing QR code, or update EasyWork to connect by tapping.";
+
+"请选择非空的普通文件。" = "Choose a nonempty regular file.";
+
+"电脑当前版本的文件大小上限为 %@，请更新电脑端。" = "This computer version limits files to %@. Update the computer app.";

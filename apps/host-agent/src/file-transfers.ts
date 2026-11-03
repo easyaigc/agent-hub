@@ -2,7 +2,6 @@ import { createHash, randomUUID } from 'node:crypto';
 import { open, readFile, readdir, rm, realpath, lstat, link } from 'node:fs/promises';
 import { join, resolve, extname, basename } from 'node:path';
 import {
-  FILE_TRANSFER_MAX_BYTES,
   parseFileTransferManifest,
   type FileTransferManifest,
   type FileTransferReceipt,
@@ -129,7 +128,7 @@ export class FileTransfers {
     return {
       hostId: this.hostId,
       destinationDirectory: this.destinationDirectory,
-      maxFileBytes: FILE_TRANSFER_MAX_BYTES,
+      maxFileBytes: null,
       files,
     };
   }

@@ -1,5 +1,9 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-04 F34／F36、UI07／UI08、S06：按最新交互要求，输入区模型按钮立即预览当前草稿的模型／推理强度／速度，不等发送；未覆盖字段回落到电脑已知值，重置后跟随电脑。设置页“电脑当前设置”独立读取原 owner，不把未发送选择当作运行参数。iOS／Android 共用 KMP 展示规则，沿用准确目标隔离、草稿持久化与提交边界；仅编辑不发送、不改写电脑当前轮或已提交操作。实现、辅助与设备交互结果见[本轮记录](../acceptance/next-turn-generation-display-20261104.md)，既有 A6 暂停范围保持。
+
+2026-11-03 F59／F19／F32：移除独立文件互传与聊天资源下载预览的 20 MiB 固定上限。新 Codex Host 的文件目录以 `maxFileBytes: null` 表示未配置大小上限，iOS 兼容旧 Host 的有限值；Host、电脑发送 CLI 与 iOS／Android 下载不再按 20 MiB 拒绝。仍验证准确目标、原消息授权、普通文件、不可变长度和 SHA-256，未知传输只查询原回执。大文件仍受可用存储、内存、网络及系统格式支持影响；Markdown／HTML 渲染预算不改变下载与分享能力。双端影响、辅助检查、物理设备与真实桌面证据分列于[专项记录](../acceptance/file-size-limits-20261103.md)。
+
 共同断言：手机只读准确原桌面最新完成轮建议，安全抑制/空结果/取消/离线/换目标即清除显示；采用和撤销只修改本地草稿，刷新不生成模型轮。共享 Host 增加被动结果来源、单会话最新正文保存及 Windows 当前可信 CLI 重定位。iOS 复用既有 native-version 接口与来源校验；Android 尚未实现建议 UI，需后续按同一来源、摘要及租期契约实现，不计新增通过。辅助检查、Windows 原生及实体 iPhone 结果分别登记；A6 保持暂停。
 
 2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](../acceptance/windows-codex-startup-safety-20261101.md)。

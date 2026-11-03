@@ -499,7 +499,8 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
         }
         if(session.selectedThread.isNotEmpty()) {
             GenerationSection(productText("电脑当前设置")) {
-                Text(actualModelDisplayLabel(session)+" · "+(if(session.displayedEffort!=null) effortLabel(session.displayedEffort) else productText("跟随电脑")),Modifier.padding(16.dp))
+                val currentModel=if(session.runtime?.settings?.model==null) productText("同步中") else session.currentModelLabel
+                Text(currentModel+" · "+(session.currentEffort?.let { effortLabel(it) } ?: productText("跟随电脑")),Modifier.padding(16.dp))
             }
             Text(productText("以下选择用于下次发送，发送前不会修改电脑当前设置。"),Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }

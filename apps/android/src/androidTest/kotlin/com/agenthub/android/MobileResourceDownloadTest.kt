@@ -82,7 +82,7 @@ class MobileResourceDownloadTest {
                 { it.getJSONObject("readTarget").put("runtimeId",123) },
                 { it.getJSONObject("attachment").put("hostId","other") },{ it.getJSONObject("attachment").put("threadId","other") },
                 { it.getJSONObject("attachment").put("id","../escape") },{ it.getJSONObject("attachment").put("name","../escape") },
-                { it.getJSONObject("attachment").put("name","..\\escape") },{ it.getJSONObject("attachment").put("sizeBytes",20L*1024*1024+1) },
+                { it.getJSONObject("attachment").put("name","..\\escape") },{ it.getJSONObject("attachment").put("sizeBytes",-1) },
                 { it.getJSONObject("attachment").put("sizeBytes","5") },{ it.getJSONObject("attachment").put("sha256","ABC") })
             for(change in cases) { mutate=change;assertTrue(failure { commands.resolveMessageFile(c,"owned-thread","owned-message",reference) } is CodexCommandError) }
             assertTrue(cache.listFiles().orEmpty().isEmpty());getOnly(server)
@@ -182,12 +182,12 @@ class MobileResourceDownloadTest {
             assertEquals(4,setOf(first,runtime,workspace,otherThread).size);assertEquals(4,server.requests.count { it.path=="/v1/attachments" });getOnly(server)
         }
     }
-    @Test fun zeroAndMaximumSizedFilesStreamAndPublishOnlyExactBytes()=runBlocking {
+    @Test fun zeroAndLargeFilesStreamAndPublishOnlyExactBytes()=runBlocking {
         var bytes=ByteArray(0);var manifest=file(bytes,"empty-version");lateinit var c: MobileClient
         CommandFixture { req->if(req.path.endsWith("/resolve"))WireResponse(body=resolution(c,manifest).toString()) else WireResponse(raw=bytes) }.use { server->
             c=client(server);val empty=commands.downloadResource(c,manifest,cache);assertEquals(0L,empty.length());assertEquals(hash(bytes),hash(empty.readBytes()))
-            bytes=ByteArray(20*1024*1024) { (it%251).toByte() };manifest=file(bytes,"maximum-version")
-            val largest=commands.downloadResource(c,manifest,cache);assertEquals(20L*1024*1024,largest.length())
+            bytes=ByteArray(24*1024*1024+1) { (it%251).toByte() };manifest=file(bytes,"large-version")
+            val largest=commands.downloadResource(c,manifest,cache);assertEquals(24L*1024*1024+1,largest.length())
             val digest=MessageDigest.getInstance("SHA-256");largest.inputStream().use { input->val buffer=ByteArray(16_384);while(true) { val n=input.read(buffer);if(n<0)break;digest.update(buffer,0,n) } }
             assertEquals(manifest.sha256,digest.digest().joinToString("") { "%02x".format(it) })
             assertEquals(2,server.requests.count { it.path=="/v1/attachments" });assertTrue(cache.walkTopDown().none { it.name.startsWith(".resource-") });getOnly(server)

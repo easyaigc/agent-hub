@@ -15,12 +15,11 @@ import kotlin.coroutines.coroutineContext
 
 /** Codex wire claims and platform file I/O; target identity and contract schema remain shared. */
 internal object CodexResources {
-    const val maximumBytes=20L*1024*1024
     private fun invalid(): Nothing=throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
     fun validate(client: MobileClient,file: MobileFile): MobileFile {
         fun basename(value: String)=value.isNotEmpty()&&value !in listOf(".","..")&&value.none { it=='/'||it=='\\'||it=='\u0000' }
         if(client.scope?.agentId!="codex"||file.hostId!=client.id||file.threadId.isEmpty()||!basename(file.id)||!basename(file.name)||
-            file.mediaType.isEmpty()||file.sizeBytes !in 0..maximumBytes||!file.sha256.matches(Regex("[a-f0-9]{64}")))invalid()
+            file.mediaType.isEmpty()||file.sizeBytes<0||!file.sha256.matches(Regex("[a-f0-9]{64}")))invalid()
         return file
     }
     private fun file(client: MobileClient,thread: String,value: JSONObject): MobileFile {
@@ -100,8 +99,8 @@ internal object CodexResources {
             temporary.outputStream().use { output->
                 while(true) {
                     checkActive();val n=input.read(buffer);if(n<0)break
+                    if(n.toLong()>file.sizeBytes-count)throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
                     count+=n
-                    if(count>file.sizeBytes||count>maximumBytes)throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
                     output.write(buffer,0,n);digest.update(buffer,0,n)
                 }
                 output.fd.sync()

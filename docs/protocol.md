@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+2026-11-03 F59／F19／F32：移除独立文件互传与聊天资源下载预览的 20 MiB 固定上限。新 Codex Host 的文件目录以 `maxFileBytes: null` 表示未配置大小上限，iOS 兼容旧 Host 的有限值；Host、电脑发送 CLI 与 iOS／Android 下载不再按 20 MiB 拒绝。仍验证准确目标、原消息授权、普通文件、不可变长度和 SHA-256，未知传输只查询原回执。大文件仍受可用存储、内存、网络及系统格式支持影响；Markdown／HTML 渲染预算不改变下载与分享能力。双端影响、辅助检查、物理设备与真实桌面证据分列于[专项记录](acceptance/file-size-limits-20261103.md)。
+
 2026-10-29 Host 错误响应追加 code／requestId／diagnosticId 和 X-Agent-Hub-Diagnostic-Id；healthz 的 runtime 分别报告 ready／bridge／reader／提交门禁，原 persistence 保留。字段为向后兼容追加，200 不表示聊天原 owner 可控；具体 Schema、分类与限制见[诊断指南](host-reconnect-diagnostics.md)。
 
 ## F74：可选模型代理 HTTP 边界

@@ -48,7 +48,7 @@ try {
   for (const name of ['../secret', 'a/b', 'a\\b', 'CON.txt', 'a:', 'trailing.'])
     await assert.rejects(store.prepare({ ...manifest(), name }), { status: 400 });
   await assert.rejects(store.prepare({ ...manifest(), path: '/arbitrary' }), { status: 400 });
-  await assert.rejects(store.prepare({ ...manifest(), sizeBytes: 20 * 1024 * 1024 + 1 }), {
+  await assert.rejects(store.prepare({ ...manifest(), sizeBytes: Number.MAX_SAFE_INTEGER + 1 }), {
     status: 400,
   });
   await assert.rejects(store.upload(first.id, source(Buffer.from('corrupt'))), { status: 400 });
@@ -155,8 +155,26 @@ try {
   assert.equal(httpDone.phase, 'completed');
   assert.deepEqual(await readFile(httpDone.destinationPath), bytes);
   assert.deepEqual(await request(route, bytes), httpDone);
+  const largeBytes = Buffer.alloc(24 * 1024 * 1024 + 1, 73);
+  const largeFile = {
+    ...manifest(),
+    hostId: httpFile.hostId,
+    id: randomUUID(),
+    name: 'large.bin',
+    sizeBytes: largeBytes.length,
+    sha256: createHash('sha256').update(largeBytes).digest('hex'),
+  };
+  await request('/v1/file-transfers', largeFile);
+  const largeDone = await request(
+    '/v1/file-transfers/content?' +
+      new URLSearchParams({ hostId: httpFile.hostId, id: largeFile.id }),
+    largeBytes,
+  );
+  assert.equal(largeDone.phase, 'completed');
+  assert.deepEqual(await readFile(largeDone.destinationPath), largeBytes);
   const listing = await request('/v1/file-transfers?hostId=' + httpFile.hostId);
-  assert.equal(listing.files.length, 1);
+  assert.equal(listing.files.length, 2);
+  assert.equal(listing.maxFileBytes, null);
   assert.equal(
     (await server.session.workspace()).threads.length,
     0,

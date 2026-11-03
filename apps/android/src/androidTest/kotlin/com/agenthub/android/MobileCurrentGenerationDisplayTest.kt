@@ -85,9 +85,10 @@ class MobileCurrentGenerationDisplayTest {
     }
     @Test fun originalDesktopSettingsAndNextSendOverrideRemainDistinctInToolbarAndPanel() {
         setup();main { session.text="unsent original draft";session.configure(GenerationSettings("fixture-b","low",null,"fast")) }
-        assertTrue(toolbar().contains("Fixture A"));assertTrue(toolbar().contains(text.tr("极高")))
-        assertFalse(toolbar().contains("Fixture B"));assertEquals("low",session.generationSettings.effort)
-        shot("actual-toolbar-with-unsent-override")
+        assertTrue(toolbar().contains("Fixture B"));assertTrue(toolbar().contains(text.tr("低")))
+        assertFalse(toolbar().contains("Fixture A"));assertEquals("low",session.generationSettings.effort)
+        assertTrue(toolbar().contains(text.tr("快速")))
+        shot("next-send-toolbar-with-unsent-override")
         ui.onNodeWithTag("generation-settings").performClick()
         assertNotEquals("English cannot silently fall back to original copy", "以下选择用于下次发送，发送前不会修改电脑当前设置。", text.tr("以下选择用于下次发送，发送前不会修改电脑当前设置。"))
         ui.onNodeWithText(text.tr("电脑当前设置")).assertExists()
@@ -98,11 +99,16 @@ class MobileCurrentGenerationDisplayTest {
         assertEquals("unsent original draft",session.text);assertTrue(session.operationRecords.isEmpty())
     }
     @Test fun missingOwnerSettingsNeverUseCatalogueDefaultOrDraftOverrideAsActual() {
-        setup(false);main { session.configure(GenerationSettings("fixture-b","low")) }
+        setup(false)
         assertNull(session.generationDisplay.model);assertNull(session.displayedEffort)
         assertTrue(toolbar().contains(text.tr("同步中")));assertTrue(toolbar().contains(text.tr("跟随电脑")))
-        assertFalse(toolbar().contains("Fixture A"));assertFalse(toolbar().contains("Fixture B"))
-        shot("unknown-owner-not-directory-default")
+        main { session.configure(GenerationSettings("fixture-b","low")) }
+        assertEquals("fixture-b",session.generationDisplay.model);assertEquals("low",session.displayedEffort)
+        assertTrue(toolbar().contains("Fixture B"));assertFalse(toolbar().contains("Fixture A"))
+        assertNull(session.runtime?.settings?.model);assertNull(session.currentEffort)
+        ui.onNodeWithTag("generation-settings").performClick()
+        ui.onNodeWithText(text.tr("同步中")+" · "+text.tr("跟随电脑")).assertExists()
+        owned.dialogShot("unknown-owner-and-next-send-preview")
     }
     @Test fun newDraftUsesItsNextSendSettingsAndNeverClaimsAnExistingDesktopThread() {
         setup();main { session.newChat(null);session.text="new independent draft";session.configure(GenerationSettings("fixture-b","low")) }
@@ -119,10 +125,14 @@ class MobileCurrentGenerationDisplayTest {
         select("model-b");main { session.text="draft-b" }
         assertTrue(toolbar().contains("Fixture B"));assertTrue(toolbar().contains(text.tr("高")))
         select("model-a");assertEquals("draft-a",session.text);assertEquals("low",session.generationSettings.effort)
-        assertTrue(toolbar().contains("Fixture A"));assertTrue(toolbar().contains(text.tr("极高")))
+        assertTrue(toolbar().contains("Fixture B"));assertTrue(toolbar().contains(text.tr("低")))
         main { values["model-a"]="fixture-b" to "high";session.loadHistory(userInitiated=true) }
-        ui.waitUntil(10_000) { session.generationDisplay.model=="fixture-b"&&session.displayedEffort=="high"&&!session.historyLoading }
+        ui.waitUntil(10_000) { session.runtime?.settings?.model=="fixture-b"&&session.currentEffort=="high"&&!session.historyLoading }
         assertTrue(toolbar().contains("Fixture B"));assertEquals("low",session.generationSettings.effort);assertEquals("draft-a",session.text)
-        shot("updated-owner-keeps-draft-override")
+        assertEquals("low",session.displayedEffort)
+        main { session.configure(GenerationSettings()) }
+        assertTrue(toolbar().contains("Fixture B"));assertTrue(toolbar().contains(text.tr("高")))
+        assertEquals("draft-a",session.text)
+        shot("cleared-override-follows-updated-owner")
     }
 }

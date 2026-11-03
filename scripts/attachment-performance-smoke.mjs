@@ -87,11 +87,14 @@ try {
     (error) => error.status === 409,
   );
   files.checked = checked;
-  await writeFile(join(root, 'oversized.bin'), Buffer.alloc(20 * 1024 * 1024 + 1));
-  await assert.rejects(
-    files.inspect(join(root, 'oversized.bin'), [root]),
-    (e) => e.status === 413 && e.code === 'FILE_TOO_LARGE',
-  );
+  const largePath = join(root, 'large.bin');
+  const largeBytes = Buffer.alloc(24 * 1024 * 1024 + 1, 37);
+  await writeFile(largePath, largeBytes);
+  const large = await files.inspect(largePath, [root]);
+  assert.equal(large.sizeBytes, largeBytes.length);
+  assert.equal(large.sha256, sha(largeBytes));
+  assert.deepEqual(await files.read(largePath, [root], large.sha256), largeBytes);
+  await assert.rejects(files.inspect(largePath, [outside]), (error) => error.status === 403);
 
   const count = full ? 513 : 16;
   const paths = [];

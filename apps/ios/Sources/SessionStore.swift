@@ -1192,6 +1192,13 @@ private var userRequestedWorkspaceGeneration: UUID?
   var displayedEffortLabel: String {
     generationDisplay.effort.map { effortLabel($0) } ?? L10n.tr("跟随电脑")
   }
+  var currentModelLabel: String {
+    let model = runtime?.generationSettings?.model
+    return models.first { $0.id == model }?.name ?? model ?? L10n.tr("同步中")
+  }
+  var currentEffortLabel: String {
+    runtime?.generationSettings?.effort.map { effortLabel($0) } ?? L10n.tr("跟随电脑")
+  }
   var selectedPermissionMode: String? { draft.permissionMode ?? runtime?.generationSettings?.permissionMode }
   var permissionOptions: [AgentPermissionOption] { guard let client, let agent = try? AgentClients.resolve(client) else { return [] }; return agent.permissionOptions(client) }
   var selectedPermissionOption: AgentPermissionOption? { permissionOptions.first { $0.id == selectedPermissionMode } }

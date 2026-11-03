@@ -21,7 +21,7 @@ import {
 import { main } from './transfer-host.mjs';
 
 const hostId = '00000000-0000-4000-8000-000000000001';
-async function fixture(t) {
+async function fixture(t, byteCount = 1024 * 80 + 3) {
   const directory = await mkdtemp(join(await realpath(tmpdir()), 'host-transfer-'));
   protectWindowsStateDirectory(directory);
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -32,7 +32,7 @@ async function fixture(t) {
   await writeFile(join(directory, 'hosts.json'), JSON.stringify(registry), { mode: 0o600 });
   protectWindowsStateFile(join(directory, 'hosts.json'));
   const file = join(directory, '交付文件.bin'),
-    bytes = randomBytes(1024 * 80 + 3),
+    bytes = randomBytes(byteCount),
     id = randomUUID();
   await writeFile(file, bytes, { mode: 0o600 });
   const target = { agentId: 'codex', hostId, workspaceId: hostId, runtimeId: 'desktop-runtime' };
@@ -247,6 +247,14 @@ test('file receipts expose bounded metadata without echoing arbitrary remote fil
   assert.deepEqual(await readFile(f.outputs.at(-1).receipt.destinationPath), f.bytes);
   const saved = await readFile(join(f.directory, 'file-transfers', f.id, 'receipt.json'), 'utf8');
   assert(!saved.includes(encoded));
+});
+
+test('files larger than 20 MiB are delivered unchanged by the CLI', async (t) => {
+  const f = await fixture(t, 24 * 1024 * 1024 + 1);
+  assert.equal(await f.run('send', ['--file', f.file]), 0);
+  const receipt = await f.store.status(f.id);
+  assert.equal(receipt.phase, 'completed');
+  assert.deepEqual(await readFile(receipt.destinationPath), f.bytes);
 });
 
 test('oversized file receipt fields are rejected while the original bytes remain queryable', async (t) => {

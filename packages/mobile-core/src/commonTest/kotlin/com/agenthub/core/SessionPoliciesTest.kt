@@ -6,13 +6,20 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
 class SessionPoliciesTest {
-    @Test fun conversationGenerationDisplayNeverUsesDraftOrCatalogueDefaults() {
+    @Test fun composerPreviewsNextInputAndFallsBackToOwnerOnlyWithoutAnOverride() {
         val actual = SessionPolicies.generationDisplay(true,"draft-model","low","owner-model","xhigh")
-        assertEquals("owner-model",actual.model)
-        assertEquals("xhigh",actual.effort)
+        assertEquals("draft-model",actual.model)
+        assertEquals("low",actual.effort)
         val unavailable = SessionPolicies.generationDisplay(true,"draft-model","low",null,null)
-        assertNull(unavailable.model)
-        assertNull(unavailable.effort)
+        assertEquals("draft-model",unavailable.model)
+        assertEquals("low",unavailable.effort)
+        val reset = SessionPolicies.generationDisplay(true,null,null,"owner-model","xhigh")
+        assertEquals("owner-model",reset.model)
+        assertEquals("xhigh",reset.effort)
+        val effortOnly = SessionPolicies.generationDisplay(true,null,"low","owner-model","xhigh")
+        assertEquals("owner-model",effortOnly.model)
+        assertEquals("low",effortOnly.effort)
+        assertNull(SessionPolicies.generationDisplay(true,null,null,null,null).model)
         assertNull(SessionPolicies.generationDisplay(true,null,null,"owner-model",null).effort)
         val newDraft = SessionPolicies.generationDisplay(false,"draft-model","low",null,null)
         assertEquals("draft-model",newDraft.model)

@@ -20,6 +20,10 @@ const methods = source.slice(
   source.indexOf('  static func baseURL('),
   source.indexOf('  static func nextTurnSuggestion('),
 );
+const resolutions = source.slice(
+  source.indexOf('  static func resolveMessageFile('),
+  source.indexOf('  static func download('),
+);
 const downloads = source.slice(source.indexOf('  static func download('), source.lastIndexOf('}'));
 const errors = source.slice(
   source.indexOf('enum HostServiceError:'),
@@ -61,11 +65,13 @@ const server = createServer((req, res) => {
     res.writeHead(code, { 'Content-Type': 'application/json' }).end(JSON.stringify(value));
   assert.equal(req.headers.authorization, 'Bearer synthetic-token');
   assert([nonce, nonce + '-other'].includes(url.searchParams.get('hostId')));
-  const id = url.searchParams.get('id');
+  const id =
+    url.searchParams.get('id') ??
+    (url.pathname === '/v1/attachments/resolve-link' ? `large_${nonce}_original` : null);
   const scenario = id?.split('_')[0];
   const key = scenario + url.pathname;
   counts.set(key, (counts.get(key) ?? 0) + 1);
-  if (url.pathname === '/v1/attachments/resolve') {
+  if (['/v1/attachments/resolve', '/v1/attachments/resolve-link'].includes(url.pathname)) {
     assert.equal(url.searchParams.get('target'), null, 'Resolver whitelist excludes target');
     if (scenario === 'stable') {
       expectedBinaryTarget = isolatedTargets[stableResolution++];
@@ -93,10 +99,13 @@ const server = createServer((req, res) => {
       return send(410, { error: 'file-removed' });
     const n = (version.get(scenario) ?? 0) + 1;
     version.set(scenario, n);
-    const content = `${scenario}-version-${n}`;
+    const content =
+      scenario === 'large' ? Buffer.alloc(24 * 1024 * 1024 + 1, 65) : `${scenario}-version-${n}`;
     return send(200, {
       hostId: scenario === 'wrongHost' ? 'other-host' : nonce,
       threadId: 'thread',
+      messageId: url.searchParams.get('messageId'),
+      reference: url.searchParams.get('reference'),
       sourceAttachmentId: scenario === 'wrongSource' ? 'other-id' : id,
       readTarget: scenario === 'wrongRuntime' ? { ...target, runtimeId: 'other-runtime' } : target,
       attachment: {
@@ -122,9 +131,11 @@ const server = createServer((req, res) => {
   if (scenario === 'changing' || (scenario === 'race' && counts.get(key) === 1))
     return send(409, { error: 'changed-during-download' });
   const content =
-    scenario === 'legacy' || scenario === 'legacyNil'
-      ? 'original'
-      : `${scenario}-version-${id.split('_').at(-1)}`;
+    scenario === 'large'
+      ? Buffer.alloc(24 * 1024 * 1024 + 1, 65)
+      : scenario === 'legacy' || scenario === 'legacyNil'
+        ? 'original'
+        : `${scenario}-version-${id.split('_').at(-1)}`;
   res.writeHead(200).end(scenario === 'corrupt' ? 'invalid-bytes' : content);
 });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
@@ -154,6 +165,7 @@ final class CodexHostRoutes {
 struct HostService {
 ${methods}
   static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
+${resolutions}
   static func boundaryDirectory(_ client: Client, file: RemoteAttachment) throws -> URL { try resourceDirectory(client, file: file) }
 ${downloads}
 }
@@ -161,19 +173,24 @@ ${downloads}
   static func main() async throws {
     let target = AgentRuntimeTarget(agentId: "codex", hostId: "${nonce}", workspaceId: "workspace", runtimeId: "runtime")
     let client = Client(id: "${nonce}", endpoint: "http://127.0.0.1:${server.address().port}", readingTarget: target)
-    let scenarios = ["cached", "removed", "race", "changing", "legacy", "wrongHost", "wrongThread", "wrongSource", "wrongRuntime", "corrupt"]
+    let scenarios = ["large", "cached", "removed", "race", "changing", "legacy", "wrongHost", "wrongThread", "wrongSource", "wrongRuntime", "corrupt"]
     var ownedScopes = Set<URL>()
     defer { for scope in ownedScopes { try? FileManager.default.removeItem(at: scope) } }
     func remember(_ client: Client, _ file: RemoteAttachment) throws {
       ownedScopes.insert(try HostService.boundaryDirectory(client, file: file).deletingLastPathComponent())
     }
     for scenario in scenarios {
-      let file = RemoteAttachment(id: "\\(scenario)_${nonce}_original", hostId: client.id, threadId: "thread", name: "report.txt", mediaType: "text/plain", sizeBytes: 8, sha256: HostService.hash(Data("original".utf8)))
+      var file = RemoteAttachment(id: "\\(scenario)_${nonce}_original", hostId: client.id, threadId: "thread", name: "report.txt", mediaType: "text/plain", sizeBytes: 8, sha256: HostService.hash(Data("original".utf8)))
+      if scenario == "large" {
+        file = try await HostService.resolveMessageFile(client, threadId: "thread", messageId: "large-message", reference: "large-file")
+        precondition(file.sizeBytes == 24 * 1024 * 1024 + 1)
+      }
       try remember(client, file)
       do {
         let url = try await HostService.download(client, file: file)
         let body = try String(contentsOf: url, encoding: .utf8)
         switch scenario {
+        case "large": precondition(body.utf8.count == 24 * 1024 * 1024 + 1)
         case "cached":
           precondition(body == "cached-version-1")
           let refreshed = try await HostService.download(client, file: file)

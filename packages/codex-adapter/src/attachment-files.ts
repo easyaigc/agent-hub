@@ -30,7 +30,6 @@ export class AttachmentFileError extends Error {
   }
 }
 
-const limit = 20 * 1024 * 1024;
 const stamp = (value: BigIntStats): FileStamp => ({
   dev: String(value.dev),
   ino: String(value.ino),
@@ -182,8 +181,6 @@ export class AttachmentFiles {
           '此链接指向目录或非普通文件，无法预览',
           'NOT_REGULAR_FILE',
         );
-      if (value.size > BigInt(limit))
-        throw new AttachmentFileError(413, '文件超过 20 MB，无法下载预览', 'FILE_TOO_LARGE');
       return { actual, value, key: identity(value) };
     } catch (error) {
       throw attachmentFileError(error);

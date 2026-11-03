@@ -148,9 +148,12 @@ try {
   const huge = join(outside, 'huge.bin');
   await writeFile(huge, Buffer.alloc(20 * 1024 * 1024 + 1));
   await project('authorized', huge, 'huge-report');
-  await assert.rejects(
-    session.resolveMessageFile('authorized', 'huge-report', huge),
-    (error) => error.status === 413 && error.code === 'FILE_TOO_LARGE',
+  const largeFile = (await session.resolveMessageFile('authorized', 'huge-report', huge))
+    .attachment;
+  assert.equal(largeFile.sizeBytes, 20 * 1024 * 1024 + 1);
+  assert.equal(
+    (await session.download('authorized', largeFile.id)).data.length,
+    largeFile.sizeBytes,
   );
   const threads = session.state.threads;
   session.save();

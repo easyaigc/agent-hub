@@ -1,0 +1,76 @@
+{
+  "kind": "file-size-limits-native-acceptance",
+  "date": "2026-11-03",
+  "scope": ["F59", "F19", "F32"],
+  "status": "passed-simulator",
+  "device": {
+    "modelName": "iPhone 15 Pro Max",
+    "osVersion": "26.0",
+    "osBuildNumber": "23A343",
+    "platform": "iOS Simulator",
+    "architecture": "arm64"
+  },
+  "testSummary": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "file": {
+    "sizeBytes": 25165825,
+    "sha256": "383387d09c84e51fa77bb547a4626979aff5b7d94ef140a6fd9db5426b9b2453"
+  },
+  "scenarios": {
+    "systemPickerUpload": "passed-in-initial-interaction",
+    "completedUploadRecovery": "passed-read-only-no-repeat",
+    "freshCacheDownload": "passed-HTTP-200-full-size-and-sha256",
+    "systemQuickLookContent": "passed-visible-original-marker-and-body",
+    "originalDesktopOwner": "one-completed-turn-one-user-input"
+  },
+  "checks": {
+    "pnpm check": "passed-Node-24.22.2",
+    "pnpm build:ios": "passed",
+    "pnpm build:android": "passed-unchanged-source-fingerprint",
+    "iOS localization": "passed"
+  },
+  "modelEvidence": {
+    "requestedModel": "gpt-6.1-terra",
+    "observedModel": null,
+    "observedEffort": "medium",
+    "speedVerified": false,
+    "latestOwnerSettingsModel": "gpt-6.1-terra",
+    "latestOwnerSettingsEffort": "medium",
+    "latestOwnerServiceTier": "default",
+    "turnModelFieldMissing": true
+  },
+  "fingerprints": {
+    "nativeInputs": "a84b2fa4e69edab8d7bdb069146007bc015d33f9485ecf5bc3dd535119db6a23",
+    "appExecutable": "e6611fec8a89bc1155811d8d4618062131aecfa1b6340dbbf350891a7fcc0e4b",
+    "adapter": "c6d5e6dbc7cafd3b7f949ece61ce75bebd7935ff6158ac6b42092c432b10da26",
+    "harness": "4d624cd9adf5998dcc8ea4589d0c67fa018b5c6811b728c1e8e4c1d930378fa5",
+    "sources": {
+      "apps/ios/Sources/FileTransfers.swift": "69670a8f2acc4dde74ca2cf0bc1158e788a2bc4cd6b60ce9de38672fc613269c",
+      "apps/ios/Sources/HostService.swift": "d1c6db659cd574fe2412253e560b119127e709f8887cbe7f9a3303e576602a5b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "f6c6cdb14a8b7b4d12ad1f3540f1c6cd6bbd7dfd4756db6083a408be2abb9b9f",
+      "apps/host-agent/src/file-transfers.ts": "50e8e30523f150dd5abbc1d7a6e4e0031b8b44c19755162d05099e9f8e8ddbc5",
+      "packages/protocol/src/file-transfers.ts": "c8b5706db48aea32ad0dfb187c97e21062e9ef7917f5f3ba54d18d8fcc18f4f1",
+      "packages/codex-adapter/src/attachment-files.ts": "5531a4292f34414356fccff8fbde99f5aafe81271d6700bbd9d5c2c5879b57ef",
+      "apps/ios/Tests/CodexManageUITests.swift": "1d627d53e3176598977b4b485c3cade06daed7339d883ef66aed6fb07bf7e3a9",
+      "scripts/mobile/file-size-limits-ios-acceptance.mjs": "4d624cd9adf5998dcc8ea4589d0c67fa018b5c6811b728c1e8e4c1d930378fa5"
+    }
+  },
+  "limitations": [
+    "physical-device-interactions-not-executed-user-chose-simulator",
+    "Android-native-interactions-not-executed",
+    "QuickLook-close-button-AX-interaction-not-verified",
+    "production-and-other-hosts-not-deployed"
+  ],
+  "priorFailures": "Physical preflight required passcode. Earlier synthetic-acceptance AX queries and a runner failure are retained separately; final XCTest passed.",
+  "cleanup": {
+    "temporarySimulatorAndApps": "removed",
+    "isolatedBuildSourceRunnersAndCertificates": "removed",
+    "temporaryServicesAndTaskDaemons": "stopped",
+    "originalTestThread": "archived-and-independently-confirmed",
+    "generatedSourceAndReceivedCopies": "removed-after-byte-verification",
+    "retained": "minimal private evidence, immutable operations and receipts"
+  }
+}

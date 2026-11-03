@@ -911,11 +911,11 @@ final class CodexManageUITests: XCTestCase {
       app.launchChineseTest()
       return
     }
-    if name.contains("testMarkdownFilePreviewPhysicalDEV") {
+    if name.contains("testMarkdownFilePreviewPhysicalDEV") || name.contains("testFileSizeLimitsPhysicalDEV") {
       guard let raw = ProcessInfo.processInfo.environment["FILE_PREVIEW_FIXTURE"],
         let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
         let bundleId = fixture["bundleId"] as? String,
-        bundleId.hasPrefix("com.easyai.agenthub.filepreview.") else {
+        (bundleId.hasPrefix("com.easyai.agenthub.filepreview.") || (name.contains("testFileSizeLimitsPhysicalDEV") && bundleId.hasPrefix("com.easyai.agenthub.filesizelimits."))) else {
         throw XCTSkip("Requires the independent file preview acceptance App")
       }
       XCUIDevice.shared.orientation = .portrait
@@ -9136,6 +9136,13 @@ final class CodexManageUITests: XCTestCase {
     app.buttons["generation-done"].tap()
     XCTAssertTrue(settings.label.contains("Fixture Fast"))
     XCTAssertTrue(settings.label.contains("低"))
+    XCTAssertTrue(settings.label.contains("速度，快速"))
+    // These are next-input previews: no message has been sent yet, and the
+    // independently reported owner settings must still show the old values.
+    openSettings()
+    XCTAssertTrue(app.descendants(matching: .any)["current-model"].firstMatch.label.contains("Fixture Quality"))
+    XCTAssertTrue(app.descendants(matching: .any)["current-effort"].firstMatch.label.contains("极高"))
+    app.buttons["generation-done"].tap()
     XCTAssertTrue(app.buttons["permission-settings"].label.contains("完全访问"))
     let secondarySearch = openDesktopSidebarSearch()
     if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
@@ -9146,14 +9153,17 @@ final class CodexManageUITests: XCTestCase {
     secondary.tap()
     XCTAssertTrue(settings.waitForExistence(timeout: 10))
     XCTAssertTrue(settings.label.contains("Fixture Quality"))
+    XCTAssertTrue(settings.label.contains("速度，标准"))
     XCTAssertTrue(app.buttons["permission-settings"].label.contains("请求批准"))
     openDesktopTestConversation(fixture)
     XCTAssertTrue(settings.label.contains("Fixture Fast"))
+    XCTAssertTrue(settings.label.contains("速度，快速"))
     app.terminate()
     app.launchArguments = ["-ui-testing", "-restore-testing"]
     app.launchChineseTest()
     XCTAssertTrue(settings.waitForExistence(timeout: 15))
     XCTAssertTrue(settings.label.contains("Fixture Fast"))
+    XCTAssertTrue(settings.label.contains("速度，快速"))
     XCTAssertTrue(app.buttons["permission-settings"].label.contains("完全访问"))
     focusLiveComposer()
     typeComposerText("Settings first")
@@ -9395,11 +9405,16 @@ final class CodexManageUITests: XCTestCase {
     app.descendants(matching: .any)["effort-picker"].firstMatch.tap()
     app.buttons["低"].tap()
     app.buttons["generation-done"].tap()
-    matches("6.1", "极高", "draft-low-does-not-replace-owner")
+    matches("6.1", "低", "draft-low-previews-next-input")
     try await openThread(fixture.second)
     matches(fixture.alternateModelName, "高", "other-thread")
     try await openThread(fixture.connection)
-    matches("6.1", "极高", "return-keeps-owner")
+    matches("6.1", "低", "return-keeps-next-input")
+    app.buttons["generation-settings"].tap()
+    XCTAssertTrue(app.descendants(matching: .any)["current-effort"].firstMatch.label.contains("极高"))
+    app.buttons["reset-effort"].tap()
+    app.buttons["generation-done"].tap()
+    matches("6.1", "极高", "reset-follows-owner")
     try await control("desktop-low")
     matches("6.1", "低", "desktop-effort-changed")
     try await control("desktop-alternate")
@@ -16673,5 +16688,71 @@ extension CodexManageUITests {
     XCTAssertTrue(web.staticTexts["可视化真机验收"].waitForExistence(timeout: 20), app.debugDescription)
     app.buttons["visualization-preview-close"].tap()
     XCTAssertTrue(app.buttons["visualization-preview-close"].waitForNonExistence(timeout: 10))
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testFileSizeLimitsPhysicalDEV() throws {
+    struct Fixture: Decodable {
+      let connection: LiveFixture
+      let plainLabel: String
+      let fileName: String
+      let displayName: String
+      let pairingUri: String?
+    }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["FILE_PREVIEW_FIXTURE"])
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(raw.utf8))
+    if let pairingUri = fixture.pairingUri {
+    allowAcceptanceLocalNetworkPermission()
+    app.buttons["client-switch"].tap()
+    let add = app.buttons["add-client"]
+    for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+    XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+    selectConnectionMethod("扫码连接", agent: "codex")
+    let qr = app.textFields["codex-qr-description"]
+    XCTAssertTrue(qr.waitForExistence(timeout: 15)); qr.tap(); qr.typeText(pairingUri)
+    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    app.buttons["codex-connect-qr"].tap()
+    XCTAssertTrue(qr.waitForNonExistence(timeout: 90), app.debugDescription)
+    dismissSystemPasswordOffer()
+    } else {
+      connectLive(fixture.connection, supportsCreation: false, nickname: fixture.displayName)
+    }
+    app.buttons["open-sidebar"].tap()
+    XCTAssertTrue(app.buttons["sidebar-file-transfers"].waitForExistence(timeout: 15))
+    app.buttons["sidebar-file-transfers"].tap()
+    let select = app.buttons["choose-transfer-files"]
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: select)], timeout: 60), .completed)
+    let completed = app.descendants(matching: .any)["completed-transfer-" + fixture.fileName].firstMatch
+    // A resumed acceptance run observes the completed original transfer rather than uploading again.
+    if !completed.exists {
+      select.tap()
+      let browse = app.buttons.matching(NSPredicate(format: "label IN %@", ["Browse", "浏览"])).firstMatch
+      if browse.waitForExistence(timeout: 3) { browse.tap() }
+      let phone = app.staticTexts.matching(NSPredicate(format: "label IN %@", ["On My iPhone", "我的 iPhone", "我的iPhone"])).firstMatch
+      if phone.waitForExistence(timeout: 3) { phone.tap() }
+      let folder = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", fixture.displayName)).firstMatch
+      if folder.waitForExistence(timeout: 3) { folder.tap() }
+      let file = app.collectionViews.cells.matching(NSPredicate(format: "label CONTAINS %@", (fixture.fileName as NSString).deletingPathExtension)).firstMatch
+      XCTAssertTrue(file.waitForExistence(timeout: 15), app.debugDescription); file.tap()
+      let open = app.buttons.matching(NSPredicate(format: "label IN %@", ["Open", "打开"])).firstMatch
+      if open.waitForExistence(timeout: 2), open.isEnabled { open.tap() }
+      XCTAssertTrue(app.descendants(matching: .any)["completed-transfer-" + fixture.fileName].firstMatch.waitForExistence(timeout: 180), app.debugDescription)
+    }
+    app.buttons["完成"].tap()
+    if app.buttons["close-sidebar"].exists { app.buttons["close-sidebar"].tap() }
+    openDesktopTestConversation(fixture.connection)
+    let link = app.links.matching(NSPredicate(format: "label == %@", fixture.plainLabel)).firstMatch
+    let fallback = app.staticTexts.matching(NSPredicate(format: "label == %@", fixture.plainLabel)).firstMatch
+    let timeline = app.scrollViews["message-list"]
+    for _ in 0..<10 where !link.isHittable && !fallback.isHittable { timeline.swipeUp() }
+    if link.isHittable { link.tap() } else { XCTAssertTrue(fallback.isHittable, app.debugDescription); fallback.tap() }
+    let done = app.buttons.matching(NSPredicate(format: "identifier IN %@ OR label IN %@", ["QLOverlayDoneButtonAccessibilityIdentifier", "QLDoneButton"], ["关闭", "Close", "Done", "完成"])).firstMatch
+    XCTAssertTrue(done.waitForExistence(timeout: 180), app.debugDescription)
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", (fixture.fileName as NSString).deletingPathExtension)).firstMatch.waitForExistence(timeout: 30), app.debugDescription)
+    shot("large-file-system-preview", fullScreen: true)
+    // Terminate this isolated test App after capturing the system preview.
+    // Closing QuickLook via its accessibility tree is outside this size-limit scenario.
+    app.terminate()
   }
 }

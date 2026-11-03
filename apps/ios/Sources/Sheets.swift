@@ -836,8 +836,8 @@ struct GenerationSettings: View {
             Form {
                 if store.selectedThreadId != nil {
                     Section(L10n.tr("电脑当前设置")) {
-                        LabeledContent(L10n.tr("模型"), value: store.displayedModelLabel)
-                        LabeledContent(L10n.tr("推理强度"), value: store.displayedEffortLabel)
+                        LabeledContent(L10n.tr("模型"), value: store.currentModelLabel).accessibilityIdentifier("current-model")
+                        LabeledContent(L10n.tr("推理强度"), value: store.currentEffortLabel).accessibilityIdentifier("current-effort")
                     }
                     Section {
                         Text(L10n.tr("以下选择用于下次发送，发送前不会修改电脑当前设置。"))

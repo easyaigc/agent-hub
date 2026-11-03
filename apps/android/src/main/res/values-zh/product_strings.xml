@@ -592,7 +592,7 @@
     <string name="product_f79ced242cae7de99ae57a7b" formatted="false">"所选照片格式暂不支持"</string>
     <string name="product_3d5dd81de8125a16fc1009e0" formatted="false">"手动探测"</string>
     <string name="product_8a1cbddd8f6a469c47337b35" formatted="false">"手动连接"</string>
-    <string name="product_a083ecda40e3d778b88d4a25" formatted="false">"手机 → 电脑 · 每个文件最多 20 MB。同名文件会保留独立副本。"</string>
+    <string name="product_c095be469b1075f4cc3b5027" formatted="false">"手机 → 电脑 · 同名文件会保留独立副本。"</string>
     <string name="product_6686865a3ce748c2b600c220" formatted="false">"手机与电脑共用一套任务库。发现服务后，核对电脑上的实例信息和证书指纹，再点选连接。"</string>
     <string name="product_facbe65fab0cf4066de28b02" formatted="false">"手机主动停止"</string>
     <string name="product_db228c0a33c11a27a202ab63" formatted="false">"手机保存的文件已变化，请保留原记录并重新选择文件。"</string>
@@ -1478,7 +1478,7 @@
     <string name="product_8e86f9b1d54f2c5125b0deb2" formatted="false">"复制链接"</string>
     <string name="product_2fb49d3f22b3c3dbb741ca8c" formatted="false">"此文件尚未由电脑提供，请刷新对话后重试。"</string>
     <string name="product_d9f2388df8958d7ea9dee029" formatted="false">"手机上没有可打开此链接的应用。"</string>
-    <string name="product_2af6350946783700a521626a" formatted="false">"这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在、位于电脑授权目录内且不超过 20 MB，才能下载预览。"</string>
+    <string name="product_ca8f78e967f18a14066a6c07" formatted="false">"这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在且获得当前聊天的读取授权，才能下载预览。"</string>
     <string name="product_c8ab0e35e62d5095a6afddbf" formatted="false">"此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。"</string>
     <string name="product_8f890014289eae055dff502c" formatted="false">"手机暂不支持此类链接，可复制后在对应应用中打开。"</string>
     <string name="product_6efc764f1c437ea5b10a8874" formatted="false">"网页未能加载，请检查手机网络或网址。"</string>
@@ -1670,6 +1670,8 @@
     <string name="product_56c719be060ad74c5ec555e0" formatted="false">"需扫码配对"</string>
     <string name="product_f2916483f7b224ba572d9eb3" formatted="false">"改用扫码连接"</string>
     <string name="product_0d4432b4cf6213d854489227" formatted="false">"这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。"</string>
+    <string name="product_fc027ca08f9a594be7fe3ee7" formatted="false">"请选择非空的普通文件。"</string>
+    <string name="product_07af35eb503562f07c44be90" formatted="false">"电脑当前版本的文件大小上限为 %@，请更新电脑端。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

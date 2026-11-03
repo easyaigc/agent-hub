@@ -29,7 +29,7 @@ struct ComputerFileReceipt: Codable, Sendable, Identifiable {
 struct ComputerFileCatalog: Decodable, Sendable {
   let hostId: String
   let destinationDirectory: String
-  let maxFileBytes: Int
+  let maxFileBytes: Int?
   let files: [ComputerFileReceipt]
 }
 private struct PendingComputerFile: Codable, Sendable, Identifiable {
@@ -94,7 +94,7 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
     defer { busy = false }
     do {
       let value = try await adapter.fileTransfers(client)
-      guard value.maxFileBytes > 0, value.maxFileBytes <= 20 * 1024 * 1024,
+      guard value.maxFileBytes.map({ $0 > 0 }) ?? true,
         value.files.allSatisfy({ $0.hostId == client.id && UUID(uuidString: $0.id) != nil && ["prepared", "completed"].contains($0.phase) })
       else { throw HostServiceError.invalidResponse }
       for file in value.files { try await apply(file) }
@@ -114,7 +114,8 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
           let scoped = url.startAccessingSecurityScopedResource()
           defer { if scoped { url.stopAccessingSecurityScopedResource() } }
           let metadata = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .contentTypeKey])
-          guard metadata.isRegularFile == true, let size = metadata.fileSize, size > 0, size <= limit else { throw HostServiceError.message(L10n.tr("请选择非空且不超过 20 MB 的文件。")) }
+          guard metadata.isRegularFile == true, let size = metadata.fileSize, size > 0 else { throw HostServiceError.message(L10n.tr("请选择非空的普通文件。")) }
+          if let limit, size > limit { throw HostServiceError.message(L10n.tr("电脑当前版本的文件大小上限为 \(ByteCountFormatter.string(fromByteCount: Int64(limit), countStyle: .file))，请更新电脑端。")) }
           let data = try Data(contentsOf: url)
           guard data.count == size else { throw HostServiceError.message(L10n.tr("文件在读取时发生变化，请重新选择。")) }
           let file = ComputerFileManifest(hostId: hostId, id: UUID().uuidString.lowercased(), name: url.lastPathComponent, mediaType: metadata.contentType?.preferredMIMEType ?? "application/octet-stream", sizeBytes: data.count, sha256: HostService.hash(data))
@@ -193,7 +194,7 @@ struct FileTransfersView: View {
           }
           Button { selecting = true } label: { Label(L10n.tr("选择文件上传"), systemImage: "arrow.up.doc") }
             .disabled(model.catalog == nil || model.busy).accessibilityIdentifier("choose-transfer-files")
-        } footer: { Text(L10n.tr("手机 → 电脑 · 每个文件最多 20 MB。同名文件会保留独立副本。")) }
+        } footer: { Text(L10n.tr("手机 → 电脑 · 同名文件会保留独立副本。")) }
         if let activity = model.activity { Section { ProgressView(activity).accessibilityIdentifier("file-transfer-progress") } }
         else if model.busy { Section { ProgressView(L10n.tr("正在查询传输记录…")) } }
         if let error = model.error { Section { Text(error).foregroundStyle(.red) } }

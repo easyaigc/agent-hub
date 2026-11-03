@@ -357,7 +357,7 @@ struct HostService {
       file.hostId == client.id, file.threadId == threadId, !file.id.isEmpty,
       file.id != ".", file.id != "..", (file.id as NSString).lastPathComponent == file.id,
       !file.name.isEmpty, (file.name as NSString).lastPathComponent == file.name,
-      file.sizeBytes >= 0, file.sizeBytes <= 20 * 1024 * 1024,
+      file.sizeBytes >= 0,
       file.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil
     else { throw HostServiceError.wrongHost }
     return file
@@ -400,7 +400,7 @@ struct HostService {
       !current.id.isEmpty, current.id != ".", current.id != "..",
       (current.id as NSString).lastPathComponent == current.id,
       current.name == file.name, current.mediaType == file.mediaType,
-      current.sizeBytes >= 0, current.sizeBytes <= 20 * 1024 * 1024,
+      current.sizeBytes >= 0,
       current.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil
     else { throw HostServiceError.wrongHost }
     return current
@@ -409,7 +409,7 @@ struct HostService {
     guard file.hostId == client.id, !file.threadId.isEmpty, !file.id.isEmpty,
       !file.name.isEmpty, file.name != ".", file.name != "..",
       !file.name.contains("/"), !file.name.contains("\\"), !file.name.contains("\0"),
-      file.sizeBytes >= 0, file.sizeBytes <= 20 * 1024 * 1024,
+      file.sizeBytes >= 0,
       file.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil,
       client.readingTarget == nil || client.readingTarget?.hostId == client.id
     else { throw HostServiceError.wrongHost }

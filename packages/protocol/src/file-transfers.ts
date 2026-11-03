@@ -1,5 +1,4 @@
 /** Computer file delivery is independent of Agent tasks and chat attachments. */
-export const FILE_TRANSFER_MAX_BYTES = 20 * 1024 * 1024;
 export interface FileTransferManifest {
   hostId: string;
   id: string;
@@ -16,7 +15,8 @@ export interface FileTransferReceipt extends FileTransferManifest {
 export interface FileTransferCatalog {
   hostId: string;
   destinationDirectory: string;
-  maxFileBytes: number;
+  /** null means no configured file-size limit; older Hosts may advertise a finite limit. */
+  maxFileBytes: number | null;
   files: FileTransferReceipt[];
 }
 export function parseFileTransferManifest(input: unknown): FileTransferManifest {
@@ -53,10 +53,9 @@ export function parseFileTransferManifest(input: unknown): FileTransferManifest 
     typeof value.sizeBytes !== 'number' ||
     !Number.isSafeInteger(value.sizeBytes) ||
     value.sizeBytes < 1 ||
-    value.sizeBytes > FILE_TRANSFER_MAX_BYTES ||
     typeof value.sha256 !== 'string' ||
     !/^[a-f0-9]{64}$/.test(value.sha256)
   )
-    throw new TypeError('无效文件清单；文件须非空且不超过 20 MB，名称不能包含路径或系统保留字符');
+    throw new TypeError('无效文件清单；文件须非空，名称不能包含路径或系统保留字符');
   return value as unknown as FileTransferManifest;
 }

@@ -79,3 +79,9 @@ apps/ios/FilePreviewKit/.swiftpm/
 !/docs/acceptance/recent-projects-20261101.md
 
 !/docs/acceptance/windows-codex-startup-safety-20261101.md
+
+# Sanitized file-transfer and preview size-limit acceptance.
+!/docs/acceptance/file-size-limits-20261103.md
+
+# Sanitized next-input generation display acceptance.
+!/docs/acceptance/next-turn-generation-display-20261104.md

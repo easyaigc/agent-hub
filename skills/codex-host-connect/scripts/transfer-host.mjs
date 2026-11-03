@@ -7,7 +7,6 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import https from 'node:https';
 
-const MAX_BYTES = 20 * 1024 * 1024;
 const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const requireValue = (value, code) => {
@@ -114,14 +113,14 @@ async function sourceBytes(path) {
   try {
     const stat = await file.stat();
     requireValue(
-      stat.isFile() && stat.size > 0 && stat.size <= MAX_BYTES,
+      stat.isFile() && Number.isSafeInteger(stat.size) && stat.size > 0,
       'FILE_SIZE_OUT_OF_RANGE',
     );
     const parts = [];
     let size = 0;
     for await (const part of file.createReadStream({ autoClose: false })) {
       size += part.length;
-      requireValue(size <= MAX_BYTES, 'FILE_SIZE_OUT_OF_RANGE');
+      requireValue(size <= stat.size, 'SOURCE_CHANGED_DURING_READ');
       parts.push(part);
     }
     requireValue(size > 0 && size === stat.size, 'SOURCE_CHANGED_DURING_READ');
@@ -148,7 +147,6 @@ function validateManifest(file) {
       /^[\w.+-]+\/[\w.+-]+$/.test(file.mediaType) &&
       Number.isSafeInteger(file.sizeBytes) &&
       file.sizeBytes > 0 &&
-      file.sizeBytes <= MAX_BYTES &&
       typeof file.sha256 === 'string' &&
       /^[a-f0-9]{64}$/.test(file.sha256),
     'INVALID_FILE_MANIFEST',

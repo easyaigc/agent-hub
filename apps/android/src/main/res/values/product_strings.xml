@@ -592,7 +592,7 @@
     <string name="product_f79ced242cae7de99ae57a7b" formatted="false">"Selected photo format unsupported"</string>
     <string name="product_3d5dd81de8125a16fc1009e0" formatted="false">"Manual probe"</string>
     <string name="product_8a1cbddd8f6a469c47337b35" formatted="false">"Manual connection"</string>
-    <string name="product_a083ecda40e3d778b88d4a25" formatted="false">"Phone → Computer · Up to 20 MB per file. Files with the same name are kept as separate copies."</string>
+    <string name="product_c095be469b1075f4cc3b5027" formatted="false">"Phone → Computer · Files with the same name are kept as separate copies."</string>
     <string name="product_6686865a3ce748c2b600c220" formatted="false">"Phone and computer share one task database. After discovering a service, verify its instance and certificate fingerprint on the computer, then tap to connect."</string>
     <string name="product_facbe65fab0cf4066de28b02" formatted="false">"Stopped from phone"</string>
     <string name="product_db228c0a33c11a27a202ab63" formatted="false">"The file saved on this phone changed. Keep the original record and select the file again."</string>
@@ -1478,7 +1478,7 @@
     <string name="product_8e86f9b1d54f2c5125b0deb2" formatted="false">"Copy Link"</string>
     <string name="product_2fb49d3f22b3c3dbb741ca8c" formatted="false">"The computer has not provided this file. Refresh the conversation and try again."</string>
     <string name="product_d9f2388df8958d7ea9dee029" formatted="false">"No app on this phone can open this link."</string>
-    <string name="product_2af6350946783700a521626a" formatted="false">"This file is on the computer and cannot be opened directly on your phone. Refresh the conversation. To download and preview it, the file must exist, be within the computer’s authorized directories, and be no larger than 20 MB."</string>
+    <string name="product_ca8f78e967f18a14066a6c07" formatted="false">"This file is on the computer and cannot be opened directly on your phone. Refresh the conversation. To download and preview it, the file must exist and have read permission for this conversation."</string>
     <string name="product_c8ab0e35e62d5095a6afddbf" formatted="false">"This URL points to the computer’s loopback address. Use a LAN or VPN URL that your phone can reach."</string>
     <string name="product_8f890014289eae055dff502c" formatted="false">"This link type is not supported on your phone. Copy it to open in a compatible app."</string>
     <string name="product_6efc764f1c437ea5b10a8874" formatted="false">"The webpage could not load. Check your phone’s network connection or the URL."</string>
@@ -1670,6 +1670,8 @@
     <string name="product_56c719be060ad74c5ec555e0" formatted="false">"Scan the desktop QR code to pair"</string>
     <string name="product_f2916483f7b224ba572d9eb3" formatted="false">"Connect with a QR code"</string>
     <string name="product_0d4432b4cf6213d854489227" formatted="false">"This computer does not offer automatic connections. Scan its pairing QR code, or update EasyWork to connect by tapping."</string>
+    <string name="product_fc027ca08f9a594be7fe3ee7" formatted="false">"Choose a nonempty regular file."</string>
+    <string name="product_07af35eb503562f07c44be90" formatted="false">"This computer version limits files to %@. Update the computer app."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

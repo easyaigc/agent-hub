@@ -25,3 +25,9 @@ R3最终SDK seal d7e4d46624a8edf1e23b38ee36228c7142e30e0e8411ac0297d57e9660cdb2a
 本次运行采用实际14GiB入口资源门槛与明确reserve/增长预算；原engine没有cold前资源hook，期间抽样只记观测，不伪称同步门槛。全部原worker闭合后正常关闭唯一自有VM，原QEMU wait=0/双EOF/fsync与端口释放已核；R66数据/密钥/各scope保留。Android fresh setup未声称强制显式重新注册，iOS身份策略差异继续单列。真实Provider/SAF/OS/完整UI/物理/24组和双端整包仍未通过，下一步实际Main迁移界面及P8短视口分别验收。
 
 最终完整pnpm check仅执行一次，原Popen wait=0/双EOF/fsync，776.870秒；42组1518项，1456通过、62跳过、0失败/取消。独立parity、生成、九文档格式和diff/cached检查通过。Root核895源码、10绑定及HEAD/index/19路径前后一致，并从本任务官方子Agent记录核实实际Terra/medium。未逐次复制的正式工具返回已从官方own-child记录恢复，没有为了补证重跑；入口没有可核验速度参数。编译/检查与这两项有限Native均不替代完整产品DEV。
+
+阶段交付：源 `f1e82326eb7e5a12518fb7ca0c09858d62f7580c`、tree `4da26cbf12fc24c4925705d1eefbdac83697a892`，19个文件指纹与提交意图逐项一致且工作树干净；已创建[Gitea PR127](https://git.51easyai.com/BCAI/agent-hub-app/pulls/127)，目标main。准确源CI通过后再合并，当前不记作已交付主线；后续Main/P8已转新安卓专用阶段，不在CI期间改写本提交。
+
+PR127已实际合入 main `e1f11b5ac7fd30641e51d7dd4276f18226b92a73`，父提交3dde5760/f1e82326、tree与源一致；源CI11278 workspace27163及iOS27164均成功。远端head、本地branch和tracking引用已清理。主线CI11279仍在核对，不用源CI替代；自动公开同步11280已报告成功，最终独立闭合另登记。
+
+最终交付闭合：准确main e1f11b5a的CI11279 workspace27165/iOS27166均success；自动同步11280/job27167成功，公开提交82e37d5c5871dc2c77d4de7bbb8d3cb953e81e27的tree4da26cbf与来源trailer相符。Root重算60组原始gzip双流/等待回执及merge对象，三个阶段77分支引用均实际不存在，T新阶段源未被FF覆盖。

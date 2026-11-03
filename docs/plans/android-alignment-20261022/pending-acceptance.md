@@ -47,7 +47,7 @@
 | P7同包只读cold与旧失败                    | [阶段70](records/stage70-p7-paired-readonly-cold.md)新UUID/同SDK、原进程自然退出后不同PID/start的first+readonly cold两方法有限通过；旧R9 cold anchor复合校验失败仍未解释，原数据不重放                                                              | 当前通过仅9条普通已初始化目标样本；旧失败待有界复现核对，不放宽anchor；pristine/完整范围/Controller/UI与物理继续                                                                                                |
 | P7 pristine无root KEY首次导入             | 阶段69以actual目的Session正常草稿发布/清空初始化root KEY，再冻结source；没有覆盖全新安装无KEY入口                                                                                                                                                   | 单列新安装/既有空目标两种前置，沿真实入口补验；不放宽existing-only策略或把初始化样本写作新安装通过                                                                                                              |
 | P7非空资料完整范围与通知owner             | 阶段69仅阅读账本、通知偏好/leases/unknown receipts及normalized CAF；voice preference原记录缺省，foreground identity/通知archive producer未覆盖                                                                                                      | 继续24项系统范围、全局通知协调/端口、语音原件/偏好、Main完整UI/物理及双端迁移；声音catalog不代替完整语音，iOS身份恢复与Android失效审计策略差异保留                                                              |
-| P8 Main偏好提案运行验收                   | 新R3提案仅独立静态审查通过，未纳入当前T源码；无SDK/Native/Main像素或busy-disabled通过                                                                                                                                                               | 在专属阶段审查接入后，按实际Main入口与当前指纹验收；不替代原七组/issuer/网络/桌面及shared default family矩阵                                                                                                    |
+| P8 Main短视口运行验收                     | 阶段73基本偏好菜单有限通过；阶段78共用源码已采用但新SDK/短视口/长字段AX/完整像素或busy-disabled仍未通过                                                                                                                                             | 在专属阶段审查接入后，按实际Main入口与当前指纹验收；不替代原七组/issuer/网络/桌面及shared default family矩阵                                                                                                    |
 
 阶段74更新：语音原件三窗口的Controller first/readonlycold组件通过，真实麦克风正常/取消/中断、识别、SAF及Main完整迁移UI/物理仍待验；iOS sealed/provisional恢复策略与整包差异保留。P9新SystemUI诊断在越界子节点处拒绝，未点击/无PNG；新crop边界候选尚未通过Native，旧失败不升级，见[阶段74](records/stage74-p7-voice-originals-paired.md)。
 
@@ -56,3 +56,9 @@
 阶段76：R6三包SDK/230独立Host向量及双背景事实有限通过；三个独立Native scope分别在选择动作/Dimmed/expanded容器的首次AX拒绝，均未点击/无PNG。完整SystemUI视觉/AX包含关系和九类链路向量、真实Host/OEM/物理仍待验。原scope不重放，三次权限和专用VM已收尾；继续P7不受此项阻塞，见[原生记录](records/stage76-p9-native.md)。
 
 阶段77：已有惰性资料目的端合并的R3 first/readonlycold与实际计数已有限通过，原first库存失败/未做cold那一run保留不重放。目的端有真实电脑连接仍拒绝迁移，未改成合并两套连接。Main完整迁移UI、SAF/系统原件、完整24组、通知身份策略与iOS互通继续独立待验，见[档案](records/stage77-p7-existing-originals-paired.md)。P8重建保护R2和Main/P8共用SDK静态独审通过，但须按阶段77最终源码重新绑定后采用，实际新profile/原生场景仍待验；Source99仅提案标签，未发号或复用旧scope。
+
+阶段78：实际Main迁移四方法与P8短视口中浅/英深两case的源码已采用，新40源/896输入共用SDK、各自原生执行及iOS逐项对照仍待验；不复用旧profile或Source99提案scope。Main隔离发现只限DEBUG独立验收私有Context，P8仍Demo/nativeRuntime=false；SAF/OS grant/生产启动、完整UI/API26/37/物理DEV和全部迁移矩阵保持开放，见[独立档案](records/stage78-p7-main-p8-short-ui.md)。
+
+阶段78首Native：run5ec2c585首方法BACK-down注入拒绝，1项失败，owner/原进程与VM已明确退出；其余三方法/P8未做，不重放或拆分升级。原窗口检查通过，test输入时序修正不改变产品断言；新SDK/原生运行待验，见[档案](records/stage78-p7-main-p8-short-ui.md)。
+
+阶段78最终：P7修订SDK及guarded Main四方法有限通过；P8新run84febd34中文首case的easywork-name原生AX锚0/1失败、英文未做，准确节点导出/就绪继续修复。两外层UNKNOWN原回执保持，原R1 Native失败不升级。owner/原PID与VM已关闭，失败scope保留；SAF、实际shipping启动/完整UI/物理继续开放，见[档案](records/stage78-p7-main-p8-short-ui.md)。

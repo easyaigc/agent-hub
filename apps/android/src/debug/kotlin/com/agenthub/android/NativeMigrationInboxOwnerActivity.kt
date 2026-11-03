@@ -9,12 +9,19 @@ import android.system.OsConstants
 import java.io.File
 import java.util.UUID
 
+/** Debug-only, same-Session configuration; no Session factory or public ingress. */
+internal fun interface NativeMigrationPrivateSessionConfiguration { fun configure(session: MobileSession) }
+
 /** Same Main lifecycle and owner; only the local installation is supplied before launch. */
 class NativeMigrationInboxOwnerActivity : MainActivity() {
-    private class Installation(val run: String,val context: Context,val session: MobileSession)
+    private class Installation(val run: String,val context: Context,val session: MobileSession,val discoveryEnabled: Boolean,
+        val sessionConfiguration: NativeMigrationPrivateSessionConfiguration?) {
+        var activity: NativeMigrationInboxOwnerActivity?=null
+    }
     companion object {
         private var active: Installation?=null
-        internal fun prepare(run: String,context: Context,session: MobileSession) {
+        internal fun prepare(run: String,context: Context,session: MobileSession,discoveryEnabled: Boolean=true,
+            sessionConfiguration: NativeMigrationPrivateSessionConfiguration?=null) {
             check(Looper.myLooper()!=Looper.getMainLooper())
             require(UUID.fromString(run).toString()==run)
             require(context.packageName=="com.easyai.agenthub.android.acceptance"&&context.applicationContext===context)
@@ -30,7 +37,12 @@ class NativeMigrationInboxOwnerActivity : MainActivity() {
                 require(OsConstants.S_ISDIR(stat.st_mode)&&stat.st_uid==Process.myUid()&&stat.st_mode and 0x3f==0)
             }
             require(File(session.migrationStorage.coordinationKey).canonicalFile==File(expected,"installation"))
-            synchronized(this){check(active==null);active=Installation(run,context,session)}
+            require(discoveryEnabled==(sessionConfiguration==null))
+            synchronized(this){check(active==null);active=Installation(run,context,session,discoveryEnabled,sessionConfiguration)}
+        }
+        /** Exact prepared owner only; never queries/replaces another installation. */
+        internal fun activity(run: String): NativeMigrationInboxOwnerActivity?=synchronized(this) {
+            check(active?.run==run);active?.activity
         }
         internal fun release(run: String) = synchronized(this) {
             check(active?.run==run);active=null
@@ -39,8 +51,16 @@ class NativeMigrationInboxOwnerActivity : MainActivity() {
     private var captured: Installation?=null
     private fun installation(): Installation=captured ?: synchronized(Companion) {
         checkNotNull(active){"An explicit private migration installation must be prepared before launch"}
-    }.also {captured=it}
+    }.also {original->captured=original;synchronized(Companion){original.activity=this}}
     override fun runtimeContext(): Context=installation().context
+    override fun runtimeDiscoveryEnabled(): Boolean=installation().discoveryEnabled
+    override fun configurePrivateRuntimeSession(value: MobileSession) {
+        val original=installation();check(!original.discoveryEnabled)
+        checkNotNull(original.sessionConfiguration).configure(value)
+        check(value.migrationStorage.coordinationKey==original.session.migrationStorage.coordinationKey)
+    }
+    internal fun currentSessionOrNull(): MobileSession?=try {session}catch(_: UninitializedPropertyAccessException){null}
+    internal fun currentMigrationOrNull(): NativeMigrationController?=try {migration}catch(_: UninitializedPropertyAccessException){null}
     override fun createInitialSession(context: Context): InitialSession {
         val original=installation();check(context===original.context)
         return InitialSession(original.session,false)

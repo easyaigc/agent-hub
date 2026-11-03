@@ -1622,3 +1622,9 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段76 F52/F54/F56：产品页面、token、文案与iOS界面未改。SystemUI原生验收只允许准确owned row的范围采集与最终刷新核对；背景通用选择动作仅观察，不执行。R6按精确Normal/Dimmed family各采18项新鲜事实及显式policy v3、总最多2clip，不能用旧部分AX补事实；其他节点和像素范围不放宽。完整通知界面/低API/字体/TalkBack/真机继续待验，见[阶段76原生记录](../plans/android-alignment-20261022/records/stage76-p9-native.md)。
 
 阶段77 F55/F56：已有惰性资料目的端合并仍走原Controller，不改变生产页面/token/文案或iOS界面。源码接入不等于Main密码/预览/确认/取消/错误/成功、短视口/方向/字号/AX通过；这些随独立Main阶段逐项验收，见[阶段77](../plans/android-alignment-20261022/records/stage77-p7-existing-originals-paired.md)。
+
+阶段78 F02/F03/F04/F55/F56／UI01/UI03/UI06/UI12：增加实际Main迁移密码/返回/预览/取消/确认及P8长字段短视口的独立原生验收入口，不改生产布局、token、文案或iOS页面。共用两包SDK源码已采用，构建/真实AX/视觉各自待验；P8固定Activity字号/方向且nativeRuntime=false/Demo，不能冒称系统字体/TalkBack或shipping runtime。Main guarded composition与初始已恢复fixture边界见[阶段78](../plans/android-alignment-20261022/records/stage78-p7-main-p8-short-ui.md)，SAF、完整方向/AX/物理仍开放。
+
+阶段78修订：首套SDK不等于UI通过；原Native在BACK DOWN注入拒绝处失败，窗口护栏本身通过，整方法及P8不升级。验收器只修事件时间/同键UP并保留真实返回，生产token/文案/页面与iOS保持；修订新包、新原生结果待验。
+
+阶段78限定验收：guarded Main密码阈值/Settings-Back/Done/Cancel/系统Back、已有连接禁入、候选取消重开、确认和PREVIOUS_IMPORT四方法本次通过，44组精确AX等待与owner切换另核；不代表shipping初始bootstrap或完整视觉。P8中文短视口在easywork-name native AX锚0/1失败、英文未验，不据Compose字段断言升级原生AX或TalkBack通过。iOS直接导入/无六身份区等差异仍开放，见[阶段78](../plans/android-alignment-20261022/records/stage78-p7-main-p8-short-ui.md)。

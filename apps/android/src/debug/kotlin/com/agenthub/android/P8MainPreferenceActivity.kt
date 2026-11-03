@@ -17,9 +17,21 @@ class P8MainPreferenceActivity : MainActivity() {
     internal lateinit var ownedContext: P8MainFilesContext; private set
     internal lateinit var ownedStorage: NativeSessionStorage; private set
     internal val deny=P8MainDenyPorts()
+    internal val ownership=P8MainActivityOwners.observe(this,deny)
     internal var preInitDefaultFamiliesAbsent=false; private set
     internal var afterCreateDefaultFamiliesAbsent=false; private set
+    // Proposal-only short-viewport fixture; no run/SDK/device has been allocated.
+    // The resource override belongs only to this Activity instance.
+    // It does not call Settings.System, wm, setRequestedOrientation or mutate application resources.
+    override fun attachBaseContext(base: Context) {
+        P8MainActivityOwners.requirePrepared(ownership)
+        val config=android.content.res.Configuration(base.resources.configuration).apply {fontScale=2f}
+        super.attachBaseContext(base.createConfigurationContext(config))
+    }
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
+        P8MainActivityOwners.beginCreate(ownership,savedInstanceState,lastCustomNonConfigurationInstance)
+        try {
         val actual=applicationContext
         check(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance"&&actual.packageName==BuildConfig.APPLICATION_ID)
         check(actual.applicationInfo.uid==android.os.Process.myUid()&&actual.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE!=0)
@@ -29,20 +41,138 @@ class P8MainPreferenceActivity : MainActivity() {
         // This is not a claim about Application/ContentProvider/instrumentation initialization.
         P8MainFilesContext.assertOrdinaryOwner(actual)
         preInitDefaultFamiliesAbsent=P8MainFilesContext.assertDefaultFamiliesAbsent(actual)
-        ownedContext=P8MainFilesContext.open(actual,run)
-        super.onCreate(savedInstanceState)
-        if(!::ownedStorage.isInitialized)ownedStorage=session.migrationStorage
+        check(run==ownership.launch?.run)
+        ownership.contextAttempted=true
+        ownedContext=P8MainFilesContext.open(actual,run);ownership.context=ownedContext
+        ownership.mainAttempted=true
+        super.onCreate(null)
+        P8MainActivityOwners.captureMain(ownership,session,migration)
+        P8MainActivityOwners.completeCreate(ownership)
         afterCreateDefaultFamiliesAbsent=P8MainFilesContext.assertDefaultFamiliesAbsent(actual)
+        } catch(error: Throwable) {P8MainActivityOwners.failed(ownership,error);throw error}
+        finally {
+            // Retain every returned handle even when Main/restore/launch fails before onActivity.
+            P8MainActivityOwners.captureMain(ownership,runCatching {session}.getOrNull(),runCatching {migration}.getOrNull())
+        }
+    }
+    override fun onNewIntent(intent: Intent) {
+        P8MainActivityOwners.reject(ownership,"New intent is outside this finite fixture")
+    }
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        P8MainActivityOwners.reject(ownership,"configuration change is outside this finite fixture")
+    }
+    override fun onRetainCustomNonConfigurationInstance(): Any? =
+        P8MainActivityOwners.reject(ownership,"retained-state request is outside this finite fixture")
+    override fun onDestroy() {
+        P8MainActivityOwners.captureMain(ownership,runCatching {session}.getOrNull(),runCatching {migration}.getOrNull())
+        ownership.destroyEntered=true
+        if(isChangingConfigurations)P8MainActivityOwners.failed(ownership,IllegalStateException("Configuration destruction"))
+        try {super.onDestroy();ownership.destroyConfirmed=true}
+        catch(error: Throwable){P8MainActivityOwners.failed(ownership,error);throw error}
     }
     override fun runtimeContext(): Context=ownedContext
     override fun createInitialSession(context: Context): InitialSession {
-        check(context===ownedContext)
+        P8MainActivityOwners.requirePrepared(ownership)
+        check(context===ownedContext&&!ownership.storageAttempted&&!ownership.sessionAttempted)
+        ownership.migration=migration
+        ownership.storageAttempted=true
         ownedStorage=NativeSessionStorage(context,"session",ownedContext.alias,existingKeyOnly=true,existingNamespaceOnly=true)
+        ownership.storage=ownedStorage
+        ownership.sessionAttempted=true
         val isolated=MobileSession(ownedStorage)
+        val binding=P8MainActivityOwners.Binding(isolated,ownedStorage,ownedContext,migration,deny)
+        ownership.bindings.add(binding)
         // Both provider IDs are fenced; resetAcceptance(reader,commands) alone retains production EasyWork.
         isolated.resetAcceptance(deny,deny,acceptanceEasyWorkPorts=deny to deny)
+        binding.portsInstalled=true
         return InitialSession(isolated,needsRestore=true,nativeRuntime=false)
     }
+}
+
+
+/** Finite fixture ownership fence, not shipping configuration support. All attempts and returned
+ * handles stay strongly reachable in this original PID; there is no reset/retry/forget API. */
+internal object P8MainActivityOwners {
+    class Launch(val run: String) {
+        val pid=android.os.Process.myPid();val nonce=NativeChatNotificationColdStart.processNonce
+        val instances=mutableListOf<Instance>();var closed=false;var problem: Throwable?=null
+    }
+    class Binding(val session: MobileSession,val storage: NativeSessionStorage,val context: P8MainFilesContext,
+        val migration: NativeMigrationController,val ports: P8MainDenyPorts) {var portsInstalled=false}
+    class Instance(val launch: Launch?,val activity: P8MainPreferenceActivity,val ports: P8MainDenyPorts) {
+        val bindings=mutableListOf<Binding>();val observedSessions=mutableListOf<MobileSession>()
+        val observedMigrations=mutableListOf<NativeMigrationController>()
+        var context: P8MainFilesContext?=null;var storage: NativeSessionStorage?=null;var migration: NativeMigrationController?=null
+        var createEntered=false;var contextAttempted=false;var mainAttempted=false;var storageAttempted=false;var sessionAttempted=false
+        var createConfirmed=false;var destroyEntered=false;var destroyConfirmed=false;var problem: Throwable?=null
+    }
+    private val launches=mutableListOf<Launch>();private val allInstances=mutableListOf<Instance>()
+    private var active: Launch?=null;private var unexpected: Throwable?=null
+    private fun main(){check(android.os.Looper.myLooper()===android.os.Looper.getMainLooper())}
+    fun prepare(run: String): Launch {
+        main();check(UUID.fromString(run).toString()==run&&active==null&&unexpected==null)
+        return Launch(run).also {launches.add(it);active=it}
+    }
+    fun observe(activity: P8MainPreferenceActivity,ports: P8MainDenyPorts): Instance {
+        main();val launch=active;val row=Instance(launch,activity,ports)
+        allInstances.add(row);launch?.instances?.add(row)
+        if(launch==null||launch.closed||launch.instances.size!=1)failed(row,IllegalStateException("Unexpected Activity creation/recreation"))
+        return row
+    }
+    fun failed(row: Instance,error: Throwable) {
+        main();if(row.problem==null)row.problem=error
+        val launch=row.launch;if(launch==null){if(unexpected==null)unexpected=error}else if(launch.problem==null)launch.problem=error
+    }
+    fun reject(row: Instance,reason: String): Nothing {
+        val error=IllegalStateException(reason);failed(row,error);throw error
+    }
+    fun requirePrepared(row: Instance) {
+        main();val launch=checkNotNull(row.launch)
+        check(unexpected==null&&active===launch&&!launch.closed&&launch.problem==null&&row.problem==null&&
+            launch.instances.size==1&&launch.instances.single()===row&&!row.destroyEntered)
+        check(launch.pid==android.os.Process.myPid()&&launch.nonce==NativeChatNotificationColdStart.processNonce)
+    }
+    fun beginCreate(row: Instance,saved: Bundle?,retained: Any?) {
+        main();if(row.createEntered)reject(row,"Repeated onCreate")
+        row.createEntered=true
+        if(saved!=null||retained!=null)reject(row,"Saved/retained recreation is outside this finite fixture")
+        requirePrepared(row)
+    }
+    fun captureMain(row: Instance,session: MobileSession?,migration: NativeMigrationController?) {
+        main()
+        if(session!=null&&row.observedSessions.none {it===session})row.observedSessions.add(session)
+        if(migration!=null&&row.observedMigrations.none {it===migration})row.observedMigrations.add(migration)
+        if(session!=null&&row.bindings.none {it.session===session})failed(row,IllegalStateException("Main returned an unbound Session"))
+        if(migration!=null&&row.migration!==migration)failed(row,IllegalStateException("Main returned an unbound migration owner"))
+    }
+    fun completeCreate(row: Instance) {
+        requirePrepared(row);val binding=row.bindings.single()
+        check(row.contextAttempted&&row.mainAttempted&&row.storageAttempted&&row.sessionAttempted&&binding.portsInstalled)
+        check(row.context===binding.context&&row.storage===binding.storage&&row.migration===binding.migration&&row.ports===binding.ports)
+        check(row.observedSessions.size==1&&row.observedSessions.single()===binding.session&&
+            row.observedMigrations.size==1&&row.observedMigrations.single()===binding.migration&&binding.session.migrationStorage===binding.storage)
+        row.createConfirmed=true
+    }
+    fun requireCurrent(row: Instance) {requirePrepared(row);check(row.createConfirmed&&!row.destroyConfirmed)}
+    fun close(launch: Launch) {
+        main();check(active===launch&&unexpected==null&&launch.problem==null&&!launch.closed)
+        val row=launch.instances.single()
+        check(row.createConfirmed&&row.destroyEntered&&row.destroyConfirmed&&row.problem==null)
+        launch.closed=true;active=null
+    }
+    fun complete(owned: List<Launch>): Boolean {
+        main()
+        return unexpected==null&&active==null&&owned.all {it.closed&&it.problem==null&&it.instances.size==1}&&
+            owned.all {row->launches.any {it===row}}&&launches.all {it.closed&&it.problem==null&&it.instances.size==1}&&
+            allInstances.size==launches.size&&allInstances.all {row->launches.any {it===row.launch}&&row.createConfirmed&&row.destroyConfirmed&&row.problem==null}
+    }
+    fun summary(launch: Launch?)=launch?.let {value->mapOf("pid" to value.pid,"nonce" to value.nonce,"closed" to value.closed,
+        "problem" to value.problem?.javaClass?.simpleName,"instances" to value.instances.map {row->mapOf(
+            "activityIdentity" to System.identityHashCode(row.activity),"createEntered" to row.createEntered,"createConfirmed" to row.createConfirmed,
+            "contextAttempted" to row.contextAttempted,"mainAttempted" to row.mainAttempted,"storageAttempted" to row.storageAttempted,
+            "sessionAttempted" to row.sessionAttempted,"bindings" to row.bindings.size,"observedSessions" to row.observedSessions.size,
+            "observedMigrations" to row.observedMigrations.size,"destroyEntered" to row.destroyEntered,"destroyConfirmed" to row.destroyConfirmed,
+            "problem" to row.problem?.javaClass?.simpleName)})}
 }
 
 /** Only finite local fixture files are forwarded; app services and content/permissions are not virtualized as real success. */

@@ -45,7 +45,7 @@ open class MainActivity : ComponentActivity() {
             check(session.ownsMigrationLease(lease))
             val original=session
             val fresh=restoreNativeMigrationSession(runtimeContext(),original,lease,
-                create={store->MobileSession(store).also {it.migrationController=migration}},
+                create={store->MobileSession(store).also {configurePrivateSession(it);it.migrationController=migration}},
                 beforeCommit={check(!isDestroyed&&!isChangingConfigurations)})
             session=fresh
             configureRuntime(fresh,fresh.migrationStorage,migrationRestore=true);fresh.resumeSelectionsAfterMigration();renderSession()
@@ -57,10 +57,7 @@ open class MainActivity : ComponentActivity() {
         value.migrationController=migration
         readNetworkMonitor=NativeReadNetworkMonitor(runtimeContext(),value::observeNetworkReadPath)
         value.configureVoice(runtimeContext())
-        if(!NativeChatNotificationColdStart.bound(value)){
-            value.discovery=CodexHostDiscovery(runtimeContext(),value,storage)
-            value.easyWorkDiscovery=EasyWorkDiscovery(runtimeContext(),value,storage)
-        }
+        configureDiscovery(value,storage)
         value.configureExternalInbox(runtimeContext(),migrationRestore);value.configurePhotoPicker(runtimeContext());value.configureCameraCapture(runtimeContext());value.configureDocumentPicker(runtimeContext());value.configureRecentPhotos(runtimeContext(),NativeChatNotificationColdStart.recentPhotoSource(runtimeContext(),value) ?: NativeRecentPhotos(runtimeContext()))
         value.configureChatNotifications(runtimeContext())
     }
@@ -74,7 +71,9 @@ open class MainActivity : ComponentActivity() {
         session.enterForeground()
         if(!nativeRuntime)return
         session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(runtimeContext())
-        readNetworkMonitor.start();session.discovery?.start();session.easyWorkDiscovery?.start()
+        readNetworkMonitor.start()
+        if(discoveryEnabled()){session.discovery?.start();session.easyWorkDiscovery?.start()}
+        else check(session.discovery==null&&session.easyWorkDiscovery==null)
     }
     private var systemBarsDark: Boolean? = null
     private var externalOperationId=java.util.UUID.randomUUID().toString()
@@ -96,6 +95,35 @@ open class MainActivity : ComponentActivity() {
     }
     /** Application framework context stays intact; integrations may use a scoped installation. */
     protected open fun runtimeContext(): android.content.Context=applicationContext
+    /** Fixed debug-fixture boundary; public intents and ordinary App builds cannot disable discovery. */
+    protected open fun runtimeDiscoveryEnabled(): Boolean=true
+    /** No replacement/factory: only the guarded private debug installation receives this hook. */
+    protected open fun configurePrivateRuntimeSession(value: MobileSession) {}
+    private fun discoveryEnabled(): Boolean {
+        val enabled=runtimeDiscoveryEnabled()
+        if(!enabled) {
+            val context=runtimeContext()
+            check(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance"&&
+                packageName==BuildConfig.APPLICATION_ID&&context.packageName==BuildConfig.APPLICATION_ID&&
+                applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE!=0&&
+                context.applicationInfo.uid==android.os.Process.myUid())
+            check(context!==applicationContext&&context.applicationContext===context)
+        }
+        return enabled
+    }
+    private fun configurePrivateSession(value: MobileSession) {
+        if(discoveryEnabled())return
+        val storage=value.migrationStorage
+        configurePrivateRuntimeSession(value)
+        check(value.migrationStorage===storage&&value.discovery==null&&value.easyWorkDiscovery==null)
+    }
+    private fun configureDiscovery(value: MobileSession,storage: NativeSessionStorage) {
+        if(!discoveryEnabled()){check(value.discovery==null&&value.easyWorkDiscovery==null);return}
+        if(!NativeChatNotificationColdStart.bound(value)) {
+            value.discovery=CodexHostDiscovery(runtimeContext(),value,storage)
+            value.easyWorkDiscovery=EasyWorkDiscovery(runtimeContext(),value,storage)
+        }
+    }
     protected class InitialSession(val session: MobileSession,val needsRestore: Boolean=true,val nativeRuntime: Boolean=true)
     /** Debug fixtures can supply an isolated installation before the real lifecycle starts. */
     protected open fun createInitialSession(context: android.content.Context): InitialSession {
@@ -112,6 +140,7 @@ open class MainActivity : ComponentActivity() {
         val initial=if(retained==null&&cold?.session==null)createInitialSession(runtimeContext())else null
         session=retained ?: cold?.session ?: checkNotNull(initial).session
         nativeRuntime=(retainedState as? Retained)?.nativeRuntime ?: initial?.nativeRuntime ?: true
+        if(nativeRuntime)configurePrivateSession(session)
         if(!nativeRuntime) {
             // Only an independent debug acceptance subclass can request this finite UI surface.
             check(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance"&&
@@ -125,10 +154,7 @@ open class MainActivity : ComponentActivity() {
         readNetworkMonitor=NativeReadNetworkMonitor(runtimeContext(),session::observeNetworkReadPath)
         if(!session.migrationPaused)session.configureChatNotifications(runtimeContext())
         session.configureVoice(runtimeContext())
-        if(!NativeChatNotificationColdStart.bound(session)) {
-            session.discovery = CodexHostDiscovery(runtimeContext(), session, storage)
-            session.easyWorkDiscovery=EasyWorkDiscovery(runtimeContext(),session,storage)
-        }
+        configureDiscovery(session,storage)
         }
         externalOperationId=savedInstanceState?.getString("agentHubExternalOperationId")?.takeIf { value -> runCatching { java.util.UUID.fromString(value).toString()==value }.getOrDefault(false) } ?: externalOperationId
         if(nativeRuntime) {

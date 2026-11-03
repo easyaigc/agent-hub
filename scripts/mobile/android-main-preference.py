@@ -27,6 +27,7 @@ encoded = first.encoded
 sha = lambda raw: hashlib.sha256(raw).hexdigest()
 TOOL = "scripts/mobile/android-main-preference.py"
 PROFILE = "p8-main-preference"
+SHARED_SDK_PROFILE = "p7-main-p8-short-ui-v1"
 MODE = "main-subclass-menu"
 CLASS = "com.agenthub.android.NativeP8MainPreferenceTest"
 METHOD = "savedPreferenceThroughMainSubclassMenuPersistsWithoutNativeRuntime"
@@ -46,10 +47,34 @@ def admitted(args):
     require(Path(__file__).resolve() == repo / TOOL, "Reviewed in-repo P8 adapter required")
     first.canonical_uuid(args.run); first.canonical_uuid(args.boot_uuid)
     first.integer(args.uid, 1, 2147483647); first.integer(args.test_uid, 1, 2147483647)
-    build = capture.verify_build_bundle(args.build_bundle, first, repo, PROFILE)
+    # Build purpose is explicit and finite; Native admission retains the original P8 identity.
+    sdk_profile = args.sdk_profile
+    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE), "Closed P8 SDK purpose")
+    if sdk_profile == SHARED_SDK_PROFILE:
+        # Root supplies both pins from immutable external intent, never from this bundle.
+        first.sha(args.expected_sdk_seal_sha256)
+        first.sha(args.expected_workspace_review_sha256)
+        bundle = Path(args.build_bundle)
+        seal_raw = capture.private_bytes(bundle / "capture-seal.json", 512 * 1024)
+        review_raw = capture.private_bytes(bundle / "workspace-review.json", 131072)
+        require(sha(seal_raw) == args.expected_sdk_seal_sha256 and
+            sha(review_raw) == args.expected_workspace_review_sha256, "Externally approved SDK/review bytes required")
+        seal = capture.parse_json(seal_raw)
+        require(type(seal) is dict and seal.get("reviewedStateSha256") == args.expected_workspace_review_sha256,
+            "External review pin must be the sealed workspace review")
+    else:
+        require(args.expected_sdk_seal_sha256 is None and args.expected_workspace_review_sha256 is None,
+            "External shared SDK pins are unsupported for the legacy P8 purpose")
+    build = capture.verify_build_bundle(args.build_bundle, first, repo, sdk_profile)
     guard = first.read_guard(Path(args.build_bundle) / "source-before.json")
-    require(guard.get("reviewedProfile") == PROFILE and set(guard["sourceOverlay"]) == set(first.P8_MAIN_OVERLAY_PATHS), "Exact P8 static source contract")
-    require(first.same(guard, first.source_guard(repo, guard["sourceOverlay"], reviewed_profile=PROFILE)), "P8 source drift")
+    if sdk_profile == SHARED_SDK_PROFILE:
+        require(build["sealSha256"] == args.expected_sdk_seal_sha256, "Approved SDK seal changed during typed verification")
+        first.exact(guard, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+        require(set(guard["sourceOverlay"]) == set(capture.MAIN_UI_SHARED_OVERLAY_PATHS), "Exact shared Main UI source contract")
+        require(first.same(guard, capture.main_ui_shared_source_guard(first, repo, guard["sourceOverlay"])), "Shared Main UI source drift")
+    else:
+        require(guard.get("reviewedProfile") == PROFILE and set(guard["sourceOverlay"]) == set(first.P8_MAIN_OVERLAY_PATHS), "Exact P8 static source contract")
+        require(first.same(guard, first.source_guard(repo, guard["sourceOverlay"], reviewed_profile=PROFILE)), "P8 source drift")
     for role, value in (("app", args.app_apk), ("test", args.test_apk)):
         pin = build["artifacts"][role]
         require(Path(value).resolve() == Path(pin["path"]).resolve() and first.digest(value) == pin["sha256"], "Exact captured APKs required")
@@ -167,10 +192,31 @@ def native_proof(expected, events, observed):
     require(first.same(proof["nativeFacts"], facts) and proof["nativeRuntime"] is False and proof["shippingMainCovered"] is False, "Native final tuple/APK/cert drift or coverage inflation")
     require(type(proof["cases"]) is list and len(proof["cases"]) == 2, "Exact two presentation cases")
     for index, case in enumerate(proof["cases"]):
-        first.exact(case, {"run", "language", "appearance", "choices", "restoredPreference", "protectedOriginalsUnchanged", "stableFinalDefaultsConfirmed", "scopeRemoved", "aliasRemoved"})
+        first.exact(case, {"run", "language", "appearance", "choices", "restoredPreference", "protectedOriginalsUnchanged", "stableFinalDefaultsConfirmed", "scopeRemoved", "aliasRemoved", "stress", "activityOwnership"})
         require(all(first.same(case[key], expected["cases"][index][key]) for key in ("run", "language", "appearance")) and
             case["choices"] == ["lan-only", "relay-only", "automatic", "relay-only"] and case["restoredPreference"] == "relay-only" and
             all(case[key] is True for key in ("protectedOriginalsUnchanged", "stableFinalDefaultsConfirmed", "scopeRemoved", "aliasRemoved")), "Native menu/restoration/cleanup case mismatch")
+        ownership = case["activityOwnership"]
+        first.exact(ownership, {"schema", "launches", "activities", "bindings", "entries", "completeInstanceSet", "allActivitiesClosed"})
+        require(ownership["schema"] == "p8-finite-activity-ownership-v1" and
+            all(type(ownership[key]) is int and ownership[key] == count for key, count in
+                (("launches", 2), ("activities", 2), ("bindings", 2), ("entries", 3))) and
+            ownership["completeInstanceSet"] is True and ownership["allActivitiesClosed"] is True,
+            "Exactly two known Activity/bound Session owners and seed, closed without recreation")
+        stress = case["stress"]
+        first.exact(stress, {"fontScale", "orientation", "windowWidthDp", "windowHeightDp", "sheetHeightDp", "longNameLength",
+            "manualAddressLength", "longTargetFields", "nameAutosaved", "targetValuesExact", "manualAddressSemanticsExact",
+            "scrollReachedRuntime", "popupBackDismissed", "sheetBackDismissed", "composeFontScale", "multilineTargetFields", "noTargetEllipsis", "nativeAxReadback", "nativeAxFields", "manualAddressSubmitted", "talkBackExecuted", "nameRestoredInNewActivity"})
+        require(type(stress["fontScale"]) in (int, float) and stress["fontScale"] == 2 and type(stress["composeFontScale"]) is int and stress["composeFontScale"] == 2 and stress["orientation"] == "landscape", "Exact per-Activity large font/orientation")
+        require(type(stress["windowHeightDp"]) is int and 180 <= stress["windowHeightDp"] <= 400 and
+            type(stress["windowWidthDp"]) is int and stress["windowWidthDp"] > stress["windowHeightDp"] and
+            type(stress["sheetHeightDp"]) in (int, float) and 120 <= stress["sheetHeightDp"] <= 400, "Measured real short viewport required")
+        require(type(stress["longNameLength"]) is int and 128 <= stress["longNameLength"] <= 256 and
+            type(stress["manualAddressLength"]) is int and 128 <= stress["manualAddressLength"] <= 512 and
+            type(stress["longTargetFields"]) is int and stress["longTargetFields"] == 6 and type(stress["multilineTargetFields"]) is int and stress["multilineTargetFields"] == 5 and type(stress["nativeAxFields"]) is int and stress["nativeAxFields"] == 14, "Bounded complete long-field fixture required")
+        require(all(stress[key] is True for key in ("nameAutosaved", "targetValuesExact", "manualAddressSemanticsExact", "scrollReachedRuntime",
+            "popupBackDismissed", "sheetBackDismissed", "nameRestoredInNewActivity", "nativeAxReadback", "noTargetEllipsis")) and stress["manualAddressSubmitted"] is False and
+            stress["talkBackExecuted"] is False, "Exact limited semantics/restore/Back scope")
     case_ids = {row["run"] for row in expected["cases"]}
     for event in events[1:-1]:
         body = event["body"]; require(body.get("ownedRun") in case_ids, "Foreign fixture scope evidence")
@@ -231,6 +277,12 @@ def run(args):
         "snapshotSha256": {phase: first.digest(output / (phase + "-snapshot.json")) for phase in ("before", "live", "after")},
         "caseCount": len(proof["cases"]), "nativeRuntime": False, "shippingMainCovered": False,
         "networkIssuerDesktopPhysicalApi26Covered": False, "allA5Covered": False, "status": "passed"}
+    if args.sdk_profile == SHARED_SDK_PROFILE:
+        # A distinct Host result names the build purpose without changing Native proof schema.
+        review["schema"] = "p8-main-subclass-shared-sdk-host-review-v1"
+        review["sdkProfile"] = SHARED_SDK_PROFILE
+        review["expectedSdkSealSha256"] = args.expected_sdk_seal_sha256
+        review["expectedWorkspaceReviewSha256"] = args.expected_workspace_review_sha256
     first.write_new(output / "host-review.json", review)
     print(json.dumps({"schema": review["schema"], "run": args.run, "status": review["status"], "reviewSha256": first.digest(output / "host-review.json")}))
 
@@ -240,6 +292,12 @@ def main():
     for name in ("repo", "output-dir", "app-apk", "test-apk", "adb", "serial", "run", "boot-uuid", "build-bundle"):
         parser.add_argument("--" + name, required=True)
     for name in ("uid", "test-uid"): parser.add_argument("--" + name, type=int, required=True)
+    parser.add_argument("--sdk-profile", choices=(PROFILE, SHARED_SDK_PROFILE), default=PROFILE,
+        help="Explicit captured SDK purpose; default retains the legacy P8 contract")
+    parser.add_argument("--expected-sdk-seal-sha256", default=None,
+        help="Root external immutable approval; required only with the shared SDK purpose")
+    parser.add_argument("--expected-workspace-review-sha256", default=None,
+        help="Root external immutable approval; required only with the shared SDK purpose")
     run(parser.parse_args())
 
 

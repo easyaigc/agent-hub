@@ -326,7 +326,9 @@ def worker_method(mode, arguments, selected_method=None):
             ("first", "foreground-first"): "nonemptyForegroundControllerProducesPortableArchives",
             ("readonly-cold", "foreground-cold"): "nonemptyForegroundReadOnlyColdAfterExactOriginalExit",
             ("first", "child-originals-first"): "childOriginalsControllerProducesPortableArchives",
-            ("readonly-cold", "child-originals-cold"): "childOriginalsReadOnlyColdAfterExactOriginalExit"}
+            ("readonly-cold", "child-originals-cold"): "childOriginalsReadOnlyColdAfterExactOriginalExit",
+            ("first", "existing-originals-first"): "existingChildOriginalsControllerPreservesDistinctArchives",
+            ("readonly-cold", "existing-originals-cold"): "existingChildOriginalsReadOnlyColdAfterExactOriginalExit"}
         expected = selectors.get((mode, arguments.get("nonemptyMode")))
         require(expected is not None and selected_method == expected, "Closed named profile worker selector")
     require(arguments.get("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + expected, "Worker method/actual class mismatch")

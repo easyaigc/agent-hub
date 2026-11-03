@@ -1620,3 +1620,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段75 F55/F56：没有产品页面、token、文案或iOS界面变化。新fixture只核当前草稿完整值/其他聊天持久附件不变与数据迁移first/cold；不等于文件/照片选择器、Main密码/预览/取消/失败/成功、短视口/方向/字号/AX或物理UI逐项通过，见[阶段75](../plans/android-alignment-20261022/records/stage75-p7-child-originals-paired.md)。
 
 阶段76 F52/F54/F56：产品页面、token、文案与iOS界面未改。SystemUI原生验收只允许准确owned row的范围采集与最终刷新核对；背景通用选择动作仅观察，不执行。R6按精确Normal/Dimmed family各采18项新鲜事实及显式policy v3、总最多2clip，不能用旧部分AX补事实；其他节点和像素范围不放宽。完整通知界面/低API/字体/TalkBack/真机继续待验，见[阶段76原生记录](../plans/android-alignment-20261022/records/stage76-p9-native.md)。
+
+阶段77 F55/F56：已有惰性资料目的端合并仍走原Controller，不改变生产页面/token/文案或iOS界面。源码接入不等于Main密码/预览/确认/取消/错误/成功、短视口/方向/字号/AX通过；这些随独立Main阶段逐项验收，见[阶段77](../plans/android-alignment-20261022/records/stage77-p7-existing-originals-paired.md)。

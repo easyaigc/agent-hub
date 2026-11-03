@@ -58,18 +58,23 @@ internal object NativeMigrationChildOriginalsProfile {
         require(owner.cameraCapture == null)
     }
 
-    private fun png(): ByteArray {
+    private fun png(variant: Int): ByteArray {
+        require(variant in 0..1)
         val image = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
         return try {
-            image.setPixels(IntArray(64) { n -> (0xff000000L or ((n * 7919L) and 0xffffffL)).toInt() }, 0, 8, 0, 0, 8, 8)
+            image.setPixels(IntArray(64) { n -> (0xff000000L or (((n * 7919L) xor (if (variant == 0) 0L else 0x00a5a5L)) and 0xffffffL)).toInt() }, 0, 8, 0, 0, 8, 8)
             ByteArrayOutputStream().also { require(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }.toByteArray()
                 .also { require(it.size in 1..65536) }
         } finally { image.recycle() }
     }
 
-    suspend fun produce(context: Context, owner: MobileSession, stores: Map<String, NativeSessionStorage>, run: String) {
+    suspend fun produce(context: Context, owner: MobileSession, stores: Map<String, NativeSessionStorage>, run: String, variant: Int = 0) {
+        require(variant in 0..1)
         require(stores.keys == paths.toSet())
-        val baseline = withContext(Dispatchers.Main.immediate) { presentation(owner) }
+        val baseline = withContext(Dispatchers.Main.immediate) {
+            require(variant == 0 || owner.migrationCanImport)
+            presentation(owner)
+        }
         val persistedMetadata = withContext(Dispatchers.IO) {
             owner.migrationStorage.awaitQueuedWrites()
             requireNotNull(owner.migrationStorage.read("metadata"))
@@ -78,7 +83,8 @@ internal object NativeMigrationChildOriginalsProfile {
         // with a synthetic retired local generation; never select another draft or persist authority.
         val destination = AttachmentImportDestination(baseline.targetKey, id(run, "retired-local-generation"), baseline.destination,
             requestId = id(run, "retired-local-request"), maximum = 5)
-        val photo = png(); val plain = "Owned nonempty child original 😀\n".toByteArray(Charsets.UTF_8)
+        val photo = png(variant); val plain = (if (variant == 0) "Owned nonempty child original 😀\n"
+            else "Owned destination child original 😀\n").toByteArray(Charsets.UTF_8)
         try {
             for (namespace in listOf("external-inbox") + kinds.map { it.namespace }) {
                 val selected = kinds.firstOrNull { it.namespace == namespace }

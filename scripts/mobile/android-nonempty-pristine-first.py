@@ -65,13 +65,56 @@ def child_scenario(run):
         "portableTextRecords": 26, "portableBinaryRecords": 7}
 
 
-def admitted(args, *, foreground=False, child_originals=False):
-    require(type(foreground) is bool and type(child_originals) is bool and not (foreground and child_originals), "Closed P7 Controller profile")
-    profile = "p7-child-originals" if child_originals else "p7-foreground" if foreground else PROFILE
-    tool = CHILD_TOOL if child_originals else "scripts/mobile/android-nonempty-foreground-pair.py" if foreground else TOOL
-    method = CHILD_METHOD if child_originals else "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
-    schema = CHILD_SCHEMA if child_originals else "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
-    mode = "child-originals-first" if child_originals else "foreground-first" if foreground else MODE
+EXISTING_SOURCES = ['apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt', 'apps/android/src/debug/AndroidManifest.xml', 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt', 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt', 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt', 'scripts/mobile/android-child-originals-pair.py', 'scripts/mobile/android-main-preference.py', 'scripts/mobile/android-nonempty-device-first.py', 'scripts/mobile/android-nonempty-device-pair.py', 'scripts/mobile/android-nonempty-foreground-pair.py', 'scripts/mobile/android-nonempty-pristine-first.py', 'scripts/mobile/android-sdk-capture.py', 'scripts/mobile/android-voice-originals-controller.py', 'scripts/mobile/android-voice-originals-pair.py', 'scripts/mobile/android-voice-originals-workers.py', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt', 'scripts/mobile/android-existing-originals-pair.py']
+EXISTING_TOOL = "scripts/mobile/android-existing-originals-pair.py"
+EXISTING_SCHEMA = "p7-existing-child-originals-controller-v1"
+EXISTING_METHOD = "existingChildOriginalsControllerPreservesDistinctArchives"
+EXISTING_COLD_METHOD = "existingChildOriginalsReadOnlyColdAfterExactOriginalExit"
+EXISTING_KEYS = {"destinationOriginalTextSha256", "destinationOriginalBinarySha256", "destinationBeforeCiphertext", "delegatedDestinationChildRetirements"}
+
+
+def existing_scenario(run):
+    return child_scenario(run) | {"producerProfile": EXISTING_SCHEMA,
+        "destinationOriginals": "nonempty-no-real-clients-three-inert-families", "destinationOriginalTextRecords": 18,
+        "destinationOriginalBinaryRecords": 6, "activeTextRecords": 43, "activeBinaryRecords": 13}
+
+
+def existing_merge_pins(proof):
+    source_text, source_binary = proof["originalTextSha256"], proof["originalBinarySha256"]
+    dest_text, dest_binary = proof["destinationOriginalTextSha256"], proof["destinationOriginalBinarySha256"]
+    active_text, active_binary = proof["activeTextSha256"], proof["activeBinarySha256"]
+    require(len(dest_text) == 18 and len(dest_binary) == 6 and len(active_text) == 43 and len(active_binary) == 13, "Finite destination/active merge graph")
+    child_text, child_binary, destination_text, destination_binary = set(), set(), set(), set()
+    for namespace, count in (("external-inbox", 3), ("document-results", 5), ("photo-results", 7)):
+        catalog = "migration-" + namespace + "-v1"; tp = "migration-" + namespace + "-text-v1:"; bp = "migration-" + namespace + "-binary-v1:"
+        def names(text, binary, originals):
+            rows = {name for name in text if name.startswith(tp)}; blobs = {name for name in binary if name.startswith(bp)}
+            require(catalog in text and len(rows) == count * originals and len(blobs) == 2 * originals, "Complete family size")
+            suffixes = [name.removeprefix(tp) for name in rows] + [name.removeprefix(bp) for name in blobs]
+            require(all(re.fullmatch(r"[a-f0-9]{64}:[0-9]{1,3}", name) for name in suffixes), "Complete family alias syntax")
+            ids = {value.split(":")[0] for value in suffixes}; require(len(ids) == originals, "Exact separate content identities")
+            for identity in ids:
+                require({int(value.split(":")[1]) for value in suffixes if value.startswith(identity + ":")} == set(range(count + 2)), "No missing original entry ordinal")
+            return rows | {catalog}, blobs
+        st, sb = names(source_text, source_binary, 1); dt, db = names(dest_text, dest_binary, 1); at, ab = names(active_text, active_binary, 2)
+        require(not (st - {catalog}) & (dt - {catalog}) and not sb & db and at == st | dt and ab == sb | db, "Separate exact original union")
+        require(all(active_text[name] == source_text[name] for name in st - {catalog}) and all(active_text[name] == dest_text[name] for name in dt - {catalog}), "All original text bytes retained")
+        require(all(active_binary[name] == source_binary[name] for name in sb) and all(active_binary[name] == dest_binary[name] for name in db), "All original binary bytes retained")
+        child_text |= at; child_binary |= ab; destination_text |= dt; destination_binary |= db
+    require(set(dest_text) == destination_text and set(dest_binary) == destination_binary, "No unbound destination original")
+    source_child_text, _ = child_names(source_text, source_binary)
+    local = {"migration-device-audit-v1", "migration-notification-tombstones-v1"}
+    require(set(active_text) == (set(source_text) - source_child_text) | child_text | local, "Exact active root/child/local text graph")
+    require(set(active_binary) == set(source_binary) | set(dest_binary), "No omitted or injected active binary")
+
+
+def admitted(args, *, foreground=False, child_originals=False, existing_originals=False):
+    require(type(foreground) is bool and type(child_originals) is bool and type(existing_originals) is bool and not (foreground and child_originals) and (not existing_originals or child_originals), "Closed P7 Controller profile")
+    profile = "p7-existing-originals" if existing_originals else "p7-child-originals" if child_originals else "p7-foreground" if foreground else PROFILE
+    tool = EXISTING_TOOL if existing_originals else CHILD_TOOL if child_originals else "scripts/mobile/android-nonempty-foreground-pair.py" if foreground else TOOL
+    method = EXISTING_METHOD if existing_originals else CHILD_METHOD if child_originals else "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
+    schema = EXISTING_SCHEMA if existing_originals else CHILD_SCHEMA if child_originals else "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
+    mode = "existing-originals-first" if existing_originals else "child-originals-first" if child_originals else "foreground-first" if foreground else MODE
     first.canonical_uuid(args.run); first.canonical_uuid(args.boot_uuid); first.integer(args.uid, 1, 2147483647)
     repo = Path(args.repo).resolve(); require(Path(__file__).resolve() == repo / TOOL, "Run only the reviewed in-repo adapter")
     # _review and verify_build_bundle enforce the finite seven-entry Root before/after overlay,
@@ -79,12 +122,12 @@ def admitted(args, *, foreground=False, child_originals=False):
     build = capture.verify_build_bundle(args.build_bundle, first, repo, profile)
     bundle = Path(args.build_bundle)
     guard = first.read_guard(bundle / "source-before.json")
-    require(set(guard["sourceOverlay"]) == (set(CHILD_SOURCES) if child_originals else set(first.DYNAMIC_SOURCES) | {TOOL, tool}), "Explicit Controller profile overlay inventory required")
+    require(set(guard["sourceOverlay"]) == (set(EXISTING_SOURCES) if existing_originals else set(CHILD_SOURCES) if child_originals else set(first.DYNAMIC_SOURCES) | {TOOL, tool}), "Explicit Controller profile overlay inventory required")
     require(first.same(guard, first.source_guard(repo, guard["sourceOverlay"])), "Pristine sources drifted")
     for role, path in (("app", args.app_apk), ("test", args.test_apk)):
         require(Path(path).resolve() == Path(build["artifacts"][role]["path"]).resolve() and first.digest(path) == build["artifacts"][role]["sha256"], "Only exact controlled output APKs admitted")
     require(Path(args.adb).resolve() == Path(build["tools"]["adb"]["path"]).resolve() and first.digest(args.adb) == build["tools"]["adb"]["sha256"], "Admitted SDK ADB only")
-    value = {"schema": "p7-child-originals-first-admission-v1" if child_originals else "p7-nonempty-foreground-first-admission-v1" if foreground else ADMISSION_SCHEMA,
+    value = {"schema": "p7-existing-child-originals-first-admission-v1" if existing_originals else "p7-child-originals-first-admission-v1" if child_originals else "p7-nonempty-foreground-first-admission-v1" if foreground else ADMISSION_SCHEMA,
         "caseSchema": schema, "run": args.run, "selectedMethod": method,
         "selector": "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + method,
         "mode": mode, "package": first.PACKAGE, "uid": args.uid, "bootUuid": args.boot_uuid,
@@ -134,16 +177,16 @@ def child_names(text, binary):
     return names, payloads
 
 
-def verify_native(intent_raw, proof_raw, args, admission, observed, *, foreground=False, child_originals=False):
-    require(type(foreground) is bool and type(child_originals) is bool and not (foreground and child_originals), "Closed P7 Controller proof profile")
-    schema = CHILD_SCHEMA if child_originals else "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
-    method = CHILD_METHOD if child_originals else "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
+def verify_native(intent_raw, proof_raw, args, admission, observed, *, foreground=False, child_originals=False, existing_originals=False):
+    require(type(foreground) is bool and type(child_originals) is bool and type(existing_originals) is bool and not (foreground and child_originals) and (not existing_originals or child_originals), "Closed P7 Controller proof profile")
+    schema = EXISTING_SCHEMA if existing_originals else CHILD_SCHEMA if child_originals else "p7-nonempty-foreground-controller-v1" if foreground else SCHEMA
+    method = EXISTING_METHOD if existing_originals else CHILD_METHOD if child_originals else "nonemptyForegroundControllerProducesPortableArchives" if foreground else METHOD
     intent = capture.parse_json(intent_raw); proof = capture.parse_json(proof_raw)
-    first.exact(intent, SHARED); first.exact(proof, SHARED | PIN_KEYS | CONTROLLER_KEYS)
+    first.exact(intent, SHARED); first.exact(proof, SHARED | PIN_KEYS | CONTROLLER_KEYS | (EXISTING_KEYS if existing_originals else set()))
     require(all(first.same(intent[name], proof[name]) for name in SHARED), "Immutable intent/proof changed")
     bound = first.binding(admission, sha(encoded(admission)))
     require(proof["schema"] == schema and proof["selectedMethod"] == method and proof["run"] == args.run and
-        first.same(proof["binding"], bound) and first.same(proof["scenario"], child_scenario(args.run) if child_originals else scenario(args.run)), "Pristine target/mode/binding")
+        first.same(proof["binding"], bound) and first.same(proof["scenario"], existing_scenario(args.run) if existing_originals else child_scenario(args.run) if child_originals else scenario(args.run)), "Pristine target/mode/binding")
     pair.process(observed, bound)
     require(type(proof["pid"]) is int and proof["pid"] == observed["pid"] and type(proof["startTicks"]) is str and
         proof["startTicks"] == observed["startTicks"] and observed["intentSha256"] == sha(intent_raw), "Original live process tuple join")
@@ -153,7 +196,7 @@ def verify_native(intent_raw, proof_raw, args, admission, observed, *, foregroun
     require(type(proof["receipt"]["records"]) is int and proof["receipt"]["records"] == (33 if child_originals else 13 if foreground else 9), "Closed source record count")
     for name, cap in (("sourceCiphertext", 64), ("originalCandidateCiphertext", 64), ("destinationCiphertext", 128),
         ("originalTextSha256", 26 if child_originals else 12 if foreground else 8), ("originalBinarySha256", 7 if child_originals else 1), ("sourceTextSha256", 32), ("sourceBinarySha256", 1),
-        ("activeTextSha256", 32), ("activeBinarySha256", 7 if child_originals else 1)):
+        ("activeTextSha256", 43 if existing_originals else 32), ("activeBinarySha256", 13 if existing_originals else 7 if child_originals else 1)):
         first.digests(proof[name], cap)
     text = proof["originalTextSha256"]
     fixed = {"metadata", "codex-private-connections-v1", "mobile-reading-ledger-v1", "native-chat-notifications-v1", "native-chat-notification-sounds-v1"}
@@ -178,15 +221,19 @@ def verify_native(intent_raw, proof_raw, args, admission, observed, *, foregroun
     sound = next(iter(sound_names))
     require(sound.startswith("native-chat-notification-sound-v1:") and sound.endswith(".caf"), "Normalized CAF record")
     first.canonical_uuid(sound.removeprefix("native-chat-notification-sound-v1:").removesuffix(".caf"))
-    require(proof["originalBinarySha256"] == proof["activeBinarySha256"], "All original binaries preserved")
+    if existing_originals:
+        for key, cap in (("destinationOriginalTextSha256", 18), ("destinationOriginalBinarySha256", 6), ("destinationBeforeCiphertext", 256)): first.digests(proof[key], cap)
+        require(type(proof["delegatedDestinationChildRetirements"]) is int and proof["delegatedDestinationChildRetirements"] == 5, "Exact delegated old child graph confirmation")
+        existing_merge_pins(proof)
+    else: require(proof["originalBinarySha256"] == proof["activeBinarySha256"], "All original binaries preserved")
     require({name: proof["originalBinarySha256"][name] for name in sound_names} == proof["sourceBinarySha256"], "Base source sound preserved")
     if child_originals:
         require(proof["explicitEnrollmentRequired"] is False, "No foreground identity or restored registration authority")
     # Two initial roots/two initial caches; two actual restore roots + ten production children;
     # one fresh Controller candidate cache. The two production-retired roots are separate returns.
-    expected_stores = 4 + 2 * (1 + 10) + 1 + (5 if child_originals else 0)
+    expected_stores = 4 + 2 * (1 + 10) + 1 + (5 if child_originals else 0) + (5 if existing_originals else 0)
     for name, count in {"acquiredStores": expected_stores, "acquiredSessions": 4, "actualSessionJoinReturns": 4,
-        "actualWriterRetireReturns": expected_stores - 2, "actualLeaseReleaseReturns": 2, "unknownAcquisitions": 0,
+        "actualWriterRetireReturns": expected_stores - 2 - (5 if existing_originals else 0), "actualLeaseReleaseReturns": 2, "unknownAcquisitions": 0,
         "forbiddenPortAttempts": 0, "controllerQuiesceReturns": 1, "controllerRestoreReturns": 1}.items():
         require(type(proof[name]) is int and proof[name] == count, "Actual owner return/count mismatch: " + name)
     for name in ("newSessionPublished", "freshReady", "controllerReady"):
@@ -197,10 +244,11 @@ def verify_native(intent_raw, proof_raw, args, admission, observed, *, foregroun
         require(proof[name] is False, "Unsupported stronger claim")
     first.sha(proof["draftTextSha256"])
     require(type(proof["draftKey"]) is str and proof["draftKey"].startswith("codex-machine-v2:") and len(proof["draftKey"]) <= 512, "Independent draft target")
-    windows = proof["keyWindows"]; require(type(windows) is list and len(windows) == len(WINDOWS), "Exact KEY observation windows")
+    windows = proof["keyWindows"]; points = list(WINDOWS); points[1] = "AFTER_EXISTING_SESSION_SETUP" if existing_originals else points[1]
+    require(type(windows) is list and len(windows) == len(points), "Exact KEY observation windows")
     for index, window in enumerate(windows):
         first.exact(window, {"point", "rootAliasPresent", "rootCiphertextCount", "destinationCiphertext"})
-        require(window["point"] == WINDOWS[index] and window["rootAliasPresent"] is (index == len(WINDOWS) - 1), "Root KEY absence/presence window")
+        require(window["point"] == points[index] and window["rootAliasPresent"] is (index > 0 if existing_originals else index == len(points) - 1), "Root KEY absence/presence window")
         first.integer(window["rootCiphertextCount"], 0, 128)
         pins = window["destinationCiphertext"]; require(type(pins) is dict and len(pins) <= 256, "Scoped ciphertext quota")
         if pins: first.digests(pins, 256)
@@ -212,11 +260,15 @@ def verify_native(intent_raw, proof_raw, args, admission, observed, *, foregroun
                 require(parts[0] == "installation" and parts[1].startswith("migration-generation-"), "Generation directory path")
                 first.canonical_uuid(parts[1].removeprefix("migration-generation-"))
         root_count = sum(name.startswith("installation/") and name.count("/") == 1 for name in pins)
-        require(window["rootCiphertextCount"] == root_count and (root_count > 0 if index == 5 else root_count == 0), "Root ciphertext timing")
-        if index < 2: require(not pins, "Empty destination before staging")
-        else:
+        require(window["rootCiphertextCount"] == root_count and (root_count > 0 if (index > 0 if existing_originals else index == 5) else root_count == 0), "Root ciphertext timing")
+        if index < (1 if existing_originals else 2): require(not pins, "Empty destination before setup/staging")
+        elif index >= 2:
             candidate = {name.removeprefix("installation-migration-candidates/"): value for name, value in pins.items() if name.startswith("installation-migration-candidates/")}
             require(candidate == proof["originalCandidateCiphertext"], "Original candidate ciphertext changed")
+    if existing_originals:
+        before = proof["destinationBeforeCiphertext"]
+        require(windows[1]["destinationCiphertext"] == before, "Exact existing destination baseline")
+        require(all(all(window["destinationCiphertext"].get(name) == digest for name, digest in before.items()) for window in windows[2:5]), "Preview cannot mutate preexisting originals")
     require(windows[2]["destinationCiphertext"] == windows[3]["destinationCiphertext"] == windows[4]["destinationCiphertext"], "Preview cannot bootstrap destination")
     return proof
 

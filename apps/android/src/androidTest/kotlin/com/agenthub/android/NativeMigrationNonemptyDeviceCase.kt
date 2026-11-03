@@ -102,7 +102,10 @@ internal object NativeMigrationNonemptyDeviceCase {
     data class PristineProof(val completed: Proof, val keyWindows: List<KeyWindow>,
         val restorePoints: List<String>, val controllerQuiesceReturns: Int, val controllerRestoreReturns: Int,
         val newSessionPublished: Boolean, val freshReady: Boolean, val controllerReady: Boolean,
-        val explicitEnrollmentRequired: Boolean, val phase: String, val result: String)
+        val explicitEnrollmentRequired: Boolean, val phase: String, val result: String,
+        val existing: ExistingEvidence? = null)
+    data class ExistingEvidence(val destinationText: Map<String, String>, val destinationBinary: Map<String, String>,
+        val destinationBeforeCiphertext: Map<String, String>, val delegatedChildRetirements: Int)
 
     fun pristineScenario(scope: Scope): JSONObject = JSONObject()
         .put("entryPath", "already-staged-production-candidate-controller")
@@ -188,6 +191,7 @@ internal object NativeMigrationNonemptyDeviceCase {
         var joined = 0; private set
         var retiredReturns = 0; private set
         var released = 0; private set
+        var delegatedChildRetirements = 0; private set
         val unknownCount get() = unknown.size
         fun own(store: NativeSessionStorage, root: NativeSessionStorage = store): NativeSessionStorage {
             if (stores.none { it === store }) stores.add(store)
@@ -258,12 +262,26 @@ internal object NativeMigrationNonemptyDeviceCase {
             check(!held.attempted); held.attempted = true
             held.lease.prepareAndReleaseForRestore(); held.returned = true; released++
         }
-        suspend fun restore(scope: Scope, original: MobileSession, held: Held, ports: Ports): Pair<MobileSession, NativeSessionStorage> =
+        suspend fun restore(scope: Scope, original: MobileSession, held: Held, ports: Ports,
+            retireOldChildren: Map<String, NativeSessionStorage>? = null): Pair<MobileSession, NativeSessionStorage> =
             withContext(NonCancellable + Dispatchers.Main.immediate) {
                 check(held.returned)
                 val attempt = begin("production-restore-root+children")
                 val delegated = DelegatedRestore(original, held.lease.storage, held, attempt)
                 delegations.add(delegated) // Includes original owner/root BEFORE invoking production.
+                // New purpose only: the old generation owns these exact children until the whole
+                // formal restore returns. Partial errors remain delegated; outer cleanup cannot retry.
+                val oldChildren = retireOldChildren?.also { children ->
+                    require(children.keys == NativeMigrationChildOriginalsProfile.paths.toSet())
+                    require(children.values.all { child -> stores.any { it === child } && actualRoot(child) === held.lease.storage &&
+                        !attemptedRetire.contains(child) && !retired.contains(child) })
+                    val inbox = requireNotNull(held.lease.inboxWriters)
+                    require(original.externalInbox === inbox.owner && inbox.childKey == children.getValue("external-inbox").coordinationKey)
+                    for (kind in listOf(NativeMigrationSelectionJournal.Kind.DOCUMENT, NativeMigrationSelectionJournal.Kind.PHOTO)) {
+                        val ticket = held.lease.selectionWriters.single { it.kind == kind }
+                        require(ticket.keys == listOf(children.getValue(kind.namespace).coordinationKey, children.getValue(kind.namespace + "/payloads").coordinationKey))
+                    }
+                }?.values?.toList().orEmpty()
                 try {
                     val fresh = restoreNativeMigrationSession(scope.context, original, held.lease, create = { opened ->
                         delegated.openedRoots.add(opened) // Exact root retained even when the constructor throws.
@@ -278,6 +296,14 @@ internal object NativeMigrationNonemptyDeviceCase {
                     // If bookkeeping itself fails, the still-delegated group remains strongly captured.
                     own(storage); sessionRoots[fresh] = storage; sessions.add(fresh)
                     retired.add(held.lease.storage); attemptedRetire.add(held.lease.storage)
+                    if (oldChildren.isNotEmpty()) {
+                        // New generation keys made takeInbox/takeSelections refuse old actor
+                        // transfer. Original.retireForMigration retired them before helper return.
+                        // These are delegated confirmations, never outer direct writer-return counts.
+                        require(fresh.externalInbox == null && fresh.documentPicker == null && fresh.photoPicker == null)
+                        oldChildren.forEach { child -> check(attemptedRetire.add(child) && retired.add(child)) }
+                        delegatedChildRetirements += oldChildren.size
+                    }
                     delegated.transferred = true
                     withContext(Dispatchers.IO) { cacheGraph(scope.context, storage) }
                     // All acquisition ownership is now resolved. Later assertion/await failures
@@ -542,18 +568,24 @@ internal object NativeMigrationNonemptyDeviceCase {
     }
 
     /** Task-owned ciphertext inventory only: never asks an existing-only root reader to open a missing KEY. */
-    private fun pristineWindow(scope: Scope, point: String): KeyWindow {
+    private fun pristineWindow(scope: Scope, point: String, existingOriginals: Boolean = false): KeyWindow {
         check(android.os.Looper.myLooper() != android.os.Looper.getMainLooper()); scope.checkScope()
         val keys = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         val present = keys.containsAlias(scope.alias)
         val base = scope.context.noBackupFilesDir
         val inventory = linkedMapOf<String, String>(); var directories = 0; var totalBytes = 0L
+        val generations = linkedSetOf<String>()
         fun identity(stat: android.system.StructStat) = listOf(stat.st_dev, stat.st_ino, stat.st_uid.toLong(), stat.st_mode.toLong(), stat.st_mtime, stat.st_ctime)
         fun walk(folder: File) {
             require(++directories <= 64)
             val before = android.system.Os.lstat(folder.path)
-            require(android.system.OsConstants.S_ISDIR(before.st_mode) && before.st_uid == Process.myUid() &&
-                before.st_mode and 0x1ff == 0x1c0 && folder.canonicalFile == folder)
+            val directory = android.system.OsConstants.S_ISDIR(before.st_mode)
+            val owner = before.st_uid == Process.myUid()
+            val privateMode = before.st_mode and 0x1ff == 0x1c0
+            val canonical = folder.canonicalFile == folder
+            require(directory && owner && privateMode && canonical) {
+                "Owned ciphertext directory rejected at $point/${folder.name}: directory=$directory, owner=$owner, private=$privateMode, canonical=$canonical"
+            }
             NativeMigrationReadLifetime().use({ android.system.Os.open(folder.path,
                 android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NONBLOCK or android.system.OsConstants.O_NOFOLLOW, 0) },
                 { require(identity(android.system.Os.fstat(it)) == identity(before)) }, { android.system.Os.close(it) })
@@ -563,6 +595,7 @@ internal object NativeMigrationNonemptyDeviceCase {
                 if (android.system.OsConstants.S_ISDIR(stat.st_mode)) {
                     require(folder.name == DESTINATION && name.startsWith("migration-generation-"))
                     val generation = name.removePrefix("migration-generation-"); require(UUID.fromString(generation).toString() == generation)
+                    generations.add(generation)
                     walk(file)
                 } else {
                     require(name.matches(Regex("[a-f0-9]{64}\\.bin")) && inventory.size < 256)
@@ -575,7 +608,32 @@ internal object NativeMigrationNonemptyDeviceCase {
             require(requireNotNull(folder.list()).sorted() == names && identity(android.system.Os.lstat(folder.path)) == identity(before))
         }
         val beforeNames = requireNotNull(base.list()).sorted()
-        beforeNames.filter { it == DESTINATION || it.startsWith("$DESTINATION-") }.forEach { walk(File(base, it)) }
+        val controls = mutableListOf<File>()
+        beforeNames.filter { it == DESTINATION || it.startsWith("$DESTINATION-") }.forEach { name ->
+            val file = File(base, name)
+            if (existingOriginals && (name.endsWith(".inbox-writer-v1.lock") ||
+                !android.system.OsConstants.S_ISDIR(android.system.Os.lstat(file.path).st_mode))) controls.add(file)
+            else walk(file)
+        }
+        // These five producers use separate, empty coordination files, never ciphertext records.
+        // Generation names must already have passed the directory inventory above.
+        val controlNamespaces = setOf(DESTINATION) + generations.map { "$DESTINATION-$it" }
+        val expectedControls = if (existingOriginals && point != "BEFORE_CONSTRUCTION") controlNamespaces.flatMap { namespace ->
+            NativeMigrationChildOriginalsProfile.paths.map { path ->
+                "$namespace-${path.replace('/', '-')}.inbox-writer-v1.lock"
+            }
+        }.toSet() else emptySet()
+        for (file in controls) {
+            require(file.name in expectedControls && file.canonicalFile == file) { "Unexpected existing-purpose control at $point/${file.name}" }
+            // Never open or close a coordination-file FD: that can disturb process record locks.
+            val before = android.system.Os.lstat(file.path)
+            NativeInboxOwnership.requireControlFile(file)
+            require(android.system.OsConstants.S_ISREG(before.st_mode) && before.st_uid == Process.myUid() &&
+                before.st_mode and 0x3f == 0 && before.st_size == 0L && before.st_nlink == 1L)
+            NativeInboxOwnership.requireControlFile(file)
+            val after = android.system.Os.lstat(file.path)
+            require(identity(after) == identity(before) && after.st_size == before.st_size && after.st_nlink == before.st_nlink)
+        }
         require(requireNotNull(base.list()).sorted() == beforeNames && keys.containsAlias(scope.alias) == present)
         scope.guard()
         val rootCount = inventory.keys.count { it.startsWith("$DESTINATION/") && it.removePrefix("$DESTINATION/").count { c -> c == '/' } == 0 }
@@ -586,8 +644,9 @@ internal object NativeMigrationNonemptyDeviceCase {
     suspend fun pristine(scope: Scope): PristineProof = controllerFirst(scope, false)
     suspend fun foregroundFirst(scope: Scope): PristineProof = controllerFirst(scope, true)
     suspend fun childOriginalsFirst(scope: Scope): PristineProof = controllerFirst(scope, false, childOriginals = true)
-    private suspend fun controllerFirst(scope: Scope, foreground: Boolean, childOriginals: Boolean = false): PristineProof {
-        require(!foreground || !childOriginals)
+    suspend fun existingOriginalsFirst(scope: Scope): PristineProof = controllerFirst(scope, false, childOriginals = true, existingOriginals = true)
+    private suspend fun controllerFirst(scope: Scope, foreground: Boolean, childOriginals: Boolean = false, existingOriginals: Boolean = false): PristineProof {
+        require((!foreground || !childOriginals) && (!existingOriginals || childOriginals))
         require(!scope.existingOnly)
         val owners = Owners(); val ports = Ports(); val windows = mutableListOf<KeyWindow>()
         val restorePoints = java.util.Collections.synchronizedList(mutableListOf<String>())
@@ -596,10 +655,22 @@ internal object NativeMigrationNonemptyDeviceCase {
         var enrollmentRequired: Boolean? = null; var failure: Throwable? = null
         var sourceForeground: Map<String, String> = emptyMap()
         var sourceChildren: NativeMigrationChildOriginalsProfile.Source? = null
+        var destinationChildren: NativeMigrationChildOriginalsProfile.Source? = null
+        var destinationBaseline: KeyWindow? = null
+        var destinationActorsResolved = true
+        var destinationActorOwner: MobileSession? = null
         var childActorOwner: MobileSession? = null
         var childActorsRetired = true
         suspend fun before(point: String) = withContext(Dispatchers.IO) {
-            pristineWindow(scope, point).also { require(!it.rootAliasPresent && it.rootCiphertextCount == 0); windows.add(it) }
+            pristineWindow(scope, point, existingOriginals).also { window ->
+                if (!existingOriginals || point == "BEFORE_CONSTRUCTION") require(!window.rootAliasPresent && window.rootCiphertextCount == 0)
+                else {
+                    require(window.rootAliasPresent && window.rootCiphertextCount > 0)
+                    destinationBaseline?.destinationCiphertext?.forEach { (path, hash) -> require(window.destinationCiphertext.getValue(path) == hash) }
+                    if (point == "AFTER_EXISTING_SESSION_SETUP") { check(destinationBaseline == null); destinationBaseline = window }
+                }
+                windows.add(window)
+            }
         }
         try {
             withContext(Dispatchers.IO) {
@@ -622,6 +693,12 @@ internal object NativeMigrationNonemptyDeviceCase {
                 val parent = if (parentPath.isEmpty()) source else sourceChildStores.getValue(parentPath)
                 sourceChildStores[path] = owners.open("child-original-producer:$path", source) { parent.prepareChild(scope.context, path.substringAfterLast('/')) }
             }
+            val destinationChildStores = linkedMapOf<String, NativeSessionStorage>()
+            if (existingOriginals) for (path in NativeMigrationChildOriginalsProfile.paths) {
+                val parentPath = path.substringBeforeLast('/', "")
+                val parent = if (parentPath.isEmpty()) destination else destinationChildStores.getValue(parentPath)
+                destinationChildStores[path] = owners.open("existing-destination-producer:$path", destination) { parent.prepareChild(scope.context, path.substringAfterLast('/')) }
+            }
             val sourceOwner = withContext(NonCancellable + Dispatchers.Main.immediate) {
                 owners.session(source, ports).also {
                     it.restoreForMigration(); require(it.chatNotifications == null && it.migrationReady)
@@ -643,14 +720,31 @@ internal object NativeMigrationNonemptyDeviceCase {
                     it.voiceSettings.resumePreferences()?.join(); require(it.voiceSettings.persisted)
                 }
             }
-            // Fixture must not preinitialize this destination. Normal confirm quiesce may persist metadata and create KEY.
-            before("AFTER_EMPTY_SESSION_RESTORE")
+            if (existingOriginals) {
+                destinationActorOwner = destinationOwner // Before independent actor constructors can throw.
+                destinationActorsResolved = false
+                withContext(Dispatchers.Main.immediate) {
+                    destinationOwner.text = "Owned destination local setup; never submitted"; destinationOwner.text = ""
+                    require(destinationOwner.migrationCanImport)
+                }
+                withContext(Dispatchers.IO) { destination.awaitQueuedWrites(); require(destination.metadata()!!.getJSONArray("clients").length() == 0) }
+                NativeMigrationChildOriginalsProfile.configure(scope.context, destinationOwner)
+                NativeMigrationChildOriginalsProfile.produce(scope.context, destinationOwner, destinationChildStores, scope.run, variant = 1)
+                withContext(Dispatchers.IO) { destinationChildren = NativeMigrationChildOriginalsProfile.source(scope.context, destination) }
+                before("AFTER_EXISTING_SESSION_SETUP")
+            } else {
+                // Old purposes still cannot preinitialize the destination KEY.
+                before("AFTER_EMPTY_SESSION_RESTORE")
+            }
             val sourceHeld = owners.freeze(sourceOwner)
             val sourceCipher = withContext(Dispatchers.IO) {
                 sourceHeld.lease.requireRawWriters(); requireSourceNonempty(source)
                 if (foreground) sourceForeground = NativeMigrationForeground.ACTIVE_NAMES.associateWith { requireNotNull(source.read(it)) }
                     .also(::requireForegroundSource)
                 if (childOriginals) sourceChildren = NativeMigrationChildOriginalsProfile.source(scope.context, source)
+                if (existingOriginals) NativeMigrationExistingOriginalsWitness.requireDistinct(
+                    NativeMigrationExistingOriginalsWitness.capture(requireNotNull(sourceChildren)),
+                    NativeMigrationExistingOriginalsWitness.capture(requireNotNull(destinationChildren)))
                 scope.view(true).using { it.familyCiphertext() }
             }
             val receipt = withContext(Dispatchers.IO) {
@@ -707,7 +801,12 @@ internal object NativeMigrationNonemptyDeviceCase {
                     val held = requireNotNull(controllerHeld); check(held.lease === lease && held.returned)
                     check(lease.requiresExplicitEnrollment == requiresExplicitEnrollment && activeSession.ownsMigrationLease(lease))
                     enrollmentRequired = requiresExplicitEnrollment
-                    val (fresh, store) = owners.restore(scope, activeSession, held, ports)
+                    val (fresh, store) = owners.restore(scope, activeSession, held, ports,
+                        retireOldChildren = if (existingOriginals) destinationChildStores else null)
+                    if (existingOriginals) {
+                        require(owners.delegatedChildRetirements == 5)
+                        destinationActorsResolved = true
+                    }
                     // Register before Controller borrows this same prepared child on return.
                     owners.open("pristine-fresh-candidate-cache", store) { store.prepareChild(scope.context, "migration-candidates") }
                     fresh.migrationController = ownedController
@@ -746,7 +845,7 @@ internal object NativeMigrationNonemptyDeviceCase {
                 require(activeSession.chatNotifications == null && activeSession.aiSharing.grants.isEmpty())
                 activeSession.migrationReady to ownedController.ready
             }
-            val after = withContext(Dispatchers.IO) { pristineWindow(scope, "AFTER_CONTROLLER_DONE").also { windows.add(it) } }
+            val after = withContext(Dispatchers.IO) { pristineWindow(scope, "AFTER_CONTROLLER_DONE", existingOriginals).also { windows.add(it) } }
             require(after.rootAliasPresent && after.rootCiphertextCount > 0)
             require(restorePoints.toList() == NativeMigrationControllerRestorePoint.entries.map { it.name })
             require(controllerQuiesces == 1 && controllerRestores == 1 && ports.attempts.get() == 0)
@@ -754,7 +853,15 @@ internal object NativeMigrationNonemptyDeviceCase {
                 require(activeStorage.migrationPublicationReceipt() == receipt)
                 verifyDomain(scope.context, activeStorage, original, receipt, true); verifyUnknown(activeStorage, original)
                 if (foreground) verifyForegroundDestination(activeStorage, sourceForeground, original)
-                if (childOriginals) NativeMigrationChildOriginalsProfile.requireDestination(activeStorage, original)
+                if (existingOriginals) {
+                    require(activeStorage.migrationPendingChildScopes().isEmpty())
+                    require(NativeMigrationInbox.read(activeStorage).size == 2)
+                    for (kind in listOf(NativeMigrationSelectionJournal.Kind.DOCUMENT, NativeMigrationSelectionJournal.Kind.PHOTO))
+                        require(NativeMigrationSelections.read(activeStorage, kind).size == 2)
+                    scope.view().using { current -> NativeMigrationExistingOriginalsWitness.requireMerged(
+                        NativeMigrationExistingOriginalsWitness.capture(requireNotNull(sourceChildren)),
+                        NativeMigrationExistingOriginalsWitness.capture(requireNotNull(destinationChildren)), current.records) }
+                } else if (childOriginals) NativeMigrationChildOriginalsProfile.requireDestination(activeStorage, original)
                 // The first destination existing-only open occurs strictly after normal Controller publication and restore.
                 scope.view().using { saved ->
                     assertEquals(candidateCipher, saved.originalCandidateCiphertext(null))
@@ -768,8 +875,9 @@ internal object NativeMigrationNonemptyDeviceCase {
             owners.close()
             // Formula follows the actual two restore graphs plus the Controller's retained candidate cache.
             require(owners.stores.size == 4 + 2 * (1 + NativeMigrationExistingPolicy.paths.size) + 1 +
-                (if (childOriginals) NativeMigrationChildOriginalsProfile.paths.size else 0) && owners.sessions.size == 4)
-            require(owners.joined == owners.sessions.size && owners.retiredReturns + 2 == owners.stores.size && owners.released == 2 && owners.unknownCount == 0)
+                (if (childOriginals) NativeMigrationChildOriginalsProfile.paths.size else 0) +
+                (if (existingOriginals) NativeMigrationChildOriginalsProfile.paths.size else 0) && owners.sessions.size == 4)
+            require(owners.joined == owners.sessions.size && owners.retiredReturns + 2 + owners.delegatedChildRetirements == owners.stores.size && owners.released == 2 && owners.unknownCount == 0)
             val finalSource = withContext(Dispatchers.IO) { scope.view(true).using {
                 NativeMigrationSounds.validate(materialize(it.records), emptyMap(), it.records.binary)
                 Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
@@ -779,9 +887,15 @@ internal object NativeMigrationNonemptyDeviceCase {
                 require(JSONObject(it.records.text.getValue("metadata")).getJSONObject("drafts").getString(draftKey) == DRAFT)
                 Triple(it.familyCiphertext(), textDigests(materialize(it.records)), binaryDigests(it.records))
             } }
-            require(finalSource.first == sourceCipher && finalActive.third == binaryPins && ports.attempts.get() == 0)
+            val expectedBinary = binaryPins + if (existingOriginals) requireNotNull(destinationChildren).binary.mapValues { sha(it.value) } else emptyMap()
+            require(finalSource.first == sourceCipher && finalActive.third == expectedBinary && ports.attempts.get() == 0)
             require(finalSource.third == if (childOriginals) binaryPins.filterKeys { it.startsWith("native-chat-notification-sound-v1:") } else binaryPins)
-            if (childOriginals) withContext(Dispatchers.IO) { scope.view().using { NativeMigrationChildOriginalsProfile.requireActive(it.records) } }
+            if (childOriginals) withContext(Dispatchers.IO) { scope.view().using {
+                if (existingOriginals) NativeMigrationExistingOriginalsWitness.requireMerged(
+                    NativeMigrationExistingOriginalsWitness.capture(requireNotNull(sourceChildren)),
+                    NativeMigrationExistingOriginalsWitness.capture(requireNotNull(destinationChildren)), it.records)
+                else NativeMigrationChildOriginalsProfile.requireActive(it.records)
+            } }
             if (foreground) {
                 require(enrollmentRequired == true)
                 withContext(Dispatchers.IO) { scope.view(true).using { sourceView ->
@@ -789,12 +903,15 @@ internal object NativeMigrationNonemptyDeviceCase {
                 } }
             }
             withContext(Dispatchers.IO) { scope.binding.requireCurrent() }
-            val completed = withContext(Dispatchers.IO) { Proof(if (childOriginals) NativeMigrationChildOriginalsProfile.SCHEMA else if (foreground) FOREGROUND_SCHEMA else PRISTINE_SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt,
+            val completed = withContext(Dispatchers.IO) { Proof(if (existingOriginals) NativeMigrationExistingOriginalsWitness.SCHEMA else if (childOriginals) NativeMigrationChildOriginalsProfile.SCHEMA else if (foreground) FOREGROUND_SCHEMA else PRISTINE_SCHEMA, scope.run, scope.binding, Process.myPid(), startTicks(Process.myPid()), receipt,
                 generation, sha(scope.archive), sourceCipher, candidateCipher, finalActive.first, textPins, binaryPins, draftKey,
                 sha(DRAFT.toByteArray(Charsets.UTF_8)), finalSource.second, finalSource.third, finalActive.second, finalActive.third,
                 owners.stores.size, owners.sessions.size, owners.joined, owners.retiredReturns, owners.released, owners.unknownCount, ports.attempts.get()) }
             return PristineProof(completed, windows.toList(), restorePoints.toList(), controllerQuiesces, controllerRestores,
-                true, ready.first, ready.second, requireNotNull(enrollmentRequired), NativeMigrationPhase.DONE.name, NativeMigrationResult.IMPORTED.name)
+                true, ready.first, ready.second, requireNotNull(enrollmentRequired), NativeMigrationPhase.DONE.name, NativeMigrationResult.IMPORTED.name,
+                if (existingOriginals) ExistingEvidence(textDigests(requireNotNull(destinationChildren).text),
+                    requireNotNull(destinationChildren).binary.mapValues { sha(it.value) }, requireNotNull(destinationBaseline).destinationCiphertext,
+                    owners.delegatedChildRetirements) else null)
         } catch (error: Throwable) { failure = error; throw error }
         finally {
             val unresolved = withContext(NonCancellable + Dispatchers.Main.immediate) {
@@ -806,7 +923,11 @@ internal object NativeMigrationNonemptyDeviceCase {
                 lifetime.hold(listOf(owners, requireNotNull(controller), lifecycle, controllerHeld, scope),
                     failure ?: IllegalStateException("Unresolved pristine Controller owner; retain exact run until original PID exit"))
             }
-            sourceChildren?.close()
+            sourceChildren?.close(); destinationChildren?.close()
+            if (!destinationActorsResolved) withContext(NonCancellable + Dispatchers.IO) {
+                NativeMigrationChildOriginalsProfile.retainingLifetime(scope.run).hold(listOf(owners, destinationActorOwner, controllerHeld, scope),
+                    failure ?: IllegalStateException("Unresolved existing destination producer/restore owner; retain exact original PID"))
+            }
             if (!childActorsRetired) withContext(NonCancellable + Dispatchers.IO) {
                 // A partial independent actor construction/transfer grants no fabricated close receipt.
                 val lifetime = if (childOriginals) NativeMigrationChildOriginalsProfile.retainingLifetime(scope.run) else NativeMigrationReadLifetime()
@@ -946,9 +1067,10 @@ internal object NativeMigrationNonemptyDeviceCase {
     suspend fun cold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, false)
     suspend fun foregroundCold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, true)
     suspend fun childOriginalsCold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, false, childOriginals = true)
-    private suspend fun coldRead(scope: Scope, first: Proof, foreground: Boolean, childOriginals: Boolean = false): NativeMigrationNonemptyPairContract.ColdPins =
+    suspend fun existingOriginalsCold(scope: Scope, first: Proof): NativeMigrationNonemptyPairContract.ColdPins = coldRead(scope, first, false, childOriginals = true, existingOriginals = true)
+    private suspend fun coldRead(scope: Scope, first: Proof, foreground: Boolean, childOriginals: Boolean = false, existingOriginals: Boolean = false): NativeMigrationNonemptyPairContract.ColdPins =
         withContext(NonCancellable + Dispatchers.IO) {
-            scope.checkScope(); require(scope.existingOnly); require(first.schema == (if (childOriginals) NativeMigrationChildOriginalsProfile.SCHEMA else if (foreground) FOREGROUND_SCHEMA else SCHEMA) && first.run == scope.run && first.binding == scope.binding)
+            scope.checkScope(); require(scope.existingOnly); require(first.schema == (if (existingOriginals) NativeMigrationExistingOriginalsWitness.SCHEMA else if (childOriginals) NativeMigrationChildOriginalsProfile.SCHEMA else if (foreground) FOREGROUND_SCHEMA else SCHEMA) && first.run == scope.run && first.binding == scope.binding)
             val owners = NativeMigrationNonemptyPairContract.ReadOwners(scope)
             var primary: Throwable? = null
             var result: NativeMigrationNonemptyPairContract.ColdPins? = null
@@ -983,7 +1105,8 @@ internal object NativeMigrationNonemptyDeviceCase {
                 assertEquals(first.activeBinarySha256, binaryDigests(current.records))
                 verifyDomainRecords(active, original, first.receipt, true); verifyUnknownRecords(active, original)
                 if (foreground) verifyForegroundArchives(sourceForeground, active)
-                if (childOriginals) NativeMigrationChildOriginalsProfile.requireActive(current.records)
+                if (existingOriginals) NativeMigrationExistingOriginalsWitness.requireActive(current.records)
+                else if (childOriginals) NativeMigrationChildOriginalsProfile.requireActive(current.records)
                 val draft = JSONObject(active.getValue("metadata")).getJSONObject("drafts").get(first.draftKey) as String
                 require(draft == DRAFT && sha(draft.toByteArray(Charsets.UTF_8)) == first.draftTextSha256)
                 NativeMigrationSounds.validate(active, emptyMap(), current.records.binary)

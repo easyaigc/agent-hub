@@ -54,3 +54,5 @@
 阶段75：33条附件原件的组件first/cold已在新run有限通过；原first e9e11856-34bc-4320-aef6-0c65c8e8ca52仍UNKNOWN、cold未做，原工具会话/退出wait不可恢复且VM消失原因未明，不重放。真实Provider/SAF/相机非空输出、Main完整迁移UI/手机与整包互通继续待验，见[阶段75档案](records/stage75-p7-child-originals-paired.md)。
 
 阶段76：R6三包SDK/230独立Host向量及双背景事实有限通过；三个独立Native scope分别在选择动作/Dimmed/expanded容器的首次AX拒绝，均未点击/无PNG。完整SystemUI视觉/AX包含关系和九类链路向量、真实Host/OEM/物理仍待验。原scope不重放，三次权限和专用VM已收尾；继续P7不受此项阻塞，见[原生记录](records/stage76-p9-native.md)。
+
+阶段77：已有惰性资料目的端合并的R3 first/readonlycold与实际计数已有限通过，原first库存失败/未做cold那一run保留不重放。目的端有真实电脑连接仍拒绝迁移，未改成合并两套连接。Main完整迁移UI、SAF/系统原件、完整24组、通知身份策略与iOS互通继续独立待验，见[档案](records/stage77-p7-existing-originals-paired.md)。P8重建保护R2和Main/P8共用SDK静态独审通过，但须按阶段77最终源码重新绑定后采用，实际新profile/原生场景仍待验；Source99仅提案标签，未发号或复用旧scope。

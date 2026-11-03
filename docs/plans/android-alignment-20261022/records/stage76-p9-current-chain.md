@@ -19,3 +19,5 @@ R6实际原生采到两背景各自的新事实后，在expanded内容容器被�
 最终完整 `pnpm check` 仅执行一次，实际wait=0、双EOF/fsync，耗时727.553秒；42组共1518项，1456通过、62跳过、0失败/取消。独立parity 10/10、生成、格式和两类diff检查通过。Root重新核对原流摘要/计数、893项源码及HEAD/index/21项状态前后一致，并从本任务官方子Agent记录核实实际模型为GPT-6.1 Terra、medium；入口没有可核验速度参数。此检查不替代失败的原生场景或完整产品DEV。
 
 R5的App/Test与当前R6逐字节相同，原失败scope/权限/VM均收尾后仅回收这两份重复包，保留其独有Examiner与原始证据；旧ecd2 bundle成为历史部分资料。当前完整R6三包与阶段75 R3成功回退包继续保留供后续有界验收，旧包不再声称可完整复用。
+
+交付：[PR126](https://git.51easyai.com/BCAI/agent-hub-app/pulls/126) 源22e236ab48f938000bb752501e8627f36cdf446f合入main 3dde5760015f84d1be7f1b1c583e32d78cf3b505；Root核21文件及893构建源码与已验输入相符，merge双父/tree一致。源CI11258（workspace27121/ios27122）、主线CI11260（27124/27125）与自动同步11261/27126均成功；公开提交879f19e084bf0f4d85989d86bfe4ad4f053762d3的tree与来源trailer匹配。stage76本地/origin/tracking引用已清理，工作树后续由阶段77复用，原失败不升级。

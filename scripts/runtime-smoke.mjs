@@ -666,19 +666,74 @@ try {
     attachmentIds: [],
     mode: 'next-turn',
   };
-  await api('/v1/replies', compactionReply);
-  await until(compactionThread.id, (s) =>
-    s.messages.some((m) => m.kind === 'contextCompaction' && m.status === 'inProgress'),
-  );
-  await until(compactionThread.id, (s) =>
-    s.messages.some((m) => m.kind === 'contextCompaction' && m.status === 'completed'),
-  );
   // Actual HTTP boundary: independent readers, exact content, target isolation and durable receipts.
   const readerId = createHash('sha256').update('mobile-reader-a').digest('hex');
   const secondReader = createHash('sha256').update('mobile-reader-b').digest('hex');
   const readHistoryURL =
     '/v1/history?' + new URLSearchParams({ hostId, threadId: compactionThread.id, readerId });
+  // Compaction and even idle can precede asynchronous attachment-link projection.
+  // Hold only this fixture's file inspection to exercise the stale-position window deterministically.
+  const files = service.session.attachmentFiles;
+  const inspect = files.inspect;
+  const projection = Promise.withResolvers();
+  files.inspect = async function (...args) {
+    if (args[0] === join(root, 'result.txt')) await projection.promise;
+    return inspect.apply(this, args);
+  };
+  let compactionReceipt, unprojectedHistory;
+  try {
+    compactionReceipt = await api('/v1/replies', compactionReply);
+    await until(compactionThread.id, (s) =>
+      s.messages.some((m) => m.kind === 'contextCompaction' && m.status === 'inProgress'),
+    );
+    const completed = await until(
+      compactionThread.id,
+      (s) =>
+        s.runtime.state === 'idle' &&
+        s.messages.some((m) => m.kind === 'contextCompaction' && m.status === 'completed'),
+    );
+    assert.equal(
+      completed.messages.find((m) => m.id === 'a-' + compactionReceipt.turnId).text,
+      `[result](${join(root, 'result.txt')}) [again](${join(root, 'result.txt')})`,
+    );
+    unprojectedHistory = await api(readHistoryURL);
+  } finally {
+    files.inspect = inspect;
+    projection.resolve();
+  }
+  await until(
+    compactionThread.id,
+    (s) =>
+      s.runtime.state === 'idle' &&
+      s.messages.some(
+        (m) =>
+          m.id === 'a-' + compactionReceipt.turnId &&
+          m.status === 'completed' &&
+          m.attachments.length === 1 &&
+          m.text ===
+            `[result](codex-attachment://${m.attachments[0].id}) [again](codex-attachment://${m.attachments[0].id})`,
+      ),
+  );
   const readHistory = await api(readHistoryURL);
+  const unprojectedPosition = unprojectedHistory.thread.readState.latest;
+  assert.equal(readHistory.thread.readState.latest.messageId, unprojectedPosition.messageId);
+  assert(readHistory.thread.readState.latest.revision > unprojectedPosition.revision);
+  assert.notEqual(
+    readHistory.thread.readState.latest.contentVersion,
+    unprojectedPosition.contentVersion,
+  );
+  await api(
+    '/v1/threads/read',
+    {
+      hostId,
+      threadId: compactionThread.id,
+      readerId,
+      position: unprojectedPosition,
+      target: unprojectedHistory.readTarget,
+    },
+    409,
+  );
+  assert.equal((await api(readHistoryURL)).thread.readState.read, undefined);
   const position = readHistory.thread.readState.latest;
   const target = readHistory.readTarget;
   const reading = { hostId, threadId: compactionThread.id, readerId, position, target };

@@ -19218,6 +19218,15 @@
         "scripts/mobile/android-nonempty-foreground-pair.py": "a1850a4414e4560dd67e4f87a223233c41e4ab99199acf689558f3741e28b543",
         "scripts/mobile/android-sdk-capture.py": "c5c76a50f495a9351f50f17bcc7576a83657a92882962048b870f4010de3625f"
       }
+    },
+    {
+      "id": "runtime-read-projection-smoke-race-20261103",
+      "baseCommit": "c8516e645c01be7305ae02c668abf0b65e980211",
+      "features": ["F22", "F32", "F49"],
+      "summary": "仅修复压缩完成后的阅读确认辅助测试时序：固定最终回复已结束但附件链接尚未投影的窗口，验证同一消息正文投影导致版本变化、旧位置409且不误标已读；等待准确最终正文再执行原有200确认。生产过期拒绝及双端实现/验收状态保持，不新增真实模型或手机通过结论。",
+      "files": {
+        "scripts/runtime-smoke.mjs": "65254c8ea1be0b1aae130fda25c28f7414a3fa5a3770912b8d1dc2a9521bca72"
+      }
     }
   ]
 }

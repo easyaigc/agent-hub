@@ -1,6 +1,6 @@
 # 阶段74：语音原件首次迁移与只读冷恢复
 
-功能 ID：F55、F56、F64。状态：API33 两个命名 Native 方法有限通过；完整检查通过，提交/PR交付中；完整 P7 未完成。
+功能 ID：F55、F56、F64。状态：API33 两个命名 Native 方法有限通过；完整检查通过，PR123已合入；完整 P7 未完成。
 
 ## 功能、交互与界面对照
 
@@ -41,3 +41,5 @@ iOS VoiceInput/PendingVoiceStore 同为 WAV 原件；CAF 属通知声音。iOS �
 CI专项收尾：PR121修复及PR122限定P8均已真实合入main，PR122源CI11236两任务成功。准确主线CI11237的workspace27089/iOS27090均成功，公开同步11238成功，公开提交7585290d的tree与Gitea-Source-Commit均匹配cba23af8。MacBook128交付的PR121源分支按61208edc删除，Root从Gitea独立回读确认不存在；其任务临时资源/凭据已取回指纹回执，专用协调聊天归档操作confirmed且独立thread元数据archived=true。没有重跑原操作或停止正式服务。
 
 最终暂存检查补充：先前普通git diff --check未包含未跟踪源，首次实际暂存后发现新PairContract第194行尾空白与workers末尾多空行，原提交执行在commit/push/PR前停止。Root只规范这两处，Python AST与Kotlin行内容相同，未改生产语义。最终SDK的App/Test与前版逐字相同，仍以新guard和新run重新执行两个Native方法并核对完整原件。前一1496d285通过版与最初失败版均保留各自原指纹，不重标结果；最终暂存差异、生成及一致性门槛另行核对。
+
+交付终态：源5242f173经PR123正常合入48884eea，parents和整树与source一致；源CI11240的workspace27093/iOS27094成功，准确main CI11242的27096/27097成功。阶段74本地/origin/tracking三类引用清理，stage75当前现场不变。自动同步11243/27098成功，公开77f6e144的tree和来源trailer匹配；无直接公开推送。

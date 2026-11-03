@@ -84,21 +84,32 @@ internal object NativeMigrationNonemptyPairContract {
     }
     fun first(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof = parseFirst(value, false)
     fun foregroundFirst(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof = parseFirst(value, true)
-    private fun parseFirst(value: JSONObject, foreground: Boolean): NativeMigrationNonemptyDeviceCase.Proof {
+    fun childOriginalsFirst(value: JSONObject): NativeMigrationNonemptyDeviceCase.Proof = parseFirst(value, false, childOriginals = true)
+    private fun parseFirst(value: JSONObject, foreground: Boolean, childOriginals: Boolean = false): NativeMigrationNonemptyDeviceCase.Proof {
+        require(!foreground || !childOriginals)
         val controllerKeys = setOf("scenario", "keyWindows", "restorePoints", "controllerQuiesceReturns", "controllerRestoreReturns",
             "newSessionPublished", "freshReady", "controllerReady", "explicitEnrollmentRequired", "phase", "result",
             "preSessionResetObserved", "directKeyGeneratorObserved", "controllerWorkerJoinClaimed", "physicalDescriptorExitClaimed")
-        exact(value, if (foreground) firstKeys + controllerKeys else firstKeys)
-        require(string(value,"schema") == if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA)
-        require(string(value,"selectedMethod") == if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_METHOD else NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
-        if (foreground) {
+        exact(value, if (foreground || childOriginals) firstKeys + controllerKeys else firstKeys)
+        require(string(value,"schema") == if (childOriginals) NativeMigrationChildOriginalsProfile.SCHEMA else if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA else NativeMigrationNonemptyDeviceCase.SCHEMA)
+        require(string(value,"selectedMethod") == if (childOriginals) NativeMigrationChildOriginalsProfile.METHOD else if (foreground) NativeMigrationNonemptyDeviceCase.FOREGROUND_METHOD else NativeMigrationNonemptyDeviceCase.FIRST_METHOD)
+        if (foreground || childOriginals) {
             val scenario = value.getJSONObject("scenario")
-            exact(scenario, setOf("entryPath", "rootAlias", "sourceAlias", "rootNamespace", "sourceNamespace", "safPickerCovered", "uiCovered", "coldProcessCovered"))
+            exact(scenario, setOf("entryPath", "rootAlias", "sourceAlias", "rootNamespace", "sourceNamespace", "safPickerCovered", "uiCovered", "coldProcessCovered") +
+                if (childOriginals) setOf("producerProfile", "inputBoundary", "providerReadCovered", "osGrantCovered", "cameraOutputsCovered", "producerNodes", "portableTextRecords", "portableBinaryRecords") else emptySet())
+            if (childOriginals) {
+                require(string(scenario, "producerProfile") == NativeMigrationChildOriginalsProfile.SCHEMA &&
+                    string(scenario, "inputBoundary") == "synthetic-bytes-and-opaque-content-uris")
+                for (name in listOf("providerReadCovered", "osGrantCovered", "cameraOutputsCovered")) require(scenario.get(name) == false)
+                require(scenario.getJSONArray("producerNodes").strings() == NativeMigrationChildOriginalsProfile.paths)
+                require(number(scenario, "portableTextRecords") == 26 && number(scenario, "portableBinaryRecords") == 7)
+            }
             require(string(scenario,"entryPath") == "already-staged-production-candidate-controller" && string(scenario,"rootNamespace") == "installation" && string(scenario,"sourceNamespace") == "source")
             require(string(scenario,"rootAlias") == "p7-nonempty-${uuid(value,"run")}" && string(scenario,"sourceAlias") == string(scenario,"rootAlias") + "-source")
             for (name in listOf("safPickerCovered", "uiCovered", "coldProcessCovered")) require(scenario.get(name) == false)
             require(number(value,"controllerQuiesceReturns") == 1 && number(value,"controllerRestoreReturns") == 1)
-            for (name in listOf("newSessionPublished", "freshReady", "controllerReady", "explicitEnrollmentRequired")) require(value.get(name) == true)
+            for (name in listOf("newSessionPublished", "freshReady", "controllerReady")) require(value.get(name) == true)
+            require(value.get("explicitEnrollmentRequired") == foreground)
             for (name in listOf("preSessionResetObserved", "directKeyGeneratorObserved", "controllerWorkerJoinClaimed", "physicalDescriptorExitClaimed")) require(value.get(name) == false)
             require(string(value,"phase") == "DONE" && string(value,"result") == "IMPORTED")
             require(value.getJSONArray("restorePoints").strings() == NativeMigrationControllerRestorePoint.entries.map { it.name })
@@ -114,18 +125,21 @@ internal object NativeMigrationNonemptyPairContract {
             }
         }
         anchor(value.getJSONObject("anchor")); val receipt = value.getJSONObject("receipt")
-        exact(receipt,setOf("candidateId", "sha256", "records")); val recordCount = if (foreground) 13 else 9; require(number(receipt,"records") == recordCount)
-        val text = maps(value,"originalTextSha256",if (foreground) 12 else 8); val binary = maps(value,"originalBinarySha256",1)
-        if (foreground) requireForegroundNames(text.keys,binary.keys) else requireNineNames(text.keys,binary.keys)
-        for ((name,count) in mapOf("acquiredStores" to 27, "acquiredSessions" to 4, "actualSessionJoinReturns" to 4,
-            "actualWriterRetireReturns" to 25, "actualLeaseReleaseReturns" to 2, "unknownAcquisitions" to 0, "forbiddenPortAttempts" to 0))
+        exact(receipt,setOf("candidateId", "sha256", "records")); val recordCount = if (childOriginals) 33 else if (foreground) 13 else 9; require(number(receipt,"records") == recordCount)
+        val text = maps(value,"originalTextSha256",if (childOriginals) 26 else if (foreground) 12 else 8)
+        val binary = maps(value,"originalBinarySha256",if (childOriginals) 7 else 1)
+        if (childOriginals) NativeMigrationChildOriginalsProfile.requireNames(text.keys,binary.keys)
+        else if (foreground) requireForegroundNames(text.keys,binary.keys) else requireNineNames(text.keys,binary.keys)
+        val stores = if (childOriginals) 32 else 27
+        for ((name,count) in mapOf("acquiredStores" to stores, "acquiredSessions" to 4, "actualSessionJoinReturns" to 4,
+            "actualWriterRetireReturns" to stores - 2, "actualLeaseReleaseReturns" to 2, "unknownAcquisitions" to 0, "forbiddenPortAttempts" to 0))
             require(number(value,name) == count)
         val draft = string(value,"draftKey"); require(draft.startsWith("codex-machine-v2:"))
         return NativeMigrationNonemptyDeviceCase.Proof(string(value,"schema"),uuid(value,"run"),binding(value.getJSONObject("binding")),
             number(value,"pid",1),ticks(value,"startTicks"), NativeMigrationCandidateStore.Receipt(uuid(receipt,"candidateId"),hash(receipt,"sha256"),recordCount),
             uuid(value,"generation"),hash(value,"archiveSha256"), maps(value,"sourceCiphertext",64),maps(value,"originalCandidateCiphertext",64),
             maps(value,"destinationCiphertext",128),text,binary,draft,hash(value,"draftTextSha256"),maps(value,"sourceTextSha256",32),
-            maps(value,"sourceBinarySha256",1),maps(value,"activeTextSha256",32),maps(value,"activeBinarySha256",1),27,4,4,25,2,0,0)
+            maps(value,"sourceBinarySha256",1),maps(value,"activeTextSha256",32),maps(value,"activeBinarySha256",if (childOriginals) 7 else 1),stores,4,4,stores - 2,2,0,0)
     }
     /** Worker wait + raw/JUnit + four completed joins are host facts, never inferred from this App. */
     fun exit(value: JSONObject, first: NativeMigrationNonemptyDeviceCase.Proof, intentSha: String, proofSha: String) {
@@ -174,7 +188,8 @@ internal object NativeMigrationNonemptyPairContract {
             val read = ref.read { encrypted -> NativeMigrationStreamCrypto.read(encrypted,password) { clear ->
                 val digest = MessageDigest.getInstance("SHA-256"); val input = DigestInputStream(clear,digest)
                 val records = NativeMigrationStreamArchive.readHeader(input,scope.context.packageName)
-                if (first.schema == NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA) requireForeground(records) else requireNine(records)
+                if (first.schema == NativeMigrationChildOriginalsProfile.SCHEMA) NativeMigrationChildOriginalsProfile.requireNames(records.text.keys, records.binary.keys)
+                else if (first.schema == NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA) requireForeground(records) else requireNine(records)
                 require(records.frames().values.sumOf { it.size.toLong() } <= CAP)
                 val text = linkedMapOf<String,String>(); val binaries = linkedMapOf<String,ByteArray>()
                 try {
@@ -192,8 +207,10 @@ internal object NativeMigrationNonemptyPairContract {
                     if (first.schema == NativeMigrationNonemptyDeviceCase.FOREGROUND_SCHEMA)
                         require(NativeMigrationNotificationArchives.validatePortable(text).size == 4)
                     val inventory = NativeChatNotificationSoundLibrary.binaryInventory(text.getValue(NativeMigrationSounds.RECORD))
-                    require(inventory.keys == binaries.keys)
-                    for ((name,bytes) in binaries) NativeChatNotificationSoundLibrary.validateBinary(inventory.getValue(name),bytes)
+                    val childOriginals = first.schema == NativeMigrationChildOriginalsProfile.SCHEMA
+                    require(inventory.keys == if (childOriginals) binaries.keys.filter { it.startsWith("native-chat-notification-sound-v1:") }.toSet() else binaries.keys)
+                    for (name in inventory.keys) NativeChatNotificationSoundLibrary.validateBinary(inventory.getValue(name), binaries.getValue(name))
+                    if (childOriginals) NativeMigrationChildOriginalsProfile.requirePortable(text, binaries)
                     Archive(text,clearSha,first.archiveSha256)
                 } finally { binaries.values.forEach { it.fill(0) } }
             } }

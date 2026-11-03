@@ -1616,3 +1616,5 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段73 F02/F03/F04：现有产品token/文案/布局和iOS界面未改。开启Demo的Main子类验证中英偏好标签、选中语义、菜单关闭/重新打开与持久恢复；nativeRuntime=false仅隔离平台装配，不能算shipping Main、截图/真实像素、短视口/busy禁用/字号/AX/旋转或物理通过，见[阶段73](../plans/android-alignment-20261022/records/stage73-p8-main-preference.md)。
 
 阶段74 F55/F56/F64：PCM/WAV写入提为窄组件，没有页面、token、文案或iOS界面变化。Controller及原件数据first/cold有限通过不代替语音录音/取消/失败恢复界面、Main迁移密码/预览/错误/成功、SAF、短视口/方向/字体/AX与双端物理逐项对照；见[阶段74](../plans/android-alignment-20261022/records/stage74-p7-voice-originals-paired.md)。
+
+阶段75 F55/F56：没有产品页面、token、文案或iOS界面变化。新fixture只核当前草稿完整值/其他聊天持久附件不变与数据迁移first/cold；不等于文件/照片选择器、Main密码/预览/取消/失败/成功、短视口/方向/字号/AX或物理UI逐项通过，见[阶段75](../plans/android-alignment-20261022/records/stage75-p7-child-originals-paired.md)。

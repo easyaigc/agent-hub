@@ -32,13 +32,16 @@ COLD_SCHEMA = "p7-nonempty-foreground-readonly-cold-v1"
 PREFIX = "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#"
 
 
-def arguments(run, bound):
-    return pair.expected_first_arguments(run, bound) | {"class": PREFIX + METHOD, "nonemptyMode": "foreground-first"}
+def arguments(run, bound, *, child_originals=False):
+    method = controller.CHILD_METHOD if child_originals else METHOD
+    return pair.expected_first_arguments(run, bound) | {"class": PREFIX + method,
+        "nonemptyMode": "child-originals-first" if child_originals else "foreground-first"}
 
 
-def cold_arguments(original_arguments, admission):
+def cold_arguments(original_arguments, admission, *, child_originals=False):
     raw = encoded(admission); require(len(raw) <= 8192, "Cold admission argument bound")
-    return original_arguments | {"class": PREFIX + COLD_METHOD, "nonemptyMode": "foreground-cold",
+    return original_arguments | {"class": PREFIX + ("childOriginalsReadOnlyColdAfterExactOriginalExit" if child_originals else COLD_METHOD),
+        "nonemptyMode": "child-originals-cold" if child_originals else "foreground-cold",
         "nonemptyFirstIntentSha256": admission["firstIntentSha256"], "nonemptyFirstProofSha256": admission["firstProofSha256"],
         "nonemptyExitAdmissionSha256": sha(raw), "nonemptyExitAdmissionJson": raw.decode("utf-8")}
 
@@ -53,7 +56,9 @@ def completed_worker(args, phase, expected_arguments, admission_sha, method):
         selected_method=method)
 
 
-def verify_cold(args, first_proof, admission, intent_raw, proof_raw, observed):
+def verify_cold(args, first_proof, admission, intent_raw, proof_raw, observed, *, child_originals=False):
+    cold_schema = "p7-child-originals-readonly-cold-v1" if child_originals else COLD_SCHEMA
+    cold_method = "childOriginalsReadOnlyColdAfterExactOriginalExit" if child_originals else COLD_METHOD
     intent = capture.parse_json(intent_raw); proof = capture.parse_json(proof_raw)
     common = {"schema", "run", "binding", "pid", "startTicks", "selectedMethod", "anchor", "firstIntentSha256",
         "firstProofSha256", "exitAdmissionSha256", "firstPid", "firstStartTicks"}
@@ -62,7 +67,7 @@ def verify_cold(args, first_proof, admission, intent_raw, proof_raw, observed):
         "activeTextSha256", "activeBinarySha256", "protectedDataSha256", "fixtureAliasesSha256", "readerCloseReturns",
         "protectedDataUnchanged", "fixtureAliasesUnchanged"})
     require(all(first.same(intent[key], proof[key]) for key in common), "Cold intent/proof changed")
-    require(proof["schema"] == COLD_SCHEMA and proof["selectedMethod"] == COLD_METHOD and proof["run"] == args.run and
+    require(proof["schema"] == cold_schema and proof["selectedMethod"] == cold_method and proof["run"] == args.run and
         first.same(proof["binding"], first_proof["binding"]) and first.same(proof["anchor"], first_proof["anchor"]), "Exact foreground cold profile/binding/anchor")
     for name in ("firstIntentSha256", "firstProofSha256"):
         require(proof[name] == admission[name], "Original immutable document changed")
@@ -83,11 +88,14 @@ def verify_cold(args, first_proof, admission, intent_raw, proof_raw, observed):
     return proof
 
 
-def run_pair(args):
+def run_pair(args, *, child_originals=False):
+    require(type(child_originals) is bool, "Closed shared Controller pair profile")
+    method = controller.CHILD_METHOD if child_originals else METHOD
+    cold_method = "childOriginalsReadOnlyColdAfterExactOriginalExit" if child_originals else COLD_METHOD
     os.umask(0o077)
     require(Path(__file__).resolve() == Path(args.repo).resolve() / TOOL, "Run only reviewed in-repo foreground adapter")
     output = capture.private_directory(args.output_dir, empty=True)
-    guard, admission, build = controller.admitted(args, foreground=True)
+    guard, admission, build = controller.admitted(args, foreground=not child_originals, child_originals=child_originals)
     device = pair.Device(args); require(device.boot() == args.boot_uuid, "Admitted boot differs")
     installed = {first.PACKAGE: admission["appApkSha256"], first.TEST_PACKAGE: admission["testApkSha256"]}
     require(device.installed() == installed, "Installed App/Test differ from captured SDK artifacts")
@@ -95,19 +103,20 @@ def run_pair(args):
     first.integer(int(sdk), 26, 1000)
     adb_version = device.call(["version"], 8192)
     require(adb_version.returncode == 0 and not adb_version.stderr and adb_version.stdout.startswith(b"Android Debug Bridge version"), "Actual captured ADB version")
-    first.write_new(output / "sdk-observation.json", {"schema": "p7-foreground-sdk-observation-v1", "deviceApi": int(sdk),
+    first.write_new(output / "sdk-observation.json", {"schema": "p7-child-originals-sdk-observation-v1" if child_originals else "p7-foreground-sdk-observation-v1", "deviceApi": int(sdk),
         "adbVersion": adb_version.stdout.decode(), "buildSealSha256": build["sealSha256"]})
     first.write_guard(output / "source-guard.json", guard); first.write_new(output / "source-admission.json", admission)
     admission_sha = first.digest(output / "source-admission.json"); bound = first.binding(admission, admission_sha)
-    native_arguments = arguments(args.run, bound)
+    native_arguments = arguments(args.run, bound, child_originals=child_originals)
     first.write_new(output / "instrumentation-arguments.json", native_arguments)
-    original = {}; pair.worker(args, device, "first", native_arguments, admission_sha, original, selected_method=METHOD)
+    original = {}; pair.worker(args, device, "first", native_arguments, admission_sha, original, selected_method=method)
     documents = {}
     for name in ("first-intent", "first-proof"):
         result = device.document(name); require(result.returncode == 0 and not result.stderr, "Missing original Native document")
         pair.write_native(output / (name + ".json"), result.stdout); documents[name] = result.stdout
-    proof = controller.verify_native(documents["first-intent"], documents["first-proof"], args, admission, original, foreground=True)
-    worker, worker_sha = completed_worker(args, "first", native_arguments, admission_sha, METHOD)
+    proof = controller.verify_native(documents["first-intent"], documents["first-proof"], args, admission, original,
+        foreground=not child_originals, child_originals=child_originals)
+    worker, worker_sha = completed_worker(args, "first", native_arguments, admission_sha, method)
     deadline = time.monotonic() + 30; exited = None
     while time.monotonic() < deadline:
         exited = device.exited(original)
@@ -117,7 +126,7 @@ def run_pair(args):
     pair.exit_observation(exited, original); first.write_new(output / "exit-process.json", exited)
 
     def stable():
-        current_guard, current_admission, current_build = controller.admitted(args, foreground=True)
+        current_guard, current_admission, current_build = controller.admitted(args, foreground=not child_originals, child_originals=child_originals)
         require(first.same(current_guard, guard) and first.same(current_admission, admission) and
             current_build["sealSha256"] == build["sealSha256"] and device.installed() == installed and
             device.success(["getprop", "ro.build.version.sdk"]).strip() == sdk and
@@ -132,29 +141,29 @@ def run_pair(args):
         "sdkVersionSha256": first.digest(output / "sdk-observation.json"), "exitKind": exited["kind"],
         "exitObservationSha256": first.digest(output / "exit-process.json")}
     first.write_new(output / "cold-admission.json", exit_admission)
-    cold_args = cold_arguments(native_arguments, exit_admission)
+    cold_args = cold_arguments(native_arguments, exit_admission, child_originals=child_originals)
     first.write_new(output / "cold-instrumentation-arguments.json", cold_args)
-    fresh = {}; pair.worker(args, device, "readonly-cold", cold_args, sha(encoded(exit_admission)), fresh, selected_method=COLD_METHOD)
+    fresh = {}; pair.worker(args, device, "readonly-cold", cold_args, sha(encoded(exit_admission)), fresh, selected_method=cold_method)
     cold_documents = {}
     for name in ("cold-intent", "cold-proof"):
         result = device.document(name); require(result.returncode == 0 and not result.stderr, "Missing cold Native document")
         pair.write_native(output / (name + ".json"), result.stdout); cold_documents[name] = result.stdout
-    verify_cold(args, proof, exit_admission, cold_documents["cold-intent"], cold_documents["cold-proof"], fresh)
-    _, cold_worker_sha = completed_worker(args, "readonly-cold", cold_args, sha(encoded(exit_admission)), COLD_METHOD)
+    verify_cold(args, proof, exit_admission, cold_documents["cold-intent"], cold_documents["cold-proof"], fresh, child_originals=child_originals)
+    _, cold_worker_sha = completed_worker(args, "readonly-cold", cold_args, sha(encoded(exit_admission)), cold_method)
     final_exit = device.exited(original); require(final_exit is not None, "Original process exit no longer established")
     pair.exit_observation(final_exit, original); first.write_new(output / "final-exit-process.json", final_exit)
     stable()
     # Re-read immutable control evidence after cold; no normalization or old first proof is accepted.
     for name, raw in documents.items():
         result = device.document(name); require(result.returncode == 0 and not result.stderr and result.stdout == raw, "Original document changed after cold")
-    result = {"schema": "p7-nonempty-foreground-paired-host-review-v1", "run": args.run,
-        "selectedMethod": METHOD, "coldMethod": COLD_METHOD, "sourceRecords": 13,
+    result = {"schema": "p7-child-originals-paired-host-review-v1" if child_originals else "p7-nonempty-foreground-paired-host-review-v1", "run": args.run,
+        "selectedMethod": method, "coldMethod": cold_method, "sourceRecords": 33 if child_originals else 13,
         "firstProofSha256": sha(documents["first-proof"]), "coldProofSha256": sha(cold_documents["cold-proof"]),
         "exitAdmissionSha256": sha(encoded(exit_admission)), "firstWorkerReceiptSha256": worker_sha,
         "coldWorkerReceiptSha256": cold_worker_sha, "buildSealSha256": build["sealSha256"],
         "sourceGuardSha256": bound["sourceGuardSha256"], "sourceAdmissionSha256": admission_sha,
-        "pairedReadonlyColdAccepted": True, "sameBootEstablished": True, "explicitFreshEnrollmentRequired": True,
-        "sourceOriginalProtocols": ["identity-v1", "foreground-v1", "recovery-v2", "authorizations-v1"],
+        "pairedReadonlyColdAccepted": True, "sameBootEstablished": True, "explicitFreshEnrollmentRequired": not child_originals,
+        "sourceOriginalProtocols": ["external-inbox-v2", "document-journal-v2", "photo-journal-v2", "selection-payloads-v2"] if child_originals else ["identity-v1", "foreground-v1", "recovery-v2", "authorizations-v1"],
         "protectedDataScope": ["run/no_backup", "run/cache", "run/files", "run/first-intent.json", "run/first-proof.json"],
         "newControlFiles": ["run/cold-intent.json", "run/cold-proof.json"],
         "safPickerAccepted": False, "uiAccepted": False, "full24Accepted": False, "physicalDeviceClaimed": False,
@@ -163,14 +172,14 @@ def run_pair(args):
     first.write_new(output / "paired-host-review.json", result); print(json.dumps(result))
 
 
-def main():
+def main(*, child_originals=False):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     command = sub.add_parser("run-pair")
     for name in ("repo", "output-dir", "app-apk", "test-apk", "adb", "serial", "run", "boot-uuid", "build-bundle"):
         command.add_argument("--" + name, required=True)
     command.add_argument("--uid", required=True, type=int)
-    run_pair(parser.parse_args())
+    run_pair(parser.parse_args(), child_originals=child_originals)
 
 
 if __name__ == "__main__":

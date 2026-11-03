@@ -78,3 +78,5 @@ Stage69补充（2026-11-03）：普通actualSession在已初始化空目标上�
 Stage70：普通已初始化空目标8TEXT+1CAF，同SDK首次迁移与不同PID readonly cold两方法有限通过；两个reader关闭与受保护数据/alias未变，不扩展成完整24项系统范围或iOS共同wire。旧cold anchor失败未解释，pristine/全局通知owner/语音与完整Controller/UI/物理仍待验；见[阶段70](../../records/stage70-p7-paired-readonly-cold.md)。
 
 Stage74：root-sealed-voice/provisional的三种真实确定性PCM producer窗口，经普通Controller与同boot不同PID readonlycold两方法有限通过；16条portable不代表24组完成。目的端13text/5binary含新增审计/墓碑，sealed只读、R/U惰性，原件与原回执保持，不恢复录音/重放。真实麦克风/SAF/自然故障/完整UI/物理及iOS整包互通仍待验，见[阶段74](../../records/stage74-p7-voice-originals-paired.md)。
+
+Stage75：external-inbox、document/photo selection-journal与payload五child真实本地producer非空原件，经普通Controller和同boot不同PID readonlycold两方法有限通过，33portable/32stores/4Session join；原URI/绑定只审计，不注册旧回调/授权或自动导入。旧first UNKNOWN未升级；相机非空输出仍拒绝，真实Provider/SAF/系统UI/手机/完整24项与iOS整包仍开放，见[阶段75](../../records/stage75-p7-child-originals-paired.md)。

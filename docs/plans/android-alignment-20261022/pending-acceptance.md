@@ -50,3 +50,5 @@
 | P8 Main偏好提案运行验收                   | 新R3提案仅独立静态审查通过，未纳入当前T源码；无SDK/Native/Main像素或busy-disabled通过                                                                                                                                                               | 在专属阶段审查接入后，按实际Main入口与当前指纹验收；不替代原七组/issuer/网络/桌面及shared default family矩阵                                                                                                    |
 
 阶段74更新：语音原件三窗口的Controller first/readonlycold组件通过，真实麦克风正常/取消/中断、识别、SAF及Main完整迁移UI/物理仍待验；iOS sealed/provisional恢复策略与整包差异保留。P9新SystemUI诊断在越界子节点处拒绝，未点击/无PNG；新crop边界候选尚未通过Native，旧失败不升级，见[阶段74](records/stage74-p7-voice-originals-paired.md)。
+
+阶段75：33条附件原件的组件first/cold已在新run有限通过；原first e9e11856-34bc-4320-aef6-0c65c8e8ca52仍UNKNOWN、cold未做，原工具会话/退出wait不可恢复且VM消失原因未明，不重放。真实Provider/SAF/相机非空输出、Main完整迁移UI/手机与整包互通继续待验，见[阶段75档案](records/stage75-p7-child-originals-paired.md)。

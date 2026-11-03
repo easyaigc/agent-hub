@@ -322,8 +322,13 @@ def worker_method(mode, arguments, selected_method=None):
     require(mode in {"first", "readonly-cold"}, "Closed worker phase")
     expected = first.METHOD if mode == "first" else first.COLD_METHOD
     if selected_method is not None:
-        expected = "nonemptyForegroundControllerProducesPortableArchives" if mode == "first" else "nonemptyForegroundReadOnlyColdAfterExactOriginalExit"
-        require(selected_method == expected, "Closed foreground worker selector")
+        selectors = {
+            ("first", "foreground-first"): "nonemptyForegroundControllerProducesPortableArchives",
+            ("readonly-cold", "foreground-cold"): "nonemptyForegroundReadOnlyColdAfterExactOriginalExit",
+            ("first", "child-originals-first"): "childOriginalsControllerProducesPortableArchives",
+            ("readonly-cold", "child-originals-cold"): "childOriginalsReadOnlyColdAfterExactOriginalExit"}
+        expected = selectors.get((mode, arguments.get("nonemptyMode")))
+        require(expected is not None and selected_method == expected, "Closed named profile worker selector")
     require(arguments.get("class") == "com.agenthub.android.NativeMigrationNonemptyDeviceSessionTest#" + expected, "Worker method/actual class mismatch")
     return expected
 

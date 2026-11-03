@@ -76,3 +76,5 @@ Stage68补充（2026-11-02）：actual Controller经show/recoverCandidate/confir
 Stage69补充（2026-11-03）：普通actualSession在已初始化空目标上，以真实producer的阅读账本、通知偏好/leases/unknown receipts与normalized CAF完成8文本+1binary/9条迁移闭环，API33 1项Native有限通过；该样本有非空资料，但不关闭24项系统范围中的任何整组。voice preference原记录缺省，foreground identity/通知archive producer未覆盖；paired cold未实施，pristine无root KEY、全局通知owner/端口、完整UI/物理与跨平台整包互通仍待验。此前direct/Controller严格owner证明保持独立，过程见[阶段69](../../records/stage69-p7-nonempty-device-session.md)。
 
 Stage70：普通已初始化空目标8TEXT+1CAF，同SDK首次迁移与不同PID readonly cold两方法有限通过；两个reader关闭与受保护数据/alias未变，不扩展成完整24项系统范围或iOS共同wire。旧cold anchor失败未解释，pristine/全局通知owner/语音与完整Controller/UI/物理仍待验；见[阶段70](../../records/stage70-p7-paired-readonly-cold.md)。
+
+Stage74：root-sealed-voice/provisional的三种真实确定性PCM producer窗口，经普通Controller与同boot不同PID readonlycold两方法有限通过；16条portable不代表24组完成。目的端13text/5binary含新增审计/墓碑，sealed只读、R/U惰性，原件与原回执保持，不恢复录音/重放。真实麦克风/SAF/自然故障/完整UI/物理及iOS整包互通仍待验，见[阶段74](../../records/stage74-p7-voice-originals-paired.md)。

@@ -7,7 +7,6 @@ import android.media.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 import java.io.File
-import java.io.RandomAccessFile
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.sqrt
@@ -39,23 +38,21 @@ internal class NativeAudioCapture(private val file: File,private val scope: Coro
                 recorder=input
                 if(!running.get()) { ready.completeExceptionally(CancellationException("录音已取消"));return@async }
                 input.startRecording();check(input.recordingState==AudioRecord.RECORDSTATE_RECORDING) { "麦克风未能开始录音，原草稿已保留。" };ready.complete(Unit)
-                rawWriter.requireCurrent()
-                RandomAccessFile(file,"rw").use { out->
-                    android.system.Os.chmod(file.path,0x180);out.setLength(0);out.write(WavePCM.header(0))
-                    val buffer=ShortArray(1600);val bytes=ByteArray(buffer.size*2);var count=0
-                    while(running.get() && count<9_600_000) {
+                NativeVoicePcmWriter(file,rawWriter).use { out->
+                    val buffer=ShortArray(1600);val bytes=ByteArray(buffer.size*2)
+                    while(running.get() && out.pcmBytes<9_600_000) {
                         ensureActive()
-                        val n=input.read(buffer,0,minOf(buffer.size,(9_600_000-count)/2),AudioRecord.READ_BLOCKING)
+                        val n=input.read(buffer,0,minOf(buffer.size,(9_600_000-out.pcmBytes)/2),AudioRecord.READ_BLOCKING)
                         check(n>0) { "录音已被系统中断，原文件已保留。" }
                         var power=0.0
                         for(i in 0 until n) { val value=buffer[i].toInt();bytes[i*2]=value.toByte();bytes[i*2+1]=(value shr 8).toByte();power+=value.toDouble()*value }
-                        rawWriter.requireCurrent();out.write(bytes,0,n*2);count+=n*2
+                        // Same production sink is exercised by deterministic PCM migration acceptance.
                         // A process death leaves recoverable PCM; the final header is sealed before networking.
-                        if(count%32000<n*2) out.fd.sync()
+                        out.append(bytes,n*2)
                         val level=(sqrt(power/n)/5000).toFloat().coerceIn(0f,1f)
                         withContext(Dispatchers.Main.immediate) { meter(level) }
                     }
-                    rawWriter.requireCurrent();out.seek(0);out.write(WavePCM.header(count));out.fd.sync()
+                    out.finish()
                 }
             } catch(e: Throwable) { ready.completeExceptionally(e);throw e }
             finally { try {running.set(false);recorder?.let { try { if(it.recordingState==AudioRecord.RECORDSTATE_RECORDING) it.stop() } finally { it.release() } }} finally {owned?.close()} }

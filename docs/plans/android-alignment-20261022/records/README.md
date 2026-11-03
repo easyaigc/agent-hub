@@ -262,3 +262,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source85 最近项目原生结果](source85-p7-recent-projects-native.md)：7项规则/Main/加密恢复及三原图读回通过；视觉差异转Source86，完整P7仍开放。
 
 - [Source86 最近项目阶段结果](source86-p7-recent-projects.md)：六源实现、7项Native及三原图源契约限定通过；完整P7和设备矩阵继续开放。
+
+- [阶段74 语音原件first/cold](stage74-p7-voice-originals-paired.md)：真实确定性PCM的三种原件窗口、16条portable、同boot不同PID两方法有限通过；真实麦克风/SAF/UI与完整P7待验。

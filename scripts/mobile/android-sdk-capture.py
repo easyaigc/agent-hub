@@ -21,6 +21,9 @@ APK_CAP = 256 * 1024 * 1024
 _LIVE = {}  # Exact Popen owners are retained before any fallible owner/marker/raw operation.
 APP = "com.easyai.agenthub.android.acceptance"
 PROFILES = {
+    "p7-voice-originals": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
     "p8-main-preference": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
@@ -439,6 +442,9 @@ def _review(api, path, expected_sha, profile):
         require(set(rows) == set(api.P8_MAIN_OVERLAY_PATHS), "P8 requires its exact independent Main/admission/tool source set")
         require(all(rows[name].get("afterSha256") == pin for name, pin in api.P8_MAIN_FIXED_SOURCES.items()),
             "P8 production/debug/test/frozen P7 pins are fixed by its source contract")
+    elif profile == "p7-voice-originals":
+        require(set(rows) == set(['apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt', 'apps/android/src/debug/AndroidManifest.xml', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt', 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt', 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt', 'scripts/mobile/android-main-preference.py', 'scripts/mobile/android-nonempty-device-first.py', 'scripts/mobile/android-nonempty-device-pair.py', 'scripts/mobile/android-nonempty-foreground-pair.py', 'scripts/mobile/android-nonempty-pristine-first.py', 'scripts/mobile/android-sdk-capture.py', 'scripts/mobile/android-voice-originals-controller.py', 'scripts/mobile/android-voice-originals-pair.py', 'scripts/mobile/android-voice-originals-workers.py']),
+            "Voice originals requires exactly the reviewed P8/voice twenty-four-source union; old profiles remain closed")
     elif profile == "p7":
         require(set(rows) == set(api.DYNAMIC_SOURCES), "P7 allows only the six reviewed test/tool overlays")
     elif profile == "p7-foreground":

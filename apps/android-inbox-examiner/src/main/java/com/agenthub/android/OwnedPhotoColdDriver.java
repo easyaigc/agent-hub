@@ -39,7 +39,7 @@ public final class OwnedPhotoColdDriver extends Instrumentation {
     }
     private void sourceActivity(String mode) { getTargetContext().startActivity(new Intent().setComponent(new ComponentName(APP+".test","com.agenthub.android.OwnedPhotoMediaActivity")).putExtra("nonce",nonce).putExtra("mode",mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
     private AccessibilityNodeInfo currentRoot() {
-        if(android.os.Build.VERSION.SDK_INT>=33)getUiAutomation().clearCache();
+        if(android.os.Build.VERSION.SDK_INT>=34)getUiAutomation().clearCache();
         AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();if(root!=null)root.refresh();return root;
     }
     private List<AccessibilityNodeInfo> nodes(String owner) {

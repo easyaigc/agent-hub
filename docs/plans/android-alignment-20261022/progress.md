@@ -2,7 +2,7 @@
 
 更新：2026-11-03。仅列整体范围、完成/未完成、优先级和交付；过程写[各阶段档案](records/README.md)，环境依赖与暂停事项单列[待验清单](pending-acceptance.md)。逐提交/功能/界面对照继续以[冻结矩阵](parity.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)逐行关闭，不以局部通过计算完成率。
 
-最近主线：[PR123](https://git.51easyai.com/BCAI/agent-hub-app/pulls/123) 已合入 `48884eea`，阶段74三类分支引用已清理；源CI11240、主线CI11242及自动公开同步均成功。阶段75附件原件33条first/cold有限通过，SDK及完整工作区检查通过，准备提交；P8/P9独立项继续。
+最近主线：[PR125](https://git.51easyai.com/BCAI/agent-hub-app/pulls/125) 已合入 `a9845a19`，阶段75三类分支引用已清理；源CI11248、主线CI11250及自动公开同步11251均成功。阶段76当前主线三包SDK/230独立Host契约与双背景事实有限通过，完整SystemUI点击仍待验；收束工具范围后，优先装配P7已有惰性资料目的端合并及Main界面候选。
 
 ## 阶段总表
 
@@ -41,7 +41,7 @@
 
 - 阶段65已交付：[PR114](https://git.51easyai.com/BCAI/agent-hub-app/pulls/114) 源 `c7fad315` 已合入 Gitea main `c36a5267`；CI11154的workspace26943/ios26944成功，本地/origin/tracking阶段65分支已清理，见[交付档案](records/stage65-pr114-ci-fixture.md)。
 - 阶段68已交付：源 `7685fff3` 经 [PR116](https://git.51easyai.com/BCAI/agent-hub-app/pulls/116) 合入 main `bd07913c`，分支三类引用已清理；Native2项与本轮完整检查通过。准确主线CI11177与公开同步11178均已成功，公开提交`9a321ed4`的来源SHA/tree匹配；原同步失败保留，见[档案](records/stage68-p7-controller-strict-restore.md)。
-- 当前：[PR123](https://git.51easyai.com/BCAI/agent-hub-app/pulls/123) 已合入main `48884eea`，准确主线CI和自动同步成功，阶段74分支已清理。阶段75在安卓专用分支完成附件原件两项Native、SDK及完整工作区检查，准备提交；旧UNKNOWN单列。P9当前整合候选尚未Native通过。任务/项目CRUD、F75、A6暂停。
+- 当前：[PR125](https://git.51easyai.com/BCAI/agent-hub-app/pulls/125) 已合入main `a9845a19`，准确主线CI和自动同步成功，阶段75分支已清理。阶段76的工具与限定诊断已完成本地检查，准备提交安卓专用分支；完整SystemUI点击仍待验，[链路检查](records/stage76-p9-current-chain.md)和[原生记录](records/stage76-p9-native.md)分开。随后继续P7已有资料目的端合并及Main界面验收。旧UNKNOWN及未验矩阵保持，任务/项目CRUD、F75、A6暂停。
 
 ## 维护与追溯
 

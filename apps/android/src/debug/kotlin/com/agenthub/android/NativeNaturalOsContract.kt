@@ -83,6 +83,18 @@ internal object NativeNaturalOsContract {
             .put("intentHash",intentHash).put("phase","entry-attempted").toString().toByteArray()
         return NativeNaturalEntryFence.claim(context.noBackupFilesDir.canonicalFile,bytes,::sync)
     }
+    private fun processText(path: String, cap: Int): String = File(path).inputStream().use { input ->
+        val bytes = ByteArray(cap + 1); var count = 0
+        while (count < bytes.size) { val n = input.read(bytes, count, bytes.size - count); if (n < 0) break; require(n > 0); count += n }
+        require(count in 1..cap); bytes.copyOf(count).toString(Charsets.UTF_8)
+    }
+    private fun processStartTicks(): Long {
+        val stat = processText("/proc/self/stat", 8192)
+        require(stat.startsWith("${android.os.Process.myPid()} (") && stat.contains(") "))
+        val fields = stat.substringAfterLast(") ").trim().split(Regex("\\s+")); require(fields.size >= 20)
+        return fields[19].toLong().also { require(it > 0) }
+    }
+    private fun bootId(): String = processText("/proc/sys/kernel/random/boot_id", 64).trim().also { NativeChatNotificationColdPlan.uuid(it) }
     fun proof(context: Context,lease: String,attempt: String,name: String,value: JSONObject) {
         guard(context);NativeChatNotificationColdPlan.uuid(lease);NativeChatNotificationColdPlan.uuid(attempt);require(name in setOf("producer","first-open","new-draft","failed"))
         var folder=context.filesDir.canonicalFile
@@ -92,6 +104,6 @@ internal object NativeNaturalOsContract {
         }
         append(File(folder,"$name.json"),value.put("version",1).put("lease",lease).put("attempt",attempt).put("pid",android.os.Process.myPid()).put("nonce",NativeChatNotificationColdStart.processNonce)
             .put("bootCount",android.provider.Settings.Global.getInt(context.contentResolver,android.provider.Settings.Global.BOOT_COUNT)).put("elapsed",android.os.SystemClock.elapsedRealtime())
-            .put("requiresIndependentObserver",true).put("fullDevVendorHostModel",false))
+            .put("startTicks",processStartTicks()).put("bootId",bootId()).put("requiresIndependentObserver",true).put("fullDevVendorHostModel",false))
     }
 }

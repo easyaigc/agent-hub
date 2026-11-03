@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Controlled local Android SDK capture. Only fixed p7/p8-main-preference/p9 build profiles are exposed by CLI."""
+"""Controlled local Android SDK capture. Only fixed p7/p8-main-preference/p9/p9-current-main-v2 build profiles are exposed by CLI."""
 import argparse
 import hashlib
 import importlib.util
@@ -39,11 +39,32 @@ PROFILES = {
     "p7": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
+    "p9-current-main-v2": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest", ":android-inbox-examiner:assembleDebug"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test"),
+        "examiner": (".build/native/android-inbox-examiner/outputs/apk/debug/android-inbox-examiner-debug.apk", APP + ".coldexaminer")}},
     "p9": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest", ":android-inbox-examiner:assembleDebug"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test"),
         "examiner": (".build/native/android-inbox-examiner/outputs/apk/debug/android-inbox-examiner-debug.apk", APP + ".coldexaminer")}},
 }
+
+
+# New explicitly reviewed 26+10 scope. The unadopted r1 34-source profile is NOT exposed.
+P9_CURRENT_MAIN_PROFILE = "p9-current-main-v2"
+P9_CURRENT_MAIN_REVIEW_SCHEMA = "p9-current-main-build-workspace-review-v2"
+P9_CURRENT_MAIN_OVERLAY_PATHS = ('apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt', 'apps/android/src/debug/AndroidManifest.xml', 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt', 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt', 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt', 'scripts/mobile/android-child-originals-pair.py', 'scripts/mobile/android-main-preference.py', 'scripts/mobile/android-nonempty-device-first.py', 'scripts/mobile/android-nonempty-device-pair.py', 'scripts/mobile/android-nonempty-foreground-pair.py', 'scripts/mobile/android-nonempty-pristine-first.py', 'scripts/mobile/android-sdk-capture.py', 'scripts/mobile/android-voice-originals-controller.py', 'scripts/mobile/android-voice-originals-pair.py', 'scripts/mobile/android-voice-originals-workers.py')
+# All 35 non-self after hashes include exact current P7/helper/production and P9 r2 bytes.
+# Self capture after is Root-reviewed externally and joined by the same-FD Host bridge;
+# do not embed a recursive self hash or infer approval from dirty paths.
+P9_CURRENT_MAIN_FIXED_AFTER = {'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java': '240537ab210090a390eac8e480dd53d0f31d062460cd89ae7aa65536f92221e8', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java': '19c69743716f5a7c599566055ff65d4f3134695aecb4f189fa41d2e897e65efc', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java': '1006bf92d477c7a9fdea00edbd9a4a8e18a7b0b522b06e88a99961ed0e784c59', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java': '2d32b5d43b7af4b533dc3dd72131b0ba19dd6f2b59221ac6c44e8c9eecb6de44', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java': 'd6691f3e5f018aae62f49f5c8550014e9732aef7f10b93a206bef1dd52d4bc09', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java': 'a2a53d3070ed8fb2af0e59e5b7a9d4249e7e8db6ee9cc3a0d9d7ddafe265adbf', 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java': '635b54a3ae32e553160b56b2b365445502ff91d75d53fb28573d0a30e1b398bf', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt': '5e121b85a1d131f94a65f4cabadeb1f02a0690db657fa43e4f7aff5e616af817', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt': 'fa3784bf5a607aca6ca2fe6b18468ff8c71f2b51602d1c4bbe8d2af065e9116c', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt': '77216320cc8f21047c10d400585fb72f133edb7f538f33bce58266e1a851673d', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt': 'dc49e9a3bb87f0a52bafc63cec10626861cc6e9351466f41114ee947c4630a9f', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt': '00f88111a2d80df690c301622d2b38db11ee781c3dda283a1b9c2ca46dfba800', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt': '5c5e38bef9254e0c3d059e8f45068e78b9bb6d41c116cded388cb88ad1fe9781', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt': 'f8aaffcfca94f4b94171cbfd2619346693ca35f130a25023c18a32678d3719eb', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt': '01b09b2d799b18040130c2170361e0c28ce7b060ea529b1264346f6026c41932', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt': 'b0e1f2593e82fc97754ef62873bd070d8b23cdf9f0bed233e79044118e93b31e', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '2de69cd6e511ca25f10b350c35a6b7730e983bad6535b4ccbd95a29b5ec043aa', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt': 'f490b3161b0baf900ad6a54717721c59cbf7405f2786e4f0639b8cb0ef08916a', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt': '90ca84c62835aa01defd18187ec046c6132b5eb88b856d016fd450b2d85f7c3c', 'apps/android/src/debug/AndroidManifest.xml': '7ffdd95963f02030f3c5bcd2ab5a3171114b8bea254ce9f90a8fdbb1ff266464', 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt': '0403ead475d9f55dfabb40962d2cbb36af5d199db866587fc66e85456d7f40f2', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt': '2c8ff5a7be9a36381fe39c64be5d0d97d4087cdc158352dd2bf3673857d9dd4d', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt': 'c0a168dbdc3a4bc4a5bf07fa4607d0032957a028b4b09253cba94302cd5fe775', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt': '99a73b93f9a43e9cc95b76da48962237bce28a0e0851a4f64a1923e3bc3859bd', 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt': 'abc482f97cba1342b39b767d4dd914af67d04b4c5b695cef451abb2d8ab035bf', 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt': '38cb07a63db7dc69f539febda7d44e3229f173d6068a3424035d5fbc22afd8b4', 'scripts/mobile/android-child-originals-pair.py': '93d21c46d9641f6354e106721429570e1531253faa94b7cd155d4ebf0797bbb5', 'scripts/mobile/android-main-preference.py': '4cb81b7d2e101a08c070c286b1b8e8d17d8ed84c92be81cf39468c9f3742c53b', 'scripts/mobile/android-nonempty-device-first.py': '47a2df7800252c46d3c466cba9df5bdf13817c7d3a67178cd73ac810e42dc775', 'scripts/mobile/android-nonempty-device-pair.py': 'e977ccfe527048f1b7c72891c3e4f680ca490d5bdd9ecc259c080a8ac28700a3', 'scripts/mobile/android-nonempty-foreground-pair.py': '3a8b35cd2893450071ed2392e688f56c6f457f923939fc61a305f1d4573b81f5', 'scripts/mobile/android-nonempty-pristine-first.py': '5ffe99fcfcfe467d28d97c9bc2752a232903d77dae70c6837bfba0139a4f4be4', 'scripts/mobile/android-voice-originals-controller.py': '0895246bbd8336856da95ed1ac2376596cfa927262d40247fcf8ca70f029475d', 'scripts/mobile/android-voice-originals-pair.py': '126d224437a1543fcc84c3358f9e40739c3bb905cd3d66265acf15b587c8eae9', 'scripts/mobile/android-voice-originals-workers.py': 'ac8392bc03e76b0dc859cf79e97a1d808840c331b6fe5eeef05973d43e40f187'}
+
+
+def _current_main_v2_overlay(overlay):
+    require(type(overlay) is dict and set(overlay) == set(P9_CURRENT_MAIN_OVERLAY_PATHS),
+        "Current-main v2 requires exact reviewed child26 plus P9 ten-source union")
+    require(all(overlay[name] == pin for name, pin in P9_CURRENT_MAIN_FIXED_AFTER.items()),
+        "Current-main v2 fixed current production/P7/helper/P9 after pins differ")
 
 
 def require(ok, message):
@@ -438,10 +459,14 @@ def _review(api, path, expected_sha, profile):
     raw = private_bytes(path, 131072); require(sha(raw) == expected_sha, "Root-reviewed-state fingerprint required")
     value = parse_json(raw)
     api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
-    require(value["schema"] == ("p8-main-build-workspace-review-v1" if profile == "p8-main-preference" else "p7-build-workspace-review-v1"), "Reviewed state schema")
+    require(value["schema"] == (P9_CURRENT_MAIN_REVIEW_SCHEMA if profile == P9_CURRENT_MAIN_PROFILE else ("p8-main-build-workspace-review-v1" if profile == "p8-main-preference" else "p7-build-workspace-review-v1")), "Reviewed state schema")
     api.canonical_uuid(value["reviewId"]); require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}",value["head"]),"Reviewed Git HEAD"); api.sha(value["statusSha256"])
     rows = value["sourceOverlay"]; require(type(rows) is dict and len(rows) <= 64, "Reviewed overlay bound")
-    if profile == "p8-main-preference":
+    if profile == P9_CURRENT_MAIN_PROFILE:
+        require(set(rows) == set(P9_CURRENT_MAIN_OVERLAY_PATHS), "Current-main v2 exact36 source set")
+        require(all(type(rows[name]) is dict and rows[name].get("afterSha256") == pin
+            for name, pin in P9_CURRENT_MAIN_FIXED_AFTER.items()), "Current-main v2 exact current after pins")
+    elif profile == "p8-main-preference":
         require(set(rows) == set(api.P8_MAIN_OVERLAY_PATHS), "P8 requires its exact independent Main/admission/tool source set")
         require(all(rows[name].get("afterSha256") == pin for name, pin in api.P8_MAIN_FIXED_SOURCES.items()),
             "P8 production/debug/test/frozen P7 pins are fixed by its source contract")
@@ -535,6 +560,11 @@ def _apk(role, recipe, result_cert, result_manifest, path, api):
 
 
 def _source_guard(api, repo, overlay, profile):
+    if profile == P9_CURRENT_MAIN_PROFILE:
+        _current_main_v2_overlay(overlay)
+        result = api.source_guard(repo, overlay)
+        result["reviewedProfile"] = P9_CURRENT_MAIN_PROFILE
+        return result
     if profile == "p8-main-preference":
         return api.source_guard(repo, overlay, reviewed_profile=profile)
     return api.source_guard(repo, overlay)

@@ -1,6 +1,6 @@
 # 阶段75：附件收件箱与文档、照片选择原件迁移
 
-功能 ID：F55、F56。状态：API33 两个命名 Native 方法有限通过，SDK与完整工作区检查通过，准备提交。完整P7及真实Provider/SAF/UI未关闭。
+功能 ID：F55、F56。状态：API33 两个命名 Native 方法有限通过，SDK与完整工作区检查通过；源6833e1ad已由PR125合入main a9845a19。完整P7及真实Provider/SAF/UI未关闭。
 
 ## 功能、交互与界面对照
 
@@ -45,3 +45,5 @@ R3只对child-purpose的既有onHold加固定tag/原Throwable观测；原strong 
 阶段74源5242f173已由PR123合入main 48884eea；源CI11240、准确main CI11242均成功，stage74三类引用已清理。自动同步11243成功，公开提交77f6e144的tree及Gitea来源trailer匹配。没有手推公开主线。
 
 下一顺序：其余系统迁移域与已有资料合并/SAF、Main交互/界面，再语音/未读/生命周期；P8/P9独立项并行。P9当前36源整合候选尚须重锁本轮新两源、SDK及Host链，不能冒用旧包。真实Provider/OS授权/相机输出、完整24项、自然I/O/崩溃、UI/手机和整包互通继续待验。真实模型账本221+0及P4 205+1 sealed unknown保持；任务/项目CRUD、F75、iOS A6暂停。
+
+交付：PR125正常合并，准确source CI11248的workspace27106/iOS27107、main CI11250的workspace27109/iOS27110均成功；自动公开同步11251/job27111成功，公开提交7d3a1745的tree和Gitea来源trailer匹配。本地、origin、tracking阶段75引用均已清理，清理前后后续阶段的HEAD/index/草稿相同；未手推公开主线。

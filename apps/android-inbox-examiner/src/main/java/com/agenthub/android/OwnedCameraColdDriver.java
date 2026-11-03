@@ -35,7 +35,7 @@ public final class OwnedCameraColdDriver extends Instrumentation {
     private void intent(String suffix,JSONObject value) throws Exception { if(file(suffix).exists())throw new AssertionError("Original intent exists; inspect its receipt without replay");save(suffix,value.toString(2)); }
     private String record(String activities,String component) { for(String block:activities.split("(?=\\* Hist\\s+#\\d+:)"))if(block.split("\n",2)[0].contains(component))return block;return null; }
     private List<AccessibilityNodeInfo> nodes(String owner) {
-        if(android.os.Build.VERSION.SDK_INT>=33)getUiAutomation().clearCache();
+        if(android.os.Build.VERSION.SDK_INT>=34)getUiAutomation().clearCache();
         List<AccessibilityNodeInfo> all=new ArrayList<>();AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();if(root!=null&&owner.contentEquals(root.getPackageName())) { root.refresh();visit(root,all); }return all;
     }
     private void visit(AccessibilityNodeInfo node,List<AccessibilityNodeInfo> all) { if(node==null)return;all.add(node);for(int n=0;n<node.getChildCount();n++)visit(node.getChild(n),all); }

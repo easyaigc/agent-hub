@@ -310,7 +310,7 @@ private object OsColdEvidence {
         var lastOwner = "none"; var rowCount = 0
         try { withTimeout(15_000) {
             while(true) {
-                if(Build.VERSION.SDK_INT >= 33)automation.clearCache()
+                if(Build.VERSION.SDK_INT >= 34)automation.clearCache()
                 val root = automation.rootInActiveWindow
                 lastOwner = root?.packageName?.toString()?.take(96) ?: "none"
                 if(lastOwner == SYSTEM_UI && root != null) {

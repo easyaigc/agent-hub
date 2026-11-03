@@ -266,3 +266,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [阶段74 语音原件first/cold](stage74-p7-voice-originals-paired.md)：真实确定性PCM的三种原件窗口、16条portable、同boot不同PID两方法有限通过；真实麦克风/SAF/UI与完整P7待验。
 
 - [阶段75 附件选择原件first/cold](stage75-p7-child-originals-paired.md)：五child真实本地producer、33条portable、同boot两方法有限通过；旧UNKNOWN单列，真实Provider/SAF/UI和完整P7待验。
+- [阶段76 当前主线构建与桥契约](stage76-p9-current-chain.md)：893/36、三包SDK与42纯变体辅助通过，九类未执行；与Native结果分开。
+- [阶段76 实际SystemUI原生记录](stage76-p9-native.md)：首次observer在点击前失败；权限复原、原wait和自有AVD回收已核；后续语义修复未验。

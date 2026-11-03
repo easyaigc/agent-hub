@@ -32,7 +32,7 @@ public final class OwnedDocumentColdDriver extends Instrumentation {
         }
     }
     private AccessibilityNodeInfo currentRoot() {
-        if(android.os.Build.VERSION.SDK_INT>=33)getUiAutomation().clearCache();
+        if(android.os.Build.VERSION.SDK_INT>=34)getUiAutomation().clearCache();
         AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();if(root!=null)root.refresh();return root;
     }
     private void save(String suffix,String value) throws Exception { Files.write(file(suffix).toPath(),value.getBytes(StandardCharsets.UTF_8)); }

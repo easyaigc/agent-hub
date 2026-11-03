@@ -28,6 +28,8 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
     private BroadcastReceiver receiver; private boolean registered,folderOwned;
     private final AtomicBoolean custodyReceived=new AtomicBoolean();private ExecutorService custodyExecutor;private volatile boolean stopping;
     private String psHash,amHash,psCommandNonce,amCommandNonce,amSectionBoundary;private int systemServerPid;private volatile boolean writerVisible;
+    private final JSONObject identityEvidence=new JSONObject();private volatile JSONObject writerLive;private volatile String publicationSha256;
+    private JSONObject identitySnapshot()throws Exception{synchronized(identityEvidence){return new JSONObject(identityEvidence.toString());}}
     @Override public void onCreate(Bundle arguments){super.onCreate(arguments);args=arguments;start();}
     private static void check(boolean value,String code){if(!value)throw new AssertionError(code);}
     private static String uuid(String value){check(value!=null&&UUID.fromString(value).toString().equals(value),"canonical UUID required");return value;}
@@ -41,7 +43,7 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
         try{android.system.Os.fsync(fd);}finally{android.system.Os.close(fd);}
     }
     private String proofShell(String role)throws Exception{
-        check(Arrays.asList("first-open","new-draft").contains(role),"fixed proof role");
+        check(Arrays.asList("producer","first-open","new-draft").contains(role),"fixed proof role");
         String fixed="run-as "+APP+" cat files/acceptance/P9-natural-os/"+lease+"/"+attempt+"/"+role+".json";
         try(InputStream input=new ParcelFileDescriptor.AutoCloseInputStream(getUiAutomation().executeShellCommand(fixed));ByteArrayOutputStream out=new ByteArrayOutputStream()){
             byte[] b=new byte[4096];int n;while((n=input.read(b))!=-1){check(out.size()+n<=262144,"diagnostic bound");out.write(b,0,n);}return out.toString("UTF-8");
@@ -100,10 +102,12 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
         JSONObject row=v.getJSONObject("row");check(row.getInt("creatorUid")==uid&&APP.equals(row.getString("creatorPackage"))&&row.getBoolean("immutable")&&row.getString("metadata").contains(lease),"row identity");
         int writerPid=v.getJSONObject("plan").getInt("writerPid");processes().requireWriter(uid,writerPid);
         check(instrumentations(writerPid).writerPresent,"original authorized writer instrumentation not visible at custody");check(!stopping,"observer stopping; preserve custody without acknowledgement");
+        writerLive=OwnedP9SystemUiEvidence.liveIdentity(this,folder,identityEvidence,NativeRweProcessCapture.IdentityRole.WRITER,writerPid,uid,v.getJSONObject("plan").getString("writerNonce"),v.getInt("bootCount"));
+        check(!stopping,"observer stopping after live writer sample; no acknowledgement");
         save("custody",new JSONObject().put("lease",lease).put("attempt",attempt).put("publicationSha256",sha(raw.getBytes("UTF-8"))).put("creatorUid",uid).put("immutable",true)
-            .put("writerPidObserved",writerPid).put("writerUidObserved",uid).put("visibility",visibility())
+            .put("writerPidObserved",writerPid).put("writerUidObserved",uid).put("writerLiveIdentity",writerLive).put("visibility",visibility())
             .put("tokenHandling","Original SDK PendingIntent parcelled over signature-protected fixed broadcast; held only, never sent by observer"));
-        published=v;original=pending;writerVisible=true;
+        publicationSha256=sha(raw.getBytes("UTF-8"));published=v;original=pending;writerVisible=true;
     }
     private List<AccessibilityNodeInfo> nodes(AccessibilityNodeInfo root){
         List<AccessibilityNodeInfo> out=new ArrayList<>();ArrayDeque<AccessibilityNodeInfo> todo=new ArrayDeque<>();ArrayDeque<Integer> depth=new ArrayDeque<>();todo.add(root);depth.add(0);
@@ -117,28 +121,23 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
     }
     private AccessibilityNodeInfo exactRow()throws Exception{
         window(15000);
-        long end=SystemClock.uptimeMillis()+15000;while(SystemClock.uptimeMillis()<end){if(Build.VERSION.SDK_INT>=33)getUiAutomation().clearCache();AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+        long end=SystemClock.uptimeMillis()+15000;while(SystemClock.uptimeMillis()<end){if(Build.VERSION.SDK_INT>=34)getUiAutomation().clearCache();AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
             if(root!=null&&SYSTEM.contentEquals(root.getPackageName())){List<AccessibilityNodeInfo> matches=new ArrayList<>();for(AccessibilityNodeInfo node:nodes(root))if(ownRow(node))matches.add(node);check(matches.size()<=1,"ambiguous original row");if(matches.size()==1)return matches.get(0);}Thread.sleep(50);
         }throw new AssertionError("original UUID row unavailable; no fallback");
-    }
-    private void crop(AccessibilityNodeInfo node)throws Exception{
-        check(ownRow(node),"row ownership before crop");Rect r=new Rect();node.getBoundsInScreen(r);Bitmap full=getUiAutomation().takeScreenshot();check(full!=null,"screenshot unavailable");
-        try{check(!r.isEmpty()&&r.left>=0&&r.top>=0&&r.right<=full.getWidth()&&r.bottom<=full.getHeight(),"own crop bounds");Bitmap part=Bitmap.createBitmap(full,r.left,r.top,r.width(),r.height());
-            try{ByteArrayOutputStream bytes=new ByteArrayOutputStream();check(part.compress(Bitmap.CompressFormat.PNG,100,bytes)&&bytes.size()<=2097152,"crop bound");File file=new File(folder,"own-row.png");check(file.createNewFile(),"original crop retained");android.system.Os.chmod(file.getAbsolutePath(),384);try(FileOutputStream out=new FileOutputStream(file)){bytes.writeTo(out);out.getFD().sync();}}finally{if(part!=full)part.recycle();}
-        }finally{full.recycle();}
     }
     private JSONObject targetProof(String role)throws Exception{
         long end=SystemClock.uptimeMillis()+30000;while(SystemClock.uptimeMillis()<end){String value=proofShell(role).trim();if(value.startsWith("{")){JSONObject p=new JSONObject(value);check(lease.equals(p.getString("lease"))&&attempt.equals(p.getString("attempt")),"same original proof");return p;}Thread.sleep(100);}throw new AssertionError("original target proof unavailable; no re-open");
     }
     private void editOwnedDraftOnce()throws Exception{
         String old="Owned cold original draft "+lease;long end=SystemClock.uptimeMillis()+10000;AccessibilityNodeInfo edit=null;
-        while(SystemClock.uptimeMillis()<end){if(Build.VERSION.SDK_INT>=33)getUiAutomation().clearCache();AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+        while(SystemClock.uptimeMillis()<end){if(Build.VERSION.SDK_INT>=34)getUiAutomation().clearCache();AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
             if(root!=null&&APP.contentEquals(root.getPackageName())){List<AccessibilityNodeInfo> matches=new ArrayList<>();for(AccessibilityNodeInfo n:nodes(root))if(n.isVisibleToUser()&&n.isEditable()&&old.contentEquals(n.getText()==null?"":n.getText()))matches.add(n);check(matches.size()<=1,"ambiguous owned draft");if(matches.size()==1){edit=matches.get(0);break;}}Thread.sleep(50);}
         check(edit!=null,"original owned editable draft unavailable");save("edit-intent",new JSONObject().put("lease",lease).put("attempt",attempt).put("action","one owned UI draft edit; never send"));
         Bundle value=new Bundle();value.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,"Owned natural OS new draft "+lease);check(edit.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,value),"owned draft edit rejected; no retry");
     }
-    @Override public void onStart(){JSONObject result=new JSONObject();Bundle completion=new Bundle();int oldFlags=0;boolean flagsSet=false;boolean clicked=false;
+    @Override public void onStart(){JSONObject result=new JSONObject(),preClickEvidence=new JSONObject();Bundle completion=new Bundle();int oldFlags=0;boolean flagsSet=false;boolean clicked=false;
         try{
+            result.put("preClickSystemUi",preClickEvidence.put("state","not-started").put("clickBlocked",true));
             check(Build.VERSION.SDK_INT>=31&&Build.VERSION.SDK_INT<=33&&SELF.equals(getTargetContext().getPackageName())&&SELF.equals(getContext().getPackageName()),"API31-33 public process V2 candidate, same-UID global visibility must be proved");
             lease=uuid(args.getString("p9NaturalOsLease"));attempt=uuid(args.getString("p9NaturalOsAttempt"));Context context=getTargetContext();PackageManager pm=context.getPackageManager();
             InstrumentationInfo own=pm.getInstrumentationInfo(new ComponentName(SELF,getClass().getName()),0);check(SELF.equals(own.targetPackage),"never instrument target");
@@ -162,19 +161,41 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
             long end=SystemClock.uptimeMillis()+30000;window(30000);int empty=0;while(SystemClock.uptimeMillis()<end){if(targetPids().isEmpty()&&noTargetInstrumentation()){if(++empty==2)break;}else empty=0;Thread.sleep(100);}check(empty==2,"producer/target process still exists; no kill/force-stop");
             check(apk(APP).equals(published.getString("appHash"))&&apk(APP+".test").equals(published.getString("runnerHash")),"installed pair before click");
             AccessibilityServiceInfo service=getUiAutomation().getServiceInfo();oldFlags=service.flags;service.flags|=AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;getUiAutomation().setServiceInfo(service);flagsSet=true;
-            check(getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS),"SystemUI shade unavailable");AccessibilityNodeInfo row=exactRow();crop(row);
-            check(custodyError==null&&targetPids().isEmpty()&&noTargetInstrumentation()&&row.refresh()&&ownRow(row),"last absent-process/original-row precondition");
-            long clickElapsed=SystemClock.elapsedRealtime();check(published.getInt("bootCount")==android.provider.Settings.Global.getInt(getTargetContext().getContentResolver(),android.provider.Settings.Global.BOOT_COUNT),"same boot before click");
-            save("click-intent",new JSONObject().put("lease",lease).put("attempt",attempt).put("targetUidPidsBefore",new JSONArray()).put("targetInstrumentationAbsent",true).put("observerUid",android.os.Process.myUid()).put("bootCount",published.getInt("bootCount")).put("elapsed",clickElapsed).put("visibility",visibility()).put("writerPreviouslyVisible",writerVisible).put("action","one exact original SystemUI ACTION_CLICK"));
-            clicked=row.performAction(AccessibilityNodeInfo.ACTION_CLICK);check(clicked,"original SystemUI click rejected; no alternative");
+            check(getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS),"SystemUI shade unavailable");AccessibilityNodeInfo row=exactRow();
+            long clickElapsed;OwnedP9SystemUiEvidence.PreClick selectedEvidence=null;
+            try{
+                selectedEvidence=OwnedP9SystemUiEvidence.captureBeforeClick(this,folder,row,OwnedP9SystemUiEvidence.preClickBinding(lease,attempt,publicationSha256,writerLive),preClickEvidence);
+                check(custodyError==null&&targetPids().isEmpty()&&noTargetInstrumentation()&&row.refresh()&&ownRow(row),"last absent-process/original-row precondition");
+                clickElapsed=SystemClock.elapsedRealtime();check(published.getInt("bootCount")==android.provider.Settings.Global.getInt(getTargetContext().getContentResolver(),android.provider.Settings.Global.BOOT_COUNT),"same boot before click");
+                save("click-intent",new JSONObject().put("lease",lease).put("attempt",attempt).put("targetUidPidsBefore",new JSONArray()).put("targetInstrumentationAbsent",true).put("observerUid",android.os.Process.myUid()).put("bootCount",published.getInt("bootCount")).put("elapsed",clickElapsed).put("visibility",visibility()).put("writerPreviouslyVisible",writerVisible).put("preClickSystemUi",selectedEvidence.intentEvidence()).put("action","one exact original SystemUI ACTION_CLICK"));
+                check(custodyError==null,"custody changed after immutable click intent; no click/replay");
+                selectedEvidence.verifyBeforeClick(this,row,OwnedP9SystemUiEvidence.preClickBinding(lease,attempt,publicationSha256,writerLive));
+                clicked=row.performAction(AccessibilityNodeInfo.ACTION_CLICK);check(clicked,"original SystemUI click rejected; no alternative");
+            }finally{if(selectedEvidence!=null)selectedEvidence.close();row.recycle();}
             List<Integer> newPids=new ArrayList<>();end=SystemClock.uptimeMillis()+15000;window(15000);while(SystemClock.uptimeMillis()<end){newPids=targetPids();if(!newPids.isEmpty())break;Thread.sleep(50);}check(newPids.size()==1&&newPids.get(0)!=published.getJSONObject("plan").getInt("writerPid")&&noTargetInstrumentation(),"one new OS target process required");
             // Only AFTER observing the new target PID do fixed run-as reads touch its private proof.
             window(30000);JSONObject first=targetProof("first-open");check("first-open-complete".equals(first.getString("phase"))&&newPids.contains(first.getInt("pid"))&&first.getInt("activityEntries")==1&&first.getInt("defaultSelections")==0&&first.getInt("commands")==0&&first.getBoolean("defaultFamilyUnchanged"),"first original Activity/claim proof");
             check(first.getInt("bootCount")==published.getInt("bootCount")&&first.getLong("elapsed")>=clickElapsed&&!first.getString("nonce").equals(published.getJSONObject("plan").getString("writerNonce")),"new consumer identity after original click");
             check(first.getJSONObject("target").toString().equals(published.getJSONObject("target").toString())&&first.getBoolean("scopeMatched")&&first.getInt("locatorPages")==12&&"complete".equals(first.getString("durableClaimPhase"))&&("cold-original-"+lease).equals(first.getString("thread")),"original full target/thread/durable claim");
             check(first.getString("planHash").equals(published.getString("planHash"))&&first.getString("receiptHash").equals(published.getString("receiptHash"))&&first.getString("ticket").equals(published.getJSONObject("plan").getString("ticket"))&&first.getString("appHash").equals(published.getString("appHash"))&&first.getString("runnerHash").equals(published.getString("runnerHash")),"same original receipt/install");
+            check(writerLive!=null,"original live writer identity required");
+            JSONObject producer=targetProof("producer"),bindings=producer.getJSONObject("bindings");
+            String writerNonce=published.getJSONObject("plan").getString("writerNonce"),consumerNonce=uuid(first.getString("nonce"));
+            check(producer.getBoolean("passed")&&producer.getBoolean("sdkOriginalPublished")&&producer.getBoolean("permitArmed")&&producer.getBoolean("custodySentOnce")&&producer.getBoolean("writerVisibilityAcknowledged")
+                &&bindings.getInt("uid")==uid&&bindings.getInt("writerPid")==published.getJSONObject("plan").getInt("writerPid")&&writerNonce.equals(bindings.getString("writerNonce"))
+                &&bindings.getString("planHash").equals(published.getString("planHash"))&&bindings.getString("publicationSha256").equals(publicationSha256),"original completed producer bound to custody");
+            OwnedP9SystemUiEvidence.matchProof(producer,writerLive,writerNonce);
+            JSONObject firstLive=OwnedP9SystemUiEvidence.liveIdentity(this,folder,identityEvidence,NativeRweProcessCapture.IdentityRole.FIRST_CONSUMER,first.getInt("pid"),uid,consumerNonce,published.getInt("bootCount"));
+            OwnedP9SystemUiEvidence.matchProof(first,firstLive,consumerNonce);
+            check(first.getString("bootId").equals(writerLive.getString("bootId")),"same independent kernel boot writer to first consumer");
+            JSONObject firstUi=OwnedP9SystemUiEvidence.capture(this,folder,lease,OwnedP9SystemUiEvidence.Scene.FIRST_MAIN);
             editOwnedDraftOnce();JSONObject newer=targetProof("new-draft");check("new-draft-observed".equals(newer.getString("phase"))&&newer.getInt("pid")==first.getInt("pid")&&newer.getString("ticket").equals(first.getString("ticket"))&&newer.getString("draftHash").equals(sha(("Owned natural OS new draft "+lease).getBytes("UTF-8")))&&newer.getInt("commands")==0,"new owned draft retained");
             window(30000);check(custodyError==null&&targetPids().equals(newPids)&&noTargetInstrumentation(),"same independent consumer after edit");
+            check(newer.getLong("startTicks")==first.getLong("startTicks")&&consumerNonce.equals(newer.getString("nonce"))&&newer.getString("bootId").equals(first.getString("bootId"))&&newer.getInt("bootCount")==first.getInt("bootCount"),"new draft must retain original expected consumer lifetime/nonce/boot");
+            JSONObject laterLive=OwnedP9SystemUiEvidence.liveIdentity(this,folder,identityEvidence,NativeRweProcessCapture.IdentityRole.LATER_CONSUMER,first.getInt("pid"),uid,consumerNonce,published.getInt("bootCount"));
+            OwnedP9SystemUiEvidence.matchProof(newer,laterLive,consumerNonce);OwnedP9SystemUiEvidence.matchProof(first,laterLive,consumerNonce);
+            JSONObject laterUi=OwnedP9SystemUiEvidence.capture(this,folder,lease,OwnedP9SystemUiEvidence.Scene.LATER_DRAFT);
+            result.put("processIdentityComplete",true).put("producerProofSha256",sha(producer.toString().getBytes("UTF-8"))).put("firstMainUi",firstUi).put("laterDraftUi",laterUi).put("newTargetStartTicks",first.getLong("startTicks"));
             result.put("status","passed").put("evidenceVersion",2).put("captureBackend","public-fixed-process-v2").put("systemUiClicks",1).put("targetUidAbsentBefore",true).put("targetInstrumentationAbsent",true).put("newTargetPid",first.getInt("pid")).put("newTargetNonce",first.getString("nonce")).put("bootCount",first.getInt("bootCount")).put("clickElapsed",clickElapsed).put("defaultSelections",0).put("commands",0).put("originalTokenHeldNotSent",true).put("firstProofSha256",sha(first.toString().getBytes("UTF-8"))).put("newDraftProofSha256",sha(newer.toString().getBytes("UTF-8"))).put("writerPreviouslyVisible",writerVisible).put("visibility",visibility());
         }catch(Throwable error){try{result.put("status","failed").put("failureType",error.getClass().getName()).put("failureCode",error instanceof AssertionError || error instanceof NaturalProcessVisibility.Refused?String.valueOf(error.getMessage()):"external API failure").put("systemUiClickAccepted",clicked).put("diagnosticCaptures",diagnosticCaptures());}catch(Exception ignored){}}
         finally{
@@ -184,7 +205,7 @@ public final class OwnedPublicProcessNaturalObserver extends Instrumentation {
             try{if(registered)getTargetContext().unregisterReceiver(receiver);}catch(Exception error){cleanupFailure(result,"receiver",error);}
             try{if(custodyExecutor!=null)custodyExecutor.shutdownNow();}catch(Exception error){cleanupFailure(result,"custodyExecutor",error);}
             try{if(flagsSet){AccessibilityServiceInfo s=getUiAutomation().getServiceInfo();s.flags=oldFlags;getUiAutomation().setServiceInfo(s);}}catch(Exception error){cleanupFailure(result,"uiAutomation",error);}
-            try{if(folderOwned)save("result",result.put("lease",lease).put("attempt",attempt).put("observerPid",android.os.Process.myPid()).put("observerUid",android.os.Process.myUid()).put("vendorHostModel",false));}catch(Exception error){cleanupFailure(result,"result",error);}
+            try{if(folderOwned)save("result",result.put("lease",lease).put("attempt",attempt).put("observerPid",android.os.Process.myPid()).put("observerUid",android.os.Process.myUid()).put("processIdentityEvidence",identitySnapshot()).put("vendorHostModel",false));}catch(Exception error){cleanupFailure(result,"result",error);}
         }
         completion.putString("p9NaturalResult",result.toString());finish("passed".equals(result.optString("status"))?-1:0,completion);
     }

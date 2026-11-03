@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Controlled local Android SDK capture. Only the p7/p9 build profiles are exposed by CLI."""
+"""Controlled local Android SDK capture. Only fixed p7/p8-main-preference/p9 build profiles are exposed by CLI."""
 import argparse
 import hashlib
 import importlib.util
@@ -21,6 +21,9 @@ APK_CAP = 256 * 1024 * 1024
 _LIVE = {}  # Exact Popen owners are retained before any fallible owner/marker/raw operation.
 APP = "com.easyai.agenthub.android.acceptance"
 PROFILES = {
+    "p8-main-preference": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
     "p7-foreground": {"tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
         "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
         "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}},
@@ -429,10 +432,14 @@ def _review(api, path, expected_sha, profile):
     raw = private_bytes(path, 131072); require(sha(raw) == expected_sha, "Root-reviewed-state fingerprint required")
     value = parse_json(raw)
     api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
-    require(value["schema"] == "p7-build-workspace-review-v1", "Reviewed state schema")
+    require(value["schema"] == ("p8-main-build-workspace-review-v1" if profile == "p8-main-preference" else "p7-build-workspace-review-v1"), "Reviewed state schema")
     api.canonical_uuid(value["reviewId"]); require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}",value["head"]),"Reviewed Git HEAD"); api.sha(value["statusSha256"])
     rows = value["sourceOverlay"]; require(type(rows) is dict and len(rows) <= 64, "Reviewed overlay bound")
-    if profile == "p7":
+    if profile == "p8-main-preference":
+        require(set(rows) == set(api.P8_MAIN_OVERLAY_PATHS), "P8 requires its exact independent Main/admission/tool source set")
+        require(all(rows[name].get("afterSha256") == pin for name, pin in api.P8_MAIN_FIXED_SOURCES.items()),
+            "P8 production/debug/test/frozen P7 pins are fixed by its source contract")
+    elif profile == "p7":
         require(set(rows) == set(api.DYNAMIC_SOURCES), "P7 allows only the six reviewed test/tool overlays")
     elif profile == "p7-foreground":
         require(set(rows) == set(api.DYNAMIC_SOURCES) | {"scripts/mobile/android-nonempty-pristine-first.py", "scripts/mobile/android-nonempty-foreground-pair.py"},
@@ -515,6 +522,12 @@ def _apk(role, recipe, result_cert, result_manifest, path, api):
         "versionName": values.get("versionName") or None}
 
 
+def _source_guard(api, repo, overlay, profile):
+    if profile == "p8-main-preference":
+        return api.source_guard(repo, overlay, reviewed_profile=profile)
+    return api.source_guard(repo, overlay)
+
+
 def capture_build(args, source_api):
     api = source_api; require(args.profile in PROFILES, "Closed SDK capture profile")
     os.umask(0o077); output = private_directory(args.output_dir, empty=True); repo = Path(args.repo).resolve()
@@ -523,7 +536,7 @@ def capture_build(args, source_api):
     _gradle_home(args.gradle_home); env, safe = _environment(args)
     require(shutil.disk_usage(repo).free >= 10 * 1024**3, "Insufficient free space for controlled SDK build")
     write_bytes(output / "workspace-review.json", raw_review)
-    before = api.source_guard(repo, overlay); api.write_guard(output / "source-before.json", before)
+    before = _source_guard(api, repo, overlay, args.profile); api.write_guard(output / "source-before.json", before)
     git_commands = _git(output, "before", repo, env, safe, review)
     sdk = Path(args.android_sdk).resolve(); java = Path(args.java_home).resolve(); bt = sdk / "build-tools" / args.build_tools
     require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9]+)?", args.build_tools), "Explicit build tools version")
@@ -544,7 +557,7 @@ def capture_build(args, source_api):
     commands["build"] = [tools["node"]["path"], "scripts/mobile/gradle.mjs", "-PagentHubAcceptance=true", "--no-daemon", "--no-build-cache", "--no-configuration-cache", "--rerun-tasks", "--console=plain"] + PROFILES[args.profile]["tasks"]
     build = run_process(output, "build", commands["build"], repo, env, safe, timeout=3600, child_umask=0o022)
     require(b"BUILD SUCCESSFUL" in build["stdout"] + build["stderr"], "Actual Gradle successful result absent")
-    after = api.source_guard(repo, overlay); require(api.same(before, after), "Build source/input inventory changed")
+    after = _source_guard(api, repo, overlay, args.profile); require(api.same(before, after), "Build source/input inventory changed")
     api.write_guard(output / "source-after.json", after); _git(output, "after", repo, env, safe, review); _gradle_home(args.gradle_home)
     require((api.digest(local, 131072) if local.exists() else None) == local_pin, "Private effective local toolchain config changed")
     expected_local = ("sdk.dir=" + str(sdk).replace("\\", "\\\\").replace(":", "\\:") + "\n").encode()
@@ -587,7 +600,7 @@ def verify_build_bundle(bundle_dir, source_api, repo, profile, expected_guard=No
     raw_review, review, overlay = _review(api, output / "workspace-review.json", seal["reviewedStateSha256"], profile)
     require(seal["files"].get("workspace-review.json")=={"sha256":sha(raw_review),"bytes":len(raw_review)},"Sealed reviewed-state differs")
     before=read_sealed("source-before.json"); after=read_sealed("source-after.json")
-    require(api.same(before, after) and sha(encoded(before)) == seal["sourceGuardSha256"] and api.same(before, api.source_guard(repo, overlay)), "Actual build source/inventory chain differs")
+    require(api.same(before, after) and sha(encoded(before)) == seal["sourceGuardSha256"] and api.same(before, _source_guard(api, repo, overlay, profile)), "Actual build source/inventory chain differs")
     if expected_guard is not None:
         require(api.same(before, expected_guard), "Build was not from the admitted runtime sources")
     entries=list(output.rglob("*"))

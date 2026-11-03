@@ -3009,7 +3009,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal val localInspectionQuiescent get()=storage?.localInspectionOnly==true&&!foreground&&!restoring&&chatNotifications==null
     internal suspend fun closeLocalInspection() {check(storage?.localInspectionOnly==true);tasks.coroutineContext[Job]?.cancelAndJoin();storage.retireWriter()}
-    internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+    internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null,
+        acceptanceEasyWorkPorts: Pair<HostReads,CodexCommands>?=null) {
+        if(acceptanceEasyWorkPorts!=null)check(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance"&&reader!=null&&commandProvider!=null)
         invalidatePanelNoticeContext();panelBlockedCredentialRevisions.clear()
         chatNotifications?.dispose();chatNotifications=null
         voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
@@ -3020,7 +3022,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
         selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false
         // Existing native fixtures own Chinese app copy; language tests explicitly override it.
-        demo = false; appearance = "system";language="zh-Hans"; restoring = false; localRecoveryRequired=false;localRecoveryAllowsAttachmentStaging=false; error = null; providers=registry(reader,commandProvider); reads=providers
+        demo = false; appearance = "system";language="zh-Hans"; restoring = false; localRecoveryRequired=false;localRecoveryAllowsAttachmentStaging=false; error = null
+        providers=if(acceptanceEasyWorkPorts==null)registry(reader,commandProvider)else
+            AgentRegistry(checkNotNull(reader),checkNotNull(commandProvider)).apply {register("easywork",acceptanceEasyWorkPorts.first,acceptanceEasyWorkPorts.second)}
+        reads=providers
         queueActionOwners.clear();replyRecordQueryOwners.clear();replyRecordQueryErrors.clear();busyOwners.clear(); busyCommands.clear(); freshWorkspaces.clear(); freshHistories.clear();attachmentPreparation.reset();attachmentImportGenerations.clear(); draftVersions.clear(); draftFiles.clear(); generation.clear(); generationPreferences.clear(); dismissedReceiptFailures.clear(); modelErrors.clear(); preferredModes.clear(); newProjects.clear(); operations.clear(); preparingCreationMessages.clear(); creationMessageCache=null; pendingCreationWait=null; busyTargets.clear(); stoppingTargets.clear(); answeringTargets.clear(); modelsByClient.clear(); foreground=true
         commands=providers; execution=storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }; eventJob=null;eventReadOwner=null;historyRecoveryJob=null;networkRecoveryJob=null;networkReadPath=null
         observingOperations.clear();connectionSuccesses.clear();conversationSyncIssues.clear();conversationSnapshotRevisions.clear();usefulConversationProgress.clear();historyRecoveryIdentity=null;readyHistorySelection=null;loadedHistorySelections.clear()

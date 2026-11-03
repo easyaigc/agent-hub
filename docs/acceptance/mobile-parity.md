@@ -1633,3 +1633,5 @@ Source69：主线209/实际 PID 诊断名组合 SDK 单次 Gradle exit0（16.766
 阶段71 F55/F56：API33普通Controller对确认前未人工预建root KEY的目的地，非空9条导入与实际Session恢复1项Native有限通过；原进程自然退出，六窗只证实confirm前无KEY/DONE后有，不归因publication。原本地入口前UNKNOWN保留，首次实际Native单次通过；SAF/UI/pristine cold/完整系统范围/物理与双端整包未验，iOS及完整状态不变。见[阶段71档案](../plans/android-alignment-20261022/records/stage71-p7-pristine-controller.md)。
 
 阶段72 F55/F56：API33真实本地identity/authorization/foreground/recovery producer的13条记录，经普通Controller未预建KEY目标first和不同PID同boot只读cold两方法有限通过；2个reader关闭、原数据/alias保护及实际进程退出有原始凭证。无旧authority激活/原unknown重放，Android/iOS策略差异与完整范围/UI/SAF/physical/互通仍开放，见[阶段72](../plans/android-alignment-20261022/records/stage72-p7-foreground-paired.md)。
+
+阶段73 F02/F03/F04：API33开启Demo的Main子类真实偏好菜单，中/英与浅/深色、四次选择/取消重开/新Activity与Session恢复，一个Native方法两个case有限通过，原草稿/凭据/合成unknown保持且两scope/alias退役。原无效Demo前提失败保留，生产fallback与完整验收状态不变；不覆盖shipping Main/完整装配、选中真实连接的联机路径、截图/AX/短视口/API26/physical/实际网络与完整A5，见[阶段73](../plans/android-alignment-20261022/records/stage73-p8-main-preference.md)。

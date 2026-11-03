@@ -1,5 +1,6 @@
 # Android 分阶段过程档案
 
+- [阶段73 P8 Main偏好菜单](stage73-p8-main-preference.md)：中文浅色/英文深色两case菜单、保存和新Activity/Session恢复1方法限定通过；生产默认装配保持，完整A5/UI/联机仍开放。
 - [阶段72 P7通知原件归档](stage72-p7-foreground-paired.md)：真实本地生产者13条资料，普通Controller首次导入与同boot只读cold两方法限定通过；完整检查通过，通知身份策略与完整系统/UI/物理仍开放。
 - [阶段71 P7未预建KEY导入](stage71-p7-pristine-controller.md)：普通Controller未预建root KEY的9条迁移1方法限定通过；PR119已合并，CI与公开同步成功。
 - [阶段70 P7同包首次/只读cold](stage70-p7-paired-readonly-cold.md)：普通已初始化空目标9条资料、原PID自然退出/不同PID恢复两方法有限通过；旧cold anchor失败单列，pristine/完整范围/UI/物理仍开放。

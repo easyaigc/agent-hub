@@ -36,6 +36,11 @@ ROOT_BUILD_NAMES = ['build.gradle.kts', 'gradle.properties', 'gradlew', 'gradlew
 EXTRA_INPUTS = ['scripts/mobile/gradle.mjs', 'scripts/mobile/android-nonempty-device-first.py', 'package.json', 'pnpm-lock.yaml']
 ROOT_PRESENCE = {'apps/android': True, 'apps/android-inbox-examiner': True, 'packages/mobile-core': True, 'packages/protocol/fixtures/mobile': True, 'packages/protocol/schemas': True, 'gradle': True, 'buildSrc': False, 'build-logic': False}
 DYNAMIC_SOURCES = ['apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt', 'scripts/mobile/android-nonempty-device-first.py', 'scripts/mobile/android-nonempty-device-pair.py', 'scripts/mobile/android-sdk-capture.py']
+# Independent P8 contract: old P7 callers never select this profile. Self-pins of the
+# two common tools are immutable Root review inputs, avoiding recursive self-hashes.
+P8_MAIN_PROFILE = "p8-main-preference"
+P8_MAIN_OVERLAY_PATHS = ['apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt', 'apps/android/src/debug/AndroidManifest.xml', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt', 'scripts/mobile/android-main-preference.py', 'scripts/mobile/android-nonempty-device-first.py', 'scripts/mobile/android-nonempty-device-pair.py', 'scripts/mobile/android-nonempty-foreground-pair.py', 'scripts/mobile/android-nonempty-pristine-first.py', 'scripts/mobile/android-sdk-capture.py']
+P8_MAIN_FIXED_SOURCES = {'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt': '5ac8fba41aa5302ba45c49c1a3a99db7b2db46f12bce674b6da86b06f7603606', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt': 'dbba0a4e7be9c66dd28916b65e9979c1206c7223abcc725b4a4837f37d8ab88b', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt': '76212e9bfd289ff591f1d6cc43bb900b07031722d6ca86af055b0ede454aa6b5', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt': 'b0e1f2593e82fc97754ef62873bd070d8b23cdf9f0bed233e79044118e93b31e', 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '2de69cd6e511ca25f10b350c35a6b7730e983bad6535b4ccbd95a29b5ec043aa', 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt': '90ca84c62835aa01defd18187ec046c6132b5eb88b856d016fd450b2d85f7c3c', 'apps/android/src/debug/AndroidManifest.xml': '7ffdd95963f02030f3c5bcd2ab5a3171114b8bea254ce9f90a8fdbb1ff266464', 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt': '2c8ff5a7be9a36381fe39c64be5d0d97d4087cdc158352dd2bf3673857d9dd4d', 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt': 'c0a168dbdc3a4bc4a5bf07fa4607d0032957a028b4b09253cba94302cd5fe775', 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt': '99a73b93f9a43e9cc95b76da48962237bce28a0e0851a4f64a1923e3bc3859bd', 'scripts/mobile/android-main-preference.py': '4cb81b7d2e101a08c070c286b1b8e8d17d8ed84c92be81cf39468c9f3742c53b', 'scripts/mobile/android-nonempty-device-pair.py': '8d0e9263c58dacb36ab93b6c8e72cd5e6eb75ed4af68d82934310dd7d44145b8', 'scripts/mobile/android-nonempty-foreground-pair.py': 'a1850a4414e4560dd67e4f87a223233c41e4ab99199acf689558f3741e28b543', 'scripts/mobile/android-nonempty-pristine-first.py': '80faab238f8bd0b37bd47eba91d061530d6133706e598b602935f7eaebc33863'}
 GUARD_CAP = 512 * 1024
 BASELINE = {
     'apps/android-inbox-examiner/build.gradle.kts': '6c89de1ad6f907e327809118d01f75633c84ead519d618a20f65ae7e7d40b00a',
@@ -1053,7 +1058,12 @@ def input_inventory(repo, overlay_names=()):
     return sorted(names)
 
 
-def source_guard(repo, source_overlay=None):
+def source_guard(repo, source_overlay=None, *, reviewed_profile=None):
+    if reviewed_profile is not None:
+        require(reviewed_profile == P8_MAIN_PROFILE and type(source_overlay) is dict and
+            set(source_overlay) == set(P8_MAIN_OVERLAY_PATHS), "Closed P8 Main source contract")
+        require(all(source_overlay[name] == pin for name, pin in P8_MAIN_FIXED_SOURCES.items()),
+            "P8 accepts only exact reviewed R3/admission sources and frozen P7 inputs")
     if source_overlay is not None:
         require(type(source_overlay) is dict and len(source_overlay)<=64,"Explicit reviewed source overlay")
         for name,value in source_overlay.items():
@@ -1075,8 +1085,10 @@ def source_guard(repo, source_overlay=None):
     require(all(actual[name]==value for name,value in BASELINE.items() if name not in overlay_names),"Unapproved baseline production/build input differs")
     if source_overlay is not None: require(all(actual[name]==value for name,value in source_overlay.items()),"Reviewed overlay bytes differ")
     require(input_inventory(repo,overlay_names)==before,"Build inventory changed while hashing")
-    return {"schema":GUARD_SCHEMA,"baselineCommit":BASELINE_COMMIT,"roots":INPUT_ROOTS,"rootBuildNames":ROOT_BUILD_NAMES,
+    result = {"schema":GUARD_SCHEMA,"baselineCommit":BASELINE_COMMIT,"roots":INPUT_ROOTS,"rootBuildNames":ROOT_BUILD_NAMES,
             "inventory":before,"sourceOverlay":{name:actual[name] for name in sorted(overlay_names)},"sources":actual}
+    if reviewed_profile is not None: result["reviewedProfile"] = reviewed_profile
+    return result
 
 
 def read_guard(path):

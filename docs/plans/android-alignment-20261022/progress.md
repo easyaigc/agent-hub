@@ -2,7 +2,7 @@
 
 更新：2026-11-04。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
 
-当前：P7准备通道返回UNKNOWN，P8原窗口归属修复和名称两次输入已有限通过，当前AX锚点待修复；原失败均留存；[阶段80](records/stage80-main-and-owned-window.md)共包构建与辅助检查通过，完整P7/P8/P9未完成。继续修复可在本机完成的部分，未知操作不重放。
+当前：P7独立Test进程缺类修复及新共包辅助构建通过；实际prepare仍受控拒绝、效果UNKNOWN，未进入Native导出。P8原窗口/名称输入曾有限通过，最新case绑定仍UNKNOWN；下一步有限原因观测与导入前置并行。完整P7/P8/P9仍开放，未知操作不重放。
 
 ## 总计划
 
@@ -22,7 +22,7 @@
 
 ## 接下来按什么顺序做
 
-1. **P7/P8当前阻塞**：修复P7 Test UID准备通道；先采集P8窗口类、类型、token与原对象元数据，再修复原窗口归属。使用新独立场景验收，不重放原UNKNOWN。
+1. **P7/P8当前阻塞**：定位P7独立Test prepare的有限拒绝原因，继续真实准备/导出；P8补齐绑定循环的失败观察，再定位准确AX锚点。使用新独立场景验收，不重放原UNKNOWN。
 2. **完整迁移**：继续真实Main导入/导出、24组库存、失败补偿、自然故障与冷恢复。F59 Android尚未实现；iOS现有F59原件/journal也未进入迁移Payload，双端缺口单列，不能按完整迁移通过。
 3. **语音、未读、生命周期**：原件与失败恢复、阅读权威/原通知回执、Main/系统冷入口、真实停止/死亡/重开逐项验。
 4. **P9独立项**：新三包诊断先完成精确源码/SDK/API36准入，再采集SystemUI拒绝节点；诊断不算通知点击通过。继续真实Host、偏好/声音/隐私与完整UI。
@@ -39,5 +39,6 @@
 ## 当前交付
 
 - 阶段78已通过范围经[PR128](https://git.51easyai.com/BCAI/agent-hub-app/pulls/128)合入主线；详情见[交付档案](records/stage78-p7-main-p8-short-ui.md)。
-- 阶段79/80已随PR131合入；后续阶段继续在新安卓分支推进。阶段80源0ba8d903经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)合入主线fda80542，源/主线CI与公开同步均通过，已清理Stage79/80本地和远端分支；详情见交付档案。当前[阶段81](records/stage81-window-owner-metadata.md)继续AX锚点定位与长字段验收；P7准备通道UNKNOWN保持。
+- 阶段79/80已随PR131合入；后续阶段继续在新安卓分支推进。阶段80源0ba8d903经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)合入主线fda80542，源/主线CI与公开同步均通过，已清理Stage79/80本地和远端分支；详情见交付档案。[阶段81](records/stage81-window-owner-metadata.md)窗口局部结果已交付；完整AX和P7未知仍单列。
+- 阶段81已提交d99bd131，已建[PR132](https://git.51easyai.com/BCAI/agent-hub-app/pulls/132)，源/主线CI及公开同步均通过，已合入472bde36并清理本地/远端Stage81分支；局部窗口/输入与完整AX验收分开。[阶段82](records/stage82-framework-and-ax-observation.md)的独立Test依赖修复、共包构建与完整辅助回归已通过；实际prepare受控拒绝仍待验。该验收工装阶段在安卓专用分支提交，完整迁移、P8及P9继续。
 - 其他已交付历史、CI与分支回收见[档案索引](records/README.md)，不在总表追加过程流水。

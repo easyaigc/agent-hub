@@ -3789,6 +3789,30 @@
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt",
       "scripts/mobile/android-main-preference.py",
       "scripts/mobile/android-sdk-capture.py"
+    ],
+    "AndroidFrameworkSafAndAxObservers": [
+      "apps/android/src/androidTest/AndroidManifest.xml",
+      "apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java",
+      "apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java",
+      "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java",
+      "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt",
+      "scripts/mobile/android-main-preference.py",
+      "scripts/mobile/android-main-saf-framework.py",
+      "scripts/mobile/android-sdk-capture.py"
+    ],
+    "AndroidFrameworkPlatformParent": [
+      "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java",
+      "scripts/mobile/android-main-preference.py",
+      "scripts/mobile/android-main-saf-framework.py",
+      "scripts/mobile/android-sdk-capture.py"
+    ],
+    "AndroidFrameworkStandaloneTestProcess": [
+      "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java",
+      "scripts/mobile/android-main-preference.py",
+      "scripts/mobile/android-main-saf-framework.py",
+      "scripts/mobile/android-sdk-capture.py"
     ]
   },
   "groups": [
@@ -19685,6 +19709,48 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt": "16497966b4b8e79b41dfce72fd3faf74fb44c16a9bad88fa49f1cea4da3f36ec",
         "scripts/mobile/android-main-preference.py": "8950de7ce415093384de86e7b1cd16a2d5a05d79ff27b89987114ae38d10d73e",
         "scripts/mobile/android-sdk-capture.py": "a5bddb958aea94e434838cce6acf3f5cc6470bacff4ed5390d4c5b3a5c327aee"
+      }
+    },
+    {
+      "id": "F02-F03-F04-F55-F56-F64-stage82-framework-export-and-ax-observer",
+      "baseCommit": "d99bd1319b6031d37860b8d63d46f41cedd43ee9",
+      "features": ["F02", "F03", "F04", "F55", "F56", "F64"],
+      "summary": "Android test-only framework TestUID EXPORT provider/immutable RX receipt and original Native joins, closed59/904sharedSDK, P8 bounded failure observer. R4 source reviewed; javacmissinggeneratedBuildConfig, GradleSDK/Native notrun. iOS product unchanged; no protectedoperation replay or fullfeatureclosure.",
+      "files": {
+        "apps/android/src/androidTest/AndroidManifest.xml": "aa82a1a072275d72ee7e29c163895cc7b1a9af8852f08d0f5d2e89d87ba3fc6c",
+        "apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java": "33d19d6e03dc825550d25f2880bf8dedd52452c4d7ec9ae96d569e1b3854115d",
+        "apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java": "dbcff358d7a1f657c7ddd1fc6f0623ca3e27b8f4ff4cc4360454f039394aa2bc",
+        "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java": "edf03ea366bc0cb897daeb1cdcaba804507653b4dd22009f801dac38c2dd961b",
+        "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java": "22bc6d4c5de570102290628497aa9f4e5af1caa1c8af52b08e60f9ee5899acea",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt": "90914b45a0c45f8f6c01622f19cd4f3774860209538fea4a2a80a3c41868bd27",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt": "870fc7e9ebe3626502d2411bcf7f5d6ffcdd7b8a30e99f4af95555cb0ee3107b",
+        "scripts/mobile/android-main-preference.py": "b29c3af021f0b68d254c0a9dc78c5ddc8570e375c0ab1a9f7ff838d17a1db6e8",
+        "scripts/mobile/android-main-saf-framework.py": "f7fa71340879441c9cfa48fc30a2d7bfad61f73ce9eafe6d759a952a1c47c100",
+        "scripts/mobile/android-sdk-capture.py": "4156ef0b7791edfed296e1a42832ac30a5170397454a354d4f35729d88ecd8c5"
+      }
+    },
+    {
+      "id": "F55-F56-F64-stage82-platform-parent-enclosure",
+      "baseCommit": "d99bd1319b6031d37860b8d63d46f41cedd43ee9",
+      "features": ["F55", "F56", "F64"],
+      "summary": "Test-only platformfiles700/771 accepted ONLYcanonicalTestdataDir700/UID=GID/originalFD enclosure; private namespaces stay700, no chmod. Separateparent-v1SDK preserves0460/v4contract; source reviewed, newSDKNativepending. iOSunchanged.",
+      "files": {
+        "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java": "6a712759fc028c4095c7187198c0ae735b5c78dea48f4b217f86923b465e0a6e",
+        "scripts/mobile/android-main-preference.py": "8d802caa35d393009f07e81161bbe985345efd76916f8b7aba973ed1919348fb",
+        "scripts/mobile/android-main-saf-framework.py": "6970602fddfe8e9b795cb490b17c4d24cb8422dd03b00fd778a821259be5eafe",
+        "scripts/mobile/android-sdk-capture.py": "0e22818ec0b4ceb42660af77ca00d57b3861a98ee8708d338733988352134d1f"
+      }
+    },
+    {
+      "id": "F55-F56-F64-stage82-standalone-test-process",
+      "baseCommit": "d99bd1319b6031d37860b8d63d46f41cedd43ee9",
+      "features": ["F55", "F56", "F64"],
+      "summary": "Android test-only standalone Test process removes target App BuildConfig linkage; actual Test/App debug flags and UID/APK/cert guards retained. Four-class standalone javac and exact59/904 SDK passed. New prepare returned controlled IOException/no PREPARED, effect UNKNOWN/no replay, Native not dispatched. iOS product unchanged, full parity remains open. Final pnpm check passed (1476/68/0), no source drift; initial long-TMP Unix socket failure repaired in execution environment. Test infrastructure only, full product DEV remains pending.",
+      "files": {
+        "apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java": "957228f8d741d68a9e325e546a45f6d7227ed110088686c818c2bea3501fcf94",
+        "scripts/mobile/android-main-saf-framework.py": "58c2242a17e6d34bad88d828dd250a2d9686fcbc35e55ceff970ab1fd8dea747",
+        "scripts/mobile/android-main-preference.py": "c71bd68f7c19837664aee91b61138763d354cfabdd2e842fbea4b5ee9dfee189",
+        "scripts/mobile/android-sdk-capture.py": "793f359c93aa9dfb70763c0e7fedef00bd27b5111f971341cfcffdb32e6316a0"
       }
     }
   ]

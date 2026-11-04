@@ -522,18 +522,19 @@ class NativeP8MainPreferenceTest {
      * No text/contentDescription, unknown tags, other windows, or input actions are read/exported.
      * One synchronous root, with a cooperative deadline around every owned AX call; a blocked
      * platform call cannot be cancelled safely and is reported UNKNOWN after it returns. */
-    private fun nativeAxFailureDiagnostic(entry: Entry,tag: String,anchor: Int?,windowId: Int?,lastCompleteSample: JSONObject?,primary: Throwable) {
+    private fun nativeAxFailureDiagnostic(binding: OwnedWindow,tag: String,anchor: Int?,windowId: Int?,lastCompleteSample: JSONObject?,primary: Throwable) {
+        val entry=binding.entry;check(currentEntry===entry)
         val started=android.os.SystemClock.elapsedRealtime();val deadline=started+1500L
         val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
         var visited=0;var idDeclared=0;var tagDeclared=0;var exactIds=0;var exactTags=0
-        var completed=false;var limit="none";var diagnosticError: Throwable?=null
+        var completed=false;var limit="none";var stage="entry";var diagnosticError: Throwable?=null
         val candidates=JSONArray();val rootFacts=JSONObject()
         val composeIds=JSONObject();val activityWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
             .put("equalsOriginalActiveWindow",JSONObject.NULL).put("errorClass",JSONObject.NULL)
         val dialogWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
-            .put("reason","not-measured-by-this-failure-only-diagnostic").put("errorClass",JSONObject.NULL)
-        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v2").put("field",tag)
-            .put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
+            .put("source","original-retained-focused-decor").put("errorClass",JSONObject.NULL)
+        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v3").put("field",tag)
+            .put("windowBindingId",binding.id).put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
             .put("expectedAnchor",anchor?:JSONObject.NULL).put("windowId",windowId?:JSONObject.NULL)
             .put("primaryErrorClass",primary.javaClass.name).put("lastCompleteSample",lastCompleteSample?:JSONObject.NULL)
         fun suppress(error: Throwable) {
@@ -548,7 +549,7 @@ class NativeP8MainPreferenceTest {
         }
         fun <T> read(action: ()->T): T {
             budget()
-            val result=owned(entry) {budget();val value=action();budget();value}
+            val result=windowOwned(binding) {budget();val value=action();budget();value}
             budget();return result
         }
         fun sameWindow(node: android.view.accessibility.AccessibilityNodeInfo)=read {
@@ -578,6 +579,9 @@ class NativeP8MainPreferenceTest {
         }
         try {
             check(tag in nativeAxFields) {"AX failure diagnostic fixed field unknown"}
+            read {check(windowId==binding.windowId)} // Also revalidates original decor/focus/AX ID.
+            dialogWindow.put("state","OBSERVED").put("windowId",binding.windowId)
+            stage="compose-identity"
             var mergedId: Int?=null;var unmergedId: Int?=null
             // Each tree mode is observed once for this fixed tag. No semantics config/value read.
             for(unmerged in listOf(false,true)) {
@@ -599,6 +603,7 @@ class NativeP8MainPreferenceTest {
                 }
             }
             composeIds.put("mergedEqualsUnmerged",if(mergedId==null||unmergedId==null)JSONObject.NULL else mergedId==unmergedId)
+            stage="original-activity-window"
             try {
                 var measuredWindowId: Int?=null
                 read {checkNotNull(entry.activity?.scenario).onActivity {activity->
@@ -620,18 +625,29 @@ class NativeP8MainPreferenceTest {
                 if(diagnosticError==null)diagnosticError=error;suppress(error)
             }
             check(anchor!=null&&windowId!=null) {"AX failure diagnostic original target unknown"}
+            stage="root-acquisition"
             val root=checkNotNull(acquire {checkNotNull(originalAutomation).rootInActiveWindow}) {"AX failure diagnostic root unknown"}
             try {
                 sameWindow(root)
                 rootFacts.put("samePackage",true).put("sameWindow",true).put("activeWindowId",nodeRead(root) {root.windowId})
-                check(nodeRead(root) {root.refresh()}) {"AX failure diagnostic root refresh unknown"}
+                stage="root-refresh"
+                val rootRefreshed=nodeRead(root) {root.refresh()}
+                rootFacts.put("refreshReturned",rootRefreshed)
+                check(rootRefreshed) {"AX failure diagnostic root refresh unknown"}
+                stage="optional-window-info"
                 var window: android.view.accessibility.AccessibilityWindowInfo?=null
                 try {
                     nodeRead(root) {window=root.window}
-                    val originalWindow=checkNotNull(window) {"AX failure diagnostic window unknown"}
-                    val active=nodeRead(root) {check(originalWindow.id==windowId);originalWindow.isActive}
-                    rootFacts.put("active",active);check(active) {"AX failure diagnostic window no longer active"}
+                    val originalWindow=window
+                    rootFacts.put("windowInfoAvailable",originalWindow!=null)
+                    if(originalWindow!=null) {
+                        val active=nodeRead(root) {check(originalWindow.id==windowId);originalWindow.isActive}
+                        rootFacts.put("active",active);check(active) {"AX failure diagnostic window no longer active"}
+                    }
+                    // getWindow() is nullable metadata. The retained focused decor plus
+                    // exact root package/window ID guard every permitted observation.
                 } finally {@Suppress("DEPRECATION") window?.recycle()}
+                stage="root-bounds"
                 val windowBounds=android.graphics.Rect();nodeRead(root) {root.getBoundsInScreen(windowBounds)}
                 rootFacts.put("visible",nodeRead(root) {root.isVisibleToUser}).put("publicClass",publicClass(root))
                 fun visit(node: android.view.accessibility.AccessibilityNodeInfo,depth: Int) {
@@ -676,9 +692,10 @@ class NativeP8MainPreferenceTest {
                         try {sameWindow(node);visit(child,depth+1)}finally {@Suppress("DEPRECATION") child.recycle()}
                     }
                 }
+                stage="bounded-traversal"
                 visit(root,0);sameWindow(root);budget()
             } finally {@Suppress("DEPRECATION") root.recycle()}
-            read {Unit};completed=diagnosticError==null
+            read {Unit};stage="complete";completed=diagnosticError==null
         } catch(error: Throwable) {completed=false;if(diagnosticError==null)diagnosticError=error;suppress(error)}
         val actualElapsedMs=android.os.SystemClock.elapsedRealtime()-started
         val overBudget=actualElapsedMs>=1500L
@@ -692,7 +709,7 @@ class NativeP8MainPreferenceTest {
             .put("exactIDCount",exactIds).put("exactTagCount",exactTags).put("candidates",candidates).put("root",rootFacts)
             .put("composeIds",composeIds).put("activityWindow",activityWindow).put("dialogWindow",dialogWindow)
             .put("candidateCap",4).put("nodeCap",2048).put("depthCap",40).put("deadlineMs",1500)
-            .put("limit",limit).put("actualElapsedMs",actualElapsedMs).put("overBudget",overBudget)
+            .put("limit",limit).put("stage",stage).put("actualElapsedMs",actualElapsedMs).put("overBudget",overBudget)
             .put("failureCount",if(diagnosticError==null)0 else 1)
             .put("errorClass",diagnosticError?.javaClass?.name?:JSONObject.NULL)
         // A separate failed-run bundle key cannot enter the Host's exact success/phase contracts.
@@ -862,7 +879,7 @@ class NativeP8MainPreferenceTest {
         } catch(error: Throwable) {
             failure=error;if(!timedOut)lastState="fatal"
             // The exact AX assertion has already failed. Diagnostic observations cannot recover it.
-            try {nativeAxFailureDiagnostic(entry,tag,anchor,windowId,lastCompleteSample,error)}
+            try {nativeAxFailureDiagnostic(binding,tag,anchor,windowId,lastCompleteSample,error)}
             catch(record: Throwable) {if(record!==error&&error.suppressed.none {it===record})error.addSuppressed(record)}
             throw error
         }

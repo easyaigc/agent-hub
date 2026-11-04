@@ -1648,3 +1648,5 @@ Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness so
 阶段81，F02/F03/F04/F56：实际失败元数据OBSERVED仅定位到原Activity decor的DecorContext链缺Activity，严格Native仍1项失败。修复按原Activity/window/decor/非空token强引用，只对该准确decor采用对象身份；Dialog仍核准确Activity context链、type2与原token，原焦点/AX window和输入期限保持。新独立构建目的与binding-v2，旧合同冻结；重建/交互及完整双端验收仍待执行，iOS产品界面与文案不变。详见[阶段档案](../plans/android-alignment-20261022/records/stage81-window-owner-metadata.md)。
 
 阶段81实际补充：新SDK7fbfee97通过辅助构建；原Dialog binding-v2与名称replacement/IME有界通过。随后原AX锚点在5000ms/18样本内缺失，JUnit1项失败，英文和余字段未执行；诊断UNKNOWN，完整长字段/AX/视觉/真实DEV仍开。原窗口与输入通过只限本次准确包/环境，不替代iOS或物理设备结果。
+
+阶段82，F02/F03/F04/F55/F56/F64：Android验收工装独立Test类依赖修复及共享SDK/独立javac辅助检查通过；实际prepare受控拒绝保持UNKNOWN，Native/SAF未执行，P8绑定与完整AX/视觉仍待验。生产布局、token、文案和iOS行为未改，完整功能不关闭；过程见[阶段档案](../plans/android-alignment-20261022/records/stage82-framework-and-ax-observation.md)。

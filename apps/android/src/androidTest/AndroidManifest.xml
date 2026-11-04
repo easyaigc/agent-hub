@@ -6,6 +6,7 @@
         <package android:name="com.easyai.agenthub.android.acceptance.documents" />
         <package android:name="com.easyai.agenthub.android.acceptance.photos" />
         <package android:name="com.easyai.agenthub.android.acceptance.cameras" />
+        <package android:name="com.google.android.documentsui" />
         <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
         <intent><action android:name="android.intent.action.OPEN_DOCUMENT" /><category android:name="android.intent.category.OPENABLE" /><data android:mimeType="*/*" /></intent>
         <intent><action android:name="android.provider.action.PICK_IMAGES" /><data android:mimeType="image/*" /></intent>
@@ -25,6 +26,16 @@
             android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
         </provider>
+        <!-- New protocol only. Old v1 provider and all unknown scopes remain untouched. -->
+        <provider android:name="com.agenthub.android.OwnedMainMigrationDocumentsV3"
+            android:authorities="${applicationId}.p7-main-saf-v3" android:exported="true" android:process=":p7MainSafV3"
+            android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
+        </provider>
+        <!-- DUMP is a platform signature permission; exact shell UID/user0 is checked again. -->
+        <provider android:name="com.agenthub.android.OwnedMainMigrationControlV4"
+            android:authorities="${applicationId}.p7-main-saf-control-v4" android:exported="true" android:process=":p7MainSafControlV4"
+            android:grantUriPermissions="false" android:permission="android.permission.DUMP" />
         <provider android:name="com.agenthub.android.NativeSoundForeignWitnessProvider"
             android:authorities="${applicationId}.sound-witness"
             android:exported="true" android:process=":soundWitness" />

@@ -280,3 +280,7 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [阶段80 F59合同缺口](stage80-f59-transfer-contract.md)：真实4动作、冷原件、双端迁移域与Android流式存储边界。
 
 - [阶段81原窗口归属定位](stage81-window-owner-metadata.md)：失败只读元数据与独立SDK，原断言保持。
+
+- [阶段82：framework文件通道与原窗口AX观察](stage82-framework-and-ax-observation.md)：源码准备、共包门槛和独立P9范围，未计作运行通过。
+
+阶段82辅助回归已通过，实际prepare仍UNKNOWN/Native未派发；交付范围与环境修复见对应阶段档案，完整P7/P8/P9继续开放。

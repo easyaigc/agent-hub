@@ -86,3 +86,7 @@ P8 v2 SDK通过，但中文首case的准确原生AX锚点在5秒截止失败，�
 阶段81：只读诊断包构建通过，实际元数据确认原Activity decor的DecorContext链缺Activity，原严格Native仍JUnit1/1失败。按准确decor对象与原非空token修复错误假设，重建、完整长字段/AX及两语言交互仍待验；诊断不计产品通过。详情见[档案](records/stage81-window-owner-metadata.md)。
 
 阶段81修复后：准确Dialog binding-v2及名称replacement/IME已CONFIRMED；原5000ms AX检查18样本无原Compose id217，诊断UNKNOWN，JUnit1/1失败，英文及其余字段未执行。不能把窗口局部通过升级为P8通过，继续精确AX身份核对；失败scope与原操作保留。
+
+阶段82新UNKNOWN：prepare c6090df6-a664-4f57-af56-ebfbc16549aa在Test控制进程缺目标App BuildConfig崩溃后无远端退出帧，效果未知，允许只读核原回执，禁止重放。对应Native操作从未派发。原VM消失原因及原wait/EOF未确认，后续只读恢复VM正常退出不替代原事实。独立进程最小修复javac通过，新SDK/实际回调/完整迁移仍待验。P8最新新case在原focused window binding失败，未进入AX断言，不能沿用前次缺锚原因；中英长字段、AX、视觉及物理矩阵继续开放。
+
+阶段82新prepare 15b2a558-ac1e-406c-b801-d22c34db8acb：原child wait0/双EOF但provider返回受控IOException，无PREPARED，效果UNKNOWN，不重放。对应Native bc14c713-91a7-484c-bfa7-dbab06ac9098从未派发；本次未进入导出UI。准确scope/namespace的后置ENOENT不能证明无副作用；待有限拒绝原因观测，不猜测guard点。Root自持VM正常退出及端口释放已核，原失败数据/密钥/意图仍保留，不能替代旧VM89265未确认的wait/EOF。

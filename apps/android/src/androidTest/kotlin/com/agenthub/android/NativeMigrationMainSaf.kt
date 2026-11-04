@@ -25,10 +25,12 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
     private val i=InstrumentationRegistry.getInstrumentation()
     private val app=i.targetContext
     private val test=i.context
+    // New framework protocol has its own admission/profile/source seal. Legacy maps stay fixed.
+    private val frameworkV4=InstrumentationRegistry.getArguments().getString("migrationMainSafFrameworkV4")=="1"
     // Target instrumentation has a DISTINCT UID: never read/write the runner sandbox here.
-    val providerRelativeDirectory="files/p7-main-saf-owned-v1/$run"
+    val providerRelativeDirectory="files/${if(frameworkV4)"p7-main-saf-owned-v3" else "p7-main-saf-owned-v1"}/$run"
     private val title="AH_P7_${run.replace("-","")}"
-    private val authority="${test.packageName}.p7-main-saf"
+    private val authority="${test.packageName}.${if(frameworkV4)"p7-main-saf-v3" else "p7-main-saf"}"
     val documentId="p7-${if(kind==NativeMigrationPickerKind.IMPORT)"input" else "output"}-$run"
     val uri: Uri=DocumentsContract.buildDocumentUri(authority,documentId)
     val filename="agent-hub-p7-${kind.name.lowercase(java.util.Locale.ROOT)}-$run.codexmigration"
@@ -40,7 +42,7 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
     private var expectedOutput: Pair<Long,String>?=null
     private var originalPickerId: String?=null
     private var ownedDirectoryWindow: Int?=null
-    private val profileV2 get()=profile.optString("schema")=="p7-main-saf-docsui-role-profile-v2"
+    private val profileV2 get()=profile.optString("schema") in setOf("p7-main-saf-docsui-role-profile-v2","p7-main-saf-docsui-framework-profile-v4")
     // Actual null resource IDs are observations, never invented ID defaults.
     private val runtimeOwnedIds=linkedMapOf<String,String?>()
     private val runtimeOwnedWindows=linkedMapOf<String,Int>()
@@ -59,9 +61,11 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
         require(UUID.fromString(run).toString()==run)
         check(BuildConfig.DEBUG&&app.packageName=="com.easyai.agenthub.android.acceptance"&&test.packageName=="${app.packageName}.test")
         admission=NativeMigrationMainSafAdmission.accept(run,kind.name)
+        if(frameworkV4)check(kind in setOf(NativeMigrationPickerKind.EXPORT,NativeMigrationPickerKind.IMPORT))
         val args=InstrumentationRegistry.getArguments()
         check(args.getString("migrationMainSafOwnedLease")=="1")
         profile=JSONObject(checkNotNull(args.getString("migrationMainSafProfile")){"Independently observed current DocsUI profile required"})
+        check((profile.optString("schema")=="p7-main-saf-docsui-framework-profile-v4")==frameworkV4)
         val keys=setOf("package","rootsButtonId","rootTitleId","directoryTitleId","documentTitleId","fileNameId","saveId","openButtonId")
         docs=profile.getString("package");check(docs in setOf("com.android.documentsui","com.google.android.documentsui"))
         check(NativeMigrationMainSaf.fingerprintText(checkNotNull(args.getString("migrationMainSafProfile")))==admission.getJSONObject("binding").getString("profileSha256"))
@@ -76,11 +80,20 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
         docsUid=info.applicationInfo.uid;check(docsUid==admission.getJSONObject("binding").getInt("docsUid"));check(docsUid!=Process.myUid()&&test.applicationInfo.uid!=Process.myUid()&&test.applicationInfo.uid!=docsUid)
         if(profileV2)verifyV2SystemApk()
         @Suppress("DEPRECATION")
-        val provider=app.packageManager.getProviderInfo(ComponentName(test.packageName,"com.agenthub.android.OwnedMainMigrationDocuments"),0)
+        val provider=app.packageManager.getProviderInfo(ComponentName(test.packageName,
+            "com.agenthub.android.${if(frameworkV4)"OwnedMainMigrationDocumentsV3" else "OwnedMainMigrationDocuments"}"),0)
         check(provider.authority==authority&&provider.packageName==test.packageName&&provider.applicationInfo.uid==test.applicationInfo.uid&&
-            provider.processName=="${test.packageName}:p7MainSaf"&&provider.exported&&provider.grantUriPermissions&&provider.readPermission=="android.permission.MANAGE_DOCUMENTS"&&provider.writePermission=="android.permission.MANAGE_DOCUMENTS")
+            provider.processName=="${test.packageName}:${if(frameworkV4)"p7MainSafV3" else "p7MainSaf"}"&&provider.exported&&provider.grantUriPermissions&&provider.readPermission=="android.permission.MANAGE_DOCUMENTS"&&provider.writePermission=="android.permission.MANAGE_DOCUMENTS")
+        if(frameworkV4) {
+            @Suppress("DEPRECATION")
+            val controller=app.packageManager.getProviderInfo(ComponentName(test.packageName,"com.agenthub.android.OwnedMainMigrationControlV4"),0)
+            check(controller.authority=="${test.packageName}.p7-main-saf-control-v4"&&controller.packageName==test.packageName&&
+                controller.applicationInfo.uid==test.applicationInfo.uid&&controller.processName=="${test.packageName}:p7MainSafControlV4"&&
+                controller.exported&&!controller.grantUriPermissions&&controller.readPermission=="android.permission.DUMP"&&controller.writePermission=="android.permission.DUMP")
+        }
         check(permission(Intent.FLAG_GRANT_READ_URI_PERMISSION)==PackageManager.PERMISSION_DENIED&&permission(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)==PackageManager.PERMISSION_DENIED)
-        // Root must preflight a fresh runner-owned UUID namespace via exact runner run-as.
+        // Root must preflight a fresh exact run. Framework-v4 prepares via the Test-UID component;
+        // its original immutable receipt and actual controller owner are independently joined.
         // This token is an intent/binding requirement, NOT proof of provider I/O or absence.
         check(args.getString("migrationMainSafRun")==run&&args.getString("migrationMainSafProviderPrepared")=="1")
         expectedInput=if(kind==NativeMigrationPickerKind.IMPORT) {
@@ -371,6 +384,7 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
         .put("expectedBytes",(expectedInput?:expectedOutput)?.first ?: JSONObject.NULL).put("expectedSha256",(expectedInput?:expectedOutput)?.second ?: JSONObject.NULL)
         .put("providerAuditRequired",providerAuditRequired).put("providerAuditVerified",false)
         .put("providerMaterialRetained",true).put("providerRelativeDirectory",providerRelativeDirectory).put("postRuleProcessExitVerified",false)
+        .apply {if(frameworkV4)put("protocolVersion","p7-main-saf-framework-v4").put("controllerAuthority","${test.packageName}.p7-main-saf-control-v4")}
         .apply {if(profileV2)put("runtimeOwnedRoles",JSONObject().put("directoryWindowId",ownedDirectoryWindow?:JSONObject.NULL)
             .put("directoryTextSha256",directoryTextSha256?:JSONObject.NULL).put("profileSha256",admission.getJSONObject("binding").getString("profileSha256"))
             .put("rootTitle",runtimeRole("rootTitleId")).put("documentTitle",runtimeRole("documentTitleId")))}
@@ -417,9 +431,19 @@ internal object NativeMigrationMainSafAdmission {
         val args=InstrumentationRegistry.getArguments();val raw=checkNotNull(args.getString("migrationMainSafAdmissionJson"))
         check(raw.toByteArray().size<=8192&&sha(raw.toByteArray())==args.getString("migrationMainSafAdmissionSha256"))
         val intent=JSONObject(raw)
-        val keys=setOf("schema","profile","run","phase","operationId","selector","uid","testUid","docsUid","bootUuid",
+        val legacyKeys=setOf("schema","profile","run","phase","operationId","selector","uid","testUid","docsUid","bootUuid",
             "appApkSha256","testApkSha256","certificateSha256","sdkSealSha256","workspaceReviewSha256","sourceGuardSha256","profileSha256","expiresWallMillis","inputBytes","inputSha256","transportContractReviewSha256")
-        check(intent.keys().asSequence().toSet()==keys&&intent.getString("schema")=="p7-main-saf-admission-v1"&&intent.getString("profile")=="p7-main-saf-v2")
+        val frameworkV4=args.getString("migrationMainSafFrameworkV4")=="1"
+        val keys=if(frameworkV4)legacyKeys+setOf("controllerOperationId","controllerIntentSha256","controllerReceiptSha256","controllerPayloadAckSha256","sourceProducerProofSha256") else legacyKeys
+        check(intent.keys().asSequence().toSet()==keys&&intent.getString("schema")==(if(frameworkV4)"p7-main-saf-admission-v4" else "p7-main-saf-admission-v1"))
+        check(intent.getString("profile")==(if(frameworkV4)"p7-main-saf-framework-v4" else "p7-main-saf-v2"))
+        if(frameworkV4) {
+            check(phase in setOf("EXPORT","IMPORT")) {"No producer or legacy fallback in framework-v4"}
+            if(phase=="IMPORT") {
+                check(intent.getString("controllerPayloadAckSha256")!="0".repeat(64)&&intent.getString("sourceProducerProofSha256")!="0".repeat(64))
+            } else check(intent.getString("controllerPayloadAckSha256")=="0".repeat(64)&&intent.getString("sourceProducerProofSha256")=="0".repeat(64))
+            check(UUID.fromString(intent.getString("controllerOperationId")).toString()==intent.getString("controllerOperationId"))
+        }
         check(intent.getString("run")==run&&intent.getString("phase")==phase&&UUID.fromString(intent.getString("operationId")).toString()==intent.getString("operationId"))
         val selector=when(phase) {
             "PRODUCER"->"NativeMigrationMainSafProducerTest#produceOnlySyntheticImportCiphertext"

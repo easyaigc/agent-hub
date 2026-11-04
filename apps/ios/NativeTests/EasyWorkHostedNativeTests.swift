@@ -4323,7 +4323,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen original queue case required") }
     let c = try easyWorkObject(Data(raw.utf8))
     let action = try XCTUnwrap(c["action"] as? String)
-    guard c["caseId"] as? String == run, ["inspect", "execute", "cold-status", "cleanup", "archive-owned-attempts", "stop-owned-paused", "cancel-owned-queued", "pre-acceptance-owner-loss"].contains(action),
+    guard c["caseId"] as? String == run, ["inspect", "execute", "cold-status", "cold-history", "fresh-cold-history", "cleanup", "archive-owned-attempts", "stop-owned-paused", "cancel-owned-queued", "pre-acceptance-owner-loss"].contains(action),
       let allowedBindings = c["allowedBindingIds"] as? [String] else { throw HostServiceError.invalidResponse }
     func field(_ name: String) throws -> String { let value = try XCTUnwrap(c[name] as? String); guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value }
     let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
@@ -4515,6 +4515,95 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         report["originalProviderInputNotReplayedAfterRealOwnerLoss"] = true
         report["independentParentObservedNoAcceptedRoot"] = true
         report["status"] = "passed-original-pre-acceptance-owner-loss-no-model-no-replay"; try save(); return
+      }
+      if action == "fresh-cold-history" {
+        guard c["newRootInputsAuthorized"] as? Int == 1, c["newThreadsAuthorized"] as? Int == 1,
+          c["maxChildRunsAuthorized"] as? Int == 0, c["metadataWritesAuthorized"] as? Int == 1 else { throw HostServiceError.invalidResponse }
+        let body = try field("body"), model = try field("model"), marker = try field("finalMarker")
+        guard HostService.hash(Data(body.utf8)) == c["bodySHA256"] as? String else { throw HostServiceError.invalidResponse }
+        await store.loadModels()
+        guard store.models.contains(where: { $0.id == model }),
+          store.saved.aiSharingGrants?.contains(where: { $0.scope.target == target && $0.scope.model == model }) == true else { throw HostServiceError.unavailable }
+        report["createAttempted"] = true; try save()
+        let thread = try await provider.createThread(client, projectId: nil, operationId: try field("createOperationId"))
+        ownedThread = thread.id; report["threadId"] = thread.id; report["seedSendAttempted"] = true; try save()
+        let sentAt = Date()
+        let sent = try await provider.send(client, reply: PendingReply(hostId: client.id, threadId: thread.id,
+          clientMessageId: try field("sendOperationId"), text: body, attachmentIds: [], mode: "next-turn",
+          expectedTurnId: nil, model: model, effort: nil, permissionMode: "confirm_high_risk"))
+        guard sent.state == "submitted", let root = sent.turnId else { throw HostServiceError.invalidResponse }
+        ownedRoot = root; report["rootRunId"] = root; report["status"] = "waiting-fresh-original-completed-reply"; try save()
+        var history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        let completeBy = Date().addingTimeInterval(180)
+        while history.runtime?.state != "idle", !["failed", "cancelled", "interrupted"].contains(history.runtime?.state ?? ""), Date() < completeBy {
+          try await Task.sleep(for: .milliseconds(250)); history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        }
+        let final = try XCTUnwrap(history.messages.last { $0.role == "assistant" && $0.runId == root })
+        guard history.runtime?.state == "idle", final.text.trimmingCharacters(in: .whitespacesAndNewlines) == marker else { throw HostServiceError.invalidResponse }
+        guard history.runtime?.suggestionSourceTurnId == root else { throw HostServiceError.invalidResponse }
+        let suggestionScope = DesktopSuggestionScope(target: target, threadId: thread.id, sourceTurnId: root,
+          navigation: "native-" + run, connection: "native-" + run, requiresRuntimeSource: true)
+        let firstSuggestion = try await provider.nextTurnSuggestion(client, scope: suggestionScope)
+        let secondSuggestion = try await provider.nextTurnSuggestion(client, scope: suggestionScope)
+        guard firstSuggestion.source == "runtime", firstSuggestion.readOnly,
+          secondSuggestion.source == "runtime", secondSuggestion.readOnly,
+          firstSuggestion.suggestion == nil || firstSuggestion.suggestion?.isRuntimeBound == true,
+          secondSuggestion.suggestion == nil || secondSuggestion.suggestion?.isRuntimeBound == true else { throw HostServiceError.invalidResponse }
+        if let first = firstSuggestion.suggestion, let second = secondSuggestion.suggestion {
+          guard first.id == second.id, first.contentSha256 == second.contentSha256 else { throw HostServiceError.invalidResponse }
+        }
+        report["canonicalSyncSourceMatchesOriginalRoot"] = true
+        report["canonicalSuggestionReadTwiceWithRuntimeVersionOnly"] = true
+        let outputHash = HostService.hash(Data(final.text.utf8)), elapsed = Date().timeIntervalSince(sentAt)
+        guard elapsed < 300 else { throw HostServiceError.invalidResponse }
+        report["originalFinalMessageId"] = final.id; report["originalFinalOutputSHA256"] = outputHash
+        report["freshSendToArchiveRequestSeconds"] = elapsed
+        report["archiveAttemptedOnce"] = true; try save()
+        _ = try await channel.request("thread/archive", ["threadId": thread.id, "archived": true], id: try field("archiveOperationId"))
+        for index in 1...2 {
+          let cold = try await provider.history(client, threadId: thread.id, cursor: nil)
+          guard cold.thread?.id == thread.id, cold.thread?.archived == true, cold.runtime?.state == "idle",
+            cold.runtime?.suggestionSourceTurnId == nil,
+            cold.messages.allSatisfy({ $0.runId == nil || $0.runId == root }),
+            let original = cold.messages.last(where: { $0.id == final.id && $0.runId == root }),
+            HostService.hash(Data(original.text.utf8)) == outputHash else { throw HostServiceError.invalidResponse }
+          report["coldHistoryReadsCompleted"] = index; try save()
+        }
+        guard try originalReadProtectedDigests(store) == protected,
+          try encoder.encode(store.drafts.values) == encoder.encode(oldDrafts),
+          try encoder.encode(store.saved.generationPreferences) == oldPreferences,
+          try encoder.encode(store.saved.aiSharingGrants) == oldGrants else { throw HostServiceError.invalidResponse }
+        report["freshCompletionArchivedAndReadTwiceWithinOriginalSuggestionTTL"] = true
+        report["unrelatedPhoneStateAndIdentityExact"] = true
+        report["status"] = "passed-fresh-original-cold-history-no-replay"; try save(); return
+      }
+      if action == "cold-history" {
+        guard c["newRootInputsAuthorized"] as? Int == 0, c["newThreadsAuthorized"] as? Int == 0,
+          c["maxChildRunsAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+        let thread = try field("threadId"), root = try field("rootRunId")
+        guard UUID(uuidString: thread) != nil, UUID(uuidString: root) != nil else { throw HostServiceError.invalidResponse }
+        report["threadId"] = thread; report["rootRunId"] = root
+        report["status"] = "reading-original-cold-history-without-command"; try save()
+        var originalFinalId: String?
+        for index in 1...2 {
+          let history = try await provider.history(client, threadId: thread, cursor: nil)
+          guard history.thread?.id == thread, history.thread?.archived == true,
+            history.runtime?.state == "idle",
+            history.messages.allSatisfy({ $0.runId == nil || $0.runId == root }) else { throw HostServiceError.invalidResponse }
+          let final = try XCTUnwrap(history.messages.last { $0.role == "assistant" && $0.runId == root })
+          guard final.text.contains(try field("originMarker")), final.text.contains(try field("queueMarker")),
+            HostService.hash(Data(final.text.utf8)) == c["expectedFinalOutputSHA256"] as? String,
+            originalFinalId == nil || originalFinalId == final.id else { throw HostServiceError.invalidResponse }
+          originalFinalId = final.id
+          report["coldHistoryReadsCompleted"] = index; report["originalFinalMessageId"] = final.id; try save()
+        }
+        guard try originalReadProtectedDigests(store) == protected,
+          try encoder.encode(store.drafts.values) == encoder.encode(oldDrafts),
+          try encoder.encode(store.saved.generationPreferences) == oldPreferences,
+          try encoder.encode(store.saved.aiSharingGrants) == oldGrants else { throw HostServiceError.invalidResponse }
+        report["originalColdHistoryAndFinalReadTwiceWithoutArchiveRestoreOrInput"] = true
+        report["unrelatedPhoneStateAndIdentityExact"] = true
+        report["status"] = "passed-original-cold-history-read-only"; try save(); return
       }
       if action == "cold-status" || action == "cleanup" {
         guard c["newRootInputsAuthorized"] as? Int == 0, c["newThreadsAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
@@ -4781,7 +4870,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["status"] = "passed-normal-ios-original-native-queue-execution"; try save()
     } catch {
       report["status"] = "failed-original-queue-no-input-replayed"; report["failure"] = error.localizedDescription
-      if action == "execute", let thread = ownedThread, let root = ownedRoot {
+      if ["execute", "fresh-cold-history"].contains(action), let thread = ownedThread, let root = ownedRoot {
         if let queueId { _ = try? await provider.cancelQueue(client, threadId: thread, messageId: queueId) }
         if let history = try? await provider.history(client, threadId: thread, cursor: nil), history.runtime?.turnId == root,
           ["running", "waiting-for-approval", "paused"].contains(history.runtime?.state ?? "") {

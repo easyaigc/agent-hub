@@ -24,6 +24,7 @@ import {
 } from '@codex-manage/protocol';
 import { DesktopNativeSampleCapture } from './desktop-native-sample-capture.js';
 import { isOriginalNativeSampleFrame } from './desktop-native-sample-envelope.js';
+import { DesktopNativeSampleDiagnostics } from './desktop-native-sample-diagnostics.js';
 import {
   inspectNativeSuggestionProducer,
   nativeSuggestionImplementationFingerprint,
@@ -602,6 +603,16 @@ class Bridge implements DesktopNativeSampleBridge {
   private phaseDeadline = Infinity;
   private phaseLeaseDeadline = Infinity;
   private roundRobin = 0;
+  private diagnostics: DesktopNativeSampleDiagnostics | undefined;
+  private stage = 'initialize';
+  private phaseElapsedMs = 0;
+  private phaseStartedAt = 0;
+  private lastTickAt = 0;
+  private tickGapMs = 0;
+  private selectedFiles = 0;
+  private emptyFiles = 0;
+  private directoryEntries = 0;
+  private stopCode: Code | undefined;
 
   constructor(
     private readonly configPath: string,
@@ -617,6 +628,7 @@ class Bridge implements DesktopNativeSampleBridge {
   report(code: Code): void {
     if (this.codes.has(code)) return;
     this.codes.add(code);
+    this.journal('notice', { code });
     try {
       if (this.hooks.status) this.hooks.status(code);
       else process.stderr.write(`${code}\n`);
@@ -626,6 +638,33 @@ class Bridge implements DesktopNativeSampleBridge {
   }
   get available(): boolean {
     return this.ready && !this.closed;
+  }
+  private journal(event: string, fields: Record<string, unknown> = {}): void {
+    try {
+      if (!this.store || this.store.rootIdentity() !== this.root) return;
+      this.diagnostics?.write(event, {
+        ...this.producer,
+        pid: this.producer?.pid ?? process.pid,
+        hostId: this.config.target.hostId,
+        workspaceId: this.config.target.workspaceId,
+        wrapperStartedAt: this.identity?.wrapperStartedAt,
+        implementationSha256: this.implementationSha256,
+        stage: this.stage,
+        leaseAgeMs: this.producerCheckedAt
+          ? Math.max(0, this.lastAt - this.producerCheckedAt)
+          : undefined,
+        tickGapMs: this.tickGapMs,
+        phaseElapsedMs: this.phaseStartedAt
+          ? performance.now() - this.phaseStartedAt
+          : this.phaseElapsedMs,
+        selectedFiles: this.selectedFiles,
+        emptyFiles: this.emptyFiles,
+        directoryEntries: this.directoryEntries,
+        ...fields,
+      });
+    } catch {
+      /* Diagnostics never affect producer ownership or original forwarding. */
+    }
   }
   private assertActive(): void {
     if (this.hooks.phaseBudget && !this.hooks.phaseBudget.active())
@@ -640,6 +679,16 @@ class Bridge implements DesktopNativeSampleBridge {
     };
   }
   private phase<T>(startup: boolean, action: () => T): T {
+    const started = performance.now();
+    this.phaseStartedAt = started;
+    try {
+      return this.withinPhase(startup, action);
+    } finally {
+      this.phaseElapsedMs = performance.now() - started;
+      this.phaseStartedAt = 0;
+    }
+  }
+  private withinPhase<T>(startup: boolean, action: () => T): T {
     const budget = this.hooks.phaseBudget;
     if (!budget) return action();
     this.assertActive();
@@ -674,6 +723,18 @@ class Bridge implements DesktopNativeSampleBridge {
     const checked = configuration(this.configPath, this.files, this.hooks);
     this.config = checked.config;
     this.configHash = checked.hash;
+    this.store = new DesktopSuggestionStore(
+      this.config.traceRoot,
+      machineRuntimeTargetKey(this.config.target),
+    );
+    this.store.prepare();
+    this.root = this.store.rootIdentity();
+    // This task enables the local macOS journal. Windows keeps its existing
+    // fixed status channel: synchronous per-event ACL helpers must not consume
+    // that sampler's six-second native execution budget.
+    if (process.platform !== 'win32')
+      this.diagnostics = new DesktopNativeSampleDiagnostics(this.store.directory);
+    this.journal('starting');
     const at = this.time();
     try {
       this.identity = this.inspect(process.pid, this.configPath);
@@ -689,12 +750,6 @@ class Bridge implements DesktopNativeSampleBridge {
       desktopPid: this.identity.desktopPid,
       desktopStartedAt: this.identity.desktopStartedAt,
     };
-    this.store = new DesktopSuggestionStore(
-      this.config.traceRoot,
-      machineRuntimeTargetKey(this.config.target),
-    );
-    this.store.prepare();
-    this.root = this.store.rootIdentity();
     this.logRoot = this.files.directory(this.config.logDirectory, this.config.logDirectory);
     this.ownerPath = join(this.store.directory, 'producer-owner.json');
     this.ownerBytes =
@@ -730,20 +785,25 @@ class Bridge implements DesktopNativeSampleBridge {
       targetKey: this.store.targetKey,
       producer: this.producer,
       now: this.now,
-      onError: (code) =>
+      onState: (state) => this.journal('capture', state),
+      onError: (code) => {
+        this.journal('notice', { code });
         this.report(
           code === 'native_sample_frame_limit'
             ? 'native_bridge_sample_frame_limit'
             : code === 'native_sample_frame_invalid'
               ? 'native_bridge_sample_frame_invalid'
               : 'native_bridge_capture_notice',
-        ),
+        );
+      },
     });
     if (!this.capture.available) fail('native_bridge_capture_unavailable');
     this.checkOwner();
     this.writeProducer('listening', this.time());
     this.heartbeatAt = this.lastAt;
     this.ready = true;
+    this.lastTickAt = this.lastAt;
+    this.journal('listening');
     if (!this.hooks.manual) {
       this.timer = setInterval(() => this.tick(), limits.tickMs);
       this.timer.unref?.();
@@ -760,6 +820,7 @@ class Bridge implements DesktopNativeSampleBridge {
     // A large unrelated history can quote native method names or request IDs.
     // Only its bounded top-level envelope may select the capture boundary.
     if (!isOriginalNativeSampleFrame(line, method)) return;
+    this.stage = method;
     try {
       this.phase(false, () => {
         this.fence(this.time());
@@ -771,7 +832,7 @@ class Bridge implements DesktopNativeSampleBridge {
         if (!this.capture!.available) fail('native_bridge_capture_unavailable');
       });
     } catch (error) {
-      this.stop(fixedCode(error, 'native_bridge_observation_failed'));
+      this.stop(fixedCode(error, 'native_bridge_observation_failed'), error);
     }
   }
   private time(): number {
@@ -888,6 +949,7 @@ class Bridge implements DesktopNativeSampleBridge {
       directories = logDirectories(this.config.logDirectory, at);
     const liveDirectories = new Set<string>();
     let entries = 0;
+    this.selectedFiles = this.emptyFiles = this.directoryEntries = 0;
     const pattern = new RegExp(
       `^codex-desktop-[A-Za-z0-9_.-]+-${this.identity.desktopPid}-[A-Za-z0-9_.-]+\\.log$`,
     );
@@ -904,11 +966,24 @@ class Bridge implements DesktopNativeSampleBridge {
         const dir = opendirSync(directory);
         try {
           for (let item = dir.readSync(); item; item = dir.readSync()) {
-            if (++entries > limits.directoryEntries) fail('native_bridge_log_entry_limit');
+            this.directoryEntries = ++entries;
+            if (entries > limits.directoryEntries) fail('native_bridge_log_entry_limit');
             if (!pattern.test(item.name)) continue;
             if (!item.isFile() || item.isSymbolicLink()) fail('native_bridge_log_unavailable');
+            const path = join(directory, item.name);
+            const stat = lstatSync(path);
+            if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
+              fail('native_bridge_log_unavailable');
+            // Codex creates many empty per-worker logs in long-lived desktops.
+            // They contain no decisions. Recheck every scan, and admit any that
+            // grow from offset zero. Keep tracked paths so truncation still fails.
+            if (stat.size === 0 && !this.cursors.has(path)) {
+              this.emptyFiles++;
+              continue;
+            }
+            this.selectedFiles = paths.length + 1;
             if (paths.length >= limits.files) fail('native_bridge_log_file_limit');
-            paths.push(join(directory, item.name));
+            paths.push(path);
           }
         } finally {
           dir.closeSync();
@@ -1046,7 +1121,11 @@ class Bridge implements DesktopNativeSampleBridge {
   }
   tick(): void {
     if (!this.ready || this.closed) return;
+    this.stage = 'tick';
     try {
+      const tickAt = this.time();
+      this.tickGapMs = Math.max(0, tickAt - this.lastTickAt);
+      this.lastTickAt = tickAt;
       this.phase(false, () => {
         const at = this.time();
         this.fence(at);
@@ -1074,15 +1153,22 @@ class Bridge implements DesktopNativeSampleBridge {
         this.roundRobin = paths.length ? (this.roundRobin + count) % paths.length : 0;
       });
     } catch (error) {
-      this.stop(fixedCode(error, 'native_bridge_log_unavailable'));
+      this.stop(fixedCode(error, 'native_bridge_log_unavailable'), error);
     }
   }
-  private stop(code: Code): void {
+  private stop(code: Code, error?: unknown): void {
+    this.stopCode = code;
+    this.journal('stopped', { code, osCode: record(error) ? error.code : undefined });
     this.report(code);
     this.close();
   }
-  close(): void {
+  close(reason?: Code): void {
     if (this.closed) return;
+    if (reason) {
+      this.stopCode = reason;
+      this.journal('stopped', { code: reason });
+    }
+    this.stage = 'close';
     this.closed = true;
     this.ready = false;
     if (this.timer !== undefined) clearInterval(this.timer);
@@ -1124,6 +1210,7 @@ class Bridge implements DesktopNativeSampleBridge {
     for (const cursor of this.cursors.values()) cursor.tail = Buffer.alloc(0);
     this.cursors.clear();
     this.directoryIdentities.clear();
+    this.journal('closed', { code: this.stopCode });
   }
 }
 
@@ -1141,7 +1228,7 @@ function create(
     const code = fixedCode(error, 'native_bridge_config_invalid');
     if (bridge) {
       bridge.report(code);
-      bridge.close();
+      bridge.close(code);
     } else {
       try {
         if (hooks.status) hooks.status(code);

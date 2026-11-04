@@ -209,6 +209,7 @@ try {
       ...[
         'desktop-native-sample-capture',
         'desktop-native-sample-envelope',
+        'desktop-native-sample-diagnostics',
         'desktop-native-sample-platform',
         'desktop-suggestion-store',
       ].map((name) => [

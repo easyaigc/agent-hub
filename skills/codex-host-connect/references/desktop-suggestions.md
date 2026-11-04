@@ -236,3 +236,11 @@ desktop-runtime 的 HOST_AGENT_ROOT 只保留历史默认 cwd 语义，不参与
 ### 冻结 R2 与更新恢复包的升级边界
 
 已有 producer、保留策略及私有路径继续保留，文档同步不自动开启回收、重装 observer 或要求原桌面重开；仅未来启动配置实际改变时才等待用户正常重开。Windows producer 自身的签名／Store／父子进程核对与通用桌面连接的既有 Publisher 契约分开。退役仅在 macOS／Windows 实现；Linux 保留原始 Trace，不新增 Linux Host 支持。本轮统一源码及辅助检查不代替目标 Windows、手机建议展示或实际安装更新验收。
+
+## macOS 采集器停止原因与私有日志（2026-11-04，源码候选）
+
+原桌面长时间运行会创建很多零字节 worker 日志。新版仍有界枚举准确原 PID 的当前／前一天日志，但空且未跟踪的文件不占 16 个正文候选名额；每次扫描重新检查，增长后从零读取。已跟踪文件变空、截短、路径或身份变化仍拒绝，不能用忽略空文件绕过原证据守卫。非空文件、目录项、每 tick 文件数和字节预算不变。
+
+新版 macOS producer 在原私有 Trace 根的 `.agent-hub-suggestions/<目标键摘要>/native-diagnostics/producer.jsonl` 记录 starting/listening、停止／关闭、固定错误码及 pending/completed/cancelled 等保存状态。记录绑定 producer epoch、PID／启动时间、实现摘要和来源 Thread／Turn；包含阶段、心跳年龄、tick 间隔、阶段耗时及候选／空文件／目录项计数。不记录建议正文、模型上下文、凭据、原始错误或完整文件路径。当前及两份轮转各约 128 KiB，目录 0700、文件 0600；日志失败只报固定标识，不改变原字节转发或采集结果。Windows 仍沿用原固定 status 通道，本次不启用额外同步 ACL 日志写入。
+
+先保存停止事件与相邻的采集状态，再核对 Host 原 owner 和原生日志；内部 Trace 的 inference_cancelled 不等于原桌面最终没有建议。原生结果／安全决定已出现而 producer 没有结果记录时，定位 producer 阶段与具体错误，不能只让用户重复重启。日志新增不能补造升级前的首次停止原因。部署记录须区分源码候选、当前已加载程序及正常重开后生效；不要原地覆盖当前进程的 Adapter 或更改活跃 producer 配置来制造恢复。

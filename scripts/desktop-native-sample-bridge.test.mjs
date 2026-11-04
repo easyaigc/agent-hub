@@ -290,7 +290,12 @@ test('only an exact real-format decision releases one body through the store', (
   const files = readdirSync(f.store.directory).sort();
   assert.deepEqual(
     files,
-    [req.params.threadId + '.json', 'producer-owner.json', 'producer.json'].sort(),
+    [
+      req.params.threadId + '.json',
+      'producer-owner.json',
+      'producer.json',
+      ...(windows ? [] : ['native-diagnostics']),
+    ].sort(),
   );
   // Original launcher byte-for-byte forwarding is deliberately a separate integration assertion.
 });
@@ -879,7 +884,12 @@ test('260 sequential requests retain availability and one body slot per source',
   assert.equal(f.store.readProducer().phase, 'listening');
   assert.deepEqual(
     readdirSync(f.store.directory).sort(),
-    [threadId + '.json', 'producer-owner.json', 'producer.json'].sort(),
+    [
+      threadId + '.json',
+      'producer-owner.json',
+      'producer.json',
+      ...(windows ? [] : ['native-diagnostics']),
+    ].sort(),
   );
 });
 
@@ -952,10 +962,123 @@ test('fixed capacity is eight files per tick, sixteen selected files and 1 MiB b
   f.tick();
   assert.equal(f.row(req).state, 'completed');
   const g = fixture(t);
-  for (let i = 0; i < 17; i++) privateFile(g.log(String(i)), '');
+  for (let i = 0; i < 17; i++) privateFile(g.log(String(i)), 'nonempty\n');
   assert.equal(g.start(), undefined);
   assert.ok(g.codes.includes('native_bridge_log_file_limit'));
 });
+
+test('many empty logs do not consume selected-file capacity and a later decision starts at zero', (t) => {
+  const f = fixture(t);
+  for (let i = 0; i < 24; i++) privateFile(f.log(String(i).padStart(2, '0')), '');
+  assert.ok(f.start());
+  const req = request();
+  f.send(req);
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(f.log('23'), f.decision(req) + '\n');
+  for (let i = 0; i < 4 && f.row(req).state === 'pending'; i++) f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'listening');
+  assert.ok(!f.codes.includes('native_bridge_log_file_limit'));
+});
+
+test('a tracked nonempty log truncated to empty still disables the producer', (t) => {
+  const f = fixture(t),
+    path = f.log();
+  privateFile(path, 'tracked nonempty record\n');
+  assert.ok(f.start());
+  const req = request();
+  f.send(req);
+  assert.equal(f.row(req).state, 'pending');
+  truncateSync(path, 0);
+  f.tick();
+  assert.notEqual(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_log_truncated'));
+});
+
+test('diagnostic write failure does not prevent a safe capture', { skip: windows }, (t) => {
+  const f = fixture(t);
+  f.store.prepare();
+  const outside = directory(join(f.root, 'outside-diagnostics'));
+  symlinkSync(outside, join(f.store.directory, 'native-diagnostics'), windows ? 'junction' : 'dir');
+  assert.ok(f.start());
+  const req = request();
+  f.send(req);
+  privateFile(f.log(), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'listening');
+  assert.deepEqual(readdirSync(outside), []);
+});
+
+function diagnosticRows(f) {
+  return readFileSync(join(f.store.directory, 'native-diagnostics', 'producer.jsonl'), 'utf8')
+    .trim()
+    .split('\n')
+    .map(JSON.parse);
+}
+
+test(
+  'journal records the tick gap and lease expiry when a tick arrives six seconds late',
+  { skip: windows },
+  (t) => {
+    const f = fixture(t);
+    assert.ok(f.start());
+    f.tick(6000);
+    assert.equal(f.store.readProducer().phase, 'unavailable');
+    const stopped = diagnosticRows(f).find((row) => row.event === 'stopped');
+    assert.ok(stopped);
+    assert.equal(stopped.code, 'native_bridge_lease_expired');
+    assert.equal(stopped.stage, 'tick');
+    assert.ok(stopped.tickGapMs >= 6000);
+  },
+);
+
+test(
+  'journal records seventeen selected nonempty files on startup rejection',
+  { skip: windows },
+  (t) => {
+    const f = fixture(t);
+    for (let i = 0; i < 17; i++) privateFile(f.log(String(i)), 'nonempty\n');
+    assert.equal(f.start(), undefined);
+    const notice = diagnosticRows(f).find(
+      (row) => row.event === 'notice' && row.code === 'native_bridge_log_file_limit',
+    );
+    assert.ok(notice);
+    assert.equal(notice.selectedFiles, 17);
+  },
+);
+
+test(
+  'journal records pending and completed capture states without private text',
+  { skip: windows },
+  (t) => {
+    const f = fixture(t);
+    assert.ok(f.start());
+    const req = request({ prompt: 'private composer sentinel' });
+    f.send(req, 'private suggestion sentinel');
+    assert.equal(f.row(req).state, 'pending');
+    privateFile(f.log(), f.decision(req) + '\n');
+    f.tick();
+    assert.equal(f.row(req).state, 'completed');
+    const raw = readFileSync(
+      join(f.store.directory, 'native-diagnostics', 'producer.jsonl'),
+      'utf8',
+    );
+    assert.ok(!raw.includes('private composer sentinel'));
+    assert.ok(!raw.includes('private suggestion sentinel'));
+    const captures = raw
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+      .filter((row) => row.event === 'capture' && row.sourceThreadId === req.params.threadId);
+    assert.deepEqual(
+      captures.map((row) => row.state),
+      ['pending', 'completed'],
+    );
+  },
+);
 
 test(
   'POSIX tick never reads past its byte budget and resumes safely next tick',
@@ -1271,11 +1394,11 @@ test('R11 one remaining startup millisecond includes time spent in begin and ret
   assert.equal(f.row(request()), undefined);
   assert.deepEqual(
     readdirSync(f.store.directory),
-    [],
+    windows ? [] : ['native-diagnostics'],
     'rejected publication also removes its temporary file',
   );
   f.advance(6000);
-  assert.deepEqual(readdirSync(f.store.directory), []);
+  assert.deepEqual(readdirSync(f.store.directory), windows ? [] : ['native-diagnostics']);
 });
 
 test('R11 listening uses the original six-second remainder across a nested heartbeat fence', (t) => {

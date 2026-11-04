@@ -5,6 +5,8 @@ description: 将 macOS 或 Windows 的原 Codex 桌面接入 Agent Hub，或让�
 
 # 接入一台 Codex 电脑
 
+需要 Codex 调用 EasyWork 时，先阅读[EasyWork 调用端边界](references/easywork-task-sdk.md)，区分 Codex 协调 CLI、EasyWork 内部任务 SDK 与工作台授权入口，再选择已交付的调用端。
+
 ## 可选模型代理默认关闭
 
 原桌面／手机完整接入不包含自动开启模型代理。安装、升级、连接修复、已登录 Codex 或存在旧研究脚本都不构成开启授权。仅在人类明确要求暴露模型 API 后，才按仓库 `docs/runtime.md` 的 F74 配置独立 Key、模型允许清单和 TLS，并显式设置 `HOST_RESPONSES_PROXY_ENABLED=1`。普通安装保持未设置或 0；升级保留用户已明确开启的配置，不扩大模型或网络范围。

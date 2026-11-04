@@ -1628,7 +1628,11 @@ for (const mode of [
   'stale-while-next',
 ])
   test(`actual Worker cold 64-item read retains each frame deadline and exact retirement: ${mode}`, async () => {
-    const result = await batchTransportFixture(mode, {}, 64);
+    const result = await batchTransportFixture(
+      mode,
+      mode === 'duplicate-late' ? { TRACE_BATCH_COLD_REPLY_DELAY_MS: '150' } : {},
+      64,
+    );
     assert.equal(result.allRetired, true);
     assert.equal(result.answer.passed, mode === 'normal');
     assert.equal(

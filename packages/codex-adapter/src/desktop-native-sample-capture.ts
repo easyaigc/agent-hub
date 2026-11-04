@@ -28,6 +28,14 @@ export interface DesktopNativeSampleCaptureOptions {
   producer: DesktopNativeSampleProducer;
   now?: () => number;
   onError?: (code: string) => void;
+  onState?: (state: {
+    sourceThreadId: string;
+    sourceTurnId: string;
+    requestId: string;
+    requestSequence: number;
+    state: RuntimeDesktopSuggestion['state'];
+    elapsedMs: number;
+  }) => void;
 }
 
 /** The caller must bind its trusted native log reader to this producer epoch. */
@@ -125,6 +133,7 @@ export class DesktopNativeSampleCapture {
   private readonly producer: DesktopNativeSampleProducer;
   private readonly now: () => number;
   private readonly onError: ((code: string) => void) | undefined;
+  private readonly onState: DesktopNativeSampleCaptureOptions['onState'];
   private readonly requests = new Map<string, Request>();
   private readonly current = new Map<string, Request>();
   private sequence = 0;
@@ -147,6 +156,7 @@ export class DesktopNativeSampleCapture {
     this.producer = Object.freeze({ ...options.producer });
     this.now = options.now ?? Date.now;
     this.onError = options.onError;
+    this.onState = options.onState;
     try {
       const at = this.now();
       if (
@@ -534,8 +544,21 @@ export class DesktopNativeSampleCapture {
           state,
           result,
         }) === true
-      )
+      ) {
+        try {
+          this.onState?.({
+            sourceThreadId: base.sourceThreadId,
+            sourceTurnId: base.sourceTurnId,
+            requestId: base.requestId,
+            requestSequence: base.requestSequence,
+            state,
+            elapsedMs: Math.max(0, at - base.requestedAt),
+          });
+        } catch {
+          /* Diagnostic hooks cannot change a durable result. */
+        }
         return true;
+      }
     } catch {
       /* Only a stable error code crosses the observer boundary. */
     }

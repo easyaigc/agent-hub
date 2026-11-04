@@ -108,7 +108,7 @@ export const opendirSync=path=>fs.opendirSync(local(path));
 
 async function stdioChild() {
   const { createInterface } = await import('node:readline');
-  const { appendFileSync } = await import('node:fs');
+  const { appendFileSync, existsSync } = await import('node:fs');
   const { createHash } = await import('node:crypto');
   const { win32 } = await import('node:path');
   const mode = process.env.TRACE_BATCH_MODE;
@@ -140,6 +140,17 @@ async function stdioChild() {
   const input = createInterface({ input: process.stdin });
   let previous;
   let batchCount = 0;
+  let duplicateTimer;
+  const afterLogicalRead = () => {
+    if (duplicateTimer) return;
+    duplicateTimer = setInterval(() => {
+      if (!existsSync(process.env.TRACE_BATCH_LOG + '.logical-completed')) return;
+      clearInterval(duplicateTimer);
+      record('duplicate-after-read', { id: previous.id });
+      send(previous);
+    }, 5);
+    duplicateTimer.unref();
+  };
   input.on('line', (line) => {
     if (line === 'QUIT') {
       record('quit');
@@ -216,8 +227,13 @@ async function stdioChild() {
         setTimeout(() => send(value), 900);
         return;
       }
+      const coldDelay = Number(process.env.TRACE_BATCH_COLD_REPLY_DELAY_MS ?? 0);
+      if (mode === 'duplicate-late' && batchCount > 1 && coldDelay > 0) {
+        setTimeout(() => send(value), coldDelay);
+        return;
+      }
       send(value);
-      if (mode === 'duplicate-late') setTimeout(() => send(value), 100);
+      if (mode === 'duplicate-late') afterLogicalRead();
       return;
     }
     send({ error: 'FIXED_BATCH_ONLY' });
@@ -318,7 +334,21 @@ async function transportOwner() {
     identities = values.map((value) => value.identity);
     if (workerData.mode === 'stale-while-next' || workerData.mode === 'duplicate-late') {
       passed = false;
-      if (workerData.mode === 'duplicate-late') await new Promise((done) => setTimeout(done, 200));
+      if (workerData.mode === 'duplicate-late')
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(
+            () => reject(new Error('Duplicate transport did not retire')),
+            4000,
+          );
+          parentPort.once('message', (value) => {
+            clearTimeout(timer);
+            if (value?.kind === 'fixture-duplicate-retired') resolve();
+            else reject(new Error('Unexpected fixture retirement acknowledgement'));
+          });
+          // Cold reads can span multiple Native frames. Release the duplicate
+          // only after the whole original read, then observe actual retirement.
+          parentPort.postMessage({ kind: 'fixture-logical-read-completed' });
+        });
       backend.backend.snapshotMany(root, items);
       passed = true;
     }
@@ -401,8 +431,27 @@ async function transportMain() {
   });
   registerWindowsProcessWorker(owner);
   let answer;
+  let duplicateReleased = false;
   const completed = new Promise((resolve, reject) => {
-    owner.once('message', (value) => {
+    owner.on('message', (value) => {
+      if (value?.kind === 'fixture-logical-read-completed') {
+        try {
+          assert.equal(mode, 'duplicate-late');
+          assert.equal(duplicateReleased, false);
+          duplicateReleased = true;
+          fs.writeFileSync(process.env.TRACE_BATCH_LOG + '.logical-completed', '', {
+            flag: 'wx',
+            mode: 0o600,
+          });
+          until(() => monitor.active.size === 0).then(
+            () => owner.postMessage({ kind: 'fixture-duplicate-retired' }),
+            reject,
+          );
+        } catch (error) {
+          reject(error);
+        }
+        return;
+      }
       answer = value;
     });
     owner.once('error', reject);
@@ -415,6 +464,8 @@ async function transportMain() {
     }
     await completed;
     await until(() => monitor.active.size === 0);
+    if (mode === 'duplicate-late')
+      assert.equal(rows().filter((row) => row.event === 'duplicate-after-read').length, 1);
     for (const row of rows().filter((row) => row.event === 'started')) {
       let alive;
       try {

@@ -19,12 +19,15 @@ for (const name of ['protocol', 'notification-runtime']) {
   await mkdir(join(target, 'runtime'), { recursive: true });
   for (const file of (await readdir(join(source, 'dist'))).sort()) {
     if (!/\.(js|d\.ts)$/.test(file)) continue;
-    const data = Buffer.from(
-      (await readFile(join(source, 'dist', file), 'utf8')).replace(
-        /\n\/\/# sourceMappingURL=[^\n]+\n?$/,
-        '\n',
-      ),
+    let compiled = (await readFile(join(source, 'dist', file), 'utf8')).replace(
+      /\n\/\/# sourceMappingURL=[^\n]+\n?$/,
+      '\n',
     );
+    // TypeScript may append this marker to an already exported declaration module.
+    // Keep it when it is the only export, where it establishes module scope.
+    if (file.endsWith('.d.ts') && /^export (?!\{\};)/m.test(compiled))
+      compiled = compiled.replace(/\nexport \{\};\n?$/, '\n');
+    const data = Buffer.from(compiled);
     hashes[name + '/' + file] = createHash('sha256').update(data).digest('hex');
     await writeFile(join(target, 'runtime', file), data);
   }

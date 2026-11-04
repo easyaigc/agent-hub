@@ -1674,3 +1674,9 @@ No page, token or native interaction is changed by this protocol/Relay group. AP
 ### 2026-11-05 EasyWork 聊天管理消费者
 
 F70保留现有聊天选项/归档界面；只有threads:manage与threads:rename均声明时开放重命名，编辑页固定原客户端/线程/代际，原回执查询不改写新标题。保存使用既有SwiftUI标签的原生按钮控制，中文/英文文案同步。Android仅同步共同语言目录并使用共享规则，原生管理/重命名UI一致性与真实验收仍开放。
+
+## iOS / EasyWork 本任务主线整合（2026-11-05）
+
+仅整合 iOS 与 EasyWork 的协议、数据、权限及执行差异。原清单保留75项范围、51项对接/16项纯手机免重验/8项排除及14条补充；68个限定场景通过与21项Native失败均按原指纹保留，整项通过数不据此扩大。详见 [原清单](../acceptance/codex-easywork-feature-matrix.md)。
+
+本批包含完整目标的 usage/read、project/git/status/files、原回执与队列恢复及问题元数据；旧桌面未准入项仅读，未知输入不重发。isSecret只控制输入遮罩，回答仍按正常工具结果和会话留存。本批优先保留主线现有读取目标、建议接口、启动、附件和迁移行为；Android源码及纯手机端重复验收不开展。合并后的检查与真实DEV结果另回填，不将旧指纹通过当作新主线全量通过。

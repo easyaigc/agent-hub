@@ -6,19 +6,16 @@ export type {
   NotificationPreferences,
   RuntimeTarget,
 } from '@codex-manage/protocol';
-import {
-  createCipheriv,
-  createHash,
-  createPrivateKey,
-  createPublicKey,
-  diffieHellman,
-  generateKeyPairSync,
-  hkdfSync,
-  randomBytes,
-  randomUUID,
-} from 'node:crypto';
+import { createHash, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
+import {
+  sealNotification,
+  notificationSenderPublicKey,
+  validateNotificationKey,
+} from './notification-crypto.js';
+import { registrationIdentity, preferenceIdentity } from './notification-registration-identity.js';
+export { sealNotification, notificationPublicKey } from './notification-crypto.js';
 import {
   notificationTargetKey,
   parseNotificationRegistration,
@@ -47,45 +44,6 @@ import {
 } from './recovery-v2.js';
 export { NotificationRecoveryError } from './recovery-v2.js';
 
-export function notificationPublicKey(raw: string) {
-  return createPublicKey({
-    key: Buffer.concat([
-      Buffer.from('302a300506032b656e032100', 'hex'),
-      Buffer.from(raw, 'base64'),
-    ]),
-    format: 'der',
-    type: 'spki',
-  });
-}
-export function sealNotification(
-  event: NotificationEvent,
-  bindingId: string,
-  privateKey: string,
-  recipient: string,
-): Pick<NotificationEnvelope, 'nonce' | 'ciphertext' | 'tag'> {
-  const shared = diffieHellman({
-    privateKey: createPrivateKey(privateKey),
-    publicKey: notificationPublicKey(recipient),
-  });
-  const key = Buffer.from(
-    hkdfSync(
-      'sha256',
-      shared,
-      Buffer.from(bindingId),
-      Buffer.from('codex-manage/notifications/v1'),
-      32,
-    ),
-  );
-  const nonce = randomBytes(12),
-    cipher = createCipheriv('aes-256-gcm', key, nonce);
-  cipher.setAAD(Buffer.from(event.id));
-  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(event), 'utf8'), cipher.final()]);
-  return {
-    nonce: nonce.toString('base64'),
-    ciphertext: ciphertext.toString('base64'),
-    tag: cipher.getAuthTag().toString('base64'),
-  };
-}
 interface Device {
   remoteRevocationPending?: boolean;
   registration: NotificationRegistration;
@@ -124,31 +82,6 @@ interface State {
 }
 // JSON encoders may reorder object keys between requests or app launches.
 // Compare preference values without treating wire property order as a revision.
-function preferenceIdentity(preferences: NotificationPreferences): string {
-  return JSON.stringify(
-    Object.entries(preferences)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([name, value]) => [
-        name,
-        name === 'categorySounds'
-          ? Object.entries(preferences.categorySounds ?? {}).sort(([left], [right]) =>
-              left.localeCompare(right),
-            )
-          : value,
-      ]),
-  );
-}
-function registrationIdentity(value: NotificationRegistration): string {
-  return JSON.stringify([
-    value.deviceId,
-    notificationTargetKey(value.target),
-    value.publicKey,
-    value.deviceToken ?? null,
-    value.deviceToken ? (value.pushProvider ?? 'apns') : null,
-    value.environment ?? null,
-    preferenceIdentity(value.preferences),
-  ]);
-}
 export interface NotificationPublisherOptions {
   target: RuntimeTarget;
   statePath: string;
@@ -300,12 +233,7 @@ export class NotificationPublisher {
       },
       device: (id) => this.state.devices[id],
       sources: () => this.state.entries,
-      validateKey: (publicKey) => {
-        diffieHellman({
-          privateKey: createPrivateKey(this.state.privateKey),
-          publicKey: notificationPublicKey(publicKey),
-        });
-      },
+      validateKey: (publicKey) => validateNotificationKey(this.state.privateKey, publicKey),
       disposition: (id, event) => {
         const device = this.state.devices[id],
           entry = this.state.entries.find((e) => e.event.id === event.id);
@@ -411,10 +339,7 @@ export class NotificationPublisher {
     );
   }
   get publicKey(): string {
-    return createPublicKey(createPrivateKey(this.state.privateKey))
-      .export({ format: 'der', type: 'spki' })
-      .subarray(-32)
-      .toString('base64');
+    return notificationSenderPublicKey(this.state.privateKey);
   }
   get observations(): NotificationObservation[] {
     return Object.values(this.state.observations ?? {});
@@ -518,10 +443,7 @@ export class NotificationPublisher {
     if (notificationTargetKey(registration.target) !== notificationTargetKey(this.options.target))
       throw new Error('通知目标不一致');
     // Reject low-order keys here, before they can break asynchronous delivery.
-    diffieHellman({
-      privateKey: createPrivateKey(this.state.privateKey),
-      publicKey: notificationPublicKey(registration.publicKey),
-    });
+    validateNotificationKey(this.state.privateKey, registration.publicKey);
     const previous = this.state.devices[registration.deviceId];
     if (previous?.ownerId && previous.ownerId !== ownerId)
       throw new Error('通知设备不属于当前授权');

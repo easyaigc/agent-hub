@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2700" version="1.3">
+ <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
+  <BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="NO">
+   <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C427F34DBA52EC680322D47D" BuildableName="EasyWorkNativeTests.xctest" BlueprintName="EasyWorkNativeTests" ReferencedContainer="container:CodexManage.xcodeproj"/>
+  </BuildActionEntry>
+ </BuildActionEntries></BuildAction>
+ <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
+  <Testables><TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C427F34DBA52EC680322D47D" BuildableName="EasyWorkNativeTests.xctest" BlueprintName="EasyWorkNativeTests" ReferencedContainer="container:CodexManage.xcodeproj"/></TestableReference></Testables>
+  <MacroExpansion><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000041" BuildableName="CodexManage.app" BlueprintName="CodexManage" ReferencedContainer="container:CodexManage.xcodeproj"/></MacroExpansion>
+ </TestAction>
+ <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES">
+  <BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000041" BuildableName="CodexManage.app" BlueprintName="CodexManage" ReferencedContainer="container:CodexManage.xcodeproj"/></BuildableProductRunnable>
+  <CommandLineArguments><CommandLineArgument argument="-ui-testing" isEnabled="YES"/><CommandLineArgument argument="-restore-testing" isEnabled="YES"/></CommandLineArguments>
+ </LaunchAction>
+ <AnalyzeAction buildConfiguration="Debug"/>
+</Scheme>

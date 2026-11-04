@@ -1322,7 +1322,49 @@ struct RootView: View {
   @FocusState private var sidebarSearchFocused: Bool
   @Environment(\.scenePhase) private var scenePhase
 
-  var body: some View {
+  @ViewBuilder var body: some View {
+    #if DEBUG
+    if SessionStore.hostedEasyWorkProductUIEnabled && store.hostedEasyWorkProductUIPresented {
+      normalBody.task { store.attachHostedEasyWorkAcceptance(voice: voice) }
+    } else if SessionStore.hostedEasyWorkAcceptanceEnabled {
+      // The native API examiner reuses this App-owned restored store without
+      // starting unrelated discovery, notification, voice or Task Hub work.
+      Color.clear.task { store.attachHostedEasyWorkAcceptance(voice: voice) }
+    } else if IndependentAcceptanceLifecycle.requested {
+      // Reuse this App-owned store without opening another original chat or
+      // keeping XCTest alive while the App naturally enters the background.
+      Text("独立通知验收已就绪，请按提示回到主屏幕。")
+        .padding()
+        .task {
+          // Install UIKit observation after SwiftUI has bound the App delegate.
+          IndependentAcceptanceLifecycle.install()
+          if IndependentAcceptanceLifecycle.attach(store) {
+            TaskNotificationController.shared.attach(store)
+            IndependentAcceptanceLifecycle.beginAuthorizedEnrollment()
+          }
+        }
+        .onChange(of: scenePhase) { _, phase in
+          TaskNotificationController.shared.setActive(phase == .active)
+          IndependentAcceptanceLifecycle.scene(phase)
+        }
+        .onReceive(TaskNotificationController.shared.$statuses) { _ in
+          Task { @MainActor in IndependentAcceptanceLifecycle.notificationStatusChanged() }
+        }
+    } else {
+      normalBody
+    }
+    #else
+    normalBody
+    #endif
+  }
+  private var hostedExaminerOwnsRefresh: Bool {
+    #if DEBUG
+    SessionStore.hostedEasyWorkAcceptanceEnabled
+    #else
+    false
+    #endif
+  }
+  private var normalBody: some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
         SidebarBackground(motionState: sidebarMotion.motionState) {
@@ -1476,11 +1518,21 @@ struct RootView: View {
     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("CodexNetworkPathChanged"))) { _ in
       if scenePhase == .active { store.recoverNetworkReads() }
     }
+    .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
+        let context = store.currentProjectGitContext else { return }
+      await ProjectGitStore.shared.refresh(context.client, context.target, context.project.id)
+    }
+    .onChange(of: store.conversation?.projectId) { _, projectId in
+      if store.sheet == .projectGit, store.projectGitContext?.project.id != projectId {
+        store.sheet = nil; store.projectGitContext = nil
+      }
+    }
     .onChange(of: store.targetKey) { _, _ in
       voice.cancel()
       store.chatSearchJump = nil
       readySearchJump = nil
-      if store.sheet == .chatSearch { store.sheet = nil }
+      if store.sheet == .chatSearch || store.sheet == .projectGit { store.sheet = nil }
       renameChatTarget = nil
       deleteChatTarget = nil
       endChatActionTarget = nil
@@ -1493,6 +1545,7 @@ struct RootView: View {
       revealedEarlierHistory = false
       followsLatest = true
       userScrolling = false
+      store.projectGitContext = nil
     }
     .task(id: store.modelLoadingKey) { if store.modelLoadingKey != nil { await store.loadModels() } }
     .onChange(of: store.drawerOpen) { _, open in if open { voice.cancel() } }
@@ -1541,6 +1594,7 @@ struct RootView: View {
         .disabled(!store.canCreateThread || store.client?.online != true)
         IconButton(symbol: "checklist", label: L10n.tr("项目与任务"), id: "task-hub-entry") { store.sheet = .taskHub }
         Menu {
+          if store.client?.agentConnection?.target.agentId == "easywork" { ProjectGitMenuEntry(store: store) }
           if let conversation = store.conversation {
             Section {
               Text(store.chatLifecycleStatus(conversation)).accessibilityIdentifier("chat-lifecycle-status")
@@ -2423,6 +2477,8 @@ struct RootView: View {
     case .projects: ProjectPickerView(store: store)
     case .settings: SettingsView(store: store)
     case .usage: if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client)) }
+    case .projectGit:
+      if let context = store.projectGitContext, context.target.agentId == "easywork" { ProjectGitDetailsView(context: context) }
     case .addProject: AddProjectView(store: store)
     case .generation: GenerationSettings(store: store)
     case .aiSharing: AISharingPermissionView(store: store)

@@ -162,6 +162,8 @@ enum AgentDomainCodec {
 
 /// Product operations. Providers own wire, authentication and target mapping.
 protocol AgentClient: Sendable {
+  func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data
+  func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data
   func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String
@@ -186,6 +188,7 @@ protocol AgentClient: Sendable {
   func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch
   func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation
+  func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation?
   func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult
   func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult
   func executeQueue(_ client: Client, threadId: String, messageId: String, expectedTurnId: String?) async throws -> CommandResult
@@ -195,6 +198,7 @@ protocol AgentClient: Sendable {
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL
+  func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL?
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt
@@ -217,7 +221,11 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { throw HostServiceError.unavailable }
+  func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data { throw HostServiceError.unavailable }
+  func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { throw HostServiceError.unavailable }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { throw HostServiceError.unavailable }
+  func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { nil }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
   func chatAction(_ client: Client, request: ChatActionRequest) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }

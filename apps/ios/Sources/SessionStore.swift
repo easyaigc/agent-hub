@@ -4,6 +4,66 @@ import MobileCore
 
 @MainActor
 final class SessionStore: ObservableObject {
+  #if DEBUG
+  // A standard app-hosted XCTest may inspect the existing UI-owned store.
+  // Never construct a second writer or expose a remote test command endpoint.
+  private(set) static weak var hostedEasyWorkAcceptanceStore: SessionStore?
+  private(set) static weak var hostedEasyWorkAcceptanceVoice: VoiceInputController?
+  // Exact independent Native case only: fail after the durable local capture,
+  // before any transport call or may-write disposition. Never persisted.
+  var devReplyBeforeTransportForAcceptance: ((PendingReply) throws -> Void)?
+  var devMetadataCreateBeforeTransportForAcceptance: ((String) throws -> Void)?
+  var devMetadataCreateAfterVerifiedForAcceptance: ((String, Conversation) throws -> Void)?
+  struct HostedMigrationExportObservation {
+    let caseId: String
+    let url: URL?
+    let error: String?
+    let cancelled: Bool
+  }
+  private(set) var hostedMigrationExportObservation: HostedMigrationExportObservation?
+  @Published var hostedEasyWorkProductUIPresented = false
+  var hostedEasyWorkReadLoopState:[String:Any] {
+    ["eventTaskActive":eventTask != nil && eventTask?.isCancelled==false,
+     "eventRecoveryTaskActive":eventRecoveryTask != nil && eventRecoveryTask?.isCancelled==false,
+     "replyRecoveryTaskActive":replyRecoveryTask != nil && replyRecoveryTask?.isCancelled==false,
+     "eventsCapability":saved.workspaces[client?.id ?? ""]?.capabilities?.contains("events")==true,
+     "applicationActive":UIApplication.shared.applicationState == .active,
+     "runtimeState":runtime?.state ?? "none","historyLoading":historyLoading,
+     "selectedThreadId":selectedThreadId ?? "none"]
+  }
+  private static let hostedEasyWorkAcceptanceRun=ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_CASE"]
+  static var hostedEasyWorkAcceptanceEnabled: Bool {
+    guard let run=hostedEasyWorkAcceptanceRun else { return false }
+    let process=ProcessInfo.processInfo
+    guard Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      process.arguments.contains("-ui-testing"),process.arguments.contains("-restore-testing"),
+      UUID(uuidString:run)?.uuidString.lowercased()==run,
+      NSClassFromString("XCTestCase") != nil else { return false }
+    return true
+  }
+  static var hostedEasyWorkProductUIEnabled: Bool {
+    hostedEasyWorkAcceptanceEnabled
+      && ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_PRODUCT_UI"] == "1"
+  }
+  func attachHostedEasyWorkAcceptance(voice: VoiceInputController? = nil) {
+    guard Self.hostedEasyWorkAcceptanceEnabled else { return }
+    Self.hostedEasyWorkAcceptanceStore=self
+    if let voice { Self.hostedEasyWorkAcceptanceVoice=voice }
+  }
+  // Observe only the real system export callback in the single App-owned store.
+  // This never opens a file, starts an export, or supplies an output location.
+  func observeHostedMigrationExport(_ result: Result<URL, Error>?) {
+    guard Self.hostedEasyWorkAcceptanceEnabled,
+      Self.hostedEasyWorkAcceptanceStore === self,
+      hostedMigrationExportObservation == nil,
+      let run=Self.hostedEasyWorkAcceptanceRun else { return }
+    switch result {
+    case .some(.success(let url)): hostedMigrationExportObservation = .init(caseId: run, url: url, error: nil, cancelled: false)
+    case .some(.failure(let error)): hostedMigrationExportObservation = .init(caseId: run, url: nil, error: error.localizedDescription, cancelled: false)
+    case .none: hostedMigrationExportObservation = .init(caseId: run, url: nil, error: nil, cancelled: true)
+    }
+  }
+  #endif
   // A Published getter copies this large value, including all cache dictionaries,
   // even when a view only reads one member. Keep mutation notifications while
   // allowing ordinary stored-property reads and immutable persistence snapshots.
@@ -23,6 +83,11 @@ final class SessionStore: ObservableObject {
   // Interaction-only gate: changing it must not invalidate the chat view.
   var sidebarInteracting = false
   @Published var sheet: AppSheet?
+  @Published var projectGitContext: ProjectGitContext?
+  var projectGitClient: Client? {
+    guard let client, client.agentConnection?.target.agentId == "easywork" else { return nil }
+    return readingClient(client)
+  }
   @Published var search = ""
   @Published var chatSearchJump: ChatSearchJump?
   @Published private(set) var chatActionBusy: [String: String] = [:]
@@ -181,6 +246,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   #endif
 
   init() {
+    MobileReadingAuthority.install(SharedMobileRules.mergeDeviceReading)
     testMode = ProcessInfo.processInfo.arguments.contains("-ui-testing")
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       UserDefaults.standard.removeObject(forKey: VoiceTranscriptionPreference.storageKey)
@@ -3351,12 +3417,37 @@ private var userRequestedWorkspaceGeneration: UUID?
       do {
         var threadId = existingId
         if threadId == nil {
-          let operationId = drafts.values[oldKey]?.operationId ?? UUID().uuidString
+          let originalOperationId = drafts.values[oldKey]?.operationId
+          let operationId = originalOperationId ?? UUID().uuidString
           drafts.values[oldKey, default: Draft()].operationId = operationId
           try await persistBeforeCommand()
           try validateAISharing(host, scope: sharingScope)
-          let thread: Conversation = try await AgentClients.resolve(host).createThread(host, projectId: selectedProject?.id, operationId: operationId)
+          let provider = try AgentClients.resolve(host)
+          let thread: Conversation
+          if host.agentConnection?.target.agentId == "easywork", originalOperationId != nil {
+            // An already captured metadata intent may have committed before the
+            // App lost its result. Absence is not permission to write it again.
+            guard let recovered = try await provider.threadCreationStatus(host,
+              projectId: selectedProject?.id, operationId: operationId) else {
+              throw HostServiceError.message(L10n.tr("操作结果仍不确定，请查询状态并核对桌面结果。"))
+            }
+            thread = recovered
+          } else {
+            #if DEBUG
+            if Self.hostedEasyWorkAcceptanceEnabled,
+              ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_METADATA_CREATE_CASE"] == Self.hostedEasyWorkAcceptanceRun {
+              try devMetadataCreateBeforeTransportForAcceptance?(operationId)
+            }
+            #endif
+            thread = try await provider.createThread(host, projectId: selectedProject?.id, operationId: operationId)
+          }
           guard thread.hostId == host.id else { throw HostServiceError.wrongHost }
+          #if DEBUG
+          if Self.hostedEasyWorkAcceptanceEnabled,
+            ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_METADATA_CREATE_CASE"] == Self.hostedEasyWorkAcceptanceRun {
+            try devMetadataCreateAfterVerifiedForAcceptance?(operationId, thread)
+          }
+          #endif
           threadId = thread.id
           if !(saved.workspaces[host.id]?.threads.contains(where: { $0.id == thread.id })
             ?? false)
@@ -3420,6 +3511,13 @@ private var userRequestedWorkspaceGeneration: UUID?
         if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
         try validateAISharing(host, scope: sharingScope)
         if replySendFlights[key] == sendFlight { transfers[key] = L10n.tr("提交给 \(host.name)…") }
+        #if DEBUG
+        if Self.hostedEasyWorkAcceptanceEnabled,
+          ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_REPLY_PREFLIGHT_CASE"]
+            == ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_CASE"] {
+          try devReplyBeforeTransportForAcceptance?(configuredReply)
+        }
+        #endif
         // Persist a may-write disposition BEFORE the first transport call. A
         // restart, lost response, HTTP rejection or owner idle cannot undo it.
         saved.replyRecovery?[configuredReply.clientMessageId]?.phase = "uncertain"
@@ -3876,7 +3974,8 @@ private var userRequestedWorkspaceGeneration: UUID?
       && codexStorageConflictMessage == nil
   }
   private func replyQueryRecord(_ host: Client, reply: PendingReply) -> ReplyRecoveryRecord? {
-    guard let record = saved.replyRecovery?[reply.clientMessageId], record.trust == replyRecoveryTrust(host),
+    guard reply.hostId == host.id,
+      let record = saved.replyRecovery?[reply.clientMessageId], record.trust == replyRecoveryTrust(host),
       record.target == aiSharingScope(host, model: reply.model).target,
       ReplyRecoveryPolicy.sameIntent(reply, record: record) else { return nil }
     return record

@@ -30,6 +30,7 @@ struct Conversation: Identifiable, Codable, Equatable {
   var projectIds: [String]? = nil
   var hasUnreadTurn: Bool? = nil
   var readState: ThreadReadState? = nil
+  var readAuthorityRevision: Int? = nil
   var archived: Bool? = nil
   var pendingAsyncQuestionCount: Int? = nil
   var archiveUnavailableReason: String? = nil
@@ -41,6 +42,28 @@ struct Conversation: Identifiable, Codable, Equatable {
 
   func belongs(to project: Project) -> Bool {
     hostId == project.hostId && (projectId == project.id || projectIds?.contains(project.id) == true)
+  }
+}
+
+struct PlanArtifactStepSnapshot: Codable, Equatable, Identifiable {
+  let id: String
+  let order: Int
+  let title: String
+  let status: String
+}
+
+struct PlanArtifactSnapshot: Codable, Equatable {
+  let id: String
+  let version: Int
+  let status: String
+  let title: String
+  let steps: [PlanArtifactStepSnapshot]
+
+  var valid: Bool {
+    !id.isEmpty && version > 0 && version <= Int(Int32.max) && !status.isEmpty
+      && Set(steps.map(\.id)).count == steps.count
+      && Set(steps.map(\.order)).count == steps.count
+      && steps.allSatisfy { !$0.id.isEmpty && $0.order > 0 && $0.order <= Int(Int32.max) && !$0.status.isEmpty }
   }
 }
 
@@ -57,8 +80,10 @@ struct ChatMessage: Identifiable, Codable, Equatable {
   var runId: String? = nil
   var replyPhase: String? = nil
   var replyMessageId: String? = nil
+  var readingProjection: ReadContentProjection? = nil
+  var planArtifact: PlanArtifactSnapshot? = nil
 
-  var isGroupedTool: Bool { role == "tool" && !["contextCompaction", "plan", "planImplementation", "error", "turnFailure"].contains(kind ?? "") }
+  var isGroupedTool: Bool { role == "tool" && !["subAgent", "contextCompaction", "plan", "planImplementation", "error", "turnFailure"].contains(kind ?? "") }
 }
 
 // Presentation only: keep the original messages and their runtime IDs intact.
@@ -269,6 +294,7 @@ struct PendingThreadFork: Identifiable, Codable {
   // Submitted intent and full source identity never change with drafts or selection.
   let request: ThreadForkRequest
   let sourceTarget: AgentRuntimeTarget
+  var sourceCredentialRef: String? = nil
   let createdAt: Date
   var phase: ThreadForkPhase
   var forkedThreadId: String?
@@ -601,7 +627,11 @@ enum ReplyRecoveryPolicy {
     return SHA256.hash(data: Data(wire.utf8)).map { String(format: "%02x", $0) }.joined()
   }
   static func sameIntent(_ reply: PendingReply, record: ReplyRecoveryRecord) -> Bool {
-    reply.hostId == record.target.hostId && reply.hostId == record.original.hostId
+    // EasyWork's local connection key is distinct from its authenticated Host.
+    // The captured fingerprint binds both; SessionStore separately verifies the
+    // current connection's local ID, full target and credential/trust metadata.
+    (record.target.agentId == "easywork" || reply.hostId == record.target.hostId)
+      && reply.hostId == record.original.hostId
       && reply.threadId == record.original.threadId && reply.clientMessageId == record.original.clientMessageId
       && (try? fingerprint(reply, target: record.target)) == record.fingerprint
       && (try? fingerprint(record.original, target: record.target)) == record.fingerprint
@@ -693,7 +723,7 @@ enum ComposerAction: String {
 }
 
 enum AppSheet: String, Identifiable {
-  case clients, addClient, projects, settings, usage, addProject, generation, fileTransfers, aiSharing, taskHub, archivedChats, chatSearch
+  case clients, addClient, projects, settings, usage, projectGit, addProject, generation, fileTransfers, aiSharing, taskHub, archivedChats, chatSearch
   var id: String { rawValue }
 }
 

@@ -42,6 +42,7 @@ packages/mobile-core/build/
 *.heapsnapshot
 
 # Public mobile specifications and sanitized evidence remain versioned.
+!/docs/acceptance/codex-easywork-feature-matrix.md
 !/docs/acceptance/android-stages.md
 !/docs/acceptance/android-environment-20261021.md
 !/docs/acceptance/mobile-parity.md

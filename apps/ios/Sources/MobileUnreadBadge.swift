@@ -39,6 +39,30 @@ struct MobileUnreadSnapshot: Sendable {
   var read: ReadPosition?
   var unread: Bool
   var localReply: (messageId: String, contentVersion: String)? = nil
+  var authorityCounter: Int? = nil
+}
+
+/// A narrow pure-rule port: the app installs KMP; the notification extension keeps its native file writer.
+enum MobileReadingAuthority {
+  struct Value: Sendable {
+    var counter: Int?
+    var latest: ReadPosition?
+    var read: ReadPosition?
+    var unread: Bool
+    var pending: Bool
+  }
+  typealias Merge = @Sendable (Value, Int, ReadPosition?, ReadPosition?) throws -> Value
+  private final class Storage: @unchecked Sendable {
+    let lock = NSLock()
+    var merge: Merge?
+  }
+  private static let storage = Storage()
+  static func install(_ merge: @escaping Merge) { storage.lock.lock(); storage.merge = merge; storage.lock.unlock() }
+  static func merge(_ old: Value, counter: Int, latest: ReadPosition?, read: ReadPosition?) throws -> Value {
+    storage.lock.lock(); let merge = storage.merge; storage.lock.unlock()
+    guard let merge else { throw CocoaError(.featureUnsupported) }
+    return try merge(old, counter, latest, read)
+  }
 }
 
 struct MobileVisibleRead: Sendable {
@@ -208,6 +232,7 @@ enum MobileUnreadBadge {
     var read: ReadPosition?
     var replyUnread = false
     var notices: [String: Notice] = [:]
+    var authorityCounter: Int? = nil
     var unread: Bool { replyUnread || notices.values.contains { !$0.seen } }
   }
   private struct Ledger: Codable, Equatable {
@@ -375,6 +400,16 @@ enum MobileUnreadBadge {
       for value in snapshots where ledger.scopes.contains(value.target) {
         let id = key(value.target, value.threadId)
         var row = ledger.threads[id] ?? Thread(target: value.target, threadId: value.threadId, replyUnread: value.unread)
+        if let counter = value.authorityCounter {
+          let merged = try MobileReadingAuthority.merge(.init(counter: row.authorityCounter, latest: row.latest,
+            read: row.read, unread: row.replyUnread, pending: false), counter: counter,
+            latest: value.latest, read: value.read)
+          row.authorityCounter = merged.counter; row.latest = merged.latest; row.read = merged.read; row.replyUnread = merged.unread
+          ledger.threads[id] = row
+          continue
+        }
+        // Missing capability/older cache must not replace a previously authoritative head with a local revision.
+        if row.authorityCounter != nil { continue }
         // Resolve old-host content versions inside this same transaction, rather
         // than rereading the whole ledger for each cached conversation.
         var latest = value.latest
@@ -405,8 +440,9 @@ enum MobileUnreadBadge {
       let id = key(target, threadId)
       var row = ledger.threads[id] ?? Thread(target: target, threadId: threadId)
       if let position = event.readPosition {
-        if position.revision > (row.latest?.revision ?? 0) {
+        if position.revision > max(row.latest?.revision ?? 0, row.authorityCounter ?? 0) {
           row.latest = position
+          if row.authorityCounter != nil { row.authorityCounter = position.revision }
           row.replyUnread = SharedReadingPolicy.newPushUnread(readSame: row.read == position, readRevision: Int64(row.read?.revision ?? 0), latestRevision: Int64(position.revision))
         }
       } else if row.notices[event.id] == nil {
@@ -428,13 +464,13 @@ enum MobileUnreadBadge {
       let id = key(value.target, value.threadId)
       var row = ledger.threads[id] ?? Thread(target: value.target, threadId: value.threadId)
       var position = value.position
-      if let reply = value.legacyReply {
+      if let reply = value.legacyReply, row.authorityCounter == nil {
         let version = reply.contentVersion
         position = ReadPosition(revision: Int(SharedReadingPolicy.nextRevision(previousRevision: Int64(row.latest?.revision ?? 0), sameVersion: row.latest?.contentVersion == version)),
           messageId: reply.messageId, contentVersion: version)
         row.latest = position
       }
-      if let position, position.revision >= (row.read?.revision ?? 0) {
+      if let position, position.revision >= (row.read?.revision ?? 0), row.authorityCounter == nil || row.latest == position {
         row.read = position
         if row.latest == position { row.replyUnread = false }
       }

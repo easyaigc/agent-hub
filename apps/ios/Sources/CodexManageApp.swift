@@ -1,6 +1,7 @@
 import SwiftUI
 import Network
 import Darwin
+import UIKit
 
 @main
 struct CodexManageApp: App {
@@ -165,6 +166,168 @@ enum NativeNetworkAcceptanceProbe {
         guard let data = try? JSONSerialization.data(withJSONObject: row, options: .sortedKeys),
               let text = String(data: data, encoding: .utf8) else { return }
         print("THERMAL_NETWORK " + text)
+    }
+}
+#endif
+
+#if DEBUG
+/// Ordinary independent App lifecycle proof without timers, background assertions
+/// or model input. Only a separately authorized Simulator enrollment case may
+/// start the normal system permission and notification registration flow once.
+@MainActor enum IndependentAcceptanceLifecycle {
+    private static var recorder: Recorder?
+    static var enabled: Bool { recorder != nil }
+    static var requested: Bool {
+        Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance"
+            && ProcessInfo.processInfo.arguments.contains("-acceptance-lifecycle-observer")
+    }
+    static func install() {
+        guard recorder == nil else { return }
+        let process = ProcessInfo.processInfo
+        guard Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+            process.arguments.contains("-acceptance-lifecycle-observer"),
+            process.environment["XCTestConfigurationFilePath"] == nil,
+            NSClassFromString("XCTestCase") == nil,
+            let run = process.environment["EASYWORK_LIFECYCLE_CASE"],
+            UUID(uuidString: run)?.uuidString.lowercased() == run,
+            let raw = process.environment["EASYWORK_LIFECYCLE_CONFIG_JSON"],
+            let config = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+            config["caseId"] as? String == run,
+            config["newModelInputsAuthorized"] as? Int == 0,
+            config["newBusinessCommandsAuthorized"] as? Int == 0,
+            let value = config["target"],
+            let data = try? JSONSerialization.data(withJSONObject: value),
+            let target = try? JSONDecoder().decode(AgentRuntimeTarget.self, from: data),
+            target.agentId == "easywork" else { return }
+        let enrollment = config["requestIndependentSandboxEnrollment"] as? Bool == true
+            && config["independentSandboxEnrollmentAuthorized"] as? Bool == true
+            && config["maximumEnrollmentStartsAuthorized"] as? Int == 1
+        recorder = try? Recorder(caseId: run, target: target, enrollmentAuthorized: enrollment)
+    }
+    static func attach(_ store: SessionStore) -> Bool { recorder?.attach(store) == true }
+    static func beginAuthorizedEnrollment() { recorder?.beginAuthorizedEnrollment() }
+    static func scene(_ phase: ScenePhase) { recorder?.record("scene-\(phase)") }
+    static func notificationStatusChanged() { recorder?.record("apns-registration-state") }
+    static func notificationCallback(_ event: String) { recorder?.record(event) }
+    static func protectedComponentMatches() -> [String: Bool] { recorder?.componentMatches() ?? [:] }
+
+    @MainActor private final class Recorder {
+        let caseId: String, target: AgentRuntimeTarget, file: URL
+        private weak var store: SessionStore?
+        private var baseline: String?
+        private var baselineComponents: [String: String] = [:]
+        private var events: [[String: Any]] = []
+        private var observers: [NSObjectProtocol] = []
+        private var dropped = 0
+        private let enrollmentAuthorized: Bool
+        private var enrollmentStarted = false
+        init(caseId: String, target: AgentRuntimeTarget, enrollmentAuthorized: Bool) throws {
+            self.caseId = caseId; self.target = target; self.enrollmentAuthorized = enrollmentAuthorized
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("easywork-lifecycle", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            file = directory.appendingPathComponent(caseId + ".json")
+            // A relaunched process cannot silently replace another process's proof.
+            guard !FileManager.default.fileExists(atPath: file.path) else {
+                throw HostServiceError.message("Lifecycle case already exists")
+            }
+            for name in [UIApplication.didBecomeActiveNotification, UIApplication.willResignActiveNotification,
+                         UIApplication.didEnterBackgroundNotification, UIApplication.willEnterForegroundNotification,
+                         UIApplication.willTerminateNotification] {
+                observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                    let event = note.name.rawValue
+                    MainActor.assumeIsolated { self?.record(event) }
+                })
+            }
+            record("ordinary-process-started")
+        }
+        func attach(_ store: SessionStore) -> Bool {
+            guard self.store == nil, !store.localRecoveryRequired,
+                store.saved.clients.filter({ !$0.isDemo }).count == 1,
+                store.saved.clients.first(where: { !$0.isDemo })?.agentConnection?.target == target else { return false }
+            self.store = store
+            baseline = try? fingerprint(store)
+            baselineComponents = (try? componentFingerprints(store)) ?? [:]
+            guard baseline != nil else { record("protected-state-unavailable"); return false }
+            record("app-owned-store-ready")
+            return true
+        }
+        // A separate opt-in uses the normal product enrollment flow once.
+        // Historical observer cases remain read-only and never enter this path.
+        func beginAuthorizedEnrollment() {
+            #if targetEnvironment(simulator)
+            guard enrollmentAuthorized, !enrollmentStarted, let store,
+                !store.localRecoveryRequired,
+                store.saved.clients.filter({ !$0.isDemo }).count == 1,
+                store.saved.clients.first(where: { !$0.isDemo })?.agentConnection?.target == target,
+                Bundle.main.object(forInfoDictionaryKey: "NotificationSimulatorUsesSharedKeychain") as? Bool == true,
+                Bundle.main.object(forInfoDictionaryKey: "NotificationEnvironment") as? String == "development" else { return }
+            guard !TaskNotificationController.shared.preferences.enabled else {
+                record("authorized-enrollment-already-enabled-no-repeat"); return
+            }
+            enrollmentStarted = true
+            record("authorized-real-system-notification-enrollment-started")
+            TaskNotificationController.shared.enable(true)
+            #endif
+        }
+        private func fingerprint(_ store: SessionStore) throws -> String {
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+            var data = try encoder.encode(store.drafts.values)
+            data.append(try encoder.encode(store.saved.outbox))
+            data.append(try encoder.encode(store.saved.replyRecovery))
+            data.append(try encoder.encode(store.saved.generationPreferences))
+            data.append(try encoder.encode([store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId]))
+            data.append(Data(try (CredentialVault.existingToken("easywork-device-identity") ?? "").utf8))
+            return HostService.hash(data)
+        }
+        private func componentFingerprints(_ store: SessionStore) throws -> [String: String] {
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+            return [
+                "identity": HostService.hash(Data(try (CredentialVault.existingToken("easywork-device-identity") ?? "").utf8)),
+                "drafts": HostService.hash(try encoder.encode(store.drafts.values)),
+                "outbox": HostService.hash(try encoder.encode(store.saved.outbox)),
+                "recovery": HostService.hash(try encoder.encode(store.saved.replyRecovery)),
+                "generationPreferences": HostService.hash(try encoder.encode(store.saved.generationPreferences)),
+                "selection": HostService.hash(try encoder.encode([store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId])),
+            ]
+        }
+        func componentMatches() -> [String: Bool] {
+            guard let store, let current = try? componentFingerprints(store), !baselineComponents.isEmpty else { return [:] }
+            return Dictionary(uniqueKeysWithValues: baselineComponents.map {
+                ($0.key, current[$0.key] == $0.value)
+            })
+        }
+        func record(_ event: String) {
+            let protectedUnchanged = store.flatMap { try? fingerprint($0) }.map { baseline == $0 } ?? false
+            let notifications = TaskNotificationController.shared
+            let status = store?.saved.clients.first(where: { !$0.isDemo }).flatMap { notifications.statuses[$0.id] }
+            let ready = status?.target == target && status?.state == "ready" && status?.delivery == "apns"
+                && status?.revision == notifications.preferences.revision && status?.bindingId != nil
+            events.append(["event": event, "at": ISO8601DateFormatter().string(from: Date()),
+                "unixTime": Date().timeIntervalSince1970, "uptime": ProcessInfo.processInfo.systemUptime,
+                "applicationState": UIApplication.shared.applicationState.rawValue,
+                "sceneStates": UIApplication.shared.connectedScenes.map { $0.activationState.rawValue }.sorted(),
+                "apnsReady": ready,
+                "apnsState": status?.state ?? "none", "apnsDelivery": status?.delivery ?? "none",
+                "apnsBindingId": status?.bindingId ?? "", "apnsRevision": status?.revision ?? "",
+                "notificationPreferencesEnabled": notifications.preferences.enabled,
+                "apnsTargetMatches": status?.target == target,
+                "apnsRevisionMatches": status?.revision == notifications.preferences.revision,
+                "uikitAPNsRegistered": UIApplication.shared.isRegisteredForRemoteNotifications,
+                "uikitAPNsRegistrationLabel": notifications.apnsRegistration,
+                "applicationDelegateClass": UIApplication.shared.delegate.map { String(describing: type(of: $0)) } ?? "none",
+                "originalProtectedComponentMatches": componentMatches(),
+                "originalIdentityDraftsOutboxRecoveryPreferencesSelectionUnchanged": protectedUnchanged])
+            if events.count > 64 { events.removeFirst(); dropped += 1 }
+            let value: [String: Any] = ["caseId": caseId, "bundleId": Bundle.main.bundleIdentifier!,
+                "pid": ProcessInfo.processInfo.processIdentifier, "ordinaryAppWithoutXCTest": true,
+                "events": events, "droppedEvents": dropped, "newModels": 0, "newBusinessCommands": 0,
+                "syntheticEvents": 0, "addedBackgroundAssertions": 0, "wholeFeaturePassed": false]
+            do {
+                try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
+                    .write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            } catch { /* No business action is available in this observer mode. Missing proof fails acceptance. */ }
+        }
     }
 }
 #endif

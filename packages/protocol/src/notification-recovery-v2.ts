@@ -240,8 +240,10 @@ export function validateNotificationV2Original(
   event: unknown,
   preferences: unknown,
   target: unknown,
-): void {
-  parseNotificationEvent(event);
-  parseNotificationPreferences(preferences);
-  parseNotificationTarget(target);
+): { event: NotificationEvent; preferences: NotificationPreferences; target: RuntimeTarget } {
+  return {
+    event: parseNotificationEvent(event),
+    preferences: parseNotificationPreferences(preferences),
+    target: parseNotificationTarget(target),
+  };
 }

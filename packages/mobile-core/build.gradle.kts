@@ -8,6 +8,8 @@ plugins {
 val generatedTests = layout.buildDirectory.dir("generated/test-vectors")
 val generatedContracts = layout.buildDirectory.dir("generated/contracts")
 val generateContracts by tasks.registering {
+    val projectGitSchema = rootProject.file("packages/protocol/schemas/project-git-v1.schema.json")
+    inputs.file(projectGitSchema)
     val usageSchema = rootProject.file("packages/protocol/schemas/usage-v1.schema.json")
     inputs.file(usageSchema)
     val schema = rootProject.file("packages/protocol/schemas/agent-management-v1.schema.json")
@@ -20,6 +22,7 @@ val generateContracts by tasks.registering {
     inputs.file(discoverySchema)
     outputs.dir(generatedContracts)
     doLast {
+        val projectGitEncoded = JavaBase64.getEncoder().encodeToString(projectGitSchema.readBytes())
         val usageEncoded = JavaBase64.getEncoder().encodeToString(usageSchema.readBytes())
         val encoded = JavaBase64.getEncoder().encodeToString(schema.readBytes())
         val httpChunks = JavaBase64.getEncoder().encodeToString(httpSchema.readBytes()).chunked(8192).joinToString(",") { "\"$it\"" }
@@ -28,6 +31,7 @@ val generateContracts by tasks.registering {
         generatedContracts.get().file("ManagementSchema.kt").asFile.apply {
             parentFile.mkdirs()
             writeText("package com.agenthub.core\ninternal const val managementSchemaBase64 = \"$encoded\"\ninternal val codexHttpSchemaBase64 = listOf($httpChunks).joinToString(\"\")\ninternal const val codexDiscoverySchemaBase64 = \"$discoveryEncoded\"\n")
+            appendText("internal const val projectGitSchemaBase64 = \"$projectGitEncoded\"\n")
             appendText("internal const val usageSchemaBase64 = \"$usageEncoded\"\n")
             appendText("internal const val taskHubSchemaBase64 = \"$taskHubEncoded\"\n")
         }

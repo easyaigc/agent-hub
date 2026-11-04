@@ -1,13 +1,21 @@
 import CryptoKit
 import Foundation
 
+struct ReadContentProjection: Codable, Equatable, Sendable {
+  var sourceVersion: String
+  var displayVersion: String
+}
+
 struct ReadPosition: Codable, Equatable, Sendable {
   var revision: Int
   var messageId: String
   var contentVersion: String
 
-  func matches(messageId: String, text: String, status: String?) -> Bool {
-    self.messageId == messageId && contentVersion == Self.contentVersion(messageId: messageId, text: text, status: status ?? "completed")
+  func matches(messageId: String, text: String, status: String?, projection: ReadContentProjection? = nil) -> Bool {
+    guard self.messageId == messageId else { return false }
+    let displayVersion = Self.contentVersion(messageId: messageId, text: text, status: status ?? "completed")
+    if let projection, projection.displayVersion == displayVersion { return contentVersion == projection.sourceVersion }
+    return contentVersion == displayVersion
   }
   static func contentVersion(messageId: String, text: String, status: String) -> String {
     var hash = SHA256()

@@ -382,3 +382,9 @@ UM04 客户端迁移补充：`codex-host-discovery-v1.schema.json` 新增具名 
 ### Host 历史窗口游标的归属
 
 `desktop-page-v1:` 是 Host 生成的 presentation cursor，包含 Host、thread 与消息锚点的 base64url 编码，长度最多 8192 字符。该前缀在历史读取和已有对话打开的读取分支中具有固定归属，即使下一页省略 `window=latest-v1` 也不能透传到 native RPC。有效匹配的缓存页仍返回原 `historyWindow` 结构标注的早期页及有界消息；格式错误为 HTTP 400 / `HOST_HISTORY_CURSOR_INVALID`，Host/thread 不同为 409 / `HOST_HISTORY_CURSOR_TARGET_MISMATCH`，未知缓存或锚点已失效为 409 / `HOST_HISTORY_CURSOR_EXPIRED`，不支持该窗口的运行时为 400 / `HOST_HISTORY_CURSOR_UNSUPPORTED`。调用方重新取得首页后使用新游标，不重放写操作。Host 身份与设备鉴权仍先由原路由校验。读缓存不表示 IPC 已就绪，也不授予原 owner 控制。
+
+## iOS / EasyWork 本任务主线整合（2026-11-05）
+
+仅整合 iOS 与 EasyWork 的协议、数据、权限及执行差异。原清单保留75项范围、51项对接/16项纯手机免重验/8项排除及14条补充；68个限定场景通过与21项Native失败均按原指纹保留，整项通过数不据此扩大。详见 [原清单](acceptance/codex-easywork-feature-matrix.md)。
+
+本批包含完整目标的 usage/read、project/git/status/files、原回执与队列恢复及问题元数据；旧桌面未准入项仅读，未知输入不重发。isSecret只控制输入遮罩，回答仍按正常工具结果和会话留存。本批优先保留主线现有读取目标、建议接口、启动、附件和迁移行为；Android源码及纯手机端重复验收不开展。合并后的检查与真实DEV结果另回填，不将旧指纹通过当作新主线全量通过。

@@ -153,7 +153,7 @@ export function appendRecoveryV2(state: RecoveryStateV2, sources: RecoverySource
   }
   capacity(state);
 }
-export function validateRecoveryV2(
+export function assertRecoveryV2(
   value: unknown,
   target: RuntimeTarget,
   sources: RecoverySourceV2[],
@@ -561,7 +561,7 @@ export class NotificationRecoveryV2 {
     return this.settle(receipt.intent.operationId);
   }
   recover(): void {
-    for (const o of [...this.hooks.read().operations])
+    for (const o of this.hooks.read().operations)
       if (o.receipt.stage === 'reserved') this.settle(o.receipt.intent.operationId);
   }
   feed(value: NotificationFeedQueryV2, ownerId?: string): NotificationFeedV2 {
@@ -670,3 +670,6 @@ export class NotificationRecoveryV2 {
     return page;
   }
 }
+
+// Keep the existing module export while exposing the narrowing assertion explicitly.
+export { assertRecoveryV2 as validateRecoveryV2 };

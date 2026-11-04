@@ -79,16 +79,49 @@ private struct EasyWorkSavedGrant: Codable {
   let origin: String
   var grant: EasyWorkDeviceGrant
   var refreshOperation: EasyWorkGrantRefresh?
+  var refreshReceipts: [EasyWorkGrantRefreshReceipt]? = nil
 }
 private struct EasyWorkGrantRefresh: Codable { let operationId: String; let token: String }
+private struct EasyWorkGrantRefreshReceipt: Codable, Equatable {
+  let operationId: String
+  let requestSha256: String
+  let responseSha256: String
+  let accessExpiresAt: String
+  let refreshExpiresAt: String
+}
 final class EasyWorkDeviceHTTPDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }
 
+struct EasyWorkServiceAvailabilityFailure: LocalizedError, RecoverableConnectionReadFailure {
+  let status: Int
+  var errorDescription: String? {
+    status == 429 ? L10n.tr("中继服务繁忙，请稍后重试。") : L10n.tr("中继服务暂时不可用，请稍后重试。")
+  }
+}
+
+private struct EasyWorkRefreshReconciled: LocalizedError, RecoverableConnectionReadFailure {
+  var errorDescription: String? { L10n.tr("原授权刷新结果已核对，正在获取当前访问凭证。") }
+}
+
+enum EasyWorkHTTPFailure {
+  static func response(status: Int, code: String?) -> Error {
+    // A gateway/rate limit failure says nothing about this device's grant.
+    // Session recovery may change routes; submitted writes still reconcile by ID.
+    if status == 408 || status == 429 || (500...599).contains(status) {
+      return EasyWorkServiceAvailabilityFailure(status: status)
+    }
+    return EasyWorkDeviceAuthorizationFailure(status: status, code: code ?? "request_rejected")
+  }
+}
+
 /// The phone holds scoped device credentials, never the Desktop's account login.
-struct EasyWorkDeviceAuthorizationFailure: LocalizedError {
+struct EasyWorkDeviceAuthorizationFailure: LocalizedError, ConnectionAuthorizationFailure {
   let status: Int
   let code: String
+  var authorizationNoticeKey: String? {
+    ["grant_inactive", "binding_inactive", "grant_revoked"].contains(code) ? "device-authorization-inactive" : nil
+  }
   var errorDescription: String? {
     switch code {
     case "offer_not_found": return "连接码无效，请在电脑上重新生成"
@@ -110,22 +143,32 @@ actor EasyWorkDeviceAuthorization {
     let value = CredentialVault.token(key); return value.isEmpty ? nil : try JSONDecoder().decode(type, from: Data(value.utf8))
   }
   private func write<T: Encodable>(_ key: String, _ value: T) throws { try CredentialVault.set(String(decoding: JSONEncoder().encode(value), as: UTF8.self), id: key) }
-  private func request(origin: String, path: String, method: String, signer: EasyWorkDPoP, token: String? = nil, body: Data? = nil) async throws -> Data {
+  private func request(origin: String, path: String, method: String, signer: EasyWorkDPoP, token: String? = nil, body: Data? = nil, lanForward: AgentConnectionCandidate? = nil, binding: EasyWorkBinding? = nil) async throws -> Data {
     guard let url = URL(string: try EasyWorkDeviceOffer.origin(origin) + "/v2/remote-access" + path) else { throw HostServiceError.invalidAddress }
-    var request = URLRequest(url: url); request.httpMethod = method; request.httpBody = body; request.timeoutInterval = 40
+    var destination=url
+    let delegate: any URLSessionTaskDelegate
+    if let candidate=lanForward {
+      guard path=="/device-grants/refresh",method=="POST",candidate.transportId=="lan-wss",let pin=candidate.peerFingerprint,let binding,var local=URLComponents(string:try EasyWorkPairing.localEndpoint(candidate.endpoint).absoluteString)else{throw HostServiceError.invalidAddress}
+      local.path="/device-authorization/refresh";local.queryItems=[URLQueryItem(name:"bindingId",value:binding.bindingId)]
+      guard let localURL=local.url else{throw HostServiceError.invalidAddress};destination=localURL
+      delegate=PairedHostTrust(endpoint:candidate.endpoint,fingerprint:pin)
+    }else{delegate=EasyWorkDeviceHTTPDelegate()}
+    var request = URLRequest(url: destination); request.httpMethod = method; request.httpBody = body; request.timeoutInterval = 40
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     if body != nil { request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type") }
     if let token { request.setValue("DPoP " + token, forHTTPHeaderField: "Authorization") }
     request.setValue(try signer.proof(method: method, url: url, accessToken: token, body: body), forHTTPHeaderField: "DPoP")
-    let session = URLSession(configuration: .ephemeral, delegate: EasyWorkDeviceHTTPDelegate(), delegateQueue: nil)
+    // Proof keeps the original issuer authority and immutable refresh body;
+    // the pinned Desktop only forwards this named endpoint to that issuer.
+    let session = URLSession(configuration: EasyWorkHTTPConfiguration.ephemeral(for: destination), delegate: delegate, delegateQueue: nil)
     defer { session.invalidateAndCancel() }
-    let (stream, response) = try await session.bytes(for: request)
+    let (stream, response) = try await session.bytes(for: request, delegate: delegate)
     guard let http = response as? HTTPURLResponse else { throw HostServiceError.invalidResponse }
     var data = Data(); let limit = (200..<300).contains(http.statusCode) ? 65_536 : 4096
     for try await byte in stream { guard data.count < limit else { throw HostServiceError.invalidResponse }; data.append(byte) }
     guard (200..<300).contains(http.statusCode) else {
       let code = (try? easyWorkObject(data)["error"] as? [String: Any])?["code"] as? String
-      throw EasyWorkDeviceAuthorizationFailure(status: http.statusCode, code: code ?? "request_rejected")
+      throw EasyWorkHTTPFailure.response(status: http.statusCode, code: code)
     }
     return data.isEmpty ? Data("{}".utf8) : data
   }
@@ -141,6 +184,16 @@ actor EasyWorkDeviceAuthorization {
       state = EasyWorkSavedClaim(origin: offer.origin, body: String(decoding: body, as: UTF8.self)); try write(key, state)
     }
     guard state.origin == offer.origin else { throw HostServiceError.invalidResponse }
+    if let ref = state.grantRef, let saved = try read(ref, as: EasyWorkSavedGrant.self) {
+      guard saved.origin == offer.origin else { throw HostServiceError.invalidResponse }
+      try saved.grant.verify(identity, signer: signer)
+      guard try EasyWorkDeviceGrant.date(saved.grant.refreshExpiresAt) > Date() else {
+        throw EasyWorkDeviceAuthorizationFailure(status: 401, code: "grant_inactive")
+      }
+      // Approval is immutable. Resume the saved grant; its runtime request
+      // still checks revocation and refresh through the normal authorization.
+      return (saved.grant.binding, ref)
+    }
     if state.claimId == nil {
       let response = try easyWorkObject(await request(origin: offer.origin, path: "/pairing/claims", method: "POST", signer: signer, body: Data(state.body.utf8)))
       guard response["protocol"] as? String == "EWDAP/1", response["status"] as? String == "pending", let id = response["claimId"] as? String, UUID(uuidString: id) != nil,
@@ -177,11 +230,11 @@ actor EasyWorkDeviceAuthorization {
     }
     throw HostServiceError.message("等待电脑确认超时，可继续核对原配对请求")
   }
-  func headers(ref: String, binding: EasyWorkBinding, method: String, url: URL, body: Data? = nil) async throws -> [String: String] {
-    let token = try await validAccess(ref: ref, binding: binding), identity = try EasyWorkIdentity.load()
+  func headers(ref: String, binding: EasyWorkBinding, method: String, url: URL, body: Data? = nil, lanCandidate: AgentConnectionCandidate? = nil) async throws -> [String: String] {
+    let token = try await validAccess(ref: ref, binding: binding, lanCandidate: lanCandidate), identity = try EasyWorkIdentity.load()
     return ["Authorization": "DPoP " + token, "DPoP": try EasyWorkDPoP.load(identity).proof(method: method, url: url, accessToken: token, body: body)]
   }
-  private func validAccess(ref: String, binding: EasyWorkBinding) async throws -> String {
+  private func validAccess(ref: String, binding: EasyWorkBinding, lanCandidate: AgentConnectionCandidate?) async throws -> String {
     while refreshing.contains(ref) { try await Task.sleep(for: .milliseconds(100)) }
     refreshing.insert(ref); defer { refreshing.remove(ref) }
     guard var saved = try read(ref, as: EasyWorkSavedGrant.self) else { throw HostServiceError.message("设备授权已移除，请重新配对") }
@@ -191,12 +244,29 @@ actor EasyWorkDeviceAuthorization {
     if saved.refreshOperation == nil, try EasyWorkDeviceGrant.date(saved.grant.accessExpiresAt) > Date().addingTimeInterval(60) { return saved.grant.accessToken }
     if saved.refreshOperation == nil { saved.refreshOperation = EasyWorkGrantRefresh(operationId: UUID().uuidString.lowercased(), token: saved.grant.refreshToken); try write(ref, saved) }
     let operation = saved.refreshOperation!
-    let response = try easyWorkObject(await request(origin: saved.origin, path: "/device-grants/refresh", method: "POST", signer: signer, token: operation.token, body: easyWorkJSON(["operationId": operation.operationId])))
+    var forward:AgentConnectionCandidate?
+    if let candidate=lanCandidate{
+      guard candidate.transportId=="lan-wss",let pin=candidate.peerFingerprint else{throw HostServiceError.invalidResponse}
+      let host=try await EasyWorkPairing.readHost(endpoint:candidate.endpoint,fingerprint:pin,target:binding.target,publicKey:binding.desktopPublicKey,timeout:5)
+      if host.deviceAuthorizationRefresh=="lan-forward-v1"{forward=candidate}
+    }
+    let response = try easyWorkObject(await request(origin: saved.origin, path: "/device-grants/refresh", method: "POST", signer: signer, token: operation.token, body: easyWorkJSON(["operationId": operation.operationId]),lanForward:forward,binding:binding))
     guard response["protocol"] as? String == "EWDAP/1", response["grantId"] as? String == saved.grant.grantId, let sealed = response["sealedDelivery"] as? String else { throw HostServiceError.invalidResponse }
     let clear = try EasyWorkDeviceDelivery.open(identity: identity, delivery: sealed, expectedDeliveryId: operation.operationId)
     let grant = try JSONDecoder().decode(EasyWorkDeviceGrant.self, from: easyWorkJSON(clear)); try grant.verify(identity, signer: signer, expected: binding)
-    guard try EasyWorkDeviceGrant.date(grant.accessExpiresAt) > Date() else { throw HostServiceError.invalidResponse }
+    // Commit the verified original completion before requesting another refresh.
+    // An expired access token does not make the rotated refresh result unknown.
+    let request = try easyWorkJSON(["operationId": operation.operationId])
+    let digest: (Data) -> String = { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() }
+    let receipt = EasyWorkGrantRefreshReceipt(operationId: operation.operationId, requestSha256: digest(request), responseSha256: digest(Data(sealed.utf8)), accessExpiresAt: grant.accessExpiresAt, refreshExpiresAt: grant.refreshExpiresAt)
+    let receipts = saved.refreshReceipts ?? []
+    if let prior = receipts.first(where: { $0.operationId == operation.operationId }), prior != receipt { throw HostServiceError.invalidResponse }
+    saved.refreshReceipts = Array((receipts.filter { $0.operationId != operation.operationId } + [receipt]).suffix(32))
     saved.grant = grant; saved.refreshOperation = nil; try write(ref, saved)
+    guard try EasyWorkDeviceGrant.date(grant.accessExpiresAt) > Date() else {
+      guard try EasyWorkDeviceGrant.date(grant.refreshExpiresAt) > Date() else { throw HostServiceError.message("设备授权已过期，请在电脑上重新配对") }
+      throw EasyWorkRefreshReconciled()
+    }
     return grant.accessToken
   }
 }

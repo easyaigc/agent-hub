@@ -17,6 +17,7 @@ const authorizationSource = await readFile(
   'apps/ios/Sources/EasyWorkDeviceAuthorization.swift',
   'utf8',
 );
+const failureSource = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
 const hostSource = await readFile('apps/ios/Sources/HostService.swift', 'utf8');
 const modelsSource = await readFile('apps/ios/Sources/NotificationModels.swift', 'utf8');
 function declaration(source, marker) {
@@ -153,7 +154,16 @@ try {
   const swift = `import Foundation
 import CryptoKit
 import Security
-struct AgentConnectionCandidate { let endpoint: String }
+struct AgentConnectionCandidate {
+  let endpoint: String
+  var transportId = "relay-http"
+  var peerFingerprint: String? = nil
+}
+enum L10n { static func tr(_ value: String) -> String { value } }
+${declaration(failureSource, 'protocol RecoverableConnectionReadFailure:')}
+${declaration(failureSource, 'protocol ConnectionAuthorizationFailure:')}
+${declaration(failureSource, 'struct ConnectionAuthorizationIdentity<')}
+${declaration(failureSource, 'struct ConnectionAuthorizationNotices<')}
 ${declaration(modelsSource, 'struct AgentAccount:')}
 enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, message(String) }
 enum HostService {
@@ -206,6 +216,14 @@ enum EasyWorkLogin {
   }
 }
 ${fixtureCrypto}
+${declaration(source, 'final class PairedHostTrust:')}
+// This Relay-only fixture never forwards LAN requests. Fail if that branch is entered.
+enum EasyWorkPairing {
+  struct Host { let deviceAuthorizationRefresh: String? }
+  static func localEndpoint(_ endpoint: String) throws -> URL { throw HostServiceError.unavailable }
+  static func readHost(endpoint: String, fingerprint: String?, target: EasyWorkTarget,
+    publicKey: String, timeout: TimeInterval) async throws -> Host { throw HostServiceError.unavailable }
+}
 ${authorizationSource}
 protocol AgentTransport: AnyObject, Sendable {
   func send(_ frame: Data) async throws
@@ -322,6 +340,20 @@ ${sessionSource.slice(publishStart, publishEnd)}
     catch let failure as EasyWorkDeviceAuthorizationFailure {
       guard failure.status == 302, failure.code == "request_rejected" else { throw failure }
     }
+    for status in [408, 429, 500, 502, 503, 504, 599] {
+      guard EasyWorkHTTPFailure.response(status: status, code: "request_rejected") is RecoverableConnectionReadFailure else {
+        fatalError("A transient gateway status was classified as device authorization failure")
+      }
+    }
+    guard let revoked = EasyWorkHTTPFailure.response(status: 403, code: "grant_revoked") as? EasyWorkDeviceAuthorizationFailure,
+      revoked.authorizationNoticeKey == "device-authorization-inactive" else { fatalError("Revocation lost its device boundary") }
+    var notices = ConnectionAuthorizationNotices<ConnectionAuthorizationIdentity<String>?>()
+    let noticeIdentity = ConnectionAuthorizationIdentity(target: "synthetic-target", credentialRef: "synthetic-credential")
+    guard notices.shouldPresent(target: "fixture", identity: noticeIdentity, failure: revoked.authorizationNoticeKey),
+      !notices.shouldPresent(target: "fixture", identity: noticeIdentity, failure: revoked.authorizationNoticeKey),
+      notices.shouldPresent(target: "fixture", identity: noticeIdentity, failure: nil) else { fatalError("Automatic authorization notices lost their scope") }
+    notices.reset("fixture")
+    guard notices.shouldPresent(target: "fixture", identity: noticeIdentity, failure: revoked.authorizationNoticeKey) else { fatalError("Explicitly verified connection did not reset its notice") }
     await device.close()
     do { _ = try await device.api("/bindings"); fatalError("A closed route reached the network") }
     catch is CancellationError {}
@@ -372,6 +404,7 @@ ${sessionSource.slice(publishStart, publishEnd)}
           deviceAuthorization: createHash('sha256').update(authorizationSource).digest('hex'),
           session: createHash('sha256').update(sessionSource).digest('hex'),
           hostService: createHash('sha256').update(hostSource).digest('hex'),
+          failurePresentation: createHash('sha256').update(failureSource).digest('hex'),
           models: createHash('sha256').update(modelsSource).digest('hex'),
         },
         generatedSwiftSHA256: createHash('sha256').update(swift).digest('hex'),

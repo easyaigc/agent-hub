@@ -21,6 +21,7 @@ import { mkdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import {
   notificationTargetKey,
+  parseNotificationRegistration,
   type NotificationEvent,
   type NotificationRegistration,
   type NotificationStatus,
@@ -90,6 +91,8 @@ interface Device {
   registration: NotificationRegistration;
   ownerId?: string;
   subscriptionGeneration?: number;
+  pendingRegistration?: boolean;
+  pendingPushRevocation?: boolean;
   revokedPreferencesGeneration?: number;
   bindingId?: string;
   managementToken?: string;
@@ -135,6 +138,17 @@ function preferenceIdentity(preferences: NotificationPreferences): string {
       ]),
   );
 }
+function registrationIdentity(value: NotificationRegistration): string {
+  return JSON.stringify([
+    value.deviceId,
+    notificationTargetKey(value.target),
+    value.publicKey,
+    value.deviceToken ?? null,
+    value.deviceToken ? (value.pushProvider ?? 'apns') : null,
+    value.environment ?? null,
+    preferenceIdentity(value.preferences),
+  ]);
+}
 export interface NotificationPublisherOptions {
   target: RuntimeTarget;
   statePath: string;
@@ -147,6 +161,10 @@ export interface NotificationPublisherOptions {
 }
 /** Agent-neutral delivery boundary. It accepts domain events, never upstream RPC. */
 export class NotificationPublisher {
+  /** This declares a supported registration contract, not provider configuration or delivery. */
+  get registrationCapabilities(): readonly string[] {
+    return ['notifications:registration:fcm:v1'];
+  }
   private state: State;
   private timer: NodeJS.Timeout;
   private busy = false;
@@ -495,6 +513,7 @@ export class NotificationPublisher {
     ownerId?: string,
   ): Promise<NotificationStatus> {
     if (this.closed) throw new Error('通知服务已关闭');
+    registration = parseNotificationRegistration(registration);
     this.assertLegacyWrite(registration.deviceId);
     if (notificationTargetKey(registration.target) !== notificationTargetKey(this.options.target))
       throw new Error('通知目标不一致');
@@ -516,10 +535,23 @@ export class NotificationPublisher {
             preferenceIdentity(previous.registration.preferences)))
     )
       throw new Error('通知设置已变化');
+    const foregroundFallback =
+      !registration.deviceToken &&
+      Boolean(
+        previous?.pendingPushRevocation ||
+        (previous?.registration.pushProvider === 'fcm' && previous.bindingId),
+      );
     const device: Device = {
       ...previous,
       registration: structuredClone(registration),
-      subscriptionGeneration: (previous?.subscriptionGeneration ?? 0) + 1,
+      subscriptionGeneration:
+        (previous?.pendingRegistration || previous?.pendingPushRevocation) &&
+        registrationIdentity(previous.registration) === registrationIdentity(registration)
+          ? (previous.subscriptionGeneration ?? 1)
+          : (previous?.subscriptionGeneration ?? 0) + 1,
+      pendingRegistration: Boolean(registration.deviceToken),
+      pendingPushRevocation: foregroundFallback,
+      ...(registration.deviceToken || foregroundFallback ? { retryAt: Date.now() + 30000 } : {}),
       managementToken: previous?.managementToken ?? randomBytes(32).toString('base64url'),
       ...(ownerId ? { ownerId } : {}),
     };
@@ -532,6 +564,30 @@ export class NotificationPublisher {
       await this.unregister(registration.deviceId, ownerId);
       return this.status(registration.deviceId, ownerId);
     }
+    if (foregroundFallback) {
+      try {
+        await this.relay('/v1/push/unregister', {
+          hostId: this.options.target.hostId,
+          target: this.options.target,
+          deviceId: registration.deviceId,
+          generation: device.subscriptionGeneration,
+        });
+        if (this.closed || this.state.devices[registration.deviceId] !== device)
+          return this.status(registration.deviceId, ownerId);
+        delete device.bindingId;
+        delete device.managementToken;
+        delete device.pendingPushRevocation;
+        delete device.error;
+        delete device.retryAt;
+      } catch {
+        if (this.closed || this.state.devices[registration.deviceId] !== device)
+          return this.status(registration.deviceId, ownerId);
+        device.error = '后台订阅撤销待同步，当前仅前台提醒';
+        device.retryAt = Date.now() + 30000;
+        this.save();
+        return this.status(registration.deviceId, ownerId);
+      }
+    }
     if (registration.deviceToken && this.options.relayURL && this.options.publisherToken) {
       try {
         const result = await this.relay('/v1/push/register', {
@@ -539,7 +595,8 @@ export class NotificationPublisher {
           target: this.options.target,
           deviceId: registration.deviceId,
           deviceToken: registration.deviceToken,
-          environment: registration.environment,
+          ...(registration.pushProvider ? { pushProvider: registration.pushProvider } : {}),
+          ...(registration.environment ? { environment: registration.environment } : {}),
           generation: device.subscriptionGeneration,
           managementToken: device.managementToken,
         });
@@ -565,6 +622,7 @@ export class NotificationPublisher {
         device.bindingId = result.bindingId;
         device.managementToken = result.managementToken;
         device.syncedRevision = registration.preferences.revision;
+        delete device.pendingRegistration;
         delete device.error;
         delete device.invalidToken;
         delete device.retryAt;
@@ -575,7 +633,8 @@ export class NotificationPublisher {
         device.retryAt = Date.now() + 30_000;
       }
     } else {
-      device.error = registration.deviceToken ? '电脑尚未配置推送服务' : '手机尚未取得 APNs 令牌';
+      delete device.pendingRegistration;
+      device.error = registration.deviceToken ? '电脑尚未配置推送服务' : '手机尚未取得推送令牌';
     }
     this.save();
     void this.flush().catch(() => undefined);
@@ -609,6 +668,8 @@ export class NotificationPublisher {
       device.registration.preferences.generation,
     );
     device.registration.preferences.enabled = false;
+    delete device.pendingRegistration;
+    delete device.pendingPushRevocation;
     this.save();
     if (device.bindingId || (this.options.relayURL && this.options.publisherToken)) {
       try {
@@ -639,14 +700,27 @@ export class NotificationPublisher {
     return {
       version: 1,
       target: this.options.target,
-      delivery: device?.bindingId ? 'apns' : 'foreground-only',
+      delivery:
+        device?.bindingId && !device.pendingPushRevocation
+          ? (device.registration.pushProvider ?? 'apns')
+          : 'foreground-only',
+      ...(device?.registration.deviceToken
+        ? {
+            pushProvider: device.registration.pushProvider ?? 'apns',
+            deviceTokenSha256: createHash('sha256')
+              .update(device.registration.deviceToken)
+              .digest('hex'),
+          }
+        : {}),
       state: !device?.registration.preferences.enabled
         ? 'disabled'
         : device.error
           ? 'unavailable'
-          : device.bindingId
-            ? 'ready'
-            : 'pending',
+          : device.pendingRegistration
+            ? 'pending'
+            : device.bindingId
+              ? 'ready'
+              : 'pending',
       ...(device?.error ? { reason: device.error } : {}),
       ...(device ? { revision: device.registration.preferences.revision } : {}),
       ...(device?.bindingId
@@ -803,8 +877,16 @@ export class NotificationPublisher {
           continue;
         }
         if (
+          device.pendingPushRevocation &&
           device.registration.preferences.enabled &&
-          device.error &&
+          (!device.retryAt || Date.now() >= device.retryAt)
+        ) {
+          await this.register(device.registration, device.ownerId);
+          continue;
+        }
+        if (
+          device.registration.preferences.enabled &&
+          (device.error || device.pendingRegistration) &&
           device.registration.deviceToken &&
           device.invalidToken !== device.registration.deviceToken &&
           this.options.relayURL &&
@@ -814,7 +896,13 @@ export class NotificationPublisher {
           await this.register(device.registration, device.ownerId);
           continue;
         }
-        if (!device.bindingId || device.error) continue;
+        if (
+          !device.bindingId ||
+          device.error ||
+          device.pendingRegistration ||
+          device.pendingPushRevocation
+        )
+          continue;
         if (Date.now() - (device.checkedAt ?? 0) > 30_000) {
           device.checkedAt = Date.now();
           try {

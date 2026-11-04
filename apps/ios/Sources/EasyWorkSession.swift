@@ -18,7 +18,7 @@ actor AgentTransportRegistry {
         guard let binding = options.authorizationBinding, var components = URLComponents(string: options.candidate.endpoint) else { throw HostServiceError.invalidResponse }
         components.path = "/channel"; components.query = nil; components.fragment = nil
         guard let url = components.url else { throw HostServiceError.invalidResponse }
-        headers = try await EasyWorkDeviceAuthorization.shared.headers(ref: ref, binding: binding, method: "GET", url: url)
+        headers = try await EasyWorkDeviceAuthorization.shared.headers(ref: ref, binding: binding, method: "GET", url: url, lanCandidate: options.candidate)
       }
       return try LANAgentTransport(candidate: options.candidate, bindingId: options.bindingId, headers: headers)
     },
@@ -72,6 +72,12 @@ actor EasyWorkSessions {
 }
 /// Wake subscriptions on actual frames, disconnects or their single deadline.
 /// Keeping the revision closes the gap between inspecting state and suspending.
+struct EasyWorkRemoteRejection: LocalizedError, Sendable {
+  let code: String?
+  let message: String
+  var errorDescription: String? { message }
+}
+
 actor EasyWorkEventSignal {
   private var revision: UInt64 = 0
   private var waiters: [UUID: (CheckedContinuation<Void, Error>, Task<Void, Never>)] = [:]
@@ -329,7 +335,11 @@ actor EasyWorkRemoteSession {
         while responses[id] == nil && lastError == nil && !closed && Date() < deadline { try await Task.sleep(for: .milliseconds(25)) }
         guard !closed else { throw CancellationError() }
         if let response = responses.removeValue(forKey: id) {
-          guard response["ok"] as? Bool == true else { let error = response["error"] as? [String: Any]; throw HostServiceError.message(error?["message"] as? String ?? L10n.tr("请求被拒绝")) }
+          guard response["ok"] as? Bool == true else {
+            let error = response["error"] as? [String: Any]
+            throw EasyWorkRemoteRejection(code: error?["code"] as? String,
+              message: error?["message"] as? String ?? L10n.tr("请求被拒绝"))
+          }
           return try easyWorkJSON(response["result"] ?? NSNull())
         }
         diagnostic("request-timeout", method)
@@ -338,6 +348,7 @@ actor EasyWorkRemoteSession {
         diagnostic("request-error", "\(method):\((error as NSError).domain):\((error as NSError).code)")
         if closed || Task.isCancelled { throw CancellationError() }
         if let failure = (error as? EasyWorkDeviceAuthorizationFailure) ?? (lastError as? EasyWorkDeviceAuthorizationFailure) { throw failure }
+        if error is EasyWorkRemoteRejection { throw error }
         if case HostServiceError.message = error { throw error }
         // A Relay can stay online while the Host restarts. A request timeout must
         // invalidate the old handshake even when the user selected only one path.

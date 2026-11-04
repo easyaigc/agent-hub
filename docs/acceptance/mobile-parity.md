@@ -1681,3 +1681,7 @@ Stage79 (F02/F03/F04/F55/F56): R3 strict native AX readiness/scope/budget/order 
 阶段83，F02/F03/F04/F54/F55/F56：两APK共享SDK9355与三APK诊断SDKfe33均通过，905项输入保持；P7新prepare返回PLATFORM_DIRECTORY，效果UNKNOWN且未重放，Native未派发。P8原窗口绑定及名称替换/IME限定通过，随后原控件AX未找到；完整交互/视觉失败，英文未完成。P9实际诊断未找到原通知行、系统前置状态待核对；完整辅助回归通过，独立producer/IMPORT及物理DEV仍待验，原成功断言与iOS产品行为保持。详见[阶段档案](../plans/android-alignment-20261022/records/stage83-shared-observers-and-import.md)。
 
 2026-11-04 F73 消费者解析整合：共享非负有限百分比边界同时影响 iOS/Android，辅助检查与源码基线见 [本轮记录](easywork-mobile-integration-20261104.md)。已有设备证据保持原指纹，不据本次边界修复新增整项通过。
+
+2026-11-04 F06/F07/F08/F37/F38：iOS EasyWork授权/刷新及未知队列/追加回执消费者已整合，11项Swift、Relay和本地TLS辅助及iOS构建通过，详见 [整合记录](easywork-mobile-integration-20261104.md)。Android本组不改，既有整项/物理状态不提升。
+
+2026-11-04 F51/F52/F53/F54/F55/F70: shared notification/Relay/management consumer contracts are integrated separately from native arrival or whole-feature acceptance; see [integration record](easywork-mobile-integration-20261104.md).

@@ -88,3 +88,5 @@ export * from './business-notifications.js';
 export * from './workspace-management.js';
 export * from './desktop-suggestion-observations.js';
 export * from './chat-actions.js';
+
+export * from './chat-management.js';

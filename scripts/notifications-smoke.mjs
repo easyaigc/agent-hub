@@ -1221,8 +1221,16 @@ test('topic-specific Sandbox routing and complete EasyWork publisher isolation p
       },
     ],
   };
-  let relay;
+  let relay, topicOnly;
   try {
+    // A configured independent topic remains usable even with no default key.
+    // No publish is made through this real sender, so Apple is never contacted.
+    topicOnly = await startPushServer(
+      { ...config, keys: undefined, statePath: join(directory, 'topic-only-state.json') },
+      { port: 0 },
+    );
+    await topicOnly.close();
+    topicOnly = undefined;
     const authorize = createAPNsAuthorizer(config);
     const kid = (jwt) => JSON.parse(Buffer.from(jwt.split('.')[0], 'base64url')).kid;
     assert.equal(kid(authorize('development')), 'DEFAULT');
@@ -1283,6 +1291,17 @@ test('topic-specific Sandbox routing and complete EasyWork publisher isolation p
       (await post('/v1/push/register', { ...registration, environment: 'production' })).status,
       403,
     );
+    assert.equal(
+      (
+        await post('/v1/push/register', {
+          ...registration,
+          pushProvider: 'fcm',
+          environment: undefined,
+          deviceToken: 'opaque-fixture-token',
+        })
+      ).status,
+      403,
+    );
     const response = await post('/v1/push/register', registration);
     assert.equal(response.status, 200);
     const binding = await response.json();
@@ -1331,6 +1350,7 @@ test('topic-specific Sandbox routing and complete EasyWork publisher isolation p
       403,
     );
   } finally {
+    await topicOnly?.close();
     await relay?.close();
     await rm(directory, { recursive: true, force: true });
   }

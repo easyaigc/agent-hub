@@ -15,11 +15,14 @@ import {
 import {
   notificationObject,
   notificationTargetKey,
+  notificationPushToken,
   parseNotificationEnvelope,
   parseNotificationTarget,
   type NotificationEnvelope,
   type RuntimeTarget,
+  type NotificationPushProvider,
 } from '@codex-manage/protocol';
+import { createFCMSender, type FCMConfiguration } from './fcm-sender.js';
 
 export interface APNsSigningKey {
   keyId: string;
@@ -41,6 +44,7 @@ export interface PushConfiguration {
   keyId?: string;
   keyPath?: string;
   keys?: Partial<Record<APNsEnvironment, APNsSigningKey>>;
+  fcm?: FCMConfiguration;
   /** Non-default topics are explicit and never fall back to the default topic's key. */
   topicKeys?: Record<string, Partial<Record<APNsEnvironment, APNsSigningKey>>>;
   hosts: HostPublisherConfiguration[];
@@ -52,7 +56,8 @@ interface Binding {
   deviceId: string;
   target: RuntimeTarget;
   deviceToken: string;
-  environment: APNsEnvironment;
+  environment?: APNsEnvironment;
+  pushProvider?: NotificationPushProvider;
   managementHash: string;
   enabled: boolean;
   generation: number;
@@ -65,6 +70,7 @@ interface Delivery {
   reason?: string;
   cancelled?: boolean;
   createdAt?: string;
+  retryAt?: number;
 }
 interface PushState {
   business?: BusinessPushState;
@@ -77,6 +83,7 @@ interface PushState {
 export interface APNsResult {
   state: 'accepted' | 'pending' | 'uncertain' | 'rejected';
   reason?: string;
+  retryAfterMs?: number;
 }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const equal = (a: string, b: string) => {
@@ -168,7 +175,7 @@ export function notificationAPNsPayload(
 export function createAPNsSender(config: PushConfiguration) {
   const authorize = createAPNsAuthorizer(config);
   return async (
-    binding: Pick<Binding, 'id' | 'environment' | 'deviceToken'> & { topic?: string },
+    binding: Pick<Binding, 'id' | 'deviceToken'> & { environment: APNsEnvironment; topic?: string },
     envelope: NotificationEnvelope,
   ): Promise<APNsResult> => {
     const jwt = authorize(binding.environment, binding.topic ?? config.topic);
@@ -256,7 +263,12 @@ async function readJSON(request: IncomingMessage): Promise<unknown> {
 }
 export async function startPushServer(
   config: PushConfiguration,
-  options: { port?: number; address?: string; send?: ReturnType<typeof createAPNsSender> } = {},
+  options: {
+    port?: number;
+    address?: string;
+    send?: ReturnType<typeof createAPNsSender>;
+    sendFCM?: ReturnType<typeof createFCMSender>;
+  } = {},
 ) {
   if (
     !config.topic ||
@@ -297,7 +309,10 @@ export async function startPushServer(
       binding.hostId === host.hostId &&
       acceptsTarget(host, binding.target) &&
       (binding.topic ?? config.topic) === (host.topic ?? config.topic) &&
-      (!host.environments || host.environments.includes(binding.environment)),
+      (!host.environments ||
+        (binding.pushProvider !== 'fcm' &&
+          binding.environment !== undefined &&
+          host.environments.includes(binding.environment))),
     );
   const publishers = config.businessPublishers ?? [];
   const publisherKeys = publishers.map((p) =>
@@ -317,7 +332,25 @@ export async function startPushServer(
     new Set(tokens).size !== tokens.length
   )
     throw new Error('Invalid business publisher configuration');
-  const send = options.send ?? createAPNsSender(config);
+  const hasAPNs = Boolean(
+    [config.topic, ...Object.keys(config.topicKeys ?? {})].some(
+      (topic) =>
+        configuredAPNsKey(config, 'development', topic) ||
+        configuredAPNsKey(config, 'production', topic),
+    ),
+  );
+  const sendAPNs = options.send ?? (hasAPNs ? createAPNsSender(config) : undefined);
+  const sendFCM = options.sendFCM ?? (config.fcm ? createFCMSender(config.fcm) : undefined);
+  if (!sendAPNs && !sendFCM) throw new Error('尚未配置通知投递提供方');
+  const send = async (binding: Binding, envelope: NotificationEnvelope): Promise<APNsResult> => {
+    if (binding.pushProvider === 'fcm')
+      return sendFCM
+        ? await sendFCM(binding, envelope)
+        : { state: 'rejected', reason: 'FCMNotConfigured' };
+    return sendAPNs && binding.environment
+      ? await sendAPNs({ ...binding, environment: binding.environment }, envelope)
+      : { state: 'rejected', reason: 'APNsEnvironmentNotConfigured' };
+  };
   if (existsSync(config.statePath)) assertPushPrivateFile(config.statePath);
   mkdirSync(dirname(config.statePath), { recursive: true, mode: 0o700 });
   const releaseLease = acquireNotificationState(config.statePath);
@@ -357,7 +390,10 @@ export async function startPushServer(
     state: state.business,
     save,
     environmentAvailable: (environment) => Boolean(configuredAPNsKey(config, environment)),
-    send,
+    send: async (binding, envelope) =>
+      sendAPNs
+        ? await sendAPNs(binding, envelope)
+        : { state: 'rejected', reason: 'APNsEnvironmentNotConfigured' },
   });
   save();
   let busy = false,
@@ -378,7 +414,7 @@ export async function startPushServer(
         if (Date.parse(timestamp) < Date.now() - 7 * 86400_000) delete state.cancelled?.[id];
       for (const delivery of Object.values(state.deliveries)) {
         if (closed) return;
-        if (delivery.state !== 'pending') continue;
+        if (delivery.state !== 'pending' || (delivery.retryAt ?? 0) > Date.now()) continue;
         const binding = state.bindings[delivery.envelope.bindingId];
         if (
           delivery.cancelled ||
@@ -395,11 +431,16 @@ export async function startPushServer(
         save();
         const result = await send(binding, delivery.envelope).catch((): APNsResult => ({
           state: 'uncertain',
-          reason: 'APNsUnknown',
+          reason: binding.pushProvider === 'fcm' ? 'FCMUnknown' : 'APNsUnknown',
         }));
         if (closed) return;
         delivery.state = result.state;
         if (result.reason) delivery.reason = result.reason;
+        else delete delivery.reason;
+        if (result.state === 'pending')
+          delivery.retryAt =
+            Date.now() + Math.max(1000, Math.min(3600000, result.retryAfterMs ?? 2000));
+        else delete delivery.retryAt;
         if (
           ['BadDeviceToken', 'Unregistered', 'DeviceTokenNotForTopic'].includes(result.reason ?? '')
         )
@@ -485,6 +526,7 @@ export async function startPushServer(
           'deviceId',
           'target',
           'deviceToken',
+          'pushProvider',
           'environment',
           'generation',
           'managementToken',
@@ -501,18 +543,32 @@ export async function startPushServer(
           Number(row.generation) < 1 ||
           typeof row.managementToken !== 'string' ||
           !/^[A-Za-z0-9_-]{43}$/.test(row.managementToken) ||
-          typeof row.deviceToken !== 'string' ||
-          !/^[a-f0-9]{64,256}$/.test(row.deviceToken) ||
-          !['development', 'production'].includes(String(row.environment))
+          (row.pushProvider !== undefined &&
+            row.pushProvider !== 'apns' &&
+            row.pushProvider !== 'fcm') ||
+          !notificationPushToken(
+            (row.pushProvider ?? 'apns') as NotificationPushProvider,
+            row.deviceToken,
+            row.environment,
+          )
         ) {
           json(403, { error: 'TargetDenied' });
           return;
         }
-        if (host.environments && !host.environments.includes(row.environment as APNsEnvironment)) {
+        if (
+          host.environments &&
+          (row.pushProvider === 'fcm' ||
+            !host.environments.includes(row.environment as APNsEnvironment))
+        ) {
           json(403, { error: 'TargetDenied' });
           return;
         }
+        if (row.pushProvider === 'fcm' && !sendFCM) {
+          json(503, { error: 'FCMNotConfigured' });
+          return;
+        }
         if (
+          row.pushProvider !== 'fcm' &&
           !configuredAPNsKey(config, row.environment as APNsEnvironment, host.topic ?? config.topic)
         ) {
           json(503, { error: 'APNsEnvironmentNotConfigured' });
@@ -539,6 +595,7 @@ export async function startPushServer(
           if (
             !binding ||
             binding.deviceToken !== row.deviceToken ||
+            (binding.pushProvider ?? 'apns') !== (row.pushProvider ?? 'apns') ||
             binding.environment !== row.environment ||
             (binding.topic ?? config.topic) !== (host.topic ?? config.topic) ||
             !equal(binding.managementHash, hash(managementToken))
@@ -555,8 +612,11 @@ export async function startPushServer(
           hostId: host.hostId,
           deviceId: row.deviceId,
           target,
-          deviceToken: row.deviceToken,
-          environment: row.environment as Binding['environment'],
+          deviceToken: row.deviceToken as string,
+          ...(row.pushProvider === 'fcm' ? { pushProvider: 'fcm' as const } : {}),
+          ...(row.pushProvider === 'fcm'
+            ? {}
+            : { environment: row.environment as APNsEnvironment }),
           managementHash: hash(managementToken),
           enabled: true,
           generation,

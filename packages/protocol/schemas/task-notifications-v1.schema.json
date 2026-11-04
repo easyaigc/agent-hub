@@ -169,12 +169,40 @@
         },
         "target": { "$ref": "#/definitions/Target" },
         "publicKey": { "type": "string", "pattern": "^[A-Za-z0-9+/]{43}=$" },
-        "deviceToken": { "type": "string", "pattern": "^[a-f0-9]{64,256}$" },
+        "deviceToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^[\\u0021-\\u007e]+$"
+        },
+        "pushProvider": { "enum": ["apns", "fcm"] },
         "environment": { "enum": ["development", "production"] },
         "preferences": { "$ref": "#/definitions/Preferences" }
       },
       "required": ["version", "deviceId", "target", "publicKey", "preferences"],
-      "dependencies": { "deviceToken": ["environment"], "environment": ["deviceToken"] }
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["deviceToken"] },
+              { "required": ["environment"] },
+              { "required": ["pushProvider"] }
+            ]
+          }
+        },
+        {
+          "required": ["deviceToken", "pushProvider"],
+          "properties": { "pushProvider": { "const": "fcm" } },
+          "not": { "required": ["environment"] }
+        },
+        {
+          "required": ["deviceToken", "environment"],
+          "properties": {
+            "pushProvider": { "const": "apns" },
+            "deviceToken": { "pattern": "^[a-f0-9]{64,256}$" }
+          }
+        }
+      ]
     },
     "Event": {
       "type": "object",

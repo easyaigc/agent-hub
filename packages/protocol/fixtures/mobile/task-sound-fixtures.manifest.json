@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "content": "Synthetic chime only; no recorded user audio.",
+  "synthesis": {
+    "sampleRate": 22050,
+    "frequencies": [660, 880],
+    "partSeconds": 0.24,
+    "frames": 10584,
+    "source": "scripts/mobile/generate-notification-sounds.mjs (same deterministic PCM synthesis as native built-in notification sounds)"
+  },
+  "verification": "All mono lossless fixtures independently decoded and verified against the deterministic synthesis at their source precision; conversion containers hold no identifiable personal metadata.",
+  "files": [
+    {
+      "file": "task-sound-synthetic-24.aiff",
+      "bytes": 35848,
+      "sha256": "948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445"
+    },
+    {
+      "file": "task-sound-synthetic-24.caf",
+      "bytes": 35848,
+      "sha256": "73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5"
+    },
+    {
+      "file": "task-sound-synthetic-32-big.caf",
+      "bytes": 46432,
+      "sha256": "2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f"
+    },
+    {
+      "file": "task-sound-synthetic-32.wav",
+      "bytes": 46432,
+      "sha256": "6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417"
+    },
+    {
+      "file": "task-sound-synthetic-big.caf",
+      "bytes": 25264,
+      "sha256": "6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991"
+    },
+    {
+      "file": "task-sound-synthetic-float32.caf",
+      "bytes": 46432,
+      "sha256": "495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e"
+    },
+    {
+      "file": "task-sound-synthetic-float32.wav",
+      "bytes": 46432,
+      "sha256": "57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676"
+    },
+    {
+      "file": "task-sound-synthetic-float64-big.caf",
+      "bytes": 88768,
+      "sha256": "fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d"
+    },
+    {
+      "file": "task-sound-synthetic.aiff",
+      "bytes": 25264,
+      "sha256": "6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600"
+    },
+    {
+      "file": "task-sound-synthetic.caf",
+      "bytes": 25264,
+      "sha256": "4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd"
+    }
+  ],
+  "excludedPendingOriginalEncodingProof": [
+    "task-sound-synthetic-stereo.wav",
+    "task-sound-m4a-reference.wav",
+    "task-sound-mp3-reference.wav"
+  ]
+}

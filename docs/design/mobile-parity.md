@@ -1658,3 +1658,11 @@ Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness so
 ### 2026-11-04 F73 额度消费者整合
 
 共享百分比解析修复同时作用于 iOS 与 Android，现有 UI02/UI03/UI12 布局、token 和文案保持；非法数据按既有未知/错误状态呈现，不投影成余额或正常比例。超过 100% 的有效数值保留，由既有圆环展示规则处理。此次无新增 UI 验收结论，记录见 [消费者整合](../acceptance/easywork-mobile-integration-20261104.md)。
+
+### 2026-11-04 EasyWork 授权恢复与原回执
+
+连接及回执沿用原布局、token和文案体系；iOS将暂态网关错误与设备撤销区分，同一连接身份的自动撤销提示在关闭后不反复弹出，明确重新验证连接后恢复提示资格。追加拒绝与未知队列状态忠实显示原操作结果，不变为新发送。Android界面与策略本组不改；完整双端交互状态仍按原矩阵验收。
+
+### 2026-11-04 notification/management contract integration
+
+No page, token or native interaction is changed by this protocol/Relay group. APNs and FCM retain their platform-specific registration while using the existing encrypted content and operation results. Synthetic audio is test data; user sounds stay on device. Backend auxiliary tests do not establish native arrival or UI parity.

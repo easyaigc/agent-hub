@@ -862,6 +862,171 @@
           }
         }
       }
+    },
+    "chatManagementIntent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hostId", "target", "threadId", "clientOperationId", "action"],
+          "properties": {
+            "hostId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "threadId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "clientOperationId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "action": {
+              "enum": ["pin", "unpin", "archive", "unarchive", "delete"]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hostId", "target", "threadId", "clientOperationId", "action", "title"],
+          "properties": {
+            "hostId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "threadId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "clientOperationId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "action": {
+              "const": "rename"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "[^\\u0009-\\u000d\\u0020\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]",
+              "description": "The complete domain parser also limits UTF-16 length to500."
+            }
+          }
+        }
+      ]
+    },
+    "chatManagementOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hostId",
+            "target",
+            "threadId",
+            "clientOperationId",
+            "action",
+            "phase",
+            "error"
+          ],
+          "properties": {
+            "hostId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "threadId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "clientOperationId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "action": {
+              "enum": ["pin", "unpin", "archive", "unarchive", "delete"]
+            },
+            "phase": {
+              "enum": ["submitted", "confirmed", "rejected", "outcome-unknown"]
+            },
+            "error": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "enum": [null]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hostId",
+            "target",
+            "threadId",
+            "clientOperationId",
+            "action",
+            "title",
+            "phase",
+            "error"
+          ],
+          "properties": {
+            "hostId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "threadId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "clientOperationId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+            },
+            "action": {
+              "const": "rename"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "[^\\u0009-\\u000d\\u0020\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]",
+              "description": "The complete domain parser also limits UTF-16 length to500."
+            },
+            "phase": {
+              "enum": ["submitted", "confirmed", "rejected", "outcome-unknown"]
+            },
+            "error": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "enum": [null]
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   },
   "$ref": "#/definitions/connection"

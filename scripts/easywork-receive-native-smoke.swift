@@ -6,7 +6,7 @@ enum HostServiceError: Error { case wrongHost, invalidResponse, unavailable, inv
 // grants and account refresh are exercised by the separately fingerprinted DEV
 // App tests; unexpected entry into a device-grant branch fails closed here.
 struct EasyWorkBinding { let bindingId: String }
-struct EasyWorkDeviceAuthorizationFailure: Error { let status: Int; let code: String }
+enum L10n { static func tr(_ value: String) -> String { value } }
 actor EasyWorkDeviceAuthorization {
   static let shared = EasyWorkDeviceAuthorization()
   func headers(ref: String, binding: EasyWorkBinding, method: String, url: URL, body: Data?) async throws -> [String: String] {

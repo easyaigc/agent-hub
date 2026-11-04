@@ -208,11 +208,22 @@ const deviceHTTPDelegate = declaration(
   deviceAuthorization,
   'final class EasyWorkDeviceHTTPDelegate:',
 );
+const failures = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
+const httpDependencies = [
+  declaration(transport, 'enum EasyWorkHTTPConfiguration'),
+  declaration(failures, 'protocol RecoverableConnectionReadFailure:'),
+  declaration(failures, 'protocol ConnectionAuthorizationFailure:'),
+  declaration(deviceAuthorization, 'struct EasyWorkServiceAvailabilityFailure:'),
+  declaration(deviceAuthorization, 'enum EasyWorkHTTPFailure'),
+  declaration(deviceAuthorization, 'struct EasyWorkDeviceAuthorizationFailure:'),
+].join('\n');
 const build = async (source, suffix) => {
   const file = join(directory, 'Relay-' + suffix + '.swift');
   await writeFile(
     file,
-    'import Foundation\n' +
+    'import Foundation\nimport Network\n' +
+      httpDependencies +
+      '\n' +
       deviceHTTPDelegate +
       '\n' +
       declaration(source, 'protocol AgentTransport:') +

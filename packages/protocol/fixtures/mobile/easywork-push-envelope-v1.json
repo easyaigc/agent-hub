@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "fixtureOnly": true,
+  "productionCredential": false,
+  "producer": "actual NotificationPublisher sealNotification function",
+  "producerSourceSha256": "10aa6e9a9b5c67c19f48036033e4e165001ea720e839b29b0c3e8f699b8bb5ce",
+  "now": "2026-10-26T00:00:00.000Z",
+  "target": {
+    "agentId": "easywork",
+    "hostId": "fixture-host",
+    "workspaceId": "fixture-workspace",
+    "runtimeId": "local",
+    "account": {
+      "authority": "https://fixture.test",
+      "subject": "fixture-owner"
+    }
+  },
+  "recipientPrivateKey": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "senderPublicKey": "NYBy1jZYgNGu6jKa35EhODhR7SGijjt16WXQ0s0WYlQ=",
+  "envelope": {
+    "version": 1,
+    "bindingId": "fixture-binding",
+    "eventId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "nonce": "BsmtQ6erKAFh0GfO",
+    "ciphertext": "R9tb17r+E3pZpOe70NKUd3VN3FutOg71nh6Q4HarBDcfGyu7iULAUNqyIenMIqxggLyuWHrnGae/D+3gIXdXOgmKXVv0Cmw4LCuw3S651LncmuqhYtsKv/vqMA00J5O+ILVpcwWh4d94ZfTrXwJRVIcjcelx9wnWmHrSe1qht6DwiRRzBcDfMOUU51fc+lqqUM1SqdcOOE0FakMXQmky1K86ThvOSFgyDjFTMqmYVyU9gQAFaWe0SKQHpSKpXFrwmlHhSxUYSP67hDr+jzRWKGVtyZcAKrBmPxpDpV5M/y/hXEuk1obQfYL0EZKnruzo8PF3W2rjs+T0USHPJSgruo/Vzxc8EzU3J7fUDeVV+qVKmoSlDiAclr/R/1UU+jIxaTVQG7t9EOOGeW46JDLQ9H0qRKxDgLKg8v8OM2SO6iwrGN0eyNekLkofr4TQnmz/g37qn6B1xjQ6eWK8SxsdGdICWmeorXvikKku2vqJk3CO9Tng1Y16QFNzUh7NvzrQ7CUSxR5NNboUk7heXJ1RvO3CDMtuzHh+Xi22iu2c91u/R9Xx+daJMMq/cr6UgeetbMkPv0Ye2Y366F2gicGhz6O7DgvFbKWsTWJ1ngyeoo7QTABrtu+Ex6CUaG2xP2+irQ1bKy98Z9hvbBcVHhOKuIHrSOsjb9hgondP35r/xV7vDibbECDgfHwWpAxjIq0CJeGJ8kuDnbqWR2KHyd+qfhU+r0Q8Wdeal4sHzfHGVIWNZmWFeSC1+p34CvXU4cDTNIx3cb6TKv4Id1w1skQCxx+Pna8AAJHBuCtpYuR2fEs/LcelislzCc0xT8+Zp+OtqPw0vTFSD/02Uaemfct9NkWpMMkbp3X/RkNk+6F7VT8dT7XTSzeI5M3QN3NRb5KDu8xqjOONpw7Udh3Iuivyo+N4xBPbL7SaOwShbnC1ew/Huij69JmxY9Q3Nws5L+yX2zt3sLec5WruoGutWafvE4Zh/SazW/6XMyL1ulz7d9KJHBDZRYgI5U7eGUFExEDMR1bHJQ38eZD17f+vUT7YBA==",
+    "tag": "h45Sj8QRQN+d/dqcXO5qTw==",
+    "expiresAt": "2026-10-26T00:10:00.000Z",
+    "sound": "default",
+    "timeSensitive": false
+  },
+  "event": {
+    "version": 1,
+    "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "target": {
+      "agentId": "easywork",
+      "hostId": "fixture-host",
+      "workspaceId": "fixture-workspace",
+      "runtimeId": "local",
+      "account": {
+        "authority": "https://fixture.test",
+        "subject": "fixture-owner"
+      }
+    },
+    "kind": "completed",
+    "occurredAt": "2026-10-26T00:00:00.000Z",
+    "threadId": "fixture-thread",
+    "runId": "fixture-run",
+    "threadTitle": "Fixture private title",
+    "taskSummary": "Fixture completed reply",
+    "readTarget": {
+      "agentId": "easywork",
+      "hostId": "fixture-host",
+      "workspaceId": "fixture-workspace",
+      "runtimeId": "local",
+      "account": {
+        "authority": "https://fixture.test",
+        "subject": "fixture-owner"
+      }
+    },
+    "readPosition": {
+      "revision": 2,
+      "messageId": "fixture-reply",
+      "contentVersion": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  }
+}

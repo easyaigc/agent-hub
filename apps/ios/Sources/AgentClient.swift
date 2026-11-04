@@ -18,6 +18,9 @@ struct AgentConnection: Codable, Equatable, Sendable {
   var candidates: [AgentConnectionCandidate]
   var preference: AgentConnectionPreference
   var credentialRef: String
+  var authorizationNoticeIdentity: ConnectionAuthorizationIdentity<AgentRuntimeTarget> {
+    .init(target: target, credentialRef: credentialRef)
+  }
 }
 
 enum AgentJSONValue: Codable, Equatable, Sendable {

@@ -251,7 +251,13 @@ if (process.platform === 'darwin') {
   const source = await readFile('apps/ios/Sources/AgentClient.swift', 'utf8');
   const shared = await readFile('apps/ios/Sources/NotificationModels.swift', 'utf8');
   const localization = await readFile('apps/ios/Sources/Localization.swift', 'utf8');
+  const failures = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
+  const identityStart = failures.indexOf('struct ConnectionAuthorizationIdentity<');
+  const identityEnd = failures.indexOf('\n}', identityStart) + 2;
+  assert(identityStart >= 0 && identityEnd > identityStart);
   const declarations =
+    failures.slice(identityStart, identityEnd) +
+    '\n' +
     localization +
     '\n' +
     shared.slice(0, shared.indexOf('enum TaskNoticeKind:')) +

@@ -53,13 +53,29 @@ const registration = object(
     deviceId,
     target: ref('Target'),
     publicKey: { type: 'string', pattern: '^[A-Za-z0-9+/]{43}=$' },
-    deviceToken: { type: 'string', pattern: '^[a-f0-9]{64,256}$' },
+    deviceToken: { type: 'string', minLength: 1, maxLength: 4096, pattern: '^[\\u0021-\\u007e]+$' },
+    pushProvider: { enum: ['apns', 'fcm'] },
     environment: { enum: ['development', 'production'] },
     preferences: ref('Preferences'),
   },
   ['version', 'deviceId', 'target', 'publicKey', 'preferences'],
 );
-registration.dependencies = { deviceToken: ['environment'], environment: ['deviceToken'] };
+registration.oneOf = [
+  {
+    not: {
+      anyOf: ['deviceToken', 'environment', 'pushProvider'].map((name) => ({ required: [name] })),
+    },
+  },
+  {
+    required: ['deviceToken', 'pushProvider'],
+    properties: { pushProvider: { const: 'fcm' } },
+    not: { required: ['environment'] },
+  },
+  {
+    required: ['deviceToken', 'environment'],
+    properties: { pushProvider: { const: 'apns' }, deviceToken: { pattern: '^[a-f0-9]{64,256}$' } },
+  },
+];
 const command = (method, params) =>
   object({ version: { const: 1 }, method: { const: method }, target: ref('Target'), params });
 const schema = {

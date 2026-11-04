@@ -83,6 +83,18 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     var rejected = false
     do { _ = try decode(["queuePresent": "invalid-type"]) } catch is DecodingError { rejected = true }
     try expect(rejected, "malformed queue metadata still rejected")
+    for status in ["stale", "inactive"] {
+      let sent = try decode(["accepted": false, "status": status], "submitted", turn: "old-run")
+      let queried = try decode(["accepted": false, "status": status], "submitted")
+      try expect(sent.state == "failed" && sent.turnId == nil && sent.error != nil, "refused guidance is not submitted or an executed turn")
+      try expect(try encoder.encode(sent) == encoder.encode(queried), "refused guidance send/query agree")
+    }
+    try expect(try decode(["accepted": true, "status": "accepted"], "uncertain").state == "submitted", "accepted guidance has authoritative disposition")
+    for malformed: [String: Any] in [["accepted": false, "status": "accepted"], ["accepted": true, "status": "inactive"], ["accepted": 1, "status": "accepted"], ["accepted": false]] {
+      var refused = false
+      do { _ = try decode(malformed, "submitted") } catch is DecodingError { refused = true }
+      try expect(refused, "malformed or contradictory guidance cannot become submitted")
+    }
     let vectorRoot = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))) as! [String: Any]
     precondition(vectorRoot["version"] as? Int == 1)
     let routing = vectorRoot["routing"] as! [String: String]
@@ -124,6 +136,6 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       { env, timeout: 30000 },
     );
     const result = JSON.parse((await run(binary, [vectorFile], { env, timeout: 5000 })).stdout);
-    assert.deepEqual(result, { passed: true, checks: 26 + vectorCases.cases.length });
+    assert.deepEqual(result, { passed: true, checks: 35 + vectorCases.cases.length });
   },
 );

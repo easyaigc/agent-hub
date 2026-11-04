@@ -91,6 +91,7 @@ struct EasyWorkHostDescriptor: Decodable, Sendable {
   var publicKey: String
   var target: EasyWorkTarget
   var connectionMode: String?
+  var deviceAuthorizationRefresh: String?
   var endpoints: [String]?
   var endpointHints: [EasyWorkEndpointHint]?
   var computer: Computer?

@@ -70,6 +70,7 @@ final class SessionStore: ObservableObject {
   @Published private(set) var aiSharingRequest: AISharingRequest?
 
   private var eventTask: Task<Void, Never>?
+  private var connectionAuthorizationNotices = ConnectionAuthorizationNotices<ConnectionAuthorizationIdentity<AgentRuntimeTarget>?>()
   private var lastConnectionSuccess: [String: TimeInterval] = [:]
   private var workspaceRefreshGeneration: UUID?
   private var workspaceRefreshOwner: UUID?
@@ -773,7 +774,8 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   private func recordConnectionFailure(_ failure: Error, host: Client, displayError: Bool = true, startedAt: TimeInterval? = nil) {
     let transient: Bool
-    if let url = failure as? URLError {
+    if failure is RecoverableConnectionReadFailure { transient = true }
+    else if let url = failure as? URLError {
       transient = [.networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotFindHost,
         .cannotConnectToHost, .dnsLookupFailed, .resourceUnavailable, .backgroundSessionWasDisconnected].contains(url.code)
     } else if case HostServiceError.unavailable = failure { transient = true }
@@ -796,7 +798,12 @@ private var userRequestedWorkspaceGeneration: UUID?
     // Background reads must not reopen a blocking alert every scan/retry.
     // Explicit connection attempts keep their own inline reauthorization action.
     if case HostServiceError.rejected(401, _) = failure, host.agentConnection == nil { return }
-    if !transient && displayError && client?.id == host.id { presentError(failure) }
+    if !transient && displayError && client?.id == host.id {
+      let show = connectionAuthorizationNotices.shouldPresent(target: host.id,
+        identity: host.agentConnection?.authorizationNoticeIdentity,
+        failure: (failure as? any ConnectionAuthorizationFailure)?.authorizationNoticeKey)
+      if show { presentError(failure) }
+    }
   }
   private func mobileUnreadSnapshots() async throws -> (scopes: [AgentRuntimeTarget], snapshots: [MobileUnreadSnapshot]) {
     // Keep one frozen input across batches; newer work cancels this projection.
@@ -2413,6 +2420,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   private func selectVerifiedClient(_ id: String) {
+    connectionAuthorizationNotices.reset(id)
     // The connection flow has just authenticated and validated this workspace.
     // Start its current chat from that snapshot, without another serial catalog
     // request. Ordinary foreground/sidebar/unread refresh still updates it.

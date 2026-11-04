@@ -80,19 +80,24 @@ export interface NotificationEvent {
   readTarget?: RuntimeTarget;
   readPosition?: ReadPosition;
 }
+export type NotificationPushProvider = 'apns' | 'fcm';
 export interface NotificationRegistration {
   version: 1;
   deviceId: string;
   target: RuntimeTarget;
   publicKey: string;
   deviceToken?: string;
+  /** Omission retains the existing APNs token/environment contract. */
+  pushProvider?: NotificationPushProvider;
   environment?: 'development' | 'production';
   preferences: NotificationPreferences;
 }
 export interface NotificationStatus {
   version: 1;
   target: RuntimeTarget;
-  delivery: 'foreground-only' | 'apns';
+  delivery: 'foreground-only' | 'apns' | 'fcm';
+  pushProvider?: NotificationPushProvider;
+  deviceTokenSha256?: string;
   state: 'disabled' | 'ready' | 'pending' | 'unavailable';
   reason?: string;
   revision?: string;
@@ -283,6 +288,21 @@ export function parseNotificationPreferences(value: unknown): NotificationPrefer
     throw new Error('无效通知声音');
   return row as unknown as NotificationPreferences;
 }
+/** FCM tokens are opaque printable strings, not APNs hexadecimal tokens. */
+export function notificationPushToken(
+  provider: NotificationPushProvider,
+  token: unknown,
+  environment?: unknown,
+): boolean {
+  return (
+    typeof token === 'string' &&
+    (provider === 'fcm'
+      ? environment === undefined && /^[\x21-\x7e]{1,4096}$/.test(token)
+      : provider === 'apns' &&
+        /^[a-f0-9]{64,256}$/.test(token) &&
+        (environment === 'development' || environment === 'production'))
+  );
+}
 export function parseNotificationRegistration(value: unknown): NotificationRegistration {
   const row = notificationObject(value, [
     'version',
@@ -290,6 +310,7 @@ export function parseNotificationRegistration(value: unknown): NotificationRegis
     'target',
     'publicKey',
     'deviceToken',
+    'pushProvider',
     'environment',
     'preferences',
   ]);
@@ -300,11 +321,14 @@ export function parseNotificationRegistration(value: unknown): NotificationRegis
     ['__proto__', 'constructor', 'prototype'].includes(row.deviceId) ||
     typeof row.publicKey !== 'string' ||
     !/^[A-Za-z0-9+/]{43}=$/.test(row.publicKey) ||
-    (row.deviceToken !== undefined &&
-      (typeof row.deviceToken !== 'string' || !/^[a-f0-9]{64,256}$/.test(row.deviceToken))) ||
-    (row.environment !== undefined &&
-      !['development', 'production'].includes(String(row.environment))) ||
-    !!row.deviceToken !== !!row.environment
+    (row.pushProvider !== undefined && row.pushProvider !== 'apns' && row.pushProvider !== 'fcm') ||
+    (row.deviceToken !== undefined
+      ? !notificationPushToken(
+          (row.pushProvider ?? 'apns') as NotificationPushProvider,
+          row.deviceToken,
+          row.environment,
+        )
+      : row.environment !== undefined || row.pushProvider !== undefined)
   )
     throw new Error('无效通知注册');
   parseNotificationTarget(row.target);

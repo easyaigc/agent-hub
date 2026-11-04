@@ -1,6 +1,43 @@
 import CryptoKit
 import Foundation
+import Network
 import Security
+
+/// The independent physical examiner may dial its owned Relay through a narrow
+/// CONNECT tunnel when its development mesh DNS changes. HTTPS still validates
+/// the original authority, and EWDAP signs that unchanged URL. Release builds
+/// and ordinary app launches always use the platform's normal configuration.
+enum EasyWorkHTTPConfiguration {
+  static func ephemeral(for url: URL) -> URLSessionConfiguration {
+    let configuration = URLSessionConfiguration.ephemeral
+    #if DEBUG
+    let process = ProcessInfo.processInfo, env = process.environment
+    if Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      process.arguments.contains("-ui-testing"),
+      env["EASYWORK_HOSTED_NATIVE_PRODUCT_UI"] == "1",
+      let caseId = env["EASYWORK_HOSTED_NATIVE_CASE"], UUID(uuidString: caseId) != nil,
+      let authority = env["EASYWORK_OWNED_RELAY_CONNECT_ORIGIN"].flatMap(URL.init(string:)),
+      authority.scheme == "https", authority.user == nil, authority.password == nil,
+      authority.query == nil, authority.fragment == nil,
+      authority.path.isEmpty || authority.path == "/",
+      let host = authority.host, url.scheme == "https", url.host == host,
+      url.port == authority.port,
+      let proxyHost = env["EASYWORK_OWNED_RELAY_CONNECT_HOST"],
+      let proxyPort = env["EASYWORK_OWNED_RELAY_CONNECT_PORT"].flatMap(UInt16.init), proxyPort >= 1024 {
+      let octets = proxyHost.split(separator: ".").compactMap { UInt8($0) }
+      let privateAddress = octets.count == 4 && (octets[0] == 10 ||
+        octets[0] == 192 && octets[1] == 168 ||
+        octets[0] == 172 && (16...31).contains(octets[1]))
+      if privateAddress, let port = NWEndpoint.Port(rawValue: proxyPort) {
+        var proxy = ProxyConfiguration(httpCONNECTProxy: .hostPort(host: .init(proxyHost), port: port))
+        proxy.matchDomains = [host]; proxy.allowFailover = false
+        configuration.proxyConfigurations = [proxy]
+      }
+    }
+    #endif
+    return configuration
+  }
+}
 
 struct EasyWorkTarget: Codable, Equatable, Sendable {
   var account: AgentAccount
@@ -127,6 +164,9 @@ final class PairedHostTrust: NSObject, URLSessionTaskDelegate, @unchecked Sendab
   let fingerprint: String
   let host: String
   init(endpoint: String, fingerprint: String) { self.host = (URL(string: endpoint)?.host ?? "").lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".[]")); self.fingerprint = fingerprint.lowercased().replacingOccurrences(of: ":", with: "") }
+  func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    urlSession(session, didReceive: challenge, completionHandler: completionHandler)
+  }
   func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust, challenge.protectionSpace.host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".[]")) == host, let trust = challenge.protectionSpace.serverTrust, let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate], let cert = chain.first, HostService.hash(SecCertificateCopyData(cert) as Data) == fingerprint else { completionHandler(.cancelAuthenticationChallenge, nil); return }
     completionHandler(.useCredential, URLCredential(trust: trust))
@@ -184,7 +224,7 @@ actor RelayAgentTransport: AgentTransport {
   let bindingId: String?
   let grantRef: String?
   let binding: EasyWorkBinding?
-  private let http = URLSession(configuration: .ephemeral, delegate: EasyWorkDeviceHTTPDelegate(), delegateQueue: nil)
+  private let http: URLSession
   private var pending: [[String: Any]] = []
   private var acknowledgements: [String: [String: Any]] = [:]
   private var acknowledgementTask: Task<Void, Never>?
@@ -192,7 +232,8 @@ actor RelayAgentTransport: AgentTransport {
   private var nextMailboxPollAt = ContinuousClock.now
   private var closed = false
   init(candidate: AgentConnectionCandidate, bindingId: String? = nil, token: String, grantRef: String? = nil, binding: EasyWorkBinding? = nil) throws {
-    _ = try HostService.baseURL(candidate.endpoint); endpoint = candidate.endpoint; self.token = token; self.bindingId = bindingId; self.grantRef = grantRef; self.binding = binding
+    let url = try HostService.baseURL(candidate.endpoint); endpoint = candidate.endpoint; self.token = token; self.bindingId = bindingId; self.grantRef = grantRef; self.binding = binding
+    http = URLSession(configuration: EasyWorkHTTPConfiguration.ephemeral(for: url), delegate: EasyWorkDeviceHTTPDelegate(), delegateQueue: nil)
     guard grantRef == nil || binding?.bindingId == bindingId else { throw HostServiceError.invalidResponse }
   }
   nonisolated func api(_ path: String, method: String = "GET", body: Any? = nil) async throws -> Data { try await apiData(path, method: method, body: body.map(easyWorkJSON)) }
@@ -214,12 +255,23 @@ actor RelayAgentTransport: AgentTransport {
     // invalidated URLSession.
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
-    let (data, response) = try await http.data(for: request)
+    let data: Data, response: URLResponse
+    do {
+      (data, response) = try await http.data(for: request)
+    } catch {
+      // Reconnect closes this exact route while other callers can still await
+      // its URLSession. That lifecycle cancellation is not a trust rejection
+      // from a route which remains open.
+      if closed { throw CancellationError() }
+      throw error
+    }
+    try Task.checkCancellation()
+    guard !closed else { throw CancellationError() }
     guard let http = response as? HTTPURLResponse else { throw HostServiceError.invalidResponse }
     if !(200..<300).contains(http.statusCode) {
       if grantRef != nil {
         let code = (try? easyWorkObject(Data(data.prefix(4096)))["error"] as? [String: Any])?["code"] as? String
-        throw EasyWorkDeviceAuthorizationFailure(status: http.statusCode, code: code ?? "request_rejected")
+        throw EasyWorkHTTPFailure.response(status: http.statusCode, code: code)
       }
       throw HostServiceError.unavailable
     }

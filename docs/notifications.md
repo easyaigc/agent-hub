@@ -129,3 +129,9 @@ xcodebuild -project apps/ios/CodexManage.xcodeproj -scheme CodexManage \
 `hosts` 的发布者项可增加 `topic`、非空 `allowedTargets` 和非空 `environments`。allowedTargets 使用完整领域目标；EasyWork 包含 account 的 authority/subject，Codex 沿用机器身份规则。新独立发布者配置精确白名单及 development 环境，不能只使用本机 Codex 的 publisher。注册时服务决定 topic，客户端不能提供任意 topic；后续操作和待投递项重新检查 publisher、目标、topic 与环境。省略限制字段的既有发布者与旧默认绑定保持兼容。
 
 上述配置扩展属于服务侧，手机不持有 APNs 私钥。上线前须对正式 topic/密钥、既有 publisher、状态和服务配置保存私有指纹及回滚资料，追加独立项后正常重启原服务；本地签名、服务健康、Apple 接受和手机到达分别记载，不把配置成功视为端到端通过。
+
+## FCM registration for EasyWork mobile consumers
+
+APNs registrations require their environment and hexadecimal device token. FCM uses an opaque token and no APNs environment. Polling-only registrations remain a separate branch without provider fields. Relay FCM sending requires explicit project/service-account configuration and uses fixed Google authorization/send endpoints; account files and tokens stay in the deployment environment. Payloads retain the encrypted notification envelope. A Host restricted to APNs environments cannot bypass that restriction through FCM. Missing provider configuration is rejected explicitly.
+
+Source integration and synthetic checks do not deploy production push or prove device arrival. See the [consumer integration record](acceptance/easywork-mobile-integration-20261104.md).

@@ -13,6 +13,21 @@ enum EasyWorkReceiptNormalization {
     receipt["state"] = result["state"] as? String ?? defaultState
     receipt["turnId"] = result["runId"] as? String ?? result["turnId"] as? String ?? fallbackTurnId
     if result["error"] == nil { receipt["error"] = fallbackError }
+    // turn/steer returns an acceptance decision, not a delivery state. A
+    // completed command can still have refused guidance for an inactive run.
+    if result["accepted"] != nil || ["accepted", "stale", "inactive"].contains(result["status"] as? String ?? "") {
+      guard let accepted = result["accepted"] as? NSNumber, String(cString: accepted.objCType) == "c",
+        let status = result["status"] as? String,
+        accepted.boolValue ? status == "accepted" : ["stale", "inactive"].contains(status) else {
+        throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid EasyWork guidance acceptance"))
+      }
+      receipt["state"] = accepted.boolValue ? "submitted" : "failed"
+      if !accepted.boolValue {
+        // The expected old run is a routing precondition, not an executed turn.
+        receipt.removeValue(forKey: "turnId")
+        receipt["error"] = L10n.tr("原任务已变化或结束，追加未提交。")
+      }
+    }
     return try JSONDecoder().decode(DeliveryReceipt.self, from: easyWorkJSON(receipt))
   }
 }
@@ -349,12 +364,32 @@ struct EasyWorkAgentClient: AgentClient {
     guard !bytes.elementsEqual(Data("null".utf8)) else { throw HostServiceError.message(L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。")) }
     let value = try object(bytes)
     let response = value["response"] as? [String: Any]
-    var result = response?["result"] as? [String: Any]
+    let result = response?["result"] as? [String: Any]
+    func originalQueueReceipt(_ thread: String) async throws -> DeliveryReceipt? {
+      let queued = try await session(client).request("queue/status", ["threadId": thread, "messageId": id])
+      if queued.elementsEqual(Data("null".utf8)) { return nil }
+      let value = try object(queued)
+      guard value["clientMessageId"] as? String == id,
+        value["threadId"] as? String == thread else { throw HostServiceError.wrongHost }
+      return try EasyWorkReceiptNormalization.decode(value, clientMessageId: id,
+        hostId: client.id, threadId: thread, defaultState: "uncertain")
+    }
     if result?["state"] as? String == "queued" || result?["queueSource"] as? String != nil {
       guard let thread = result?["threadId"] as? String else { throw HostServiceError.invalidResponse }
-      result = try object(await session(client).request("queue/status", ["threadId": thread, "messageId": id]))
-      return try EasyWorkReceiptNormalization.decode(result ?? [:], clientMessageId: id,
-        hostId: client.id, threadId: thread, defaultState: "uncertain")
+      guard let receipt = try await originalQueueReceipt(thread) else { throw HostServiceError.invalidResponse }
+      return receipt
+    }
+    // The queue may have durably accepted this input before its command acknowledgement was saved.
+    // Query the original admission; its absence never grants permission to resend the input.
+    if result == nil, value["method"] as? String == "turn/start",
+      ["submitting", "uncertain"].contains(value["state"] as? String ?? ""),
+      let thread = value["threadId"] as? String, !thread.isEmpty {
+      do {
+        if let receipt = try await originalQueueReceipt(thread) { return receipt }
+      } catch let error as EasyWorkRemoteRejection
+        where ["method_unavailable", "queue_unavailable"].contains(error.code ?? "") {
+        // Older hosts can still report the original unknown command without a queue query port.
+      }
     }
     return try EasyWorkReceiptNormalization.decode(result ?? [:], clientMessageId: id,
       hostId: client.id, threadId: result?["threadId"] as? String ?? value["threadId"] as? String ?? "",

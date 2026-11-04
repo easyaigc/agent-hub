@@ -1,0 +1,11 @@
+{
+  "envelope": {
+    "ciphertext": "YLqypPwxpO5P9KSOdn15vRQ+jguhsJfpFe3K6NwEWWnYnEhOYO09GN9fbz1gW8T\/b13ufOfBX+9c6iJnoe8KyKiD",
+    "salt": "\/BTunYGeVsquXpnLNsAXqg==",
+    "version": 1
+  },
+  "password": "EasyWork-迁移-🔐-2026",
+  "plaintextBase64": "RWFzeVdvcmsgaW1tdXRhYmxlIGludGVudArkuK3mlocg8J+YgAo=",
+  "producer": "production Swift EncryptedMigrationCrypto",
+  "version": 1
+}

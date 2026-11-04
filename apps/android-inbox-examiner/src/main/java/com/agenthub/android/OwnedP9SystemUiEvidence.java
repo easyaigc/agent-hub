@@ -221,6 +221,87 @@ final class OwnedP9SystemUiEvidence {
                 "original decorative AX rectangle stays inside actual screenshot source");
         }
     }
+    /** Failure-only getter observations. This object is never a clip or a successful AX node.
+     * Attach each field before the next getter so unavailable facts remain absent, not defaults.
+     */
+    private static void rejectedNodeObservation(AccessibilityNodeInfo node, Rect raw, int[] characters, JSONObject observed,
+            JSONObject facts, JSONObject semanticProperties) throws Exception {
+        observed.put("package", actual(node.getPackageName(), characters)).put("resourceId", actual(node.getViewIdResourceName(), characters))
+            .put("class", actual(node.getClassName(), characters)).put("text", actual(node.getText(), characters))
+            .put("contentDescription", actual(node.getContentDescription(), characters)).put("boundsInScreen", box(raw))
+            .put("windowId", node.getWindowId()).put("visible", node.isVisibleToUser()).put("clickable", node.isClickable())
+            .put("enabled", node.isEnabled()).put("childCount", node.getChildCount());
+        JSONArray actions = new JSONArray(); observed.put("actions", actions);
+        List<AccessibilityNodeInfo.AccessibilityAction> actualActions = node.getActionList();
+        check(actualActions != null && actualActions.size() <= 32, "failure-only owned row action cap");
+        for (AccessibilityNodeInfo.AccessibilityAction action : actualActions) {
+            JSONObject value = new JSONObject(); actions.put(value);
+            value.put("id", action.getId()).put("label", actual(action.getLabel(), characters));
+        }
+        facts.put("longClickable", node.isLongClickable()).put("contextClickable", node.isContextClickable()).put("focusable", node.isFocusable())
+            .put("editable", node.isEditable()).put("scrollable", node.isScrollable()).put("checkable", node.isCheckable());
+        readDecorativeSemantics(node, characters, semanticProperties);
+    }
+    /** Observe at most the rejected node and its immediately following direct row child.
+     * No new selection, class/ID qualification, child traversal, ancestor or notification-sibling serialization or action.
+     * The second node is a sibling of the rejected node INSIDE the selected owned row, not a
+     * sibling notification row. Both references already belong to readRow's bounded queue.
+     * Regardless of diagnostics, the original rejection is thrown and no screenshot is reached.
+     */
+    private static void rejectedOutsideDiagnostics(List<AccessibilityNodeInfo> queue, List<Integer> parents, List<Integer> depths,
+            List<Integer> ordinals, int first, Rect rejectedRaw, Rect row, Rect activeBounds, int window, int[] characters,
+            JSONObject hierarchy, AssertionError originalFailure) throws Exception {
+        if (Build.VERSION.SDK_INT != 36) return;
+        JSONArray samples = new JSONArray();
+        JSONObject diagnostic = new JSONObject().put("format", "android-owned-row-rejected-node-diagnostic-v1")
+            .put("purpose", "failure-only own getter observations; no clip eligibility or success evidence")
+            .put("maxNodes", 2).put("descendantsTraversed", false).put("eligible", false)
+            .put("snapshotClaim", "non-atomic getter observations; no screenshot or layout-stability claim")
+            .put("complete", false).put("firstRejectedBoundsInScreen", box(rejectedRaw)).put("samples", samples);
+        hierarchy.put("rejectedOutsideDiagnostics", diagnostic);
+        int last = first;
+        if (parents.get(first) == 0 && depths.get(first) == 1 && first + 1 < queue.size()
+                && parents.get(first + 1) == 0 && depths.get(first + 1) == 1
+                && ordinals.get(first + 1) == ordinals.get(first) + 1) last = first + 1;
+        diagnostic.put("nextDirectChild", last > first ? "queued immediate next ordinal only" : "not available; no search or inference");
+        boolean complete = true;
+        for (int index = first; index <= last; index++) {
+            JSONObject observed = new JSONObject(), facts = new JSONObject(), semanticProperties = new JSONObject();
+            JSONObject sample = new JSONObject().put("role", index == first ? "first-rejected-descendant" : "next-direct-row-child")
+                .put("index", index).put("parent", parents.get(index)).put("depth", depths.get(index)).put("childOrdinal", ordinals.get(index))
+                .put("observed", observed).put("actualProperties", facts).put("semanticProperties", semanticProperties)
+                .put("complete", false).put("beginElapsed", SystemClock.elapsedRealtime());
+            samples.put(sample);
+            try {
+                AccessibilityNodeInfo node = queue.get(index);
+                // The first node was refreshed by the failed ordinary read. Refresh only the
+                // not-yet-visited second reference; never reselect or obtain a different node.
+                check((index == first || node.refresh()) && node.getWindowId() == window && SYSTEM.contentEquals(node.getPackageName())
+                    && !ROW.equals(node.getViewIdResourceName()), "failure-only same owned row/window node");
+                // Compare the current official parent reference only; never serialize its data.
+                AccessibilityNodeInfo actualParent = node.getParent();
+                try {
+                    check(parents.get(index) >= 0 && actualParent != null && actualParent.equals(queue.get(parents.get(index))),
+                        "failure-only original owned parent identity");
+                    sample.put("originalParentMatched", true);
+                } finally {
+                    boolean alreadyHeld = false;
+                    for (AccessibilityNodeInfo held : queue) if (actualParent == held) alreadyHeld = true;
+                    if (actualParent != null && !alreadyHeld) actualParent.recycle();
+                }
+                Rect raw = new Rect(); node.getBoundsInScreen(raw); Rect intersection = new Rect(raw);
+                sample.put("rawBoundsInScreen", box(raw)).put("insideSelectedRow", row.contains(raw))
+                    .put("insideObservedActiveWindow", activeBounds.contains(raw))
+                    .put("cropIntersection", intersection.intersect(row) ? box(intersection) : JSONObject.NULL);
+                rejectedNodeObservation(node, raw, characters, observed, facts, semanticProperties);
+                sample.put("complete", true);
+            } catch (Throwable diagnosticFailure) {
+                complete = false; sample.put("failureType", type(diagnosticFailure));
+                try { originalFailure.addSuppressed(diagnosticFailure); } catch (Throwable ignored) { /* preserve original rejection */ }
+            } finally { sample.put("endElapsed", SystemClock.elapsedRealtime()); }
+        }
+        diagnostic.put("complete", complete);
+    }
     /** Only the selected row and its descendants. No SystemUI root/sibling/ancestor serialization. */
     private static RowSnapshot readRow(Instrumentation owner, AccessibilityNodeInfo selected, JSONObject hierarchy) throws Exception {
         if (Build.VERSION.SDK_INT >= 34) owner.getUiAutomation().clearCache();
@@ -266,6 +347,10 @@ final class OwnedP9SystemUiEvidence {
                                 + " class=" + boundedDiagnosticName(node.getClassName()));
                         } catch (Throwable diagnosticFailure) {
                             try { failure.addSuppressed(diagnosticFailure); } catch (Throwable ignored) { /* preserve base guard */ }
+                        }
+                        try { rejectedOutsideDiagnostics(queue, parents, depths, ordinals, index, r, bounds, activeBounds, window, characters, hierarchy, failure); }
+                        catch (Throwable diagnosticFailure) {
+                            try { failure.addSuppressed(diagnosticFailure); } catch (Throwable ignored) { /* preserve original rejection */ }
                         }
                         throw failure;
                     }
@@ -391,6 +476,60 @@ final class OwnedP9SystemUiEvidence {
             .put("bootCount", writerLive.getInt("bootCount")).put("bootId", writerLive.getString("bootId"))
             .put("bootIdBasis", "joined original independent live writer sample; current BOOT_COUNT checked")
             .put("writerLiveIdentity", new JSONObject(writerLive.toString()));
+    }
+    /** A separately selected API36 diagnostic lane. Only readRow/getters and original-file I/O.
+     * It never calls captureBeforeClick, capture, takeScreenshot or any accessibility action.
+     * Even a complete ordinary row read is explicitly incomplete as product acceptance evidence.
+     */
+    static JSONObject diagnoseRejectedOutsideOnly(Instrumentation owner, File folder, AccessibilityNodeInfo selected,
+            JSONObject binding, String diagnosticId, String selector, JSONObject record) throws Exception {
+        check(Build.VERSION.SDK_INT == 36 && "first-rejection-next-direct-row-child-v1".equals(selector), "fixed API36 diagnostic selector");
+        check(UUID.fromString(diagnosticId).toString().equals(diagnosticId)
+            && !diagnosticId.equals(binding.getString("lease")) && !diagnosticId.equals(binding.getString("attempt")), "new distinct diagnostic operation UUID");
+        check(binding.getInt("bootCount") == android.provider.Settings.Global.getInt(owner.getTargetContext().getContentResolver(), android.provider.Settings.Global.BOOT_COUNT), "same admitted boot before diagnostic getters");
+        JSONObject tree = hierarchy(), artifact = new JSONObject();
+        record.put("format", "p9-systemui-rejected-node-diagnostic-result-v1").put("status", "DIAGNOSTIC_ONLY")
+            .put("selector", selector).put("diagnosticId", diagnosticId).put("outcome", "REFUSED")
+            .put("sameSelectedRowAfter", false).put("sameBootAfter", false).put("screenshotCaptures", 0).put("actionInvocations", 0)
+            .put("productPassed", false).put("artifact", artifact);
+        long begin = SystemClock.elapsedRealtime(); String outcome = "REFUSED", failureType = "none";
+        Rect initial = new Rect(); selected.getBoundsInScreen(initial);
+        int window = selected.getWindowId(); boolean sameSelectedRow = false;
+        check(!initial.isEmpty() && initial.left >= 0 && initial.top >= 0 && initial.right <= 8192 && initial.bottom <= 8192
+            && (long) initial.width() * initial.height() <= 4194304, "bounded diagnostic owned row rectangle");
+        AccessibilityNodeInfo identity = new AccessibilityNodeInfo(selected);
+        try {
+            try {
+                readRow(owner, selected, tree);
+                outcome = "NO_REJECTION"; // still diagnostic-only: no screenshot/action or product success
+            } catch (Throwable refusal) {
+                failureType = type(refusal);
+                if (tree.has("rejectedOutsideDiagnostics"))
+                    outcome = tree.getJSONObject("rejectedOutsideDiagnostics").getBoolean("complete") ? "OBSERVED_REJECTION" : "PARTIAL_REJECTION";
+            }
+            Rect end = new Rect();
+            if (selected.refresh()) {
+                selected.getBoundsInScreen(end);
+                sameSelectedRow = selected.equals(identity) && selected.getWindowId() == window && initial.equals(end)
+                    && SYSTEM.contentEquals(selected.getPackageName()) && ROW.equals(selected.getViewIdResourceName());
+            }
+            if (!sameSelectedRow) outcome = "UNSTABLE_ROW";
+        } catch (Throwable diagnosticFailure) {
+            outcome = "REFUSED"; failureType = type(diagnosticFailure);
+        } finally { identity.recycle(); }
+        boolean sameBoot = false;
+        try { sameBoot = binding.getInt("bootCount") == android.provider.Settings.Global.getInt(owner.getTargetContext().getContentResolver(), android.provider.Settings.Global.BOOT_COUNT); }
+        catch (Throwable bootFailure) { failureType = type(bootFailure); }
+        if (!sameBoot) outcome = "REFUSED";
+        record.put("outcome", outcome).put("sameSelectedRowAfter", sameSelectedRow).put("sameBootAfter", sameBoot);
+        tree.put("diagnosticOnly", true).put("diagnosticSelector", selector).put("diagnosticId", diagnosticId)
+            .put("captureNonce", diagnosticId).put("runBinding", new JSONObject(binding.toString()))
+            .put("observerPid", android.os.Process.myPid()).put("observerUid", android.os.Process.myUid())
+            .put("beginElapsed", begin).put("endElapsed", SystemClock.elapsedRealtime())
+            .put("complete", false).put("stableAcrossScreenshot", false).put("failureStage", "DIAGNOSTIC_ONLY").put("failureType", failureType);
+        String name = "systemui-preclick-" + diagnosticId + ".ax.json";
+        retainPreClick(folder, name, tree.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8), 262144, artifact);
+        return record;
     }
     static PreClick captureBeforeClick(Instrumentation owner, File folder, AccessibilityNodeInfo selected, JSONObject binding, JSONObject record) throws Exception {
         String nonce = UUID.randomUUID().toString(), stem = "systemui-preclick-" + nonce;

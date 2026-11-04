@@ -62,6 +62,7 @@ class NativeP8MainPreferenceTest {
         val nativeAxReadiness=JSONArray() // Fixed-tag counts only, including a failed final sample.
         val nativeWindows=mutableListOf<OwnedWindow>() // Original View/Activity references survive unknown outcomes.
         var windowOwnerFailure: JSONObject?=null // First failure-only local metadata, never an ownership substitute.
+        var windowBindingFailure: JSONObject?=null // Cached existing binding reads only; never an ownership substitute.
     }
     private class ActivityOwner(val owner: CaseOwners) {
         val ledger=Ledger();var scenario: ActivityScenario<P8MainPreferenceActivity>?=null
@@ -299,52 +300,92 @@ class NativeP8MainPreferenceTest {
         requireOriginalDecor();P8MainActivityOwners.requireCurrent(instance)
         return focused.singleOrNull() to attached.size
     }
+    /** Only primitive facts from a completed original binding iteration; no extra native reads. */
+    private data class WindowBindingSample(val request: Int,val finishedElapsedMs: Long,val attachedOwnerCount: Int,
+        val focusedDecorPresent: Boolean,val axNodePresent: Boolean?,val nonNegativeAxWindowId: Boolean)
     /** Bind once before field input; a missing focus/AX ID may only wait read-only within this budget. */
     private fun bindOwnedWindow(entry: Entry,inputBudget: InputBudget): OwnedWindow {
         val started=inputBudget.started;val deadline=inputBudget.deadline
         var requests=0;var original: android.view.View?=null
         var activityDecorOwner: ActivityDecorOwner?=null
+        var phase="before-original-binding";var lastCompleteSample: WindowBindingSample?=null
         fun budget(){check(android.os.SystemClock.elapsedRealtime()<deadline&&requests<64) {"Owned focused window binding remains UNKNOWN"}}
-        while(true) {
-            budget();requests++
-            var selected: android.view.View?=null;var id: Int?=null;var attachedCount=0
-            owned(entry) {main {
-                inputBudget.withinDeadline()
-                if(activityDecorOwner==null)activityDecorOwner=captureActivityDecorOwner(entry)
-                val observation=focusedOwnedDecor(entry,checkNotNull(activityDecorOwner),original);selected=observation.first;attachedCount=observation.second
-                val decor=selected
-                if(decor!=null) {
-                    if(original==null)original=decor else check(original===decor)
+        try {
+            while(true) {
+                budget();requests++
+                var selected: android.view.View?=null;var id: Int?=null;var attachedCount=0;var axNodePresent: Boolean?=null
+                owned(entry) {main {
                     inputBudget.withinDeadline()
-                    val node=decor.createAccessibilityNodeInfo()
-                    try {
-                        if(node!=null) {
-                            check(node.packageName?.toString()==actual.packageName) {"Owned decor AX package changed"}
-                            if(node.windowId>=0)id=node.windowId
-                        }
-                    } finally {@Suppress("DEPRECATION") node?.recycle()}
-                    check(focusedOwnedDecor(entry,checkNotNull(activityDecorOwner),decor).first===decor)
+                    phase="local-original-owner"
+                    if(activityDecorOwner==null)activityDecorOwner=captureActivityDecorOwner(entry)
+                    phase="local-focus-metadata"
+                    val observation=focusedOwnedDecor(entry,checkNotNull(activityDecorOwner),original);selected=observation.first;attachedCount=observation.second
+                    val decor=selected
+                    if(decor!=null) {
+                        if(original==null)original=decor else check(original===decor)
+                        inputBudget.withinDeadline()
+                        phase="original-decor-ax-read"
+                        val node=decor.createAccessibilityNodeInfo()
+                        axNodePresent=node!=null
+                        try {
+                            if(node!=null) {
+                                check(node.packageName?.toString()==actual.packageName) {"Owned decor AX package changed"}
+                                if(node.windowId>=0)id=node.windowId
+                            }
+                        } finally {@Suppress("DEPRECATION") node?.recycle()}
+                        check(focusedOwnedDecor(entry,checkNotNull(activityDecorOwner),decor).first===decor)
+                    }
+                }}
+                phase="sample-postcheck"
+                val finished=android.os.SystemClock.elapsedRealtime();check(finished<deadline) {"Owned window binding exceeded original budget"}
+                lastCompleteSample=WindowBindingSample(requests,finished,attachedCount,selected!=null,axNodePresent,id!=null)
+                if(id!=null) {
+                    phase="binding-proof"
+                    val instance=checkNotNull(entry.instance);val bindingId=UUID.randomUUID().toString()
+                    val proof=JSONObject().put("schema","p8-owned-focused-window-binding-v2")
+                        .put("ownerPolicy","retained-activity-decor-and-exact-dialog-token-v1")
+                        .put("originalActivityDecorRetained",true).put("originalActivityTokenRetained",true).put("bindingId",bindingId)
+                        .put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
+                        .put("launchOrdinal",entry.owner.activities.indexOf(entry.activity)).put("windowId",checkNotNull(id))
+                        .put("source","WindowInspector.getGlobalWindowViews").put("attachedOwnerCount",attachedCount)
+                        .put("startedElapsedMs",started).put("boundElapsedMs",finished).put("elapsedMs",finished-started)
+                        .put("requests",requests).put("requestLimit",64).put("deadlineMs",5000).put("beforeFirstFieldInput",true)
+                    val binding=OwnedWindow(entry,instance.activity,checkNotNull(activityDecorOwner),checkNotNull(selected),checkNotNull(id),bindingId,proof)
+                    proof.put("inputOperations",binding.inputs);entry.owner.nativeWindows.add(binding)
+                    requireOwnedWindow(binding)
+                    val bound=android.os.SystemClock.elapsedRealtime();check(bound<deadline) {"Owned window binding exceeded original budget after final owner check"}
+                    proof.put("boundElapsedMs",bound).put("elapsedMs",bound-started)
+                    return binding
                 }
-            }}
-            val finished=android.os.SystemClock.elapsedRealtime();check(finished<deadline) {"Owned window binding exceeded original budget"}
-            if(id!=null) {
-                val instance=checkNotNull(entry.instance);val bindingId=UUID.randomUUID().toString()
-                val proof=JSONObject().put("schema","p8-owned-focused-window-binding-v2")
-                    .put("ownerPolicy","retained-activity-decor-and-exact-dialog-token-v1")
-                    .put("originalActivityDecorRetained",true).put("originalActivityTokenRetained",true).put("bindingId",bindingId)
-                    .put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
-                    .put("launchOrdinal",entry.owner.activities.indexOf(entry.activity)).put("windowId",checkNotNull(id))
-                    .put("source","WindowInspector.getGlobalWindowViews").put("attachedOwnerCount",attachedCount)
-                    .put("startedElapsedMs",started).put("boundElapsedMs",finished).put("elapsedMs",finished-started)
-                    .put("requests",requests).put("requestLimit",64).put("deadlineMs",5000).put("beforeFirstFieldInput",true)
-                val binding=OwnedWindow(entry,instance.activity,checkNotNull(activityDecorOwner),checkNotNull(selected),checkNotNull(id),bindingId,proof)
-                proof.put("inputOperations",binding.inputs);entry.owner.nativeWindows.add(binding)
-                requireOwnedWindow(binding)
-                val bound=android.os.SystemClock.elapsedRealtime();check(bound<deadline) {"Owned window binding exceeded original budget after final owner check"}
-                proof.put("boundElapsedMs",bound).put("elapsedMs",bound-started)
-                return binding
+                phase="read-only-wait"
+                budget();Thread.sleep(maxOf(1L,minOf(50L,deadline-android.os.SystemClock.elapsedRealtime())))
             }
-            budget();Thread.sleep(maxOf(1L,minOf(50L,deadline-android.os.SystemClock.elapsedRealtime())))
+        } catch(error: Throwable) {
+            // This assertion has already failed. Serialize cached primitive facts only: no new
+            // WindowInspector/Activity/View/AX access and no new wait or input is performed here.
+            try {
+                if(entry.owner.windowBindingFailure==null) {
+                    val sample=lastCompleteSample
+                    val errorClass=error.javaClass.name.let {if(it.matches(Regex("[A-Za-z0-9_.$]{1,96}")))it else "CLASS_NAME_UNAVAILABLE"}
+                    val record=JSONObject().put("schema","p8-window-binding-failure-cached-v1").put("failureOnly",true)
+                        .put("ownershipProven",false).put("contentInspected",false).put("additionalWindowInventoryReads",0)
+                        .put("additionalAxNodeAcquisitions",0).put("metadataByteLimit",2048).put("phase",phase)
+                        .put("requests",requests).put("requestLimit",64).put("deadlineMs",5000).put("startedElapsedMs",started)
+                        .put("originalActivityDecorRetained",activityDecorOwner!=null).put("originalFocusedDecorRetained",original!=null)
+                        .put("errorClass",errorClass).put("lastCompleteSample",sample?.let {JSONObject()
+                            .put("request",it.request).put("finishedElapsedMs",it.finishedElapsedMs).put("attachedOwnerCount",it.attachedOwnerCount)
+                            .put("focusedDecorPresent",it.focusedDecorPresent).put("axNodePresent",it.axNodePresent?:JSONObject.NULL)
+                            .put("nonNegativeAxWindowId",it.nonNegativeAxWindowId)}?:JSONObject.NULL)
+                    check(record.toString().toByteArray(Charsets.UTF_8).size<=2048)
+                    entry.owner.windowBindingFailure=record
+                }
+            } catch(record: Throwable) {
+                if(record!==error) {
+                    val safe=IllegalStateException("Window binding cached metadata unavailable");safe.stackTrace=emptyArray()
+                    error.addSuppressed(safe)
+                }
+            }
+            throw error
         }
     }
     private fun requireOwnedWindow(binding: OwnedWindow) = main {
@@ -1109,7 +1150,10 @@ class NativeP8MainPreferenceTest {
                     .put("stableFinalDefaultFamiliesConfirmed",owner.ledger.confirmed("final-defaults")).put("bodyPassed",bodyPassed)
                     .put("nativeAxReadiness",owner.nativeAxReadiness).put("nativeAxPreparation",checkNotNull(automationPreparation))
                     .put("nativeWindowBindings",JSONArray(owner.nativeWindows.map {it.proof}))
-                    .also {details->owner.windowOwnerFailure?.let {details.put("nativeWindowOwnerFailure",it)}}.toString())}
+                    .also {details->
+                        owner.windowOwnerFailure?.let {details.put("nativeWindowOwnerFailure",it)}
+                        owner.windowBindingFailure?.let {details.put("nativeWindowBindingFailure",it)}
+                    }.toString())}
             val deletionReady=bodyPassed&&errors.first==null&&ownersClosed&&owner.ledger.confirmed("scope-created","scope-pinned","alias-new","store-created","seed-created","final-defaults","final-status")
             owner.ledger.step("scope-removed",errors,ready=deletionReady){owner.fence!!.removeConfirmedOwnedScope {facts->
                 status("complete-bounded-scope-inventory-before-delete",owner.context!!,JSONObject(facts).toString())

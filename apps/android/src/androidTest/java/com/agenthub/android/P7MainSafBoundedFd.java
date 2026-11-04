@@ -37,7 +37,7 @@ final class P7MainSafBoundedFd {
             // here is not a claim it remains open after framework transfer.
             return owner.pipe[1];
         }catch(Exception|Error failure) {
-            owner.failureClass=failure.getClass().getSimpleName();
+            owner.failureClass=P7MainSafLeaseV3.failureClass(failure);
             if(!owner.started)owner.closeBeforeStart();
             throw failure;
         }
@@ -140,7 +140,7 @@ final class P7MainSafBoundedFd {
                     .put("eofObserved",true).put("receiverFdClosed",true).put("sinkFdClosed",true).put("fileSynced",true)
                     .put("directorySynced",true).put("payloadPublished",true).put("expectedFingerprintBound",expected>0)
                     .put("peerStatusIsAcknowledgement",false));committed=true;
-            }catch(Exception|Error failure) {failureClass=failure.getClass().getSimpleName();}
+            }catch(Exception|Error failure) {failureClass=P7MainSafLeaseV3.failureClass(failure);}
             finally {
                 Arrays.fill(block,(byte)0);
                 if(!committed) {

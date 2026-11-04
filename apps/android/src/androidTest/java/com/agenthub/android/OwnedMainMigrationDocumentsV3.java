@@ -29,7 +29,7 @@ public final class OwnedMainMigrationDocumentsV3 extends DocumentsProvider {
     private static final String[] DOCUMENT_COLUMNS={Document.COLUMN_DOCUMENT_ID,Document.COLUMN_DISPLAY_NAME,Document.COLUMN_MIME_TYPE,Document.COLUMN_FLAGS,Document.COLUMN_SIZE};
     @Override public boolean onCreate(){return true;}
     private void self() throws Exception {P7MainSafLeaseV3.component(getContext(),false);P7MainSafLeaseV3.facts(P7MainSafLeaseV3.TEST+":p7MainSafV3");}
-    private static FileNotFoundException denied(Exception e){return new FileNotFoundException("P7V4_DOCUMENT_REJECTED_"+e.getClass().getSimpleName());}
+    private static FileNotFoundException denied(Exception e){return new FileNotFoundException("P7V4_DOCUMENT_REJECTED_"+P7MainSafLeaseV3.rejectionCode(e));}
     private void queryOwner(P7MainSafLeaseV3.Scope s) throws Exception {
         if(Binder.getCallingUid()!=s.docsUid&&Binder.getCallingUid()!=getContext().getApplicationInfo().uid)throw P7MainSafLeaseV3.reject("LIST_CALLER");
     }
@@ -116,7 +116,7 @@ public final class OwnedMainMigrationDocumentsV3 extends DocumentsProvider {
             P7MainSafLeaseV3.ownerWitness(s.folder,false);
             s.event("read-open",new JSONObject().put("callerUid",Binder.getCallingUid()).put("callerPid",Binder.getCallingPid()).put("mode",mode));
             ParcelFileDescriptor result=ParcelFileDescriptor.open(s.payload(),ParcelFileDescriptor.MODE_READ_ONLY,new Handler(Looper.getMainLooper()),error->{
-                try {s.event("read-close",new JSONObject().put("success",error==null).put("failureClass",error==null?"None":error.getClass().getSimpleName())
+                try {s.event("read-close",new JSONObject().put("success",error==null).put("failureClass",error==null?"None":P7MainSafLeaseV3.failureClass(error))
                     .put("fdCloseOnly",true).put("fullPayloadReadProven",false));}catch(Exception ignored){}
             });
             try {P7MainSafLeaseV3.regular(Os.fstat(result.getFileDescriptor()));P7MainSafLeaseV3.same(Os.fstat(result.getFileDescriptor()),Os.lstat(s.payload().getPath()));

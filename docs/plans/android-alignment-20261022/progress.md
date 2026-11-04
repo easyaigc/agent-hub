@@ -2,7 +2,7 @@
 
 更新：2026-11-04。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
 
-当前：P7独立Test进程缺类修复及新共包辅助构建通过；实际prepare仍受控拒绝、效果UNKNOWN，未进入Native导出。P8原窗口/名称输入曾有限通过，最新case绑定仍UNKNOWN；下一步有限原因观测与导入前置并行。完整P7/P8/P9仍开放，未知操作不重放。
+当前：阶段82经PR133合入d79e85bb，源/主线CI及公开同步通过，已清理阶段82开发分支。阶段83两包/三包SDK均通过；P7新prepare定位到平台目录检查拒绝，P8原窗口绑定及两项输入限定通过、控件AX读取失败，继续修复；P9实际观察未找到原通知行，完整P7/P8/P9仍开放，未知操作不重放。
 
 ## 总计划
 
@@ -17,15 +17,15 @@
 | P6 展示与设置       | 双语/外观/隐私/支持、Markdown/代码/表格/Diff/工具、长文、链接/资源和页面状态             | 部分完成：本地化、设置/工具/状态/读屏、资源隔离/预览/分享及触达有界通过                          | 错误来源前缀、94 token、格式/主题/AX/全视觉；系统复制/分享/冷恢复随P7                                             | 并行补验    |
 | P7 系统、迁移与阅读 | 附件/URI/权限/互传、完整迁移、双语音、未读、生命周期                                     | 当前执行；文本/通知/语音/附件/惰性原件first/cold、普通Controller及guarded Main四方法已有有限结果 | 真实SAF与准备通道、其余24组迁移域/错误/补偿/崩溃/完整UI、F59独立互传与双端迁移域、语音实录/未读/生命周期及手机DEV | 最高        |
 | P8 EasyWork A5      | Provider、配对、LAN/Relay、历史/事件、控制、EWDAP、原生/Codex回归七组                    | 部分完成；目标/连接替换隔离及中英菜单/保存/新Activity恢复有限通过                                | 当前AX锚点及短视口/长字段/AX、Main截图/API26/37、真实issuer/网络/桌面/手机与七组封存                              | 与P7并行    |
-| P9 普通聊天通知     | PushProvider、GMS差异、权限/渠道/声音/隐私/去重/路由/角标/漏推                           | 部分完成；原通知/冷入口及scoped bootstrap有限通过                                                | SystemUI真实点击/零进程创建、真实Host/供应商/OEM、低API/字号/TalkBack/手机；新三包诊断仍待SDK/API36准入           | 与P7/P8并行 |
+| P9 普通聊天通知     | PushProvider、GMS差异、权限/渠道/声音/隐私/去重/路由/角标/漏推                           | 部分完成；原通知/冷入口及scoped bootstrap有限通过                                                | SystemUI真实点击/零进程创建、真实Host/供应商/OEM、低API/字号/TalkBack/手机；新三包SDK通过，API36准入/系统诊断待验 | 与P7/P8并行 |
 | P10 全量冻结交付    | 全部适用F/UI/S/X、双Provider、双端原生、API26/37/手机、macOS/Windows、升级/签名/安装文档 | 待全量验收与发布准备                                                                             | 冻结源码/包/Host/runner，逐行关闭功能、交互、界面与性能/稳定性门槛                                                | 依赖关闭后  |
 
 ## 接下来按什么顺序做
 
-1. **P7/P8当前阻塞**：定位P7独立Test prepare的有限拒绝原因，继续真实准备/导出；P8补齐绑定循环的失败观察，再定位准确AX锚点。使用新独立场景验收，不重放原UNKNOWN。
+1. **P7/P8当前阻塞**：修复P7框架目录的系统路径别名检查，继续真实准备/导出；P8核对原窗口绑定成功后准确AX控件缺失。使用新独立场景验收，不重放原UNKNOWN。
 2. **完整迁移**：继续真实Main导入/导出、24组库存、失败补偿、自然故障与冷恢复。F59 Android尚未实现；iOS现有F59原件/journal也未进入迁移Payload，双端缺口单列，不能按完整迁移通过。
 3. **语音、未读、生命周期**：原件与失败恢复、阅读权威/原通知回执、Main/系统冷入口、真实停止/死亡/重开逐项验。
-4. **P9独立项**：新三包诊断先完成精确源码/SDK/API36准入，再采集SystemUI拒绝节点；诊断不算通知点击通过。继续真实Host、偏好/声音/隐私与完整UI。
+4. **P9独立项**：新三包诊断先完成精确源码/SDK/API36准入，再采集SystemUI拒绝节点；本轮未找到原通知行，系统前置状态待准确准备；诊断不算通知点击通过。继续真实Host、偏好/声音/隐私与完整UI。
 5. **新增iOS差异及P1–P6剩余矩阵**：下一轮模型/强度/速度预览与owner分离、文件大小兼容、HTML预览/速度图标/最近导航，以及原owner、复制、建议、资源、视觉/AX按优先级补齐。
 6. **P10**：适用依赖关闭后执行最终双端、版本、主题、语言、方向、字号、性能、稳定性和发布门槛。
 
@@ -40,5 +40,5 @@
 
 - 阶段78已通过范围经[PR128](https://git.51easyai.com/BCAI/agent-hub-app/pulls/128)合入主线；详情见[交付档案](records/stage78-p7-main-p8-short-ui.md)。
 - 阶段79/80已随PR131合入；后续阶段继续在新安卓分支推进。阶段80源0ba8d903经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)合入主线fda80542，源/主线CI与公开同步均通过，已清理Stage79/80本地和远端分支；详情见交付档案。[阶段81](records/stage81-window-owner-metadata.md)窗口局部结果已交付；完整AX和P7未知仍单列。
-- 阶段81已提交d99bd131，已建[PR132](https://git.51easyai.com/BCAI/agent-hub-app/pulls/132)，源/主线CI及公开同步均通过，已合入472bde36并清理本地/远端Stage81分支；局部窗口/输入与完整AX验收分开。[阶段82](records/stage82-framework-and-ax-observation.md)的独立Test依赖修复、共包构建与完整辅助回归已通过；实际prepare受控拒绝仍待验。该验收工装阶段在安卓专用分支提交，完整迁移、P8及P9继续。
+- 阶段81已提交d99bd131，已建[PR132](https://git.51easyai.com/BCAI/agent-hub-app/pulls/132)，源/主线CI及公开同步均通过，已合入472bde36并清理本地/远端Stage81分支；局部窗口/输入与完整AX验收分开。[阶段82](records/stage82-framework-and-ax-observation.md)的独立Test依赖修复、共包构建与完整辅助回归已通过；实际prepare受控拒绝仍待验。已提交88181243并创建[PR133](https://git.51easyai.com/BCAI/agent-hub-app/pulls/133)，已合入主线d79e85bb，源/主线CI与公开同步通过，阶段82本地及远端分支已清理；[阶段83](records/stage83-shared-observers-and-import.md)已完成两包/三包SDK与完整辅助回归；P7平台目录和P8 AX修复继续，P9未找到原通知行单列待验。本阶段随后提交安卓分支。
 - 其他已交付历史、CI与分支回收见[档案索引](records/README.md)，不在总表追加过程流水。

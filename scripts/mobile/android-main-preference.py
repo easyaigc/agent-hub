@@ -36,6 +36,7 @@ ACTIVITY_DECOR_SDK_PROFILE = "p8-activity-decor-owner-v1"
 FRAMEWORK_SDK_PROFILE = "p7-main-saf-framework-v4"
 PLATFORM_PARENT_SDK_PROFILE = "p7-main-saf-framework-parent-v1"
 TEST_PROCESS_SDK_PROFILE = "p7-main-saf-framework-test-process-v1"
+OBSERVERS_IMPORT_SDK_PROFILE = 'p7-main-saf-framework-observers-import-v1'
 OWNED_WINDOW_PURPOSE = "p8-owned-window-readiness-v1"
 MODE = "main-subclass-menu"
 CLASS = "com.agenthub.android.NativeP8MainPreferenceTest"
@@ -59,9 +60,9 @@ def admitted(args):
     # Build purpose is explicit and finite; Native admission retains the original P8 identity.
     sdk_profile = args.sdk_profile
     require(args.readiness_purpose in (None, OWNED_WINDOW_PURPOSE), "Closed original-window readiness purpose")
-    require((args.readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE)), "Original-window proof and newly reviewed SAF-v2 SDK must be selected together")
-    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE), "Closed P8 SDK purpose")
-    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE):
+    require((args.readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE)), "Original-window proof and newly reviewed SAF-v2 SDK must be selected together")
+    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE), "Closed P8 SDK purpose")
+    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE):
         # Root supplies both pins from immutable external intent, never from this bundle.
         first.sha(args.expected_sdk_seal_sha256)
         first.sha(args.expected_workspace_review_sha256)
@@ -78,10 +79,13 @@ def admitted(args):
             "External shared SDK pins are unsupported for the legacy P8 purpose")
     build = capture.verify_build_bundle(args.build_bundle, first, repo, sdk_profile)
     guard = first.read_guard(Path(args.build_bundle) / "source-before.json")
-    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE):
+    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE):
         require(build["sealSha256"] == args.expected_sdk_seal_sha256, "Approved SDK seal changed during typed verification")
         first.exact(guard, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
-        if sdk_profile == TEST_PROCESS_SDK_PROFILE:
+        if sdk_profile == OBSERVERS_IMPORT_SDK_PROFILE:
+            require(set(guard["sourceOverlay"]) == set(capture.P7_FRAMEWORK_OBSERVERS_IMPORT_OVERLAY_PATHS), "Exact framework-observers-import shared60 source contract")
+            require(first.same(guard, capture.p7_framework_observers_import_source_guard(first, repo, guard["sourceOverlay"])), "Framework-observers-import shared905 source drift")
+        elif sdk_profile == TEST_PROCESS_SDK_PROFILE:
             require(set(guard["sourceOverlay"]) == set(capture.P7_FRAMEWORK_TEST_PROCESS_OVERLAY_PATHS), "Exact framework-test-process shared59 source contract")
             require(first.same(guard, capture.p7_framework_test_process_source_guard(first, repo, guard["sourceOverlay"])), "Framework-test-process shared904 source drift")
         elif sdk_profile == PLATFORM_PARENT_SDK_PROFILE:
@@ -414,7 +418,7 @@ def owned_window_readiness_proof(expected, events, facts, *, activity_decor_owne
 
 
 def native_proof(expected, events, observed, *, sdk_profile=PROFILE, readiness_purpose=None):
-    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE), "Closed P8 proof purpose")
+    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE), "Closed P8 proof purpose")
     accepted = events[0]["body"]; first.exact(accepted, {"binding", "nativeFacts"})
     require(first.same(accepted["binding"], expected), "Native did not accept the original immutable admission")
     facts = accepted["nativeFacts"]
@@ -458,10 +462,10 @@ def native_proof(expected, events, observed, *, sdk_profile=PROFILE, readiness_p
         body = event["body"]; require(body.get("ownedRun") in case_ids, "Foreign fixture scope evidence")
         require(body.get("pid") == facts["pid"] and body.get("processNonce") == facts["processNonce"], "Evidence process changed")
     require(readiness_purpose in (None, OWNED_WINDOW_PURPOSE), "Closed Native proof purpose")
-    require((readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE)), "Original-window proof requires the explicit SAF-v2 purpose")
+    require((readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE)), "Original-window proof requires the explicit SAF-v2 purpose")
     if readiness_purpose == OWNED_WINDOW_PURPOSE:
-        require(sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE), "Only explicitly reviewed original-window SDK owns this proof")
-        owned_window_readiness_proof(expected, events, facts, activity_decor_owner=sdk_profile in (ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE))
+        require(sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE), "Only explicitly reviewed original-window SDK owns this proof")
+        owned_window_readiness_proof(expected, events, facts, activity_decor_owner=sdk_profile in (ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE))
     elif sdk_profile in (READINESS_SDK_PROFILE, SAF_SDK_PROFILE):
         readiness_proof(expected, events, facts)
     return proof
@@ -523,7 +527,7 @@ def run(args):
         "snapshotSha256": {phase: first.digest(output / (phase + "-snapshot.json")) for phase in ("before", "live", "after")},
         "caseCount": len(proof["cases"]), "nativeRuntime": False, "shippingMainCovered": False,
         "networkIssuerDesktopPhysicalApi26Covered": False, "allA5Covered": False, "status": "passed"}
-    if args.sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE):
+    if args.sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE):
         # The v2 result also requires its strict per-case/owner/readiness evidence above.
         review["schema"] = ("p8-main-subclass-saf-shared-sdk-host-review-v1" if args.sdk_profile == SAF_SDK_PROFILE
             else ("p8-main-subclass-readiness-sdk-host-review-v2" if args.sdk_profile == READINESS_SDK_PROFILE
@@ -543,7 +547,7 @@ def main():
     for name in ("repo", "output-dir", "app-apk", "test-apk", "adb", "serial", "run", "boot-uuid", "build-bundle"):
         parser.add_argument("--" + name, required=True)
     for name in ("uid", "test-uid"): parser.add_argument("--" + name, type=int, required=True)
-    parser.add_argument("--sdk-profile", choices=(PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE), default=PROFILE,
+    parser.add_argument("--sdk-profile", choices=(PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE, FRAMEWORK_SDK_PROFILE, PLATFORM_PARENT_SDK_PROFILE, TEST_PROCESS_SDK_PROFILE, OBSERVERS_IMPORT_SDK_PROFILE), default=PROFILE,
         help="Explicit captured SDK purpose; default retains the legacy P8 contract")
     parser.add_argument("--readiness-purpose", choices=(OWNED_WINDOW_PURPOSE,), default=None,
         help="Explicit new original-window v3 proof; old readiness proof contracts remain closed")

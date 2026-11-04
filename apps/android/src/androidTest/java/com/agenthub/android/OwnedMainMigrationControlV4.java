@@ -36,7 +36,7 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
             P7MainSafLeaseV3.validate(getContext(),intent,true,true);
             synchronized(preparationLock){prepare(intent);}
             return new Bundle(); // content call text is NEVER parsed or treated as an ACK.
-        } catch(Exception failure) {throw new IllegalStateException("P7V4_REJECTED_"+failure.getClass().getSimpleName());}
+        } catch(Exception failure) {throw new IllegalStateException("P7V4_REJECTED_"+P7MainSafLeaseV3.rejectionCode(failure));}
     }
     private void prepare(JSONObject intent) throws Exception {
         File parent=P7MainSafLeaseV3.parent(getContext(),true);
@@ -66,7 +66,7 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
                 !Files.exists(new File(folder,"receipt.pending").toPath(),LinkOption.NOFOLLOW_LINKS)) {
                 try {P7MainSafLeaseV3.atomicJson(folder,"receipt",base(intent).put("status","FAILED")
                     .put("scopePublished",false).put("directorySynced",false).put("failureCategory","PREPARATION_BOUNDARY")
-                    .put("failureClass",failure.getClass().getSimpleName()));}catch(Exception ignored){}
+                    .put("failureClass",P7MainSafLeaseV3.failureClass(failure)));}catch(Exception ignored){}
             }
             throw failure;
         }
@@ -117,7 +117,7 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
             byte[] bytes=audit(s).toString().getBytes(StandardCharsets.UTF_8);
             if(bytes.length>P7MainSafLeaseV3.JSON_MAX)throw P7MainSafLeaseV3.reject("AUDIT_BOUND");
             return P7MainSafBoundedFd.metadata(bytes);
-        }catch(Exception failure){throw new FileNotFoundException("P7V4_READ_REJECTED_"+failure.getClass().getSimpleName());}
+        }catch(Exception failure){throw new FileNotFoundException("P7V4_READ_REJECTED_"+P7MainSafLeaseV3.rejectionCode(failure));}
     }
     private JSONObject audit(P7MainSafLeaseV3.Scope s) throws Exception {
         Set<String> before=P7MainSafLeaseV3.inventory(s.folder);JSONObject files=new JSONObject(),documents=new JSONObject();

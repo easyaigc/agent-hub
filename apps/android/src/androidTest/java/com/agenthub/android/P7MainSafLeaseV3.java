@@ -47,7 +47,44 @@ final class P7MainSafLeaseV3 {
         return Arrays.asList("output.pending","output.bin","input.pending","input.bin").contains(name);
     }
     private P7MainSafLeaseV3() {}
-    static IOException reject(String category) { return new IOException("P7V4_"+category); }
+    /** Diagnostics are only for this class's own fixed guard literals. Raw IO messages
+     * and values are never parsed, logged or sent by this classifier. */
+    private static final Set<String> REJECTION_CATEGORIES=Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "ABSENT","APK","APK_BOUND","AUDIT_BOUND","AUDIT_CHANGED","BOOT",
+        "BOUND","BYTE_BOUND","CERTIFICATE","CHANGED","CLAIM","COMPONENT",
+        "CREATE","CREATE_REQUIRED","DIRECTORY","DOCS_PACKAGE","DOCS_RESOLVER","DOCS_UID",
+        "DOCUMENT_ID","EVENT","EXPIRED","EXPORT_EXPECTATION","EXPORT_MODE","FD_DEADLINE",
+        "FD_INVALID","FD_OWNER_EXISTS","FILE","FILE_BOUND","FOREIGN_FILE","GRANT_CALLER",
+        "HASH","IMPORT_EXPECTATION","IMPORT_MODE","IMPORT_NOT_COMMITTED","IMPORT_SNAPSHOT","INODE",
+        "INPUT_MODE","KEYS","KIND","LINK_PAIR","LIST_CALLER","METADATA_BOUND",
+        "METADATA_READ_BOUND","METHOD","MODE","OPEN","OPERATION","OWNER_REPLACED",
+        "OWNER_UNKNOWN","PARENT","PARTIAL","PAYLOAD_ACK","PAYLOAD_ACK_FILE","PAYLOAD_BOUND",
+        "PAYLOAD_SHA","PAYLOAD_SIZE","PLATFORM_DEVICE","PLATFORM_DIRECTORY","PLATFORM_FILES_PATH","PLATFORM_GID",
+        "PLATFORM_IDENTITY","PLATFORM_MODE","PLATFORM_NAMESPACE","PLATFORM_PACKAGE","PLATFORM_PATH_CHANGED","PRIMITIVE",
+        "PROCESS","PROCESS_BOUND","PROTOCOL","RECEIPT","RELIABLE_PIPE_REQUIRED","RUN",
+        "RUN_BOUND","SCOPE","TEST_IDENTITY","TYPE","UID","URI",
+        "URI_ALIAS","UUID"
+    )));
+    private static final class GuardRejection extends IOException {
+        private static final long serialVersionUID=1L;
+        private final String category;
+        private GuardRejection(String category) { super("P7V4_"+category);this.category=category; }
+    }
+    static IOException reject(String category) {
+        return REJECTION_CATEGORIES.contains(category)?new GuardRejection(category):new IOException("P7V4_UNCLASSIFIED");
+    }
+    /** Preserve existing retained failureClass values despite the private subtype. */
+    static String failureClass(Throwable failure) {
+        return failure instanceof GuardRejection?"IOException":failure.getClass().getSimpleName();
+    }
+    /** Only a private, directly raised guard can carry one fixed category. No cause traversal. */
+    static String rejectionCode(Throwable failure) {
+        if(failure instanceof GuardRejection) {
+            String category=((GuardRejection)failure).category;
+            if(REJECTION_CATEGORIES.contains(category))return "IOException_GUARD_"+category;
+        }
+        return failureClass(failure);
+    }
     static String uuid(String value) throws Exception {
         if(value==null||!UUID.fromString(value).toString().equals(value))throw reject("UUID");return value;
     }

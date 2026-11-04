@@ -31,7 +31,7 @@ sys.dont_write_bytecode = True
 from typing import Optional
 
 PROFILE = "p7-main-saf-framework-v4"
-SDK_PROFILE = "p7-main-saf-framework-test-process-v1"
+SDK_PROFILE = 'p7-main-saf-framework-observers-import-v1'
 APP = "com.easyai.agenthub.android.acceptance"
 TEST = APP + ".test"
 CONTROL = TEST + ".p7-main-saf-control-v4"
@@ -880,8 +880,8 @@ def admitted(args, root):
     build = _capture.verify_build_bundle(bundle, _first, repo, SDK_PROFILE)
     guard = _first.read_guard(bundle / "source-before.json")
     require(build["sealSha256"] == root["sdkSealSha256"] and digest(canonical(guard)) == root["sourceGuardSha256"] and
-        _first.same(guard, _capture.p7_framework_test_process_source_guard(_first, repo, guard["sourceOverlay"])), "Exact59/904 source chain")
-    require(len(guard["inventory"]) == len(guard["sources"]) == 904 and len(guard["sourceOverlay"]) == 59 and
+        _first.same(guard, _capture.p7_framework_observers_import_source_guard(_first, repo, guard["sourceOverlay"])), "Exact60/905 source chain")
+    require(len(guard["inventory"]) == len(guard["sources"]) == 905 and len(guard["sourceOverlay"]) == 60 and
         guard["sources"][TOOL] == root["hostToolSha256"] and guard["sources"]["scripts/mobile/android-sdk-capture.py"] == root["captureSelfSha256"], "No old SDK or broad source overlay")
     require(Path(args.adb).resolve() == Path(build["tools"]["adb"]["path"]).resolve() and build["tools"]["adb"]["sha256"] == root["adbSha256"], "Captured actual ADB")
     for role, key in (("app", "appApkSha256"), ("test", "testApkSha256")):
@@ -1055,7 +1055,7 @@ def run_export(args):
         "intentSha256": digest(intent.raw), "receiptSha256": digest(prepared.stdout), "controllerProcess": controller, "remoteEffectConfirmed": True,
         "remoteExitFrameObserved": False, "nonceIndependentRuntimeMeasurement": False})
     # Recheck actual target/source/installed bytes after remote effect and before original Native.
-    require(_first.same(guard, _capture.p7_framework_test_process_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Source changed after preparation; no Native input")
+    require(_first.same(guard, _capture.p7_framework_observers_import_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Source changed after preparation; no Native input")
     device.snapshot(build); lease_now(root)
     persist_json(output / "native-once.claim", {"run": root["run"], "operationId": root["nativeOperationId"], "selector": NATIVE_SELECTOR})
     proof, original_exit, document_owner = native_export(device, args, root, build, intent, prepared.stdout, controller)
@@ -1077,7 +1077,7 @@ def run_export(args):
     final_documents = device.process("documents", phase="final")
     require(final_controller["status"] == final_documents["status"] == "present" and final_controller["process"] == controller and final_documents["process"] == document_owner,
         "Persistent original provider replaced; do not invent natural exit")
-    require(_first.same(guard, _capture.p7_framework_test_process_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Final source drift")
+    require(_first.same(guard, _capture.p7_framework_observers_import_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Final source drift")
     result = {"schema": "p7-framework-export-auxiliary-proof-v4", "status": "passed-auxiliary-API33-export", "run": root["run"], "operationId": root["operationId"],
         "nativeOperationId": root["nativeOperationId"], "rootApprovalSha256": digest(raw), "runtimeAdmissionSha256": digest(runtime_raw),
         "sdkSealSha256": root["sdkSealSha256"], "sourceGuardSha256": root["sourceGuardSha256"], "prepareRemoteEffectConfirmed": True,

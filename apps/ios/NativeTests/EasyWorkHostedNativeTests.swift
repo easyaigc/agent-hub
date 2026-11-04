@@ -4809,6 +4809,8 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     }
     let body = try field("body"), customAnswer = try field("customAnswer"), marker = try field("finalMarker")
     let expectsSecret = c["expectSecretCustom"] as? Bool == true
+    let desktopAnswersFirst = c["desktopAnswersFirst"] as? Bool == true
+    guard !desktopAnswersFirst || expectsSecret else { throw HostServiceError.invalidResponse }
     guard HostService.hash(Data(body.utf8)) == c["bodySHA256"] as? String,
       customAnswer.hasPrefix("EW-SYNTHETIC-CUSTOM-") else { throw HostServiceError.invalidResponse }
     let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(c["target"] ?? [:]))
@@ -4873,6 +4875,8 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       if expectsSecret {
         guard multi.isSecret == false else { throw HostServiceError.invalidResponse }
         report["originalSecretTrueAndPublicFalseMetadataReceived"] = true
+      }
+      if expectsSecret && !desktopAnswersFirst {
         report["status"] = "waiting-original-desktop-secret-mask-observation"; try save()
         let witness = folder.appendingPathComponent("secret-display-witness-" + run + ".json")
         let deadline = Date().addingTimeInterval(240)
@@ -4890,17 +4894,36 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         report["actualDesktopMaskAndClearBeforePhoneAnswerVerified"] = true; try save()
       }
       let valid = [multi.id: ["Alpha", "Gamma"], custom.id: [customAnswer]]
-      for invalid in [[multi.id: ["not-an-option"], custom.id: [customAnswer]], [multi.id: ["Alpha"], custom.id: ["Preset", "Skip"]]] {
-        var rejected = false
-        do { _ = try await provider.approve(client, approval: question, decision: "answer", answers: invalid) }
-        catch HostServiceError.message { rejected = true }
-        guard rejected else { throw HostServiceError.invalidResponse }
+      if desktopAnswersFirst {
+        report["status"] = "waiting-original-desktop-answer-before-phone-late"; try save()
+        let witness = folder.appendingPathComponent("desktop-answer-witness-" + run + ".json")
+        let desktopDeadline = Date().addingTimeInterval(240)
+        while !FileManager.default.fileExists(atPath: witness.path), Date() < desktopDeadline {
+          try await Task.sleep(for: .milliseconds(500))
+        }
+        guard FileManager.default.fileExists(atPath: witness.path) else { throw HostServiceError.invalidResponse }
+        let proof = try easyWorkObject(Data(contentsOf: witness))
+        guard proof["caseId"] as? String == run, proof["threadId"] as? String == thread.id,
+          proof["rootRunId"] as? String == root, proof["questionId"] as? String == question.id,
+          proof["desktopOriginalAnswerSubmitted"] as? Bool == true,
+          proof["selectedLabels"] as? [String] == ["Alpha", "Gamma"],
+          proof["customAnswerSHA256"] as? String == HostService.hash(Data(customAnswer.utf8)),
+          proof["desktopAppBundleIdentifier"] as? String == "com.easyai.easywork.iosacceptance.dev" else { throw HostServiceError.invalidResponse }
+        report["desktopAnswerWitnessOnOriginalQuestionReceived"] = true
+        report["phoneOriginalAnswerNotSubmittedBeforeDesktop"] = true; try save()
+      } else {
+        for invalid in [[multi.id: ["not-an-option"], custom.id: [customAnswer]], [multi.id: ["Alpha"], custom.id: ["Preset", "Skip"]]] {
+          var rejected = false
+          do { _ = try await provider.approve(client, approval: question, decision: "answer", answers: invalid) }
+          catch HostServiceError.message { rejected = true }
+          guard rejected else { throw HostServiceError.invalidResponse }
+        }
+        let stillPending = try await provider.history(client, threadId: thread.id, cursor: nil)
+        guard stillPending.runtime?.approvals.contains(where: { $0.id == question.id && $0.turnId == root }) == true else { throw HostServiceError.invalidResponse }
+        report["invalidCustomAndMultipleAnswersLocallyRejectedOriginalStillPending"] = true
+        report["answerAttempted"] = true; try save()
+        guard try await provider.approve(client, approval: question, decision: "answer", answers: valid).ok else { throw HostServiceError.invalidResponse }
       }
-      let stillPending = try await provider.history(client, threadId: thread.id, cursor: nil)
-      guard stillPending.runtime?.approvals.contains(where: { $0.id == question.id && $0.turnId == root }) == true else { throw HostServiceError.invalidResponse }
-      report["invalidCustomAndMultipleAnswersLocallyRejectedOriginalStillPending"] = true
-      report["answerAttempted"] = true; try save()
-      guard try await provider.approve(client, approval: question, decision: "answer", answers: valid).ok else { throw HostServiceError.invalidResponse }
       var output = ""
       let completionDeadline = Date().addingTimeInterval(180)
       while Date() < completionDeadline {
@@ -4914,13 +4937,14 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       guard finished else { throw HostServiceError.invalidResponse }
       report["sameOriginalRootReturnedFrozenChoicesAndCustomText"] = true
       report["outputSHA256"] = HostService.hash(Data(output.utf8))
+      report["lateOriginalAnswerAttempted"] = true; try save()
       var lateRejected = false
       do { _ = try await provider.approve(client, approval: question, decision: "answer", answers: valid) }
       catch let error as EasyWorkRemoteRejection { guard error.code == "question_mismatch" else { throw error }; lateRejected = true }
       guard lateRejected, try originalReadProtectedDigests(store) == protected else { throw HostServiceError.invalidResponse }
       report["lateOriginalAnswerRejectedQuestionMismatch"] = true
       report["unrelatedPhoneStateAndIdentityExact"] = true
-      report["status"] = "passed-original-real-question-multiple-custom-combination"
+      report["status"] = desktopAnswersFirst ? "passed-original-real-desktop-first-phone-late-question" : "passed-original-real-question-multiple-custom-combination"
       try save()
     } catch {
       report["status"] = "failed-original-question-combination-no-replay"; report["failure"] = error.localizedDescription

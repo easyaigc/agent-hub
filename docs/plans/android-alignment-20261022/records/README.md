@@ -278,3 +278,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 
 - [阶段80实际运行失败](stage80-runtime-failures.md)：P7 handoff UNKNOWN与P8原窗口归属失败，原操作不重放。
 - [阶段80 F59合同缺口](stage80-f59-transfer-contract.md)：真实4动作、冷原件、双端迁移域与Android流式存储边界。
+
+- [阶段81原窗口归属定位](stage81-window-owner-metadata.md)：失败只读元数据与独立SDK，原断言保持。

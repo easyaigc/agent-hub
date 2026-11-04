@@ -82,3 +82,7 @@ P8 v2 SDK通过，但中文首case的准确原生AX锚点在5秒截止失败，�
 上游iOS模拟器、Android测试源码与静态检查仅作辅助，不替代本候选手机DEV。迁移archive64MiB及渲染预算不随文件传输上限变更；任务/项目CRUD、F75与iOS A6继续暂停。
 
 阶段80实际结果：P7准备handoff rc137/UNKNOWN，未进入Native UI/JUnit或文件回调，原操作封存；P8首中文case在原decor归属绑定失败，英文未执行，需先补只读窗口元数据。F59双端迁移域与Android实现缺口见[合同档案](records/stage80-f59-transfer-contract.md)。详见[运行档案](records/stage80-runtime-failures.md)，不将辅助构建升级为通过。
+
+阶段81：只读诊断包构建通过，实际元数据确认原Activity decor的DecorContext链缺Activity，原严格Native仍JUnit1/1失败。按准确decor对象与原非空token修复错误假设，重建、完整长字段/AX及两语言交互仍待验；诊断不计产品通过。详情见[档案](records/stage81-window-owner-metadata.md)。
+
+阶段81修复后：准确Dialog binding-v2及名称replacement/IME已CONFIRMED；原5000ms AX检查18样本无原Compose id217，诊断UNKNOWN，JUnit1/1失败，英文及其余字段未执行。不能把窗口局部通过升级为P8通过，继续精确AX身份核对；失败scope与原操作保留。

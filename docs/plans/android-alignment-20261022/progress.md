@@ -2,7 +2,7 @@
 
 更新：2026-11-04。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
 
-当前：P7准备通道返回UNKNOWN，P8原窗口绑定失败，均已留存原结果；[阶段80](records/stage80-main-and-owned-window.md)共包构建与辅助检查通过，完整P7/P8/P9未完成。继续修复可在本机完成的部分，未知操作不重放。
+当前：P7准备通道返回UNKNOWN，P8原窗口归属修复和名称两次输入已有限通过，当前AX锚点待修复；原失败均留存；[阶段80](records/stage80-main-and-owned-window.md)共包构建与辅助检查通过，完整P7/P8/P9未完成。继续修复可在本机完成的部分，未知操作不重放。
 
 ## 总计划
 
@@ -16,7 +16,7 @@
 | P5 桌面建议         | 来源/实例/版本/租期、并行读取、灰字/详情、采用/追加/替换/忽略/撤销                       | 部分完成：读取/草稿接通；76项本次通过、52项匹配复用                                              | 真实源正文/采用、实际源长文/计时与完整系统矩阵；不自动发送                                                        | P2/P4后补验 |
 | P6 展示与设置       | 双语/外观/隐私/支持、Markdown/代码/表格/Diff/工具、长文、链接/资源和页面状态             | 部分完成：本地化、设置/工具/状态/读屏、资源隔离/预览/分享及触达有界通过                          | 错误来源前缀、94 token、格式/主题/AX/全视觉；系统复制/分享/冷恢复随P7                                             | 并行补验    |
 | P7 系统、迁移与阅读 | 附件/URI/权限/互传、完整迁移、双语音、未读、生命周期                                     | 当前执行；文本/通知/语音/附件/惰性原件first/cold、普通Controller及guarded Main四方法已有有限结果 | 真实SAF与准备通道、其余24组迁移域/错误/补偿/崩溃/完整UI、F59独立互传与双端迁移域、语音实录/未读/生命周期及手机DEV | 最高        |
-| P8 EasyWork A5      | Provider、配对、LAN/Relay、历史/事件、控制、EWDAP、原生/Codex回归七组                    | 部分完成；目标/连接替换隔离及中英菜单/保存/新Activity恢复有限通过                                | 当前原窗口绑定及短视口/长字段/AX、Main截图/API26/37、真实issuer/网络/桌面/手机与七组封存                          | 与P7并行    |
+| P8 EasyWork A5      | Provider、配对、LAN/Relay、历史/事件、控制、EWDAP、原生/Codex回归七组                    | 部分完成；目标/连接替换隔离及中英菜单/保存/新Activity恢复有限通过                                | 当前AX锚点及短视口/长字段/AX、Main截图/API26/37、真实issuer/网络/桌面/手机与七组封存                              | 与P7并行    |
 | P9 普通聊天通知     | PushProvider、GMS差异、权限/渠道/声音/隐私/去重/路由/角标/漏推                           | 部分完成；原通知/冷入口及scoped bootstrap有限通过                                                | SystemUI真实点击/零进程创建、真实Host/供应商/OEM、低API/字号/TalkBack/手机；新三包诊断仍待SDK/API36准入           | 与P7/P8并行 |
 | P10 全量冻结交付    | 全部适用F/UI/S/X、双Provider、双端原生、API26/37/手机、macOS/Windows、升级/签名/安装文档 | 待全量验收与发布准备                                                                             | 冻结源码/包/Host/runner，逐行关闭功能、交互、界面与性能/稳定性门槛                                                | 依赖关闭后  |
 
@@ -39,5 +39,5 @@
 ## 当前交付
 
 - 阶段78已通过范围经[PR128](https://git.51easyai.com/BCAI/agent-hub-app/pulls/128)合入主线；详情见[交付档案](records/stage78-p7-main-p8-short-ui.md)。
-- 阶段79源88447c1a与阶段80主线整合daf966bc已推安卓分支，尚未PR合入。当前新增验收修订已完成本轮全检查，按阶段提交安卓分支；P7/P8真实失败仍保持待修复。
+- 阶段79/80已随PR131合入；后续阶段继续在新安卓分支推进。阶段80源0ba8d903经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)合入主线fda80542，源/主线CI与公开同步均通过，已清理Stage79/80本地和远端分支；详情见交付档案。当前[阶段81](records/stage81-window-owner-metadata.md)继续AX锚点定位与长字段验收；P7准备通道UNKNOWN保持。
 - 其他已交付历史、CI与分支回收见[档案索引](records/README.md)，不在总表追加过程流水。

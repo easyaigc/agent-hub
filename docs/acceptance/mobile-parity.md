@@ -1667,3 +1667,9 @@ Stage79 (F02/F03/F04/F55/F56): R3 strict native AX readiness/scope/budget/order 
 阶段80 SDK5317及API33安装/系统预检已辅助通过；在Native调用前发现实际ADB换行能力列表与验收器逗号假设不符，已修订严格解析。未调用P7 helper/Native；原VM正常退出并释放端口。修订后的SDK/实际回调及AX仍待验，旧包不作新源码匹配复用；过程见阶段80档案。
 
 阶段80实际：SDKf6d9/899源辅助通过；P7 handoff rc137/UNKNOWN，未进入Native UI，原操作不重放。P8首中文case在原decor归属绑定失败（JUnit1/1），英文未验；inner wait0不能升级通过。原VM正常退出与流/端口收尾另核，失败数据保留。详见阶段80运行档案；F59 Android仍未实现，iOS F59原件/journal未在迁移Payload内的双端缺口单列。
+
+阶段81 F02/F03/F04/F56：只读窗口失败元数据源及独立54/899目的已独审并采用；原所有者拒绝/通过断言保持。新SDK/实际观测/修复未执行，不增加Native或产品通过，见阶段81档案。
+
+阶段81，F02/F03/F04/F56：实际失败元数据OBSERVED仅定位到原Activity decor的DecorContext链缺Activity，严格Native仍1项失败。修复按原Activity/window/decor/非空token强引用，只对该准确decor采用对象身份；Dialog仍核准确Activity context链、type2与原token，原焦点/AX window和输入期限保持。新独立构建目的与binding-v2，旧合同冻结；重建/交互及完整双端验收仍待执行，iOS产品界面与文案不变。详见[阶段档案](../plans/android-alignment-20261022/records/stage81-window-owner-metadata.md)。
+
+阶段81实际补充：新SDK7fbfee97通过辅助构建；原Dialog binding-v2与名称replacement/IME有界通过。随后原AX锚点在5000ms/18样本内缺失，JUnit1项失败，英文和余字段未执行；诊断UNKNOWN，完整长字段/AX/视觉/真实DEV仍开。原窗口与输入通过只限本次准确包/环境，不替代iOS或物理设备结果。

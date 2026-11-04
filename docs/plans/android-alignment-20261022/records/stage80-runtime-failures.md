@@ -15,3 +15,7 @@ Android 13可能将DecorContext建立在applicationContext上，ContextWrapper�
 预备阶段的目录缺失、错误Git cwd及执行服务容量故障都未触发Native/helper输入，原回执保留；已明确修正。P7真正handoff提交后的UNKNOWN与这些纯本地前置失败分开，不因环境恢复重放。
 
 详见[阶段80源码/构建档案](stage80-main-and-owned-window.md)；功能、交互、界面及物理DEV继续分别关闭，任务/项目CRUD、F75、iOS A6暂停。
+
+## 主线交付与分支收尾
+
+阶段79/80经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)正常合入main fda80542，源0ba8d903。源CI11320、主线CI11321的workspace/iOS均成功，公开同步11322成功；GitHub b06b819c的tree fb495d5b与Gitea完全匹配。两个已合并开发分支经准确SHA、无工作树使用和祖先关系核对后，均完成本地/远端普通删除；Stage81工作树和其他refs保留。该交付不改变P7 UNKNOWN或P8失败结论。

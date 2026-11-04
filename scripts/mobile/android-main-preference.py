@@ -31,6 +31,8 @@ SHARED_SDK_PROFILE = "p7-main-p8-short-ui-v1"
 READINESS_SDK_PROFILE = "p7-main-p8-short-ui-v2"
 SAF_SDK_PROFILE = "p7-main-saf-v1"
 SAF_READINESS_SDK_PROFILE = "p7-main-saf-v2"
+OWNER_METADATA_SDK_PROFILE = "p8-window-owner-metadata-v1"
+ACTIVITY_DECOR_SDK_PROFILE = "p8-activity-decor-owner-v1"
 OWNED_WINDOW_PURPOSE = "p8-owned-window-readiness-v1"
 MODE = "main-subclass-menu"
 CLASS = "com.agenthub.android.NativeP8MainPreferenceTest"
@@ -54,9 +56,9 @@ def admitted(args):
     # Build purpose is explicit and finite; Native admission retains the original P8 identity.
     sdk_profile = args.sdk_profile
     require(args.readiness_purpose in (None, OWNED_WINDOW_PURPOSE), "Closed original-window readiness purpose")
-    require((args.readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile == SAF_READINESS_SDK_PROFILE), "Original-window proof and newly reviewed SAF-v2 SDK must be selected together")
-    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE), "Closed P8 SDK purpose")
-    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE):
+    require((args.readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE)), "Original-window proof and newly reviewed SAF-v2 SDK must be selected together")
+    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE), "Closed P8 SDK purpose")
+    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE):
         # Root supplies both pins from immutable external intent, never from this bundle.
         first.sha(args.expected_sdk_seal_sha256)
         first.sha(args.expected_workspace_review_sha256)
@@ -73,10 +75,16 @@ def admitted(args):
             "External shared SDK pins are unsupported for the legacy P8 purpose")
     build = capture.verify_build_bundle(args.build_bundle, first, repo, sdk_profile)
     guard = first.read_guard(Path(args.build_bundle) / "source-before.json")
-    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE):
+    if sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE):
         require(build["sealSha256"] == args.expected_sdk_seal_sha256, "Approved SDK seal changed during typed verification")
         first.exact(guard, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
-        if sdk_profile == SAF_READINESS_SDK_PROFILE:
+        if sdk_profile == ACTIVITY_DECOR_SDK_PROFILE:
+            require(set(guard["sourceOverlay"]) == set(capture.P8_ACTIVITY_DECOR_OVERLAY_PATHS), "Exact Activity decor owner SDK source contract")
+            require(first.same(guard, capture.p8_activity_decor_source_guard(first, repo, guard["sourceOverlay"])), "Activity decor owner SDK source drift")
+        elif sdk_profile == OWNER_METADATA_SDK_PROFILE:
+            require(set(guard["sourceOverlay"]) == set(capture.P8_OWNER_METADATA_OVERLAY_PATHS), "Exact owned-window metadata SDK source contract")
+            require(first.same(guard, capture.p8_owner_metadata_source_guard(first, repo, guard["sourceOverlay"])), "Owned-window metadata SDK source drift")
+        elif sdk_profile == SAF_READINESS_SDK_PROFILE:
             require(set(guard["sourceOverlay"]) == set(capture.P7_MAIN_SAF_V2_OVERLAY_PATHS), "Exact SAF-v2 shared SDK source contract")
             require(first.same(guard, capture.main_saf_v2_source_guard(first, repo, guard["sourceOverlay"])), "SAF-v2 shared SDK source drift")
         elif sdk_profile == SAF_SDK_PROFILE:
@@ -274,7 +282,7 @@ def readiness_proof(expected, events, facts):
                 (("nodeCap", 2048), ("sampleLimit", 64), ("deadlineMs", 5000), ("intervalMs", 100))), "Exact v2 read-only readiness limits")
 
 
-def owned_window_readiness_proof(expected, events, facts):
+def owned_window_readiness_proof(expected, events, facts, *, activity_decor_owner=False):
     binding_ids = set()
     finalizers = [event["body"] for event in events if event["phase"] == "owners-confirmed-or-retained-before-scope-cleanup"]
     require(len(finalizers) == 2, "Original-window v3 requires exactly one finalizer per original case")
@@ -340,10 +348,16 @@ def owned_window_readiness_proof(expected, events, facts):
         bindings = detail["nativeWindowBindings"]
         require(type(bindings) is list and len(bindings) == 1, "One original form window binding before this case's field input")
         binding = bindings[0]
-        first.exact(binding, {"schema", "bindingId", "ownedRun", "pid", "processNonce", "launchOrdinal", "windowId", "source", "attachedOwnerCount", "startedElapsedMs", "boundElapsedMs", "elapsedMs", "requests", "requestLimit", "deadlineMs", "beforeFirstFieldInput", "inputOperations"})
+        binding_keys = {"schema", "bindingId", "ownedRun", "pid", "processNonce", "launchOrdinal", "windowId", "source", "attachedOwnerCount", "startedElapsedMs", "boundElapsedMs", "elapsedMs", "requests", "requestLimit", "deadlineMs", "beforeFirstFieldInput", "inputOperations"}
+        if activity_decor_owner:
+            binding_keys |= {"ownerPolicy", "originalActivityDecorRetained", "originalActivityTokenRetained"}
+            require(binding.get("ownerPolicy") == "retained-activity-decor-and-exact-dialog-token-v1" and
+                binding.get("originalActivityDecorRetained") is True and binding.get("originalActivityTokenRetained") is True,
+                "Exact retained original Activity decor and token policy required")
+        first.exact(binding, binding_keys)
         first.canonical_uuid(binding["bindingId"]); first.integer(binding["windowId"], 0, 2147483647)
         require(binding["bindingId"] not in binding_ids, "Each original case owns its own window binding"); binding_ids.add(binding["bindingId"])
-        require(binding["schema"] == "p8-owned-focused-window-binding-v1" and binding["ownedRun"] == run and binding["pid"] == facts["pid"] and binding["processNonce"] == facts["processNonce"] and
+        require(binding["schema"] == ("p8-owned-focused-window-binding-v2" if activity_decor_owner else "p8-owned-focused-window-binding-v1") and binding["ownedRun"] == run and binding["pid"] == facts["pid"] and binding["processNonce"] == facts["processNonce"] and
             type(binding["launchOrdinal"]) is int and binding["launchOrdinal"] == 0 and binding["source"] == "WindowInspector.getGlobalWindowViews" and binding["beforeFirstFieldInput"] is True, "Original process/Activity/decor binding only")
         first.integer(binding["attachedOwnerCount"], 1, 4); first.integer(binding["requests"], 1, 64); first.integer(binding["elapsedMs"], 0, 4999)
         require(type(binding["requestLimit"]) is int and binding["requestLimit"] == 64 and type(binding["deadlineMs"]) is int and binding["deadlineMs"] == 5000, "Finite read-only pre-input binding limits")
@@ -388,7 +402,7 @@ def owned_window_readiness_proof(expected, events, facts):
 
 
 def native_proof(expected, events, observed, *, sdk_profile=PROFILE, readiness_purpose=None):
-    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE), "Closed P8 proof purpose")
+    require(sdk_profile in (PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE), "Closed P8 proof purpose")
     accepted = events[0]["body"]; first.exact(accepted, {"binding", "nativeFacts"})
     require(first.same(accepted["binding"], expected), "Native did not accept the original immutable admission")
     facts = accepted["nativeFacts"]
@@ -432,10 +446,10 @@ def native_proof(expected, events, observed, *, sdk_profile=PROFILE, readiness_p
         body = event["body"]; require(body.get("ownedRun") in case_ids, "Foreign fixture scope evidence")
         require(body.get("pid") == facts["pid"] and body.get("processNonce") == facts["processNonce"], "Evidence process changed")
     require(readiness_purpose in (None, OWNED_WINDOW_PURPOSE), "Closed Native proof purpose")
-    require((readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile == SAF_READINESS_SDK_PROFILE), "Original-window proof requires the explicit SAF-v2 purpose")
+    require((readiness_purpose == OWNED_WINDOW_PURPOSE) == (sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE)), "Original-window proof requires the explicit SAF-v2 purpose")
     if readiness_purpose == OWNED_WINDOW_PURPOSE:
-        require(sdk_profile == SAF_READINESS_SDK_PROFILE, "Only newly reviewed SAF-v2 SDK owns this window proof")
-        owned_window_readiness_proof(expected, events, facts)
+        require(sdk_profile in (SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE), "Only explicitly reviewed original-window SDK owns this proof")
+        owned_window_readiness_proof(expected, events, facts, activity_decor_owner=sdk_profile == ACTIVITY_DECOR_SDK_PROFILE)
     elif sdk_profile in (READINESS_SDK_PROFILE, SAF_SDK_PROFILE):
         readiness_proof(expected, events, facts)
     return proof
@@ -497,7 +511,7 @@ def run(args):
         "snapshotSha256": {phase: first.digest(output / (phase + "-snapshot.json")) for phase in ("before", "live", "after")},
         "caseCount": len(proof["cases"]), "nativeRuntime": False, "shippingMainCovered": False,
         "networkIssuerDesktopPhysicalApi26Covered": False, "allA5Covered": False, "status": "passed"}
-    if args.sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE):
+    if args.sdk_profile in (SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE):
         # The v2 result also requires its strict per-case/owner/readiness evidence above.
         review["schema"] = ("p8-main-subclass-saf-shared-sdk-host-review-v1" if args.sdk_profile == SAF_SDK_PROFILE
             else ("p8-main-subclass-readiness-sdk-host-review-v2" if args.sdk_profile == READINESS_SDK_PROFILE
@@ -517,7 +531,7 @@ def main():
     for name in ("repo", "output-dir", "app-apk", "test-apk", "adb", "serial", "run", "boot-uuid", "build-bundle"):
         parser.add_argument("--" + name, required=True)
     for name in ("uid", "test-uid"): parser.add_argument("--" + name, type=int, required=True)
-    parser.add_argument("--sdk-profile", choices=(PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE), default=PROFILE,
+    parser.add_argument("--sdk-profile", choices=(PROFILE, SHARED_SDK_PROFILE, READINESS_SDK_PROFILE, SAF_SDK_PROFILE, SAF_READINESS_SDK_PROFILE, OWNER_METADATA_SDK_PROFILE, ACTIVITY_DECOR_SDK_PROFILE), default=PROFILE,
         help="Explicit captured SDK purpose; default retains the legacy P8 contract")
     parser.add_argument("--readiness-purpose", choices=(OWNED_WINDOW_PURPOSE,), default=None,
         help="Explicit new original-window v3 proof; old readiness proof contracts remain closed")

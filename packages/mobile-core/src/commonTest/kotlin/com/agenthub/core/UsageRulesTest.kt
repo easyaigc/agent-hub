@@ -32,4 +32,17 @@ class UsageRulesTest {
         assertEquals("<0.01",UsageRules.displayAmount("0.00001"))
         assertEquals("−<0.01",UsageRules.displayAmount("-0.00001"))
     }
+    @Test fun percentageRequiresAnActualNonnegativeFiniteJsonNumber() {
+        val root=vectors
+        val response=root.getValue("cases").jsonArray.first().jsonObject.getValue("response").toString()
+        val target=root.getValue("target").toString()
+        val now=root.getValue("nowMillis").jsonPrimitive.long
+        for(value in listOf("-1","true","null","\"23\"","1e309")) {
+            assertFails(value) { UsageRules.project(response.replace("\"usedPercent\":23","\"usedPercent\":"+value),target,now) }
+        }
+        // Above 100 percent remains valid provider data; do not silently clamp it.
+        val actual=Json.parseToJsonElement(UsageRules.project(response.replace("\"usedPercent\":23","\"usedPercent\":123.5"),target,now)).jsonObject
+        assertEquals(123.5,actual.getValue("percent").jsonPrimitive.double)
+    }
+
 }

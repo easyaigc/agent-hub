@@ -1652,3 +1652,7 @@ Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness so
 阶段82，F02/F03/F04/F55/F56/F64：Android验收工装独立Test类依赖修复及共享SDK/独立javac辅助检查通过；实际prepare受控拒绝保持UNKNOWN，Native/SAF未执行，P8绑定与完整AX/视觉仍待验。生产布局、token、文案和iOS行为未改，完整功能不关闭；过程见[阶段档案](../plans/android-alignment-20261022/records/stage82-framework-and-ax-observation.md)。
 
 阶段83，F02/F03/F04/F54/F55/F56：两APK共享SDK9355与三APK诊断SDKfe33均通过，905项输入保持；P7新prepare返回PLATFORM_DIRECTORY，效果UNKNOWN且未重放，Native未派发。P8原窗口绑定及名称替换/IME限定通过，随后原控件AX未找到；完整交互/视觉失败，英文未完成。P9实际诊断未找到原通知行、系统前置状态待核对；完整辅助回归通过，独立producer/IMPORT及物理DEV仍待验，原成功断言与iOS产品行为保持。详见[阶段档案](../plans/android-alignment-20261022/records/stage83-shared-observers-and-import.md)。
+
+### 2026-11-04 F73 额度消费者整合
+
+共享百分比解析修复同时作用于 iOS 与 Android，现有 UI02/UI03/UI12 布局、token 和文案保持；非法数据按既有未知/错误状态呈现，不投影成余额或正常比例。超过 100% 的有效数值保留，由既有圆环展示规则处理。此次无新增 UI 验收结论，记录见 [消费者整合](../acceptance/easywork-mobile-integration-20261104.md)。

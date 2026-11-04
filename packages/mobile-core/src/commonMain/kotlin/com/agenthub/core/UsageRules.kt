@@ -50,6 +50,16 @@ object UsageRules {
         val grouped=roundedWhole.reversed().chunked(3).joinToString(",").reversed()
         return (if(negative && cents.any { it!='0' })"-" else "")+grouped+(if(roundedFraction.isEmpty())"" else ".$roundedFraction")
     }
+    // The legacy shared validator handles integer bounds, but not JSON number
+    // rules. Enforce usage v1's number/minimum here without changing other clients.
+    private fun percentage(value: JsonElement): Double {
+        val primitive=value.jsonPrimitive
+        require(!primitive.isString)
+        val number=primitive.doubleOrNull
+        require(number!=null && number.isFinite() && number>=0)
+        return number
+    }
+
     /** Throws for malformed known values or a wrong machine. Unknown v1 children are skipped locally. */
     @Throws(Exception::class)
     fun project(json: String, targetJson: String, nowMillis: Long): String {
@@ -107,7 +117,7 @@ object UsageRules {
             if(state=="unavailable")missing=true
             val usage=reading?.get("usage")?.jsonObject
             val percent=if(state=="measured") when(usage?.text("kind")) {
-                "percentage" -> usage.getValue("usedPercent").jsonPrimitive.double
+                "percentage" -> percentage(usage.getValue("usedPercent"))
                 "quantity" -> ratio(usage.text("used")!!,usage.text("limit")!!)
                 else -> null
             } else null

@@ -8023,7 +8023,7 @@
       "androidStages": ["A6"],
       "scenarios": ["S01", "S11", "S14", "S18"],
       "ui": ["UI02", "UI03", "UI12"],
-      "revision": 8,
+      "revision": 9,
       "implementation": {
         "ios": "code-present",
         "android": "code-present"
@@ -8032,7 +8032,7 @@
         "ios": "not-verified",
         "android": "not-verified"
       },
-      "sourceNotes": "用户确认额度 UI 修订6并授权实现。公共 usage v1、Codex Host、EasyWork 标准适配及固定 usage/read、KMP共享规则和双端原生两处展示已落地。左侧固定设置，右侧用量环和两行余额在收起按钮前；只有余额时准确朗读数值。实际 Codex 返回7天窗口及credits，无5小时窗口；EasyWork原Electron线上余额与账户摘要独立核对通过，双仓库交付复验记录见docs/acceptance/agent-usage-20261028.md。本次真实EasyWork原Electron与原生iOS模拟器LAN/Relay流程通过；实体iPhone原生App内XCTest读取及视图通过，snapshotId和精确余额独立匹配桌面回执，物理触控与模拟器触控证据分列；Android真实结果单列；F73不恢复其他A6暂停项。",
+      "sourceNotes": "用户确认额度 UI 修订6并授权实现。公共 usage v1、Codex Host、EasyWork 标准适配及固定 usage/read、KMP共享规则和双端原生两处展示已落地。左侧固定设置，右侧用量环和两行余额在收起按钮前；只有余额时准确朗读数值。实际 Codex 返回7天窗口及credits，无5小时窗口；EasyWork原Electron线上余额与账户摘要独立核对通过，双仓库交付复验记录见docs/acceptance/agent-usage-20261028.md。本次真实EasyWork原Electron与原生iOS模拟器LAN/Relay流程通过；实体iPhone原生App内XCTest读取及视图通过，snapshotId和精确余额独立匹配桌面回执，物理触控与模拟器触控证据分列；Android真实结果单列；F73不恢复其他A6暂停项。 2026-11-04消费者整合补充：共享额度投影拒绝负数、字符串、布尔值、null及非有限百分比，保留大于100%的有效数字；iOS与Android共同受影响，UI和生产端协议保持。辅助检查及当前整合边界见docs/acceptance/easywork-mobile-integration-20261104.md，未新增整项或真机通过。",
       "sharedImplementation": {
         "status": "implemented",
         "scope": "usage v1 严格校验、精确余额摘要、数量比例、有效窗口选择、未知 v1 子类型与过期投影",
@@ -19789,6 +19789,16 @@
         "scripts/mobile/android-main-saf-framework-import.py": "03f7468b28f2896ae8957eeefa7a100755396f51a9d956132d93e7c6a4285b62",
         "scripts/mobile/android-main-saf-framework.py": "f30cc2a072996ff7d598608c0ecfd7d6d20391a9a1d6fce18d3af5fd01a63230",
         "scripts/mobile/android-sdk-capture.py": "078e918d4dd705b863898a6137c72dce5cddc14f6184f7267b88a961ccf4827d"
+      }
+    },
+    {
+      "id": "F73-easywork-consumer-percentage-boundary-20261104",
+      "baseCommit": "637928fe28f6c28e40497bf4a8978cf398de927a",
+      "features": ["F73"],
+      "summary": "共享iOS/Android额度消费者严格解析非负有限JSON百分比，保留超过100%的有效数据；仅辅助边界回归，不新增整项或物理设备通过。",
+      "files": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt": "0312f4f1e55dbc71e525596db1bc23c86286f1d9bd9ae13277f2387ec4d8fc69",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt": "6e184bc72ff0965a81807ff312a42683f87d52e4f8e9e60f7f93ef630f6276cd"
       }
     }
   ]

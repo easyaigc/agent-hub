@@ -45,8 +45,8 @@ public final class OwnedMainMigrationDocumentsV3 extends DocumentsProvider {
     @Override public Cursor queryRoots(String[] projection) throws FileNotFoundException {
         try {
             self();String boot=P7MainSafLeaseV3.facts(P7MainSafLeaseV3.TEST+":p7MainSafV3").getString("bootUuid");
-            MatrixCursor out=cursor(projection,ROOT_COLUMNS);File parent=new File(getContext().getFilesDir(),P7MainSafLeaseV3.NAMESPACE);
-            if(!Files.exists(parent.toPath(),LinkOption.NOFOLLOW_LINKS))return out;
+            MatrixCursor out=cursor(projection,ROOT_COLUMNS);File parent=P7MainSafLeaseV3.parentOrNull(getContext());
+            if(parent==null)return out;
             for(String run:P7MainSafLeaseV3.runs(parent)) {
                 File folder=new File(parent,run);
                 // Incomplete history is preserved and hidden, never adopted as a new lease.

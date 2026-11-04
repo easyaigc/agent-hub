@@ -570,11 +570,13 @@ class NativeP8MainPreferenceTest {
         var visited=0;var idDeclared=0;var tagDeclared=0;var exactIds=0;var exactTags=0
         var completed=false;var limit="none";var stage="entry";var diagnosticError: Throwable?=null
         val candidates=JSONArray();val rootFacts=JSONObject()
+        val nativeSemanticsIds=JSONArray();var nativeIdsTruncated=false
+        var mergedView: android.view.View?=null;var unmergedView: android.view.View?=null
         val composeIds=JSONObject();val activityWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
             .put("equalsOriginalActiveWindow",JSONObject.NULL).put("errorClass",JSONObject.NULL)
         val dialogWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
             .put("source","original-retained-focused-decor").put("errorClass",JSONObject.NULL)
-        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v3").put("field",tag)
+        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v4").put("field",tag)
             .put("windowBindingId",binding.id).put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
             .put("expectedAnchor",anchor?:JSONObject.NULL).put("windowId",windowId?:JSONObject.NULL)
             .put("primaryErrorClass",primary.javaClass.name).put("lastCompleteSample",lastCompleteSample?:JSONObject.NULL)
@@ -633,7 +635,25 @@ class NativeP8MainPreferenceTest {
                     val id=read {
                         val matches=ui.onAllNodesWithTag(tag,useUnmergedTree=unmerged).fetchSemanticsNodes()
                         check(matches.size==1) {"AX diagnostic fixed-tag count mismatch"}
-                        matches.single().id
+                        val node=matches.single()
+                        val root=checkNotNull(node.root as? androidx.compose.ui.platform.ViewRootForTest)
+                        val view=root.view
+                        if(unmerged)unmergedView=view else mergedView=view
+                        // Exact original Compose owner only. This cannot select an AX root/window.
+                        main {
+                            budget()
+                            observation.put("sameRetainedDecor",view.rootView===binding.decor)
+                                .put("viewAttached",view.isAttachedToWindow).put("viewHasWindowFocus",view.hasWindowFocus())
+                                .put("pendingMeasureOrLayout",root.hasPendingMeasureOrLayout)
+                                .put("layoutAttached",node.layoutInfo.isAttached).put("layoutPlaced",node.layoutInfo.isPlaced)
+                            budget()
+                        }
+                        fun bounds(r: androidx.compose.ui.geometry.Rect)=JSONArray(listOf(r.left,r.top,r.right,r.bottom))
+                        observation.put("boundsInRoot",bounds(node.boundsInRoot)).put("boundsInWindow",bounds(node.boundsInWindow))
+                        val parents=JSONArray();var parent=node.parent
+                        repeat(8) { if(parent!=null){budget();parents.put(checkNotNull(parent).id);parent=checkNotNull(parent).parent} }
+                        observation.put("parentIds",parents).put("parentIdLimit",8).put("parentIdsTruncated",parent!=null)
+                        node.id
                     }
                     if(unmerged)unmergedId=id else mergedId=id
                     observation.put("state","OBSERVED").put("semanticsId",id)
@@ -644,6 +664,7 @@ class NativeP8MainPreferenceTest {
                 }
             }
             composeIds.put("mergedEqualsUnmerged",if(mergedId==null||unmergedId==null)JSONObject.NULL else mergedId==unmergedId)
+                .put("mergedAndUnmergedSameView",if(mergedView==null||unmergedView==null)JSONObject.NULL else mergedView===unmergedView)
             stage="original-activity-window"
             try {
                 var measuredWindowId: Int?=null
@@ -704,6 +725,7 @@ class NativeP8MainPreferenceTest {
                             check(node.extras.containsKey(idKey)&&node.extras.get(idKey) is Int) {"AX failure diagnostic ID metadata unknown"}
                             node.extras.getInt(idKey)
                         }
+                        if(nativeSemanticsIds.length()<32)nativeSemanticsIds.put(id)else nativeIdsTruncated=true
                         if(id==anchor)exactIds++
                     }
                     if(hasTag) {
@@ -748,6 +770,7 @@ class NativeP8MainPreferenceTest {
         diagnostic.put("outcome",if(completed)"OBSERVED" else "UNKNOWN").put("complete",completed)
             .put("visitedNodes",visited).put("idExtraDeclared",idDeclared).put("tagDeclared",tagDeclared)
             .put("exactIDCount",exactIds).put("exactTagCount",exactTags).put("candidates",candidates).put("root",rootFacts)
+            .put("nativeSemanticsIds",nativeSemanticsIds).put("nativeSemanticsIdLimit",32).put("nativeSemanticsIdsTruncated",nativeIdsTruncated)
             .put("composeIds",composeIds).put("activityWindow",activityWindow).put("dialogWindow",dialogWindow)
             .put("candidateCap",4).put("nodeCap",2048).put("depthCap",40).put("deadlineMs",1500)
             .put("limit",limit).put("stage",stage).put("actualElapsedMs",actualElapsedMs).put("overBudget",overBudget)

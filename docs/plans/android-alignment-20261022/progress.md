@@ -2,7 +2,7 @@
 
 更新：2026-11-04。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
 
-当前：阶段82经PR133合入d79e85bb，源/主线CI及公开同步通过，已清理阶段82开发分支。阶段83两包/三包SDK均通过；P7新prepare定位到平台目录检查拒绝，P8原窗口绑定及两项输入限定通过、控件AX读取失败，继续修复；P9实际观察未找到原通知行，完整P7/P8/P9仍开放，未知操作不重放。
+当前：阶段83提交809abd82已随PR134合入637928fe，主线workspace门禁仍核对。阶段84新SDK/Java/Kotlin通过；P7原准备因SELinux硬链接发布失败，P8确认原控件在原窗口但可见边界为零。本阶段完整辅助回归通过，正在提交登记；下一阶段优先修复发布和保存后的视口准备；整项P7/P8/P9保持开放。
 
 ## 总计划
 
@@ -22,7 +22,7 @@
 
 ## 接下来按什么顺序做
 
-1. **P7/P8当前阻塞**：修复P7框架目录的系统路径别名检查，继续真实准备/导出；P8核对原窗口绑定成功后准确AX控件缺失。使用新独立场景验收，不重放原UNKNOWN。
+1. **P7/P8当前阻塞**：修复P7系统拒绝的硬链接发布，再验收真实准备/导出；P8在自动保存后准备原字段视口并核对AX。使用新独立场景验收，不重放原UNKNOWN。
 2. **完整迁移**：继续真实Main导入/导出、24组库存、失败补偿、自然故障与冷恢复。F59 Android尚未实现；iOS现有F59原件/journal也未进入迁移Payload，双端缺口单列，不能按完整迁移通过。
 3. **语音、未读、生命周期**：原件与失败恢复、阅读权威/原通知回执、Main/系统冷入口、真实停止/死亡/重开逐项验。
 4. **P9独立项**：新三包诊断先完成精确源码/SDK/API36准入，再采集SystemUI拒绝节点；本轮未找到原通知行，系统前置状态待准确准备；诊断不算通知点击通过。继续真实Host、偏好/声音/隐私与完整UI。
@@ -40,5 +40,5 @@
 
 - 阶段78已通过范围经[PR128](https://git.51easyai.com/BCAI/agent-hub-app/pulls/128)合入主线；详情见[交付档案](records/stage78-p7-main-p8-short-ui.md)。
 - 阶段79/80已随PR131合入；后续阶段继续在新安卓分支推进。阶段80源0ba8d903经[PR131](https://git.51easyai.com/BCAI/agent-hub-app/pulls/131)合入主线fda80542，源/主线CI与公开同步均通过，已清理Stage79/80本地和远端分支；详情见交付档案。[阶段81](records/stage81-window-owner-metadata.md)窗口局部结果已交付；完整AX和P7未知仍单列。
-- 阶段81已提交d99bd131，已建[PR132](https://git.51easyai.com/BCAI/agent-hub-app/pulls/132)，源/主线CI及公开同步均通过，已合入472bde36并清理本地/远端Stage81分支；局部窗口/输入与完整AX验收分开。[阶段82](records/stage82-framework-and-ax-observation.md)的独立Test依赖修复、共包构建与完整辅助回归已通过；实际prepare受控拒绝仍待验。已提交88181243并创建[PR133](https://git.51easyai.com/BCAI/agent-hub-app/pulls/133)，已合入主线d79e85bb，源/主线CI与公开同步通过，阶段82本地及远端分支已清理；[阶段83](records/stage83-shared-observers-and-import.md)已完成两包/三包SDK与完整辅助回归；P7平台目录和P8 AX修复继续，P9未找到原通知行单列待验。本阶段随后提交安卓分支。
+- 阶段81已提交d99bd131，已建[PR132](https://git.51easyai.com/BCAI/agent-hub-app/pulls/132)，源/主线CI及公开同步均通过，已合入472bde36并清理本地/远端Stage81分支；局部窗口/输入与完整AX验收分开。[阶段82](records/stage82-framework-and-ax-observation.md)的独立Test依赖修复、共包构建与完整辅助回归已通过；实际prepare受控拒绝仍待验。已提交88181243并创建[PR133](https://git.51easyai.com/BCAI/agent-hub-app/pulls/133)，已合入主线d79e85bb，源/主线CI与公开同步通过，阶段82本地及远端分支已清理；[阶段83](records/stage83-shared-observers-and-import.md)已完成两包/三包SDK与完整辅助回归；P7平台目录和P8 AX修复继续，P9未找到原通知行单列待验。已提交809abd82并推送；[阶段84](records/stage84-platform-alias-and-ax-owner.md)在新安卓分支继续平台路径/列表及原控件归属修复。
 - 其他已交付历史、CI与分支回收见[档案索引](records/README.md)，不在总表追加过程流水。

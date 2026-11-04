@@ -154,13 +154,24 @@ final class P7MainSafLeaseV3 {
         ApplicationInfo info=context.getApplicationInfo();
         if(!context.getPackageName().equals(TEST)||info==null||!TEST.equals(info.packageName)||info.uid!=Process.myUid()||
             info.dataDir==null||info.dataDir.isEmpty())throw reject("PLATFORM_PACKAGE");
-        File data=new File(info.dataDir),files=context.getFilesDir();
-        if(files==null||!files.getAbsoluteFile().equals(new File(data.getAbsoluteFile(),"files")))throw reject("PLATFORM_FILES_PATH");
+        // Only authenticated framework package roots may contain Android's user-0 alias.
+        // Resolve their ancestors once; never admit a symlink at either directory leaf.
+        File rawData=new File(info.dataDir).getAbsoluteFile(),rawFiles=context.getFilesDir();
+        if(rawFiles==null)throw reject("PLATFORM_FILES_PATH");
+        rawFiles=rawFiles.getAbsoluteFile();
+        if(!rawFiles.equals(new File(rawData,"files")))throw reject("PLATFORM_FILES_PATH");
+        StructStat rawDataStat=Os.lstat(rawData.getPath()),rawFilesStat=Os.lstat(rawFiles.getPath());
+        if(Files.isSymbolicLink(rawData.toPath())||Files.isSymbolicLink(rawFiles.toPath()))throw reject("PLATFORM_DIRECTORY");
+        File data=rawData.getCanonicalFile(),files=rawFiles.getCanonicalFile();
+        if(!files.equals(new File(data,"files")))throw reject("PLATFORM_FILES_PATH");
         StructStat dataStat=Os.lstat(data.getPath()),filesStat=Os.lstat(files.getPath());
         platformDirectory(data,dataStat,false);platformDirectory(files,filesStat,true);
         if(dataStat.st_gid!=Process.myUid()||filesStat.st_gid!=Process.myUid())throw reject("PLATFORM_GID");
         if(dataStat.st_dev!=filesStat.st_dev)throw reject("PLATFORM_DEVICE");
-        return new PlatformFiles(data.getAbsoluteFile(),files.getAbsoluteFile(),dataStat,filesStat);
+        samePlatformIdentity(rawDataStat,dataStat);samePlatformIdentity(rawFilesStat,filesStat);
+        samePlatformIdentity(rawDataStat,Os.lstat(rawData.getPath()));
+        samePlatformIdentity(rawFilesStat,Os.lstat(rawFiles.getPath()));
+        return new PlatformFiles(data,files,dataStat,filesStat);
     }
     /** Directory nlink may change when the one admitted namespace is created. Unlike a
      * regular-file alias check, platform directory identity therefore pins inode/UID/GID/
@@ -206,6 +217,14 @@ final class P7MainSafLeaseV3 {
             if(!create)throw reject("ABSENT");createPlatformNamespace(context,platform,folder);
         }
         directory(folder);checkPlatformFiles(context,platform);return folder;
+    }
+    /** Listing is empty only for this class's own absent-namespace guard. */
+    static File parentOrNull(Context context) throws Exception {
+        try {return parent(context,false);}
+        catch(GuardRejection failure) {
+            if(failure.category.equals("ABSENT"))return null;
+            throw failure;
+        }
     }
     static List<String> runs(File parent) throws Exception {
         directory(parent);String[] names=parent.list();if(names==null||names.length>MAX_RUNS)throw reject("RUN_BOUND");

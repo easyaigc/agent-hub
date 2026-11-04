@@ -92,3 +92,7 @@ P8 v2 SDK通过，但中文首case的准确原生AX锚点在5秒截止失败，�
 阶段82新prepare 15b2a558-ac1e-406c-b801-d22c34db8acb：原child wait0/双EOF但provider返回受控IOException，无PREPARED，效果UNKNOWN，不重放。对应Native bc14c713-91a7-484c-bfa7-dbab06ac9098从未派发；本次未进入导出UI。准确scope/namespace的后置ENOENT不能证明无副作用；待有限拒绝原因观测，不猜测guard点。Root自持VM正常退出及端口释放已核，原失败数据/密钥/意图仍保留，不能替代旧VM89265未确认的wait/EOF。
 
 阶段83：两APK9355/三APKfe33及905源码构建通过。新P7操作6e818c8d受PLATFORM_DIRECTORY拒绝，效果UNKNOWN、禁止重放，Native2343未派发；平台路径别名修复待新场景。P8原窗口绑定及两项输入限定通过，AX锚232缺失、英文未完成。P9 API36一次诊断未找到原通知行，系统前置状态未证实，通知权限已按原flags恢复；独立producer/IMPORT、物理与完整产品交互/视觉仍待验。v2独立AVD因原合成密钥/加密fixture审计保留，24小时复核，未知操作不重放。见[阶段档案](records/stage83-shared-observers-and-import.md)。
+
+阶段84：P7认证根路径与列表同源修复、P8失败原View归属观察已采用并独审；新两包SDK/Kotlin/新prepare/系统SAF/AX/IMPORT与整项产品/物理门槛待验。原6e/15b/c609等UNKNOWN保持，不重放，不以新场景改判旧结果。见[阶段档案](records/stage84-platform-alias-and-ax-owner.md)。
+
+阶段84本次：P7 8e4d4440/run9201e7bd UNKNOWN，原intent.pending/claim保留，Native8f9b8227从未派发；原进程AVC拒绝link已只读关联，不重放。P8首次Native在原View/窗口/anchor下因边界0/AX缺失失败，App5455自然退出，cleanup未开始、原scope/alias保留。发布锁与保存后视口准备待新SDK/Native；旧泛型本地外层UNKNOWN不改写，前置失败证明与首次实际Native回执分开。

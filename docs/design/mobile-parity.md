@@ -1655,6 +1655,10 @@ Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness so
 
 阶段83，F02/F03/F04/F54/F55/F56：两APK共享SDK9355与三APK诊断SDKfe33均通过，905项输入保持；P7新prepare返回PLATFORM_DIRECTORY，效果UNKNOWN且未重放，Native未派发。P8原窗口绑定及名称替换/IME限定通过，随后原控件AX未找到；完整交互/视觉失败，英文未完成。P9实际诊断未找到原通知行、系统前置状态待核对；完整辅助回归通过，独立producer/IMPORT及物理DEV仍待验，原成功断言与iOS产品行为保持。详见[阶段档案](../plans/android-alignment-20261022/records/stage83-shared-observers-and-import.md)。
 
+阶段84，F02/F03/F04/F55/F56：Android认证框架data/files祖先别名规范化，queryRoots共用认证parentOrNull；通用目录/FD/UID/权限/ACK守卫保持。P8仅失败时补原View/decor及有界ID连接，原成功/布局/token/文案不变，iOS不受影响。源码独审和P7独立Java编译通过，新两包SDK、Kotlin及实际回调/完整交互/视觉/物理仍待验，见[阶段档案](../plans/android-alignment-20261022/records/stage84-platform-alias-and-ax-owner.md)。
+
+阶段84实际：新SDK6368/Java/Kotlin及905源码通过。P7已到intent.pending发布但SELinux拒绝link，原8e效果UNKNOWN、Native未派发；P8原View/窗口/anchor一致而clipped边界0，AX失败，完整交互/视觉仍待验。后续发布/视口修复是提案，iOS产品不变；见阶段84档案。
+
 ### 2026-11-04 F73 额度消费者整合
 
 共享百分比解析修复同时作用于 iOS 与 Android，现有 UI02/UI03/UI12 布局、token 和文案保持；非法数据按既有未知/错误状态呈现，不投影成余额或正常比例。超过 100% 的有效数值保留，由既有圆环展示规则处理。此次无新增 UI 验收结论，记录见 [消费者整合](../acceptance/easywork-mobile-integration-20261104.md)。

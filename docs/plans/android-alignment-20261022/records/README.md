@@ -286,3 +286,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 阶段82辅助回归已通过，实际prepare仍UNKNOWN/Native未派发；交付范围与环境修复见对应阶段档案，完整P7/P8/P9继续开放。
 
 - [阶段83：共用诊断、导入前置与P9重锁](stage83-shared-observers-and-import.md)：11路径/60/905源码采用与独审，P7四类独立编译通过，新SDK/producer/真实回调仍待验。
+
+- [阶段84：平台目录别名与原控件归属](stage84-platform-alias-and-ax-owner.md)：双路径/列表统一、原控件归属和新两包目的；SDK/新原生待验。

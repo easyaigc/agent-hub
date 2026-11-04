@@ -26,8 +26,8 @@ sys.dont_write_bytecode = True
 
 TOOL = "scripts/mobile/android-main-saf-framework-import.py"
 EXPORT_HELPER = "scripts/mobile/android-main-saf-framework.py"
-SDK_PROFILE = 'p7-main-saf-framework-observers-import-v1'
-SOURCE_GUARD_FUNCTION = 'p7_framework_observers_import_source_guard'
+SDK_PROFILE = 'p7-main-saf-platform-alias-ax-v1'
+SOURCE_GUARD_FUNCTION = 'p7_platform_alias_ax_source_guard'
 PROFILE = "p7-main-saf-framework-v4"
 APP = "com.easyai.agenthub.android.acceptance"
 TEST = APP + ".test"

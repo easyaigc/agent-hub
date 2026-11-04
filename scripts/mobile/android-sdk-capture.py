@@ -1570,5 +1570,92 @@ def _source_guard(api, repo, overlay, profile):
         return p9_geometry_v2_source_guard(api, repo, overlay)
     return _p9_geometry_v2_previous_source_guard(api, repo, overlay, profile)
 
+# Stage84 is a new independently reviewed two-APK purpose. Source83 contracts above
+# remain byte-for-byte intact; capture-self is pinned only by external Root review.
+P7_PLATFORM_ALIAS_AX_PROFILE = "p7-main-saf-platform-alias-ax-v1"
+P7_PLATFORM_ALIAS_AX_REVIEW_SCHEMA = "p7-main-saf-platform-alias-ax-build-review-v1"
+P7_PLATFORM_ALIAS_AX_OVERLAY_PATHS = P7_FRAMEWORK_OBSERVERS_IMPORT_OVERLAY_PATHS
+P7_PLATFORM_ALIAS_AX_FIXED_AFTER = {**P7_FRAMEWORK_OBSERVERS_IMPORT_FIXED_AFTER,
+    'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': 'f86aefe644758283ac18e53ac6a2c65aefbf0d7e71e58dd9db8aaef2ae4ee1f2',
+    'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java': '43cf0d1c773048621f610b8af098e9affef55ad6d68496c6af369dfe93447bb1',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '78602f95107605d67a3c4aa7613e2f4278625700ba8ede891e914d8b0ed539ea',
+    'scripts/mobile/android-main-saf-framework.py': '7f997ff48dee7fcb7007b93e17a9e8ad1735797bc3c262fea8f2b68ba97d67b6',
+    'scripts/mobile/android-main-saf-framework-import.py': '0d9ae9089fe8d3b099c0765234a0ed74948f811aa0110a1f4a1d3023447136a0',
+    'scripts/mobile/android-main-preference.py': '3623b295a629bac3cb15e4a20a8bff58675063365445905ad9cdc870ace808c3',
+}
+PROFILES = {**PROFILES, P7_PLATFORM_ALIAS_AX_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_platform_alias_ax_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_PLATFORM_ALIAS_AX_OVERLAY_PATHS), "Platform-alias-AX-v1 exact60 source union required")
+    require(all(overlay[name] == pin for name, pin in P7_PLATFORM_ALIAS_AX_FIXED_AFTER.items()), "Platform-alias-AX-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # This independent static contract also pins package.json, an EXTRA_INPUTS entry.
+    # The legacy generic guard deliberately forbids overlaying such build inputs.
+    # Reuse its strict inventory/hash/identity rules here without mutating its baseline,
+    # broadening legacy path acceptance, or accepting any non-enumerated build override.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Platform-alias-AX-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Platform-alias-AX-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Platform-alias-AX-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Platform-alias-AX-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Platform-alias-AX-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Platform-alias-AX-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 905 and
+        type(result["sources"]) is dict and len(result["sources"]) == 905 and
+        set(result["inventory"]) == set(result["sources"]), "Platform-alias-AX-v1 exact905 build inputs")
+    # Capture-self remains externally Root-pinned; the seven-key generic guard is unchanged.
+    return result
+
+_platform_alias_ax_previous_review = _review
+_platform_alias_ax_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_PLATFORM_ALIAS_AX_PROFILE:
+        return _platform_alias_ax_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned framework reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
+    require(value["schema"] == P7_PLATFORM_ALIAS_AX_REVIEW_SCHEMA, "Closed platform-alias-AX-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Framework reviewed HEAD")
+    api.sha(value["statusSha256"])
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_PLATFORM_ALIAS_AX_OVERLAY_PATHS), "Framework exact60 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit framework before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Framework before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(all(overlay[name] == pin for name, pin in P7_PLATFORM_ALIAS_AX_FIXED_AFTER.items()), "Platform-alias-AX fixed59 after pins")
+    # Capture-self is the sole omitted fixed pin and is explicitly in the independently
+    # Root-hashed review, then source guard, tools metadata and final sealed SDK chain.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_PLATFORM_ALIAS_AX_PROFILE:
+        return p7_platform_alias_ax_source_guard(api, repo, overlay)
+    return _platform_alias_ax_previous_source_guard(api, repo, overlay, profile)
+
+
 if __name__ == "__main__":
     main()

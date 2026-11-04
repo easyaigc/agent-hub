@@ -33,3 +33,9 @@ P8实际两Session的join/I/O/migration/writer退休均CONFIRMED，一个Activit
 最终范围：四条Main路径为本次有限通过；P8当前失败、SAF/真实Provider grant、密码错误/篡改/UNKNOWN交互、完整方向/字体/视觉/TalkBack/物理及shipping首次bootstrap仍待验。首套窗口/时间问题、外层预检UNKNOWN与本轮AX失败各自保留，不用编译、组件或iOS结果替代。下一阶段继续P8准确AX等待/导出映射及P7真实Main SAF前置；已有通过先按安卓专用分支提交。
 
 Final pnpm check ran once: original PID91880, 754.248 seconds, actual wait0/dual EOF/fsync; 42 groups, 1518 tests, 1456 pass, 62 skip, zero fail/cancel. Generate, nine-doc format and parity passed. Root rehashed raw streams, 896 inputs/eight bindings and unchanged HEAD/index/17 paths. The execution agent later hit model capacity, while its original collector completed normally; Root recovered existing receipts and official tool returns without rerunning or substituting another model. Actual Terra/medium turn_context was verified; speed is not exposed.
+
+Stage78 source `17ade391fdeefc6c8f85d1a64bf494335693a85f`, tree `f9756e17eefd5454b66eb6bd5e4de322458dd697`, parent f1e82326, was committed/pushed with all17 blobs and896 SDK inputs independently matched. [PR128](https://git.51easyai.com/BCAI/agent-hub-app/pulls/128) is open against main; exact source CI11286 has iOS27174 success and workspace27173 pending. No merge/main-CI claim yet. T moved to a separate Stage79 branch without modifying this submitted intent.
+
+PR128 merged to main ffb2656143efbd60286060c386fad43cd4072c39, parents e1f11b5/17ade391, source tree f9756e17 unchanged. SourceCI11286 workspace27173/iOS27174 passed; stage78 remote/local/tracking refs removed. Public sync11288 passed to085ffb3b25860997b38504adc9245d9768003182 with matching tree/source trailer. Exact mainCI11287 is still pending; source CI does not substitute for it.
+
+交付闭环补记：PR128已合入main `ffb2656143efbd60286060c386fad43cd4072c39`；源CI11286、主线CI11287（27175/27176）与公开同步11288均成功。公开 `085ffb3b25860997b38504adc9245d9768003182` 的来源与tree `f9756e17eefd5454b66eb6bd5e4de322458dd697` 匹配，三类开发分支引用已清理。此闭环不提升原P8失败。

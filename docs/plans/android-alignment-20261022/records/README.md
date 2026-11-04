@@ -271,3 +271,10 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [阶段77 已有资料目的端合并](stage77-p7-existing-originals-paired.md)：R3新SDK及first/只读cold两方法有限通过，来源33/目的端24/活动56和37store归账核对；旧first库存失败保持，不扩为真实连接合并或完整UI。
 
 - [阶段78：实际Main迁移与P8短视口](stage78-p7-main-p8-short-ui.md)：共性SDK源码已采用，功能/交互/界面与原生结果分开登记。
+
+- [阶段79：准确原生AX就绪](stage79-p8-native-ax-readiness.md)：v2源码经独审采用，构建与原生结果分别待验。
+
+- [阶段80：新主线与原窗口绑定](stage80-main-and-owned-window.md)：整合新主线及共同F03记录，继续P7/P8/P9限定验收；各未验门槛保持。
+
+- [阶段80实际运行失败](stage80-runtime-failures.md)：P7 handoff UNKNOWN与P8原窗口归属失败，原操作不重放。
+- [阶段80 F59合同缺口](stage80-f59-transfer-contract.md)：真实4动作、冷原件、双端迁移域与Android流式存储边界。

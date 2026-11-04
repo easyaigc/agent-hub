@@ -1653,3 +1653,17 @@ Source69：主线209/实际 PID 诊断名组合 SDK 单次 Gradle exit0（16.766
 阶段78首套SDK辅助通过，首Native方法1项失败：旧test6b871c4b:338 BACK DOWN注入返回false，原runner wait=0不算JUnit通过。owner/原PID与VM正常退出；其余三P7方法和P8未执行。验收器时序修正不改产品断言，修订SDK及原生待验，旧run和旧失败保持，详见[阶段档案](../plans/android-alignment-20261022/records/stage78-p7-main-p8-short-ui.md)。
 
 阶段78最终限定：修订SDK4f4b与四个实际guarded Main方法通过，各自新run/PID/命名JUnit及原inner/outer等待、自然退出、5个Session和44组AX等待已独立核对。P8中文首case实际失败/英文未做，两外层UNKNOWN与原R1失败保留；不关闭P8或完整P7/UI/物理。范围、回执和资源收尾见[独立档案](../plans/android-alignment-20261022/records/stage78-p7-main-p8-short-ui.md)。
+
+Stage79 (F02/F03/F04/F55/F56): R3 strict native AX readiness/scope/budget/order repair passed independent static review and is adopted. New v2 SDK/Native has not run; Stage78 AX failure and two outer UNKNOWN receipts are unchanged. No product/physical/full-UI acceptance is added. See [stage record](../plans/android-alignment-20261022/records/stage79-p8-native-ax-readiness.md).
+
+阶段79续：v2两APK/896源构建通过；新中文Native首case在准确easywork-name AX锚点5秒截止失败，英文未执行。inner wait0不是JUnit通过，外层UNKNOWN保留；原App退出及模拟器正常退出、双流与端口释放已单独核对。下一独立SAF purpose准确44/899，P7真实系统导入/导出和P8只读失败元数据共用下一包但结果分开，不继承旧通过；任务/项目CRUD、F75和A6继续暂停。
+
+阶段79共包补充：独立SAF两APK/899源SDK已通过，Root复核92封存材料和17原工具wait。真实系统选择器显示与只读观察识别无ID导航按钮、SAVE、文件名和breadcrumb控制；原全ID定位契约需修订，完整导入导出未验。首OPEN观察失败保留，后续独立只读恢复未重放展示动作；各XML已删除。P8失败诊断、P9只读入口与物理矩阵仍分别待验。
+
+阶段79最终：共包P8新run `8882a286`实际JUnit 1项/1失败（英文未执行），原active AX root获取为null，不能与先前5秒缺锚混为一次结果。失败后merged/unmerged ID232与anchor一致，Activity window2仅为后置观察，整体诊断UNKNOWN；原inner wait0、outer wait1/UNKNOWN分开保存。实际owner关闭、原App退出和QEMU正常wait0/双流/端口释放已核，另Test进程随VM停止而非自然退出。P7/P8/P9完整验收仍开放。
+
+阶段80：主线整合daf966bc的重建与指定整合检查通过（19通过/6跳过，重连10通过），属于辅助证据。P7角色R3与P8原窗口R2已静态独审并采用；新SAF-v2明确54/899预期范围，SDK/Native尚未执行。旧P8 root-null/缺锚失败及UNKNOWN保持，实际系统回调、原窗口AX与物理/full parity未关闭。F34/F36和F19/F32/F59新增双端矩阵见pending，Android独立F59待实现，任务/项目CRUD、F75和iOS A6暂停。
+
+阶段80 SDK5317及API33安装/系统预检已辅助通过；在Native调用前发现实际ADB换行能力列表与验收器逗号假设不符，已修订严格解析。未调用P7 helper/Native；原VM正常退出并释放端口。修订后的SDK/实际回调及AX仍待验，旧包不作新源码匹配复用；过程见阶段80档案。
+
+阶段80实际：SDKf6d9/899源辅助通过；P7 handoff rc137/UNKNOWN，未进入Native UI，原操作不重放。P8首中文case在原decor归属绑定失败（JUnit1/1），英文未验；inner wait0不能升级通过。原VM正常退出与流/端口收尾另核，失败数据保留。详见阶段80运行档案；F59 Android仍未实现，iOS F59原件/journal未在迁移Payload内的双端缺口单列。

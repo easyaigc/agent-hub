@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, linkSync } from 'node:fs';
+import { mkdtempSync, realpathSync, mkdirSync, writeFileSync, rmSync, linkSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -13,7 +13,7 @@ import { validateWindowsHostEnvironment } from './windows-host-environment.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 test('frozen runtime refuses stale, missing and nested emitted modules before collecting a closure', () => {
-  const root = mkdtempSync(join(tmpdir(), 'regular-runtime-source-'));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'regular-runtime-source-')));
   const component = 'packages/codex-adapter';
   const source = join(root, component, 'src');
   const output = join(root, component, 'dist');
@@ -87,7 +87,7 @@ test('protected deployment selects Host-only environment before config; ordinary
 });
 
 test('runtime inventory rejects a substituted binary, extra executable input, hardlink and unsafe names', () => {
-  const root = mkdtempSync(join(tmpdir(), 'regular-runtime-'));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'regular-runtime-')));
   const names = [
     'bin/node.exe',
     'scripts/windows-desktop-worker.mjs',

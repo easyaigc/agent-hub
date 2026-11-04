@@ -19,6 +19,12 @@
             android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
         </provider>
+        <!-- Dedicated P7 Main UUID-only synthetic binary root; no production/file-path RPC. -->
+        <provider android:name="com.agenthub.android.OwnedMainMigrationDocuments"
+            android:authorities="${applicationId}.p7-main-saf" android:exported="true" android:process=":p7MainSaf"
+            android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
+        </provider>
         <provider android:name="com.agenthub.android.NativeSoundForeignWitnessProvider"
             android:authorities="${applicationId}.sound-witness"
             android:exported="true" android:process=":soundWitness" />

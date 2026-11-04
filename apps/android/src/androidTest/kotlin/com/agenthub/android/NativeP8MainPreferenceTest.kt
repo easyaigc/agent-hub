@@ -31,6 +31,8 @@ class NativeP8MainPreferenceTest {
     private val actual get()=instrumentation.targetContext
     private lateinit var admission: NativeP8MainAdmission.Accepted
     private var currentEntry: Entry?=null
+    private var originalAutomation: android.app.UiAutomation?=null
+    private var automationPreparation: JSONObject?=null
     private enum class Outcome { NOT_STARTED,UNKNOWN,CONFIRMED }
     private class Failures {
         var first: Throwable?=null;private set
@@ -57,6 +59,8 @@ class NativeP8MainPreferenceTest {
         var context: P8MainFilesContext?=null;var keys: KeyStore?=null;var storage: NativeSessionStorage?=null
         var fence: P8MainScopeBoundary?=null
         var expectedClient: MobileClient?=null
+        val nativeAxReadiness=JSONArray() // Fixed-tag counts only, including a failed final sample.
+        val nativeWindows=mutableListOf<OwnedWindow>() // Original View/Activity references survive unknown outcomes.
     }
     private class ActivityOwner(val owner: CaseOwners) {
         val ledger=Ledger();var scenario: ActivityScenario<P8MainPreferenceActivity>?=null
@@ -130,6 +134,149 @@ class NativeP8MainPreferenceTest {
         assertEntry(entry);var first: Throwable?=null
         try {return action()}catch(error: Throwable){first=error;throw error}
         finally {try {assertEntry(entry)}catch(error: Throwable){if(first==null)throw error else if(first!==error)first.addSuppressed(error)}}
+    }
+    /** Preparation only: same public flags=0 connection, never an owner/root/Compose proof. */
+    private fun prepareOriginalAutomation() {
+        check(originalAutomation==null&&automationPreparation==null&&NativeChatNotificationColdStart.activityEntries.get()==0)
+        val started=android.os.SystemClock.elapsedRealtime()
+        val automation=checkNotNull(instrumentation.getUiAutomation(0)) {"Original flags=0 UiAutomation connection unknown"}
+        originalAutomation=automation // Retain even if quiet fails; no reconnect or alternate flags.
+        automation.waitForIdle(100L,1000L) // Public event quiet only; an exception is not swallowed.
+        val finished=android.os.SystemClock.elapsedRealtime()
+        check(finished-started in 0L..1499L) {"UiAutomation preparation exceeded cooperative budget"}
+        check(NativeChatNotificationColdStart.activityEntries.get()==0)
+        automationPreparation=JSONObject().put("schema","p8-original-ui-automation-preparation-v1")
+            .put("flags",0).put("quietMs",100).put("globalMs",1000).put("budgetMs",1500)
+            .put("startedElapsedMs",started).put("finishedElapsedMs",finished).put("elapsedMs",finished-started)
+            .put("beforeAnyActivity",true).put("eventQuietObserved",true).put("rootIdentityProven",false)
+            .put("pid",android.os.Process.myPid()).put("processNonce",NativeChatNotificationColdStart.processNonce)
+    }
+    /** One cooperative deadline per original field input, never reset by preparation or waiting. */
+    private class InputBudget {
+        val started=android.os.SystemClock.elapsedRealtime()
+        val deadline=started+5000L
+        fun withinDeadline(): Long {
+            val now=android.os.SystemClock.elapsedRealtime()
+            check(now<deadline) {"Original field input deadline elapsed; preserve UNKNOWN without replay"}
+            return now
+        }
+    }
+    private class OwnedWindow(val entry: Entry,val activity: P8MainPreferenceActivity,val decor: android.view.View,
+        val windowId: Int,val id: String,val proof: JSONObject) {
+        val inputs=JSONArray()
+    }
+    /** Public API29 local-process decor metadata only. No child/content scan or AX windows list. */
+    private fun focusedOwnedDecor(entry: Entry,original: android.view.View?=null): Pair<android.view.View?,Int> {
+        check(android.os.Looper.myLooper()===android.os.Looper.getMainLooper())
+        val instance=checkNotNull(entry.instance);val activity=instance.activity
+        P8MainActivityOwners.requireCurrent(instance)
+        check(currentEntry===entry&&activity.ownership===instance&&instance.launch===entry.activity?.ticket)
+        check(entry.owner.pid==android.os.Process.myPid()&&entry.owner.nonce==NativeChatNotificationColdStart.processNonce)
+        val roots=android.view.inspector.WindowInspector.getGlobalWindowViews()
+        check(roots.size<=8) {"Local decor metadata inventory exceeded bound"}
+        val attached=roots.filter {it.isAttachedToWindow}
+        check(attached.size<=4&&attached.distinct().size==attached.size) {"Local attached decor inventory changed"}
+        for(root in attached) {
+            check(root.rootView===root) {"WindowInspector returned a non-decor root"}
+            var context: android.content.Context=root.context
+            val seen=mutableListOf<android.content.Context>();var exact=false
+            for(depth in 0 until 16) {
+                if(context===activity){exact=true;break}
+                check(seen.none {it===context}) {"Decor Context cycle"};seen+=context
+                context=(context as? android.content.ContextWrapper)?.baseContext ?: break
+            }
+            check(exact) {"Attached decor does not belong to the exact original P8 Activity"}
+        }
+        val focused=attached.filter {it.visibility==android.view.View.VISIBLE&&it.windowVisibility==android.view.View.VISIBLE&&it.isShown&&it.hasWindowFocus()}
+        check(focused.size<=1) {"Multiple original focused decors"}
+        if(original!=null)check(attached.any {it===original}&&focused.singleOrNull()===original) {"Original focused decor changed or detached"}
+        P8MainActivityOwners.requireCurrent(instance)
+        return focused.singleOrNull() to attached.size
+    }
+    /** Bind once before field input; a missing focus/AX ID may only wait read-only within this budget. */
+    private fun bindOwnedWindow(entry: Entry,inputBudget: InputBudget): OwnedWindow {
+        val started=inputBudget.started;val deadline=inputBudget.deadline
+        var requests=0;var original: android.view.View?=null
+        fun budget(){check(android.os.SystemClock.elapsedRealtime()<deadline&&requests<64) {"Owned focused window binding remains UNKNOWN"}}
+        while(true) {
+            budget();requests++
+            var selected: android.view.View?=null;var id: Int?=null;var attachedCount=0
+            owned(entry) {main {
+                inputBudget.withinDeadline()
+                val observation=focusedOwnedDecor(entry,original);selected=observation.first;attachedCount=observation.second
+                val decor=selected
+                if(decor!=null) {
+                    if(original==null)original=decor else check(original===decor)
+                    inputBudget.withinDeadline()
+                    val node=decor.createAccessibilityNodeInfo()
+                    try {
+                        if(node!=null) {
+                            check(node.packageName?.toString()==actual.packageName) {"Owned decor AX package changed"}
+                            if(node.windowId>=0)id=node.windowId
+                        }
+                    } finally {@Suppress("DEPRECATION") node?.recycle()}
+                    check(focusedOwnedDecor(entry,decor).first===decor)
+                }
+            }}
+            val finished=android.os.SystemClock.elapsedRealtime();check(finished<deadline) {"Owned window binding exceeded original budget"}
+            if(id!=null) {
+                val instance=checkNotNull(entry.instance);val bindingId=UUID.randomUUID().toString()
+                val proof=JSONObject().put("schema","p8-owned-focused-window-binding-v1").put("bindingId",bindingId)
+                    .put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
+                    .put("launchOrdinal",entry.owner.activities.indexOf(entry.activity)).put("windowId",checkNotNull(id))
+                    .put("source","WindowInspector.getGlobalWindowViews").put("attachedOwnerCount",attachedCount)
+                    .put("startedElapsedMs",started).put("boundElapsedMs",finished).put("elapsedMs",finished-started)
+                    .put("requests",requests).put("requestLimit",64).put("deadlineMs",5000).put("beforeFirstFieldInput",true)
+                val binding=OwnedWindow(entry,instance.activity,checkNotNull(selected),checkNotNull(id),bindingId,proof)
+                proof.put("inputOperations",binding.inputs);entry.owner.nativeWindows.add(binding)
+                requireOwnedWindow(binding)
+                val bound=android.os.SystemClock.elapsedRealtime();check(bound<deadline) {"Owned window binding exceeded original budget after final owner check"}
+                proof.put("boundElapsedMs",bound).put("elapsedMs",bound-started)
+                return binding
+            }
+            budget();Thread.sleep(maxOf(1L,minOf(50L,deadline-android.os.SystemClock.elapsedRealtime())))
+        }
+    }
+    private fun requireOwnedWindow(binding: OwnedWindow) = main {
+        val entry=binding.entry;val instance=checkNotNull(entry.instance)
+        check(binding.activity===instance.activity&&currentEntry===entry)
+        check(focusedOwnedDecor(entry,binding.decor).first===binding.decor)
+        val node=checkNotNull(binding.decor.createAccessibilityNodeInfo()) {"Original decor AX ID became unknown"}
+        try {check(node.packageName?.toString()==actual.packageName&&node.windowId==binding.windowId) {"Original decor AX window changed"}}
+        finally {@Suppress("DEPRECATION") node.recycle()}
+        check(focusedOwnedDecor(entry,binding.decor).first===binding.decor)
+    }
+    private fun <T> windowOwned(binding: OwnedWindow,action: ()->T): T = owned(binding.entry) {
+        requireOwnedWindow(binding);var first: Throwable?=null
+        try {action()}catch(error: Throwable){first=error;throw error}
+        finally {try {requireOwnedWindow(binding)}catch(error: Throwable){
+            if(first==null)throw error else if(first!==error) {
+                // Preserve the primary identity. Secondary framework failures may carry a tree.
+                val metadata=IllegalStateException("Owned window post-check failed: ${error.javaClass.name}")
+                metadata.stackTrace=emptyArray()
+                first.addSuppressed(metadata) // No original message, cause, suppressed chain or stack.
+            }
+        }}
+    }
+    /** One original field operation only. The UNKNOWN record is never removed or re-entered. */
+    private fun fieldInput(binding: OwnedWindow,name: String,inputBudget: InputBudget=InputBudget(),action: (()->Unit)->Unit) {
+        val expected=listOf("name-replacement","name-ime","address-replacement","address-ime")
+        check(binding.inputs.length()<expected.size&&name==expected[binding.inputs.length()])
+        val record=JSONObject().put("name",name).put("startedElapsedMs",inputBudget.started)
+            .put("deadlineElapsedMs",inputBudget.deadline).put("deadlineMs",5000)
+            .put("beforeElapsedMs",JSONObject.NULL).put("inputCallElapsedMs",JSONObject.NULL).put("outcome","UNKNOWN")
+        binding.inputs.put(record)
+        inputBudget.withinDeadline()
+        windowOwned(binding) {
+            record.put("beforeElapsedMs",inputBudget.withinDeadline()) // The window/owner guard may have blocked.
+            action {
+                check(record.isNull("inputCallElapsedMs")) {"Original field input gate cannot be re-entered"}
+                record.put("inputCallElapsedMs",inputBudget.withinDeadline())
+            }
+            check(!record.isNull("inputCallElapsedMs")) {"Original input requires its immediate deadline gate"}
+            inputBudget.withinDeadline()
+        }
+        record.put("afterElapsedMs",inputBudget.withinDeadline()).put("outcome","CONFIRMED")
     }
     private fun cleanupEntry(entry: Entry,errors: Failures) {
         // Known session/IO/controller handles can quiesce once even if Activity close is unknown.
@@ -255,70 +402,380 @@ class NativeP8MainPreferenceTest {
         try {owned {acquired=action()};return acquired}
         catch(error: Throwable){@Suppress("DEPRECATION") acquired?.recycle();throw error}
     }
-    /** Read-only platform AX join: exact current app root + original Compose semantics ID + tag.
-     * No accessibility focus/action or TalkBack service is simulated. Missing native data fails. */
-    private fun nativeAxComplete(tag: String,value: String,label: String?=null) {
-        val anchor=owned {ui.onNodeWithTag(tag).fetchSemanticsNode().id}
+    // Only these fourteen original measurements may publish count-only readiness evidence.
+    private val nativeAxFields=listOf("easywork-name")+listOf("agent","authority","subject","host","workspace","runtime").flatMap {
+        listOf("easywork-target-label-$it","easywork-target-$it")
+    }+"easywork-manual-address"
+    private class AxPending(val state: String): Exception()
+    private data class AxGeometry(val window: android.graphics.Rect,val field: android.graphics.Rect,val readable: Int)
+    /** Failure-only metadata observation. This cannot satisfy or retry nativeAxComplete.
+     * No text/contentDescription, unknown tags, other windows, or input actions are read/exported.
+     * One synchronous root, with a cooperative deadline around every owned AX call; a blocked
+     * platform call cannot be cancelled safely and is reported UNKNOWN after it returns. */
+    private fun nativeAxFailureDiagnostic(entry: Entry,tag: String,anchor: Int?,windowId: Int?,lastCompleteSample: JSONObject?,primary: Throwable) {
+        val started=android.os.SystemClock.elapsedRealtime();val deadline=started+1500L
         val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
-        var retained: android.view.accessibility.AccessibilityNodeInfo?=null
-        ui.waitUntil(5000) {
-            val root=axNode {instrumentation.uiAutomation.rootInActiveWindow}
-            if(root==null)false else {
-                var keep=false
-                try {
-                    if(!owned {root.packageName?.toString()==actual.packageName})false
-                    else {retained=root;keep=true;true}
-                } finally {if(!keep){@Suppress("DEPRECATION") root.recycle()}}
+        var visited=0;var idDeclared=0;var tagDeclared=0;var exactIds=0;var exactTags=0
+        var completed=false;var limit="none";var diagnosticError: Throwable?=null
+        val candidates=JSONArray();val rootFacts=JSONObject()
+        val composeIds=JSONObject();val activityWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
+            .put("equalsOriginalActiveWindow",JSONObject.NULL).put("errorClass",JSONObject.NULL)
+        val dialogWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
+            .put("reason","not-measured-by-this-failure-only-diagnostic").put("errorClass",JSONObject.NULL)
+        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v2").put("field",tag)
+            .put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
+            .put("expectedAnchor",anchor?:JSONObject.NULL).put("windowId",windowId?:JSONObject.NULL)
+            .put("primaryErrorClass",primary.javaClass.name).put("lastCompleteSample",lastCompleteSample?:JSONObject.NULL)
+        fun suppress(error: Throwable) {
+            if(error!==primary) {
+                // Framework failures may contain a semantics tree. Export only the class.
+                val safe=IllegalStateException("AX failure diagnostic error class: "+error.javaClass.name)
+                safe.stackTrace=emptyArray();primary.addSuppressed(safe)
             }
         }
-        val root=checkNotNull(retained);var matched=0;var visited=0
-        try {
-            owned {check(root.refresh()&&root.packageName?.toString()==actual.packageName)}
-            val windowId=owned {root.windowId};val windowBounds=android.graphics.Rect();owned {root.getBoundsInScreen(windowBounds)}
-            fun own(node: android.view.accessibility.AccessibilityNodeInfo)=owned {node.packageName?.toString()==actual.packageName&&node.windowId==windowId}
-            fun nativeId(node: android.view.accessibility.AccessibilityNodeInfo): Int? {
-                owned {check(own(node)&&node.refresh()&&own(node))}
-                if(!owned {node.availableExtraData.contains(idKey)})return null
-                owned {check(node.refreshWithExtraData(idKey,android.os.Bundle())&&own(node)&&node.extras.containsKey(idKey))}
-                return owned {node.extras.getInt(idKey)}
+        fun budget() {
+            if(android.os.SystemClock.elapsedRealtime()>=deadline) {limit="time";throw IllegalStateException("AX failure diagnostic budget exhausted")}
+        }
+        fun <T> read(action: ()->T): T {
+            budget()
+            val result=owned(entry) {budget();val value=action();budget();value}
+            budget();return result
+        }
+        fun sameWindow(node: android.view.accessibility.AccessibilityNodeInfo)=read {
+            check(node.packageName?.toString()==actual.packageName&&node.windowId==checkNotNull(windowId)) {"AX failure diagnostic target changed"}
+        }
+        fun <T> nodeRead(node: android.view.accessibility.AccessibilityNodeInfo,action: ()->T): T {
+            sameWindow(node);val result=read(action);sameWindow(node);return result
+        }
+        fun acquire(action: ()->android.view.accessibility.AccessibilityNodeInfo?): android.view.accessibility.AccessibilityNodeInfo? {
+            var acquired: android.view.accessibility.AccessibilityNodeInfo?=null
+            try {read {acquired=action()};return acquired}
+            catch(error: Throwable){@Suppress("DEPRECATION") acquired?.recycle();throw error}
+        }
+        fun publicClass(node: android.view.accessibility.AccessibilityNodeInfo)=nodeRead(node) {
+            // Export only fixed public framework roles; never arbitrary class/metadata strings.
+            when(node.className?.toString()) {
+                "android.view.View"->"android.view.View"
+                "android.view.ViewGroup"->"android.view.ViewGroup"
+                "android.widget.EditText"->"android.widget.EditText"
+                "android.widget.TextView"->"android.widget.TextView"
+                "android.widget.Button"->"android.widget.Button"
+                "android.widget.ScrollView"->"android.widget.ScrollView"
+                "android.widget.FrameLayout"->"android.widget.FrameLayout"
+                "android.widget.LinearLayout"->"android.widget.LinearLayout"
+                else->"other"
             }
-            fun visit(node: android.view.accessibility.AccessibilityNodeInfo) {
-                check(++visited<=2048&&own(node));val id=nativeId(node)
-                if(id==anchor) {
-                    matched++;owned {check(node.availableExtraData.contains(tagKey))}
-                    owned {check(node.refreshWithExtraData(tagKey,android.os.Bundle())&&own(node)&&node.extras.getCharSequence(tagKey)?.toString()==tag)}
-                    owned {assertEquals(value,node.text?.toString());assertTrue(node.isVisibleToUser&&node.isEnabled)}
-                    owned {assertTrue("Native AX speaks or edits this original value: $tag",node.isScreenReaderFocusable||node.isFocusable||node.isEditable)}
-                    val bounds=android.graphics.Rect();owned {node.getBoundsInScreen(bounds)}
-                    assertTrue("Complete native field bounds inside active app window: $tag",!bounds.isEmpty&&windowBounds.contains(bounds))
-                    if(label!=null) {
-                        owned {assertTrue(node.isEditable)}
-                        var associated=owned {if(node.contentDescription?.toString()==label)1 else 0}
-                        for(k in 0 until (owned {node.childCount})) {
-                            val child=axNode {node.getChild(k)}?:continue
-                            try {if(owned {own(child)&&child.contentDescription?.toString()==label&&nativeId(child)?.toLong()==anchor.toLong()+2_000_000_000L})associated++}
-                            finally {@Suppress("DEPRECATION") child.recycle()}
+        }
+        try {
+            check(tag in nativeAxFields) {"AX failure diagnostic fixed field unknown"}
+            var mergedId: Int?=null;var unmergedId: Int?=null
+            // Each tree mode is observed once for this fixed tag. No semantics config/value read.
+            for(unmerged in listOf(false,true)) {
+                val observation=JSONObject().put("state","UNKNOWN").put("semanticsId",JSONObject.NULL)
+                    .put("equalsOriginalAnchor",JSONObject.NULL).put("errorClass",JSONObject.NULL)
+                composeIds.put(if(unmerged)"unmerged" else "merged",observation)
+                try {
+                    val id=read {
+                        val matches=ui.onAllNodesWithTag(tag,useUnmergedTree=unmerged).fetchSemanticsNodes()
+                        check(matches.size==1) {"AX diagnostic fixed-tag count mismatch"}
+                        matches.single().id
+                    }
+                    if(unmerged)unmergedId=id else mergedId=id
+                    observation.put("state","OBSERVED").put("semanticsId",id)
+                        .put("equalsOriginalAnchor",if(anchor==null)JSONObject.NULL else id==anchor)
+                } catch(error: Throwable) {
+                    observation.put("errorClass",error.javaClass.name)
+                    if(diagnosticError==null)diagnosticError=error;suppress(error)
+                }
+            }
+            composeIds.put("mergedEqualsUnmerged",if(mergedId==null||unmergedId==null)JSONObject.NULL else mergedId==unmergedId)
+            try {
+                var measuredWindowId: Int?=null
+                read {checkNotNull(entry.activity?.scenario).onActivity {activity->
+                    val instance=checkNotNull(entry.instance)
+                    budget();P8MainActivityOwners.requireCurrent(instance);budget()
+                    check(activity===instance.activity&&activity.ownership===instance) {"AX diagnostic original Activity changed"}
+                    // This is only the original Activity window, never an inferred Dialog window.
+                    val info=checkNotNull(activity.window.decorView.createAccessibilityNodeInfo()) {"AX diagnostic Activity window node unknown"}
+                    try {
+                        budget();measuredWindowId=info.windowId;budget()
+                        P8MainActivityOwners.requireCurrent(instance);budget()
+                    } finally {@Suppress("DEPRECATION") info.recycle()}
+                }}
+                val id=checkNotNull(measuredWindowId);check(id>=0) {"AX diagnostic Activity window ID unknown"}
+                activityWindow.put("state","OBSERVED").put("windowId",id)
+                    .put("equalsOriginalActiveWindow",if(windowId==null)JSONObject.NULL else id==windowId)
+            } catch(error: Throwable) {
+                activityWindow.put("errorClass",error.javaClass.name)
+                if(diagnosticError==null)diagnosticError=error;suppress(error)
+            }
+            check(anchor!=null&&windowId!=null) {"AX failure diagnostic original target unknown"}
+            val root=checkNotNull(acquire {checkNotNull(originalAutomation).rootInActiveWindow}) {"AX failure diagnostic root unknown"}
+            try {
+                sameWindow(root)
+                rootFacts.put("samePackage",true).put("sameWindow",true).put("activeWindowId",nodeRead(root) {root.windowId})
+                check(nodeRead(root) {root.refresh()}) {"AX failure diagnostic root refresh unknown"}
+                var window: android.view.accessibility.AccessibilityWindowInfo?=null
+                try {
+                    nodeRead(root) {window=root.window}
+                    val originalWindow=checkNotNull(window) {"AX failure diagnostic window unknown"}
+                    val active=nodeRead(root) {check(originalWindow.id==windowId);originalWindow.isActive}
+                    rootFacts.put("active",active);check(active) {"AX failure diagnostic window no longer active"}
+                } finally {@Suppress("DEPRECATION") window?.recycle()}
+                val windowBounds=android.graphics.Rect();nodeRead(root) {root.getBoundsInScreen(windowBounds)}
+                rootFacts.put("visible",nodeRead(root) {root.isVisibleToUser}).put("publicClass",publicClass(root))
+                fun visit(node: android.view.accessibility.AccessibilityNodeInfo,depth: Int) {
+                    budget();sameWindow(node)
+                    check(depth<=40&&visited<2048) {"AX failure diagnostic traversal bound"};visited++
+                    val declarations=nodeRead(node) {node.availableExtraData}
+                    val hasId=declarations.contains(idKey);val hasTag=declarations.contains(tagKey)
+                    if(hasId)idDeclared++;if(hasTag)tagDeclared++
+                    var id: Int?=null
+                    if(hasId) {
+                        check(nodeRead(node) {node.refreshWithExtraData(idKey,android.os.Bundle())}) {"AX failure diagnostic ID refresh unknown"}
+                        id=nodeRead(node) {
+                            check(node.extras.containsKey(idKey)&&node.extras.get(idKey) is Int) {"AX failure diagnostic ID metadata unknown"}
+                            node.extras.getInt(idKey)
                         }
-                        assertEquals("Complete native label belongs to exact input: $tag",1,associated)
+                        if(id==anchor)exactIds++
+                    }
+                    if(hasTag) {
+                        check(nodeRead(node) {node.refreshWithExtraData(tagKey,android.os.Bundle())}) {"AX failure diagnostic tag refresh unknown"}
+                        // Compare in place. Unknown tag strings are never retained or exported.
+                        val exactTag=nodeRead(node) {node.extras.getCharSequence(tagKey)?.toString()==tag}
+                        if(exactTag) {
+                            exactTags++
+                            if(candidates.length()<4) {
+                                val bounds=android.graphics.Rect();nodeRead(node) {node.getBoundsInScreen(bounds)}
+                                val visible=nodeRead(node) {node.isVisibleToUser}
+                                val visibleBounds=android.graphics.Rect(bounds)
+                                val hasVisibleBounds=visible&&!visibleBounds.isEmpty&&visibleBounds.intersect(windowBounds)
+                                val readable=nodeRead(node) {(if(node.isScreenReaderFocusable)1 else 0)+(if(node.isFocusable)2 else 0)+(if(node.isEditable)4 else 0)}
+                                candidates.put(JSONObject().put("semanticsId",id?:JSONObject.NULL).put("publicClass",publicClass(node))
+                                    .put("readable",readable).put("visible",visible).put("enabled",nodeRead(node) {node.isEnabled})
+                                    .put("visibleBounds",if(hasVisibleBounds)JSONArray(listOf(visibleBounds.left,visibleBounds.top,visibleBounds.right,visibleBounds.bottom)) else JSONObject.NULL))
+                            }
+                        }
+                    }
+                    val count=nodeRead(node) {node.childCount};check(count in 0..2048) {"AX failure diagnostic child count bound"}
+                    for(index in 0 until count) {
+                        budget();sameWindow(node)
+                        if(depth>=40) {limit="depth";throw IllegalStateException("AX failure diagnostic depth exhausted")}
+                        if(visited>=2048) {limit="nodes";throw IllegalStateException("AX failure diagnostic nodes exhausted")}
+                        val child=checkNotNull(acquire {node.getChild(index)}) {"AX failure diagnostic child unknown"}
+                        try {sameWindow(node);visit(child,depth+1)}finally {@Suppress("DEPRECATION") child.recycle()}
                     }
                 }
-                for(k in 0 until (owned {node.childCount})) {
-                    val child=axNode {node.getChild(k)}?:continue
-                    try {visit(child)}finally {@Suppress("DEPRECATION") child.recycle()}
-                }
-            }
-            visit(root);assertEquals("One exact native AX anchor: $tag",1,matched)
-            owned {assertEquals("Compose anchor stayed unchanged",anchor,ui.onNodeWithTag(tag).fetchSemanticsNode().id)}
-            owned {check(root.refresh()&&root.packageName?.toString()==actual.packageName&&root.windowId==windowId)}
-        } finally {@Suppress("DEPRECATION") root.recycle()}
+                visit(root,0);sameWindow(root);budget()
+            } finally {@Suppress("DEPRECATION") root.recycle()}
+            read {Unit};completed=diagnosticError==null
+        } catch(error: Throwable) {completed=false;if(diagnosticError==null)diagnosticError=error;suppress(error)}
+        val actualElapsedMs=android.os.SystemClock.elapsedRealtime()-started
+        val overBudget=actualElapsedMs>=1500L
+        if(overBudget&&diagnosticError==null) {
+            completed=false;limit="time"
+            val error=IllegalStateException("AX failure diagnostic budget exceeded after final check")
+            diagnosticError=error;suppress(error)
+        }
+        diagnostic.put("outcome",if(completed)"OBSERVED" else "UNKNOWN").put("complete",completed)
+            .put("visitedNodes",visited).put("idExtraDeclared",idDeclared).put("tagDeclared",tagDeclared)
+            .put("exactIDCount",exactIds).put("exactTagCount",exactTags).put("candidates",candidates).put("root",rootFacts)
+            .put("composeIds",composeIds).put("activityWindow",activityWindow).put("dialogWindow",dialogWindow)
+            .put("candidateCap",4).put("nodeCap",2048).put("depthCap",40).put("deadlineMs",1500)
+            .put("limit",limit).put("actualElapsedMs",actualElapsedMs).put("overBudget",overBudget)
+            .put("failureCount",if(diagnosticError==null)0 else 1)
+            .put("errorClass",diagnosticError?.javaClass?.name?:JSONObject.NULL)
+        // A separate failed-run bundle key cannot enter the Host's exact success/phase contracts.
+        try {owned(entry) {instrumentation.sendStatus(0,android.os.Bundle().apply {putString("p8AxFailureDiagnostic",diagnostic.toString())})}}
+        catch(error: Throwable) {suppress(error)}
     }
-    private fun awaitImeHidden(entry: Entry) {
+    /** Read-only exact-anchor readiness, never a business-action retry. Every attempt obtains and
+     * refreshes its own active root, then releases every returned handle before another attempt.
+     * Null root may wait only under the original pre-input decor/window binding, as may explicit
+     * stale refresh, absent anchor, or AX value lag. Every other acquisition, owner/window/tag/
+     * structure/label/geometry error fails immediately; no other window is adopted. */
+    private fun nativeAxComplete(binding: OwnedWindow,tag: String,value: String,label: String?=null) {
+        check(tag in nativeAxFields)
+        val entry=checkNotNull(currentEntry);check(entry===binding.entry);val owner=entry.owner
+        val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
+        val started=android.os.SystemClock.elapsedRealtime();val deadline=started+5000L
+        var anchor: Int?=null;var windowId: Int?=binding.windowId;var samples=0;var rootRequests=0
+        var visited=0;var idExtras=0;var matched=0;var readyTotal=0
+        var stage="compose-anchor";var lastState="fatal";var passed=false;var timedOut=false;var finished: Long?=null
+        var firstGeometry: AxGeometry?=null
+        var lastCompleteSample: JSONObject?=null // Diagnostic only; never part of the exact success proof.
+        val readySamples=mutableListOf<Int>()
+        val pendingCounts=linkedMapOf("root-pending" to 0,"anchor-absent" to 0,"node-refresh-pending" to 0,"value-pending" to 0)
+        fun withinDeadline(): Long {
+            val now=android.os.SystemClock.elapsedRealtime()
+            if(now>=deadline) {
+                timedOut=true;lastState="timeout"
+                throw AssertionError("Exact native AX readiness deadline: $tag")
+            }
+            return now
+        }
+        fun <T> read(action: ()->T): T {
+            withinDeadline();val result=windowOwned(binding) {withinDeadline();action()};withinDeadline();return result
+        }
+        fun acquire(action: ()->android.view.accessibility.AccessibilityNodeInfo?): android.view.accessibility.AccessibilityNodeInfo? {
+            var node: android.view.accessibility.AccessibilityNodeInfo?=null
+            try {read {node=action()};return node}
+            catch(error: Throwable){@Suppress("DEPRECATION") node?.recycle();throw error}
+        }
+        fun composeAnchor() {
+            read {
+                val node=ui.onNodeWithTag(tag).fetchSemanticsNode()
+                check(node.id==checkNotNull(anchor)) {"Original Compose anchor changed: $tag"}
+                val config=node.config
+                if(label!=null) {
+                    check(config.getOrNull(SemanticsProperties.EditableText)==AnnotatedString(value)&&
+                        config.getOrNull(SemanticsProperties.InputText)==AnnotatedString(value)&&
+                        config.getOrNull(SemanticsProperties.ContentDescription)==listOf(label)) {"Original Compose input changed: $tag"}
+                } else check(config.getOrNull(SemanticsProperties.Text)==listOf(AnnotatedString(value))) {"Original Compose text changed: $tag"}
+            }
+        }
+        fun sample(): AxGeometry? {
+            stage="root-acquisition";withinDeadline();rootRequests++
+            val root=acquire {checkNotNull(originalAutomation).rootInActiveWindow} ?: throw AxPending("root-pending")
+            try {
+                fun own(node: android.view.accessibility.AccessibilityNodeInfo) = read {
+                    check(node.packageName?.toString()==actual.packageName&&node.windowId==checkNotNull(windowId)) {"AX package/window changed: $tag"}
+                }
+                // Inspect metadata only until exact current-app/window ownership is established.
+                val originalWindow=read {
+                    check(root.packageName?.toString()==actual.packageName&&root.windowId>=0) {"Wrong active AX app/window: $tag"}
+                    root.windowId
+                }
+                check(windowId==originalWindow) {"Active AX window changed between fresh samples: $tag"}
+                fun refresh(node: android.view.accessibility.AccessibilityNodeInfo,key: String?=null) {
+                    withinDeadline();own(node)
+                    val refreshed=read {if(key==null)node.refresh() else node.refreshWithExtraData(key,android.os.Bundle())}
+                    own(node);withinDeadline()
+                    if(!refreshed)throw AxPending("node-refresh-pending")
+                }
+                stage="root-refresh";refresh(root)
+                val windowBounds=android.graphics.Rect();read {root.getBoundsInScreen(windowBounds)}
+                check(read {root.isVisibleToUser}&&!windowBounds.isEmpty) {"Invisible or empty active AX window: $tag"}
+                fun nativeId(node: android.view.accessibility.AccessibilityNodeInfo): Int? {
+                    refresh(node)
+                    if(!read {node.availableExtraData.contains(idKey)})return null
+                    idExtras++;refresh(node,idKey)
+                    return read {
+                        check(node.extras.containsKey(idKey)&&node.extras.get(idKey) is Int) {"Malformed declared AX ID extra: $tag"}
+                        node.extras.getInt(idKey)
+                    }
+                }
+                var geometry: AxGeometry?=null;var valueReady=true;var associatedLabels=0
+                fun visit(node: android.view.accessibility.AccessibilityNodeInfo,depth: Int,parentId: Int?) {
+                    stage="tree-structure";withinDeadline();own(node)
+                    check(depth<=40&&++visited<=2048) {"AX tree bound exceeded: $tag"}
+                    val id=nativeId(node)
+                    if(id==anchor) {
+                        check(++matched==1) {"Multiple exact native AX anchors: $tag"}
+                        stage="anchor-tag";check(read {node.availableExtraData.contains(tagKey)}) {"Exact anchor lacks declared AX testTag: $tag"}
+                        refresh(node,tagKey)
+                        read {check(node.extras.getCharSequence(tagKey)?.toString()==tag) {"Exact AX testTag changed: $tag"}}
+                        stage="anchor-semantics"
+                        val readable=read {
+                            check(node.isVisibleToUser&&node.isEnabled) {"Exact AX anchor hidden or disabled: $tag"}
+                            check(node.isScreenReaderFocusable||node.isFocusable||node.isEditable) {"Exact AX anchor has no readable semantics: $tag"}
+                            (if(node.isScreenReaderFocusable)1 else 0)+(if(node.isFocusable)2 else 0)+(if(node.isEditable)4 else 0)
+                        }
+                        val bounds=android.graphics.Rect();read {node.getBoundsInScreen(bounds)}
+                        check(!bounds.isEmpty&&windowBounds.contains(bounds)) {"Exact AX anchor outside active window: $tag"}
+                        if(label!=null) {
+                            read {check(node.isEditable) {"Exact AX input is not editable: $tag"}}
+                            associatedLabels+=read {if(node.contentDescription?.toString()==label)1 else 0}
+                            check(associatedLabels<=1) {"Duplicate exact native input label: $tag"}
+                        }
+                        // Exact Compose still contains the expected original value. Only its AX publication may lag.
+                        valueReady=read {node.text?.toString()==value}
+                        geometry=AxGeometry(android.graphics.Rect(windowBounds),android.graphics.Rect(bounds),readable)
+                    }
+                    // Associate the exact virtual label during this one bounded traversal.
+                    // No prepass acquires children outside the same depth/node budget.
+                    if(label!=null&&parentId==anchor&&id?.toLong()==checkNotNull(anchor).toLong()+2_000_000_000L) {
+                        read {check(node.contentDescription?.toString()==label) {"Exact AX input label changed: $tag"}}
+                        associatedLabels++
+                        check(associatedLabels<=1) {"Duplicate exact native input label: $tag"}
+                    }
+                    val count=read {node.childCount};check(count in 0..2048) {"AX child count exceeds bound: $tag"}
+                    for(k in 0 until count) {
+                        withinDeadline();check(depth<40&&visited<2048) {"AX child acquisition would exceed tree bound: $tag"}
+                        val child=checkNotNull(acquire {node.getChild(k)}) {"AX child acquisition unknown: $tag"}
+                        try {visit(child,depth+1,id)}finally {@Suppress("DEPRECATION") child.recycle()}
+                    }
+                }
+                visit(root,0,null)
+                lastCompleteSample=JSONObject().put("sample",samples).put("visitedNodes",visited)
+                    .put("idExtraNodes",idExtras).put("anchorCount",matched)
+                // Structural facts already observed must fail before any later pending refresh.
+                if(matched==1&&label!=null)check(associatedLabels==1) {"Complete native label must belong once to exact input: $tag"}
+                stage="sample-postcheck";composeAnchor();refresh(root)
+                read {
+                    val after=android.graphics.Rect();root.getBoundsInScreen(after)
+                    check(after==windowBounds) {"Active AX window bounds changed during sample: $tag"}
+                }
+                withinDeadline()
+                if(matched==0)throw AxPending("anchor-absent")
+                check(matched==1) {"One exact native AX anchor required: $tag"}
+                if(!valueReady)throw AxPending("value-pending")
+                return checkNotNull(geometry)
+            } finally {@Suppress("DEPRECATION") root.recycle()}
+        }
+        var failure: Throwable?=null
+        try {
+            anchor=read {ui.onNodeWithTag(tag).fetchSemanticsNode().id};check(checkNotNull(anchor)>0)
+            composeAnchor()
+            while(true) {
+                withinDeadline();check(samples<64) {"Exact native AX sample cap exceeded: $tag"}
+                samples++;visited=0;idExtras=0;matched=0;lastState="fatal";composeAnchor()
+                val geometry=try {sample()}catch(pending: AxPending) {
+                    // Only our explicit return-value states may wait. Suppressed owner failures never retry.
+                    check(pending.suppressed.isEmpty());assertEntry(entry);requireOwnedWindow(binding);composeAnchor();withinDeadline()
+                    check(pending.state in pendingCounts);lastState=pending.state
+                    pendingCounts[pending.state]=checkNotNull(pendingCounts[pending.state])+1
+                    null
+                }
+                if(geometry!=null) {
+                    readyTotal++;lastState="ready"
+                    if(firstGeometry==null)firstGeometry=geometry
+                    else check(firstGeometry==geometry) {"Exact AX geometry/readable semantics changed between ready samples: $tag"}
+                    readySamples.add(samples)
+                    if(readySamples.size==2) {
+                        composeAnchor();assertEntry(entry);finished=withinDeadline();stage="complete";passed=true;return
+                    }
+                } else {readySamples.clear();firstGeometry=null}
+                stage="read-only-sample-interval";withinDeadline()
+                Thread.sleep(maxOf(1L,minOf(100L,deadline-android.os.SystemClock.elapsedRealtime())))
+            }
+        } catch(error: Throwable) {
+            failure=error;if(!timedOut)lastState="fatal"
+            // The exact AX assertion has already failed. Diagnostic observations cannot recover it.
+            try {nativeAxFailureDiagnostic(entry,tag,anchor,windowId,lastCompleteSample,error)}
+            catch(record: Throwable) {if(record!==error&&error.suppressed.none {it===record})error.addSuppressed(record)}
+            throw error
+        }
+        finally {
+            // This is saved by the existing owner-finalizer on both success and failure. No tree/value/label/credential data.
+            val diagnostic=JSONObject().put("schema","p8-native-ax-readiness-v3").put("field",tag)
+                .put("windowBindingId",binding.id).put("expectedAnchor",anchor?:JSONObject.NULL).put("windowId",windowId?:JSONObject.NULL)
+                .put("samples",samples).put("freshRootRequests",rootRequests).put("matchedSamples",readySamples.size)
+                .put("readySamplesTotal",readyTotal).put("readySampleNumbers",JSONArray(readySamples))
+                .put("visitedNodes",visited).put("idExtraNodes",idExtras).put("anchorCount",matched)
+                .put("pendingCounts",JSONObject(pendingCounts)).put("lastState",lastState).put("stage",stage)
+                .put("timeout",timedOut).put("passed",passed).put("elapsedMs",(finished?:android.os.SystemClock.elapsedRealtime())-started)
+                .put("nodeCap",2048).put("sampleLimit",64).put("deadlineMs",5000).put("intervalMs",100)
+            try {owner.nativeAxReadiness.put(diagnostic)}catch(record: Throwable) {
+                if(failure==null)throw record else if(failure!==record)failure.addSuppressed(record)
+            }
+        }
+    }
+    private fun awaitImeHidden(entry: Entry,binding: OwnedWindow) {
+        check(entry===binding.entry)
         ui.waitUntil(10000) {
             var hidden=false
-            owned(entry){checkNotNull(entry.activity?.scenario).onActivity {activity->
-                check(activity===entry.instance?.activity)
-                hidden=activity.window.decorView.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==false
-            }}
+            windowOwned(binding){main {hidden=binding.decor.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())==false}}
             hidden
         }
     }
@@ -349,11 +806,17 @@ class NativeP8MainPreferenceTest {
     }
     private fun longFields(entry: Entry,client: MobileClient,scope: TargetScope,renamed: String,english: Boolean): JSONObject {
         val facts=shortViewport(entry)
+        val firstInputBudget=InputBudget() // Starts before binding and every whole preparation for this input.
         completeInput("easywork-name",client.name,if(english)"Name" else "名称")
-        owned {whole("easywork-name").performTextReplacement(renamed)}
-        owned {ui.onNodeWithTag("easywork-name").performImeAction()};awaitImeHidden(entry)
+        val binding=bindOwnedWindow(entry,firstInputBudget)
+        fieldInput(binding,"name-replacement",firstInputBudget) {gate->
+            val node=whole("easywork-name");gate();node.performTextReplacement(renamed)
+        }
+        fieldInput(binding,"name-ime") {gate->
+            val node=ui.onNodeWithTag("easywork-name");gate();node.performImeAction()
+        };awaitImeHidden(entry,binding)
         completeInput("easywork-name",renamed,if(english)"Name" else "名称");savedName(entry,client.id,renamed)
-        nativeAxComplete("easywork-name",renamed,if(english)"Name" else "名称")
+        nativeAxComplete(binding,"easywork-name",renamed,if(english)"Name" else "名称")
         // The layout may wrap a label/value; its semantics must keep every original character.
         val values=listOf("agent" to scope.agentId,"authority" to scope.accountAuthority.orEmpty(),"subject" to scope.accountSubject.orEmpty(),
             "host" to scope.hostId,"workspace" to scope.workspaceId,"runtime" to scope.runtimeId)
@@ -362,18 +825,22 @@ class NativeP8MainPreferenceTest {
         values.forEachIndexed {index,(id,value)->
             owned {whole("easywork-target-label-$id",true).assertTextEquals(labels[index])}
             fullTargetLayout("easywork-target-label-$id",labels[index])
-            nativeAxComplete("easywork-target-label-$id",labels[index])
+            nativeAxComplete(binding,"easywork-target-label-$id",labels[index])
             owned {whole("easywork-target-$id",true).assertTextEquals(value)}
             fullTargetLayout("easywork-target-$id",value,multiline=id!="agent")
-            nativeAxComplete("easywork-target-$id",value)
+            nativeAxComplete(binding,"easywork-target-$id",value)
         }
         owned {whole("easywork-connection-method").performClick()}
         owned {whole("easywork-method-手动连接").assertIsEnabled().assertHasClickAction().performClick()}
         val address="https://owned-address.main-ui.invalid/"+"long-address-segment-".repeat(8)+"TAIL-%25-END"
-        owned {whole("easywork-manual-address").performTextReplacement(address)}
-        owned {ui.onNodeWithTag("easywork-manual-address").performImeAction()};awaitImeHidden(entry)
+        fieldInput(binding,"address-replacement") {gate->
+            val node=whole("easywork-manual-address");gate();node.performTextReplacement(address)
+        }
+        fieldInput(binding,"address-ime") {gate->
+            val node=ui.onNodeWithTag("easywork-manual-address");gate();node.performImeAction()
+        };awaitImeHidden(entry,binding)
         completeInput("easywork-manual-address",address,if(english)"Computer address" else "电脑地址")
-        nativeAxComplete("easywork-manual-address",address,if(english)"Computer address" else "电脑地址")
+        nativeAxComplete(binding,"easywork-manual-address",address,if(english)"Computer address" else "电脑地址")
         owned {whole("easywork-manual-connect").assertIsEnabled().assertHasClickAction()} // Never submit.
         owned {whole("connection-preference").performClick()};options("automatic",english)
         owned {instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)};owned {ui.waitForIdle()}
@@ -383,11 +850,12 @@ class NativeP8MainPreferenceTest {
         owned {instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)};owned {ui.waitForIdle()}
         owned {ui.onNodeWithTag("connection-page").assertDoesNotExist()};owned {ui.onNodeWithTag("client-selector").assertIsDisplayed()}
         savedName(entry,client.id,renamed)
+        check(entry.owner.nativeAxReadiness.length()==nativeAxFields.size&&nativeAxFields.size==14)
         return facts.put("longNameLength",renamed.length).put("manualAddressLength",address.length).put("longTargetFields",values.size)
             .put("nameAutosaved",true).put("targetValuesExact",true).put("manualAddressSemanticsExact",true)
             .put("scrollReachedRuntime",true).put("popupBackDismissed",true).put("sheetBackDismissed",true)
             .put("composeFontScale",2).put("multilineTargetFields",5).put("noTargetEllipsis",true)
-            .put("nativeAxReadback",true).put("nativeAxFields",14).put("manualAddressSubmitted",false).put("talkBackExecuted",false)
+            .put("nativeAxReadback",true).put("nativeAxFields",entry.owner.nativeAxReadiness.length()).put("manualAddressSubmitted",false).put("talkBackExecuted",false)
     }
     private fun options(expected: String,english: Boolean) {
         val labels=if(english)mapOf("automatic" to "Automatic","lan-only" to "Direct only","relay-only" to "Relay only")
@@ -402,6 +870,7 @@ class NativeP8MainPreferenceTest {
     @Test fun savedPreferenceThroughMainSubclassMenuPersistsWithoutNativeRuntime() {
         // Admission precedes every owned fixture/KeyStore/Session/Main acquisition.
         admission=NativeP8MainAdmission.admit()
+        prepareOriginalAutomation()
         val cases=JSONArray()
         for(index in 0..1) {
             val row=admission.case(index)
@@ -510,7 +979,9 @@ class NativeP8MainPreferenceTest {
                     .put("activityLedgers",JSONArray(owner.activities.map {JSONObject(it.ledger.summary())}))
                     .put("activityInstances",activityProof(owner))
                     .put("completeInstanceSet",completeInstanceSet).put("acquisitionsKnown",acquisitionsKnown).put("ownersClosed",ownersClosed)
-                    .put("stableFinalDefaultFamiliesConfirmed",owner.ledger.confirmed("final-defaults")).put("bodyPassed",bodyPassed).toString())}
+                    .put("stableFinalDefaultFamiliesConfirmed",owner.ledger.confirmed("final-defaults")).put("bodyPassed",bodyPassed)
+                    .put("nativeAxReadiness",owner.nativeAxReadiness).put("nativeAxPreparation",checkNotNull(automationPreparation))
+                    .put("nativeWindowBindings",JSONArray(owner.nativeWindows.map {it.proof})).toString())}
             val deletionReady=bodyPassed&&errors.first==null&&ownersClosed&&owner.ledger.confirmed("scope-created","scope-pinned","alias-new","store-created","seed-created","final-defaults","final-status")
             owner.ledger.step("scope-removed",errors,ready=deletionReady){owner.fence!!.removeConfirmedOwnedScope {facts->
                 status("complete-bounded-scope-inventory-before-delete",owner.context!!,JSONObject(facts).toString())

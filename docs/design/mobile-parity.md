@@ -1632,3 +1632,13 @@ Source69 保留主线设计增量和现有迁移/阅读界面，未新增 token�
 阶段78修订：首套SDK不等于UI通过；原Native在BACK DOWN注入拒绝处失败，窗口护栏本身通过，整方法及P8不升级。验收器只修事件时间/同键UP并保留真实返回，生产token/文案/页面与iOS保持；修订新包、新原生结果待验。
 
 阶段78限定验收：guarded Main密码阈值/Settings-Back/Done/Cancel/系统Back、已有连接禁入、候选取消重开、确认和PREVIOUS_IMPORT四方法本次通过，44组精确AX等待与owner切换另核；不代表shipping初始bootstrap或完整视觉。P8中文短视口在easywork-name native AX锚0/1失败、英文未验，不据Compose字段断言升级原生AX或TalkBack通过。iOS直接导入/无六身份区等差异仍开放，见[阶段78](../plans/android-alignment-20261022/records/stage78-p7-main-p8-short-ui.md)。
+
+Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness source is adopted; original ID/tag/value/label/visible geometry and owner assertions remain. Only two fresh independent samples can pass; no text fallback or input retry. Product layout/tokens/copy and iOS are unchanged. New v2 SDK/Native, full visual/TalkBack/physical and shipping runtime remain pending; [stage record](../plans/android-alignment-20261022/records/stage79-p8-native-ax-readiness.md).
+
+阶段79续：P8中文短视口的准确原生AX锚点仍失败，英文未执行；增加的失败后ID/窗口诊断不改变界面、文案、原匹配断言或通过状态。P7真实系统文件选择器导入/导出进入独立SAF验收，iOS布局与交互基线保持；Android系统DocumentsUI差异和回调/取消/恢复逐项登记，当前不宣称系统选择器或物理矩阵通过。
+
+阶段79系统差异实测：当前Android DocumentsUI导航按钮没有资源ID，标准描述Show roots；保存按钮呈现SAVE，目录由breadcrumb显示。验收器将采用窄角色、准确toolbar祖先与owned目录/文件绑定，不将无ID视为产品缺失或用任意文本匹配放宽门槛。iOS产品交互、布局和文案不变；系统选择器观察不代替实际回调与完整视觉验收。
+
+阶段80 F02/F03/F04/F55/F56：P7采用实际观察的系统工具栏窄角色、owned目录及原文件绑定；P8输入前绑定原表单focused decor，保留原锚点/文案/值、双样本和同窗口要求。产品布局/token/iOS未改。新SDK、实际回调/AX、中英短视口、TalkBack/物理及完整视觉待验；详见阶段80档案。
+
+阶段80实际UI门槛：P8原decor绑定失败，未能验收长字段；需先用只读type/token/原对象元数据定位，不以Activity窗口或任意Context回填原表单。P7未进入真实系统回调，系统界面及完整视觉继续待验。iOS布局/token/文案未改，过程见阶段80运行档案。

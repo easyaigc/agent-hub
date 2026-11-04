@@ -53,6 +53,8 @@ class NativeMigrationMainUiTest {
             "actualMainExistingConnectionDisablesImportWithoutRemovingIt"->true
             "actualMainRecoversEncryptedCandidateAndCancelReopenKeepIt"->false
             "actualMainConfirmPublishesPreparedCandidateAndRestoresOnlyOnce"->false
+            "actualMainSafCreateWritesOnlyOwnedEncryptedDocument"->false
+            "actualMainSafOpenStagesOnlyOwnedEncryptedDocument"->false
             else->error("Only an explicit finite Main migration UI selector is allowed")
         }
         val original=metadata("original owned local draft")
@@ -69,6 +71,14 @@ class NativeMigrationMainUiTest {
             // Real encrypted candidate parsing/validation before launch, never UI state assignment.
             prepared=NativeMigrationCandidateStore(context,storage).stage(UUID.randomUUID().toString(),
                 NativeMigrationCrypto.seal(envelope.toString().toByteArray(),fixture.password),fixture.password)
+        }
+        if(name.methodName in setOf("actualMainSafCreateWritesOnlyOwnedEncryptedDocument","actualMainSafOpenStagesOnlyOwnedEncryptedDocument")) {
+            val kind=if(name.methodName=="actualMainSafOpenStagesOnlyOwnedEncryptedDocument")NativeMigrationPickerKind.IMPORT else NativeMigrationPickerKind.EXPORT
+            if(kind==NativeMigrationPickerKind.IMPORT)incomingMetadata=metadata("imported owned SAF draft").toString()
+            safAcquisitionStarted=true // Retain the original external provider lease even on failure.
+            saf=NativeMigrationMainSaf(fixture.run,kind) {ui.mainClock.advanceTimeByFrame();instrumentation.waitForIdleSync()}
+            // Strongly retain the helper before any native accessibility configuration side effect.
+            checkNotNull(saf).enableAccessibility()
         }
         acquisitionStarted=true
         initial=MobileSession(storage) // Register immediately on constructor return, before any restore.
@@ -87,6 +97,9 @@ class NativeMigrationMainUiTest {
     }
     private val owners=mutableListOf<ConfiguredOwner>()
     private val axWaits=JSONArray()
+    private var saf: NativeMigrationMainSaf?=null
+    private var safAcquisitionStarted=false
+    private var safCallbackCompleted=false
     private var nativeBackProof: JSONObject?=null
     private var folderOwned=false
     private var storageAcquisitionStarted=false
@@ -114,10 +127,7 @@ class NativeMigrationMainUiTest {
     private var completed=false
     private var retirementConfirmed=false
     private val draftKey get()="owned-main-ui-draft-${fixture.run}"
-    private fun metadata(draft: String)=JSONObject().put("version",1).put("appearance","light").put("language","en")
-        .put("demo",true).put("selected",DemoMobileData.clients.first().id).put("clients",JSONArray())
-        .put("drafts",JSONObject().put(draftKey,draft)).put("draftVersions",JSONObject().put(draftKey,"owned-main-ui-version"))
-        .put("draftFiles",JSONObject()).put("selectedThreads",JSONObject()).put("expanded",JSONObject()).put("workspaces",JSONObject())
+    private fun metadata(draft: String)=NativeMigrationMainSafMetadata.value(fixture.run,draft)
 
     @Before fun ready() {
         // Framework application is unchanged; runtime installation/cache are isolated before Main.
@@ -417,6 +427,65 @@ class NativeMigrationMainUiTest {
         assertEquals(receipt,fresh.migrationStorage.migrationPublicationReceipt())
         clickAction("sheet-done","完成");assertNoPorts();completed=true
     }
+    /** Read-only correlation of the actual SystemHost-issued original request. Never dispatches a result. */
+    @Suppress("UNCHECKED_CAST") private fun issued(kind: NativeMigrationPickerKind): List<String> {
+        val field=NativeMigrationController::class.java.getDeclaredField("issued").apply {isAccessible=true}
+        return (field.get(ui.activity.migration) as Map<NativeMigrationPickerKind,java.util.ArrayDeque<NativeMigrationPicker>>).getValue(kind).map {it.id}
+    }
+    private fun selectOwnedSaf(kind: NativeMigrationPickerKind): Pair<NativeMigrationPicker,Pair<Long,String>?> {
+        val driver=checkNotNull(saf);check(driver.kind==kind)
+        val originalController=ui.activity.migration
+        openFromMain();password(fixture.password)
+        clickAction(if(kind==NativeMigrationPickerKind.IMPORT)"migration-import" else "migration-export",
+            if(kind==NativeMigrationPickerKind.IMPORT)"导入加密迁移文件" else "导出加密迁移文件")
+        ui.waitUntil(60_000){ui.activity.migration.picker?.let {it.kind==kind&&it.launched}==true}
+        val activity=ui.activity;val session=activity.session
+        val request=checkNotNull(activity.migration.picker)
+        assertSame(originalController,activity.migration);assertEquals(storage.coordinationKey,session.migrationStorage.coordinationKey)
+        if(kind==NativeMigrationPickerKind.EXPORT){assertNotSame(initial,session);assertEquals(2,owners.size)}
+        else {assertSame(initial,session);assertEquals(1,owners.size)}
+        val target=session.targetKey
+        fun guard()=instrumentation.runOnMainSync {
+            check(ui.activity===activity&&!activity.isDestroyed&&!activity.isFinishing&&activity.migration===originalController&&activity.session===session)
+            check(session.migrationStorage.coordinationKey==storage.coordinationKey&&session.targetKey==target)
+            check(activity.migration.picker?.let {it.id==request.id&&it.kind==kind&&it.launched}==true&&issued(kind)==listOf(request.id))
+            assertNoPorts()
+        }
+        guard()
+        val expected=if(kind==NativeMigrationPickerKind.EXPORT)NativeMigrationMainSaf.fingerprint(NativeMigrationDocuments(context).file(request.id,"export")) else null
+        driver.select(request,::guard)
+        return request to expected
+    }
+    @Test fun actualMainSafCreateWritesOnlyOwnedEncryptedDocument() {
+        val (request,expected)=selectOwnedSaf(NativeMigrationPickerKind.EXPORT)
+        ui.waitUntil(60_000){ui.activity.migration.result==NativeMigrationResult.SAVED&&ui.activity.migration.phase==NativeMigrationPhase.DONE&&
+            !ui.activity.migration.busy&&ui.activity.session.migrationReady}
+        ui.runOnIdle {assertNull(ui.activity.migration.picker);assertTrue(issued(request.kind).isEmpty());assertTrue(ui.activity.migration.password.isEmpty())}
+        checkNotNull(saf).verifyCallback(checkNotNull(expected));safCallbackCompleted=true
+        val fresh=ui.activity.session;assertEquals(2,owners.size);assertNotSame(initial,fresh)
+        assertEquals(originalMetadata,fresh.migrationStorage.read("metadata"));assertNull(fresh.migrationStorage.migrationPublicationReceipt())
+        assertNull(NativeMigrationCandidateStore(context,fresh.migrationStorage).currentReceipt())
+        assertFalse(NativeMigrationDocuments(context).file(request.id,"export").exists())
+        assertNoPorts();bindPage(fresh)
+        ui.onNodeWithTag("migration-result").performScrollTo().assertTextContains(NativeL10n(context,"en").tr("加密文件已保存。请核对文件和密码可用。"))
+        clickAction("sheet-done","完成");completed=true
+    }
+    @Test fun actualMainSafOpenStagesOnlyOwnedEncryptedDocument() {
+        val (request,_)=selectOwnedSaf(NativeMigrationPickerKind.IMPORT)
+        ui.waitUntil(60_000){ui.activity.migration.result==NativeMigrationResult.READY&&ui.activity.migration.phase==NativeMigrationPhase.PREVIEW&&!ui.activity.migration.busy}
+        ui.runOnIdle {assertNull(ui.activity.migration.picker);assertTrue(issued(request.kind).isEmpty());assertTrue(ui.activity.migration.password.isEmpty());assertEquals(NativeMigrationPreview(0,1,0,0,0),ui.activity.migration.preview)}
+        val driver=checkNotNull(saf);driver.verifyCallback(driver.inputFingerprint());safCallbackCompleted=true
+        val receipt=checkNotNull(NativeMigrationCandidateStore(context,storage).currentReceipt());assertEquals(request.id,receipt.id)
+        assertEquals(incomingMetadata,NativeMigrationCandidateStore(context,storage).readArchive(receipt).text.getValue("metadata"))
+        assertEquals(originalMetadata,storage.read("metadata"));assertNull(storage.migrationPublicationReceipt())
+        assertSame(initial,ui.activity.session);assertEquals(1,owners.size);assertNoPorts();bindPage(initial)
+        ui.onNodeWithTag("migration-preview").performScrollTo().assertExists()
+        awaitPage("确认导入",true,passwordLength=0,requireField=false)
+        clickAction("migration-cancel","取消",scroll=true)
+        assertEquals(receipt,NativeMigrationCandidateStore(context,storage).currentReceipt())
+        assertEquals(originalMetadata,storage.read("metadata"));assertNull(storage.migrationPublicationReceipt())
+        assertNoPorts();completed=true // Preview only: this selector deliberately never activates.
+    }
     /** Owns prepare + Activity launch + body + Activity-rule close. @After is deliberately absent. */
     private fun ownedCase(base: Statement) {
         var primary: Throwable?=null;var cleanupFailure: Throwable?=null
@@ -444,6 +513,9 @@ class NativeMigrationMainUiTest {
                 if(installationPrepared){NativeMigrationInboxOwnerActivity.release(fixture.run);installationReleased=true}
                 if(owners.isNotEmpty()){assertNoPorts();postJoinProviderCheckPassed=true}
             }catch(failure: Throwable){cleanupFailure=failure}
+            try {saf?.restoreAccessibilityFlags()}catch(failure: Throwable){
+                val prior=cleanupFailure;if(prior==null)cleanupFailure=failure else prior.addSuppressed(failure)
+            }
             try {record(primary,cleanupFailure)}catch(failure: Throwable){
                 val prior=cleanupFailure
                 if(prior==null)cleanupFailure=failure else prior.addSuppressed(failure)
@@ -477,10 +549,17 @@ class NativeMigrationMainUiTest {
         check(owners.any {it.session===ending}){"Unknown Main Session; retain all owners"}
         // A successful original Main transfer already retired initial; never retire it twice.
         if(ending!==initial)withContext(Dispatchers.Main.immediate) {
-            check(name.methodName=="actualMainConfirmPublishesPreparedCandidateAndRestoresOnlyOnce"&&prepared!=null)
+            val imported=name.methodName=="actualMainConfirmPublishesPreparedCandidateAndRestoresOnlyOnce"&&prepared!=null
+            val exported=name.methodName=="actualMainSafCreateWritesOnlyOwnedEncryptedDocument"&&safCallbackCompleted
+            check(imported||exported)
             check(owners.size==2&&ending.migrationReady&&initial.migrationPaused)
-            check(activity?.currentMigrationOrNull()?.result in setOf(NativeMigrationResult.IMPORTED,NativeMigrationResult.PREVIOUS_IMPORT))
-            check(ending.migrationStorage.migrationPublicationReceipt()==prepared)
+            if(imported) {
+                check(activity?.currentMigrationOrNull()?.result in setOf(NativeMigrationResult.IMPORTED,NativeMigrationResult.PREVIOUS_IMPORT))
+                check(ending.migrationStorage.migrationPublicationReceipt()==prepared)
+            } else {
+                check(activity?.currentMigrationOrNull()?.result==NativeMigrationResult.SAVED)
+                check(ending.migrationStorage.migrationPublicationReceipt()==null&&ending.migrationStorage.read("metadata")==originalMetadata)
+            }
             mainTransferredOriginal=true
         }else check(owners.size==1){"Uncommitted fresh owner outcome unknown; retain all owners"}
         if(activity!=null) {
@@ -515,7 +594,8 @@ class NativeMigrationMainUiTest {
             .put("privateMaterialRetained",true).put("preparedCandidate",prepared!=null).put("inheritedMainAssembly",true)
             .put("discoveryDisableRequested",true).put("providerProbes",probes).put("axWaits",axWaits)
             .put("nativeBack",nativeBackProof ?: JSONObject.NULL)
-            .put("safAccepted",false).put("physicalDeviceAccepted",false).put("shippingTransportAccepted",false).put("isolatedCompose",false)
+            .put("safAcquisitionStarted",safAcquisitionStarted).put("safProviderDirectory",if(safAcquisitionStarted)"files/p7-main-saf-owned-v1/${fixture.run}" else JSONObject.NULL)
+            .put("saf",saf?.summary() ?: JSONObject.NULL).put("safCallbackCompleted",safCallbackCompleted).put("safAccepted",false).put("physicalDeviceAccepted",false).put("shippingTransportAccepted",false).put("isolatedCompose",false)
         // Also emit only scalars if admission/fresh() failed before a new directory was owned.
         instrumentation.sendStatus(0,Bundle().apply {putString("p7MainUiCleanup",result.toString())})
         if(!folderOwned)return

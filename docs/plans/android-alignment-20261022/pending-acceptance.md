@@ -62,3 +62,23 @@
 阶段78首Native：run5ec2c585首方法BACK-down注入拒绝，1项失败，owner/原进程与VM已明确退出；其余三方法/P8未做，不重放或拆分升级。原窗口检查通过，test输入时序修正不改变产品断言；新SDK/原生运行待验，见[档案](records/stage78-p7-main-p8-short-ui.md)。
 
 阶段78最终：P7修订SDK及guarded Main四方法有限通过；P8新run84febd34中文首case的easywork-name原生AX锚0/1失败、英文未做，准确节点导出/就绪继续修复。两外层UNKNOWN原回执保持，原R1 Native失败不升级。owner/原PID与VM已关闭，失败scope保留；SAF、实际shipping启动/完整UI/物理继续开放，见[档案](records/stage78-p7-main-p8-short-ui.md)。
+
+Stage79: the P8 first-Chinese-case AX-anchor failure and unrun English case remain open. The strict readiness/scope/budget/order repair has passed static independent review only; new v2 SDK, actual native two-case execution and complete UI/physical gates remain pending. No fallback by text/label and no original operation replay. See [stage record](records/stage79-p8-native-ax-readiness.md).
+
+### 阶段79补充
+
+P8 v2 SDK通过，但中文首case的准确原生AX锚点在5秒截止失败，英文未执行；原JUnit失败、外层UNKNOWN和旧scope保留，不重放。下一轮只读元数据诊断与P7真实SAF共包，不因此提升P8状态。P7 OpenDocument/CreateDocument、shell_v2真实双向字节/退出、provider实际释放和新owner还原仍待新包真实验收；旧Main四路径通过不能替代。
+
+阶段79最新：SAF共包SDK通过；P8新run首次active AX root为null而失败，merged/unmerged ID232相同且等于anchor，原window未建立，失败后Activity window2不补成原证明；英文仍未验。原scope/alias及outer UNKNOWN保留，模拟器已正常停止。P7无ID导航按钮需窄角色profile，新R3仅静态通过；P9只读候选尚缺新API36三APK准入。低空间已回收旧包体/中间目录，当前与回退包保留；退役的旧bundle不可当完整验证或匹配复用输入。
+
+## 阶段80新增待验
+
+| 项目                    | 当前范围                                                                      | 关闭条件                                                                                                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P7系统选择器 / P8原窗口 | 角色/原窗口修订静态独审通过，独立SAF-v2新包待构建；旧失败/未知保持            | P7实际owned根目录、导入/导出回调及provider字节/原进程回执；P8中浅/英深短视口、长字段四次输入、14组真实AX、菜单/Back与恢复逐项实际执行；不把UiAutomation连接或Compose断言当AX通过                           |
+| F34/F36双端下一轮/owner | 固定主线已有共同规则与双端源码，尚无本候选双端DEV通过                         | 草稿逐字段编辑/清除/未知owner、runtime刷新/冷恢复与速度支持目录；工具栏即时预览和当前owner独立，发送后真实模型与桌面独核；中英/主题/长名小屏/AX                                                            |
+| F19/F32/F59大文件       | 下载源码移除20MiB固定门槛，新Host null/旧有限值兼容；Android独立F59入口待实现 | F59仅按现有上传/查回执/复制路径及冷原件范围实现；F19/F32分别验证大文件下载/预览/分享。双端核对大于20MiB原件、摘要/Host回执、未知结果只查询、失败/清理及跨目标隔离；不虚构浏览/取消接口，实际资源约束仍适用 |
+
+上游iOS模拟器、Android测试源码与静态检查仅作辅助，不替代本候选手机DEV。迁移archive64MiB及渲染预算不随文件传输上限变更；任务/项目CRUD、F75与iOS A6继续暂停。
+
+阶段80实际结果：P7准备handoff rc137/UNKNOWN，未进入Native UI/JUnit或文件回调，原操作封存；P8首中文case在原decor归属绑定失败，英文未执行，需先补只读窗口元数据。F59双端迁移域与Android实现缺口见[合同档案](records/stage80-f59-transfer-contract.md)。详见[运行档案](records/stage80-runtime-failures.md)，不将辅助构建升级为通过。

@@ -28,6 +28,8 @@ const paths = [
   'apps/ios/Sources/MobileUnreadBadge.swift',
   'scripts/mobile/fixtures/legacy-chat-timeline.swift',
   'apps/ios/Sources/NativeChatSearch.swift',
+  'apps/ios/Sources/OperationFailure.swift',
+  'apps/ios/Sources/RecentProjects.swift',
 ];
 const fingerprint = async () => {
   const hash = createHash('sha256');
@@ -77,6 +79,11 @@ const unreadProjection =
   store.slice(contextStart, contextEnd) + store.slice(projectionStart, projectionEnd);
 const reference = await readFile('scripts/mobile/fixtures/legacy-chat-timeline.swift', 'utf8');
 const legacy = reference.replace('struct ChatTimeline', 'struct LegacyChatTimeline');
+const failures = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
+const identityStart = failures.indexOf('struct ConnectionAuthorizationIdentity<');
+const identityEnd = failures.indexOf('/// Per live connection,', identityStart);
+assert(identityStart >= 0 && identityEnd > identityStart);
+const authorizationIdentity = failures.slice(identityStart, identityEnd);
 const facade =
   shared.slice(0, shared.indexOf('// Platform tasks')) +
   '\n' +
@@ -93,6 +100,8 @@ const code =
   '\n' +
   notifications.slice(0, notifications.indexOf('enum TaskNoticeKind:')) +
   '\n' +
+  authorizationIdentity +
+  '\n' +
   agent.slice(0, agent.indexOf('/// Product operations.')) +
   '\n' +
   agent.slice(agent.indexOf('extension AgentConnection {')) +
@@ -105,6 +114,8 @@ const code =
   reading +
   '\n' +
   generated +
+  '\n' +
+  (await readFile('apps/ios/Sources/RecentProjects.swift', 'utf8')) +
   '\n' +
   models +
   '\n' +

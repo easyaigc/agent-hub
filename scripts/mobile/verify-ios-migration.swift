@@ -445,6 +445,8 @@ do {
     switch kind {
     case .cache:
       return RuntimeIdentity.shared.cacheKey(clientId: t.hostId, target: SharedMobileRules.scope(t), threadId: thread, projectId: project)
+    case .legacyCache:
+      return MobileRules.shared.cacheKey(clientId: t.hostId, target: SharedMobileRules.scope(t), threadId: thread, projectId: project)
     case .reading:
       return RuntimeIdentity.shared.readingKey(target: SharedMobileRules.scope(t), threadId: thread)
     case .nativeReading:
@@ -481,13 +483,17 @@ do {
   changed.account?.subject = "two"; targets.append(changed)
   changed.account?.authority = "other-authority"; targets.append(changed)
   for t in targets {
-    for kind in [RuntimeIdentityKeyCache.Kind.cache, .reading, .nativeReading] {
+    for kind in [RuntimeIdentityKeyCache.Kind.cache, .legacyCache, .reading, .nativeReading] {
       for selector in [(nil, nil), (nil, ""), (nil, "project"), ("", nil), ("thread", nil)] as [(String?, String?)] {
         let expected = reference(t, kind, selector.0, selector.1)
         precondition(encoded(t, kind, selector.0, selector.1) == expected)
         let actual: String
         switch kind {
         case .cache: actual = SharedMobileRules.machineCacheKey(t, threadId: selector.0, projectId: selector.1)
+        case .legacyCache:
+          let client = Client(id: t.hostId, name: "Cache boundary", endpoint: nil, isDemo: false, online: false,
+            agentConnection: AgentConnection(target: t, candidates: [], preference: .automatic, credentialRef: "cache-test-reference"))
+          actual = SharedMobileRules.cacheKey(client, threadId: selector.0, projectId: selector.1)
         case .reading: actual = SharedMobileRules.machineReadingKey(t, threadId: selector.0)
         case .nativeReading: actual = SharedMobileRules.nativeReadingKey(t, threadId: selector.0)
         }

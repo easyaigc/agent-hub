@@ -26,6 +26,7 @@ final class SessionStore: ObservableObject {
   @Published var search = ""
   @Published var chatSearchJump: ChatSearchJump?
   @Published private(set) var chatActionBusy: [String: String] = [:]
+  @Published private var chatActionQueryErrors: [String: String] = [:]
   private var errorRevision: UInt64 = 0
   @Published private var operationFailure: OperationFailure? { didSet { errorRevision &+= 1 } }
   var error: String? {
@@ -4225,7 +4226,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     return SharedMobileRules.workspaceArchiveEligible(
       knownTarget: thread.hostId == host.id && threads.contains { $0.id == thread.id && $0.hostId == thread.hostId },
       archived: thread.archived == true, singleBusy: chatActionBusy[cacheKey(host, threadId: thread.id)] != nil,
-      singlePending: !pendingChatActions(thread.id).isEmpty, batchPending: workspaceArchivePendingIds(excluding: operationId).contains(thread.id))
+      singlePending: pendingChatActions(thread.id).contains { SharedMobileRules.chatActionBlocksInput($0.phase, waitingEnded: $0.waitingEnded == true) }, batchPending: workspaceArchivePendingIds(excluding: operationId).contains(thread.id))
   }
   func manageWorkspace(_ action: WorkspaceManagementAction, ids: [String], labels: [String: String]) async throws {
     guard !managementBusy, let host = client, host.online, canManageWorkspace(action), !ids.isEmpty, ids.count <= 100 else { throw HostServiceError.unavailable }
@@ -4473,7 +4474,7 @@ extension SessionStore {
     return SharedMobileRules.chatCanManage(demo: host.isDemo, online: host.online, supported: supportsChatManagement,
       knownTarget: thread.hostId == host.id && threads.contains { $0.id == thread.id && $0.hostId == thread.hostId },
       busy: busy || managementBusy,
-      pending: pendingChatActions(thread.id).contains { $0.id != operationId } || workspaceArchivePendingIds().contains(thread.id))
+      pending: pendingChatActions(thread.id).contains { $0.id != operationId && SharedMobileRules.chatActionBlocksInput($0.phase, waitingEnded: $0.waitingEnded == true) } || workspaceArchivePendingIds().contains(thread.id))
   }
   func chatTaskStatus(_ thread: Conversation) -> String {
     let selected = thread.hostId == client?.id && thread.id == selectedThreadId
@@ -4497,34 +4498,36 @@ extension SessionStore {
     let archive = thread.archived == true ? L10n.tr("已归档") : L10n.tr("未归档")
     return L10n.tr("\(archive) · 任务状态：\(chatTaskStatus(thread))")
   }
-  func manageChat(_ action: ChatAction, thread: Conversation?) {
-    guard let thread, thread.id == selectedThreadId, canManageChat(thread), let host = client else { return }
+  @discardableResult
+  func manageChat(_ action: ChatAction, thread: Conversation?, title: String? = nil, showsErrorAlert: Bool = true) -> (operation: ChatActionReceipt, task: Task<Bool, Never>)? {
+    guard let thread, thread.id == selectedThreadId, canManageChat(thread), let host = client, action != .rename || supportsChatRename else { return nil }
     let operation = ChatActionReceipt(hostId: host.id, target: mobileReadingTarget(host), threadId: thread.id,
-      clientOperationId: UUID().uuidString, action: action, phase: "submitted")
+      clientOperationId: UUID().uuidString, action: action, phase: "submitted", title: title)
+    guard SharedMobileRules.chatActionValid(operation.request) else { return nil }
     if saved.chatActionReceipts == nil { saved.chatActionReceipts = [:] }
     saved.chatActionReceipts?[operation.id] = operation
     let key = cacheKey(host, threadId: thread.id), generation = historyGeneration
     chatActionBusy[key] = operation.id
-    Task {
+    let task = Task {
       defer { if chatActionBusy[key] == operation.id { chatActionBusy.removeValue(forKey: key) } }
       do { try await persistBeforeCommand() }
       catch {
         saved.chatActionReceipts?[operation.id]?.phase = "rejected"
         saved.chatActionReceipts?[operation.id]?.error = L10n.tr("未发送操作：无法保存本地记录。")
-        persist(); return
+        persist(); return false
       }
       guard let current = client, current.id == host.id, current.endpoint == host.endpoint,
         mobileReadingTarget(current) == operation.target, historyGeneration == generation,
         selectedThreadId == thread.id, canManageChatExcluding(thread, operationId: operation.id) else {
         saved.chatActionReceipts?[operation.id]?.phase = "rejected"
         saved.chatActionReceipts?[operation.id]?.error = L10n.tr("未发送操作：目标已变化。")
-        persist(); return
+        persist(); return false
       }
       do {
         let receipt = try await AgentClients.resolve(host).chatAction(host, request: operation.request)
         try await acceptChatAction(receipt, original: operation, host: host, originGeneration: generation)
       } catch {
-        if let phase = saved.chatActionReceipts?[operation.id]?.phase, ["confirmed", "rejected"].contains(phase) { return }
+        if let phase = saved.chatActionReceipts?[operation.id]?.phase, ["confirmed", "rejected"].contains(phase) { return phase == "confirmed" }
         saved.chatActionReceipts?[operation.id]?.phase = "outcome-unknown"
         let rejected: Bool
         if case HostServiceError.rejected(let code, _) = error, [400, 401, 403, 404, 409, 422].contains(code) { rejected = true }
@@ -4532,36 +4535,73 @@ extension SessionStore {
         if rejected { saved.chatActionReceipts?[operation.id]?.phase = "rejected" }
         saved.chatActionReceipts?[operation.id]?.error = error.userFacingDescription
         persist()
-        if let current = client, current.id == host.id, current.endpoint == host.endpoint, mobileReadingTarget(current) == operation.target, historyGeneration == generation, selectedThreadId == operation.threadId {
+        if showsErrorAlert, let current = client, current.id == host.id, current.endpoint == host.endpoint, mobileReadingTarget(current) == operation.target, historyGeneration == generation, selectedThreadId == operation.threadId {
           self.error = rejected ? ChatAction.errorDescription(error.userFacingDescription) : L10n.tr("操作结果待确认，请在对话选项中查询原记录。")
         }
       }
+      return saved.chatActionReceipts?[operation.id]?.phase == "confirmed"
     }
+    return (operation, task)
   }
-  func endChatActionWaiting(_ operation: ChatActionReceipt) {
+  var supportsChatRename: Bool {
+    guard let host = client else { return false }
+    return supportsChatManagement && saved.workspaces[host.id]?.capabilities?.contains("threads:rename") == true
+  }
+  func captureChatRename() -> ChatRenameContext? {
+    guard supportsChatRename, let host = client, let thread = conversation, canManageChat(thread) else { return nil }
+    return ChatRenameContext(host: host, thread: thread, target: mobileReadingTarget(host), generation: historyGeneration)
+  }
+  func chatRenameContextCurrent(_ context: ChatRenameContext) -> Bool {
+    guard let host = client else { return false }
+    return host.id == context.host.id && host.endpoint == context.host.endpoint && mobileReadingTarget(host) == context.target
+      && historyGeneration == context.generation && selectedThreadId == context.thread.id
+  }
+  func chatActionReceipt(_ id: String) -> ChatActionReceipt? { saved.chatActionReceipts?[id] }
+  func chatActionQueryError(_ id: String) -> String? { chatActionQueryErrors[id] }
+  func endChatActionWaiting(_ operation: ChatActionReceipt, showsErrorAlert: Bool = true) {
     guard saved.chatActionReceipts?[operation.id]?.request == operation.request else { return }
+    chatActionQueryErrors.removeValue(forKey: operation.id)
     Task {
       saved.chatActionReceipts?[operation.id]?.waitingEnded = true
-      do { try await persistBeforeCommand() }
-      catch { saved.chatActionReceipts?[operation.id]?.waitingEnded = operation.waitingEnded; self.presentError(error) }
+      do {
+        try await persistBeforeCommand()
+        if let host = client, host.id == operation.hostId, mobileReadingTarget(host) == operation.target {
+          let key = cacheKey(host, threadId: operation.threadId)
+          if chatActionBusy[key] == operation.id { chatActionBusy.removeValue(forKey: key) }
+        }
+      } catch {
+        saved.chatActionReceipts?[operation.id]?.waitingEnded = operation.waitingEnded
+        chatActionQueryErrors[operation.id] = error.userFacingDescription
+        if showsErrorAlert { self.presentError(error) }
+      }
     }
   }
-  func queryChatAction(_ operation: ChatActionReceipt) {
-    guard let host = client, mobileReadingTarget(host) == operation.target else { return }
+  @discardableResult
+  func queryChatAction(_ operation: ChatActionReceipt, showsErrorAlert: Bool = true) -> Task<Bool, Never>? {
+    guard let host = client, host.id == operation.hostId, mobileReadingTarget(host) == operation.target else { return nil }
     let generation = historyGeneration
-    Task {
+    chatActionQueryErrors.removeValue(forKey: operation.id)
+    return Task {
       do {
         let receipt = try await AgentClients.resolve(host).chatActionStatus(host, threadId: operation.threadId, operationId: operation.id)
         try await acceptChatAction(receipt, original: operation, host: host, originGeneration: generation)
+        chatActionQueryErrors.removeValue(forKey: operation.id)
+        return receipt.phase == "confirmed"
       } catch {
-        if let current = client, current.id == host.id, current.endpoint == host.endpoint,
+        let detail: String
+        if case HostServiceError.rejected(let code, _) = error, code == 404 {
+          detail = L10n.tr("未查到原聊天操作记录，结果仍未确认；不会重新提交。")
+        } else { detail = error.userFacingDescription }
+        if let receipt = saved.chatActionReceipts?[operation.id], receipt.request == operation.request, receipt.pending {
+          chatActionQueryErrors[operation.id] = detail
+        }
+        if showsErrorAlert, let current = client, current.id == host.id, current.endpoint == host.endpoint,
           mobileReadingTarget(current) == operation.target, historyGeneration == generation,
           selectedThreadId == operation.threadId {
-          if case HostServiceError.rejected(let code, _) = error, code == 404 {
-            self.error = L10n.tr("未查到原聊天操作记录，结果仍未确认；不会重新提交。")
-          } else { self.presentError(error) }
+          self.error = detail
         }
       }
+      return false
     }
   }
   private func acceptChatAction(_ receipt: ChatActionReceipt, original: ChatActionReceipt, host: Client, originGeneration: UUID) async throws {

@@ -1672,6 +1672,10 @@
     <string name="product_0d4432b4cf6213d854489227" formatted="false">"这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。"</string>
     <string name="product_fc027ca08f9a594be7fe3ee7" formatted="false">"请选择非空的普通文件。"</string>
     <string name="product_07af35eb503562f07c44be90" formatted="false">"电脑当前版本的文件大小上限为 %@，请更新电脑端。"</string>
+    <string name="product_9841324fc7709c269f12fbf6" formatted="false">"原操作已完成，当前修改尚未保存。"</string>
+    <string name="product_26c4fa32203ada79d411124a" formatted="false">"对话名称"</string>
+    <string name="product_363bc289d10f295d13947082" formatted="false">"未查到原批量归档记录，结果仍未确认；不会重新提交。"</string>
+    <string name="product_0d0cbac2eee541136ec2dbba" formatted="false">"重命名"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

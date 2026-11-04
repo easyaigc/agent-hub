@@ -48,6 +48,15 @@ class ChatManagementRulesTest {
         for((from,to)in listOf("runtime-test" to "runtime-other","thread-test-01" to "thread-other-01","operation-test-01" to "operation-other-01","archive" to "delete"))
             assertFalse(ChatManagementRules.outcomeMatches(request(),receipt().replace(from,to)))
     }
+    @Test fun codexKeepsItsOriginalWireContractAndCannotUseAnEasyWorkAlias() {
+        val mismatched=request().replaceFirst("host-test-01","local-alias")
+        val matchingOutcome=mismatched.dropLast(1)+""","phase":"confirmed","error":null}"""
+        assertFalse(ChatManagementRules.validIntent(mismatched))
+        assertFalse(ChatManagementRules.outcomeMatches(mismatched,matchingOutcome))
+        assertFalse(ChatManagementRules.validIntent(request().replace("thread-test-01","short")))
+        val rename=request("rename").dropLast(1)+""","title":"new name"}"""
+        assertFalse(ChatManagementRules.validIntent(rename))
+    }
     @Test fun unknownAndTerminalReceiptsCannotBecomeAnotherActionOrRegress() {
         assertTrue(ChatManagementRules.pending("uncertain"))
         assertTrue(ChatManagementRules.pending("outcome-unknown"))

@@ -114,6 +114,7 @@ actor EasyWorkEventSignal {
 
 /// Owns request correlation, encryption and recovery; transports only carry frames.
 actor EasyWorkRemoteSession {
+  var mobileDeviceId: String { credential.binding.mobileDeviceId }
   let target: EasyWorkTarget
   private(set) var connection: AgentConnection
   private let credential: EasyWorkCredential

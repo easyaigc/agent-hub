@@ -912,3 +912,63 @@ struct GenerationSettings: View {
         }.presentationDetents([.large])
     }
 }
+
+/// A single native action surface with the existing SwiftUI label. Touch,
+/// assistive input and standard UIControl activation all invoke the same action.
+struct NativeContentButton<Content: View>: UIViewRepresentable {
+    let identifier: String
+    let label: String
+    var value: String? = nil
+    var selected = false
+    @ViewBuilder let content: () -> Content
+    let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+
+    final class Control: UIButton {
+        var hosted: (UIView & UIContentView)?
+        override var intrinsicContentSize: CGSize { hosted?.intrinsicContentSize ?? super.intrinsicContentSize }
+        override func layoutSubviews() { super.layoutSubviews();hosted?.frame=bounds }
+        override var isHighlighted: Bool { didSet { hosted?.alpha=isHighlighted ? 0.75 : 1 } }
+    }
+    final class Coordinator: NSObject {
+        var action: () -> Void
+        init(action: @escaping () -> Void) { self.action=action }
+        @objc func activate(_ sender: UIButton) {
+            guard sender.isEnabled,sender.window != nil else { return }
+            action()
+        }
+    }
+    func makeCoordinator() -> Coordinator { Coordinator(action:action) }
+    func makeUIView(context: Context) -> Control {
+        // SwiftUI draws the complete row, including its selected background.
+        // A custom button avoids UIKit's system selected-state paint covering it.
+        let control=Control(type:.custom)
+        control.addTarget(context.coordinator,action:#selector(Coordinator.activate(_:)),for:.touchUpInside)
+        return control
+    }
+    func updateUIView(_ control: Control,context: Context) {
+        context.coordinator.action=action
+        control.isEnabled=isEnabled
+        control.isAccessibilityElement=true
+        control.accessibilityIdentifier=identifier
+        control.accessibilityLabel=label
+        control.accessibilityValue=value
+        control.isSelected=selected
+        if selected { control.accessibilityTraits.insert(.selected) }
+        else { control.accessibilityTraits.remove(.selected) }
+        control.accessibilityTraits.insert(.button)
+        let configuration=UIHostingConfiguration { content().allowsHitTesting(false).accessibilityHidden(true) }.margins(.all,0)
+        if let hosted=control.hosted { hosted.configuration=configuration }
+        else {
+            let hosted=configuration.makeContentView()
+            hosted.isUserInteractionEnabled=false
+            control.addSubview(hosted);control.hosted=hosted
+        }
+        control.invalidateIntrinsicContentSize()
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize,uiView: Control,context: Context) -> CGSize? {
+        let width=proposal.width ?? max(44,uiView.intrinsicContentSize.width)
+        let size=uiView.hosted?.systemLayoutSizeFitting(CGSize(width:width,height:0),withHorizontalFittingPriority:.required,verticalFittingPriority:.fittingSizeLevel) ?? .zero
+        return CGSize(width:width,height:max(44,size.height))
+    }
+}

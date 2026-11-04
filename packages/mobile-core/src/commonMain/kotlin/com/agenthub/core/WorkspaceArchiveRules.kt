@@ -14,7 +14,9 @@ object WorkspaceArchiveRules {
     fun requestValid(wire: String): Boolean = runCatching {
         require(CodexHttpContract.validate(wire,"workspaceManagementRequest")==null)
         val row=Json.parseToJsonElement(wire).jsonObject
-        require(row.getValue("target").jsonObject.getValue("hostId")==row.getValue("hostId"))
+        val target=row.getValue("target").jsonObject
+        // EasyWork journals retain the local connection key; its adapter checks the bound wire Host.
+        require(target.getValue("agentId").jsonPrimitive.content=="easywork"||target.getValue("hostId")==row.getValue("hostId"))
         require(row.getValue("ids").jsonArray.all { it.jsonPrimitive.content.length<=200 })
         true
     }.getOrDefault(false)

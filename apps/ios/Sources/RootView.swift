@@ -1298,6 +1298,7 @@ struct RootView: View {
   @State private var visibleMessageLimit = RootView.initialHistoryWindow
   @State private var timelineCache = ChatTimelineCache()
   @State private var readySearchJump: UUID?
+  @State private var renameChatTarget: ChatRenameContext?
   @State private var deleteChatTarget: Conversation?
   @State private var endChatActionTarget: ChatActionReceipt?
   @State private var showsReplyRecords = false
@@ -1431,6 +1432,9 @@ struct RootView: View {
         Text((deleteChatTarget.map { target in store.chatLifecycleStatus(store.threads.first { $0.id == target.id && $0.hostId == target.hostId } ?? target) + "\n\n" } ?? "")
           + L10n.tr("将同步删除电脑端的原始聊天及其子对话，无法恢复。仅想保留历史时请选择归档。"))
       }
+      .sheet(item: $renameChatTarget) { context in
+        ChatRenameSheet(store: store, context: context) { if renameChatTarget?.id == context.id { renameChatTarget = nil } }
+      }
       .sheet(item: $store.sheet, onDismiss: {
         if let jump = store.chatSearchJump, jump.targetKey == store.targetKey, jump.token != readySearchJump { readySearchJump = jump.token }
       }) { route in sheets(route).presentationDragIndicator(.visible) }
@@ -1477,6 +1481,7 @@ struct RootView: View {
       store.chatSearchJump = nil
       readySearchJump = nil
       if store.sheet == .chatSearch { store.sheet = nil }
+      renameChatTarget = nil
       deleteChatTarget = nil
       endChatActionTarget = nil
       showsReplyRecords = false
@@ -1545,6 +1550,10 @@ struct RootView: View {
                 Button(store.currentChatPinned ? L10n.tr("取消置顶") : L10n.tr("置顶"), systemImage: store.currentChatPinned ? "pin.slash" : "pin") {
                   store.manageChat(store.currentChatPinned ? .unpin : .pin, thread: conversation)
                 }.disabled(!store.canManageChat(conversation) || conversation.archived == true).accessibilityIdentifier("chat-pin")
+              }
+              if store.supportsChatRename {
+                Button(L10n.tr("重命名"), systemImage: "pencil") { composerFocused = false; renameChatTarget = store.captureChatRename() }
+                  .disabled(!store.canManageChat(conversation)).accessibilityIdentifier("chat-rename")
               }
               Button(L10n.tr("在聊天中查找"), systemImage: "magnifyingglass") { composerFocused = false; store.sheet = .chatSearch }
                 .accessibilityIdentifier("chat-search")

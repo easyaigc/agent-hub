@@ -1666,3 +1666,7 @@ Stage79 F02/F03/F04/F55/F56 / UI01/UI03: strict read-only native AX readiness so
 ### 2026-11-04 notification/management contract integration
 
 No page, token or native interaction is changed by this protocol/Relay group. APNs and FCM retain their platform-specific registration while using the existing encrypted content and operation results. Synthetic audio is test data; user sounds stay on device. Backend auxiliary tests do not establish native arrival or UI parity.
+
+### 2026-11-05 EasyWork 聊天管理消费者
+
+F70保留现有聊天选项/归档界面；只有threads:manage与threads:rename均声明时开放重命名，编辑页固定原客户端/线程/代际，原回执查询不改写新标题。保存使用既有SwiftUI标签的原生按钮控制，中文/英文文案同步。Android仅同步共同语言目录并使用共享规则，原生管理/重命名UI一致性与真实验收仍开放。

@@ -1804,3 +1804,8 @@
 "请选择非空的普通文件。" = "Choose a nonempty regular file.";
 
 "电脑当前版本的文件大小上限为 %@，请更新电脑端。" = "This computer version limits files to %@. Update the computer app.";
+
+"原操作已完成，当前修改尚未保存。" = "The original operation completed. Your current changes are not saved.";
+"对话名称" = "Conversation name";
+"未查到原批量归档记录，结果仍未确认；不会重新提交。" = "The original batch archive record was not found. Its result is still unconfirmed; it will not be submitted again.";
+"重命名" = "Rename";

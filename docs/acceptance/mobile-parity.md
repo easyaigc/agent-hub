@@ -1685,3 +1685,7 @@ Stage79 (F02/F03/F04/F55/F56): R3 strict native AX readiness/scope/budget/order 
 2026-11-04 F06/F07/F08/F37/F38：iOS EasyWork授权/刷新及未知队列/追加回执消费者已整合，11项Swift、Relay和本地TLS辅助及iOS构建通过，详见 [整合记录](easywork-mobile-integration-20261104.md)。Android本组不改，既有整项/物理状态不提升。
 
 2026-11-04 F51/F52/F53/F54/F55/F70: shared notification/Relay/management consumer contracts are integrated separately from native arrival or whole-feature acceptance; see [integration record](easywork-mobile-integration-20261104.md).
+
+2026-11-05 F43/F70：EasyWork聊天/批量归档消费者与能力受控重命名进入独立候选；原操作/标题/完整目标和结束等待后只读查询保留。共享规则及编译按新指纹验证，真实producer、App交互、Android与整项验收继续开放。
+
+F43/F70 本轮辅助：共享规则15项和Simulator ARM64链接通过，iOS App构建及契约/建议/持久化检查通过；生成文案双语一致。真实原生交互与完整产品状态不提升。

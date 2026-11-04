@@ -133,8 +133,10 @@ struct EasyWorkAgentClient: AgentClient {
     let context = try object(await channel.request("runtime/context", [:]))
     let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
     guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+    let capabilities = context["capabilities"] as? [String] ?? []
     let projects = try object(await channel.request("project/list", [:]))["projects"] as? [[String: Any]] ?? []
     var params: [String: Any] = ["limit": 100]; if let threadCursor { params["cursor"] = threadCursor }
+    if capabilities.contains("threads:manage") { params["status"] = "all" }
     let threads = try object(await channel.request("thread/list", params))
     let observed = try object(context["state"] ?? [:])
     let connectionState = client.agentConnection.map { AgentConnectionState(target: $0.target, phase: .connected, transportId: nil, processHealthy: observed["processHealthy"] as? Bool == true, runtimeConnected: observed["runtimeConnected"] as? Bool == true, historyReadable: observed["historyReadable"] as? Bool == true) }
@@ -151,7 +153,11 @@ struct EasyWorkAgentClient: AgentClient {
     let active = value["activeRun"] as? [String: Any]
     return Conversation(id: value["id"] as? String ?? "", hostId: client.id, projectId: value["projectId"] as? String,
       title: value["title"] as? String ?? value["firstUserMessageText"] as? String ?? L10n.tr("新对话"), state: runState(active),
-      hasUnreadTurn: value["hasUnreadTurn"] as? Bool)
+      hasUnreadTurn: value["hasUnreadTurn"] as? Bool,
+      archived: value["archived"] as? Bool ?? !(value["archivedAt"] == nil || value["archivedAt"] is NSNull),
+      pendingAsyncQuestionCount: value["pendingAsyncQuestionCount"] as? Int,
+      archiveUnavailableReason: value["archiveUnavailableReason"] as? String,
+      lastTurnStatus: value["lastTurnStatus"] as? String ?? (value["latestRun"] as? [String: Any])?["status"] as? String)
   }
   private func runState(_ active: [String: Any]?) -> String {
     guard let active else { return "idle" }

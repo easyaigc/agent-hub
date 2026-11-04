@@ -837,13 +837,14 @@ struct AgentPermissionOption: Identifiable {
 
 
 enum ChatAction: String, Codable, Sendable {
-  case pin, unpin, archive, unarchive, delete
+  case pin, unpin, archive, unarchive, delete, rename
   var title: String { switch self {
     case .pin: L10n.tr("置顶")
     case .unpin: L10n.tr("取消置顶")
     case .archive: L10n.tr("归档")
     case .unarchive: L10n.tr("恢复对话")
     case .delete: L10n.tr("删除")
+    case .rename: L10n.tr("重命名")
   } }
   static func errorDescription(_ message: String) -> String {
     switch message {
@@ -861,6 +862,11 @@ struct ChatActionRequest: Codable, Equatable, Sendable {
   let threadId: String
   let clientOperationId: String
   let action: ChatAction
+  let title: String?
+  init(hostId: String, target: AgentRuntimeTarget, threadId: String, clientOperationId: String, action: ChatAction, title: String? = nil) {
+    self.hostId = hostId; self.target = target; self.threadId = threadId
+    self.clientOperationId = clientOperationId; self.action = action; self.title = title
+  }
 }
 struct ChatActionReceipt: Codable, Equatable, Identifiable, Sendable {
   let hostId: String
@@ -868,11 +874,17 @@ struct ChatActionReceipt: Codable, Equatable, Identifiable, Sendable {
   let threadId: String
   let clientOperationId: String
   let action: ChatAction
+  let title: String?
   var phase: String
   var error: String?
   var waitingEnded: Bool? = nil
+  init(hostId: String, target: AgentRuntimeTarget, threadId: String, clientOperationId: String, action: ChatAction, phase: String, error: String? = nil, title: String? = nil, waitingEnded: Bool? = nil) {
+    self.hostId = hostId; self.target = target; self.threadId = threadId
+    self.clientOperationId = clientOperationId; self.action = action; self.phase = phase
+    self.error = error; self.title = title; self.waitingEnded = waitingEnded
+  }
   var id: String { clientOperationId }
-  var request: ChatActionRequest { ChatActionRequest(hostId: hostId, target: target, threadId: threadId, clientOperationId: clientOperationId, action: action) }
+  var request: ChatActionRequest { ChatActionRequest(hostId: hostId, target: target, threadId: threadId, clientOperationId: clientOperationId, action: action, title: title) }
   var pending: Bool { SharedMobileRules.chatActionPending(phase) }
 }
 struct ChatSearchJump: Equatable {

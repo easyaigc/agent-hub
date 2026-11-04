@@ -406,6 +406,16 @@ extension SharedMobileRules {
     return result
   }
   static func chatActionPending(_ phase: String) -> Bool { ChatManagementRules.shared.pending(phase: phase) }
+  static func chatActionBlocksInput(_ phase: String, waitingEnded: Bool) -> Bool { ChatManagementRules.shared.blocksInput(phase: phase, waitingEnded: waitingEnded) }
+  static func normalizedChatTitle(_ value: String) -> String? { ChatManagementRules.shared.normalizedTitle(value: value) }
+  static func chatActionValid(_ request: ChatActionRequest) -> Bool {
+    guard let bytes = try? JSONEncoder().encode(request), let json = String(data: bytes, encoding: .utf8) else { return false }
+    return ChatManagementRules.shared.validIntent(json: json)
+  }
+  static func chatActionOutcomeValid(_ data: Data) -> Bool {
+    guard let json = String(data: data, encoding: .utf8) else { return false }
+    return ChatManagementRules.shared.validOutcome(json: json)
+  }
   static func chatActionMatches(_ receipt: ChatActionReceipt, original: ChatActionReceipt) -> Bool {
     guard let request = try? JSONEncoder().encode(original.request), let outcome = try? JSONEncoder().encode(receipt),
       let requestText = String(data: request, encoding: .utf8) else { return false }

@@ -12,6 +12,7 @@ final class SessionStore: ObservableObject {
   // Exact independent Native case only: fail after the durable local capture,
   // before any transport call or may-write disposition. Never persisted.
   var devReplyBeforeTransportForAcceptance: ((PendingReply) throws -> Void)?
+  private var hostedReplySendWorkCount = 0
   var devMetadataCreateBeforeTransportForAcceptance: ((String) throws -> Void)?
   var devMetadataCreateAfterVerifiedForAcceptance: ((String, Conversation) throws -> Void)?
   struct HostedMigrationExportObservation {
@@ -27,6 +28,7 @@ final class SessionStore: ObservableObject {
      "eventRecoveryTaskActive":eventRecoveryTask != nil && eventRecoveryTask?.isCancelled==false,
      "replyRecoveryTaskActive":replyRecoveryTask != nil && replyRecoveryTask?.isCancelled==false,
      "replyRecoveryFlightCount":replyRecoveryFlights.count,
+     "replySendWorkCount":hostedReplySendWorkCount,
      "eventsCapability":saved.workspaces[client?.id ?? ""]?.capabilities?.contains("events")==true,
      "applicationActive":UIApplication.shared.applicationState == .active,
      "runtimeState":runtime?.state ?? "none","historyLoading":historyLoading,
@@ -3403,12 +3405,18 @@ private var userRequestedWorkspaceGeneration: UUID?
     let sendFlight = UUID()
     replySendFlights[oldKey] = sendFlight
     sendingKeys.insert(oldKey)
+    #if DEBUG
+    if Self.hostedEasyWorkAcceptanceEnabled { hostedReplySendWorkCount += 1 }
+    #endif
     Task {
       var key = oldKey
       var attempt: PendingReply?
       var clearedDraft: Draft?
       var mayHaveSubmitted = false
       defer {
+        #if DEBUG
+        if Self.hostedEasyWorkAcceptanceEnabled { hostedReplySendWorkCount -= 1 }
+        #endif
         for target in Set([oldKey, key]) where replySendFlights[target] == sendFlight {
           replySendFlights.removeValue(forKey: target)
           sendingKeys.remove(target)

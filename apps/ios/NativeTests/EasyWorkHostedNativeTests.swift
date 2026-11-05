@@ -219,6 +219,271 @@ private struct EasyWorkReceiptGateProvider: AgentClient {
   }
 }
 
+/// Holds authentic reply delivery locally; the next send never reaches transport.
+private actor EasyWorkSendWaitGate {
+  struct Witness: Sendable {
+    let firstID: String?
+    let secondID: String?
+    let rootID: String?
+    let firstPending: Data?
+    let secondPending: Data?
+    let firstReceipt: Data?
+    let firstHeld: Bool
+    let secondHeld: Bool
+    let firstReturned: Bool
+    let forwarded: Int
+    let calls: Int
+    let originalReceiptQueries: Int
+    let lastOriginalReceiptQuery: Data?
+  }
+
+  private let clientID: String
+  private let threadID: String
+  private let firstBody: String
+  private let secondBody: String
+  private var firstID: String?
+  private var secondID: String?
+  private var rootID: String?
+  private var firstPending: Data?
+  private var secondPending: Data?
+  private var firstReceipt: Data?
+  private var firstHeld = false
+  private var secondHeld = false
+  private var firstReturned = false
+  private var forwarded = 0
+  private var calls = 0
+  private var originalReceiptQueries = 0
+  private var lastOriginalReceiptQuery: Data?
+  private var firstWaitStarted = false
+  private var secondWaitStarted = false
+  private var firstReleased = false
+  private var secondEnded = false
+  private var cancelled = false
+  private var firstWaiter: CheckedContinuation<Void, Never>?
+  private var secondWaiter: CheckedContinuation<Void, Never>?
+
+  init(clientID: String, threadID: String, firstBody: String, secondBody: String) {
+    self.clientID = clientID
+    self.threadID = threadID
+    self.firstBody = firstBody
+    self.secondBody = secondBody
+  }
+
+  func begin(_ pending: Data) throws -> Int {
+    // Count rejected invocations too; a third call can never become a retry.
+    calls += 1
+    guard !cancelled, calls <= 2, !clientID.isEmpty, !threadID.isEmpty,
+      !firstBody.isEmpty, !secondBody.isEmpty, firstBody != secondBody else {
+      throw HostServiceError.invalidResponse
+    }
+    let value = try JSONDecoder().decode(PendingReply.self, from: pending)
+    guard value.hostId == clientID, value.threadId == threadID,
+      let id = UUID(uuidString: value.clientMessageId),
+      value.attachmentIds.isEmpty, value.sourceAttachments?.isEmpty != false else {
+      throw HostServiceError.invalidResponse
+    }
+    if calls == 1 {
+      guard value.text == firstBody else { throw HostServiceError.invalidResponse }
+      firstID = value.clientMessageId
+      firstPending = pending
+      return 1
+    }
+    guard firstPending != nil, forwarded == 1, firstWaitStarted,
+      value.text == secondBody,
+      let original = firstID.flatMap(UUID.init(uuidString:)), id != original else {
+      throw HostServiceError.invalidResponse
+    }
+    secondID = value.clientMessageId
+    secondPending = pending
+    return 2
+  }
+
+  func markForwarded() throws {
+    guard !cancelled, calls == 1, firstID != nil, firstPending != nil,
+      forwarded == 0 else { throw HostServiceError.invalidResponse }
+    forwarded = 1
+  }
+
+  func holdFirst(_ receipt: Data) async throws {
+    guard !cancelled else { throw CancellationError() }
+    guard !firstWaitStarted, forwarded == 1,
+      let firstID, let firstPending else { throw HostServiceError.invalidResponse }
+    let pending = try JSONDecoder().decode(PendingReply.self, from: firstPending)
+    let value = try JSONDecoder().decode(DeliveryReceipt.self, from: receipt)
+    guard pending.hostId == clientID, pending.threadId == threadID,
+      pending.clientMessageId == firstID,
+      value.hostId == pending.hostId, value.threadId == pending.threadId,
+      value.clientMessageId == pending.clientMessageId,
+      value.state == "submitted", value.error == nil,
+      let root = value.turnId, UUID(uuidString: root) != nil else {
+      throw HostServiceError.invalidResponse
+    }
+    if let query = lastOriginalReceiptQuery {
+      let originalRead = try JSONDecoder().decode(DeliveryReceipt.self, from: query)
+      guard originalRead.turnId == root else { throw HostServiceError.wrongHost }
+    }
+    firstWaitStarted = true
+    firstReceipt = receipt
+    rootID = root
+    try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      if !firstReleased {
+        firstHeld = true
+        await withCheckedContinuation { continuation in
+          firstWaiter = continuation
+        }
+        firstHeld = false
+      }
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      firstReturned = true
+    } onCancel: {
+      Task { await self.cancelAll() }
+    }
+  }
+
+  func holdSecond() async throws {
+    guard !cancelled else { throw CancellationError() }
+    guard !secondWaitStarted, secondID != nil, secondPending != nil,
+      calls == 2, forwarded == 1 else { throw HostServiceError.invalidResponse }
+    secondWaitStarted = true
+    let _: Void = try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      if !secondEnded {
+        secondHeld = true
+        await withCheckedContinuation { continuation in
+          secondWaiter = continuation
+        }
+        secondHeld = false
+      }
+      throw CancellationError()
+    } onCancel: {
+      Task { await self.cancelAll() }
+    }
+  }
+
+  func observeOriginalReceiptQuery(_ bytes: Data) throws {
+    let value = try JSONDecoder().decode(DeliveryReceipt.self, from: bytes)
+    guard value.clientMessageId == firstID else { return }
+    guard value.state == "submitted", value.error == nil else { return }
+    guard value.hostId == clientID, value.threadId == threadID,
+      let root = value.turnId, UUID(uuidString: root) != nil,
+      rootID == nil || rootID == root else { throw HostServiceError.wrongHost }
+    originalReceiptQueries += 1; lastOriginalReceiptQuery = bytes
+  }
+
+  func releaseFirst() {
+    firstReleased = true
+    let waiter = firstWaiter
+    firstWaiter = nil
+    waiter?.resume()
+  }
+
+  func endSecond() {
+    secondEnded = true
+    let waiter = secondWaiter
+    secondWaiter = nil
+    waiter?.resume()
+  }
+
+  func cancelAll() {
+    guard !cancelled else { return }
+    cancelled = true
+    releaseFirst()
+    endSecond()
+  }
+
+  func witness() -> Witness {
+    Witness(firstID: firstID, secondID: secondID, rootID: rootID,
+      firstPending: firstPending, secondPending: secondPending, firstReceipt: firstReceipt,
+      firstHeld: firstHeld, secondHeld: secondHeld, firstReturned: firstReturned,
+      forwarded: forwarded, calls: calls, originalReceiptQueries: originalReceiptQueries,
+      lastOriginalReceiptQuery: lastOriginalReceiptQuery)
+  }
+}
+
+private struct EasyWorkSendWaitProvider: AgentClient {
+  let base: any AgentClient
+  let gate: EasyWorkSendWaitGate
+  let target: AgentRuntimeTarget
+  let clientID: String
+  let threadID: String
+
+  func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt {
+    try await sendCapturedReply(client, reply: reply, target: target)
+  }
+
+  func sendCapturedReply(_ client: Client, reply: PendingReply,
+    target capturedTarget: AgentRuntimeTarget) async throws -> DeliveryReceipt {
+    guard capturedTarget.matchesCapturedPayload(target), client.id == clientID,
+      let actualTarget = client.agentConnection?.target,
+      actualTarget.matchesCapturedPayload(target),
+      reply.hostId == clientID, reply.threadId == threadID else {
+      throw HostServiceError.wrongHost
+    }
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    let slot = try await gate.begin(encoder.encode(reply))
+    if slot == 1 {
+      try await gate.markForwarded()
+      let receipt = try await base.sendCapturedReply(client, reply: reply, target: capturedTarget)
+      guard receipt.hostId == clientID, receipt.threadId == threadID,
+        receipt.clientMessageId == reply.clientMessageId,
+        receipt.state == "submitted", receipt.error == nil,
+        let root = receipt.turnId, UUID(uuidString: root) != nil else {
+        throw HostServiceError.invalidResponse
+      }
+      try await gate.holdFirst(encoder.encode(receipt))
+      return receipt
+    }
+    guard slot == 2 else { throw HostServiceError.invalidResponse }
+    try await gate.holdSecond()
+    // holdSecond always throws; keep this defensive failure if its contract changes.
+    throw HostServiceError.invalidResponse
+  }
+
+  func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot {
+    try await base.workspace(client, projectCursor: projectCursor, threadCursor: threadCursor)
+  }
+  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
+    try await base.history(client, threadId: threadId, cursor: cursor)
+  }
+  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
+    let receipt = try await base.receipt(client, id: id)
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    try await gate.observeOriginalReceiptQuery(encoder.encode(receipt))
+    return receipt
+  }
+  func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {
+    try await base.events(client, epoch: epoch, after: after, threadId: threadId)
+  }
+  func models(_ client: Client) async throws -> ModelList { try await base.models(client) }
+  func permissionOptions(_ client: Client) -> [AgentPermissionOption] { base.permissionOptions(client) }
+  func normalizedCapabilities(_ capabilities: [String], connectionMode: String?) -> [String] {
+    base.normalizedCapabilities(capabilities, connectionMode: connectionMode)
+  }
+  func connectionTitle(_ client: Client) async -> String? { await base.connectionTitle(client) }
+  func close(_ client: Client) async { await base.close(client) }
+
+  func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation {
+    throw HostServiceError.unavailable
+  }
+  func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult {
+    throw HostServiceError.unavailable
+  }
+  func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult {
+    throw HostServiceError.unavailable
+  }
+  func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment {
+    throw HostServiceError.unavailable
+  }
+  func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+    throw HostServiceError.unavailable
+  }
+}
+
 /// Executes inside the independently identified App through normal XCTest hosting.
 /// No second SessionStore or pairing. Model submissions and negative commands
 
@@ -2093,6 +2358,231 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["onlyOwnedEmptyThreadProjectsAndNeverWrittenSyntheticDraftsNormallyCleaned"] = true
       report["status"] = "passed-late-metadata-result-next-project-isolated"; try save()
     } catch { report["status"] = "failed-preserve-prefix-no-replay"; report["error"] = error.localizedDescription; try save(); throw error }
+  }
+
+  @MainActor func testOriginalAcceptedReplyReleasesHeldSendButLateCallbackPreservesNewFlight() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen owned in-flight reply case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["inFlightReplyProbe"] as? Bool == true,
+      c["newRootInputsAuthorized"] as? Int == 1, c["newThreadsAuthorized"] as? Int == 1,
+      c["secondInputNetworkPublishesAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String { let value = try XCTUnwrap(c[name] as? String); guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value }
+    let firstBody = try field("firstBody"), secondBody = try field("secondBody"), nextDraft = try field("nextDraft")
+    let marker = try field("finalMarker"), create = try field("createOperationId"), archive = try field("archiveOperationId")
+    guard firstBody != secondBody, nextDraft != secondBody, marker.hasPrefix("F43_WAIT_"), firstBody.contains(marker),
+      HostService.hash(Data(firstBody.utf8)) == c["firstBodySHA256"] as? String,
+      HostService.hash(Data(secondBody.utf8)) == c["secondBodySHA256"] as? String,
+      UUID(uuidString: create) != nil, UUID(uuidString: archive) != nil, create != archive else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, clients[0].agentConnection?.target == target,
+      target.agentId == "easywork", (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0 else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func bytes<T: Encodable>(_ value: T) throws -> Data { try encoder.encode(value) }
+    let base = try AgentClients.resolve(client), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let oldThread = store.conversation, oldThreadID = store.selectedThreadId, oldProject = store.selectedProjectId
+    let oldClientID = store.saved.selectedClientId, oldMode = store.replyMode
+    let oldLastThread = store.saved.lastThreads[client.id], oldLastProject = store.saved.lastThreadProjects?[client.id]
+    let oldLastProjectsNil = store.saved.lastThreadProjects == nil, oldNewProject = store.saved.newProjects[client.id]
+    let oldDrafts = store.drafts.values, oldOutbox = store.saved.outbox, oldRecovery = store.saved.replyRecovery
+    let oldDetached = store.saved.detachedReplies, preferences = try bytes(store.saved.generationPreferences)
+    let grants = try bytes(store.saved.aiSharingGrants), oldError = store.error
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "wholeFeaturePassed": false, "pureUIReaccepted": false,
+      "newRootBudget": 1, "newThreadBudget": 1, "secondNetworkBudget": 0,
+      "createOperationId": create, "archiveOperationId": archive, "status": "prepared-owned-reply-flight-case"]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label: String, seconds: Double = 60, _ predicate: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(seconds)
+      while !predicate(), Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+      guard predicate() else { report["failedWait"] = label; try save(); throw HostServiceError.invalidResponse }
+    }
+    func restoreNavigation() {
+      if let oldThread { store.openThread(oldThread, loadAutomatically: false) }
+      store.saved.selectedClientId = oldClientID; store.selectedThreadId = oldThreadID; store.selectedProjectId = oldProject
+      store.saved.lastThreads[client.id] = oldLastThread; store.saved.lastThreadProjects?[client.id] = oldLastProject
+      if oldLastProjectsNil, store.saved.lastThreadProjects?.isEmpty == true { store.saved.lastThreadProjects = nil }
+      store.saved.newProjects[client.id] = oldNewProject; store.replyMode = oldMode; store.error = oldError
+      store.persist(reconcileUnread: false)
+    }
+    var gate: EasyWorkSendWaitGate?
+    var ownKey: String?, firstID: String?, secondID: String?
+    do {
+      try save()
+      let model = try field("existingApprovedModelId")
+      let catalog = try await base.models(client)
+      report["requestedExistingModelId"] = model
+      report["actualCatalogModelIds"] = catalog.models.map(\.id)
+      report["existingGrantedModelsForExactTarget"] = (store.saved.aiSharingGrants ?? [])
+        .filter { $0.scope.target == target }.map { $0.scope.model }
+      try save()
+      guard catalog.models.contains(where: { $0.id == model }),
+        (store.saved.aiSharingGrants ?? []).contains(where: { $0.scope.target == target && $0.scope.model == model }) else {
+        throw HostServiceError.message(L10n.tr("现有模型目录或分享授权不匹配；没有创建线程或扩大授权。"))
+      }
+      report["existingApprovedModelId"] = model
+      report["catalogAndExistingSharingVerifiedBeforeMetadata"] = true; try save()
+      let thread = try await base.createThread(client, projectId: nil, operationId: create)
+      guard thread.hostId == client.id, thread.projectId == nil, thread.archived != true else { throw HostServiceError.wrongHost }
+      report["threadId"] = thread.id; try save()
+      await store.refresh(includeHistory: false, userInitiated: true)
+      store.openThread(thread, loadAutomatically: false); await store.loadHistory(threadId: thread.id); await store.loadModels()
+      let key = store.targetKey; ownKey = key
+      guard store.saved.outbox?[key] == nil, store.draft.text.isEmpty, store.draft.attachments.isEmpty,
+        !store.sendingKeys.contains(key), oldDrafts[key] == nil, oldOutbox?[key] == nil else { throw HostServiceError.invalidResponse }
+      let probe = EasyWorkSendWaitGate(clientID: client.id, threadID: thread.id, firstBody: firstBody, secondBody: secondBody)
+      gate = probe
+      AgentClients.register("easywork", client: EasyWorkSendWaitProvider(base: base, gate: probe,
+        target: target, clientID: client.id, threadID: thread.id))
+      var firstDraft = Draft(text: firstBody, model: model); firstDraft.collaborationMode = "default"
+      report["status"] = "one-real-first-input-about-to-send"; try save()
+      store.send(content: firstDraft)
+      let firstDeadline = Date().addingTimeInterval(180)
+      var firstWitness = await probe.witness()
+      while !firstWitness.firstHeld, Date() < firstDeadline {
+        try await Task.sleep(for: .milliseconds(50)); firstWitness = await probe.witness()
+      }
+      guard firstWitness.firstHeld, firstWitness.forwarded == 1, firstWitness.calls == 1,
+        let firstData = firstWitness.firstPending, let actualFirstID = firstWitness.firstID,
+        let root = firstWitness.rootID, let receiptData = firstWitness.firstReceipt else { throw HostServiceError.invalidResponse }
+      firstID = actualFirstID
+      let first = try JSONDecoder().decode(PendingReply.self, from: firstData)
+      guard first.threadId == thread.id, first.text == firstBody, first.mode == "next-turn",
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 1 else { throw HostServiceError.invalidResponse }
+      report["firstPending"] = try JSONSerialization.jsonObject(with: firstData)
+      report["firstOperationId"] = actualFirstID; report["rootRunId"] = root
+      report["verifiedFirstReceiptSHA256"] = HostService.hash(receiptData)
+      let current = try await base.receipt(client, id: actualFirstID)
+      guard current.clientMessageId == actualFirstID, current.threadId == thread.id,
+        current.turnId == root, current.state == "submitted", current.error == nil else { throw HostServiceError.wrongHost }
+      if store.saved.outbox?[key]?.clientMessageId == actualFirstID {
+        report["waitReleaseObservation"] = "explicit-original-receipt-query"
+        store.reconcilePending()
+      } else {
+        let observed = await probe.witness()
+        let canonicalReceiptPresent = store.runtime?.receipts.contains(where: {
+          $0.clientMessageId == actualFirstID && $0.threadId == thread.id && $0.turnId == root
+            && ["submitted", "completed"].contains($0.state)
+        }) == true
+        guard canonicalReceiptPresent || observed.originalReceiptQueries > 0 else { throw HostServiceError.invalidResponse }
+        report["waitReleaseObservation"] = canonicalReceiptPresent
+          ? "authentic-original-canonical-update-preceded-explicit-query"
+          : "authentic-original-automatic-receipt-query-preceded-explicit-query"
+        report["observedOriginalReceiptQueries"] = observed.originalReceiptQueries
+      }
+      try await wait("accurate first receipt releases wait while original send caller remains held") {
+        store.saved.outbox?[key] == nil && !store.sendingKeys.contains(key)
+          && (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 1
+      }
+      guard !(await probe.witness()).firstReturned else { throw HostServiceError.invalidResponse }
+      report["actualOriginalSendTaskStillHeldAfterWaitRelease"] = true; try save()
+      try await wait("canonical history update settled before next send") { !store.historyLoading }
+      store.replyMode = "queue"
+      var secondDraft = Draft(text: secondBody, model: model); secondDraft.collaborationMode = "default"
+      store.send(content: secondDraft)
+      let secondDeadline = Date().addingTimeInterval(60)
+      var secondWitness = await probe.witness()
+      while !secondWitness.secondHeld, Date() < secondDeadline {
+        try await Task.sleep(for: .milliseconds(50)); secondWitness = await probe.witness()
+      }
+      guard secondWitness.secondHeld, secondWitness.calls == 2, secondWitness.forwarded == 1,
+        let secondData = secondWitness.secondPending, let actualSecondID = secondWitness.secondID,
+        actualSecondID != actualFirstID,
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 2 else { throw HostServiceError.invalidResponse }
+      secondID = actualSecondID
+      let second = try JSONDecoder().decode(PendingReply.self, from: secondData)
+      guard ["next-turn", "queue"].contains(second.mode) else { throw HostServiceError.invalidResponse }
+      let recovery = try XCTUnwrap(store.saved.replyRecovery?[actualSecondID])
+      let fingerprint = try ReplyRecoveryPolicy.fingerprint(second, target: target)
+      guard recovery.phase == "uncertain", recovery.fingerprint == fingerprint,
+        store.saved.outbox?[key]?.clientMessageId == actualSecondID, store.sendingKeys.contains(key) else { throw HostServiceError.invalidResponse }
+      store.setText(nextDraft, target: key)
+      report["secondOperationId"] = actualSecondID; report["secondPending"] = try JSONSerialization.jsonObject(with: secondData)
+      report["secondFingerprint"] = fingerprint; report["actualOverlappingSendTaskCount"] = 2; try save()
+      await probe.releaseFirst()
+      try await wait("old authentic send callback and its defer fully finish without releasing new send") {
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 1
+      }
+      guard (await probe.witness()).firstReturned,
+        store.targetKey == key, store.saved.outbox?[key]?.clientMessageId == actualSecondID,
+        store.saved.replyRecovery?[actualSecondID]?.fingerprint == fingerprint,
+        store.sendingKeys.contains(key), store.drafts.values[key]?.text == nextDraft else { throw HostServiceError.invalidResponse }
+      report["lateOriginalCallerAndDeferFinishedNewPendingBusyAndDraftIntact"] = true; try save()
+      await probe.endSecond()
+      try await wait("never-published second caller ends normally") {
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0 && !store.sendingKeys.contains(key)
+      }
+      let witness = await probe.witness()
+      guard witness.calls == 2, witness.forwarded == 1,
+        store.saved.outbox?[key]?.clientMessageId == actualSecondID,
+        store.saved.replyRecovery?[actualSecondID]?.phase == "uncertain", !store.canRetryPending else { throw HostServiceError.invalidResponse }
+      report["actualForwardedInputs"] = 1; report["secondInputNetworkPublishes"] = 0
+      let finalDeadline = Date().addingTimeInterval(600)
+      var completed = false
+      while Date() < finalDeadline {
+        let history = try await base.history(client, threadId: thread.id, cursor: nil)
+        if history.runtime?.state == "idle", history.messages.contains(where: {
+          $0.role == "assistant" && $0.runId == root && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == marker
+        }) { completed = true; break }
+        if ["failed", "cancelled", "interrupted"].contains(history.thread?.lastTurnStatus ?? "") {
+          throw HostServiceError.invalidResponse
+        }
+        try await Task.sleep(for: .milliseconds(500))
+      }
+      guard completed else { throw HostServiceError.invalidResponse }
+      AgentClients.register("easywork", client: base)
+      report["archiveAttemptedOnce"] = true; report["status"] = "one-completed-owned-thread-about-to-archive"; try save()
+      let channel = try await EasyWorkSessions.shared.session(client)
+      _ = try await channel.request("thread/archive", ["threadId": thread.id, "archived": true], id: archive)
+      guard (try await base.history(client, threadId: thread.id, cursor: nil)).thread?.archived == true else { throw HostServiceError.invalidResponse }
+      guard store.drafts.values[key]?.text == nextDraft, store.drafts.values[key]?.attachments.isEmpty == true,
+        store.saved.outbox?[key]?.clientMessageId == actualSecondID else { throw HostServiceError.invalidResponse }
+      store.saved.outbox?[key] = oldOutbox?[key]
+      for id in [actualFirstID, actualSecondID] { store.saved.replyRecovery?[id] = oldRecovery?[id] }
+      store.saved.detachedReplies?[key] = oldDetached?[key]; store.drafts.values[key] = oldDrafts[key]
+      if oldOutbox == nil, store.saved.outbox?.isEmpty == true { store.saved.outbox = nil }
+      if oldRecovery == nil, store.saved.replyRecovery?.isEmpty == true { store.saved.replyRecovery = nil }
+      if oldDetached == nil, store.saved.detachedReplies?.isEmpty == true { store.saved.detachedReplies = nil }
+      restoreNavigation()
+      for (k,v) in oldDrafts { guard try bytes(store.drafts.values[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      for (k,v) in oldOutbox ?? [:] { guard try bytes(store.saved.outbox?[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      for (k,v) in oldRecovery ?? [:] { guard try bytes(store.saved.replyRecovery?[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      guard try bytes(store.saved.generationPreferences) == preferences, try bytes(store.saved.aiSharingGrants) == grants,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      report["ownedFixtureCleanupAndOriginalPhoneProtectionExact"] = true
+      report["status"] = "passed-real-original-wait-release-late-callback-preserves-new-send-flight"; try save()
+    } catch {
+      if let gate {
+        let witness = await gate.witness()
+        firstID = firstID ?? witness.firstID; secondID = secondID ?? witness.secondID
+        if let data = witness.firstPending { report["firstPending"] = try? JSONSerialization.jsonObject(with: data) }
+        if let data = witness.secondPending { report["secondPending"] = try? JSONSerialization.jsonObject(with: data) }
+        report["actualForwardAttemptsAtFailure"] = witness.forwarded
+        report["capturedSendCallsAtFailure"] = witness.calls; report["rootRunId"] = witness.rootID
+        await gate.cancelAll()
+      }
+      AgentClients.register("easywork", client: base)
+      let deadline = Date().addingTimeInterval(45)
+      while (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) != 0, Date() < deadline {
+        try? await Task.sleep(for: .milliseconds(50))
+      }
+      report["firstOperationId"] = firstID; report["secondOperationId"] = secondID; report["ownedKey"] = ownKey
+      report["status"] = "failed-preserve-owned-original-operations-no-replay"
+      report["error"] = error.localizedDescription; restoreNavigation(); try save(); throw error
+    }
   }
 
   @MainActor func testCompletedOwnReplyChangedIntentRejectedWithoutReplayingOriginal() async throws {

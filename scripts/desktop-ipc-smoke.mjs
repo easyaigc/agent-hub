@@ -101,33 +101,33 @@ function write(value, fragmented = false) {
     socket.write(frame.subarray(7));
   } else socket.write(frame);
 }
-function snapshot(id = 'thread') {
+function snapshot(id = 'thread', deliveryDelayMs = 0) {
   if (heldSnapshot?.id === id) {
     heldSnapshot.release = () => {
       heldSnapshot = undefined;
-      snapshot(id);
+      snapshot(id, deliveryDelayMs);
     };
     return;
   }
   const fixtureOwner = notificationOwnerFixture?.owners.get(id);
-  write(
-    {
-      type: 'broadcast',
-      method: 'thread-stream-state-changed',
-      version: 11,
-      sourceClientId: fixtureOwner?.clientId ?? source,
-      params: {
-        hostId: 'local',
-        conversationId: id,
-        change: {
-          type: 'snapshot',
-          revision,
-          conversationState: fixtureOwner?.state ?? { ...state(), id },
-        },
+  const message = {
+    type: 'broadcast',
+    method: 'thread-stream-state-changed',
+    version: 11,
+    sourceClientId: fixtureOwner?.clientId ?? source,
+    params: {
+      hostId: 'local',
+      conversationId: id,
+      change: {
+        type: 'snapshot',
+        revision,
+        conversationState: fixtureOwner?.state ?? { ...state(), id },
       },
     },
-    true,
-  );
+  };
+  const deliver = () => write(message, true);
+  if (deliveryDelayMs) setTimeout(deliver, deliveryDelayMs);
+  else deliver();
 }
 const server = createServer((connected) => {
   socket = connected;
@@ -1109,8 +1109,14 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         },
       ];
       revision++;
-      snapshot();
-      await settle();
+      // This assertion depends on a received owner snapshot, not on the
+      // scheduler delivering a fragmented socket frame within 35 ms. Force a
+      // longer fixture delay so the old sleep cannot silently pass this case.
+      snapshot('thread', 75);
+      await waitForFixture(
+        () => session.history('thread').runtime.approvals.length === 1,
+        `Native app approval snapshot was not observed for ${decision}`,
+      );
       const [approval] = session.history('thread').runtime.approvals;
       assert(approval);
       assert.match(approval.detail, /com.apple.calculator/);

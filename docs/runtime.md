@@ -1,5 +1,22 @@
 # 完整运行时连接与开发验收
 
+## Windows 原生建议 Responses 采集
+
+Windows `desktop-runtime` 可设置 `CODEX_DESKTOP_RESPONSES_CONFIG=<private-config.json>`，私有 JSON 为 `{ "version": 1, "port": 8797, "bindingId": "<uuid>" }`。端口先核对空闲，bindingId 独立生成；此入口与面向外部消费者的 `HOST_RESPONSES_PROXY_ENABLED` 无关，不开启 F74 模型 API。新通道的无效配置只关闭建议能力，不阻断 Host 其他功能。
+
+先通过既有 Windows Host 服务保存该环境并启动，确认 `http://localhost:<port>/_agent_hub/<bindingId>/backend-api/health` 返回匹配的 ready／bindingId／port，再运行：
+
+```powershell
+node scripts/windows-response-suggestions-config.mjs install --config <private-config.json>
+node scripts/windows-response-suggestions-config.mjs status --config <private-config.json>
+```
+
+安装只管理官方 `openai_base_url`，保留原 App、快捷方式和 `CODEX_CLI_PATH`；不强退原桌面。原进程中已加载的聊天不保证热生效，新聊天／正常冷恢复分别确认。标准 ChatGPT 路由、当前支持范围及 Host 作为网络依赖的限制见[专项记录](acceptance/windows-response-suggestions-20261104.md)。前台只读确认仅用于验收，采集运行不使用截图或 UI 自动化。
+
+停用先运行同入口 `disable` 删除有回执的准确配置；已加载聊天仍可能保留旧地址，必须核实无在途请求及连接并安排正常会话恢复后，才能停监听。未知配置事务保留私有备份，不强行覆盖或重放。macOS 继续原有安装与采集流程，不设置此 Windows 选项。
+
+替换文件及备份位于 Codex 配置同卷的新建私有 staging，元数据可留在另一个盘；不修改 Codex home 本身的所有者或 ACL。失败事务默认阻止再次写入。可用 `inspect-no-change --config <private-config.json> --receipt <exact-receipt-id>` 只读核对当前配置仍等于原摘要且无遗留准备文件／备份；明确处理该事务时才用 `resolve-no-change` 记录独立恢复回执。它不删除原拒绝记录，也不代表原动作成功；权限拒绝仍按操作环境的授权规则处理。
+
 2026-11-01 F03／F69 Windows 启动安全：停用会接管原 Codex 后端的全局建议采集垫片安装。旧安装仅解除有本产品私有清单证明且仍指向原 launcher.exe 的 HKCU CODEX_CLI_PATH，保留其他覆盖、私有配置、身份和运行中的进程；config.json 损坏、旧源码摘要或应用路径失效不阻断恢复。iOS／Android 共用此 Windows Host 限制，UI、macOS 路径及 A6 暂停范围保持；Windows 被动结果采集暂不可安装，真实桌面与手机验收分别记于[启动安全记录](acceptance/windows-codex-startup-safety-20261101.md)。
 
 2026-10-31 Windows 建议采集候选：原执行器的输入、输出先建立管道，收到原响应后才启动固定采集 Worker 的身份检查。配置与实际 Node→启动器→原桌面链、原 IPC owner、固定私有根和 vendor-log 根由原生 scope 验证；持久读取不改变六秒 producer 租期。启动、每次原生响应、阶段及最终发布均有期限；队列超限、坏帧、原生错误或未知退出关闭观察器并保留可核对状态，原字节继续转发，未就绪前的帧不重放。当前仅为源码候选，真实部署及验收状态见 [专项记录](acceptance/host-native-suggestions-20261031.md)。

@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@codex-manage/notification-runtime": "workspace:*",
-    "@codex-manage/protocol": "workspace:*"
+    "@codex-manage/protocol": "workspace:*",
+    "smol-toml": "catalog:"
   },
   "devDependencies": {
     "@codex-manage/tsconfig": "workspace:*",

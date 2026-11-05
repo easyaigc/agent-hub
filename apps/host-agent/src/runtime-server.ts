@@ -23,6 +23,7 @@ import {
   assertPrivateFile,
   DesktopDomBridgeError,
   DesktopSuggestionObserver,
+  DesktopResponseSuggestions,
   SuggestionObservationError,
   createWindowsTraceDiagnostics,
 } from '@codex-manage/codex-adapter';
@@ -169,7 +170,10 @@ export async function startRuntimeServer() {
   const diagnostics = startRuntimeDiagnostics(directory, session.hostId, mode);
   const domSuggestions = new DesktopDomSuggestions(
     session,
-    mode === 'desktop-runtime' ? process.env.CODEX_DESKTOP_DOM_BRIDGE_CONFIG : undefined,
+    mode === 'desktop-runtime' &&
+      !(process.platform === 'win32' && process.env.CODEX_DESKTOP_RESPONSES_CONFIG)
+      ? process.env.CODEX_DESKTOP_DOM_BRIDGE_CONFIG
+      : undefined,
   );
   try {
     await session.connect();
@@ -178,26 +182,48 @@ export async function startRuntimeServer() {
     void diagnostics.close();
     throw error;
   }
-  const suggestionObserver = new DesktopSuggestionObserver({
-    directory,
-    target: () => session.readingTarget(),
-    enabled: mode === 'desktop-runtime' && process.env.CODEX_DESKTOP_SUGGESTION_OBSERVER === '1',
-    traceRetention: process.env.CODEX_DESKTOP_TRACE_RETENTION === '1',
-    ...(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG
-      ? { nativeSuggestionsConfig: resolve(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG) }
-      : {}),
-    ...(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT
-      ? { traceRoot: resolve(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT) }
-      : {}),
-    ...(mode === 'desktop-runtime' &&
-    process.platform === 'darwin' &&
-    process.env.CODEX_SHARED_SERVER_URL
-      ? { sharedDesktopState: join(homedir(), '.config/agent-hub/shared-desktop') }
-      : {}),
-    codexHome:
-      process.env.CODEX_HOME ??
-      dirname(dirname(process.env.CODEX_SOCKET ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
-  });
+  const responseSuggestionsRequested =
+    mode === 'desktop-runtime' &&
+    process.platform === 'win32' &&
+    Boolean(process.env.CODEX_DESKTOP_RESPONSES_CONFIG);
+  let responseSuggestions: DesktopResponseSuggestions | undefined;
+  if (responseSuggestionsRequested) {
+    try {
+      responseSuggestions = new DesktopResponseSuggestions({
+        directory,
+        target: () => session.readingTarget(),
+        configPath: resolve(process.env.CODEX_DESKTOP_RESPONSES_CONFIG!),
+      });
+    } catch {
+      // Optional capture configuration must never prevent normal Host functions.
+      console.warn('Windows response suggestion capture unavailable: configuration rejected');
+    }
+  }
+  const suggestionObserver =
+    responseSuggestions ??
+    new DesktopSuggestionObserver({
+      directory,
+      target: () => session.readingTarget(),
+      enabled:
+        !responseSuggestionsRequested &&
+        mode === 'desktop-runtime' &&
+        process.env.CODEX_DESKTOP_SUGGESTION_OBSERVER === '1',
+      traceRetention: process.env.CODEX_DESKTOP_TRACE_RETENTION === '1',
+      ...(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG
+        ? { nativeSuggestionsConfig: resolve(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG) }
+        : {}),
+      ...(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT
+        ? { traceRoot: resolve(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT) }
+        : {}),
+      ...(mode === 'desktop-runtime' &&
+      process.platform === 'darwin' &&
+      process.env.CODEX_SHARED_SERVER_URL
+        ? { sharedDesktopState: join(homedir(), '.config/agent-hub/shared-desktop') }
+        : {}),
+      codexHome:
+        process.env.CODEX_HOME ??
+        dirname(dirname(process.env.CODEX_SOCKET ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
+    });
   const fileTransfers = new FileTransfers(
     session.hostId,
     directory,

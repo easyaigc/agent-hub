@@ -9,6 +9,9 @@ catalogs:
     '@types/node':
       specifier: 24.19.1
       version: 24.19.1
+    smol-toml:
+      specifier: 1.9.1
+      version: 1.9.1
     tsx:
       specifier: 4.23.15
       version: 4.23.15
@@ -120,6 +123,9 @@ importers:
       '@codex-manage/protocol':
         specifier: workspace:*
         version: link:../protocol
+      smol-toml:
+        specifier: 'catalog:'
+        version: 1.9.1
     devDependencies:
       '@codex-manage/tsconfig':
         specifier: workspace:*
@@ -868,6 +874,10 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
+  smol-toml@1.9.1:
+    resolution: {integrity: sha512-j7WyPdf0CJoutMzMoPLF/bVXHtKZIT9Rb4eGeEbWw8X2t5oirjPgpL+OpaENZrILYaXqYwnVH+qgUwVbl+pUJQ==}
+    engines: {node: '>= 18'}
+
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
     engines: {node: '>=8'}
@@ -1560,6 +1570,8 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  smol-toml@1.9.1: {}
 
   string-width@4.2.3:
     dependencies:

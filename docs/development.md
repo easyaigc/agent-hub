@@ -66,6 +66,8 @@ P9 scoped bootstrap只建立正常Storage的独占scope/key/write准入，不能
 3. 目标电脑先保存程序、差异与私有配置，核对包摘要后更新稳定程序和 SKILL。保留 Host ID、密钥、项目根目录、Node、服务路径、端口及既有配置。完整接入按 [Trace 流程](../skills/codex-host-connect/references/desktop-suggestions.md) 简要解释手机建议同步与本机保存范围，macOS 和原生 x64 Windows 默认使用各自持久环境工具配置 Trace 及 Host 观察器，不逐项追加记录授权；已有匹配配置复用，用户明确关闭或仅本次诊断时保留。持久环境就绪后由用户择机正常退出并从原图标重开，只有本次诊断才用独立等待器。必要时只重启本产品 Host，不强退原 Codex；当前进程、新 Trace、手机效果与注销恢复分别记证。Windows 实现及本机验收范围见 [Windows Trace](windows-native-trace.md)，不把源码或其他电脑通过写成当前目标全通过。默认核对当前用户登录自启，用户明确关闭时除外。
 4. 逐机核对回环与 HTTPS 身份、实际 owner、创建与主动打开，并记录真实原生客户端和模型任务的结果。使用原 Node 运行 `scripts/verify-host-runtime.mjs --entry <正式 Host dist/runtime-entry.js> --bundle <统一包 bundle.json>`，核对实际 ESM 解析到的直接及传递依赖指纹；检查嵌套 `dist/node_modules`，不能把工作区目录摘要当作正式进程已加载证明；工具核对解析到的磁盘文件，变更后仍核对必要重启后的 PID、入口与原环境。客户端可由有 Xcode 的开发电脑配合验收，桌面 owner 和执行证据仍须在各目标独立核对。
 
+Windows 已有受保护 Host 可使用[同源增量升级入口](windows-host-regular-upgrade.md)：在本机独立、干净的冻结检出中安装自身依赖并从空 `dist` 编译，再冻结 `windows-host-regular-runtime-v1` 闭包，按 manifest SHA-256 发布。它用于 Windows 本机程序升级，保留原身份、私有配置、端口与 Task 定义；不声称生成完整 Skill ZIP，不取代同一次 macOS／Windows 联合分发的统一包要求，也不把 Windows 验收升级为 macOS 通过。
+
 冻结目录必须先执行 `pnpm install --frozen-lockfile`，建立自身的 `node_modules`，再编译六组件；不得链接或借用其他工作区的 `node_modules`。若依赖状态核验触发自动安装或共享模块目录重建确认，保留该次失败场景，从新的独立冻结目录重新安装，不得为绕过确认设置 `CI`、修改 `confirmModulesPurge` 或强行通过共享目录核验。
 
 打包器在暂存和生成指纹前，要求五个实际分发的运行组件中，平铺 `dist/*.js` 与当前非声明 `src/*.ts` 的发射文件名完整对应。发现无源码的孤儿或缺失项立即拒绝；保留旧产物，从新的冻结源码、空 `dist` 重建，不静默过滤文件或改写指纹来制造一致。该清单检查不证明同名 JS 字节来自当前源码，仍须执行上述干净冻结构建。`pnpm check:skill` 包含真实打包边界回归：合法发射可生成包，注入无源 JS 后不得生成 ZIP 或摘要文件。

@@ -7,6 +7,7 @@ catalog:
   '@types/node': 24.19.1
   tsx: 4.23.15
   typescript: 6.0.3
+  smol-toml: 1.9.1
 
 allowBuilds:
   esbuild: true

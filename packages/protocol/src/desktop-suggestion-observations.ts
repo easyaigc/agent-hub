@@ -32,6 +32,12 @@ export interface DesktopNextTurnSuggestionResponse {
   readOnly: true;
   /** Trace identifies generated text; only desktop-display proves renderer state. */
   source?: 'desktop-display' | 'native-trace' | 'runtime';
+  /** Additive generated-response provenance; never asserts renderer or safety state. */
+  provenance?: {
+    kind: 'responses-forwarder';
+    responseId: string;
+    desktopDisplay: 'unobserved';
+  };
   suggestion: {
     id: string;
     text: string;

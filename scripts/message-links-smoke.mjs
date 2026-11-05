@@ -203,7 +203,12 @@ try {
   );
   await rm(path);
   await writeFile(path, 'version three');
-  const visualPath = join(root, 'chart #?.html');
+  // Windows forbids '?' in real filenames; the parser-only cases above retain
+  // that character on every platform while this boundary uses an actual file.
+  const visualPath = join(
+    root,
+    process.platform === 'win32' ? 'chart # (预览).html' : 'chart #?.html',
+  );
   const visualBytes = '<button>可视化</button>';
   await writeFile(visualPath, visualBytes);
   const desktop = new RuntimeSession({

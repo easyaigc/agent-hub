@@ -1,5 +1,7 @@
 # 原桌面下一轮建议：启用、升级与实测
 
+2026-11-04 Windows 新入口：原桌面 Responses 透明转发采集按来源聊天／轮及 response ID 保存原生成正文，生产不再要求前台画面确认。使用 `CODEX_DESKTOP_RESPONSES_CONFIG` 与单键配置器；旧全局 CLI 垫片继续停用。网络记录不等同于 renderer 当下可见或原安全后结果；macOS 既有安全判定及 native-sample 路径保持。配置、限制和逐层结果见[运行说明](../../../docs/runtime.md#windows-原生建议-responses-采集)与[专项验收](../../../docs/acceptance/windows-response-suggestions-20261104.md)。
+
 当前 macOS 实现读取原 Codex 已经生成的建议，不调用预测生成接口，不采用或发送桌面建议。请求中的来源 Thread／Turn 与预测 Thread／Turn 精确连接，响应正文须与原完成通知一致；手机按完整机器目标、来源轮次、摘要和响应声明的有效性读取。Windows 原生 x64 适配复用公共解析器，以当前原实例与句柄／DACL 校验直接读取准确来源的 Trace，不模拟 macOS 通知；源码实现、正式部署、正常重开、新记录与手机验收分别记录。见 [Windows 安装步骤](windows.md#trace-与下一轮建议)。
 
 ## 为什么开启 Trace，推荐怎么安装

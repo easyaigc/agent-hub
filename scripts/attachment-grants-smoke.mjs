@@ -21,7 +21,9 @@ const base = await realpath(await mkdtemp(join(tmpdir(), 'message-file-resources
 const state = join(base, 'state'),
   root = join(base, 'project'),
   outside = join(base, 'reports');
-for (const path of [state, root, outside]) await mkdir(path, { mode: 0o700 });
+// Let RuntimeSession create its private state through the native Windows helper;
+// a pre-created mkdir directory can inherit Administrators ownership.
+for (const path of [root, outside]) await mkdir(path, { mode: 0o700 });
 const report = join(outside, 'report.md'),
   sibling = join(outside, 'private.txt'),
   missing = join(outside, 'missing.md');

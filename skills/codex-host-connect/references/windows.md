@@ -1,5 +1,11 @@
 # Windows 原桌面接入
 
+## 原建议 Responses 采集
+
+原生建议新增 `CODEX_DESKTOP_RESPONSES_CONFIG` 通道，按仓库 [运行配置](../../../docs/runtime.md#windows-原生建议-responses-采集)启用。先完成统一构建和 Host 监听健康检查，再运行 `windows-response-suggestions-config.mjs install|status|disable` 管理官方单键配置；不恢复旧 `CODEX_CLI_PATH` 垫片、不修改原 App、不要求特殊启动器，不在读取时生成建议。原有 Mac 安装流程不变。
+
+原请求和结果按来源聊天、来源轮、response ID 绑定，前台画面确认只用于验收。此入口是本机采集，不开放 F74 模型代理。标准 ChatGPT 路由已知边界、原已加载聊天生效时机及 Host 离线仍影响转发的限制须如实说明，不能称为自动直连。真实 Host／原桌面及手机结果分别按[专项验收](../../../docs/acceptance/windows-response-suggestions-20261104.md)记录。
+
 包内包含 Windows 原桌面 Adapter、命名管道桥接、私有文件 DACL 和计划任务服务。2026-10-09 在构建 26.1002.52244 的目标 Windows 联合验收通过原生核心场景、普通 App 新建和用户真实 iPhone 新建/回复，并独立核对原 owner、创建工具、首条输入、审批和恢复。通过范围绑定该次环境，不自动覆盖其他安装或完整功能清单中的未验项目；程序交付不等于 Windows 全功能通过。
 
 当前安装桌面代码的 Windows 分支使用 `\\.\pipe\codex-ipc` 和四字节长度帧。不检查 Codex 应用版本，不对照构建清单或发兼容性提示；Adapter 核对 Windows 安装归档中的实际方法版本及运行时协议。已有聊天按真实 owner 开放回复、停止和审批，不需要先完成专用聊天验收，也不要求通过证明。默认安装使用 [独立桥接](prepared-bridge.md)，按本机身份、私有权限和真实协议就绪开放正式新建／主动打开，不要求控制聊天、本机报告、Xcode 或手机在场。真实 DEV 继续按完整清单实际执行并单列证据，不能把能力启用报告为全功能实测通过。

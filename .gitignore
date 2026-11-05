@@ -46,6 +46,7 @@ packages/mobile-core/build/
 !/docs/acceptance/android-stages.md
 !/docs/acceptance/android-environment-20261021.md
 !/docs/acceptance/mobile-parity.md
+!/docs/acceptance/windows-response-suggestions-20261104.md
 !/docs/acceptance/voice-local-fallback-20261026.md
 !/docs/acceptance/voice-transcribing-animation-20261026.md
 !/docs/acceptance/question-voice-recovery-20261026.md

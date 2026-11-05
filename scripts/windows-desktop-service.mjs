@@ -148,6 +148,7 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     'CODEX_DESKTOP_SUGGESTION_TRACE_ROOT',
     'CODEX_DESKTOP_TRACE_RETENTION',
     'CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG',
+    'CODEX_DESKTOP_RESPONSES_CONFIG',
   ]) {
     if (process.env[key] !== undefined) environment[key] = process.env[key];
   }

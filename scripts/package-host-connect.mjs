@@ -451,6 +451,7 @@ export async function packageHostConnect({
       for (const [name, version] of Object.entries(manifest.dependencies ?? {})) {
         if (component === 'apps/host-agent' && ['bonjour-service', 'qrcode'].includes(name))
           continue;
+        if (component === 'packages/codex-adapter' && name === 'smol-toml') continue;
         if (
           !runtimePackages.some((entry) => name === '@codex-manage/' + entry) ||
           !version.startsWith('workspace:')
@@ -540,6 +541,7 @@ export async function packageHostConnect({
     };
     for (const name of ['bonjour-service', 'qrcode'])
       await copyDependency(name, join(repository, 'apps/host-agent/package.json'));
+    await copyDependency('smol-toml', join(repository, 'packages/codex-adapter/package.json'));
     await cp(taskHubBundle, join(skill, 'assets/task-hub'), {
       recursive: true,
       verbatimSymlinks: true,

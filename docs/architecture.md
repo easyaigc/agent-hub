@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-04 F69 Windows Responses 通道：Windows Host 显式选择独立的回环转发采集，从原桌面预测请求绑定来源聊天／完成轮及 response ID，不依赖前台 UI、OCR 或额外生成。原 CLI TCP peer、IPC owner、读取前中后来源及当前结果版本分别核验；每聊天只保存最新状态，失败／取消／空值／新请求不回退旧正文。兼容领域接口增加 `responses-forwarder` 来源说明，不声称 renderer 可见或安全后确认。macOS 原 Trace／native-sample 安全判定及启动路径保持，详见[实现与验收边界](acceptance/windows-response-suggestions-20261104.md)。
+
 2026-11-04 F69 本机部署候选：在正式 R11 对应的规范提交上叠加空日志候选计数修复和 macOS 私有诊断日志，保留正式 Host 已有诊断、恢复和原生 owner 规则。空文件每次复查，增长后从零读取，已跟踪截断仍拒绝；日志记录生命周期、固定原因、阶段、心跳和结果状态。iOS／Android 共用 Host 来源规则，UI／草稿语义保持，Android 建议 UI 与 A6 状态不变。源码、辅助检查、实际部署与建议来源验收分别记录。
 
 2026-11-04 F34／F36：按最新交互要求，输入区立即预览下一轮草稿模型／推理／速度，未覆盖字段回落到准确 owner 已知值；设置页“电脑当前设置”继续只读显示真实运行参数。iOS／Android 共用 KMP 展示规则，沿用原目标隔离、持久化和实际发送边界，选择本身不写入电脑任务。此修订取代 2026-10-26 的输入区只显示当前 owner 设计；历史验收不自动升级，见[本轮记录](acceptance/next-turn-generation-display-20261104.md)。

@@ -156,7 +156,10 @@ export function collectRegularRuntime(repository, nodeExecutable) {
     for (const name of compiled)
       add(component + '/dist/' + name, regularBytes(join(repository, component, 'dist', name)));
     for (const [dependency, version] of Object.entries(manifest.dependencies ?? {})) {
-      if (component === 'apps/host-agent' && ['bonjour-service', 'qrcode'].includes(dependency)) {
+      if (
+        (component === 'apps/host-agent' && ['bonjour-service', 'qrcode'].includes(dependency)) ||
+        (component === 'packages/codex-adapter' && dependency === 'smol-toml')
+      ) {
         copyDependency(dependency, join(repository, component, 'package.json'));
       } else if (
         !components.some((c) => c === 'packages/' + dependency.replace('@codex-manage/', '')) ||
@@ -180,7 +183,11 @@ export function collectRegularRuntime(repository, nodeExecutable) {
       }
     }
   }
-  if (versions.get('bonjour-service') !== '1.4.4' || versions.get('qrcode') !== '1.5.4')
+  if (
+    versions.get('bonjour-service') !== '1.4.4' ||
+    versions.get('qrcode') !== '1.5.4' ||
+    versions.get('smol-toml') !== '1.9.1'
+  )
     fail('HOST_RUNTIME_DEPENDENCY_VERSION_CHANGED');
   add('bin/node.exe', regularBytes(nodeExecutable));
   const inventory = Object.fromEntries(

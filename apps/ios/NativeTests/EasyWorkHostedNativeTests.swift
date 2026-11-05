@@ -2957,6 +2957,126 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     }
   }
 
+  @MainActor func testOmittedPermissionUsesOwnerDefaultWithoutChangingPhonePreferences() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"], let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {
+      throw XCTSkip("Frozen owner-default permission case required")
+    }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["ownerDefaultPermissionProbe"] as? Bool == true,
+      c["newModelInputsAuthorized"] as? Int == 1, c["newThreadsAuthorized"] as? Int == 1,
+      c["newSharingGrantsAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String {
+      let value = try XCTUnwrap(c[name] as? String)
+      guard !value.isEmpty else { throw HostServiceError.invalidResponse }
+      return value
+    }
+    let model = try field("existingApprovedModelId"), body = try field("body"), marker = try field("finalMarker")
+    let create = try field("createOperationId"), send = try field("sendOperationId")
+    let stop = try field("stopOperationId"), archive = try field("archiveOperationId")
+    let legacyThread = try field("legacyThreadId"), expectedMode = try field("expectedOwnerPermissionMode")
+    guard Set([create, send, stop, archive]).count == 4,
+      [create, send, stop, archive].allSatisfy({ UUID(uuidString: $0) != nil }),
+      expectedMode == "confirm_high_risk", body.contains("pwd"), body.contains(marker),
+      marker.hasPrefix("I7_OWNER_DEFAULT_"), HostService.hash(Data(body.utf8)) == c["bodySHA256"] as? String else {
+      throw HostServiceError.invalidResponse
+    }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let deadline = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1,
+      clients[0].agentConnection?.target == target, target.agentId == "easywork" else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true,
+      (store.saved.aiSharingGrants ?? []).contains(where: { $0.scope.target == target && $0.scope.model == model }) else {
+      throw HostServiceError.wrongHost
+    }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protectedState() throws -> Data {
+      try encoder.encode(store.drafts.values) + encoder.encode(store.saved.outbox)
+        + encoder.encode(store.saved.replyRecovery) + encoder.encode(store.saved.detachedReplies)
+        + encoder.encode(store.saved.generationPreferences) + encoder.encode(store.saved.aiSharingGrants)
+    }
+    let protected = try protectedState(), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let selection = [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId]
+    let provider = try AgentClients.resolve(client), channel = try await EasyWorkSessions.shared.session(client)
+    let legacy = try await provider.history(client, threadId: legacyThread, cursor: nil)
+    guard legacy.readTarget == target, legacy.runtime?.generationSettings?.permissionMode == nil else {
+      throw HostServiceError.invalidResponse
+    }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "modelSubmissionAttempts": 0,
+      "stopAttempts": 0, "wholeFeaturePassed": false, "pureUIReaccepted": false]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    var ownThread: String?, ownRoot: String?
+    do {
+      try save()
+      guard try await provider.models(client).models.contains(where: { $0.id == model }) else { throw HostServiceError.invalidResponse }
+      let thread = try await provider.createThread(client, projectId: nil, operationId: create)
+      guard thread.hostId == client.id, thread.projectId == nil, thread.archived != true else { throw HostServiceError.wrongHost }
+      ownThread = thread.id; report["threadId"] = thread.id; try save()
+      var pending = PendingReply(hostId: client.id, threadId: thread.id, clientMessageId: send,
+        text: body, attachmentIds: [], mode: "next-turn", expectedTurnId: nil, model: model, effort: nil)
+      pending.collaborationMode = "default"
+      guard pending.permissionMode == nil else { throw HostServiceError.invalidResponse }
+      report["pending"] = try JSONSerialization.jsonObject(with: encoder.encode(pending))
+      report["fingerprint"] = try ReplyRecoveryPolicy.fingerprint(pending, target: target)
+      report["modelSubmissionAttempts"] = 1; report["status"] = "submitting-one-owned-root-with-permission-omitted"; try save()
+      let accepted = try await provider.sendCapturedReply(client, reply: pending, target: target)
+      guard accepted.clientMessageId == send, accepted.threadId == thread.id,
+        ["submitted", "completed"].contains(accepted.state), let root = accepted.turnId,
+        UUID(uuidString: root) != nil else { throw HostServiceError.invalidResponse }
+      ownRoot = root; report["rootRunId"] = root; try save()
+      var final: HistorySnapshot?
+      let until = Date().addingTimeInterval(300)
+      while Date() < until {
+        let history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        guard history.readTarget == target, history.threadId == thread.id, let runtime = history.runtime,
+          runtime.approvals.isEmpty else { throw HostServiceError.invalidResponse }
+        if runtime.turnId == nil { final = history; break }
+        try await Task.sleep(for: .milliseconds(250))
+      }
+      let history = try XCTUnwrap(final), settings = try XCTUnwrap(history.runtime?.generationSettings)
+      guard history.runtime?.state == "idle", settings.model == model, settings.permissionMode == expectedMode,
+        history.messages.last(where: { $0.role == "assistant" && !$0.text.isEmpty })?.text.trimmingCharacters(in: .whitespacesAndNewlines) == marker else {
+        throw HostServiceError.invalidResponse
+      }
+      report["actualOwnerGenerationSettings"] = try JSONSerialization.jsonObject(with: encoder.encode(settings))
+      report["finalHistorySHA256"] = HostService.hash(try encoder.encode(history)); try save()
+      let legacyAfter = try await provider.history(client, threadId: legacyThread, cursor: nil)
+      guard legacyAfter.runtime?.generationSettings?.permissionMode == nil,
+        try encoder.encode(legacyAfter.runtime?.generationSettings) == encoder.encode(legacy.runtime?.generationSettings) else {
+        throw HostServiceError.invalidResponse
+      }
+      _ = try await channel.request("thread/archive", ["threadId": thread.id, "archived": true], id: archive)
+      let archived = try await provider.history(client, threadId: thread.id, cursor: nil)
+      guard archived.thread?.archived == true, try protectedState() == protected,
+        [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId] == selection,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      report["phoneIntentPreferencesGrantsIdentitySelectionAndLegacySettingsUnchanged"] = true
+      report["status"] = "observed-owner-default-snapshot-awaiting-independent-execution-proof"; try save()
+    } catch {
+      report["failure"] = error.localizedDescription; report["status"] = "failed-preserve-original-operations-no-replay"; try save()
+      if let thread = ownThread, let root = ownRoot,
+        let history = try? await provider.history(client, threadId: thread, cursor: nil), history.runtime?.turnId == root {
+        report["stopAttempts"] = 1; report["stopOperationId"] = stop; try save()
+        do {
+          report["ownedStopResponse"] = try easyWorkObject(await channel.request("turn/cancel", ["threadId": thread, "turnId": root], id: stop)); try save()
+        } catch { report["ownedStopResultUnknownDoNotReplay"] = true; try save() }
+      }
+      throw error
+    }
+  }
+
   @MainActor func testExplicitHighEffortAndStrictPermissionDenialOnOneOwnedRoot() async throws {
     let env = ProcessInfo.processInfo.environment
     guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],

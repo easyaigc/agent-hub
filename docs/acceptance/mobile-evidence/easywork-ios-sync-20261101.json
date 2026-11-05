@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T03:55:51.558550+00:00",
+  "updatedAt": "2026-11-05T12:35:55.813293+00:00",
   "taskId": "easywork-ios-sync-20261101",
   "scope": {
     "mobilePlatform": "ios",
@@ -29,24 +29,24 @@
     "phoneOnlyWaiverIsNotPass": true,
     "supplementaryRowsDoNotIncreaseFeatureDenominator": true,
     "simulatorThisContinuation": {
-      "passed": 79,
+      "passed": 80,
       "failedPreserved": 28,
       "skipped": 2,
-      "newModels": 38,
-      "newRemoteReceipts": 204,
-      "currentRuns": 142,
-      "currentRemoteReceipts": 788,
+      "newModels": 39,
+      "newRemoteReceipts": 207,
+      "currentRuns": 143,
+      "currentRemoteReceipts": 791,
       "wholeFeaturePasses": 7,
       "notStarted": 2,
       "installRefusedBeforeTest": 1,
       "uiRunnerRefusedBeforeTest": 1,
-      "newRootInputAttempts": 50,
-      "actualModelSamples": 22,
+      "newRootInputAttempts": 51,
+      "actualModelSamples": 23,
       "businessRootFailuresPreserved": 1,
       "systemUISelectorFailuresPreserved": 3,
       "auxiliarySystemHierarchyTestsPassed": 2,
       "auxiliaryOwnedProjectLifecycleTestsPassedNotDoubleCounted": 3,
-      "actualModelRunRowsAfterLogin": 38,
+      "actualModelRunRowsAfterLogin": 39,
       "automaticMailboxFollowupRuns": 2,
       "acceptanceControllerFailuresPreserved": 3,
       "newModelsCountingDefinition": "actual model Run rows after restored DEV login, including two automatic mailbox follow-ups; user-origin rows and positive-usage samples are separate. Original AUTH failure had no provider sampling.",
@@ -62,7 +62,7 @@
       "auxiliaryPretestConfigurationOrDependencyFailuresPreserved": 3,
       "additionalManifestGenerationFailuresBeforeChecksPreserved": 7,
       "gateObserverCancelledRunsPreserved": 5,
-      "userOriginRunRowsAfterLogin": 36,
+      "userOriginRunRowsAfterLogin": 37,
       "interruptedNativeWrappersPreserved": 1,
       "queueControllerAssertionFailuresPreserved": 1,
       "completedQueueRealModelRunsWithUsageUncollected": 5,
@@ -100,7 +100,8 @@
       "auxiliaryOwnedPermissionFixtureArchivePassNotDoubleCounted": 1,
       "native65StaleTemplatePackagingFailurePreserved": 1,
       "native65PermissionHashVerifierSerializationMismatchPreserved": 1,
-      "native65FullRepositorySkillFixtureDependencyFailurePreserved": 1
+      "native65FullRepositorySkillFixtureDependencyFailurePreserved": 1,
+      "native66AuditRedactionVerifierMismatchPreserved": 1
     }
   },
   "features": [
@@ -833,7 +834,7 @@
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
         "verification": "not-verified",
-        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.100当前Native62/V30只读目录/原执行设置重新确认，38模型、Fast声明0；0新增功能场景/模型/回执。原Fast/权限工具效果不推定通过。I7.103不支持生成设置拒绝驱动待验。 I7.113当前严格权限和实际owner设置/中风险pwd拒绝限定通过，四规范回执/五字段/权限hash/MCP派发前阻断及完成Root均独立核；电脑默认继承/owner默认策略仍补证，整项继续。",
+        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.100当前Native62/V30只读目录/原执行设置重新确认，38模型、Fast声明0；0新增功能场景/模型/回执。原Fast/权限工具效果不推定通过。I7.103不支持生成设置拒绝驱动待验。 I7.113当前严格权限和实际owner设置/中风险pwd拒绝限定通过，四规范回执/五字段/权限hash/MCP派发前阻断及完成Root均独立核；电脑默认继承/owner默认策略仍补证，整项继续。 I7.119–120默认owner启动快照修复并通过Native66真实模型限定验收，提交省略权限字段，实际confirm_high_risk策略、手机设置回读及原工具执行一致，旧历史未知/原意图/手机偏好保留。其余整项断言继续，新批正式合并待核。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "映射具名动作、实际生效设置、原ID与唯一执行；缺能力明确拒绝，不伪造成功",
@@ -10330,6 +10331,127 @@
       "sameSourceNative152EvidenceReusable": true,
       "targetedThenFullCheckRequired": true,
       "at": "2026-11-05T07:39:19.188630+00:00"
+    },
+    "I7.117": {
+      "status": "gcm-task-api-expiry-renewal-verified-remote-delivery-resumed",
+      "sameHostSharedGitConfig": true,
+      "apiTwoReadsStatus": 200,
+      "sameCachedCredentialAcrossRequests": true,
+      "credentialRefreshedViaExistingGCM": true,
+      "refreshTokenKeyPreserved": true,
+      "globalGitConfigurationChanged": false,
+      "previousManualCredentialUpdateRequestTooBroad": true,
+      "originalC1bbCIJobs": [
+        {
+          "id": 27540,
+          "conclusion": "failure",
+          "stage": "checkout",
+          "cause": "TLS decoding/early EOF"
+        },
+        {
+          "id": 27541,
+          "conclusion": "failure",
+          "stage": "checkout",
+          "cause": "TLS/transfer closed early EOF"
+        }
+      ],
+      "originalPR154HeadConfirmed": "c1bbd499933ceb7a43346702d8a9f5a14f18874b",
+      "newApprovedSource": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+      "at": "2026-11-05T11:12:37.559512+00:00",
+      "newSourcePushConfirmed": {
+        "at": "2026-11-05T11:11:55.389584+00:00",
+        "pushExit": 0,
+        "remoteBranch": "codex/ios-easywork-late-event-20261105",
+        "remoteSHA": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+        "prHead": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+        "tree": "0879f777b457cdfcf10cafb1ed665e8da02a62d6"
+      },
+      "newSourceCIJobIds": [27548, 27549]
+    },
+    "I7.118": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "actual-mainline-merge-parent-independently-verified",
+      "pr": 154,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/154",
+      "source": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+      "actualMergeSHA": "ba0fee47bcee29b460f4640232431b3c2c378ed1",
+      "actualMain": "ba0fee47bcee29b460f4640232431b3c2c378ed1",
+      "sourceAndMergeTree": "0879f777b457cdfcf10cafb1ed665e8da02a62d6",
+      "parents": [
+        "eae10a60ddff923c5b49ce0a23bfde499f6f166e",
+        "757c113c9f3ff3a0e14305471ace2deca6b94d5d"
+      ],
+      "jobs": [
+        {
+          "id": 27548,
+          "name": "workspace",
+          "head_sha": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-05T11:11:33Z",
+          "completed_at": "2026-11-05T11:36:39Z"
+        },
+        {
+          "id": 27549,
+          "name": "ios",
+          "head_sha": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-05T11:11:33Z",
+          "completed_at": "2026-11-05T11:15:49Z"
+        }
+      ],
+      "remoteSourceBranchDeletionIndependentlyConfirmed": true,
+      "localSourceWorktreeStillClean": true,
+      "gcmApiRefreshRecoveryVerified": true,
+      "at": "2026-11-05T11:42:17.207606+00:00"
+    },
+    "I7.119": {
+      "status": "owner-default-snapshot-development-and-co-build-passed",
+      "backendBase": "f51a909a8dbd798c7c3a927ce3e04770fabc6633",
+      "backendPatchSHA256": "8e583dea0efc581bdf7ccae4b7590807ab16520dc5b909ed74735aace143879f",
+      "backendPaths": 10,
+      "relevantUnitTestsPassed": 11,
+      "lintPassed": true,
+      "originalLintFailuresPreserved": 2,
+      "backendBuildSeconds": 47.217,
+      "nativeCoBuildSeconds": [164.197, 115.819],
+      "nativeInputs": 152,
+      "unchangedNativeInputs": 151,
+      "packageFiles": 40,
+      "signedRoles": 5,
+      "sameOriginalDEVIdentityAndNineTables": true,
+      "newBatchActualMainline": "pending",
+      "at": "2026-11-05T12:35:55.813293+00:00"
+    },
+    "I7.120": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed-parent-canonical-owner-default-snapshot",
+      "official": {
+        "result": "Passed",
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "newModels": 1,
+      "newThreads": 1,
+      "newCanonicalMutationReceipts": 3,
+      "currentRuns": 143,
+      "currentReceipts": 791,
+      "canonicalDefaultModeMatchesActualPermissionAuditAndNativeHistory": true,
+      "normalizedActualExecutionArgsHashAndOriginalArchivedToolCallMatched": true,
+      "rawSubmittedPermissionOmittedAndNativePendingFingerprintUnchanged": true,
+      "legacyRootPermissionStillUnknown": true,
+      "actualPwdExecutedWithZeroExit": true,
+      "noPermissionConfirmationOrStop": true,
+      "positiveSDKCalls": 2,
+      "providerReportedTokens": 37769,
+      "priorNineTableRowsBindingsCriticalFilesPreserved": true,
+      "phoneIntentPreferencesGrantsIdentityAndSelectionProtected": true,
+      "ownColdArchiveMessages": 20,
+      "ownColdArchiveSHA256": "946945e448ba1ce03ec7b70ddfff184ae21332bb4cbdc47e0155860a0b81c75a",
+      "globalF35Closed": false,
+      "at": "2026-11-05T12:34:36.398248+00:00"
     }
   }
 }

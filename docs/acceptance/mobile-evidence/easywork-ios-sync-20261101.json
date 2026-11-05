@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-04T23:47:33.841784+00:00",
+  "updatedAt": "2026-11-05T01:14:57.619332+00:00",
   "taskId": "easywork-ios-sync-20261101",
   "scope": {
     "mobilePlatform": "ios",
@@ -29,8 +29,8 @@
     "phoneOnlyWaiverIsNotPass": true,
     "supplementaryRowsDoNotIncreaseFeatureDenominator": true,
     "simulatorThisContinuation": {
-      "passed": 72,
-      "failedPreserved": 24,
+      "passed": 73,
+      "failedPreserved": 25,
       "skipped": 2,
       "newModels": 35,
       "newRemoteReceipts": 185,
@@ -91,7 +91,9 @@
       "closedIntegrationFeatureIds": ["F37", "F42"],
       "wholeFeaturePassesDefinition": "Only this task integration feature scope; excludes global product, other clients/platforms and physical/VPN claims",
       "queueControllerFIFOPathQueryFailuresPreserved": 1,
-      "queueControllerNativeReportObservationFailuresPreserved": 1
+      "queueControllerNativeReportObservationFailuresPreserved": 1,
+      "ownedTemporaryLANDevicesCreatedThisBatch": 2,
+      "ownedTemporaryLANDevicesRevokedThisBatch": 2
     }
   },
   "features": [
@@ -172,8 +174,8 @@
       "easyworkIOS": {
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
-        "verification": "not-verified",
-        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.64当前Native54/V30原绑定运行时和原accepted/missing回执零写复验通过；九表全等。仅复用已覆盖断言，不关闭其余隔离/撤销/不可用/consumed/foreign/late边界。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。",
+        "verification": "simulator-lan-owned-device-revocation-subcase-passed-whole-open",
+        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.64当前Native54/V30原绑定运行时和原accepted/missing回执零写复验通过；九表全等。仅复用已覆盖断言，不关闭其余隔离/撤销/不可用/consumed/foreign/late边界。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。 I7.74仅补自有临时LAN设备撤销验收器；搜索原授权ID只读前置已核，尚未创建新授权或执行撤销，不计通过。 I7.77：Native56/V30自有临时LAN授权撤销限定通过，正式1过0失败0跳过；旧通道/新握手读取拒绝，同一原测试身份自动重连HTTP400，原手机连接/凭据/保护状态保持。原39授权和九表全等，新增测试授权已撤销；首次搜索联动失败I7.75保留。仅此LAN子项，不关闭DPoP/续期或整项。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
@@ -235,8 +237,8 @@
       "easyworkIOS": {
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
-        "verification": "not-verified",
-        "currentNote": "R3914原授权/刷新回执子项通过；完整撤销/重放拒绝矩阵未关闭",
+        "verification": "simulator-lan-owned-device-revocation-subcase-passed-whole-open",
+        "currentNote": "R3914原授权/刷新回执子项通过；完整撤销/重放拒绝矩阵未关闭 I7.74仅补自有临时LAN设备撤销验收器；搜索原授权ID只读前置已核，尚未创建新授权或执行撤销，不计通过。 I7.77：Native56/V30自有临时LAN授权撤销限定通过，正式1过0失败0跳过；旧通道/新握手读取拒绝，同一原测试身份自动重连HTTP400，原手机连接/凭据/保护状态保持。原39授权和九表全等，新增测试授权已撤销；首次搜索联动失败I7.75保留。仅此LAN子项，不关闭DPoP/续期或整项。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
@@ -9185,6 +9187,130 @@
       "privateQualificationSHA256": "443cfb0d02e6bdbf0aeddaf3dd97c29ffc73007ec115bdf1de2e05077d6aea81",
       "nativeCandidate": "Native55",
       "sourceRuntime": "V30"
+    },
+    "I7.73": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "prior-ci-passed-main-conflict-resolved-new-candidate-ci-pending",
+      "pr": 148,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/148",
+      "priorSourceCommit": "faa3b5ffd2c00c1c5b81015a4ce5d699e9f07576",
+      "priorSourceCI": {
+        "iosPassedSeconds": 149,
+        "workspacePassedSeconds": 1630,
+        "pnpmCheckSeconds": 1487,
+        "prBaseDifferenceCheckPassed": true
+      },
+      "incomingMain": "8b2824357d86095f6292f8e02596b409b946a66f",
+      "newSourceCommit": "864e6486ff384f46ba6265672cf204bbaca12dbc",
+      "newTree": "4d5a8fc0709ec553d16f0b162a04d0127c2db052",
+      "all75FeaturesAndBothF61F69ChangesPreserved": true,
+      "native152SourceInputsExactNative55": true,
+      "newCandidateRemoteGatesAndActualMergePending": true,
+      "functionalCountIncrement": 0,
+      "at": "2026-11-05T00:25:42.739396+00:00",
+      "subsequentMainlineResult": "passed I7.76; prior pending status preserved"
+    },
+    "I7.74": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "native56-owned-device-revocation-driver-development-candidate-not-accepted",
+      "features": ["F04", "F07"],
+      "newModelsBudget": 0,
+      "newCanonicalBusinessCommandsBudget": 0,
+      "temporaryLANDeviceBudget": 1,
+      "onlyOwnNewDeviceMayBeRevoked": true,
+      "originalPhoneBindingAndIdentityPreserved": true,
+      "GUIExactAuthorizationIdSearchPreflightPassedNotRevocationPass": true,
+      "nativeBuildAndActualCaseNotYetExecuted": true,
+      "functionalCountIncrement": 0,
+      "cumulativeScopedPassed": 72,
+      "currentRuns": 139,
+      "currentReceipts": 769,
+      "backendFrozen4251Untouched": true,
+      "at": "2026-11-05T00:25:42.739396+00:00",
+      "subsequentActualCase": "failed I7.75; no product pass; only owned new grant revoked afterward",
+      "subsequentActualAcceptance": "passed I7.77 after no-search orchestration; original I7.75 failed case preserved"
+    },
+    "I7.75": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "failed-preserved-native-permit-missing-desktop-cause-pending",
+      "official": {
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      },
+      "nineTablesAllRowsExact": true,
+      "old38BindingsExact": true,
+      "newOwnedOnlyBindingId": "9981ad72-35d6-4c6e-996a-efcb123d591e",
+      "sameFullWireTargetAsOriginalBinding": true,
+      "stateAtRunnerCompletion": "active",
+      "newModels": 0,
+      "newBusinessReceipts": 0,
+      "cumulativeScopedPassedUnchanged": 72,
+      "cleanupPendingSeparateActualReceipt": true,
+      "at": "2026-11-05T01:05:14.071384+00:00",
+      "caseRuntimeResult": "Native56 original permit wait expired; GUI search paste CUA -10005 and delayed concatenated input; Native negative revocation tail not executed",
+      "sourceReportSHA256": "e99758bd110890ae19c714d362597c2e1b6a51de11d93b5bb82adaeb59f37479",
+      "cleanupReportedByExecutor": "new9981 only revoked; parent final cleanup status qualification next",
+      "functionalCountIncrement": 0,
+      "cumulativeScopedPassed": 72,
+      "cumulativeNativeFailedPreserved": 25
+    },
+    "I7.76": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed",
+      "pr": 148,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/148",
+      "sourceCommit": "864e6486ff384f46ba6265672cf204bbaca12dbc",
+      "actualMergeCommit": "322c07fc179ea2727e9722111e255547a08c655d",
+      "actualRemoteMainAtIndependentVerification": "f7728d7eee1bd104831c6b02320a2cce0f755231",
+      "mergeParents": [
+        "8b2824357d86095f6292f8e02596b409b946a66f",
+        "864e6486ff384f46ba6265672cf204bbaca12dbc"
+      ],
+      "sourceBranchDeleted": true,
+      "latestMainIncludesExactPR148Merge": true,
+      "sourceForeignI7_72AndConsumedLateI1_14Delivered": true,
+      "at": "2026-11-05T01:04:32.103571+00:00",
+      "functionalCountIncrement": 0
+    },
+    "I7.77": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed",
+      "functionalCountIncrement": 1,
+      "cumulativeScopedPassed": 73,
+      "currentRuns": 139,
+      "currentReceipts": 769,
+      "newModels": 0,
+      "newCanonicalBusinessReceipts": 0,
+      "newTemporaryLANDevices": 1,
+      "newAuthorizationRows": 1,
+      "ownedNewAuthorizationRevoked": true,
+      "allPriorBindingsAndOriginalIdentityRuntimeProtected": true,
+      "priorBindingCount": 39,
+      "sameOriginalTargetDesktopPublicKeyAndNewMobilePublicKeyHashIndependentlyMatched": true,
+      "revokedOldChannelAndNewHandshakeDeniedAndAutomaticRecreate400": true,
+      "nineTablesAllRowsExactlyEqual": true,
+      "source152Package40AndRuntime1645Exact": true,
+      "frozenBackend4251Untouched": true,
+      "criticalFileDriftOnlyOwnLANAuthorizationRecord": [],
+      "wholeF04F07Closed": false,
+      "notClaimed": ["EWDAP DPoP/refresh", "physical/VPN", "Android", "global feature acceptance"],
+      "at": "2026-11-05T01:14:57.619332+00:00",
+      "GUIActualExactOwnedBindingActionAndConfirmationAndPermitIndependentlyVerified": true,
+      "firstFailedCasePreservedAndItsOwnedAuthorizationStillRevoked": true,
+      "qualifiedScopedPassCount": 73,
+      "privateQualificationSHA256": "a3b9de1d07524e56e2b017946139081aefa715104f2698e84e681ecf81d6c66e",
+      "nativeCandidate": "Native56",
+      "sourceRuntime": "V30",
+      "officialNative": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nativeElapsedSeconds": 111.694,
+      "firstFailedCasePreserved": "I7.75",
+      "twoCreatedTestDevicesBothNowRevoked": true,
+      "phoneOnlyUIRepeated": false
     }
   }
 }

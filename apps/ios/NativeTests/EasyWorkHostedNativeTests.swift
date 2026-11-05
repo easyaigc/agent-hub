@@ -4444,6 +4444,145 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     }
   }
 
+  @MainActor func testOwnedTemporaryLANDeviceRevocationPreservesOriginalBindingWithoutModel() async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Independent Simulator acceptance required")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"], UUID(uuidString: run)?.uuidString.lowercased() == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw HostServiceError.invalidResponse }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run,
+      c["newModelInputsAuthorized"] as? Int == 0, c["newRemoteCommandsAuthorized"] as? Int == 0,
+      c["temporaryLANDevicesAuthorized"] as? Int == 1,
+      let deviceId = c["temporaryDeviceId"] as? String, deviceId == "mobile-acceptance-" + run,
+      let alias = c["temporaryDeviceName"] as? String, alias == "iOS revoke " + String(run.prefix(8)),
+      let allowed = c["allowedBindingIds"] as? [String] else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let deadline = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil && Date() < deadline {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard target.agentId == "easywork", !store.localRecoveryRequired else { throw HostServiceError.wrongHost }
+    let clients = store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target == target }
+    let original = try XCTUnwrap(clients.count == 1 ? clients.first : nil)
+    let originalConnection = try XCTUnwrap(original.agentConnection)
+    let token = try XCTUnwrap(CredentialVault.existingToken(originalConnection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(token.utf8))
+    guard allowed.contains(credential.binding.bindingId), credential.binding.mobileDeviceId != deviceId,
+      credential.binding.status == "active" else { throw HostServiceError.wrongHost }
+    let candidate = try XCTUnwrap(originalConnection.candidates.first { $0.transportId == "lan-wss" })
+    let host = try await EasyWorkPairing.readHost(endpoint: candidate.endpoint,
+      fingerprint: candidate.peerFingerprint, target: credential.binding.target,
+      publicKey: credential.binding.desktopPublicKey)
+    guard host.connectionMode == "automatic" else { throw HostServiceError.invalidResponse }
+    let protected = try originalReadProtectedDigests(store)
+    let originalProvider = try AgentClients.resolve(original)
+    let originalBefore = try await originalProvider.workspace(original, projectCursor: nil, threadCursor: nil)
+    guard originalBefore.agentConnectionState?.target == target,
+      originalBefore.agentConnectionState?.runtimeConnected == true else { throw HostServiceError.unavailable }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let reportPath = folder.appendingPathComponent(run + ".json")
+    let permitPath = folder.appendingPathComponent(run + ".revoke-permit.json")
+    guard !FileManager.default.fileExists(atPath: reportPath.path),
+      !FileManager.default.fileExists(atPath: permitPath.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "newModelInputs": 0, "newRemoteCommands": 0,
+      "newTemporaryLANDevices": 0, "wholeFeaturePassed": false, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier ?? "", "originalBindingId": credential.binding.bindingId,
+      "temporaryDeviceId": deviceId, "temporaryDeviceName": alias]
+    func save() throws {
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        .write(to: reportPath, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = 15; configuration.timeoutIntervalForResource = 30
+    let base = try EasyWorkPairing.localEndpoint(candidate.endpoint)
+    let http = URLSession(configuration: configuration,
+      delegate: PairedHostTrust(endpoint: candidate.endpoint, fingerprint: host.fingerprint), delegateQueue: nil)
+    defer { http.invalidateAndCancel() }
+    // Separate in-memory content key: never replace the real phone's identity or Keychain credential.
+    let key = Curve25519.KeyAgreement.PrivateKey()
+    let body = try easyWorkJSON(["mobileDeviceId": deviceId,
+      "publicKey": key.publicKey.rawRepresentation.base64URL, "name": alias])
+    var active: EasyWorkRemoteSession?
+    do {
+      report["status"] = "creating-one-owned-temporary-lan-device"; try save()
+      let request = HostService.request(base.appendingPathComponent("connections"), method: "POST", body: body)
+      let (bytes, response) = try await http.data(for: request)
+      guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw HostServiceError.invalidResponse }
+      let binding = try JSONDecoder().decode(EasyWorkBinding.self,
+        from: easyWorkJSON(try easyWorkObject(bytes)["binding"] ?? [:]))
+      report["newTemporaryLANDevices"] = 1; report["temporaryBindingId"] = binding.bindingId
+      report["temporaryMobilePublicKeySHA256"] = HostService.hash(key.publicKey.rawRepresentation)
+      report["status"] = "owned-binding-created-not-yet-read"; try save()
+      guard !allowed.contains(binding.bindingId), binding.mobileDeviceId == deviceId,
+        binding.mobilePublicKey == key.publicKey.rawRepresentation.base64URL,
+        binding.desktopPublicKey == credential.binding.desktopPublicKey,
+        binding.target == credential.binding.target, binding.status == "active",
+        binding.deviceAuthorization == nil else { throw HostServiceError.wrongHost }
+      let temporaryConnection = AgentConnection(target: target, candidates: [candidate],
+        preference: .lanOnly, credentialRef: "acceptance-memory-" + run)
+      let temporaryCredential = EasyWorkCredential(binding: binding, privateKey: key.rawRepresentation.base64URL)
+      let channel = try EasyWorkRemoteSession(connection: temporaryConnection, credential: temporaryCredential)
+      active = channel
+      let context = try easyWorkObject(await channel.request("runtime/context", [:]))
+      let actual = try JSONDecoder().decode(EasyWorkTarget.self,
+        from: easyWorkJSON(try XCTUnwrap(context["target"])))
+      guard actual == binding.target else { throw HostServiceError.wrongHost }
+      report["actualPinnedEncryptedRuntimeReadBeforeRevoke"] = true
+      report["status"] = "waiting-for-exact-owned-device-gui-revoke"; try save()
+      let revokeDeadline = Date().addingTimeInterval(360)
+      while !FileManager.default.fileExists(atPath: permitPath.path) && Date() < revokeDeadline {
+        try await Task.sleep(for: .milliseconds(100))
+      }
+      let permit = try easyWorkObject(Data(contentsOf: permitPath))
+      guard permit["caseId"] as? String == run, permit["bindingId"] as? String == binding.bindingId,
+        permit["deviceId"] as? String == deviceId, permit["exactOwnedDeviceGUIRevoked"] as? Bool == true else {
+        throw HostServiceError.invalidResponse
+      }
+      var oldReadRejected = false
+      do { _ = try await channel.request("runtime/context", [:]) }
+      catch { guard !(error is CancellationError) else { throw error }; oldReadRejected = true }
+      await channel.close(); active = nil
+      guard oldReadRejected else { throw HostServiceError.invalidResponse }
+      let fresh = try EasyWorkRemoteSession(connection: temporaryConnection, credential: temporaryCredential)
+      active = fresh
+      var freshReadRejected = false
+      do { _ = try await fresh.request("runtime/context", [:]) }
+      catch { guard !(error is CancellationError) else { throw error }; freshReadRejected = true }
+      await fresh.close(); active = nil
+      guard freshReadRejected else { throw HostServiceError.invalidResponse }
+      let (reconnectBytes, reconnectResponse) = try await http.data(for: request)
+      let reconnectStatus = try XCTUnwrap(reconnectResponse as? HTTPURLResponse).statusCode
+      report["automaticSameDeviceReconnectHTTPStatus"] = reconnectStatus
+      report["automaticSameDeviceReconnectBodySHA256"] = HostService.hash(reconnectBytes)
+      guard reconnectStatus == 400 else { throw HostServiceError.invalidResponse }
+      let originalAfter = try await originalProvider.workspace(original, projectCursor: nil, threadCursor: nil)
+      guard originalAfter.agentConnectionState?.target == target,
+        originalAfter.agentConnectionState?.runtimeConnected == true,
+        try CredentialVault.existingToken(originalConnection.credentialRef) == token,
+        try originalReadProtectedDigests(store) == protected else { throw HostServiceError.invalidResponse }
+      report["oldAndFreshRevokedEncryptedReadsRejected"] = true
+      report["automaticSameDeviceReconnectCannotRestoreRevokedAuthority"] = true
+      report["originalBindingRuntimeAndCredentialAndProtectedPhoneStateUnchanged"] = true
+      report["ephemeralPrivateKeyOnlyInTestProcessMemory"] = true
+      report["status"] = "passed-owned-lan-device-revocation-and-original-binding-protection"
+      try save()
+    } catch {
+      await active?.close()
+      report["status"] = "failed-owned-device-revoke-case-retain-binding-id-for-cleanup"
+      report["failure"] = error.localizedDescription
+      try? save(); throw error
+    }
+    #endif
+  }
+
   @MainActor func testSimulatorForeignDeviceStatusIsolationWithoutReplay() async throws {
     #if !targetEnvironment(simulator)
     throw XCTSkip("Explicit independent Simulator case required")

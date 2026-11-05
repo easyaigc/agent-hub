@@ -65,12 +65,16 @@ const selection = {
   connectionId: stored.id,
   target: stored.target,
   projectId, // 可省略；目标项目 ID
-  settings: { model, effort, permissionMode }, // 可省略；目标原生目录值
+  settings: { model, effort, permissionMode: permissionMode ?? 'allow_all' },
 };
 const bound = await sdk.bind(selection, stored.credentialRef);
 ```
 
 `connectionId` 必须来自按完整 `target` 唯一筛选后的连接记录；目标身份比较使用 `hostRuntimeTargetKey`，不使用显示名。`target` 固定 `agentId: 'easywork'`、`hostId`、`workspaceId`、`runtimeId`、`account: { authority, subject }`。`authorizationRef` 是受保护连接对象的 `credentialRef`，不是配对码、链接、Host Key 或 OAuth token；公开连接列表不返回此授权引用。参数省略和实际生效的模型、推理、权限分别核对；此 selection 没有速度字段。
+
+Host 任务未显式指定权限时采用 `allow_all`，不要通过省略权限来表达完全权限：旧 SDK 会原样省略，目标可能回落到需要审批的普通聊天默认值。调用方按上例在准备新意图前补齐默认；显式 `confirm_high_risk` 或 `confirm_every_operation` 必须保留。首轮、后续回复及排队的 `prepareStart` 使用同一 selection；模型和速度仍沿用其既有规则。Codex Host 任务使用其原生 `full-access`，不能把 EasyWork 的权限字符串透传给 Codex。
+
+旧意图恢复使用原请求与摘要执行 `commandStatus`／`queueStatus`，不修改已提交意图的 settings、不补写权限或再次派发。新权限规则只影响新准备的任务输入；正在执行的轮次、既有队列项和单次审批不因此改变会话权限。SDK 请求值不是实际生效证据，仍须读取目标 Run 的 generationSettings 或同等权威字段。
 
 - 只读：`context()`、`projects()`、`models()`、`readThread(threadId, runId?)`、`history(threadId, { runId?, before?, limit? })`。
 - 创建：`prepareCreate({ commandId, requestId })` → 持久保存原 intent → `createThread(intent, { beforeWrite? })`。

@@ -220,6 +220,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
       'project-id': { type: 'string' },
       'no-suitable-reason': { type: 'string' },
       effort: { type: 'string' },
+      'permission-mode': { type: 'string' },
       mode: { type: 'string', default: 'auto' },
       'expected-turn-id': { type: 'string' },
       'queued-message-id': { type: 'string' },
@@ -231,7 +232,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
   const command = positionals[0];
   if (values.help) {
     writeOutput(
-      'probe|workspace|history|queue|send|queue-execute|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--mode auto|next-turn|queue|steer] [--expected-turn-id ID] [--queued-message-id ID] [--effort xhigh (send/create default; forbidden for steer)] [--limit 1..50] [--offset N]; queue-execute uses a NEW operation ID and the ORIGINAL queued-message-id; text <=8192 UTF-8 bytes; files: transfer-host.mjs',
+      'probe|workspace|history|queue|send|queue-execute|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--mode auto|next-turn|queue|steer] [--expected-turn-id ID] [--queued-message-id ID] [--effort xhigh (send/create default; forbidden for steer)] [--permission-mode read-only|guardian-approvals|full-access (send/create default: full-access; forbidden for steer)] [--limit 1..50] [--offset N]; queue-execute uses a NEW operation ID and the ORIGINAL queued-message-id; text <=8192 UTF-8 bytes; files: transfer-host.mjs',
     );
     return;
   }
@@ -268,14 +269,28 @@ export async function main(args = process.argv.slice(2), options = {}) {
   if (command === 'queue-execute') {
     requireValue(values['queued-message-id']?.trim(), 'ORIGINAL_QUEUED_MESSAGE_ID_REQUIRED');
     requireValue(
-      values['text-file'] === undefined && values.effort === undefined,
+      values['text-file'] === undefined &&
+        values.effort === undefined &&
+        values['permission-mode'] === undefined,
       'QUEUE_EXECUTE_REUSES_ORIGINAL_INPUT',
     );
   }
   if (command === 'send' && values.mode === 'steer') {
     requireValue(values['expected-turn-id']?.trim(), 'EXPECTED_TURN_ID_REQUIRED');
-    requireValue(values.effort === undefined, 'STEER_CANNOT_CHANGE_GENERATION_SETTINGS');
+    requireValue(
+      values.effort === undefined && values['permission-mode'] === undefined,
+      'STEER_CANNOT_CHANGE_GENERATION_SETTINGS',
+    );
   }
+  requireValue(
+    values['permission-mode'] === undefined || ['send', 'create'].includes(command),
+    'PERMISSION_MODE_ONLY_FOR_NEW_INPUT',
+  );
+  const permissionMode = values['permission-mode'] ?? 'full-access';
+  requireValue(
+    ['read-only', 'guardian-approvals', 'full-access'].includes(permissionMode),
+    'INVALID_PERMISSION_MODE',
+  );
   const effort = values.effort ?? 'xhigh';
   requireValue(values['host-id'], 'EXPLICIT_HOST_ID_REQUIRED');
   await privatePath(root, true);
@@ -491,6 +506,8 @@ export async function main(args = process.argv.slice(2), options = {}) {
           (command === 'create-submit' ||
             (saved.textSha256 === digest(text) &&
               saved.payload.effort === effort &&
+              (values['permission-mode'] === undefined ||
+                saved.payload.permissionMode === permissionMode) &&
               saved.payload.projectId === (values['project-id'] ?? null))),
         'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
       );
@@ -531,6 +548,8 @@ export async function main(args = process.argv.slice(2), options = {}) {
           (command !== 'send' ||
             (saved.textSha256 === digest(text) &&
               saved.payload.effort === (values.mode === 'steer' ? undefined : effort) &&
+              (values['permission-mode'] === undefined ||
+                saved.payload.permissionMode === permissionMode) &&
               (saved.requestedMode ?? 'auto') === values.mode &&
               saved.payload.expectedTurnId === values['expected-turn-id'])) &&
           (command !== 'queue-execute' ||
@@ -681,6 +700,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
         text,
         attachments: [],
         effort,
+        permissionMode,
       };
       saved = {
         kind: 'create',
@@ -897,7 +917,9 @@ export async function main(args = process.argv.slice(2), options = {}) {
           text,
           attachmentIds: [],
           mode,
-          ...(mode === 'steer' ? { expectedTurnId: values['expected-turn-id'] } : { effort }),
+          ...(mode === 'steer'
+            ? { expectedTurnId: values['expected-turn-id'] }
+            : { effort, permissionMode }),
         }
       : command === 'queue-execute'
         ? {

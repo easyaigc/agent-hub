@@ -161,6 +161,77 @@ test('send selects auto, explicit next-turn and explicit queue without silently 
     { code: 'NATIVE_QUEUE_UNAVAILABLE' },
   );
   assert.equal(f.calls.filter((call) => call.body).length, 4);
+  assert.ok([...f.receipts.values()].every((receipt) => receipt.permissionMode === 'full-access'));
+});
+
+test('send and create preserve explicit permissions and reject changing an immutable operation', async (t) => {
+  for (const permissionMode of ['read-only', 'guardian-approvals', 'full-access']) {
+    await t.test(permissionMode, async (t) => {
+      const f = await fixture(t);
+      const args = ['--text-file', f.taskFile, '--permission-mode', permissionMode];
+      await f.run('send', 'permission-send-001', args);
+      assert.equal(f.receipts.get('permission-send-001').permissionMode, permissionMode);
+      await f.run('create', 'permission-create-001', [...args, '--no-suitable-reason', '独立任务']);
+      const saved = JSON.parse(
+        await readFile(join(f.directory, 'operations', 'permission-create-001.json'), 'utf8'),
+      );
+      assert.equal(saved.payload.permissionMode, permissionMode);
+      const writesBeforeConflict = f.calls.filter((call) => call.body).length;
+      const other = permissionMode === 'read-only' ? 'full-access' : 'read-only';
+      for (const command of ['send', 'create']) {
+        await assert.rejects(
+          f.run(command, `permission-${command}-001`, [
+            '--text-file',
+            f.taskFile,
+            '--permission-mode',
+            other,
+          ]),
+          {
+            code: 'OPERATION_ID_REUSED_WITH_DIFFERENT_INPUT',
+          },
+        );
+      }
+      assert.equal(f.calls.filter((call) => call.body).length, writesBeforeConflict);
+    });
+  }
+});
+
+test('permission settings are rejected before writes for steer, queue promotion and invalid modes', async (t) => {
+  const f = await fixture(t);
+  await assert.rejects(
+    f.run('send', 'invalid-permission-001', [
+      '--text-file',
+      f.taskFile,
+      '--permission-mode',
+      'invalid',
+    ]),
+    { code: 'INVALID_PERMISSION_MODE' },
+  );
+  await assert.rejects(
+    f.run('send', 'steer-permission-001', [
+      '--text-file',
+      f.taskFile,
+      '--mode',
+      'steer',
+      '--expected-turn-id',
+      'turn',
+      '--permission-mode',
+      'full-access',
+    ]),
+    { code: 'STEER_CANNOT_CHANGE_GENERATION_SETTINGS' },
+  );
+  await assert.rejects(
+    f.run('queue-execute', 'queue-permission-001', [
+      '--thread-id',
+      threadId,
+      '--queued-message-id',
+      'original-message',
+      '--permission-mode',
+      'full-access',
+    ]),
+    { code: 'QUEUE_EXECUTE_REUSES_ORIGINAL_INPUT' },
+  );
+  assert.equal(f.calls.length, 0);
 });
 
 test('steer binds the observed Turn, omits generation settings and keeps retries query-only', async (t) => {
@@ -844,6 +915,7 @@ test('create binds current project list and sends first input only once across r
     { code: 'EXACT_PROJECT_UNAVAILABLE' },
   );
   await f.run('create', 'create-coordination-001', args);
+  assert.equal(f.creations.get('create-coordination-001').permissionMode, 'full-access');
   await f.run('create', 'create-coordination-001', args);
   assert.equal(f.calls.filter((c) => c.path === '/v1/desktop/creations').length, 1);
   assert.equal(f.calls.filter((c) => c.path === '/v1/desktop/creations/submit').length, 1);

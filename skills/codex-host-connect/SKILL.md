@@ -5,6 +5,12 @@ description: 将 macOS 或 Windows 的原 Codex 桌面接入 Agent Hub，或让�
 
 # 接入一台 Codex 电脑
 
+## Host 任务默认完全权限
+
+已获人类授权的 Host 任务，在未显式指定权限时使用目标原生完全权限。Codex 协调工具 `send`／`create` 默认发送 `permissionMode: full-access`；需要低权限时显式传 `--permission-mode read-only` 或 `--permission-mode guardian-approvals`。EasyWork SDK 调用在新建任务意图前使用 `selection.settings.permissionMode: allow_all`，显式选择其他原生权限时保留选择，详见 [EasyWork 调用端](references/easywork-task-sdk.md)。不把权限参数省略当成完全权限，不依赖目标普通聊天的默认审批设置。
+
+该规则覆盖新任务首轮、续聊与新排队输入，不修改客户端全局设置或正在执行的轮次。`steer` 沿用当前轮权限，`queue-execute` 沿用原队列项；二者不接受权限覆盖。旧提交意图、操作 ID、正文、权限与摘要保持不可变，只读查询原回执，不为补权限重放任务。运行记录披露的实际权限与请求参数分别核对；完全权限也不扩大人类授权范围。
+
 Windows 原建议可选用本机 Responses 转发采集（`CODEX_DESKTOP_RESPONSES_CONFIG`），按 [Windows 接入](references/windows.md#原建议-responses-采集)先验证 Host 监听、再管理官方单键 URL 配置。已有受保护安装使用随包 `docs/windows-host-regular-upgrade.md` 的同源增量入口，保留 Task 定义和私有身份，逐阶段保存回执。原 App、启动入口和 Mac 采集路径保持；前台画面确认只用于验收，不进入常驻运行。该采集不开放外部模型 API，与下面的 F74 开关独立；真实结果及网络依赖限制逐项交付。
 
 需要 Codex 调用 EasyWork 时，先阅读[EasyWork 调用端边界](references/easywork-task-sdk.md)，区分 Codex 协调 CLI、EasyWork 内部任务 SDK 与工作台授权入口，再选择已交付的调用端。

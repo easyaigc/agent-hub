@@ -20813,6 +20813,15 @@
       }
     },
     {
+      "id": "host-async-question-owner-confirmation-fixture-20261106",
+      "baseCommit": "54065bca68eeaf27aad4e9dc910c492f7e93e8ad",
+      "features": ["F42", "F48", "F58"],
+      "summary": "异步问题晚到接收确认夹具改为在既有五秒期限内等待原回执实际确认，替代固定35毫秒等待。正常脚本与同一快照延迟200毫秒的受控实验通过；保留未知结果、不重放及原全部断言。仅调整合成测试时序，Host和双端产品实现、验收状态保持不变，不将模拟延迟当作CI实测或新增真机通过。",
+      "files": {
+        "scripts/desktop-ipc-smoke.mjs": "a12900901abc1093c63e487f0b8030ea4b9c116d93fafcc0bff3286c06323d11"
+      }
+    },
+    {
       "id": "ios-easywork-backlog-mainline-20261105",
       "baseCommit": "4f77677747d221b53be7737bbb19b4cfdcb7d081",
       "features": [

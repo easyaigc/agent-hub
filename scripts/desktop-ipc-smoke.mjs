@@ -1646,7 +1646,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     fixtureTurns[0].items.at(-1).status = 'accepted';
     revision++;
     snapshot();
-    await settle();
+    await waitForFixture(
+      () => ['submitted', 'completed'].includes(rejectedReceipt.state),
+      'Original rejected answer must be confirmed by the owner before reconciliation',
+    );
     await session.answer(
       'thread',
       rejectedQuestion.id,
@@ -1714,7 +1717,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     fixtureTurns[0].items.at(-1).status = 'accepted';
     revision++;
     snapshot();
-    await settle();
+    await waitForFixture(
+      () => ['submitted', 'completed'].includes(uncertainReceipt.state),
+      'Late owner acceptance must reach the original receipt before reconciliation',
+    );
     await session.answer(
       'thread',
       uncertainQuestion.id,

@@ -2095,6 +2095,125 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     } catch { report["status"] = "failed-preserve-prefix-no-replay"; report["error"] = error.localizedDescription; try save(); throw error }
   }
 
+  @MainActor func testCompletedOwnReplyChangedIntentRejectedWithoutReplayingOriginal() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen original reply conflict case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["replyConflictProbe"] as? Bool == true,
+      c["newModelInputsAuthorized"] as? Int == 0, c["newRemoteCommandsAuthorized"] as? Int == 0,
+      c["expectedConflictAttempts"] as? Int == 10 else { throw HostServiceError.invalidResponse }
+    let original = try JSONDecoder().decode(PendingReply.self,
+      from: easyWorkJSON(try XCTUnwrap(c["originalPending"])))
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    guard original.mode == "next-turn", original.attachmentIds.isEmpty,
+      original.collaborationMode == "default", original.effort == nil,
+      original.permissionMode == nil, original.speed == nil, original.expectedPlanId == nil,
+      original.expectedTurnId == nil, UUID(uuidString: original.clientMessageId) != nil else { throw HostServiceError.invalidResponse }
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, target.agentId == "easywork",
+      clients[0].id == original.hostId, clients[0].agentConnection?.target == target else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protectedState() throws -> Data {
+      try encoder.encode(store.drafts.values) + encoder.encode(store.saved.outbox)
+        + encoder.encode(store.saved.replyRecovery) + encoder.encode(store.saved.detachedReplies)
+        + encoder.encode(store.saved.generationPreferences) + encoder.encode(store.saved.aiSharingGrants)
+    }
+    let protected = try protectedState(), selection = [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId]
+    let identity = try CredentialVault.existingToken("easywork-device-identity")
+    let credentialBytes = try CredentialVault.existingToken(connection.credentialRef)
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "operationId": original.clientMessageId,
+      "threadId": original.threadId, "unchangedOriginalSendCalls": 0, "newModels": 0,
+      "wholeFeaturePassed": false, "pureUIReaccepted": false, "attemptedControls": [String](), "passedControls": [String]()]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    do {
+      let provider = try AgentClients.resolve(client), channel = try await EasyWorkSessions.shared.session(client)
+      let before = try easyWorkObject(await channel.request("command/status", ["commandId": original.clientMessageId]))
+      let parts: [[String: Any]] = [["type": "text", "data": ["text": original.text]]]
+      let params: [String: Any] = ["threadId": original.threadId, "clientRequestId": original.clientMessageId,
+        "parts": parts, "mode": original.mode, "settings": ["model": try XCTUnwrap(original.model), "mode": "normal"]]
+      let wireTarget = await channel.target
+      let result = try EasyWorkRemoteSession.verifiedWriteResult(before, target: wireTarget,
+        mobileDeviceId: await channel.mobileDeviceId, operationId: original.clientMessageId,
+        method: "turn/start", params: params)
+      guard before["requestHash"] as? String == c["originalRequestHash"] as? String,
+        try easyWorkObject(result)["runId"] as? String == c["originalRootRunId"] as? String else { throw HostServiceError.invalidResponse }
+      let canonical = try easyWorkJSON(before)
+      report["originalCanonicalSHA256"] = HostService.hash(canonical)
+      report["originalRequestHash"] = before["requestHash"]
+      report["originalPendingSHA256"] = HostService.hash(try encoder.encode(original))
+      report["status"] = "verified-original-hash-before-changed-intent-controls"; try save()
+      let changes: [(String, String, String)] = [
+        ("body", "text", original.text + " changed-intent"),
+        ("model", "model", "acceptance-invalid-provider/changed-model"),
+        ("effort", "effort", "high"), ("speed", "speed", "fast"),
+        ("permission", "permissionMode", "confirm_high_risk"),
+        ("collaboration", "collaborationMode", "plan"), ("queue-mode", "mode", "queue")]
+      var attempted: [String] = [], passed: [String] = []
+      for (label, field, value) in changes {
+        var changed = try easyWorkObject(encoder.encode(original)); changed[field] = value
+        let altered = try JSONDecoder().decode(PendingReply.self, from: easyWorkJSON(changed))
+        guard altered.clientMessageId == original.clientMessageId,
+          try ReplyRecoveryPolicy.fingerprint(altered, target: target) != ReplyRecoveryPolicy.fingerprint(original, target: target) else { throw HostServiceError.invalidResponse }
+        attempted.append(label); report["attemptedControls"] = attempted; try save()
+        do { _ = try await provider.sendCapturedReply(client, reply: altered, target: target); throw HostServiceError.invalidResponse }
+        catch let rejection as EasyWorkRemoteRejection {
+          guard rejection.code == "operation_conflict" else { throw rejection }
+        }
+        passed.append(label); report["passedControls"] = passed; try save()
+      }
+      // These synthetic attachment parts test the real command gate, not upload or resource ownership.
+      var attached = params
+      attached["parts"] = parts + [["type": "attachment", "data": ["id": original.clientMessageId,
+        "resourceId": "acceptance-unsubmitted-resource", "name": "changed.txt", "kind": "file",
+        "contentType": "text/plain", "size": 1, "sha256": String(repeating: "0", count: 64)]]]
+      var attachmentHash = params
+      attachmentHash["parts"] = parts + [["type": "attachment", "data": ["id": original.clientMessageId,
+        "resourceId": "acceptance-unsubmitted-resource", "name": "changed.txt", "kind": "file",
+        "contentType": "text/plain", "size": 1, "sha256": String(repeating: "1", count: 64)]]]
+      let guidance: [String: Any] = ["threadId": original.threadId,
+        "guidanceId": original.clientMessageId, "turnId": try XCTUnwrap(c["originalRootRunId"] as? String),
+        "parts": parts, "message": original.text]
+      let wireControls: [(String, String, [String: Any])] = [
+        ("attachment-parts", "turn/start", attached), ("attachment-digest", "turn/start", attachmentHash),
+        ("method", "turn/steer", guidance)]
+      for (label, method, changed) in wireControls {
+        let changedHash = HostService.hash(try easyWorkJSON(["target": wireTarget.dictionary, "method": method, "params": changed]))
+        guard changedHash != c["originalRequestHash"] as? String,
+          ((changed["clientRequestId"] as? String) ?? (changed["guidanceId"] as? String)) == original.clientMessageId else { throw HostServiceError.invalidResponse }
+        attempted.append(label); report["attemptedControls"] = attempted; try save()
+        do { _ = try await channel.request(method, changed, id: original.clientMessageId); throw HostServiceError.invalidResponse }
+        catch let rejection as EasyWorkRemoteRejection {
+          guard rejection.code == "operation_conflict" else { throw rejection }
+        }
+        passed.append(label); report["passedControls"] = passed; try save()
+      }
+      let after = try easyWorkObject(await channel.request("command/status", ["commandId": original.clientMessageId]))
+      guard passed.count == 10, try easyWorkJSON(after) == canonical, try protectedState() == protected,
+        [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId] == selection,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialBytes else { throw HostServiceError.invalidResponse }
+      report["originalCanonicalAndPhoneProtectedStateExact"] = true
+      report["providerControls"] = 7; report["rawAttachmentAndMethodGateControls"] = 3
+      report["attachmentUploadOrOwnershipPassed"] = false
+      report["status"] = "passed-changed-intent-conflicts-without-original-replay"; try save()
+    } catch { report["status"] = "failed-preserve-original-no-replay"; report["error"] = error.localizedDescription; try save(); throw error }
+  }
+
   @MainActor func testCompletedOwnedMetadataSameIdConflictPreservesOriginalWithoutModel() async throws {
     let env = ProcessInfo.processInfo.environment
     guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T01:14:57.619332+00:00",
+  "updatedAt": "2026-11-05T02:28:12.772759+00:00",
   "taskId": "easywork-ios-sync-20261101",
   "scope": {
     "mobilePlatform": "ios",
@@ -25,12 +25,12 @@
   },
   "counting": {
     "originalF01F70CurrentPhysicalLANPasses": ["F31", "F32", "F69"],
-    "newWholeFeaturePassesThisRevision": 2,
+    "newWholeFeaturePassesThisRevision": 4,
     "phoneOnlyWaiverIsNotPass": true,
     "supplementaryRowsDoNotIncreaseFeatureDenominator": true,
     "simulatorThisContinuation": {
-      "passed": 73,
-      "failedPreserved": 25,
+      "passed": 74,
+      "failedPreserved": 26,
       "skipped": 2,
       "newModels": 35,
       "newRemoteReceipts": 185,
@@ -996,7 +996,7 @@
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
         "verification": "not-verified",
-        "currentNote": "I1.13当前独立模拟器以已确认完成的自有空会话归档操作验证：同ID同参数两次准确返回原缓存结果；同ID改archived参数及改method的两个刻意冲突候选均operation_conflict。父核原canonical全文SHA/完整目标/设备/方法/参数hash及原归档DB行、9表和本地草稿/偏好/共享许可/身份保持，0新canonical/0模型。不是未知操作重放；消息正文/附件/设置及整项其他断言不扩大。",
+        "currentNote": "I1.13当前独立模拟器以已确认完成的自有空会话归档操作验证：同ID同参数两次准确返回原缓存结果；同ID改archived参数及改method的两个刻意冲突候选均operation_conflict。父核原canonical全文SHA/完整目标/设备/方法/参数hash及原归档DB行、9表和本地草稿/偏好/共享许可/身份保持，0新canonical/0模型。不是未知操作重放；消息正文/附件/设置及整项其他断言不扩大。 I7.83：Native58/V30真实原操作10项变更意图拒绝通过，7项Provider正文/设置/模式与3项原始附件parts/方法门禁；原输入不重发、原规范回执/九表保持。附件门禁不作上传或资源归属证明；在途原回执与新操作忙碌隔离仍分别验收，整项不提升。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
@@ -1014,13 +1014,13 @@
         "note": "主线状态只证明对应源版本；候选或旧真机记录不等于当前EasyWork通过"
       },
       "easyworkIOS": {
-        "implementation": "in-progress",
-        "implementationNote": "开发中（部分实现，细项未齐）",
-        "verification": "not-verified",
-        "currentNote": "旧有限通过保留；I3.7终态拒绝及同ID原回执、I4.17本设备回执与外设备command/ASR隔离、重连不重发通过。本轮原计划Native超时后只读等同Root完成，0初始输入重发；I4.24实际失败canonical严格验证、I3.20原归档成功回执零写入恢复通过。null不等于从未提交，未以当前Run状态代替原操作；整项其他受影响边界继续。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。",
-        "acceptanceDisposition": "integration-only; existing matching passes reused"
+        "implementation": "implemented",
+        "implementationNote": "已实现未知操作查询与保留、明确未执行的有限继续、原回执领域结果归一化与终态保护",
+        "verification": "passed",
+        "currentNote": "旧有限通过保留；I3.7终态拒绝及同ID原回执、I4.17本设备回执与外设备command/ASR隔离、重连不重发通过。本轮原计划Native超时后只读等同Root完成，0初始输入重发；I4.24实际失败canonical严格验证、I3.20原归档成功回执零写入恢复通过。null不等于从未提交，未以当前Run状态代替原操作；整项其他受影响边界继续。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。 I7.85：F44本任务对接断言通过，未知保留/明确继续按F61及F37匹配复用；当前Native55拒绝原回执和Native58取消原准入只读查询、真实失败响应Swift归一化及真实caller空completed映射submitted对应。外层RPC成功不覆盖原失败/取消，未改共享规则；F43/F46在途和新操作时序独立继续。",
+        "acceptanceDisposition": "integration-scope-closed; current native and source-matched actual historical evidence, auxiliary decoder/caller proof separately identified"
       },
-      "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
+      "acceptanceAction": "本任务适用断言已关闭；只对后续受影响路径复验，不重放未知/已完成写入",
       "definitionRef": "525bef7311e69fc79eeaa69df64ad890df4c3111:docs/product/mobile-parity.manifest.json#F44"
     },
     {
@@ -1371,13 +1371,13 @@
         "note": "主线状态只证明对应源版本；候选或旧真机记录不等于当前EasyWork通过"
       },
       "easyworkIOS": {
-        "implementation": "in-progress",
-        "implementationNote": "开发中（部分实现，细项未齐）",
-        "verification": "not-verified",
-        "currentNote": "I1.3–7确认并修复EasyWork本地连接键与wireHost不同造成not-written原输入不能继续；真实App持久化前传输故障零提交、冷启动同原操作/指纹明确一次执行通过，篡改/未知/消耗拒绝，下一草稿保持。受控本地失败不称断网，远端null不作未执行证明；其他权威负向条件仍不扩大。 I7.64当前Native54/V30原绑定运行时和原accepted/missing回执零写复验通过；九表全等。仅复用已覆盖断言，不关闭其余隔离/撤销/不可用/consumed/foreign/late边界。 I1.14：当前Native55/V30已消费原操作双击只查询，真实回执本机迟到不覆盖另一线程和两份后续草稿；两次原ID查询、9表逐行全等通过，0新模型/0变更回执。仅关闭此子项，foreign/授权撤销等其余边界不提升。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。",
-        "acceptanceDisposition": "integration-only; existing matching passes reused"
+        "implementation": "implemented",
+        "implementationNote": "已实现原意图持久化、首条原ID查询、明确本地未发送的同指纹一次继续及未知只查询",
+        "verification": "passed",
+        "currentNote": "I1.3–7确认并修复EasyWork本地连接键与wireHost不同造成not-written原输入不能继续；真实App持久化前传输故障零提交、冷启动同原操作/指纹明确一次执行通过，篡改/未知/消耗拒绝，下一草稿保持。受控本地失败不称断网，远端null不作未执行证明；其他权威负向条件仍不扩大。 I7.64当前Native54/V30原绑定运行时和原accepted/missing回执零写复验通过；九表全等。仅复用已覆盖断言，不关闭其余隔离/撤销/不可用/consumed/foreign/late边界。 I1.14：当前Native55/V30已消费原操作双击只查询，真实回执本机迟到不覆盖另一线程和两份后续草稿；两次原ID查询、9表逐行全等通过，0新模型/0变更回执。仅关闭此子项，foreign/授权撤销等其余边界不提升。 I7.72当前Native55/V30复验I4.17通过：原foreign设备command/ASR记录确实存在且来源未改，完整目标/设备及语音存储key独立重算；当前绑定重连前后六次状态读不可见foreign，own拒绝回执可读。9表逐行全等、0模型/0变更回执；仅设备回执隔离子项，不关闭授权续期/撤销或整项。 I7.82：F61本任务iOS↔EasyWork对接断言通过。首条元数据原ID查询链经V33完整源码重建SHA精确匹配；原本地not-written冷恢复仅明确一次继续的输入/消费/持久化/Provider路径匹配复用，当前Native54/55原accepted/missing、consumed、foreign和本机延后交付保护通过。不把远端missing当未执行、不重放原输入；F04续期/撤销独立，不作为F61追加门槛。仅此对接范围，物理/VPN、Android及其他功能不提升。",
+        "acceptanceDisposition": "integration-scope-closed; matched historical real execution plus current Native54/55 Simulator LAN; pure phone UI waived"
       },
-      "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
+      "acceptanceAction": "本任务对接断言已关闭；后续代码影响原路径时按场景/指纹做有限回归，不重放未知或已完成原输入",
       "definitionRef": "525bef7311e69fc79eeaa69df64ad890df4c3111:docs/product/mobile-parity.manifest.json#F61"
     },
     {
@@ -9311,6 +9311,206 @@
       "firstFailedCasePreserved": "I7.75",
       "twoCreatedTestDevicesBothNowRevoked": true,
       "phoneOnlyUIRepeated": false
+    },
+    "I7.78": {
+      "status": "actual-master-merge-independently-verified-with-two-reviewed-profile-deltas",
+      "pr": 59,
+      "url": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/59",
+      "coreMasterSHA": "d18478c50bf569364dc19dc3c97695162ef18fad",
+      "latestMasterObserved": "d1f0ace532b0f1733298be6ccb6d93011da67ab7",
+      "sourceFrozenTree": "4251be4b24426d450218c81f3e1684229131a0d1",
+      "deliveredTree": "433724438babeb02bd911cea83c4ef54e9f53f86",
+      "paths": 294,
+      "exactBlobs": 292,
+      "reviewedDelta": "Preserves original Mac64 Git sandbox fingerprint; adds one exact receiving-MacBook fingerprint and genuine sandbox permission regression. Current local Mac64 profile unchanged.",
+      "gateEvidence": "Receiving MacBook formal checks reported in primary PR body; no hosted checks (total0), remote raw formal receipt not read. Original Mac64 gate failure and unconfirmed cause retained.",
+      "qualificationSHA256": "42647f37555807f104d01833f7d344fd6b856a38283e970c9d456f3b981aefb1",
+      "at": "2026-11-05T01:53:10.563828+00:00"
+    },
+    "I7.79": {
+      "status": "actual-main-merge-independently-verified",
+      "pr": 150,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/150",
+      "source": "416bc60982112e43f1462303c3651e62d1bb86f0",
+      "sourceTree": "eaa78b26c3ec1920eb95b0f0bad5816cb7d5db45",
+      "mainSHA": "8ec86ecaa709d3f9f8f1b265192575640994a8b3",
+      "parents": [
+        "f7728d7eee1bd104831c6b02320a2cce0f755231",
+        "416bc60982112e43f1462303c3651e62d1bb86f0"
+      ],
+      "sourceBranchDeleted": true,
+      "ciWorkspaceSeconds": 1446,
+      "pnpmCheckSeconds": 1305,
+      "ciIOSSeconds": 245,
+      "scopedNativePasses": 73,
+      "failedPreserved": 25,
+      "runs": 139,
+      "receipts": 769,
+      "qualificationSHA256": "79d80ce27041dd15b0483a172d19e58a92c2501c5040e47e343eb4a47aeb0f3d",
+      "at": "2026-11-05T01:53:10.563828+00:00"
+    },
+    "I7.80": {
+      "status": "native-driver-prepared-not-yet-executed",
+      "featureIds": ["F43"],
+      "newMethod": "testCompletedOwnReplyChangedIntentRejectedWithoutReplayingOriginal",
+      "controls": "Seven actual Provider reply-field mutations, plus three raw command-gate attachment/method controls; all use one existing completed own operation. Original unchanged input is never submitted.",
+      "expectedConflictAttempts": 10,
+      "newModelBudget": 0,
+      "newCanonicalWritesBudget": 0,
+      "originalRequestHashReconstructedExactBeforeExecution": true,
+      "attachmentUploadOrResourceOwnershipPassed": false,
+      "scopedNativePassesUnchanged": 73,
+      "at": "2026-11-05T01:54:30.992839+00:00"
+    },
+    "I7.81": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "failed-official-native-preserved-nine-controls-partial",
+      "official": {
+        "result": "Failed",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "processExit": 65,
+      "nineBusinessTablesExact": true,
+      "lanAndCriticalIdentityFilesExact": true,
+      "newModels": 0,
+      "newMutationReceipts": 0,
+      "passedControls": [
+        "body",
+        "model",
+        "effort",
+        "speed",
+        "permission",
+        "collaboration",
+        "queue-mode",
+        "attachment-parts",
+        "attachment-digest"
+      ],
+      "tenthControl": "method: raw turn/steer retained fields only allowed for turn/start; strict schema rejects those fields",
+      "rootCauseLimit": "Invalid request shape confirmed statically; exact original transport exception attribution not proven. No claim actual Host command gate failed.",
+      "firstFailureNeverReplayedOrReclassifiedPassed": true,
+      "nativeFailuresCumulative": 26,
+      "passedScenesStill": 73,
+      "runs": 139,
+      "receipts": 769,
+      "reportSHA256": "9e19da1d4b8611ae61e6f0322b7ce0da45e23019f8d06ba73117c7ad3932eeb7",
+      "at": "2026-11-05T02:08:17.752075+00:00",
+      "record": "I7.81",
+      "nativePackage": "Native57",
+      "newCandidate": "Native58 retains all ten assertions; constructs strict-valid turn/steer params and stable guidanceId",
+      "failureProofSHA256": "e6051ef5b40300ee99771b13ad9eac930d15aebc5e7b633a167f29ca2a48bb3c",
+      "oldDriverSourceSHA256": "6ec3c9600b0538cf019c24c808abf1ea5a44f5c9d8d9d49dae11ff22b139ecc6"
+    },
+    "I7.82": {
+      "status": "passed-scoped-integration-with-matching-reuse",
+      "featureId": "F61",
+      "assertions": [
+        "first-message-metadata",
+        "known-local-not-written-explicit-once",
+        "remote-unknown-query-only",
+        "consumed-cold-and-late-original"
+      ],
+      "evidenceRefs": ["I1.6", "I1.7", "I1.9", "I1.10", "I1.12", "I7.64", "I1.14", "I7.72"],
+      "currentSourceNamedPathsAndV33RecoveredManifestsExact": true,
+      "newModelInputs": 0,
+      "newScenes": 0,
+      "scopedScenes": 73,
+      "runs": 139,
+      "receipts": 769,
+      "privateDecisionSHA256": "006a8e6ad28ab2ecd9ddc18720451b763f6235d7da1c8fc839c15a0b70b5344e",
+      "at": "2026-11-05T02:12:36.209503+00:00"
+    },
+    "I7.83": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed",
+      "functionalCountIncrement": 1,
+      "cumulativeScopedPassed": 74,
+      "currentRuns": 139,
+      "currentReceipts": 769,
+      "newModels": 0,
+      "newMutationReceipts": 0,
+      "official": {
+        "result": "Passed",
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "allTenChangedIntentControlsOperationConflict": true,
+      "actualProviderControls": 7,
+      "syntheticAttachmentAndMethodGateControls": 3,
+      "attachmentUploadOwnershipNotClaimed": true,
+      "originalUnchangedInputNeverSent": true,
+      "originalFullRequestHashRebuiltAndCanonicalUnchanged": true,
+      "nineTablesEveryRowExact": true,
+      "all40AuthorizationRecordsByUniqueIDAndOtherLANFieldsExact": true,
+      "LANRawArrayOnlyOrderChanged": true,
+      "criticalIdentityQueuePublisherFilesExact": true,
+      "phoneProtectedStateNativeAssertedExact": true,
+      "native152Package40Runtime1645ParentQualified": true,
+      "native57FailedOriginalPreserved": true,
+      "failedNativeCumulative": 26,
+      "wholeF43NotClosedInFlightNewBusyBoundarySeparate": true,
+      "at": "2026-11-05T02:22:41.687357+00:00",
+      "qualificationSHA256": "1b3365c72383080aa79aec903f14ec584c53369ce7fd22a8b0ef821fec8c23c7",
+      "nativeCandidate": "Native58",
+      "firstFailedNative57Preserved": "I7.81"
+    },
+    "I7.84": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed-current-native-original-cancelled-admission-query-only",
+      "official": {
+        "result": "Passed",
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "functionalCountIncrement": 0,
+      "cumulativeScopedPassed": 74,
+      "runs": 139,
+      "receipts": 769,
+      "nineTablesEveryRowExact": true,
+      "all40AuthorizationRecordsAndOtherLANFieldsExact": true,
+      "criticalQueuePublisherIdentityFilesExact": true,
+      "originalCancelledAdmissionEveryFieldUnchanged": true,
+      "originalAdmissionNeverClaimedOrDispatched": true,
+      "providerOriginalCancelledStateTwiceNoTurnIDNoQueueCard": true,
+      "missingReadNullNotResendAuthority": true,
+      "newModels": 0,
+      "newMutationReceipts": 0,
+      "nativeReportRootRunIdIsOnlyPreexistingSourceReferenceNotCancelledDispatch": true,
+      "nativePhoneProtectionAsserted": true,
+      "native58PackageAndV30RuntimeQualified": true,
+      "at": "2026-11-05T02:25:14.689741+00:00",
+      "qualificationSHA256": "1d5fdbd187492892536b303c5e21b1017e718af5b2ab80026111d10402fa3b99"
+    },
+    "I7.85": {
+      "taskId": "easywork-ios-sync-20261101",
+      "featureId": "F44",
+      "status": "passed-task-scoped-integration-current-native-and-matching-reuse",
+      "definition": "Unknown outcomes retained and queried; explicit only-proven-not-executed continuation; no automatic write replay; original query never borrows current Run; outer RPC completion cannot replace original failure/cancellation",
+      "assertions": {
+        "unknownAndExplicitOnly": "F61 I7.82 exact path matching, current Native54/55 accepted/missing/consumed/foreign plus F37 durable original admission unknown",
+        "failedNormalization": "Current Native55 own rejected guidance read plus exact I3.7 and I4.24 original DB records, actual current Swift decoder compiled against genuine response golden inputs",
+        "cancelledNormalization": "I7.84 current Native58 original cancelled admission via production Provider twice; no turnID/no queued card; original full admission and nine tables unchanged",
+        "outerRPCCompletion": "Actual caller maps empty completed journal to submitted, current Swift decoder compiled proof; original KMP predicate protects previous failed/cancelled from that nonterminal. Explicit domain completed is not outer RPC success. No shared-rule change needed."
+      },
+      "evidenceSHA256": {
+        "cancelCurrent": "1d5fdbd187492892536b303c5e21b1017e718af5b2ab80026111d10402fa3b99",
+        "callerCorrectionAux": "8ab99708d6d49aec19f130d36aa9a860849b245d8c5c1dccf0d316a43d8fbd21",
+        "originalFailureAux": "dd147f54b4bcd987671e215260c447a643c95fa76e9172e70594b10256daa3a4",
+        "F61Closure": "006a8e6ad28ab2ecd9ddc18720451b763f6235d7da1c8fc839c15a0b70b5344e"
+      },
+      "auxiliaryNotNativeAndKMPPredicateNotExecutedBySwiftHarness": true,
+      "newModels": 0,
+      "newCanonicalWrites": 0,
+      "newScenes": 0,
+      "sceneCount": 74,
+      "runs": 139,
+      "receipts": 769,
+      "AndroidPhysicalVPNOtherFeaturesNotExpanded": true,
+      "at": "2026-11-05T02:28:12.772759+00:00",
+      "privateDecisionSHA256": "47b8ce22c5c483eb5f1a677cb53a6ebc5f68d0e816d895f5a2938d5b25ff65eb"
     }
   }
 }

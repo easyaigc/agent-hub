@@ -219,6 +219,185 @@ private struct EasyWorkReceiptGateProvider: AgentClient {
   }
 }
 
+private actor EasyWorkLateMissingReceiptGate {
+  struct Witness: Sendable {
+    let originalQueryCalls: Int
+    let originalErrorHeld: Bool
+    let originalErrorDelivered: Bool
+    let originalErrorSHA256: String?
+    let secondHeld: Bool
+    let secondID: String?
+    let secondPending: Data?
+    let secondSendCalls: Int
+    let forwardedInputs: Int
+  }
+
+  private let clientID: String
+  private let threadID: String
+  private let originalID: String
+  private let secondBody: String
+  private var originalQueryCalls = 0
+  private var originalErrorHeld = false
+  private var originalErrorDelivered = false
+  private var originalErrorSHA256: String?
+  private var secondHeld = false
+  private var secondID: String?
+  private var secondPending: Data?
+  private var secondSendCalls = 0
+  private var originalReleased = false
+  private var secondEnded = false
+  private var cancelled = false
+  private var originalWaiter: CheckedContinuation<Void, Never>?
+  private var secondWaiter: CheckedContinuation<Void, Never>?
+
+  init(clientID: String, threadID: String, originalID: String, secondBody: String) {
+    self.clientID = clientID; self.threadID = threadID
+    self.originalID = originalID; self.secondBody = secondBody
+  }
+
+  func isOriginal(_ id: String) -> Bool { id == originalID }
+
+  func beginOriginal(clientID: String, id: String) throws {
+    guard !cancelled else { throw CancellationError() }
+    guard clientID == self.clientID, id == originalID, !threadID.isEmpty,
+      !originalID.isEmpty, originalQueryCalls == 0 else { throw HostServiceError.invalidResponse }
+    originalQueryCalls += 1
+  }
+
+  func holdOriginalError(_ message: String) async throws {
+    guard !cancelled else { throw CancellationError() }
+    guard originalQueryCalls == 1, originalErrorSHA256 == nil,
+      message == L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。") else {
+      throw HostServiceError.invalidResponse
+    }
+    originalErrorSHA256 = HostService.hash(Data(message.utf8))
+    try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      if !originalReleased {
+        originalErrorHeld = true
+        await withCheckedContinuation { originalWaiter = $0 }
+        originalErrorHeld = false
+      }
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      originalErrorDelivered = true
+    } onCancel: { Task { await self.cancelAll() } }
+  }
+
+  func holdSecond(_ pending: Data) async throws {
+    secondSendCalls += 1
+    guard !cancelled else { throw CancellationError() }
+    let reply = try JSONDecoder().decode(PendingReply.self, from: pending)
+    guard secondSendCalls == 1, reply.hostId == clientID, reply.threadId == threadID,
+      !secondBody.isEmpty, reply.text == secondBody, !reply.clientMessageId.isEmpty,
+      reply.clientMessageId != originalID, UUID(uuidString: reply.clientMessageId) != nil,
+      reply.attachmentIds.isEmpty, reply.sourceAttachments?.isEmpty != false else { throw HostServiceError.invalidResponse }
+    secondID = reply.clientMessageId; secondPending = pending
+    try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      guard !cancelled else { throw CancellationError() }
+      if !secondEnded {
+        secondHeld = true
+        await withCheckedContinuation { secondWaiter = $0 }
+        secondHeld = false
+      }
+      throw CancellationError()
+    } onCancel: { Task { await self.cancelAll() } }
+  }
+
+  func releaseOriginalError() {
+    originalReleased = true
+    let waiter = originalWaiter; originalWaiter = nil; waiter?.resume()
+  }
+  func endSecond() {
+    secondEnded = true
+    let waiter = secondWaiter; secondWaiter = nil; waiter?.resume()
+  }
+  func cancelAll() {
+    guard !cancelled else { return }
+    cancelled = true; releaseOriginalError(); endSecond()
+  }
+  func witness() -> Witness {
+    Witness(originalQueryCalls: originalQueryCalls, originalErrorHeld: originalErrorHeld,
+      originalErrorDelivered: originalErrorDelivered, originalErrorSHA256: originalErrorSHA256,
+      secondHeld: secondHeld, secondID: secondID, secondPending: secondPending,
+      secondSendCalls: secondSendCalls, forwardedInputs: 0)
+  }
+}
+
+private struct EasyWorkLateMissingReceiptProvider: AgentClient {
+  let base: any AgentClient
+  let gate: EasyWorkLateMissingReceiptGate
+  let target: AgentRuntimeTarget
+  let clientID: String
+  let threadID: String
+
+  private func validate(_ client: Client) throws {
+    guard client.id == clientID, let actual = client.agentConnection?.target,
+      actual.matchesCapturedPayload(target) else { throw HostServiceError.wrongHost }
+  }
+  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
+    guard await gate.isOriginal(id) else { return try await base.receipt(client, id: id) }
+    try validate(client)
+    try await gate.beginOriginal(clientID: client.id, id: id)
+    do { return try await base.receipt(client, id: id) }
+    catch let error as HostServiceError {
+      guard case .message(let message) = error,
+        message == L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。") else { throw error }
+      try await gate.holdOriginalError(message)
+      throw error
+    }
+  }
+  func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt {
+    throw HostServiceError.unavailable
+  }
+  func sendCapturedReply(_ client: Client, reply: PendingReply, target captured: AgentRuntimeTarget) async throws -> DeliveryReceipt {
+    try validate(client)
+    guard captured.matchesCapturedPayload(target), reply.hostId == clientID,
+      reply.threadId == threadID else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    try await gate.holdSecond(encoder.encode(reply))
+    throw CancellationError()
+  }
+
+  func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot { try await base.workspace(client, projectCursor: projectCursor, threadCursor: threadCursor) }
+  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await base.history(client, threadId: threadId, cursor: cursor) }
+  func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch { try await base.events(client, epoch: epoch, after: after, threadId: threadId) }
+  func models(_ client: Client) async throws -> ModelList { try await base.models(client) }
+  func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data { try await base.projectGit(client, projectId: projectId, target: target, refresh: refresh) }
+  func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { try await base.projectGitFiles(client, projectId: projectId, target: target, snapshotId: snapshotId, worktreeId: worktreeId, cursor: cursor) }
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { try await base.usage(client, target: target) }
+  func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness { try await base.voiceReadiness(client) }
+  func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { try await base.nextTurnSuggestion(client, scope: scope) }
+  func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection { try await base.replyDeliveryStatus(client, reply: reply, target: target) }
+  func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { try await base.threadCreationStatus(client, projectId: projectId, operationId: operationId) }
+  func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation { try await base.workspaceManagementStatus(client, request: request) }
+  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await base.download(client, file: file) }
+  func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { try await base.cachedDownload(client, file: file) }
+  func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await base.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
+  func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { try await base.fileTransfers(client) }
+  func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt { try await base.fileTransfer(client, id: id) }
+  func notificationEvents(_ client: Client, deviceId: String, after: String) async throws -> TaskNotificationFeed { try await base.notificationEvents(client, deviceId: deviceId, after: after) }
+  func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await base.openStatus(client, threadId: threadId, operationId: operationId) }
+  func chatActionStatus(_ client: Client, threadId: String, operationId: String) async throws -> ChatActionReceipt { try await base.chatActionStatus(client, threadId: threadId, operationId: operationId) }
+  func searchHistory(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await base.searchHistory(client, threadId: threadId, cursor: cursor) }
+  func forkOptions(_ client: Client, threadId: String) async throws -> ThreadForkOptions { try await base.forkOptions(client, threadId: threadId) }
+  func forkStatus(_ client: Client, threadId: String, operationId: String) async throws -> ThreadForkOperation { try await base.forkStatus(client, threadId: threadId, operationId: operationId) }
+  func creation(_ client: Client, id: String) async throws -> DesktopCreationOperation { try await base.creation(client, id: id) }
+  func creationReceipt(_ client: Client, id: String) async throws -> DesktopCreationOperation { try await base.creationReceipt(client, id: id) }
+  func permissionOptions(_ client: Client) -> [AgentPermissionOption] { base.permissionOptions(client) }
+  func normalizedCapabilities(_ capabilities: [String], connectionMode: String?) -> [String] { base.normalizedCapabilities(capabilities, connectionMode: connectionMode) }
+  func connectionTitle(_ client: Client) async -> String? { await base.connectionTitle(client) }
+  func close(_ client: Client) async { await base.close(client) }
+
+  // Remaining protocol defaults reject business writes; required non-default writes follow.
+  func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation { throw HostServiceError.unavailable }
+  func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult { throw HostServiceError.unavailable }
+  func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult { throw HostServiceError.unavailable }
+  func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { throw HostServiceError.unavailable }
+}
+
 /// Holds authentic reply delivery locally; the next send never reaches transport.
 private actor EasyWorkSendWaitGate {
   struct Witness: Sendable {
@@ -2582,6 +2761,223 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["firstOperationId"] = firstID; report["secondOperationId"] = secondID; report["ownedKey"] = ownKey
       report["status"] = "failed-preserve-owned-original-operations-no-replay"
       report["error"] = error.localizedDescription; restoreNavigation(); try save(); throw error
+    }
+  }
+
+  @MainActor func testConnectionPreferenceEditRejectsLateOriginalQueryErrorDuringNewSend() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_HOSTED_NATIVE_REPLY_PREFLIGHT_CASE"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen owned late query case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["lateOriginalQueryProbe"] as? Bool == true,
+      c["newRootInputsAuthorized"] as? Int == 0, c["newThreadsAuthorized"] as? Int == 1,
+      c["modelNetworkPublishesAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String {
+      let value = try XCTUnwrap(c[name] as? String)
+      guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value
+    }
+    let firstBody = try field("firstBody"), secondBody = try field("secondBody"), nextDraft = try field("nextDraft")
+    let currentError = try field("currentError"), create = try field("createOperationId"), archive = try field("archiveOperationId")
+    guard firstBody != secondBody, nextDraft != secondBody,
+      HostService.hash(Data(firstBody.utf8)) == c["firstBodySHA256"] as? String,
+      HostService.hash(Data(secondBody.utf8)) == c["secondBodySHA256"] as? String,
+      UUID(uuidString: create) != nil, UUID(uuidString: archive) != nil, create != archive else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, clients[0].agentConnection?.target == target,
+      target.agentId == "easywork", (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0,
+      (store.hostedEasyWorkReadLoopState["replyQueryWorkCount"] as? Int) == 0 else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let originalPreference = connection.preference
+    guard [.automatic, .lanOnly].contains(originalPreference) else { throw HostServiceError.invalidResponse }
+    let changedPreference: AgentConnectionPreference = originalPreference == .automatic ? .lanOnly : .automatic
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func bytes<T: Encodable>(_ value: T) throws -> Data { try encoder.encode(value) }
+    let base = try AgentClients.resolve(client), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let oldThread = store.conversation, oldThreadID = store.selectedThreadId, oldProject = store.selectedProjectId
+    let oldClientID = store.saved.selectedClientId, oldMode = store.replyMode
+    let oldLastThread = store.saved.lastThreads[client.id], oldLastProject = store.saved.lastThreadProjects?[client.id]
+    let oldLastProjectsNil = store.saved.lastThreadProjects == nil, oldNewProject = store.saved.newProjects[client.id]
+    let oldDrafts = store.drafts.values, oldOutbox = store.saved.outbox, oldRecovery = store.saved.replyRecovery
+    let oldDetached = store.saved.detachedReplies, preferences = try bytes(store.saved.generationPreferences)
+    let grants = try bytes(store.saved.aiSharingGrants), oldError = store.error
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "wholeFeaturePassed": false, "pureUIReaccepted": false,
+      "newRootBudget": 0, "newThreadBudget": 1, "modelNetworkBudget": 0,
+      "createOperationId": create, "archiveOperationId": archive,
+      "originalConnectionPreference": originalPreference.rawValue, "changedConnectionPreference": changedPreference.rawValue,
+      "status": "prepared-owned-late-query-error"]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label: String, seconds: Double = 60, _ predicate: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(seconds)
+      while !predicate(), Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+      guard predicate() else { report["failedWait"] = label; try save(); throw HostServiceError.invalidResponse }
+    }
+    func restoreNavigation() {
+      store.devReplyBeforeTransportForAcceptance = nil
+      if let oldThread { store.openThread(oldThread, loadAutomatically: false) }
+      store.saved.selectedClientId = oldClientID; store.selectedThreadId = oldThreadID; store.selectedProjectId = oldProject
+      store.saved.lastThreads[client.id] = oldLastThread; store.saved.lastThreadProjects?[client.id] = oldLastProject
+      if oldLastProjectsNil, store.saved.lastThreadProjects?.isEmpty == true { store.saved.lastThreadProjects = nil }
+      store.saved.newProjects[client.id] = oldNewProject; store.replyMode = oldMode; store.error = oldError
+      store.persist(reconcileUnread: false)
+    }
+    var gate: EasyWorkLateMissingReceiptGate?
+    var firstID: String?, secondID: String?, ownKey: String?
+    var preferenceChanged = false
+    do {
+      try save()
+      let model = try field("existingApprovedModelId"), catalog = try await base.models(client)
+      guard catalog.models.contains(where: { $0.id == model }),
+        (store.saved.aiSharingGrants ?? []).contains(where: { $0.scope.target == target && $0.scope.model == model }) else {
+        throw HostServiceError.message(L10n.tr("现有模型目录或分享授权不匹配；没有创建线程或扩大授权。"))
+      }
+      report["catalogAndExistingSharingVerifiedBeforeMetadata"] = true; report["existingApprovedModelId"] = model; try save()
+      let thread = try await base.createThread(client, projectId: nil, operationId: create)
+      guard thread.hostId == client.id, thread.projectId == nil, thread.archived != true else { throw HostServiceError.wrongHost }
+      report["threadId"] = thread.id; try save()
+      await store.refresh(includeHistory: false, userInitiated: true)
+      store.openThread(thread, loadAutomatically: false); await store.loadHistory(threadId: thread.id); await store.loadModels()
+      let key = store.targetKey; ownKey = key
+      guard store.saved.outbox?[key] == nil, store.draft.text.isEmpty, store.draft.attachments.isEmpty,
+        !store.sendingKeys.contains(key), oldDrafts[key] == nil, oldOutbox?[key] == nil else { throw HostServiceError.invalidResponse }
+      var hookCalls = 0
+      store.devReplyBeforeTransportForAcceptance = { reply in
+        hookCalls += 1
+        guard hookCalls == 1, reply.hostId == client.id, reply.threadId == thread.id, reply.text == firstBody,
+          reply.attachmentIds.isEmpty, let captured = store.saved.replyRecovery?[reply.clientMessageId],
+          captured.phase == "not-written", captured.target == target,
+          captured.fingerprint == (try ReplyRecoveryPolicy.fingerprint(reply, target: target)) else { throw HostServiceError.invalidResponse }
+        firstID = reply.clientMessageId
+        report["firstPending"] = try JSONSerialization.jsonObject(with: bytes(reply))
+        report["firstOperationId"] = reply.clientMessageId; report["firstFingerprint"] = captured.fingerprint; try save()
+        throw URLError(.networkConnectionLost)
+      }
+      var firstDraft = Draft(text: firstBody, model: model); firstDraft.collaborationMode = "default"
+      store.send(content: firstDraft)
+      try await wait("actual first capture finishes before all transport") {
+        hookCalls == 1 && (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0
+          && !store.sendingKeys.contains(key) && store.saved.outbox?[key]?.text == firstBody
+      }
+      store.devReplyBeforeTransportForAcceptance = nil
+      let originalID = try XCTUnwrap(firstID), first = try XCTUnwrap(store.saved.outbox?[key])
+      guard first.clientMessageId == originalID, first.knownRejected == true,
+        store.saved.replyRecovery?[originalID]?.phase == "not-written" else { throw HostServiceError.invalidResponse }
+      report["actualDurableOriginalCaptureBeforeTransport"] = true; report["preTransportHookCalls"] = hookCalls
+      let probe = EasyWorkLateMissingReceiptGate(clientID: client.id, threadID: thread.id, originalID: originalID, secondBody: secondBody)
+      gate = probe
+      AgentClients.register("easywork", client: EasyWorkLateMissingReceiptProvider(base: base, gate: probe,
+        target: target, clientID: client.id, threadID: thread.id))
+      store.reconcilePending()
+      var witness = await probe.witness(); let errorDeadline = Date().addingTimeInterval(60)
+      while !witness.originalErrorHeld, Date() < errorDeadline {
+        try await Task.sleep(for: .milliseconds(50)); witness = await probe.witness()
+      }
+      guard witness.originalErrorHeld, witness.originalQueryCalls == 1,
+        (store.hostedEasyWorkReadLoopState["replyQueryWorkCount"] as? Int) == 1 else { throw HostServiceError.invalidResponse }
+      report["genuineMissingOriginalReceiptErrorHeld"] = true; report["originalErrorSHA256"] = witness.originalErrorSHA256; try save()
+      store.detachPendingWait(first, target: key)
+      guard store.saved.outbox?[key] == nil, !store.sendingKeys.contains(key),
+        store.saved.detachedReplies?[key]?.contains(where: { $0.id == originalID }) == true else { throw HostServiceError.invalidResponse }
+      store.setConnectionPreference(client, changedPreference); preferenceChanged = true
+      try await wait("normal connection preference edit settles") {
+        store.client?.agentConnection?.preference == changedPreference && !store.historyLoading
+      }
+      await store.loadHistory(threadId: thread.id)
+      let editedClient = try XCTUnwrap(store.client), editedConnection = try XCTUnwrap(editedClient.agentConnection)
+      guard store.targetKey == key, editedConnection.target == target,
+        editedConnection.credentialRef == connection.credentialRef,
+        try bytes(editedConnection.candidates) == bytes(connection.candidates),
+        try bytes(editedConnection) != bytes(connection) else { throw HostServiceError.wrongHost }
+      report["normalConnectionPreferenceEditKeptTargetCredentialAndCandidates"] = true; try save()
+      var secondDraft = Draft(text: secondBody, model: model); secondDraft.collaborationMode = "default"
+      store.setText(secondBody, target: key)
+      try await wait("edited connection history is writable for the next captured send") {
+        !store.historyLoading && store.canSend
+      }
+      store.send(content: secondDraft)
+      witness = await probe.witness(); let secondDeadline = Date().addingTimeInterval(60)
+      while !witness.secondHeld, Date() < secondDeadline {
+        try await Task.sleep(for: .milliseconds(50)); witness = await probe.witness()
+      }
+      guard witness.secondHeld, witness.secondSendCalls == 1, witness.forwardedInputs == 0,
+        let secondData = witness.secondPending, let actualSecondID = witness.secondID, actualSecondID != originalID,
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 1 else { throw HostServiceError.invalidResponse }
+      secondID = actualSecondID
+      let second = try JSONDecoder().decode(PendingReply.self, from: secondData)
+      let fingerprint = try ReplyRecoveryPolicy.fingerprint(second, target: target)
+      guard store.saved.outbox?[key]?.clientMessageId == actualSecondID,
+        store.saved.replyRecovery?[actualSecondID]?.phase == "uncertain",
+        store.saved.replyRecovery?[actualSecondID]?.fingerprint == fingerprint else { throw HostServiceError.invalidResponse }
+      store.setText(nextDraft, target: key); store.error = currentError
+      report["secondPending"] = try JSONSerialization.jsonObject(with: secondData)
+      report["secondOperationId"] = actualSecondID; report["secondFingerprint"] = fingerprint; try save()
+      await probe.releaseOriginalError()
+      try await wait("old actual query and its defer finish while new send stays held") {
+        (store.hostedEasyWorkReadLoopState["replyQueryWorkCount"] as? Int) == 0
+      }
+      witness = await probe.witness()
+      guard witness.originalErrorDelivered, witness.originalQueryCalls == 1, witness.secondHeld,
+        store.client?.agentConnection?.preference == changedPreference, store.targetKey == key,
+        store.saved.outbox?[key]?.clientMessageId == actualSecondID,
+        store.saved.replyRecovery?[actualSecondID]?.fingerprint == fingerprint,
+        store.sendingKeys.contains(key), store.drafts.values[key]?.text == nextDraft, store.error == currentError else { throw HostServiceError.invalidResponse }
+      report["lateOriginalErrorAndQueryDeferPreservedNewSendDraftAndCurrentError"] = true; try save()
+      await probe.endSecond()
+      try await wait("never-published second send finishes") {
+        (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0 && !store.sendingKeys.contains(key)
+      }
+      guard store.saved.outbox?[key]?.clientMessageId == actualSecondID,
+        store.saved.replyRecovery?[actualSecondID]?.phase == "uncertain", !store.canRetryPending else { throw HostServiceError.invalidResponse }
+      AgentClients.register("easywork", client: base)
+      store.setConnectionPreference(editedClient, originalPreference); preferenceChanged = false
+      await store.refresh(includeHistory: false, userInitiated: true)
+      guard store.client?.agentConnection == connection else { throw HostServiceError.wrongHost }
+      let channel = try await EasyWorkSessions.shared.session(client)
+      report["archiveAttemptedOnce"] = true; try save()
+      _ = try await channel.request("thread/archive", ["threadId": thread.id, "archived": true], id: archive)
+      guard (try await base.history(client, threadId: thread.id, cursor: nil)).thread?.archived == true else { throw HostServiceError.invalidResponse }
+      store.saved.outbox?[key] = oldOutbox?[key]
+      for id in [originalID, actualSecondID] { store.saved.replyRecovery?[id] = oldRecovery?[id] }
+      store.saved.detachedReplies?[key] = oldDetached?[key]; store.drafts.values[key] = oldDrafts[key]
+      if oldOutbox == nil, store.saved.outbox?.isEmpty == true { store.saved.outbox = nil }
+      if oldRecovery == nil, store.saved.replyRecovery?.isEmpty == true { store.saved.replyRecovery = nil }
+      if oldDetached == nil, store.saved.detachedReplies?.isEmpty == true { store.saved.detachedReplies = nil }
+      restoreNavigation()
+      for (k,v) in oldDrafts { guard try bytes(store.drafts.values[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      for (k,v) in oldOutbox ?? [:] { guard try bytes(store.saved.outbox?[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      for (k,v) in oldRecovery ?? [:] { guard try bytes(store.saved.replyRecovery?[k]) == bytes(Optional(v)) else { throw HostServiceError.invalidResponse } }
+      guard try bytes(store.saved.generationPreferences) == preferences, try bytes(store.saved.aiSharingGrants) == grants,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      witness = await probe.witness()
+      report["actualForwardedInputs"] = witness.forwardedInputs; report["secondSendCalls"] = witness.secondSendCalls
+      report["originalQueryCalls"] = witness.originalQueryCalls
+      report["ownedFixtureCleanupOriginalConnectionAndPhoneProtectionExact"] = true
+      report["status"] = "passed-connection-edit-late-original-query-error-preserves-new-flight"; try save()
+    } catch {
+      store.devReplyBeforeTransportForAcceptance = nil
+      if let gate { await gate.cancelAll() }
+      AgentClients.register("easywork", client: base)
+      let deadline = Date().addingTimeInterval(45)
+      while ((store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) != 0
+        || (store.hostedEasyWorkReadLoopState["replyQueryWorkCount"] as? Int) != 0), Date() < deadline {
+        try? await Task.sleep(for: .milliseconds(50))
+      }
+      if preferenceChanged, let current = store.client { store.setConnectionPreference(current, originalPreference) }
+      report["firstOperationId"] = firstID; report["secondOperationId"] = secondID; report["ownedKey"] = ownKey
+      report["status"] = "failed-preserve-original-operations-no-replay"; report["error"] = error.localizedDescription
+      restoreNavigation(); try save(); throw error
     }
   }
 

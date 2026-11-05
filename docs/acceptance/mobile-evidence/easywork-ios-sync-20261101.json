@@ -29,13 +29,13 @@
     "phoneOnlyWaiverIsNotPass": true,
     "supplementaryRowsDoNotIncreaseFeatureDenominator": true,
     "simulatorThisContinuation": {
-      "passed": 75,
+      "passed": 76,
       "failedPreserved": 27,
       "skipped": 2,
       "newModels": 36,
-      "newRemoteReceipts": 190,
+      "newRemoteReceipts": 192,
       "currentRuns": 140,
-      "currentRemoteReceipts": 774,
+      "currentRemoteReceipts": 776,
       "wholeFeaturePasses": 5,
       "notStarted": 2,
       "installRefusedBeforeTest": 1,
@@ -55,12 +55,12 @@
       "actualModelSamplesCountingDefinition": "user-origin real model tasks with actual output and positive usage; not internal LLM call count; automatic mailbox follow-up is separately included in actualModelRunRowsAfterLogin",
       "additionalPackageGateRejectionsPreservedBeforeNative": 3,
       "auxiliaryResourceArchivePreflightFailuresPreserved": 1,
-      "additionalNativeBuildFailuresPreservedBeforeTest": 6,
+      "additionalNativeBuildFailuresPreservedBeforeTest": 7,
       "newSpeechTranscriptions": 2,
       "newAudioUploadsForHostASR": 2,
       "additionalBackendBuildSetupFailuresPreserved": 6,
       "auxiliaryPretestConfigurationOrDependencyFailuresPreserved": 3,
-      "additionalManifestGenerationFailuresBeforeChecksPreserved": 5,
+      "additionalManifestGenerationFailuresBeforeChecksPreserved": 6,
       "gateObserverCancelledRunsPreserved": 5,
       "userOriginRunRowsAfterLogin": 34,
       "interruptedNativeWrappersPreserved": 1,
@@ -1059,7 +1059,7 @@
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
         "verification": "not-verified",
-        "currentNote": "I1.12当前Simulator/LAN真实Store晚到建聊结果与新项目草稿隔离通过：原确认结果回Store前正常切到另一个自建项目并填写合成草稿；旧初始reply仅在原线程捕获并实际加密保存，传输前拦住；原ID查询仍不选择旧线程或覆盖新草稿。其他草稿/生成偏好/共享许可/身份及原9表保持，0模型，专用空会话与2项目正常清理。受控本地调度不称真实网络延迟；其他Host/账号、物理/VPN与整项其余边界不扩大。 I7.91实际原A SDK旧成功/defer不释放新B忙碌与第三草稿子项通过；仍需连接编辑/旧错误时序，整项不提升。",
+        "currentNote": "I1.12当前Simulator/LAN真实Store晚到建聊结果与新项目草稿隔离通过：原确认结果回Store前正常切到另一个自建项目并填写合成草稿；旧初始reply仅在原线程捕获并实际加密保存，传输前拦住；原ID查询仍不选择旧线程或覆盖新草稿。其他草稿/生成偏好/共享许可/身份及原9表保持，0模型，专用空会话与2项目正常清理。受控本地调度不称真实网络延迟；其他Host/账号、物理/VPN与整项其余边界不扩大。 I7.91实际原A SDK旧成功/defer不释放新B忙碌与第三草稿子项通过；仍需连接编辑/旧错误时序，整项不提升。 I7.95 Native61/V30连接偏好编辑后真实缺失原回执旧错误/查询defer不覆盖B忙碌、原指纹、第三草稿及当前错误；0输入发布，限定子项通过。迟到事件分支继续，F46尚未整项关闭。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "仅补EasyWork目标/授权/刷新撤销、重连及原ID查询差异；不重放未知写入",
@@ -9711,6 +9711,105 @@
       "receipts": 774,
       "at": "2026-11-05T03:55:51.478002+00:00",
       "privateDecisionSHA256": "2372f3d90f3a6def783321c86a5925f27f0c18efc4d3e682b57273ac096cba27"
+    },
+    "I7.93": {
+      "status": "native61-connection-edit-late-original-error-developed-not-built",
+      "features": ["F46"],
+      "newModelBudget": 0,
+      "newOwnEmptyThreadBudget": 1,
+      "newMetadataCommandBudget": 2,
+      "actualPreTransportCaptureNotSyntheticOutbox": true,
+      "genuineProviderMissingOriginalReceiptErrorLocallyDelayed": true,
+      "normalConnectionPreferenceSetter": true,
+      "newSendHeldBeforeAllNetwork": true,
+      "queryWorkCountDebugOnly": true,
+      "passedScenesUnchanged": 75,
+      "runs": 140,
+      "receipts": 774,
+      "nativeFailures": 27,
+      "at": "2026-11-05T04:20:11.882382+00:00",
+      "initialBuildDiagnostics": {
+        "appBuild": {
+          "exit": 0,
+          "seconds": 166.169
+        },
+        "nativeBuild": {
+          "exit": 65,
+          "cause": "test incorrectly used private canSubmit; changed to normal setText and public canSend without altering assertion"
+        },
+        "missingFeatureChangeRecord": "fixed with exact current source hashes",
+        "nativeTestNotExecuted": true,
+        "noModelOrBusinessCommands": true
+      }
+    },
+    "I7.94": {
+      "taskId": "easywork-ios-sync-20261101",
+      "pr": 152,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/152",
+      "source": "8af16a545368753080d9a602b68371df3b1e49de",
+      "state": "closed",
+      "merged": true,
+      "actualMergeSHA": "25207328348bc7337b116e06ab48ea33fd87cf37",
+      "latestMain": "25207328348bc7337b116e06ab48ea33fd87cf37",
+      "at": "2026-11-05T04:29:02.527279+00:00",
+      "sourceTree": "5326e7fe7ce20502d556f3d3ea45f2d25614d429",
+      "mainTree": "5326e7fe7ce20502d556f3d3ea45f2d25614d429",
+      "parents": [
+        "4c55e1a18e70747f4ad54ae270e5e4f5e0bccfc4",
+        "8af16a545368753080d9a602b68371df3b1e49de"
+      ],
+      "treeProof": "actual Git objects fetched from authority; API nested tree.sha returns commit ID",
+      "status": "actual-main-merge-independently-verified",
+      "jobs": [
+        {
+          "id": 27525,
+          "name": "workspace",
+          "head_sha": "8af16a545368753080d9a602b68371df3b1e49de",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-05T04:00:46Z",
+          "completed_at": "2026-11-05T04:24:58Z"
+        },
+        {
+          "id": 27526,
+          "name": "ios",
+          "head_sha": "8af16a545368753080d9a602b68371df3b1e49de",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-05T04:00:47Z",
+          "completed_at": "2026-11-05T04:06:08Z"
+        }
+      ]
+    },
+    "I7.95": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "passed-parent-canonical-zero-model-qualified",
+      "official": {
+        "result": "Passed",
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "newModels": 0,
+      "newMutationReceipts": 2,
+      "currentRuns": 140,
+      "currentReceipts": 776,
+      "newScenes": 1,
+      "cumulativeScopedPassed": 76,
+      "nativeFailuresPreserved": 27,
+      "actualNotWrittenCaptureAndGenuineMissingReceiptError": true,
+      "normalPreferenceEditTargetCredentialsCandidatesPreserved": true,
+      "oldQueryAndDeferActuallyFinishedWhileNewSendHeld": true,
+      "newBusyDraftFingerprintCurrentErrorPreserved": true,
+      "bothOriginalOperationsNeverPublishedNoServerRecord": true,
+      "bothImmutableFingerprintsAndTwoMetadataRequestHashesRecomputed": true,
+      "ownedThreadEmptyArchived": true,
+      "allNinePriorTableRowsPreserved": true,
+      "all40AuthorizationRecordsAndOtherLANFieldsExact": true,
+      "criticalIdentityQueuePublisherFilesExact": true,
+      "phoneProtectionNativeAsserted": true,
+      "localErrorDeliverySchedulingNotPhysicalNetworkFault": true,
+      "at": "2026-11-05T04:31:31.201579+00:00"
     }
   }
 }

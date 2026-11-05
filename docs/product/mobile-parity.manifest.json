@@ -20181,6 +20181,16 @@
         "apps/ios/Sources/SessionStore.swift": "e9f53dc7aea1423506d02f82a572b352a184e3b677f957f5a360f4725f2bf2bb",
         "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "45e04ea982cf61c6223d6a58a6a33202dd47d01728b107de726b2850e672c503"
       }
+    },
+    {
+      "id": "easywork-ios-connection-edit-late-query-driver-20261105",
+      "baseCommit": "8af16a545368753080d9a602b68371df3b1e49de",
+      "features": ["F46"],
+      "summary": "Add Native-only controlled delivery of a genuine missing original receipt error after normal connection preference edit while a distinct new send is held before all transport. Uses actual durable local preflight A capture and production receipt read; query work-count DEBUG lens proves old task/defer finished. Initial driver compile-private-access and missing change record retained, corrected to normal setText/canSend; no business/UI/Release/Android change. Native61 not yet accepted;0-model/one own empty thread and2metadata budget.75 scoped scenes140Run774receipts27Native failures unchanged. Native61/V30 I7.95 actual1/0/0 and parent canonical audit passed;76scenes140Run776receipts27preservedNativefailures. New busy/fingerprint/draft/current error protected after old query/defer, both A/B never published;2metadata hashes and both recovery fingerprints recomputed. Original connection restored, F46 late event scope remains open.",
+      "files": {
+        "apps/ios/Sources/SessionStore.swift": "68b0e481e2be79cf015546a9ea70c8a4a750df15364ac85cd2782b1073209472",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "6ba7dd24ff9c88d15847e6d16f2530990f6d6eb5c24a243e8e0061eee7d91fbe"
+      }
     }
   ]
 }

@@ -13,6 +13,7 @@ final class SessionStore: ObservableObject {
   // before any transport call or may-write disposition. Never persisted.
   var devReplyBeforeTransportForAcceptance: ((PendingReply) throws -> Void)?
   private var hostedReplySendWorkCount = 0
+  private var hostedReplyQueryWorkCount = 0
   var devMetadataCreateBeforeTransportForAcceptance: ((String) throws -> Void)?
   var devMetadataCreateAfterVerifiedForAcceptance: ((String, Conversation) throws -> Void)?
   struct HostedMigrationExportObservation {
@@ -29,6 +30,7 @@ final class SessionStore: ObservableObject {
      "replyRecoveryTaskActive":replyRecoveryTask != nil && replyRecoveryTask?.isCancelled==false,
      "replyRecoveryFlightCount":replyRecoveryFlights.count,
      "replySendWorkCount":hostedReplySendWorkCount,
+     "replyQueryWorkCount":hostedReplyQueryWorkCount,
      "eventsCapability":saved.workspaces[client?.id ?? ""]?.capabilities?.contains("events")==true,
      "applicationActive":UIApplication.shared.applicationState == .active,
      "runtimeState":runtime?.state ?? "none","historyLoading":historyLoading,
@@ -4017,8 +4019,16 @@ private var userRequestedWorkspaceGeneration: UUID?
       replyRecoveryQueries[key] = (pending.clientMessageId, now + delay, delay)
     }
     replyRecoveryFlights[key] = flight
+    #if DEBUG
+    if Self.hostedEasyWorkAcceptanceEnabled { hostedReplyQueryWorkCount += 1 }
+    #endif
     Task {
-      defer { if replyRecoveryFlights[key] == flight { replyRecoveryFlights.removeValue(forKey: key) } }
+      defer {
+        #if DEBUG
+        if Self.hostedEasyWorkAcceptanceEnabled { hostedReplyQueryWorkCount -= 1 }
+        #endif
+        if replyRecoveryFlights[key] == flight { replyRecoveryFlights.removeValue(forKey: key) }
+      }
       do {
         let provider = try AgentClients.resolve(host)
         do {

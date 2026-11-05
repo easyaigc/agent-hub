@@ -22,7 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.util.*;
 
-/** Framework Test-UID P7 v4 synthetic provider. Exact UUID IDs; never opens legacy v1.
+/** Framework Test-UID P7 wire-v4 provider using only publication-lock namespace v4.
+ * Exact UUID IDs; never opens, enumerates or migrates retained v1/v3 namespaces.
  * Only fully published scopes are listed. Listing never reads the binary payload. */
 public final class OwnedMainMigrationDocumentsV3 extends DocumentsProvider {
     private static final String[] ROOT_COLUMNS={Root.COLUMN_ROOT_ID,Root.COLUMN_DOCUMENT_ID,Root.COLUMN_TITLE,Root.COLUMN_FLAGS,Root.COLUMN_MIME_TYPES,Root.COLUMN_AVAILABLE_BYTES};

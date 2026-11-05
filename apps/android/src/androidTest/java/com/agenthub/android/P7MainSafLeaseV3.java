@@ -10,23 +10,27 @@ import android.content.pm.ProviderInfo;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructStat;
 import org.json.JSONObject;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** androidTest only. New namespace; this class never opens, enumerates or migrates v1.
+/** androidTest only. Publication-lock namespace v4; never opens, enumerates or migrates v1/v3.
  * Same-UID hostile concurrent replacement is outside the existing synthetic-test threat model.
  * Every open still checks nofollow, exact inode, UID/mode/link count and bounded bytes. */
 final class P7MainSafLeaseV3 {
     static final String APP="com.easyai.agenthub.android.acceptance", TEST=APP+".test";
-    static final String NAMESPACE="p7-main-saf-owned-v3";
+    static final String NAMESPACE="p7-main-saf-owned-v4", PUBLICATION_LOCK="publication.lock";
     static final String AUTHORITY=TEST+".p7-main-saf-v3", CONTROL=TEST+".p7-main-saf-control-v4";
     static final String PROFILE="p7-main-saf-framework-v4";
     static final int MAX=2*1024*1024, JSON_MAX=16384, MAX_RUNS=16, MAX_FILES=20;
@@ -37,6 +41,7 @@ final class P7MainSafLeaseV3 {
         "sourceGuardSha256","profileSha256","rootApprovalSha256","transportContractReviewSha256",
         "serialSha256","adbSha256","expiresWallMillis","expectedPayloadBytes","expectedPayloadSha256","sourceProducerProofSha256")));
     static final Set<String> NAMES=Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        PUBLICATION_LOCK,
         "controller-owner.pending","controller-owner.json","document-owner.pending","document-owner.json",
         "scope.claimed","intent.pending","intent.json","scope.pending","scope.json","receipt.pending","receipt.json",
         "output.pending","output.bin","input.pending","input.bin","payload.claimed",
@@ -54,14 +59,14 @@ final class P7MainSafLeaseV3 {
         "BOUND","BYTE_BOUND","CERTIFICATE","CHANGED","CLAIM","COMPONENT",
         "CREATE","CREATE_REQUIRED","DIRECTORY","DOCS_PACKAGE","DOCS_RESOLVER","DOCS_UID",
         "DOCUMENT_ID","EVENT","EXPIRED","EXPORT_EXPECTATION","EXPORT_MODE","FD_DEADLINE",
-        "FD_INVALID","FD_OWNER_EXISTS","FILE","FILE_BOUND","FOREIGN_FILE","GRANT_CALLER",
+        "FD_INVALID","FD_OWNER_EXISTS","FD_CLOSE_UNKNOWN","FILE","FILE_BOUND","FOREIGN_FILE","GRANT_CALLER",
         "HASH","IMPORT_EXPECTATION","IMPORT_MODE","IMPORT_NOT_COMMITTED","IMPORT_SNAPSHOT","INODE",
         "INPUT_MODE","KEYS","KIND","LINK_PAIR","LIST_CALLER","METADATA_BOUND",
         "METADATA_READ_BOUND","METHOD","MODE","OPEN","OPERATION","OWNER_REPLACED",
         "OWNER_UNKNOWN","PARENT","PARTIAL","PAYLOAD_ACK","PAYLOAD_ACK_FILE","PAYLOAD_BOUND",
         "PAYLOAD_SHA","PAYLOAD_SIZE","PLATFORM_DEVICE","PLATFORM_DIRECTORY","PLATFORM_FILES_PATH","PLATFORM_GID",
         "PLATFORM_IDENTITY","PLATFORM_MODE","PLATFORM_NAMESPACE","PLATFORM_PACKAGE","PLATFORM_PATH_CHANGED","PRIMITIVE",
-        "PROCESS","PROCESS_BOUND","PROTOCOL","RECEIPT","RELIABLE_PIPE_REQUIRED","RUN",
+        "PROCESS","PROCESS_BOUND","PROTOCOL","PUBLICATION_BUSY","PUBLICATION_LOCK","PUBLICATION_TARGET","FINAL_EXISTS","RECEIPT","RELIABLE_PIPE_REQUIRED","RUN",
         "RUN_BOUND","SCOPE","TEST_IDENTITY","TYPE","UID","URI",
         "URI_ALIAS","UUID"
     )));
@@ -236,60 +241,250 @@ final class P7MainSafLeaseV3 {
         long total=0;Set<String> result=new TreeSet<>();for(String name:names) {
             if(!NAMES.contains(name)||!result.add(name))throw reject("FOREIGN_FILE");
             StructStat st=Os.lstat(new File(folder,name).getPath());regular(st);
+            if(name.equals(PUBLICATION_LOCK))publicationLockFile(st);
             if(st.st_size<0||st.st_size>(payloadName(name)?MAX:JSON_MAX))throw reject("BOUND");total+=st.st_size;
         }
+        if(!result.contains(PUBLICATION_LOCK))throw reject("PUBLICATION_LOCK");
         if(total>RUN_MAX)throw reject("BYTE_BOUND");return result;
     }
-    /** Metadata-only visibility check. A crash during link/unlink may leave nlink=2;
-     * that exact partial pair is retained and hidden, not parsed or presented as complete. */
+    /** Metadata-only visibility check in v4. Pending bytes remain hidden. No v3 link-pair
+     * recovery/adoption exists, and v4 never creates a second link to a pending inode. */
     static boolean publishedCandidate(File folder) throws Exception {
         directory(folder);String[] listed=folder.list();if(listed==null||listed.length>MAX_FILES)throw reject("FILE_BOUND");
-        Set<String> names=new HashSet<>(Arrays.asList(listed));Set<String> chargedPairs=new HashSet<>();long total=0;boolean pending=false;
+        Set<String> names=new HashSet<>(Arrays.asList(listed));long total=0;boolean pending=false;
         for(String name:names) {
             if(!NAMES.contains(name))throw reject("FOREIGN_FILE");StructStat st=Os.lstat(new File(folder,name).getPath());
-            if(!OsConstants.S_ISREG(st.st_mode)||st.st_uid!=Process.myUid()||(st.st_mode&0777)!=0600||st.st_nlink<1||st.st_nlink>2)throw reject("FILE");
-            if(st.st_size<0||st.st_size>(payloadName(name)?MAX:JSON_MAX))throw reject("BOUND");boolean charge=true;
+            regular(st);if(name.equals(PUBLICATION_LOCK))publicationLockFile(st);
+            if(st.st_size<0||st.st_size>(payloadName(name)?MAX:JSON_MAX))throw reject("BOUND");
             if(name.endsWith(".pending"))pending=true;
-            if(st.st_nlink==2) {
-                String peer;
-                if(name.equals("output.pending"))peer="output.bin";
-                else if(name.equals("output.bin"))peer="output.pending";
-                else if(name.equals("input.pending"))peer="input.bin";
-                else if(name.equals("input.bin"))peer="input.pending";
-                else peer=name.endsWith(".pending")?name.substring(0,name.length()-8)+".json":name.endsWith(".json")?name.substring(0,name.length()-5)+".pending":null;
-                if(peer==null||!names.contains(peer))throw reject("LINK_PAIR");same(st,Os.lstat(new File(folder,peer).getPath()));pending=true;
-                // Only this verified exact two-name link pair shares a byte charge.
-                // Every pathname still counts toward MAX_FILES and is checked independently.
-                String pair=name.compareTo(peer)<0?name+":"+peer:peer+":"+name;
-                charge=chargedPairs.add(pair);
-            }
-            if(charge)total+=st.st_size;
+            total+=st.st_size;
         }
         if(total>RUN_MAX)throw reject("BYTE_BOUND");
-        return !pending&&names.containsAll(Arrays.asList("scope.claimed","intent.json","scope.json","receipt.json"));
+        return !pending&&names.containsAll(Arrays.asList(PUBLICATION_LOCK,"scope.claimed","intent.json","scope.json","receipt.json"));
+    }
+    /** Os.open returns caller-owned raw FDs. Android's public FD stream constructors
+     * borrow that SAME object: closing their wrapper/channel does not close this FD.
+     * Register the owner before acquisition. A close exception is UNKNOWN and is never
+     * retried; retain the exact owner/object until process exit, not a reusable FD number. */
+    private static final Set<OwnedRawFd> RETAINED_RAW_FDS=ConcurrentHashMap.newKeySet();
+    private static final class OwnedRawFd implements AutoCloseable {
+        FileDescriptor fd;boolean closeAttempted,closed;
+        private OwnedRawFd(){RETAINED_RAW_FDS.add(this);}
+        static OwnedRawFd open(File file,int flags,int mode) throws Exception {
+            OwnedRawFd owner=new OwnedRawFd();
+            try {owner.fd=Os.open(file.getPath(),flags,mode);return owner;}
+            catch(Exception|Error failure) {RETAINED_RAW_FDS.remove(owner);throw failure;}
+        }
+        @Override public synchronized void close() throws Exception {
+            if(closeAttempted) {if(!closed)throw reject("FD_CLOSE_UNKNOWN");return;}
+            closeAttempted=true;
+            // Os.close consumes this exact object. Do not test a recycled FD number or
+            // retry EINTR/other errors; no successful flag/token release on an exception.
+            if(fd!=null)Os.close(fd);
+            closed=true;RETAINED_RAW_FDS.remove(this);
+        }
+    }
+    /** Hold a duplicated PFD until the original raw FD has actually closed. If that
+     * close fails, this result was never returned to Binder and must be closed here.
+     * Its failed close is likewise retained, single-attempt, and suppressed by TWR. */
+    private static final Set<ReturnedParcel> RETAINED_RETURN_FDS=ConcurrentHashMap.newKeySet();
+    private static final class ReturnedParcel implements AutoCloseable {
+        ParcelFileDescriptor value;boolean transferred,closeAttempted,closed;
+        ReturnedParcel(){RETAINED_RETURN_FDS.add(this);}
+        ParcelFileDescriptor transfer() throws Exception {
+            if(value==null||transferred||closeAttempted)throw reject("FD_OWNER_EXISTS");
+            RETAINED_RETURN_FDS.remove(this);transferred=true;return value;
+        }
+        @Override public synchronized void close() throws Exception {
+            if(transferred)return;
+            if(closeAttempted) {if(!closed)throw reject("FD_CLOSE_UNKNOWN");return;}
+            closeAttempted=true;
+            if(value!=null)value.close();
+            closed=true;RETAINED_RETURN_FDS.remove(this);
+        }
     }
     static void writeNew(File file,byte[] bytes) throws Exception {
-        if(bytes.length>JSON_MAX)throw reject("BOUND");directory(file.getParentFile());
-        FileDescriptor fd=Os.open(file.getPath(),OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_EXCL|OsConstants.O_NOFOLLOW,0600);
-        try(FileOutputStream out=new FileOutputStream(fd)) {
+        if(bytes.length>JSON_MAX)throw reject("BOUND");
+        if(file.getName().equals(PUBLICATION_LOCK))throw reject("PUBLICATION_LOCK");
+        directory(file.getParentFile());
+        try(OwnedRawFd owned=OwnedRawFd.open(file,OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_EXCL|OsConstants.O_NOFOLLOW,0600);
+            FileOutputStream out=new FileOutputStream(owned.fd)) {
+            FileDescriptor fd=owned.fd;
             StructStat opened=Os.fstat(fd);regular(opened);same(opened,Os.lstat(file.getPath()));out.write(bytes);out.getFD().sync();same(Os.fstat(fd),Os.lstat(file.getPath()));
-        }
+        } // borrowed wrapper first, then the original raw FD; both closes must succeed
         syncDirectory(file.getParentFile());
     }
-    static void publish(File pending,File finalFile) throws Exception {
-        regular(Os.lstat(pending.getPath()));Os.link(pending.getPath(),finalFile.getPath());
-        StructStat a=Os.lstat(pending.getPath()),b=Os.lstat(finalFile.getPath());same(a,b);
-        if(!OsConstants.S_ISREG(a.st_mode)||a.st_uid!=Process.myUid()||a.st_nlink!=2||(a.st_mode&0777)!=0600)throw reject("LINK_PAIR");
-        Files.delete(pending.toPath());syncDirectory(finalFile.getParentFile());regular(Os.lstat(finalFile.getPath()));
+    // Reserve this JVM's run BEFORE opening any lock inode FD. Closing another FD for
+    // that inode can release POSIX locks; even a failed overlapping tryLock must not do so.
+    private static final Map<String,Object> PUBLICATIONS=new ConcurrentHashMap<>();
+    /** Lock-only admission: generic regular()/same() keep their existing contracts. */
+    private static void publicationLockFile(StructStat st) throws Exception {
+        regular(st);
+        if(st.st_gid!=Process.myUid()||(st.st_mode&07777)!=0600||st.st_size!=0)throw reject("PUBLICATION_LOCK");
+    }
+    private static void samePublicationLock(StructStat expected,StructStat actual) throws Exception {
+        publicationLockFile(expected);publicationLockFile(actual);same(expected,actual);
+        if(expected.st_gid!=actual.st_gid||expected.st_mtime!=actual.st_mtime||expected.st_ctime!=actual.st_ctime)throw reject("PUBLICATION_LOCK");
+    }
+    /** The only lock creator. Reserve before the initial O_EXCL FD open as well.
+     * Intent is not published yet, so another legitimate process cannot target this run.
+     * There is no inode to advisory-lock before creation; later users take publication(). */
+    static void createPublicationLock(File folder) throws Exception {
+        directory(folder);String key=folder.getAbsolutePath();Object token=new Object();
+        if(PUBLICATIONS.putIfAbsent(key,token)!=null)throw reject("PUBLICATION_BUSY");
+        FileDescriptor fd=null;Throwable failure=null;
+        try {
+            File file=new File(folder,PUBLICATION_LOCK);
+            fd=Os.open(file.getPath(),OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_EXCL|OsConstants.O_NOFOLLOW,0600);
+            StructStat created=Os.fstat(fd);publicationLockFile(created);samePublicationLock(created,Os.lstat(file.getPath()));
+            Os.fsync(fd);samePublicationLock(created,Os.fstat(fd));samePublicationLock(created,Os.lstat(file.getPath()));
+            syncDirectory(folder);samePublicationLock(created,Os.fstat(fd));samePublicationLock(created,Os.lstat(file.getPath()));
+        } catch(Exception|Error rejected) {failure=rejected;}
+        boolean lockFdClosed=false;
+        try {if(fd!=null)Os.close(fd);lockFdClosed=true;}
+        catch(Exception|Error cleanup) {failure=publicationFailure(failure,cleanup);}
+        // Unknown lock-FD close retains this run's reservation until process exit.
+        if(lockFdClosed)PUBLICATIONS.remove(key,token);
+        throwPublicationFailure(failure);
+    }
+    private static Throwable publicationFailure(Throwable primary,Throwable cleanup) {
+        if(primary==null)return cleanup;
+        if(primary!=cleanup)primary.addSuppressed(cleanup);
+        return primary;
+    }
+    private static void throwPublicationFailure(Throwable failure) throws Exception {
+        if(failure==null)return;
+        if(failure instanceof Error)throw (Error)failure;
+        throw (Exception)failure;
+    }
+    static final class Publication implements AutoCloseable {
+        final File folder,lockFile;final String key;final Object token;
+        final FileDescriptor directoryFd;final OwnedRawFd lockFd;final FileOutputStream stream;final FileLock lock;
+        final StructStat directoryStat,lockStat;boolean closed;
+        private Publication(File folder,String key,Object token,FileDescriptor directoryFd,OwnedRawFd lockFd,FileOutputStream stream,FileLock lock,
+                            StructStat directoryStat,StructStat lockStat) {
+            this.folder=folder;this.key=key;this.token=token;this.directoryFd=directoryFd;this.lockFd=lockFd;this.stream=stream;this.lock=lock;
+            this.directoryStat=directoryStat;this.lockStat=lockStat;lockFile=new File(folder,PUBLICATION_LOCK);
+        }
+        void check() throws Exception {
+            if(closed||PUBLICATIONS.get(key)!=token||!lock.isValid()||lock.isShared())throw reject("PUBLICATION_LOCK");
+            directory(folder);same(directoryStat,Os.fstat(directoryFd));same(directoryStat,Os.lstat(folder.getPath()));
+            if(lockFd.closed||lockFd.closeAttempted||stream.getFD()!=lockFd.fd)throw reject("PUBLICATION_LOCK");
+            StructStat fd=Os.fstat(lockFd.fd),path=Os.lstat(lockFile.getPath());samePublicationLock(lockStat,fd);samePublicationLock(fd,path);
+            if(fd.st_size!=0||path.st_size!=0||fd.st_mtime!=lockStat.st_mtime||fd.st_ctime!=lockStat.st_ctime)throw reject("PUBLICATION_LOCK");
+        }
+        void sync() throws Exception {check();Os.fsync(directoryFd);check();}
+        @Override public void close() throws Exception {
+            if(closed)return;
+            Throwable failure=null;
+            try {check();}catch(Exception|Error rejected) {failure=rejected;}
+            closed=true;boolean lockReleased=false,streamClosed=false,lockFdClosed=false;
+            try {lock.release();lockReleased=true;}
+            catch(Exception|Error cleanup) {failure=publicationFailure(failure,cleanup);}
+            try {stream.close();streamClosed=true;}
+            catch(Exception|Error cleanup) {failure=publicationFailure(failure,cleanup);}
+            // The public FileOutputStream(FileDescriptor) is not the raw FD owner.
+            try {lockFd.close();lockFdClosed=lockFd.closed;}
+            catch(Exception|Error cleanup) {failure=publicationFailure(failure,cleanup);}
+            try {Os.close(directoryFd);}
+            catch(Exception|Error cleanup) {failure=publicationFailure(failure,cleanup);}
+            // Even a subsequent successful close does not re-admit a failed release.
+            // At most MAX_RUNS run reservations can be poisoned in this namespace.
+            if(lockReleased&&streamClosed&&lockFdClosed)PUBLICATIONS.remove(key,token);
+            throwPublicationFailure(failure);
+        }
+    }
+    static Publication publication(File folder) throws Exception {
+        directory(folder);String key=folder.getAbsolutePath();Object token=new Object();
+        if(PUBLICATIONS.putIfAbsent(key,token)!=null)throw reject("PUBLICATION_BUSY");
+        FileDescriptor directoryFd=null;OwnedRawFd lockFd=null;FileOutputStream stream=null;FileLock lock=null;
+        try {
+            directoryFd=Os.open(folder.getPath(),OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
+            StructStat directoryStat=Os.fstat(directoryFd);same(directoryStat,Os.lstat(folder.getPath()));directory(folder);
+            File lockFile=new File(folder,PUBLICATION_LOCK);StructStat before=Os.lstat(lockFile.getPath());publicationLockFile(before);
+            lockFd=OwnedRawFd.open(lockFile,OsConstants.O_RDWR|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
+            stream=new FileOutputStream(lockFd.fd); // borrowed exact FD; no dup, write or truncate
+            if(stream.getFD()!=lockFd.fd)throw reject("PUBLICATION_LOCK");
+            samePublicationLock(before,Os.fstat(lockFd.fd));samePublicationLock(before,Os.lstat(lockFile.getPath()));
+            try {lock=stream.getChannel().tryLock();}catch(OverlappingFileLockException busy){throw reject("PUBLICATION_BUSY");}
+            if(lock==null)throw reject("PUBLICATION_BUSY"); // no wait, retry, replacement or replay
+            Publication result=new Publication(folder,key,token,directoryFd,lockFd,stream,lock,directoryStat,before);result.check();return result;
+        } catch(Exception|Error failure) {
+            boolean lockReleased=lock==null,streamClosed=stream==null,lockFdClosed=lockFd==null;
+            try {if(lock!=null)lock.release();lockReleased=true;}
+            catch(Exception|Error cleanup) {publicationFailure(failure,cleanup);}
+            try {if(stream!=null)stream.close();streamClosed=true;}
+            catch(Exception|Error cleanup) {publicationFailure(failure,cleanup);}
+            try {if(lockFd!=null)lockFd.close();lockFdClosed=lockFd==null||lockFd.closed;}
+            catch(Exception|Error cleanup) {publicationFailure(failure,cleanup);}
+            try {if(directoryFd!=null)Os.close(directoryFd);}
+            catch(Exception|Error cleanup) {publicationFailure(failure,cleanup);}
+            // A lock release/FD close exception poisons this run; never retry it.
+            if(lockReleased&&streamClosed&&lockFdClosed)PUBLICATIONS.remove(key,token);
+            throw failure;
+        }
+    }
+    /** A read-only witness is joined to the ORIGINAL live writer before that writer closes.
+     * It stays open through final identity checks and directory fsync; it never escapes. */
+    static final class Pending implements AutoCloseable {
+        final File file;final FileDescriptor fd;final StructStat original;boolean closed;
+        private Pending(File file,FileDescriptor fd,StructStat original){this.file=file;this.fd=fd;this.original=original;}
+        void check(File path,boolean renamed) throws Exception {
+            if(closed)throw reject("INODE");StructStat current=Os.fstat(fd),named=Os.lstat(path.getPath());regular(current);regular(named);
+            same(original,current);same(current,named);
+            if(current.st_size!=original.st_size||named.st_size!=original.st_size||current.st_mtime!=original.st_mtime||
+                named.st_mtime!=original.st_mtime||!renamed&&(current.st_ctime!=original.st_ctime||named.st_ctime!=original.st_ctime))throw reject("CHANGED");
+        }
+        @Override public void close() throws Exception {if(!closed){closed=true;Os.close(fd);}}
+    }
+    static Pending pendingWitness(File pending,FileDescriptor originalWriter,long size) throws Exception {
+        if(!NAMES.contains(pending.getName())||!pending.getName().endsWith(".pending"))throw reject("PUBLICATION_TARGET");
+        directory(pending.getParentFile());StructStat original=Os.fstat(originalWriter);regular(original);same(original,Os.lstat(pending.getPath()));
+        if(size<0||size>(payloadName(pending.getName())?MAX:JSON_MAX)||original.st_size!=size)throw reject("BOUND");
+        FileDescriptor fd=Os.open(pending.getPath(),OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
+        try {Pending result=new Pending(pending,fd,original);result.check(pending,false);same(original,Os.fstat(originalWriter));return result;}
+        catch(Exception|Error failure){try {Os.close(fd);}catch(Exception cleanup){failure.addSuppressed(cleanup);}throw failure;}
+    }
+    static void publish(Pending pending,File finalFile) throws Exception {
+        String name=pending.file.getName();String expected=payloadName(name)?name.substring(0,name.length()-8)+".bin":name.substring(0,name.length()-8)+".json";
+        if(!pending.file.getParentFile().equals(finalFile.getParentFile())||!NAMES.contains(finalFile.getName())||!expected.equals(finalFile.getName()))throw reject("PUBLICATION_TARGET");
+        try(Publication held=publication(finalFile.getParentFile())) {
+            held.check();pending.check(pending.file,false);
+            // Only a definite ENOENT is absence. Any existing type, including a symlink,
+            // rejects. Os.rename is atomic but has NO kernel NOREPLACE guarantee: all
+            // admitted writers must hold this guard; hostile same-UID writers are excluded.
+            try {Os.lstat(finalFile.getPath());throw reject("FINAL_EXISTS");}
+            catch(ErrnoException absent){if(absent.errno!=OsConstants.ENOENT)throw absent;}
+            held.check();pending.check(pending.file,false);Os.rename(pending.file.getPath(),finalFile.getPath());
+            pending.check(finalFile,true);held.sync();pending.check(finalFile,true);held.check();
+        }
+    }
+    static void atomicBytes(File folder,String stem,byte[] bytes) throws Exception {
+        if(bytes.length>JSON_MAX)throw reject("BOUND");File file=new File(folder,stem+".pending");
+        if(!NAMES.contains(file.getName())||payloadName(file.getName()))throw reject("PUBLICATION_TARGET");
+        directory(folder);Pending pending=null;
+        try {
+            try(OwnedRawFd owned=OwnedRawFd.open(file,OsConstants.O_WRONLY|OsConstants.O_CREAT|OsConstants.O_EXCL|OsConstants.O_NOFOLLOW,0600);
+                FileOutputStream out=new FileOutputStream(owned.fd)) {
+                FileDescriptor fd=owned.fd;
+                regular(Os.fstat(fd));same(Os.fstat(fd),Os.lstat(file.getPath()));out.write(bytes);out.getFD().sync();
+                pending=pendingWitness(file,fd,bytes.length);
+            } // borrowed wrapper AND original writable raw FD closed before publication
+            syncDirectory(folder);
+            try(Pending held=pending){publish(held,new File(folder,stem+".json"));}
+        }catch(Exception|Error failure){if(pending!=null)try {pending.close();}catch(Exception cleanup){failure.addSuppressed(cleanup);}throw failure;}
     }
     static void atomicJson(File folder,String stem,JSONObject value) throws Exception {
         byte[] bytes=value.toString().getBytes(StandardCharsets.UTF_8);if(bytes.length>JSON_MAX)throw reject("BOUND");
-        File pending=new File(folder,stem+".pending");writeNew(pending,bytes);publish(pending,new File(folder,stem+".json"));
+        atomicBytes(folder,stem,bytes);
     }
     static byte[] read(File file,int cap) throws Exception {
+        // Audit reads the held guard's verified empty lock without opening another FD.
+        if(file.getName().equals(PUBLICATION_LOCK))throw reject("PUBLICATION_LOCK");
         StructStat before=Os.lstat(file.getPath());regular(before);if(before.st_size<0||before.st_size>cap)throw reject("BOUND");
-        FileDescriptor fd=Os.open(file.getPath(),OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
-        try(FileInputStream in=new FileInputStream(fd);ByteArrayOutputStream out=new ByteArrayOutputStream()) {
+        try(OwnedRawFd owned=OwnedRawFd.open(file,OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
+            FileInputStream in=new FileInputStream(owned.fd);ByteArrayOutputStream out=new ByteArrayOutputStream()) {
+            FileDescriptor fd=owned.fd;
             same(before,Os.fstat(fd));byte[] bytes=new byte[65536];int n,total=0;
             while((n=in.read(bytes))!=-1){total+=n;if(total>cap)throw reject("BOUND");out.write(bytes,0,n);}Arrays.fill(bytes,(byte)0);
             StructStat after=Os.fstat(fd);regular(after);same(before,after);same(after,Os.lstat(file.getPath()));
@@ -298,9 +493,15 @@ final class P7MainSafLeaseV3 {
     }
     static JSONObject json(File folder,String name) throws Exception {return new JSONObject(new String(read(new File(folder,name),JSON_MAX),StandardCharsets.UTF_8));}
     static ParcelFileDescriptor immutableFd(File file) throws Exception {
+        if(file.getName().equals(PUBLICATION_LOCK))throw reject("PUBLICATION_LOCK");
         StructStat before=Os.lstat(file.getPath());regular(before);if(before.st_size>JSON_MAX)throw reject("BOUND");
-        FileDescriptor fd=Os.open(file.getPath(),OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0);
-        try {same(before,Os.fstat(fd));same(before,Os.lstat(file.getPath()));return ParcelFileDescriptor.dup(fd);}finally {Os.close(fd);}
+        try(ReturnedParcel result=new ReturnedParcel()) {
+            try(OwnedRawFd owned=OwnedRawFd.open(file,OsConstants.O_RDONLY|OsConstants.O_NOFOLLOW|OsConstants.O_NONBLOCK,0)) {
+                same(before,Os.fstat(owned.fd));same(before,Os.lstat(file.getPath()));
+                result.value=ParcelFileDescriptor.dup(owned.fd);
+            } // a raw close failure cannot discard an already-duplicated, unreturned PFD
+            return result.transfer();
+        }
     }
     private static final String PROCESS_NONCE=UUID.randomUUID().toString();
     static JSONObject facts(String processName) throws Exception {

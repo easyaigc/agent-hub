@@ -24,6 +24,13 @@ internal object NativeVoiceRawOwnership {
         require(file.name.endsWith(".wav"));val id=file.name.removeSuffix(".wav");require(UUID.fromString(id).toString()==id)
         return gate.writer(lock(requireNotNull(file.parentFile)),id)
     }
+    /** F59 provider/store work participates in the existing installation migration gate.
+     * A unique local record permits nested F59 transactions; migration freeze remains exclusive. */
+    internal fun computerFilesWriter(storage: NativeSessionStorage): NativeVoiceRawGate.Writer {
+        requireIo();storage.requireRawWriterOwner()
+        val raw=File(requireNotNull(File(storage.coordinationKey).parentFile),"voice-recordings-v1")
+        return gate.computerFileWriter(lock(raw),"computer-files:"+UUID.randomUUID())
+    }
     fun requireRoot(storage: NativeSessionStorage,raw: File) {
         val parent=requireNotNull(File(storage.coordinationKey).parentFile).canonicalFile
         require(raw.absoluteFile.parentFile.canonicalFile==parent&&raw.canonicalFile==File(parent,"voice-recordings-v1"))

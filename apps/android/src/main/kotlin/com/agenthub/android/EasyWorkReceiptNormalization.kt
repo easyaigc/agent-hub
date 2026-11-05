@@ -22,9 +22,21 @@ internal object EasyWorkReceiptNormalization {
             require(rawFiles is JSONArray) { "\u7535\u8111\u56de\u6267\u683c\u5f0f\u65e0\u6548" }
             (0 until rawFiles.length()).map { index -> rawFiles.get(index).also { require(it is String) { "\u7535\u8111\u56de\u6267\u683c\u5f0f\u65e0\u6548" } } as String }
         }
-        return DeliveryReceipt(hostId,threadId,operationId,value.opt("state") as? String ?: defaultState,
-            value.opt("runId") as? String ?: value.opt("turnId") as? String ?: fallbackTurnId,
-            if(value.has("error"))text("error") else fallbackError,text("supersededByTurnId"),text("text"),files,
+        var state=value.opt("state") as? String ?: defaultState
+        var turn=value.opt("runId") as? String ?: value.opt("turnId") as? String ?: fallbackTurnId
+        var error: String?=null;var rejectedGuidance=false
+        // A completed RPC can have refused guidance for an old run. The expected
+        // run is only a precondition; it is not evidence that guidance executed.
+        if(value.has("accepted")||value.opt("status") in listOf("accepted","stale","inactive")) {
+            val accepted=value.opt("accepted");val status=value.opt("status")
+            require(accepted is Boolean&&status is String&&
+                (if(accepted)status=="accepted" else status in listOf("stale","inactive"))) { "电脑回执格式无效" }
+            state=if(accepted)"submitted" else "failed"
+            if(!accepted) {turn=null;rejectedGuidance=true;error="原任务已变化或结束，追加未提交。"}
+        }
+        if(!rejectedGuidance)error=if(value.has("error"))text("error") else fallbackError
+        return DeliveryReceipt(hostId,threadId,operationId,state,turn,
+            error,text("supersededByTurnId"),text("text"),files,
             text("noticeContext"),text("queueSource"),flag("queuePresent"),flag("canExecuteNow"),text("queueDisposition"),text("queueSyncError"),text("laterTurnId"))
     }
 }

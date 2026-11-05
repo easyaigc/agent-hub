@@ -3,7 +3,9 @@
 
 One controller preparation, exact original receipt/owner join, one original Native export,
 provider receive ACK and stable audit join. The distinct parent-v1 SDK admits only the
-exact protected platform files container; Native protocol stays framework-v4. IMPORT
+exact protected platform files container and new namespace-v4 locked publication;
+Native protocol stays framework-v4. Fresh explicit-FD Root/SDK/runtime purposes
+exclude old v3 UNKNOWN scopes. IMPORT
 execution has no CLI/admission path.
 Local CLI actual waits/dual EOF are mandatory; raw remote shell-v2 exit frames are not
 exposed by stock adb and are reported unobserved. Immutable original provider receipts
@@ -31,14 +33,14 @@ sys.dont_write_bytecode = True
 from typing import Optional
 
 PROFILE = "p7-main-saf-framework-v4"
-SDK_PROFILE = 'p7-main-saf-platform-alias-ax-v1'
+SDK_PROFILE = 'p7-main-saf-explicit-fd-v1'
 APP = "com.easyai.agenthub.android.acceptance"
 TEST = APP + ".test"
 CONTROL = TEST + ".p7-main-saf-control-v4"
 DOCUMENTS = TEST + ".p7-main-saf-v3"
 CONTROLLER_PROCESS = TEST + ":p7MainSafControlV4"
 DOCUMENT_PROCESS = TEST + ":p7MainSafV3"
-NAMESPACE = "files/p7-main-saf-owned-v3"
+NAMESPACE = "files/p7-main-saf-owned-v4"
 CAP, PAYLOAD_CAP, STDERR_CAP = 16384, 2 * 1024 * 1024, 2 * 1024 * 1024
 ZERO = "0" * 64
 INTENT_KEYS = frozenset(("schema", "profile", "run", "operationId", "kind", "appUid", "testUid", "docsUid", "docsPackage", "bootUuid",
@@ -402,7 +404,7 @@ def stable_audits(intent, raw_a, raw_b, controller_observed, receiver_observed, 
     v = intent.value()
     require(type(consumer_closed) is bool and (not consumer_closed or v["kind"] == "IMPORT"), "Closed audit stage")
     name = "input.bin" if v["kind"] == "IMPORT" else "output.bin"
-    expected_files = {"controller-owner.json", "scope.claimed", "intent.json", "scope.json", "receipt.json", "payload.claimed", name, "payload-ack.claimed", "payload-ack.json"}
+    expected_files = {"publication.lock", "controller-owner.json", "scope.claimed", "intent.json", "scope.json", "receipt.json", "payload.claimed", name, "payload-ack.claimed", "payload-ack.json"}
     if v["kind"] == "EXPORT":
         expected_files |= {"document-owner.json", "create.claimed", "create.json", "open.claimed", "open.json"}
     if consumer_closed:
@@ -418,8 +420,8 @@ def stable_audits(intent, raw_a, raw_b, controller_observed, receiver_observed, 
         for filename, pin in result["files"].items():
             require(set(pin) == {"bytes", "sha256"} and type(pin["bytes"]) is int and 0 <= pin["bytes"] <= (PAYLOAD_CAP if filename == name else CAP), "Bounded audit file")
             sha(pin["sha256"])
-            if filename.endswith(".claimed"):
-                require(pin == {"bytes": 0, "sha256": digest(b"")}, "Empty exclusive event claim")
+            if filename.endswith(".claimed") or filename == "publication.lock":
+                require(pin == {"bytes": 0, "sha256": digest(b"")}, "Empty exclusive event claim or stable publication lock")
         require(result["documents"]["intent.json"] == v and result["files"]["intent.json"] == {"bytes": len(intent.raw), "sha256": digest(intent.raw)}, "Immutable intent bytes")
         require(result["documents"]["scope.json"] == {"schema": 1, "run": v["run"], "kind": v["kind"], "appUid": v["appUid"], "docsUid": v["docsUid"]}, "Exact original scope")
         receipt(intent, canonical(result["documents"]["receipt.json"]), controller_observed)
@@ -795,6 +797,23 @@ RUNTIME_KEYS = {"schema", "purpose", "ownedRuntimeId", "run", "bootUuid", "seria
     "sourceGuardSha256", "sdkSealSha256", "adbSha256", "adbVersionSha256", "expiresWallMillis"}
 PROTECTED_IDS = frozenset(("fab4fe68-408f-4308-8157-a95fedc1a97f", "863ec69e-e647-4f5e-bdd0-5b294b9823ac", "ece33c64-7446-4fb6-8d69-deb971dd91da", "01a17d28-2dfd-74c2-99fd-70e58e239086"))
 
+# Preserve the current source84 unknown preparation and never-dispatched Native intent.
+# New storage/purpose is not permission to reuse or query an old operation/run.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("8e4d4440-8931-4c96-95a6-5e6ae7818980",
+    "8f9b8227-b102-470b-aba6-fddc411a7497", "9201e7bd-e9db-42c9-9c83-f9b9bdcd6eff"))
+
+
+# Preserve Source85 prepared-but-failed picker and its original immutable intent.
+# A filename phase fix only admits a fresh run; never resume or replay these IDs.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("835a58e0-d421-4f51-bcf2-82467fa68ba8",
+    "d6e02b7b-6313-4a83-8ad3-64315bd2a76c", "13543e28-9178-4439-83d7-7352ee05a4f0"))
+
+
+# Preserve Source86's original written payload, ACK and failed Main/owner result.
+# Fresh explicit-FD admission must never resume or replay these operations.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("0b2dd747-2a70-45fe-b348-772f6d634a12",
+    "880e07d9-42cf-48da-ae90-399d92cf98ce", "e6cdc5a7-b83e-4846-8299-e68f1ff399cf"))
+
 
 def private_bytes(path, cap):
     path = Path(path); before = path.lstat()
@@ -825,7 +844,7 @@ def root_approval(args):
     raw = private_bytes(Path(args.root_approval), CAP); sha(args.root_approval_sha256)
     require(digest(raw) == args.root_approval_sha256, "External immutable Root approval differs")
     root = exact_json(raw); require(type(root) is dict and set(root) == ROOT_KEYS, "Exact framework EXPORT Root schema")
-    require(root["schema"] == "p7-framework-export-root-approval-v4" and root["kind"] == "EXPORT", "EXPORT only; IMPORT lacks producer admission")
+    require(root["schema"] == "p7-framework-export-explicit-fd-root-approval-v1" and root["kind"] == "EXPORT", "EXPORT only; IMPORT lacks producer admission")
     for key in ("operationId", "nativeOperationId", "run", "bootUuid"):
         canonical_uuid(root[key]); require(root[key] not in PROTECTED_IDS, "Protected original scope/operation forbidden")
     require(root["operationId"] != root["nativeOperationId"] != root["run"] and root["operationId"] != root["run"], "Distinct original operations/run")
@@ -845,7 +864,7 @@ def root_approval(args):
     require(digest(runtime_raw) == root["runtimeAdmissionSha256"], "Root-owned actual runtime admission pin")
     runtime = exact_json(runtime_raw)
     require(set(runtime) == RUNTIME_KEYS and runtime["schema"] == "p7-framework-api33-runtime-admission-v1" and
-        runtime["purpose"] == "p7-main-saf-framework-export-v4" and runtime["api"] == 33 and type(runtime["api"]) is int and runtime["ready"] is True,
+        runtime["purpose"] == "p7-main-saf-framework-export-explicit-fd-v1" and runtime["api"] == 33 and type(runtime["api"]) is int and runtime["ready"] is True,
         "Exact owned API33 runtime purpose/readiness")
     canonical_uuid(runtime["ownedRuntimeId"])
     for key in RUNTIME_KEYS - {"schema", "purpose", "ownedRuntimeId", "api", "ready"}:
@@ -880,8 +899,8 @@ def admitted(args, root):
     build = _capture.verify_build_bundle(bundle, _first, repo, SDK_PROFILE)
     guard = _first.read_guard(bundle / "source-before.json")
     require(build["sealSha256"] == root["sdkSealSha256"] and digest(canonical(guard)) == root["sourceGuardSha256"] and
-        _first.same(guard, _capture.p7_platform_alias_ax_source_guard(_first, repo, guard["sourceOverlay"])), "Exact60/905 source chain")
-    require(len(guard["inventory"]) == len(guard["sources"]) == 905 and len(guard["sourceOverlay"]) == 60 and
+        _first.same(guard, _capture.p7_explicit_fd_source_guard(_first, repo, guard["sourceOverlay"])), "Exact62/905 source chain")
+    require(len(guard["inventory"]) == len(guard["sources"]) == 905 and len(guard["sourceOverlay"]) == 62 and
         guard["sources"][TOOL] == root["hostToolSha256"] and guard["sources"]["scripts/mobile/android-sdk-capture.py"] == root["captureSelfSha256"], "No old SDK or broad source overlay")
     require(Path(args.adb).resolve() == Path(build["tools"]["adb"]["path"]).resolve() and build["tools"]["adb"]["sha256"] == root["adbSha256"], "Captured actual ADB")
     for role, key in (("app", "appApkSha256"), ("test", "testApkSha256")):
@@ -976,7 +995,7 @@ def native_export(device, args, root, build, intent, prepared_raw, controller):
     persist_json(output / "native-original-exit.json", original_exit)
     persisted = exact_json(device.success(["run-as", APP, "cat", f"files/acceptance/P7-inbox-{root['run']}/main-ui-result.json"]))
     require(persisted == proof, "Independently read exact original Main result differs")
-    # The outer legacy safProviderDirectory display field is not used as a v4 target.
+    # The display field is not an execution target; the bound saf object supplies the actual v4 target.
     persist_json(output / "native-proof.json", proof)
     documents = device.process("documents", phase="after-native")
     require(documents["status"] == "present", "Original document process missing/unknown")
@@ -1055,7 +1074,7 @@ def run_export(args):
         "intentSha256": digest(intent.raw), "receiptSha256": digest(prepared.stdout), "controllerProcess": controller, "remoteEffectConfirmed": True,
         "remoteExitFrameObserved": False, "nonceIndependentRuntimeMeasurement": False})
     # Recheck actual target/source/installed bytes after remote effect and before original Native.
-    require(_first.same(guard, _capture.p7_platform_alias_ax_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Source changed after preparation; no Native input")
+    require(_first.same(guard, _capture.p7_explicit_fd_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Source changed after preparation; no Native input")
     device.snapshot(build); lease_now(root)
     persist_json(output / "native-once.claim", {"run": root["run"], "operationId": root["nativeOperationId"], "selector": NATIVE_SELECTOR})
     proof, original_exit, document_owner = native_export(device, args, root, build, intent, prepared.stdout, controller)
@@ -1077,7 +1096,7 @@ def run_export(args):
     final_documents = device.process("documents", phase="final")
     require(final_controller["status"] == final_documents["status"] == "present" and final_controller["process"] == controller and final_documents["process"] == document_owner,
         "Persistent original provider replaced; do not invent natural exit")
-    require(_first.same(guard, _capture.p7_platform_alias_ax_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Final source drift")
+    require(_first.same(guard, _capture.p7_explicit_fd_source_guard(_first, Path(args.repo).resolve(), guard["sourceOverlay"])), "Final source drift")
     result = {"schema": "p7-framework-export-auxiliary-proof-v4", "status": "passed-auxiliary-API33-export", "run": root["run"], "operationId": root["operationId"],
         "nativeOperationId": root["nativeOperationId"], "rootApprovalSha256": digest(raw), "runtimeAdmissionSha256": digest(runtime_raw),
         "sdkSealSha256": root["sdkSealSha256"], "sourceGuardSha256": root["sourceGuardSha256"], "prepareRemoteEffectConfirmed": True,

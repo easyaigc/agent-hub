@@ -28,7 +28,7 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
     // New framework protocol has its own admission/profile/source seal. Legacy maps stay fixed.
     private val frameworkV4=InstrumentationRegistry.getArguments().getString("migrationMainSafFrameworkV4")=="1"
     // Target instrumentation has a DISTINCT UID: never read/write the runner sandbox here.
-    val providerRelativeDirectory="files/${if(frameworkV4)"p7-main-saf-owned-v3" else "p7-main-saf-owned-v1"}/$run"
+    val providerRelativeDirectory="files/${if(frameworkV4)"p7-main-saf-owned-v4" else "p7-main-saf-owned-v1"}/$run"
     private val title="AH_P7_${run.replace("-","")}"
     private val authority="${test.packageName}.${if(frameworkV4)"p7-main-saf-v3" else "p7-main-saf"}"
     val documentId="p7-${if(kind==NativeMigrationPickerKind.IMPORT)"input" else "output"}-$run"
@@ -54,6 +54,8 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
     private val attemptedSteps=linkedSetOf<Step>()
     private var actionIssued=false
     private var callbackObserved=false
+    // The production create-document launcher supplies this title before our one SET_TEXT.
+    private var filenameInputIssued=false
     private var closed=false
     private val admission: JSONObject
     private val expectedInput: Pair<Long,String>?
@@ -215,7 +217,7 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
             val role=when(key){"directoryTitleId"->"android.widget.TextView";"fileNameId"->"android.widget.EditText";"saveId"->"android.widget.Button";else->return false}
             if(n.className?.toString()!=role)return false
             if(key=="directoryTitleId"&&!breadcrumbRole(n))return false
-            if(key=="fileNameId"&&n.text?.toString()!=filename)return false
+            if(key=="fileNameId"&&n.text?.toString()!=(if(filenameInputIssued)filename else "AgentHub.codexmigration"))return false
             if(key=="saveId"&&(n.text?.toString()!="SAVE"||!n.isClickable||!n.isEnabled))return false
         }
         return n.viewIdResourceName==id(key)&&(if(editable)n.isEditable else !n.isEditable)&&(text==null||n.text?.toString()==text)
@@ -314,6 +316,9 @@ internal class NativeMigrationMainSaf(private val run: String,val kind: NativeMi
                 }
             }
         }
+        // ACTION_SET_TEXT was issued once; subsequent reads must observe the desired text.
+        // This flag is not evidence that the UI accepted it and never permits a retry.
+        if(step==Step.SET_FILENAME){check(!filenameInputIssued);filenameInputIssued=true}
         if(profileV2) {
             if(step==Step.CHOOSE_ROOT)selectedOwnedRootWindow=oldWindow
             if(key in setOf("rootTitleId","documentTitleId"))runtimeFreshActions+=key
@@ -406,8 +411,15 @@ internal object NativeMigrationMainSafMetadata {
         val key="owned-main-ui-draft-$run"
         return JSONObject().put("version",1).put("appearance","light").put("language","en")
             .put("demo",true).put("selected",DemoMobileData.clients.first().id).put("clients",org.json.JSONArray())
-            .put("drafts",JSONObject().put(key,draft)).put("draftVersions",JSONObject().put(key,"owned-main-ui-version"))
-            .put("draftFiles",JSONObject()).put("selectedThreads",JSONObject()).put("expanded",JSONObject()).put("workspaces",JSONObject())
+            // Seed the complete ordinary persisted shape before Main/producer starts. The
+            // existing byte-preservation assertions remain exact; startup/export may persist
+            // empty ordinary domains, so a sparse fixture is not a stable byte baseline.
+            .put("drafts",JSONObject().put(key,draft)).put("selectedThreads",JSONObject())
+            .put("draftVersions",JSONObject().put(key,"owned-main-ui-version"))
+            .put("attachmentImportGenerations",JSONObject()).put("newProjects",JSONObject())
+            .put("draftFiles",JSONObject()).put("photoSources",JSONObject())
+            .put("generation",JSONObject()).put("replyModes",JSONObject()).put("generationPreferences",JSONObject())
+            .put("dismissedReceiptFailures",JSONObject()).put("expanded",JSONObject()).put("sidebar",JSONObject()).put("workspaces",JSONObject())
     }
 }
 
@@ -434,9 +446,10 @@ internal object NativeMigrationMainSafAdmission {
         val legacyKeys=setOf("schema","profile","run","phase","operationId","selector","uid","testUid","docsUid","bootUuid",
             "appApkSha256","testApkSha256","certificateSha256","sdkSealSha256","workspaceReviewSha256","sourceGuardSha256","profileSha256","expiresWallMillis","inputBytes","inputSha256","transportContractReviewSha256")
         val frameworkV4=args.getString("migrationMainSafFrameworkV4")=="1"
+        val producerAppFilesV2=!frameworkV4&&phase=="PRODUCER"&&intent.getString("schema")=="p7-main-saf-producer-admission-v2"
         val keys=if(frameworkV4)legacyKeys+setOf("controllerOperationId","controllerIntentSha256","controllerReceiptSha256","controllerPayloadAckSha256","sourceProducerProofSha256") else legacyKeys
-        check(intent.keys().asSequence().toSet()==keys&&intent.getString("schema")==(if(frameworkV4)"p7-main-saf-admission-v4" else "p7-main-saf-admission-v1"))
-        check(intent.getString("profile")==(if(frameworkV4)"p7-main-saf-framework-v4" else "p7-main-saf-v2"))
+        check(intent.keys().asSequence().toSet()==keys&&intent.getString("schema")==(if(frameworkV4)"p7-main-saf-admission-v4" else if(producerAppFilesV2)"p7-main-saf-producer-admission-v2" else "p7-main-saf-admission-v1"))
+        check(intent.getString("profile")==(if(frameworkV4)"p7-main-saf-framework-v4" else if(producerAppFilesV2)"p7-main-saf-producer-app-files-v2" else "p7-main-saf-v2"))
         if(frameworkV4) {
             check(phase in setOf("EXPORT","IMPORT")) {"No producer or legacy fallback in framework-v4"}
             if(phase=="IMPORT") {
@@ -493,17 +506,172 @@ internal object NativeMigrationMainSafAdmission {
     }
 }
 
+/** APP-only platform-parent binding for a fresh v2 producer scope. Generic private
+ * directories remain canonical, non-symlink, UID/GID-owned 0700. The only alias
+ * admitted is a framework package root through /data/user/0 <-> /data/data. */
+private object NativeMigrationMainSafProducerAppFilesV2 {
+    private const val APP="com.easyai.agenthub.android.acceptance"
+    private const val NAMESPACE="p7-main-saf-producer-app-files-v2"
+    private val protected=setOf(
+        "0b2dd747-2a70-45fe-b348-772f6d634a12","880e07d9-42cf-48da-ae90-399d92cf98ce","e6cdc5a7-b83e-4846-8299-e68f1ff399cf",
+        "2b400f42-3e37-49fb-90eb-469846cd4d41","9afd6f96-15ae-4f0a-801c-53b62ec848ae","39fe4fc4-582a-47f8-9142-3ac3379fdeed",
+        "158ce0d8-9e4c-4f24-abf7-8515d1f64110","84168274-cb1b-466e-b454-57b679ad2e4f","1e2f60d2-1936-4ae1-bc99-bb16ef21e648")
+    private data class Platform(val data: File,val files: File,
+        val dataStat: android.system.StructStat,val filesStat: android.system.StructStat)
+    private fun identity(a: android.system.StructStat,b: android.system.StructStat)=
+        a.st_dev==b.st_dev&&a.st_ino==b.st_ino&&a.st_uid==b.st_uid&&a.st_gid==b.st_gid&&a.st_mode==b.st_mode
+    private fun same(a: android.system.StructStat,b: android.system.StructStat) {
+        check(identity(a,b)) {"APP_PLATFORM_IDENTITY"}
+    }
+    private fun directory(file: File,st: android.system.StructStat,platformFiles: Boolean=false) {
+        check(file.isAbsolute&&file.canonicalFile==file.absoluteFile&&
+            !java.nio.file.Files.isSymbolicLink(file.toPath())&&
+            android.system.OsConstants.S_ISDIR(st.st_mode)&&st.st_uid==Process.myUid()&&
+            st.st_gid==Process.myUid()) {"APP_PLATFORM_DIRECTORY"}
+        val mode=st.st_mode and 0xfff
+        check(if(platformFiles)mode==0x1c0||mode==0x1f9 else mode==0x1c0) {"APP_PLATFORM_MODE"}
+    }
+    private fun rootClass(file: File)=when(file) {
+        File("/data/data/$APP")->"DATA"
+        File("/data/user/0/$APP")->"USER0"
+        else->"OTHER"
+    }
+    private fun knownAlias(rawData: File,data: File) {
+        if(rawData==data)return
+        // Exact known framework parent and literal absolute target only.
+        val alias=checkNotNull(rawData.parentFile);val expected=checkNotNull(data.parentFile)
+        check(java.nio.file.Files.isSymbolicLink(alias.toPath())&&
+            android.system.Os.readlink(alias.path)==expected.path) {"APP_PLATFORM_KNOWN_ALIAS"}
+    }
+    private fun read(context: android.content.Context,witness: JSONObject?=null): Platform {
+        val instrumentation=InstrumentationRegistry.getInstrumentation();val info=context.applicationInfo
+        val contextMatches=context===instrumentation.targetContext
+        val appMatches=context.packageName==APP;val infoMatches=info.packageName==APP
+        val uidMatches=info.uid==Process.myUid()&&instrumentation.context.applicationInfo.uid!=Process.myUid()
+        witness?.put("contextIsTarget",contextMatches)?.put("appPackageMatches",appMatches)
+            ?.put("infoPackageMatches",infoMatches)?.put("uidMatches",uidMatches)
+        check(contextMatches&&appMatches&&infoMatches&&uidMatches) {"APP_PLATFORM_PACKAGE"}
+        val rawData=File(checkNotNull(info.dataDir) {"APP_PLATFORM_DATA_PATH"}).absoluteFile
+        val rawFiles=checkNotNull(context.filesDir).absoluteFile
+        val rawFilesData=checkNotNull(rawFiles.parentFile)
+        witness?.put("dataRoot",rootClass(rawData))?.put("filesRoot",rootClass(rawFilesData))
+            ?.put("filesBasenameMatches",rawFiles.name=="files")?.put("lexicalFilesChild",rawFiles==File(rawData,"files"))
+        check(rootClass(rawData)!="OTHER"&&rootClass(rawFilesData)!="OTHER"&&rawFiles==File(rawFilesData,"files")) {"APP_PLATFORM_FILES_PATH"}
+        check(!java.nio.file.Files.isSymbolicLink(rawData.toPath())&&
+            !java.nio.file.Files.isSymbolicLink(rawFilesData.toPath())&&
+            !java.nio.file.Files.isSymbolicLink(rawFiles.toPath())) {"APP_PLATFORM_LEAF_SYMLINK"}
+        val rawDataStat=android.system.Os.lstat(rawData.path);val rawFilesStat=android.system.Os.lstat(rawFiles.path)
+        val rawFilesDataStat=android.system.Os.lstat(rawFilesData.path)
+        val data=rawData.canonicalFile;val files=rawFiles.canonicalFile
+        val dataStat=android.system.Os.lstat(data.path);val filesStat=android.system.Os.lstat(files.path)
+        witness?.put("canonicalDataRoot",rootClass(data))?.put("canonicalFilesRoot",rootClass(checkNotNull(files.parentFile)))
+            ?.put("dataIsCanonical",rawData==data)?.put("filesIsCanonical",rawFiles==files)
+            ?.put("canonicalFilesChild",files==File(data,"files"))
+            ?.put("rawDataIsDirectory",android.system.OsConstants.S_ISDIR(rawDataStat.st_mode))
+            ?.put("rawFilesIsDirectory",android.system.OsConstants.S_ISDIR(rawFilesStat.st_mode))
+            ?.put("dataSameObject",identity(rawDataStat,dataStat)&&identity(rawFilesDataStat,dataStat))
+            ?.put("filesSameObject",identity(rawFilesStat,filesStat))
+            ?.put("dataMode",dataStat.st_mode and 0xfff)?.put("filesMode",filesStat.st_mode and 0xfff)
+        check(rootClass(data)!="OTHER"&&files==File(data,"files")&&rawFilesData.canonicalFile==data) {"APP_PLATFORM_CANONICAL_ROOT"}
+        check(File("/data").canonicalFile==File("/data")&&
+            File("/data/user").canonicalFile==File("/data/user")) {"APP_PLATFORM_ANCESTOR"}
+        knownAlias(rawData,data);knownAlias(rawFilesData,data)
+        directory(data,dataStat);directory(files,filesStat,true)
+        check(dataStat.st_dev==filesStat.st_dev) {"APP_PLATFORM_DEVICE"}
+        same(rawDataStat,dataStat);same(rawFilesDataStat,dataStat);same(rawFilesStat,filesStat)
+        same(rawDataStat,android.system.Os.lstat(rawData.path));same(rawFilesStat,android.system.Os.lstat(rawFiles.path))
+        same(rawFilesDataStat,android.system.Os.lstat(rawFilesData.path))
+        return Platform(data,files,dataStat,filesStat)
+    }
+    private fun verify(context: android.content.Context,expected: Platform,
+        dataFd: java.io.FileDescriptor,filesFd: java.io.FileDescriptor) {
+        val current=read(context)
+        check(current.data==expected.data&&current.files==expected.files) {"APP_PLATFORM_PATH_CHANGED"}
+        same(expected.dataStat,current.dataStat);same(expected.filesStat,current.filesStat)
+        same(expected.dataStat,android.system.Os.fstat(dataFd));same(expected.filesStat,android.system.Os.fstat(filesFd))
+    }
+    private fun create(context: android.content.Context,run: String,platform: Platform): File {
+        val flags=android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NOFOLLOW or android.system.OsConstants.O_NONBLOCK
+        val dataFd=android.system.Os.open(platform.data.path,flags,0)
+        try {
+            same(platform.dataStat,android.system.Os.fstat(dataFd))
+            val filesFd=android.system.Os.open(platform.files.path,flags,0)
+            try {
+                verify(context,platform,dataFd,filesFd)
+                val base=File(platform.files,NAMESPACE)
+                if(!java.nio.file.Files.exists(base.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                    verify(context,platform,dataFd,filesFd)
+                    android.system.Os.mkdir(base.path,0x1c0)
+                    directory(base,android.system.Os.lstat(base.path))
+                    android.system.Os.fsync(filesFd)
+                    verify(context,platform,dataFd,filesFd)
+                }
+                // An existing namespace is validated, never repaired/chmodded.
+                val baseStat=android.system.Os.lstat(base.path);directory(base,baseStat)
+                val baseFd=android.system.Os.open(base.path,flags,0)
+                try {
+                    same(baseStat,android.system.Os.fstat(baseFd));same(baseStat,android.system.Os.lstat(base.path))
+                    verify(context,platform,dataFd,filesFd)
+                    val folder=File(base,run)
+                    check(!java.nio.file.Files.exists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {"APP_PRODUCER_FRESH_RUN"}
+                    android.system.Os.mkdir(folder.path,0x1c0)
+                    directory(folder,android.system.Os.lstat(folder.path))
+                    android.system.Os.fsync(baseFd)
+                    same(baseStat,android.system.Os.fstat(baseFd));same(baseStat,android.system.Os.lstat(base.path))
+                    verify(context,platform,dataFd,filesFd)
+                    directory(folder,android.system.Os.lstat(folder.path))
+                    return folder
+                }finally {android.system.Os.close(baseFd)}
+            }finally {android.system.Os.close(filesFd)}
+        }finally {android.system.Os.close(dataFd)}
+    }
+    private fun report(witness: JSONObject,stage: String,category: String) {
+        val value=JSONObject(witness.toString()).put("stage",stage).put("category",category)
+        InstrumentationRegistry.getInstrumentation().sendStatus(0,Bundle().apply {putString("p7MainSafProducerAppFilesV2",value.toString())})
+    }
+    fun newRun(context: android.content.Context,run: String,operationId: String): File {
+        val witness=JSONObject().put("schema","p7-main-saf-producer-app-files-witness-v2").put("run",run)
+            .put("dataRoot","UNOBSERVED").put("filesRoot","UNOBSERVED")
+            .put("canonicalDataRoot","UNOBSERVED").put("canonicalFilesRoot","UNOBSERVED")
+            .put("dataMode",-1).put("filesMode",-1)
+        for(key in listOf("contextIsTarget","appPackageMatches","infoPackageMatches","uidMatches","filesBasenameMatches",
+            "lexicalFilesChild","dataIsCanonical","filesIsCanonical","canonicalFilesChild","rawDataIsDirectory",
+            "rawFilesIsDirectory","dataSameObject","filesSameObject"))witness.put(key,false)
+        try {
+            check(UUID.fromString(run).toString()==run&&UUID.fromString(operationId).toString()==operationId&&
+                run!=operationId&&run !in protected&&operationId !in protected) {"APP_PRODUCER_PROTECTED_SCOPE"}
+            val platform=read(context,witness)
+            report(witness,"FRAMEWORK_BOUND","OK")
+            val folder=create(context,run,platform)
+            report(witness,"NEW_RUN_DURABLE","OK")
+            return folder
+        }catch(error: Exception) {
+            val known=setOf("APP_PLATFORM_IDENTITY","APP_PLATFORM_DIRECTORY","APP_PLATFORM_MODE","APP_PLATFORM_KNOWN_ALIAS",
+                "APP_PLATFORM_PACKAGE","APP_PLATFORM_DATA_PATH","APP_PLATFORM_FILES_PATH","APP_PLATFORM_LEAF_SYMLINK",
+                "APP_PLATFORM_CANONICAL_ROOT","APP_PLATFORM_ANCESTOR","APP_PLATFORM_DEVICE","APP_PLATFORM_PATH_CHANGED",
+                "APP_PRODUCER_FRESH_RUN","APP_PRODUCER_PROTECTED_SCOPE")
+            report(witness,"FAILED",error.message?.takeIf {it in known} ?: "APP_PLATFORM_EXCEPTION")
+            throw error
+        }
+    }
+}
+
 /** Separate one-shot process, no Activity/Session/storage owners, no SAF or test-UID access.
  * Success publishes only size/hash/facts, after both ciphertext and receipt FDs are closed. */
 class NativeMigrationMainSafProducerTest {
     @org.junit.Test fun produceOnlySyntheticImportCiphertext() {
         val fixture=MigrationInboxFixture();val admission=NativeMigrationMainSafAdmission.accept(fixture.run,"PRODUCER")
-        val base=File(fixture.app.filesDir,"p7-main-saf-producer-v1")
-        check(!java.nio.file.Files.isSymbolicLink(base.toPath()))
-        if(!base.exists()){check(base.mkdir());android.system.Os.chmod(base.path,0x1c0);NativeMigrationMainSafAdmission.syncDirectory(fixture.app.filesDir)}
-        check(base.isDirectory&&base.canonicalFile==base.absoluteFile)
-        val st=android.system.Os.lstat(base.path);check(st.st_uid==Process.myUid()&&st.st_mode and 0x1ff==0x1c0)
-        val folder=File(base,fixture.run);check(!java.nio.file.Files.exists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&folder.mkdir());android.system.Os.chmod(folder.path,0x1c0);NativeMigrationMainSafAdmission.syncDirectory(base)
+        val folder=if(admission.getJSONObject("binding").getString("schema")=="p7-main-saf-producer-admission-v2") {
+            NativeMigrationMainSafProducerAppFilesV2.newRun(fixture.app,fixture.run,admission.getJSONObject("binding").getString("operationId"))
+        } else {
+            val base=File(fixture.app.filesDir,"p7-main-saf-producer-v1")
+            check(!java.nio.file.Files.isSymbolicLink(base.toPath()))
+            if(!base.exists()){check(base.mkdir());android.system.Os.chmod(base.path,0x1c0);NativeMigrationMainSafAdmission.syncDirectory(fixture.app.filesDir)}
+            check(base.isDirectory&&base.canonicalFile==base.absoluteFile)
+            val st=android.system.Os.lstat(base.path);check(st.st_uid==Process.myUid()&&st.st_mode and 0x1ff==0x1c0)
+            val folder=File(base,fixture.run);check(!java.nio.file.Files.exists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&folder.mkdir());android.system.Os.chmod(folder.path,0x1c0);NativeMigrationMainSafAdmission.syncDirectory(base)
+            folder
+        }
         NativeMigrationMainSafAdmission.durable(File(folder,"intent.json"),admission.toString().toByteArray())
         val envelope=JSONObject().put("format","agent-hub/android-migration").put("version",1).put("applicationId",fixture.app.packageName)
             .put("records",JSONObject().put("metadata",NativeMigrationMainSafMetadata.value(fixture.run,"imported owned SAF draft").toString()))

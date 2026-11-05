@@ -1,0 +1,413 @@
+{
+  "schema": "android-f59-acceptance-plan-v1",
+  "executed": false,
+  "notAnOperationAdmission": true,
+  "existingHostWire": "packages/protocol/src/file-transfers.ts",
+  "localJournalPortable": false,
+  "kmpProductionPathAdded": false,
+  "cases": [
+    {
+      "id": "wire-nonempty-manifest",
+      "input": "strict-six-fields",
+      "expected": "accept valid canonical UUID/nonempty safe basename/integer bytes/sha256",
+      "executed": false
+    },
+    {
+      "id": "wire-empty-or-reserved-name",
+      "input": "size=0/name=con.txt/path separator/control/unpaired surrogate",
+      "expected": "reject before original namespace creation",
+      "executed": false
+    },
+    {
+      "id": "wire-receipt-mismatch",
+      "input": "one manifest field, host, phase, id, path, timestamp wrong",
+      "expected": "reject before local terminal publication/deletion",
+      "executed": false
+    },
+    {
+      "id": "catalog-host-and-quota",
+      "input": "wrong host/duplicate IDs/noninteger or nonpositive finite max/oversize response",
+      "expected": "reject entire catalog; keep old journal/originals",
+      "executed": false
+    },
+    {
+      "id": "long-original",
+      "input": "21MiB < size <= 1GiB, content regular known length",
+      "expected": "chunk <=1MiB; Long HTTP fixed length; no full-file array; ordinary attachment cap unchanged",
+      "executed": false
+    },
+    {
+      "id": "long-over-cap",
+      "input": "size > min(Host max, 1GiB)",
+      "expected": "explicit reject before copying; UI shows effective cap",
+      "executed": false
+    },
+    {
+      "id": "pending-budget",
+      "input": "33rd pending or >4GiB/4096 chunks",
+      "expected": "explicit preserve-and-reject; no POST",
+      "executed": false
+    },
+    {
+      "id": "fd-source-changed",
+      "input": "PFD stat before/after, truncate/grow, read error, changed source",
+      "expected": "fail capture; own saved chunks retained; never make submitted manifest",
+      "executed": false
+    },
+    {
+      "id": "claim-boundaries",
+      "input": "crash at claim/chunk save/journal save/fsync/first POST boundary",
+      "expected": "CAPTURING -> failed capture; READY only unsent; any admitted POST has durable UNKNOWN",
+      "executed": false
+    },
+    {
+      "id": "unknown-cold",
+      "input": "cold process with UNKNOWN journal",
+      "expected": "only original ID GET; preserve manifest and source",
+      "executed": false
+    },
+    {
+      "id": "unknown-prepared",
+      "input": "GET original id -> prepared",
+      "expected": "remain UNKNOWN; no POST/PUT even next click",
+      "executed": false
+    },
+    {
+      "id": "unknown-not-found",
+      "input": "GET original id ->404",
+      "expected": "remain UNKNOWN; tell user no replay",
+      "executed": false
+    },
+    {
+      "id": "completed-cleanup",
+      "input": "matching completed receipt then crash after each cleanup point",
+      "expected": "terminal commit before deleting originals; repeated local cleanup safe; no remote replay",
+      "executed": false
+    },
+    {
+      "id": "cancel-local",
+      "input": "cancel preflight/read/prepare/content/query at each suspension",
+      "expected": "cancel local waiter only; preserve original operation/journal; worker close/join separately proven",
+      "executed": false
+    },
+    {
+      "id": "late-result-new-target",
+      "input": "target/cert/route/model replacement, old result late",
+      "expected": "only original target store may settle; new UI/model untouched; no new-target send",
+      "executed": false
+    },
+    {
+      "id": "codex-login-change",
+      "input": "same machine/runtime/workspace, changed account metadata",
+      "expected": "same canonical local key; old target JSON immutable; no account-based refusal",
+      "executed": false
+    },
+    {
+      "id": "other-agent-account-change",
+      "input": "EasyWork authority/subject change",
+      "expected": "different canonical identity; reject old binding",
+      "executed": false
+    },
+    {
+      "id": "picker-owner",
+      "input": "rotate/process death/new target while picker open",
+      "expected": "retained presentation token accepts once; stale token rejects input, never reroutes",
+      "executed": false
+    },
+    {
+      "id": "uri-grant",
+      "input": "regular content FD only; denied/transient/revoked URI",
+      "expected": "close PFD and dup input; no persisted URI authority/no auto reopen",
+      "executed": false
+    },
+    {
+      "id": "empty-page",
+      "input": "first open/refresh/status with no existing child",
+      "expected": "no child/key/journal creation, migration behavior remains unchanged",
+      "executed": false
+    },
+    {
+      "id": "migration-source",
+      "input": "F59 child empty/nonempty/file/link/unknown IO",
+      "expected": "whole export rejects without reading/deleting F59; exact named domain reported",
+      "executed": false
+    },
+    {
+      "id": "migration-destination",
+      "input": "same cases, empty real-client installation, key/pointer publish instrumentation",
+      "expected": "activation rejects before metadata/key/generation writes; old records readable",
+      "executed": false
+    },
+    {
+      "id": "writer-before-child",
+      "input": "capture paused before child creation vs source snapshot or activation",
+      "expected": "global snapshot fence orders actions; no archive omission or stale-generation write",
+      "executed": false
+    },
+    {
+      "id": "restored-active-child",
+      "input": "normal migration without F59; new F59 opened after ACTIVE",
+      "expected": "no mandatory empty child, optional creation allowed only ACTIVE; original restore required paths unchanged",
+      "executed": false
+    },
+    {
+      "id": "native-ui",
+      "input": "Chinese/English, portrait/landscape, short viewport, 4096 catalog items, empty/failed/offline/active states",
+      "expected": "verify sidebar/header/icons/destination/limit/picker/list/progress/error/copy/Done/cancel and lazy scrolling on actual App",
+      "executed": false
+    },
+    {
+      "id": "r1-borrowed-fd-counterexample",
+      "input": "Original R1 Os.dup -> borrowed FileInputStream.use on a uniquely owned fixture inode",
+      "expected": "Independently sample /proc/self/fd and public fstat before/after. Wrapper/token exit alone leaves the dup open; do not call this R2 verification.",
+      "executed": false
+    },
+    {
+      "id": "r2-raw-owner-success",
+      "input": "Use the actual readDuplicate callback; capture its FileInputStream.fd through the public getter only; original PFD stays separately owned",
+      "expected": "After normal EOF and after callback failure, independently observe exact fixture dev/inode aliases and fstat of the same FD object. Dup closes once; original closes separately; no residual alias after both owners finish. No FD-number close/reflection/JNI.",
+      "executed": false
+    },
+    {
+      "id": "r2-acquisition-construction-faults",
+      "input": "Invalid source FD / provider open cancellation / exception before stream use / construction fault at a separately reviewed test seam",
+      "expected": "Owner exists before acquisition. Every returned handle has exactly one release attempt even when stream construction fails. No handle returned means no retry of acquisition. Kernel evidence required; constructor fault seam is not yet implemented/executed here.",
+      "executed": false
+    },
+    {
+      "id": "r2-close-unknown-eintr",
+      "input": "Isolated acceptance process injects EINTR or other failure at the named owner close boundary; include failure after underlying close consumed the object",
+      "expected": "One attempt only; retain exact Java owner/object. No retry or fd-number reuse close; new capture/claim blocked. Worker/Future may finish but FD release remains unknown until independent observation/process exit. A close fault-injection seam still needs implementation before this case can run.",
+      "executed": false
+    },
+    {
+      "id": "r2-owner-cancel-original-pfd",
+      "input": "Cancel query/open/read at each suspension, including after duplicate EOF before original PFD close",
+      "expected": "No READY before both source owners return successful close. Original PFD/dup/kernel observations, actual worker exit and cleanup executor exit recorded separately. Cancellation signal is not closure proof.",
+      "executed": false
+    },
+    {
+      "id": "r2-before-child-unresolved",
+      "input": "Provider returned invalid/empty FD and original close becomes unknown before child creation",
+      "expected": "No local original or remote POST. Unknown-owner inventory still rejects source export and destination activation even when child is absent; never infer release from zero active workers.",
+      "executed": false
+    },
+    {
+      "id": "r2-stale-runtime-original-counterexample",
+      "input": "Original R1 F59 GET/POST URL carries saved target with a changed Host runtime",
+      "expected": "Show the Host verifyCommandTarget 409 occurs before the file handler. Source condition only until real Host test executes.",
+      "executed": false
+    },
+    {
+      "id": "r2-stale-runtime-fixed-requests",
+      "input": "Owned Host running with desktop runtime disconnected or changed; original captured MobileClient remains scoped locally",
+      "expected": "Both exact F59 paths carry hostId and optional id, never target. Catalog/status/prepare/content reach named file service under normal TLS/token/host validation. This does not retarget or merge local journals.",
+      "executed": false
+    },
+    {
+      "id": "r2-non-f59-negative-control",
+      "input": "Reply/open/approval/voice/resource routes and foreign Host/certificate/token",
+      "expected": "Only exact F59 paths gain exemption. Existing non-F59 parameter expression unchanged; scoped commands still reject wrong runtime and every file path still rejects wrong host/trust. No broad prefix exemption.",
+      "executed": false
+    },
+    {
+      "id": "r2-terminal-save-failure",
+      "input": "Valid completed receipt, fail AtomicFile/write/child or parent fsync/owner close before terminal call returns",
+      "expected": "Show confirmed remote result plus local receipt-save verification warning. Keep originals; persist UNKNOWN or completed bytes as actually observed. Never cleanup on failed terminal return. After restart original UNKNOWN can only GET; full valid completed record may only establish a local barrier before cleanup.",
+      "executed": false
+    },
+    {
+      "id": "r2-cleanup-delete-failure",
+      "input": "After successful terminal API barrier, fail first or middle original removal",
+      "expected": "Keep exact completed receipt/manifest and remaining originals; show local cleanup pending, no receive-unknown message. Count row/chunks/declared reservation as retained until actual retirement. Offline retry sends zero HTTP/POST/PUT.",
+      "executed": false
+    },
+    {
+      "id": "r2-cleanup-final-sync-row-removal",
+      "input": "Fail post-delete fsync, final row write, row-delete directory barrier, or readback",
+      "expected": "Remote success never downgrades. Distinguish remaining originals from already removed chunks. If row remains it conservatively occupies quota; if row disappeared after originals were synced away, keep in-memory local verification issue and perform only local sync/readback. Cold restart may read restored completed row and redo local cleanup only.",
+      "executed": false
+    },
+    {
+      "id": "r2-offline-completed-cold",
+      "input": "Seed encrypted completed row plus remaining originals, stop only the owned Host endpoint for test",
+      "expected": "Page shows known completed receipt/path and local cleanup pending despite catalog GET failure. Local cleanup button is enabled without a catalog and sends zero network requests. Terminal rebarrier must succeed before original deletion.",
+      "executed": false
+    },
+    {
+      "id": "r2-known-completed-conflict",
+      "input": "After a known receipt, Host returns prepared/404/different completed receipt fields",
+      "expected": "Show confirmation conflict, preserve original receipt/manifest and any originals; do not downgrade to unsent or READY and never replay POST/PUT.",
+      "executed": false
+    },
+    {
+      "id": "r2-host-null-capacity",
+      "input": "Host maxFileBytes null, finite >2^31, and finite below 1GiB; provider file at 1GiB and above",
+      "expected": "Null means Host has no configured cap, not 20MiB. Explicit Android 1GiB/file, per-target 4GiB/4096 chunks/32 rows remain unmatched capacity boundaries. Effective limit is min finite Host/local; no whole-file allocation or signed overflow.",
+      "executed": false
+    },
+    {
+      "id": "r2-atomic-finish-counterexample",
+      "input": "At R2 claim/terminal force FileUtils.sync=false, close IOException or renameTo=false while directory fsync succeeds.",
+      "expected": "Record actual old base/.new bytes+inodes and allowed POST/deletion; a source-level counterexample, not an already reproduced device bug.",
+      "executed": false
+    },
+    {
+      "id": "r3-file-fsync-failure",
+      "input": "Fail Os.fsync of a captured chunk or UNKNOWN staged journal with real EIO/ENOSPC boundary.",
+      "expected": "Exception propagates; 0 prepare/content POST; original base preserved before rename; exact .f59-new retained; no AtomicFile.openRead or automatic deletion.",
+      "executed": false
+    },
+    {
+      "id": "r3-temp-close-unknown",
+      "input": "At staged file close produce EINTR/other ambiguous close; inspect original FD target before/after and subsequent descriptor allocation.",
+      "expected": "No rename/POST; exact Java FD owner retained, no second close/probe by reused number; chosen temp survives. Worker/token exit does not prove closure.",
+      "executed": false
+    },
+    {
+      "id": "r3-rename-real-failure",
+      "input": "Owned native fixture makes actual rename fail after staged file fsync+confirmed close.",
+      "expected": "No POST; old base ciphertext/identity unchanged and staged .f59-new retained. Cold strict read rejects pending sidecar instead of discarding it.",
+      "executed": false
+    },
+    {
+      "id": "r3-ciphertext-identity-positive",
+      "input": "Normal stage->rename->base path on API26/API33/API37; independently read exact original cipher bytes and stat under lock.",
+      "expected": "All ciphertext bytes/length/inode match committed candidate; file fsync, close, throwing rename, installed-object verification and both directory fsync return before claim/POST admission.",
+      "executed": false
+    },
+    {
+      "id": "r3-replaced-installed-object",
+      "input": "Change exact inode or same-length ciphertext between rename and installed-object verification in an owned fault fixture.",
+      "expected": "Reject before POST/deletion; content equality and identity are independently required, not stat-only/readback-only.",
+      "executed": false
+    },
+    {
+      "id": "r3-directory-fsync-or-close-failure",
+      "input": "Fail child or noBackup parent fsync/close after rename at UNKNOWN and terminal.",
+      "expected": "No POST if claim did not return; no chunk deletion if terminal did not return. Unknown close retains exact owner, no retry. Restart may read a durable UNKNOWN or reject pending/invalid files; any old READY is safe only with independently proven zero earlier POST.",
+      "executed": false
+    },
+    {
+      "id": "r3-crash-cut-matrix",
+      "input": "Kill independent fixture before/after write/fsync/close/rename/installed read/each directory barrier/claim return/first POST; inspect raw files without AtomicFile.",
+      "expected": "Any observed POST has previously returned durable UNKNOWN. Cold UNKNOWN permits only same-ID GET; unsettled files block admission. No automatic replay/adoption/cleanup of .new/.bak/.f59-new.",
+      "executed": false
+    },
+    {
+      "id": "r3-preexisting-sidecars",
+      "input": "Place private regular/symlink/directory .new/.bak/.f59-new on journal or selected chunk.",
+      "expected": "Never resolve via AtomicFile or delete/restore sidecar. Exact associated operation fails closed, raw bytes remain; unrelated target is not silently merged.",
+      "executed": false
+    },
+    {
+      "id": "r3-originals-final-claim-barrier",
+      "input": "After READY replace/corrupt/drop a chunk or fail its file/dir sync before UNKNOWN.",
+      "expected": "Claim reauthenticates size/name/chunk SHA and whole manifest hash then actual file barrier under same exclusive transaction; 0 POST on failure.",
+      "executed": false
+    },
+    {
+      "id": "r3-r2-delete-false-counterexample",
+      "input": "Make original File.delete return false in the R2 deletion chain while directory fsync succeeds.",
+      "expected": "Observe residual real path and lost index/quota in R2 counterexample; do not substitute a fake method that only throws for the ignored-boolean failure.",
+      "executed": false
+    },
+    {
+      "id": "r3-unlink-no-effect-or-error",
+      "input": "Fail public Os.remove for a validated regular-file path for first/middle/last chunk or simulate returned success without removal.",
+      "expected": "Actual base/new/bak/f59-new absence and directory sync required. Any failure keeps COMPLETED receipt/manifest/row and full conservative quota; local retry has 0 network.",
+      "executed": false
+    },
+    {
+      "id": "r3-partial-retirement-restart",
+      "input": "Delete first chunks successfully then fail later unlink/fsync/close or final row-save.",
+      "expected": "Remaining paths precisely observed; row retains original full chunk references and full quota until all absence+durable index commit return. Known remote success never becomes unconfirmed/unsent. Restart only local cleanup or receipt GET, never POST.",
+      "executed": false
+    },
+    {
+      "id": "r3-delete-ciphertext-conflict",
+      "input": "Replace private chunk with authenticated wrong logical name/size/hash or changed raw inode/cipher after validation.",
+      "expected": "Reject precise removal and row retirement; never blindly delete hashed path, sidecars, a link, foreign UID/GID/mode or multi-link object.",
+      "executed": false
+    },
+    {
+      "id": "r3-already-absent-retry",
+      "input": "After a completed partial cleanup retry each previously removed chunk.",
+      "expected": "Absence accepted only after no sidecars and directory fsync; no arbitrary path deletion. Whole row removed only after all referenced chunks satisfy confirmed absence.",
+      "executed": false
+    },
+    {
+      "id": "r3-three-layer-close",
+      "input": "Fault FileLock.release, borrowed wrapper/channel.close, raw lock FD.close or directory close separately, including EINTR.",
+      "expected": "Each actual acquired owner has one release attempt; ambiguous exact owner is retained and new input/claim/migration blocked. Closing Future/counter does not release ownership; no raw descriptor reclose.",
+      "executed": false
+    },
+    {
+      "id": "r3-cooperating-process-child-writers",
+      "input": "Two actual cooperating processes attempt capture/claim/apply/retire for one F59 child.",
+      "expected": "Exclusive FileChannel lock serializes all reads/mutations, snapshots/cipher checks remain stable, one READY->UNKNOWN admission per ID. Shared root gate still allows unrelated voice writer semantics.",
+      "executed": false
+    },
+    {
+      "id": "r3-before-child-migration-race",
+      "input": "Hold F59 provider metadata/PFD before child creation in process A; process B attempts actual installation migration freeze.",
+      "expected": "Existing installation shared/exclusive kernel gate rejects freeze until A source close+gate close confirmed. Same-process snapshot fence also spans provider/READY. After child presence, full export/activation fails closed even empty child.",
+      "executed": false
+    },
+    {
+      "id": "r3-retired-generation-writer",
+      "input": "Retire/restore root while cancelled worker or another process waits for gate/lock; acquire old handle after publication.",
+      "expected": "Re-check original generation/strict policy/actual namespace before every data operation; old target cannot write restored namespace. No pending child-pointer recovery through AtomicFile.",
+      "executed": false
+    },
+    {
+      "id": "r3-remaining-content-copy",
+      "input": "Partial cleanup then resource-close unknown/cancel/late conflicting receipt, stale UNKNOWN row and cold reload.",
+      "expected": "UI says remaining content or verification needed, never all originals retained; known remote receipt stays received and full quota is not released on failed retirement.",
+      "executed": false
+    },
+    {
+      "id": "r3-legacy-error-display",
+      "input": "Load strict v1 journal with exact old R2 resource/cleanup/conflict/wait/404 error keys.",
+      "expected": "Legacy fields remain immutable and parsed using finite allowlist; display maps to corrected remaining-content wording. Original RECEIPT_SAVE_PENDING remains query-only; no namespace/key change.",
+      "executed": false
+    },
+    {
+      "id": "r3-current-catalog-merge",
+      "input": "Merge current native/shared localization with R3 input then run official generator in adopted branch.",
+      "expected": "Keep all current P8/new keys, produce three real mirrors, placeholders/English/Chinese match. No R2 generated snapshot overwrite.",
+      "executed": false
+    },
+    {
+      "id": "r3-existing-outbox-boundary",
+      "input": "Inspect ordinary NativeOperationJournal caller chain separately.",
+      "expected": "R3 does not change existing production outbox or claim its runtime fixed. Any later strict-port rollout must address old READY ambiguity without replay and receive separate Root review/acceptance.",
+      "executed": false
+    },
+    {
+      "id": "r3-global-gate-pre-writer-acquisition-failure",
+      "input": "Fail actual raw open/fstat/validate/borrowed stream ctor/shared tryLock/revalidation BEFORE NativeVoiceRawGate.Writer returns; fault cleanup close/release independently.",
+      "expected": "Provider metadata has not run and 0 POST. Internal owners already hold exact actual raw FD/wrapper/lock; each close attempted once. Ambiguous close is retained and blocks new input/claim/migration. Outer Writer owner/token is not used to prove this closure.",
+      "executed": false
+    },
+    {
+      "id": "r3-global-gate-publication-failure",
+      "input": "Fail state/token/Writer publication after strict Handle acquired; also join an existing voice writer state and fail F59 Writer creation.",
+      "expected": "Remove only F59 token/new state; attempt newly owned handle closes, preserve unrelated voice/inbox writers and original default acquisition behavior. Observe actual shared lock/file descriptors, not only states/token counts.",
+      "executed": false
+    },
+    {
+      "id": "r4-public-remove-api-contract",
+      "input": "Installed SDK37 public stub and API history since21; prevalidated regular file, nofollow, nlink1, exact ciphertext/inode, cooperating writer exclusive lock; errors, path-type replacement and post-removal presence faults.",
+      "expected": "Use public Os.remove(String), never hidden Os.unlink. All errors propagate and exact base+sidecars absence plus child/parent fsync still precede row/quota retirement. Do not claim atomic inode-conditional deletion against hostile same-UID code. API26 is metadata-supported only; no compile/runtime pass implied.",
+      "executed": false
+    }
+  ],
+  "r1ReviewPrimarySha256": "69f4432cfa93ba20fb72763edf184eb547f748cd0e2e69169737483ba15c1471",
+  "caseCount": 40,
+  "inheritedCases": 65,
+  "execution": "NONE; source proposal only, every original and new case needs independent execution",
+  "causalEvidence": "Observe original files/ciphertext SHA+inode/sidecars and actual kernel FD/locks plus independent Host request logs and cold process. Memory flags/counters/Future completion are insufficient.",
+  "casesTotal": 66,
+  "status": "production-source-adopted-runtime-unverified"
+}

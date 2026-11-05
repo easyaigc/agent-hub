@@ -17,6 +17,11 @@ import javax.crypto.spec.SecretKeySpec
 internal class NativeEasyWorkProtocolPeer(private val credential: EasyWorkCredential,private val confirmation: String,
     private val reply: suspend (JSONObject)->JSONObject): AgentFrameTransport {
     private val incoming=Channel<ByteArray>(Channel.UNLIMITED)
+    private var started=false
+    private var responseBody: (suspend (JSONObject)->JSONObject)?=null
+    internal fun withResponseBody(body: suspend (JSONObject)->JSONObject): NativeEasyWorkProtocolPeer {
+        check(!started&&responseBody==null);responseBody=body;return this
+    }
     private val session=UUID.randomUUID().toString();private var sequence=1L
     private val mobileToDesktop: ByteArray;private val desktopToMobile: ByteArray
     init {
@@ -40,6 +45,7 @@ internal class NativeEasyWorkProtocolPeer(private val credential: EasyWorkCreden
         return value.toString().toByteArray()
     }
     override suspend fun send(bytes: ByteArray) {
+        started=true
         val value=JSONObject(String(bytes));val cipher=Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE,SecretKeySpec(mobileToDesktop,"AES"),GCMParameterSpec(128,easyBytes(value.getString("nonce"))));cipher.updateAAD(aad(value))
         val payload=JSONObject(String(cipher.doFinal(easyBytes(value.getString("ciphertext")))))
@@ -48,8 +54,12 @@ internal class NativeEasyWorkProtocolPeer(private val credential: EasyWorkCreden
             incoming.send(encrypt(JSONObject().put("kind","key-confirmation").put("value",confirmation)))
         } else {
             val request=payload.getJSONObject("envelope");require(EasyWorkTarget.decode(request.getJSONObject("target"))==credential.binding.target)
+            val body=responseBody?.invoke(request)?:JSONObject().put("ok",true).put("result",reply(request))
+            val keys=body.keys().asSequence().toSet()
+            require(body.opt("ok") is Boolean&&keys==(if(body.getBoolean("ok"))setOf("ok","result") else setOf("ok","error")))
             val response=JSONObject().put("protocolVersion",2).put("kind","response").put("requestId",request.getString("requestId"))
-                .put("target",credential.binding.target.json()).put("ok",true).put("result",reply(request))
+                .put("target",credential.binding.target.json())
+            keys.forEach {response.put(it,body.get(it))}
             incoming.send(encrypt(JSONObject().put("kind","protocol").put("envelope",response)))
         }
     }

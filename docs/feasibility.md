@@ -10,6 +10,8 @@
 
 2026-11-04 F69 Windows 建议采集恢复研究：本机 Codex `26.1029.7803.0`／CLI `0.166.0-alpha.6` 的原编辑器取字及请求分支隔离验证通过；现有请求在缓存未命中时仍生成预测，未找到独立 Host 可用的只读已有建议出口。正式 Host 健康与工作区查询通过，但未声明建议能力；有限 Trace 盘点及对应版本源码不能提供本次完整自然建议与唯一安全绑定。生产实现、手机全文与采用／撤销均未新增通过，详见[新版可行性复核](research/windows-suggestion-independent.md#2026-11-04新版-windows-的可行性复核)。
 
+2026-11-05 Android F59：独立互传与具名严格密文端口已接入开发分支并通过静态独审，增加9项直接调用生产文件端口的Native测试源码；尚未编译/执行，不能据此宣称持久性故障、系统选择器、界面或真实Host/手机通过。已有Android完整回归和SDK仅绑定此前a496c47a；本次新源码需新指纹验收。容量、portable原件/journal及24域完整迁移仍开放，详见[阶段94](plans/android-alignment-20261022/records/stage94-f59-strict-storage.md)。iOS A6及任务/项目管理暂停范围保持。
+
 2026-11-04 F69 本机部署候选：在正式 R11 对应的规范提交上叠加空日志候选计数修复和 macOS 私有诊断日志，保留正式 Host 已有诊断、恢复和原生 owner 规则。空文件每次复查，增长后从零读取，已跟踪截断仍拒绝；日志记录生命周期、固定原因、阶段、心跳和结果状态。iOS／Android 共用 Host 来源规则，UI／草稿语义保持，Android 建议 UI 与 A6 状态不变。源码、辅助检查、实际部署与建议来源验收分别记录。
 
 2026-11-04 F34／F36：按最新交互要求，输入区立即预览下一轮草稿模型／推理／速度，未覆盖字段回落到准确 owner 已知值；设置页“电脑当前设置”继续只读显示真实运行参数。iOS／Android 共用 KMP 展示规则，沿用原目标隔离、持久化和实际发送边界，选择本身不写入电脑任务。此修订取代 2026-10-26 的输入区只显示当前 owner 设计；历史验收不自动升级，见[本轮记录](acceptance/next-turn-generation-display-20261104.md)。
@@ -603,3 +605,9 @@ Windows P1 preparation now has a native receipt, including new helper identity, 
 The subsequent Windows P2 launch failed its non-administrator prerequisite on a UAC-disabled installation. Its synthetic fixtures were closed by a bound reconciliation entry without changing the formal Task or original state. A separately frozen Node/Host runtime passed eight read-only startup checks through a real Scheduler task; the worker was high-integrity, not Limited. The local continuation now implements a sealed preparation, a post-Restart identity-bound marker archive and fixed Task replacement/rollback candidate. These paths, actual Host operation and authenticated peer connectivity remain unverified until exercised; no system Restart has been authorized. The original desktop workflow and both mobile clients' wire/UI contracts are unchanged. See [the recovery contract](windows-host-regular-recovery.md).
 
 2026-11-03 regular Host integration: the Windows delivery reports one no-restart activation using the reviewed legacy synthetic-test scope while retaining its original pending/unknown state. The maintaining Mac independently verified original certificate-pinned LAN and Tailscale authentication and the exact Host/desktop-runtime workspace. The running Windows artifact is retained; this source integration does not deploy it, change UAC/AppData ACLs or resume suggestions. Native rollback, login/restart autostart and mobile DEV are not upgraded by this peer read. Stage-specific failures above remain unchanged. See [the integrated evidence](acceptance/windows-regular-host-recovery-20261103.md).
+
+阶段98 F59迁移域：Android唯一journal decoder与流式graph已调用KMP惰性描述符规则，独立闭合Schema只定义子域，不开放新的Host端点或发送权限。当前未接Export/Activation，旧整包F59拒绝与v4限额保持；strict源freeze/generation/FD/库存/barrier、独立大容量流式封包与目的端惰性publication及iOS接线继续实现。JVM6/Node3和普通Android编译是辅助，真实字节源、系统/界面/手机及跨端未验。见docs/plans/android-alignment-20261022/records/stage98-f59-portable-domain.md。
+
+阶段101 F59源：NativeSessionStorage窄入口要求实际Session/raw Frozen及准确当前generation，既有key-only解码、固定目录FD/单record读取和全cipher摘要，终态缺失要求真实fsync-close/双目录barrier；close未知保留owner。当前只支持单child、无export/activation接线，old-generation family/新容器/惰性发布/iOS与完整验收继续，旧整包拒绝保持。普通编译和8方法源码/独立940输入SDK资格不等于运行通过。见docs/plans/android-alignment-20261022/records/stage101-f59-readonly-source.md。
+
+阶段104 F59 family：实际root与全部受限retained generation按代严格只读/独立graph，保留UNKNOWN/原receipt，目录存在不授予lineage或激活权。仅新增内部source入口，旧整包F59拒绝和Host/传输边界不变；新SDK/15项Native、认证容器/目的端/iOS仍待验。见docs/plans/android-alignment-20261022/records/stage104-f59-family-source.md。

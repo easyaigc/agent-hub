@@ -1,5 +1,13 @@
 # Android 分阶段过程档案
 
+- [阶段113 主线交接](stage113-mainline-handoff.md)汇总可交付范围、待验边界和后续短期 PR 流程。
+
+- [阶段89 App目录与reader合同修复](stage89-producer-app-files-and-reader-contract.md)：四源采用/静态独审与34辅助向量通过，SDK/真实producer/14件/独立IMPORT待验；PR135收尾完成。
+
+- [阶段88 独立原件与Main导入](stage88-independent-producer-lane.md)：新Host/SDK完成；实际producer目录校验失败、UNKNOWN保留，完整回归受iOS启动/资源阻断；14材料/第二Root IMPORT待新操作验收；阶段87已提交209e2339。
+
+- [阶段87B 显式FD与完整基线](stage87-explicit-fd-metadata-geometry.md)：8源/905输入、SDK及真实API33导出单方法有限通过；完整辅助回归通过；IMPORT/24域及P8诊断待继续。阶段87A完整检查通过并已提交f522ffa5；PR135源CI通过，最新主线冲突处理中。
+
 - [阶段73 P8 Main偏好菜单](stage73-p8-main-preference.md)：中文浅色/英文深色两case菜单、保存和新Activity/Session恢复1方法限定通过；生产默认装配保持，完整A5/UI/联机仍开放。
 - [阶段72 P7通知原件归档](stage72-p7-foreground-paired.md)：真实本地生产者13条资料，普通Controller首次导入与同boot只读cold两方法限定通过；完整检查通过，通知身份策略与完整系统/UI/物理仍开放。
 - [阶段71 P7未预建KEY导入](stage71-p7-pristine-controller.md)：普通Controller未预建root KEY的9条迁移1方法限定通过；PR119已合并，CI与公开同步成功。
@@ -288,3 +296,53 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [阶段83：共用诊断、导入前置与P9重锁](stage83-shared-observers-and-import.md)：11路径/60/905源码采用与独审，P7四类独立编译通过，新SDK/producer/真实回调仍待验。
 
 - [阶段84：平台目录别名与原控件归属](stage84-platform-alias-and-ax-owner.md)：双路径/列表统一、原控件归属和新两包目的；SDK/新原生待验。
+
+- [阶段85：协作发布与保存后视口](stage85-publication-and-viewport.md)：新v4原件隔离/锁护栏、保存后准确字段准备，源码采用、共包构建和完整辅助回归通过，真实prepare确认；导出文件名顺序及P8原几何失败单列，继续修复。
+
+- [阶段86：系统选择器文件名阶段](stage86-picker-filename-phase.md)：默认名/目标名顺序修复、新封闭共同SDK目的及旧意图保护，源码独审、新SDK和完整辅助回归通过；真实系统回调/密文限定结果与metadata/FD失败单列，继续修复。
+
+- [阶段87A：同步主线共同修复](stage87-main-sync.md)：保留主线额度/Host诊断/迟到回复回归，语义合并记录及下一轮SDK重锁；不复用旧包证明新源码。
+
+- [阶段90：独立原件与Main导入预览](stage90-independent-producer-main-import-preview.md)：当前SDK/真实14材料/第二Root导入预览及独立FD采样有限通过；完整激活、24域与当前回归仍开放。
+
+- [阶段91：主线与EasyWork原回执安全](stage91-main-and-easywork-receipt-safety.md)：保留双方历史和已验修复，接入拒绝追加/原队列只读恢复，新增22组后续差异独立列档；本次验收继续。
+
+- [阶段92：格式、主线与公共持久性](stage92-format-main-and-durable-boundaries.md)：保留实际构建/首项失败与等价格式修正；F59阻塞及公共原件/回执/authority修复组另列，完整验收继续。
+
+- [阶段93：全仓回归与新SDK](stage93-sdk-fullcheck-and-native-deferral.md)：当前检查/构建/源CI通过，Native零派发及资源正常收尾；F59 R4静态复核完成、后续接入验收继续。
+
+- [阶段94：独立文件互传与严格保存](stage94-f59-strict-storage.md)：F59生产源码/9项真实文件端口Native测试源码接入，66条场景列计划；编译、故障、系统/UI与真实DEV仍待验。
+
+- [阶段95：旧回复安全与界面门槛](stage95-legacy-reply-safety.md)：仅强证明重试、旧失败Composer/查询/结束等待与到期UI源码接入；4项隔离Native及完整持久性、真实交互仍待验。
+
+- [阶段96：主线与当前包边界](stage96-main-and-sdk-contract.md)：逐提交续接iOS PR146/147，独立930输入/31方法SDK资格；完整检查、新SDK和Native实际结果另记。
+
+- [阶段97：新SDK与31项原生方法](stage97-sdk-and-native31.md)：当前编译通过，31启动/30通过/1硬链接准备失败；旧数据/安装/VM实际收尾，完整检查辅助预热采集失败单列，迁移与真实UI继续。
+
+- [阶段98：F59 portable第一切片](stage98-f59-portable-domain.md)：唯一journal decoder、流式graph、KMP规则和闭合Schema；6+3辅助及普通编译通过，源快照/新容器/目的端发布未实现，旧整包拒绝保持。
+
+- [阶段100：当前完整回归](stage100-current-source-fullcheck.md)：aeda809b全仓1594项/1526通过/68跳过/0失败；预热、资源和长TMP原失败保持，短TMP修复及自有资源收尾，原生/界面/完整P7状态不提升。
+
+- [阶段101：F59只读源](stage101-f59-readonly-source.md)：真实冻结owner的当前generation单child，bounded DirectoryStream/FD/既有key与barrier；普通编译通过，940输入SDK与8方法实际原生待验，整包gate保持。
+
+- [阶段102 F59原生首轮与generation修复](stage102-f59-native-fixture-recovery.md)：940输入SDK通过，8项Native为7通过1夹具准备失败；最小修复待新包复验，原结果/保护及VM收尾已核对。
+
+- [阶段103 F59当前源八项通过](stage103-f59-current-source-native8.md)：f38新SDK/精确八方法限定通过，104原始客户端/336材料与Root原VM退出核对；继续旧代库存，完整迁移/UI/手机开放。
+
+- [阶段104 F59旧代完整源源码](stage104-f59-family-source.md)：按代独立库存/整体额度，7方法及独立942/15 SDK资格已审接入；新编译/guard/SDK/Native待验。
+
+- [阶段105 F59旧代源十五项通过](stage105-f59-family-native15.md)：520的942 SDK/8+7原生通过，旧数据及Root原VM退出复核；完整迁移和主线继续。
+
+- [阶段106 主线续接](stage106-mainline-eae10-continuation.md)：逐提交对照PR141、148–153，六文档语义合并、两SDK输入变化，全检查和iOS构建单独登记。
+
+- [阶段107 打包夹具恢复](stage107-packager-fixture-after-main.md)：保留当前完整回归原失败；补齐 adapter 私有依赖夹具并单测，不影响产品。
+
+- [阶段108 F59 内层封包](stage108-f59-inner-framing.md)：Long framing、可核对回执边界与独立 Swift 小向量；新 SDK、Native、加密容器及完整迁移分开验。
+
+- [阶段109 F59 新包原生与回归](stage109-f59-inner-native23.md)：85d5bc0 新 SDK、API33 23 项及完整回归/独立 iOS 构建；真实产品仍按缺口单列。
+
+- [阶段110 F59 代际清单](stage110-f59-typed-family-inventory.md)：旧根和代际、缺失/空/有数据、同一原件退役与保留分块，新包与完整迁移另验。
+
+- [阶段111 F59 代际清单新包准入](stage111-f59-typed-sdk-profile.md)：独立 949 输入与 24 项 Native 资格，实际签名包和运行结果另记。
+
+- [阶段112 F59 代际清单实际原生](stage112-f59-typed-native24.md)：949 新包、独立 API33 24 项及同原件真实部分退役；完整产品与设备验收另列。

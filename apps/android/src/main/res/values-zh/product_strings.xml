@@ -1676,6 +1676,7 @@
     <string name="product_26c4fa32203ada79d411124a" formatted="false">"对话名称"</string>
     <string name="product_363bc289d10f295d13947082" formatted="false">"未查到原批量归档记录，结果仍未确认；不会重新提交。"</string>
     <string name="product_0d0cbac2eee541136ec2dbba" formatted="false">"重命名"</string>
+    <string name="product_e4f5d88c78b2ec57439559fd" formatted="false">"原任务已变化或结束，追加未提交。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>
@@ -1947,4 +1948,48 @@
     <string name="product_59e7a7700078c56ae9ba5448" formatted="false">"离线模型安装未完成，请检查模型状态后重试。"</string>
     <string name="product_4916ce4f6e7dd69fad93d9f1" formatted="false">"本机原录音识别超时，原录音和已有结果已保留。"</string>
     <string name="product_59f1484a823c35b82282f686" formatted="false">"已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。"</string>
+    <string name="product_3233038ca4a29060df8098ee" formatted="false">"电脑回执格式无效"</string>
+    <string name="product_a3dc567e6090c81730020db9" formatted="false">"原操作回执身份或内容不匹配"</string>
+    <string name="product_2d6b19b41ab1a3f092310b20" formatted="false">"一次最多选择 32 个文件。"</string>
+    <string name="product_309350cc6160c0bbb39ed1af" formatted="false">"传输已完成"</string>
+    <string name="product_35a70ec33173d483b005a330" formatted="false">"保存的文件不属于当前电脑目标。"</string>
+    <string name="product_e92e475c0a7714425b5e928c" formatted="false">"原件读取未完成，已保存的内容保留在手机。"</string>
+    <string name="product_5a100e342dd8ff05e5b1d607" formatted="false">"当前单文件额度：%@"</string>
+    <string name="product_1cc90b0312874e3e08d1419f" formatted="false">"手机保存的原件校验失败，请保留原记录。"</string>
+    <string name="product_d2de30604260e55eeff25ab0" formatted="false">"手机保存的待传文件已达到额度，请先核对已有传输。"</string>
+    <string name="product_6933ef64e09c73aefd601b64" formatted="false">"手机存储空间不足，未开始传输。"</string>
+    <string name="product_313c50d968646128bc15540d" formatted="false">"文件传输未确认，请查询原结果。"</string>
+    <string name="product_99c528b0209e9fead5ed8994" formatted="false">"本地等待已结束，原件和传输记录保留。"</string>
+    <string name="product_98d7eb0850ca162baf58fb2e" formatted="false">"正在上传文件…"</string>
+    <string name="product_c569f1186b1f48563105f508" formatted="false">"正在核对手机原件…"</string>
+    <string name="product_faebd20c2801fd0f0d81a4ef" formatted="false">"正在读取所选文件…"</string>
+    <string name="product_bea3b4494db69a9c2f6b196e" formatted="false">"电脑仍在等待或处理原传输；请继续查询，不会重新上传。"</string>
+    <string name="product_aa02500f9417a6978e34a273" formatted="false">"电脑尚无原传输回执，记录与原件已保留；不会重新上传。"</string>
+    <string name="product_e168c9103511242443a8bcb1" formatted="false">"电脑目标已变化，请关闭后重新打开文件互传。"</string>
+    <string name="product_bbb7ba0f9f249e5c6820993d" formatted="false">"电脑返回的文件回执不匹配。"</string>
+    <string name="product_5884d5337ba3d34a74e79516" formatted="false">"结束本地等待"</string>
+    <string name="product_d9355dc63a986c0c5a262f26" formatted="false">"请选择名称不含路径或系统保留字符的非空普通文件。"</string>
+    <string name="product_4cd8be27f98f046b64c3d846" formatted="false">"请选择额度以内、大小明确且非空的普通文件。"</string>
+    <string name="product_4b701bb8736d1622fe132ec6" formatted="false">"待完成最多 32 个文件，累计额度：%@"</string>
+    <string name="product_2403a1b00334f6b3494c0f98" formatted="false">"电脑未设置文件上限；当前仍受 Android 本地额度限制。"</string>
+    <string name="product_6f1e4ef650528357ff6e24b9" formatted="false">"电脑公布的单文件额度：%@"</string>
+    <string name="product_49add7ba703579c7b027a9ee" formatted="false">"Android 本机单文件上限：%@；超过上限的文件暂无法上传。"</string>
+    <string name="product_8cda8ee626f26121c20b9506" formatted="false">"当前电脑目标最多保留 32 个待完成文件，累计本地额度：%@。"</string>
+    <string name="product_7000f3e5031692ec85ed4423" formatted="false">"文件读取或保存尚未完整结束，原件和记录保留；不会继续上传。"</string>
+    <string name="product_d43f880259bccd4b178baea4" formatted="false">"电脑已确认接收；手机回执保存状态待核对，原件仍保留。请查询原结果核对。"</string>
+    <string name="product_f72a98132c37baa84800fac3" formatted="false">"电脑已确认接收；手机本地清理待处理，未清理的原件和记录仍保留。"</string>
+    <string name="product_2612289ac00ea6ea5bf122e3" formatted="false">"电脑返回的状态与已确认接收记录不一致；原件和记录已保留，请继续核对。"</string>
+    <string name="product_3e7d77c458b28f395de78466" formatted="false">"暂时无法读取电脑传输记录；已确认的接收结果不变。"</string>
+    <string name="product_0ecd67408edc9c411e44f0f9" formatted="false">"电脑已接收 · 本地清理待完成"</string>
+    <string name="product_57ecafc49ff011b86931dbd7" formatted="false">"电脑已确认接收 · 手机回执待核对"</string>
+    <string name="product_0cd4d082ceea3c9bfae2611a" formatted="false">"重试本地清理"</string>
+    <string name="product_60a7c381b39cd205f0e30f58" formatted="false">"文件读取、保存或资源关闭尚未确认；请保留手机上的剩余内容，不会继续上传。"</string>
+    <string name="product_bc7fb7a87f464a080294de60" formatted="false">"电脑已确认接收；手机回执保存状态待核对。请查询原结果，核对前不会清理剩余原件。"</string>
+    <string name="product_80f392bedb349d10e3843ff1" formatted="false">"电脑已确认接收；手机清理尚未确认，可能仅剩部分原件。保留原回执和清理入口，不会重新上传。"</string>
+    <string name="product_2bbf8884cfb61bf22f416d3c" formatted="false">"电脑返回的状态与已确认接收记录不一致；已知接收结果不变，请继续核对剩余内容和原回执。"</string>
+    <string name="product_c2e82814aedffde8ab0112a1" formatted="false">"本地等待已结束；远端操作未取消。已清理的原件不会恢复，剩余内容和原回执需继续核对。"</string>
+    <string name="product_56d21d53e84fafc9cfdf9449" formatted="false">"电脑尚无原传输回执；请保留手机上的剩余内容并继续查询，不会重新上传。"</string>
+    <string name="product_205ad84c7a9fe72fb4fa9190" formatted="false">"手机文件保存状态待核对；剩余文件和临时记录不会自动清理，不会继续上传。"</string>
+    <string name="product_ccd45cad07bfed37d72de44d" formatted="false">"文件存储正由另一个本机进程使用，请稍后核对。"</string>
+    <string name="product_faefe9cb61daf0acf448b9fe" formatted="false">"接收结果待确认 · 仅核对原传输"</string>
 </resources>

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T12:35:55.813293+00:00",
+  "updatedAt": "2026-11-05T13:15:32.735173+00:00",
   "taskId": "easywork-ios-sync-20261101",
   "scope": {
     "mobilePlatform": "ios",
@@ -10421,8 +10421,10 @@
       "packageFiles": 40,
       "signedRoles": 5,
       "sameOriginalDEVIdentityAndNineTables": true,
-      "newBatchActualMainline": "pending",
-      "at": "2026-11-05T12:35:55.813293+00:00"
+      "newBatchActualMainline": "both-source-repositories-merged-and-parent-verified",
+      "at": "2026-11-05T12:35:55.813293+00:00",
+      "backendActualMaster": "9ce2bc955cb2063bee9ffac0c8076ef7e7615132",
+      "iosActualMain": "1f6cac9c927646233459d3436b93128df4d3f917"
     },
     "I7.120": {
       "taskId": "easywork-ios-sync-20261101",
@@ -10452,6 +10454,91 @@
       "ownColdArchiveSHA256": "946945e448ba1ce03ec7b70ddfff184ae21332bb4cbdc47e0155860a0b81c75a",
       "globalF35Closed": false,
       "at": "2026-11-05T12:34:36.398248+00:00"
+    },
+    "I7.116": {
+      "taskId": "easywork-ios-sync-20261101",
+      "sourceHEAD": "757c113c9f3ff3a0e14305471ace2deca6b94d5d",
+      "sourceTree": "0879f777b457cdfcf10cafb1ed665e8da02a62d6",
+      "parent": "c1bbd499933ceb7a43346702d8a9f5a14f18874b",
+      "committedPaths": [
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift",
+        "docs/acceptance/codex-easywork-feature-matrix.md",
+        "docs/acceptance/mobile-evidence/easywork-ios-sync-20261101.json",
+        "docs/acceptance/mobile-parity.md",
+        "docs/design/mobile-parity.md",
+        "docs/product/mobile-parity.manifest.json",
+        "scripts/package-host-connect.test.mjs"
+      ],
+      "worktreeClean": true,
+      "all152AcceptedNativeSourceInputsExact": true,
+      "reviewedOneLinePackagerFixtureHashExact": true,
+      "androidProtectedSectionExact": true,
+      "fullCheckReportedExit": 0,
+      "fullCheckReportedSeconds": 803.463,
+      "targetedReportedPassFailSkip": [13, 0, 0],
+      "targetedReportedSeconds": 0.665,
+      "remotePushPRMergeNotPerformed": true,
+      "formatAuditLimitation": "executor did not capture a full post-format/pre-check snapshot for allowed docs; native152 and reviewed fixture exact, final source/commit clean verified, no claim of independent byte identity of docs across check interval",
+      "sourcePackageAcceptedNativeAndCanonicalEvidenceMatched": true,
+      "at": "2026-11-05T08:02:52.162226+00:00",
+      "fullCheckRawLogSHA256": "58598de389b3523339c32e417a1ba1fdf3c2049a35932cb09921f8de86043c1d",
+      "bothExistingTraceGroupsActualTwoFrames": [
+        {
+          "requests": 2,
+          "frames": 2,
+          "incomplete": false
+        },
+        {
+          "requests": 2,
+          "frames": 2,
+          "incomplete": false
+        }
+      ],
+      "fullCheckActualReceipt": {
+        "command": "pnpm check",
+        "exitCode": 0,
+        "seconds": 803.463,
+        "lastLog": 1
+      }
+    },
+    "I7.121": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "backend-original-formal-receipt-and-exact-source-parent-verified",
+      "pr": 61,
+      "actualMaster": "9ce2bc955cb2063bee9ffac0c8076ef7e7615132",
+      "tree": "e2d08e89e6e0bfa63f35a6a958ccd40ba63c8bd1",
+      "tenFrozenFilesMatchNative66Source": true,
+      "worktreeClean": true,
+      "at": "2026-11-05T12:51:43.380819+00:00",
+      "verificationReceiptSHA256": "6ca0f8768264b64a450213fc5ed45999fa5e05d28c25ce63987ac83a3deef457"
+    },
+    "I7.122": {
+      "taskId": "easywork-ios-sync-20261101",
+      "status": "ios-original-formal-receipt-and-actual-main-parent-verified",
+      "pr": 156,
+      "source": "6cdf529efa844ec5356158a3c265547207373bc2",
+      "actualMain": "1f6cac9c927646233459d3436b93128df4d3f917",
+      "tree": "de802b265b7c443b5efcff1d069e3e63169d9ead",
+      "parents": [
+        "ba0fee47bcee29b460f4640232431b3c2c378ed1",
+        "6cdf529efa844ec5356158a3c265547207373bc2"
+      ],
+      "sourceBranchDeleted": true,
+      "ciRun": 11521,
+      "ciContexts": [
+        {
+          "context": "CI / ios (pull_request)",
+          "status": "success",
+          "description": "Successful in 5m25s"
+        },
+        {
+          "context": "CI / workspace (pull_request)",
+          "status": "success",
+          "description": "Successful in 25m51s"
+        }
+      ],
+      "native152SourceInputsMatchActualNative66": true,
+      "at": "2026-11-05T13:15:32.735173+00:00"
     }
   }
 }

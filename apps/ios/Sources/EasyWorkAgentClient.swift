@@ -750,13 +750,25 @@ struct EasyWorkAgentClient: AgentClient {
       fallbackTurnId: reply.expectedTurnId)
   }
   func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
-    let bytes = try await session(client).request("command/status", ["commandId": id])
+    let channel = try await session(client)
+    let bytes = try await channel.request("command/status", ["commandId": id])
     guard !bytes.elementsEqual(Data("null".utf8)) else { throw HostServiceError.message(L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。")) }
     let value = try object(bytes)
+    for key in ["operationId", "clientMessageId"] {
+      if let observed = value[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
+    }
+    if let raw = value["response"], !(raw is NSNull), !(raw is [String: Any]) { throw HostServiceError.invalidResponse }
     let response = value["response"] as? [String: Any]
+    if let raw = response?["result"], !(raw is NSNull), !(raw is [String: Any]) { throw HostServiceError.invalidResponse }
     let result = response?["result"] as? [String: Any]
+    if let result {
+      for key in ["operationId", "clientMessageId"] {
+        if let observed = result[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
+      }
+      if let recorded = value["threadId"] as? String, let reported = result["threadId"] as? String, recorded != reported { throw HostServiceError.wrongHost }
+    }
     func originalQueueReceipt(_ thread: String) async throws -> DeliveryReceipt? {
-      let queued = try await session(client).request("queue/status", ["threadId": thread, "messageId": id])
+      let queued = try await channel.request("queue/status", ["threadId": thread, "messageId": id])
       if queued.elementsEqual(Data("null".utf8)) { return nil }
       let value = try object(queued)
       guard value["clientMessageId"] as? String == id,
@@ -783,7 +795,7 @@ struct EasyWorkAgentClient: AgentClient {
     }
     return try EasyWorkReceiptNormalization.decode(result ?? [:], clientMessageId: id,
       hostId: client.id, threadId: result?["threadId"] as? String ?? value["threadId"] as? String ?? "",
-      defaultState: value["state"] as? String == "completed" ? "submitted" : value["state"] as? String ?? "uncertain",
+      defaultState: result != nil && value["state"] as? String == "completed" ? "submitted" : "uncertain",
       fallbackError: (response?["error"] as? [String: Any])?["message"] as? String)
   }
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {

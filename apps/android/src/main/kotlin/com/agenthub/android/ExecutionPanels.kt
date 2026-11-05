@@ -109,15 +109,21 @@ fun StorageIdentityNotice(session: MobileSession) {
         session.receiptNotices.forEach { receipt -> ReceiptNotice(receipt,key) { session.dismissReceiptFailure(receipt,key) } }
         session.forkRecords.forEach { ThreadForkReceipt(session,it) }
         session.activeOperationRecords.takeLast(12).forEach { record ->
-            val notSubmitted=record.kind=="reply" && record.phase=="failed" && !record.submissionAttempted
-            val canRetry=session.mayRetryReply(record)
-            val strongNotAccepted=record.replyRecovery?.phase=="strong-not-accepted"
-            ExecutionCard(productText(if(notSubmitted || strongNotAccepted) "未提交" else if(record.detached) "已结束等待 · 原记录保留" else if(record.kind=="creation") "新聊天提交记录" else "操作待确认"),"operation-${record.id}") {
-                Text(productText(if(strongNotAccepted) "电脑已明确原输入未接受；可显式重试同一原消息。" else if(notSubmitted) "内容已保留，请检查当前任务后重新发送。" else if(session.mayContinueCreation(record)) "电脑已准备，可以提交原内容" else when(record.phase) { "ready"->"本地意图已保存"; "preparing"->"电脑准备中"; "prepared"->if(session.mayContinueCreation(record)) "电脑已准备，可以提交原内容" else "原首条结果待核对，请查询原记录"; "submitting"->"提交中"; "received"->"电脑已接收"; "opening"->"原桌面正在打开"; "failed","rejected"->"操作未完成"; else->"结果待确认，查询原记录后再继续" }),fontSize=13.sp)
+            var retryClock by remember(record.target,record.id,record.replyRecovery) {mutableLongStateOf(System.currentTimeMillis())}
+            val canRetry=session.mayRetryReply(record,retryClock)
+            LaunchedEffect(record,canRetry) {
+                retryClock=System.currentTimeMillis()
+                while(session.mayRetryReply(record)) {
+                    kotlinx.coroutines.delay(1000)
+                    retryClock=System.currentTimeMillis()
+                }
+            }
+            val strongNotAccepted=record.kind=="reply" && canRetry
+            ExecutionCard(productText(if(strongNotAccepted) "未提交" else if(record.detached) "已结束等待 · 原记录保留" else if(record.kind=="creation") "新聊天提交记录" else "操作待确认"),"operation-${record.id}") {
+                Text(productText(if(strongNotAccepted) "电脑已明确原输入未接受；可显式重试同一原消息。" else if(session.mayContinueCreation(record)) "电脑已准备，可以提交原内容" else when(record.phase) { "ready"->"本地意图已保存"; "preparing"->"电脑准备中"; "prepared"->if(session.mayContinueCreation(record)) "电脑已准备，可以提交原内容" else "原首条结果待核对，请查询原记录"; "submitting"->"提交中"; "received"->"电脑已接收"; "opening"->"原桌面正在打开"; "failed","rejected"->"操作未完成"; else->"结果待确认，查询原记录后再继续" }),fontSize=13.sp)
                 record.error?.let { Text(it,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
                 FlowRow {
-                    if(notSubmitted) TextButton(onClick={ session.detachOperation(record) },modifier=Modifier.testTag("dismiss-operation-${record.id}")) { Text(productText("关闭提示")) }
-                    else TextButton(onClick={ session.queryOperation(record) },enabled=session.transferStatus==null,modifier=Modifier.testTag("query-operation-${record.id}")) { Text(productText("查询记录")) }
+                    TextButton(onClick={ session.queryOperation(record) },enabled=session.transferStatus==null,modifier=Modifier.testTag("query-operation-${record.id}")) { Text(productText("查询记录")) }
                     if(record.kind=="creation" && record.phase=="rejected") {
                         val original=session.creationWaitContext(record)
                         TextButton(onClick={ original?.let(session::returnRejectedCreation) },enabled=original!=null&&session.transferStatus==null,
@@ -126,9 +132,9 @@ fun StorageIdentityNotice(session: MobileSession) {
                     if(canRetry) TextButton(onClick={ session.retryReply(record) },modifier=Modifier.testTag("retry-operation-${record.id}")) { Text(productText("重试原消息")) }
                     if(canRetry) TextButton(onClick={ session.editOriginalReply(record) },modifier=Modifier.testTag("edit-operation-${record.id}")) { Text(productText("修改原消息")) }
                     if(session.mayContinueCreation(record)) TextButton(onClick={ session.continueCreation(record) },enabled=session.transferStatus==null,modifier=Modifier.testTag("continue-creation-${record.id}")) { Text(productText("提交原内容")) }
-                    if(!record.detached && record.phase!="failed" && (record.phase!="rejected" || record.kind=="creation")) TextButton(onClick={ if(record.kind=="creation")session.requestCreationWait(record) else session.detachOperation(record) },enabled=record.kind!="creation" || session.creationWaitContext(record)!=null,modifier=Modifier.testTag("detach-operation-${record.id}")) { Text(productText("结束等待")) }
+                    if(!record.detached && (record.phase!="failed" || record.kind=="reply") && (record.phase!="rejected" || record.kind=="creation")) TextButton(onClick={ if(record.kind=="creation")session.requestCreationWait(record) else session.detachOperation(record) },enabled=record.kind!="creation" || session.creationWaitContext(record)!=null,modifier=Modifier.testTag("detach-operation-${record.id}")) { Text(productText("结束等待")) }
                 }
-                if(!record.detached && !notSubmitted) Text(productText("结束等待保留原操作与附件，不代表电脑任务已取消。"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                if(!record.detached) Text(productText("结束等待保留原操作与附件，不代表电脑任务已取消。"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         session.runtime?.error?.let { Text(it,color=MaterialTheme.colorScheme.error,fontSize=13.sp,modifier=Modifier.testTag("runtime-error")) }

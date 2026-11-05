@@ -576,7 +576,7 @@ class NativeP8MainPreferenceTest {
             .put("equalsOriginalActiveWindow",JSONObject.NULL).put("errorClass",JSONObject.NULL)
         val dialogWindow=JSONObject().put("state","UNKNOWN").put("windowId",JSONObject.NULL)
             .put("source","original-retained-focused-decor").put("errorClass",JSONObject.NULL)
-        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v4").put("field",tag)
+        val diagnostic=JSONObject().put("schema","p8-native-ax-failure-diagnostic-v5").put("field",tag)
             .put("windowBindingId",binding.id).put("ownedRun",entry.owner.run).put("pid",entry.owner.pid).put("processNonce",entry.owner.nonce)
             .put("expectedAnchor",anchor?:JSONObject.NULL).put("windowId",windowId?:JSONObject.NULL)
             .put("primaryErrorClass",primary.javaClass.name).put("lastCompleteSample",lastCompleteSample?:JSONObject.NULL)
@@ -653,6 +653,68 @@ class NativeP8MainPreferenceTest {
                         val parents=JSONArray();var parent=node.parent
                         repeat(8) { if(parent!=null){budget();parents.put(checkNotNull(parent).id);parent=checkNotNull(parent).parent} }
                         observation.put("parentIds",parents).put("parentIdLimit",8).put("parentIdsTruncated",parent!=null)
+                        // Failure-only metadata for this exact original anchor. Never select
+                        // another anchor/window or call a scroll/input/layout action here.
+                        if(unmerged&&node.id==anchor) {
+                            val fixedNodes=listOf("connection-page","sheet-add").associateWith {fixedTag->
+                                read {
+                                    val found=ui.onAllNodesWithTag(fixedTag,useUnmergedTree=true).fetchSemanticsNodes()
+                                    check(found.size==1) {"AX diagnostic fixed geometry tag count mismatch"}
+                                    found.single().also {check(it.root===root) {"AX diagnostic fixed geometry owner changed"}}
+                                }
+                            }
+                            val geometry=JSONObject().put("state","UNKNOWN").put("nodeLimit",9)
+                            observation.put("originalGeometry",geometry)
+                            main {
+                                budget();check(view.rootView===binding.decor&&node.root===root)
+                                val rootNode=root.semanticsOwner.unmergedRootSemanticsNode
+                                val rootLayout=rootNode.layoutInfo;val rootCoordinates=rootLayout.coordinates
+                                check(rootCoordinates.isAttached)
+                                val rows=JSONArray();val chain=mutableListOf<androidx.compose.ui.semantics.SemanticsNode>()
+                                var at: androidx.compose.ui.semantics.SemanticsNode?=node
+                                repeat(9) {depth->
+                                    val item=at?:return@repeat
+                                    budget();check(item.root===root&&chain.none {it.id==item.id})
+                                    val parentBefore=item.parent;val layout=item.layoutInfo;val coordinates=layout.coordinates
+                                    val position=item.positionInRoot;val windowPosition=item.positionInWindow
+                                    val row=JSONObject().put("id",item.id).put("parentId",parentBefore?.id?:JSONObject.NULL).put("depth",depth)
+                                        .put("role",if(item.id==node.id)"original-field" else fixedNodes.entries.firstOrNull {it.value.id==item.id}?.key?:"ancestor")
+                                        .put("size",JSONArray(listOf(item.size.width,item.size.height)))
+                                        .put("layoutSize",JSONArray(listOf(layout.width,layout.height)))
+                                        .put("attached",layout.isAttached).put("placed",layout.isPlaced)
+                                        .put("coordinatesAttached",coordinates.isAttached)
+                                        .put("positionInRoot",JSONArray(listOf(position.x,position.y)))
+                                        .put("positionInWindow",JSONArray(listOf(windowPosition.x,windowPosition.y)))
+                                        .put("semanticsBoundsInRoot",bounds(item.boundsInRoot)).put("semanticsBoundsInWindow",bounds(item.boundsInWindow))
+                                    if(coordinates.isAttached) {
+                                        row.put("layoutClippedInRoot",bounds(rootCoordinates.localBoundingBoxOf(coordinates,true)))
+                                            .put("layoutUnclippedInRoot",bounds(rootCoordinates.localBoundingBoxOf(coordinates,false)))
+                                    }
+                                    val scroll=item.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)
+                                    if(scroll!=null) {
+                                        val value=scroll.value();val maximum=scroll.maxValue()
+                                        row.put("verticalScroll",JSONObject().put("finite",value.isFinite()&&maximum.isFinite())
+                                            .put("value",if(value.isFinite())value else JSONObject.NULL)
+                                            .put("maximum",if(maximum.isFinite())maximum else JSONObject.NULL).put("reverse",scroll.reverseScrolling))
+                                    }
+                                    budget();check(item.root===root&&item.parent?.id==parentBefore?.id&&item.layoutInfo===layout)
+                                    rows.put(row);chain.add(item);at=parentBefore
+                                }
+                                chain.forEachIndexed {index,item->
+                                    budget();check(item.root===root)
+                                    if(index+1<chain.size)check(item.parent?.id==chain[index+1].id)
+                                }
+                                val roles=JSONObject()
+                                fixedNodes.forEach {(fixedTag,fixedNode)->
+                                    budget();check(fixedNode.root===root)
+                                    roles.put(fixedTag,JSONObject().put("id",fixedNode.id).put("inCapturedAncestorChain",chain.any {it.id==fixedNode.id}))
+                                }
+                                check(node.root===root&&view.rootView===binding.decor&&root.semanticsOwner.unmergedRootSemanticsNode.layoutInfo===rootLayout)
+                                budget();geometry.put("state","OBSERVED").put("nodes",rows).put("truncated",at!=null)
+                                    .put("fixedRoles",roles).put("pendingMeasureOrLayout",root.hasPendingMeasureOrLayout)
+                                    .put("imeVisible",binding.decor.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime())?:JSONObject.NULL)
+                            }
+                        }
                         node.id
                     }
                     if(unmerged)unmergedId=id else mergedId=id
@@ -776,6 +838,12 @@ class NativeP8MainPreferenceTest {
             .put("limit",limit).put("stage",stage).put("actualElapsedMs",actualElapsedMs).put("overBudget",overBudget)
             .put("failureCount",if(diagnosticError==null)0 else 1)
             .put("errorClass",diagnosticError?.javaClass?.name?:JSONObject.NULL)
+        // Failure metadata has its own byte bound, never a success fallback.
+        if(diagnostic.toString().toByteArray(Charsets.UTF_8).size>16384) {
+            composeIds.optJSONObject("unmerged")?.remove("originalGeometry")
+            diagnostic.put("outcome","UNKNOWN").put("complete",false).put("limit","metadata-bytes")
+                .put("geometryOmittedForQuota",true).put("metadataByteLimit",16384)
+        }
         // A separate failed-run bundle key cannot enter the Host's exact success/phase contracts.
         try {owned(entry) {instrumentation.sendStatus(0,android.os.Bundle().apply {putString("p8AxFailureDiagnostic",diagnostic.toString())})}}
         catch(error: Throwable) {suppress(error)}
@@ -817,6 +885,13 @@ class NativeP8MainPreferenceTest {
             read {
                 val node=ui.onNodeWithTag(tag).fetchSemanticsNode()
                 check(node.id==checkNotNull(anchor)) {"Original Compose anchor changed: $tag"}
+                // A prior scroll is not a visibility proof after asynchronous save/IME/layout work.
+                // Keep the exact original anchor fully reachable throughout this read-only AX wait.
+                val size=node.size;val bounds=node.boundsInRoot;val inWindow=node.boundsInWindow
+                check(node.layoutInfo.isAttached&&node.layoutInfo.isPlaced&&size.width>0&&size.height>0&&
+                    !bounds.isEmpty&&!inWindow.isEmpty&&bounds.width>=size.width-1.5f&&bounds.height>=size.height-1.5f) {
+                    "Original Compose anchor is no longer fully visible: $tag"
+                }
                 val config=node.config
                 if(label!=null) {
                     check(config.getOrNull(SemanticsProperties.EditableText)==AnnotatedString(value)&&
@@ -1006,7 +1081,8 @@ class NativeP8MainPreferenceTest {
         fieldInput(binding,"name-ime") {gate->
             val node=ui.onNodeWithTag("easywork-name");gate();node.performImeAction()
         };awaitImeHidden(entry,binding)
-        completeInput("easywork-name",renamed,if(english)"Name" else "名称");savedName(entry,client.id,renamed)
+        savedName(entry,client.id,renamed)
+        completeInput("easywork-name",renamed,if(english)"Name" else "名称")
         nativeAxComplete(binding,"easywork-name",renamed,if(english)"Name" else "名称")
         // The layout may wrap a label/value; its semantics must keep every original character.
         val values=listOf("agent" to scope.agentId,"authority" to scope.accountAuthority.orEmpty(),"subject" to scope.accountSubject.orEmpty(),

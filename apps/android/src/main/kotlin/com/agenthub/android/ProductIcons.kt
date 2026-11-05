@@ -72,6 +72,8 @@ import androidx.compose.ui.unit.dp
             "search" -> { drawCircle(color,7f*u,Offset(10f*u,10f*u),style=stroke); line(15f,15f,21f,21f) }
             "desktop" -> { drawRoundRect(color,Offset(2f*u,3f*u),Size(20f*u,14f*u),androidx.compose.ui.geometry.CornerRadius(2f*u),style=stroke); line(12f,17f,12f,21f); line(7f,21f,17f,21f) }
             "laptop" -> { drawRoundRect(color,Offset(4f*u,4f*u),Size(16f*u,13f*u),style=stroke); path(2f,20f,22f,20f) }
+            "file-transfer" -> {line(7f,20f,7f,4f);path(3f,8f,7f,4f,11f,8f);line(17f,4f,17f,20f);path(13f,16f,17f,20f,21f,16f)}
+            "file-upload" -> {path(5f,2f,14f,2f,19f,7f,19f,22f,5f,22f,5f,2f);path(14f,2f,14f,7f,19f,7f);line(12f,18f,12f,10f);path(9f,13f,12f,10f,15f,13f)}
             "folder" -> path(3f,19f,3f,6f,10f,6f,12f,9f,21f,9f,21f,19f,3f,19f)
             "new" -> { path(19f,13f,19f,21f,3f,21f,3f,5f,11f,5f); path(9f,15f,10f,10f,19f,1f,23f,5f,14f,14f,9f,15f) }
             "send" -> { line(12f,20f,12f,4f); path(5f,11f,12f,4f,19f,11f) }

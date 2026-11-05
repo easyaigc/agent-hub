@@ -2598,25 +2598,42 @@
     {
       "id": "F59",
       "group": "手机阅读、通知与系统功能",
-      "assertion": "电脑文件互传入口独立于对话任务；系统文件多选、目标身份与能力、20 MiB 限额、文件名／大小／SHA-256 校验、稳定操作回执及未知查询、重启恢复与复制路径一致；不会自动发送聊天或启动模型",
+      "assertion": "电脑文件互传入口独立于对话任务；系统文件多选、目标身份与能力、Host明确配置的大小上限与本机资源约束；Host未配置上限不再按20 MiB拒绝，平台未对齐容量明确登记、文件名／大小／SHA-256 校验、稳定操作回执及未知查询、重启恢复与复制路径一致；不会自动发送聊天或启动模型；本次移除独立互传／Codex资源下载预览的20 MiB固定上限，保留完整目标与摘要校验",
       "ui": ["UI02", "UI13", "UI11", "UI12"],
       "scenarios": ["S04", "S11", "S14"],
       "implementation": {
         "ios": "code-present",
-        "android": "planned"
+        "android": "in-progress"
       },
       "verification": {
         "ios": "not-verified-for-current-product",
         "android": "not-verified"
       },
       "androidStages": ["A6"],
-      "sourceReviewStatus": "未实现独立文件互传",
+      "sourceReviewStatus": "阶段105：520的新SDK942与15项Native本次通过，完整F59/迁移/界面/手机仍not-verified",
       "androidSourceFiles": [
-        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
-        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt"
+        "apps/android/localization/native-copy.json",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt"
       ],
-      "gapAndScope": "没有侧栏电脑文件互传入口/独立操作台；附件发送不能替代，A6暂停",
-      "acceptance": "系统多选、20MiB、目录权限/哈希、上传/下载/未知原ID查询、复制路径/重启；零聊天Turn",
+      "gapAndScope": "独立页与严格原件/回执源码已接入，容量差异、portable迁移、系统/故障/完整UI及真实Host/手机待验；iOS A6继续暂停",
+      "acceptance": "SAF多选/目标与能力/有效额度/不可变长度摘要、UNKNOWN仅原ID查询、清理失败保留原回执、路径复制/冷恢复/零聊天Turn及全部UI矩阵",
       "scope": "retained",
       "newPhoneVerification": "not-performed-by-this-source-audit",
       "iosSourceFiles": [
@@ -2634,10 +2651,11 @@
         "windows-trace-client-queue-upstream-integration-20261019",
         "cellular-real-device-preparation-20261020",
         "controlled-weak-network-windows-20261021",
-        "native-discovery-jitter-read-coalescing-20261021"
+        "native-discovery-jitter-read-coalescing-20261021",
+        "stage94-android-standalone-strict-files"
       ],
       "plannedPackages": ["P7"],
-      "a6ExecutionGate": "相关系统/新增存储恢复/未读/语音工作暂停，现有代码保留；P1只核已有提交前置条件。"
+      "a6ExecutionGate": "Android P7按人类授权继续；iOS A6保持暂停，任务/项目管理及F75暂缓。"
     },
     {
       "id": "F60",
@@ -2683,21 +2701,21 @@
       "scenarios": ["S03", "S10", "S13"],
       "implementation": {
         "ios": "implemented",
-        "android": "implemented"
+        "android": "in-progress"
       },
       "verification": {
         "ios": "passed",
-        "android": "passed"
+        "android": "not-verified"
       },
       "androidStages": ["A4"],
-      "sourceReviewStatus": "UM02已有",
+      "sourceReviewStatus": "阶段95已接入旧not-written保守重试/界面门槛修复；当前编译/Native/UI未验",
       "androidSourceFiles": [
         "apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt",
         "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt",
         "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt"
       ],
-      "gapAndScope": "首条/回复投递检查、提交原内容/重试原消息已有",
-      "acceptance": "not-written权威范围与过期、普通404、单显式继续一次、重启后原指纹与授权scope不变",
+      "gapAndScope": "历史投递验收按原指纹保留；旧not-written不再证明未发送，完整strict lineage/source/outbox/消费/编辑退场竞争仍开放",
+      "acceptance": "新鲜强证明/过期/目标或证书不符/已消费/已脱离/迁入只读、原ID只读查询/显式结束等待、Composer拦截与自动到期UI；不得重放原输入",
       "scope": "retained",
       "newPhoneVerification": "not-performed-by-this-source-audit",
       "iosSourceFiles": [
@@ -2710,7 +2728,8 @@
         "UM02-reply-recovery-implementation",
         "UM02-independent-ios-correction-acceptance",
         "UM05-sharing-voice-implementation",
-        "windows-trace-client-queue-upstream-integration-20261019"
+        "windows-trace-client-queue-upstream-integration-20261019",
+        "stage95-android-legacy-reply-safety"
       ],
       "plannedPackages": ["P1", "P4"]
     },
@@ -3421,7 +3440,7 @@
         "后台/重启后恢复"
       ],
       "newPhoneVerification": "not-performed-by-this-source-audit",
-      "delta": "完全缺独立文件互传页，附件选择/发送不得顶替。"
+      "delta": "阶段94独立LazyColumn页/侧栏入口/SAF多选/进度/待传与原结果查询/已完成路径复制源码已接入；主题、横竖屏、字号、键盘/返回/手势与TalkBack尚未逐项验收。"
     },
     {
       "id": "UI14",
@@ -4908,7 +4927,17 @@
     "S18仅UI01–UI13已过时，UI14–21及本次X增量不能遗漏。",
     "F70原断言与UI表缺置顶、全文搜索、归档列表/批量管理等子项；本计划分解，不声称Android已实现。",
     "A0 89图仍有大字/完整Markdown/链接/Diff/发现/非阻塞问题/迁移等缺态，不能作为最新全UI覆盖。",
-    "多数manifest Android in-progress记录滞后于A4已关闭及UM01–05完成；implementation与verification必须分开，不凭修正文档标全通过。"
+    "多数manifest Android in-progress记录滞后于A4已关闭及UM01–05完成；implementation与verification必须分开，不凭修正文档标全通过。",
+    "阶段94只更新F59/UI13当前源码状态与Host无配置大小上限口径；frozenCommit/sourceFingerprints保留最初审计证据，不将新接入称最初已实现或运行通过。",
+    "阶段95当前Android F61回到in-progress/not-verified以反映新修复未验与持久性缺口；历史UM02通过按原指纹保留，iOS/KMP未改。",
+    "阶段97按84d8be9e更新有限编译/Native实际结果：31启动30通过，hardlink准备EACCES不算reader通过；原始frozenCommit/sourceFingerprints与历史结果不改，F59/F61仍in-progress/not-verified。",
+    "阶段98仅新增F59 portable子域校验与共同规则；6+3辅助和普通编译不关闭完整迁移或真实UI，原frozenCommit/sourceFingerprints不改。",
+    "阶段100仅关闭aeda809b完整辅助回归待补项（1594/1526pass0fail68skip）；旧失败及原frozenCommit/sourceFingerprints保持，Native/界面/完整迁移不升级。",
+    "阶段101只更新F59当前generation单child只读源源码/普通编译与8方法资格；frozenCommit/sourceFingerprints及历史通过不改，完整迁移/Native/UI未关闭。",
+    "阶段102：c4fcea62的940输入/14工具/92文件SDK封存通过；API33八项实际启动、7通过1失败，旧66文件/133对象及prefs保护核对。失败在generation夹具普通producer误用existingKeyOnly、未到替换消费者；仅修夹具冻结前重开方式并重锁固定pin，strict reader和迁移gate不变。新源码SDK/八项Native待重新封存验收，old-generation family候选未采用，完整迁移/iOS/UI/手机仍开放，UNKNOWN不重放。见docs/plans/android-alignment-20261022/records/stage102-f59-native-fixture-recovery.md。",
+    "阶段103：f38b8be1的新940输入SDK及API33八个具名方法全部通过，无skip/assumption；104条原始客户端、336份材料、旧66文件/133对象/prefs及Root原VM wait0/双流/退出核对。旧c4的7/1和harness失败保留，未升级完整F59/迁移/iOS/UI/手机；继续old-generation family、大容量封包及目的端。见docs/plans/android-alignment-20261022/records/stage103-f59-current-source-native8.md。",
+    "阶段104：F59只读family源码已接入，原root与全部受限保留generation独立库存、既有key-only/实际Frozen/目录FD身份与整体额度闭合，UNKNOWN/同名ID/原receipt不跨代合并。新增7方法源码强化不同payload/hash与终态回执、消费者实际执行断言；独立942/125/124+self/15资格及执行capture self绑定已静态复核，新编译/SDK/Native尚待验。旧整包拒绝、完整24域/认证容器/目的端/iOS/Main/手机仍开放。见docs/plans/android-alignment-20261022/records/stage104-f59-family-source.md。",
+    "阶段105：5203513的942输入/19合同拒绝与新SDK通过，API33准确15方法（原8+family7）全部通过、0跳过，原66文件/133对象/prefs与104客户端/334材料/原VM退出核对。仅闭合按代严格只读源边界；认证容器/24域/目的端/iOS/Main/手机仍未验，旧UNKNOWN不重放。见docs/plans/android-alignment-20261022/records/stage105-f59-family-native15.md。"
   ],
   "sourceFingerprints": [
     {

@@ -22,19 +22,21 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null): JSONObject =
         exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path=="v1/usage") 262144 else if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
     private suspend fun <T> exchange(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
-        body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,decode: (java.io.InputStream,()->Boolean)->T): T {
+        body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,transfer: ComputerFileUpload? = null,progress: (Long)->Unit = {},decode: (java.io.InputStream,()->Boolean)->T): T {
         require(!client.isDemo && client.id.isNotBlank() && client.scope?.hostId==client.id) { "未绑定真实电脑目标" }
         require(path in ROUTES) { "未知电脑操作" }
-        val post=body!=null || bytes!=null
+        require(transfer==null || path=="v1/file-transfers/content"&&body==null&&bytes==null&&query==mapOf("id" to transfer.file.id)&&transfer.file.hostId==client.id)
+        val post=body!=null || bytes!=null || transfer!=null
         require(!post || path in POST_ROUTES) { "此接口仅可读取" }
         if(body!=null) {
             require(body.getString("hostId")==client.id) { "操作电脑身份不匹配" }
             require(definition!=null)
-            if(path=="v1/threads/read") { require(definition=="phoneReadRequest");NativeThreadReadingWire.validateRequest(body) }
+            if(path=="v1/file-transfers") {require(definition=="computerFileManifest");ComputerFileCodec.manifest(body)}
+            else if(path=="v1/threads/read") { require(definition=="phoneReadRequest");NativeThreadReadingWire.validateRequest(body) }
             else CodexCommandCodec.validate(body,definition)
         }
         val base=NativeHostReads.baseAddress(client.endpoint ?: throw CodexCommandError("尚未配置电脑地址")).toString().trimEnd('/')
-        val parameters=if(path=="v1/usage")query else mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
+        val parameters=if(path=="v1/usage")query else mapOf("hostId" to client.id)+query+if(path in setOf("v1/file-transfers","v1/file-transfers/content") || path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
         val encoded=parameters.entries.joinToString("&") { (k,v)->URLEncoder.encode(k,"UTF-8")+"="+URLEncoder.encode(v,"UTF-8") }
         val url=URI("$base/$path?$encoded").toURL()
         return suspendCancellableCoroutine { continuation ->
@@ -57,16 +59,18 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                     connection.setRequestProperty("X-Agent-Hub-Approvals","mcp-v1")
                     token(client.id).takeIf { it.isNotEmpty() }?.let { connection.setRequestProperty("Authorization","Bearer $it") }
                     if(post) {
-                        val content=bytes ?: body!!.toString().toByteArray(Charsets.UTF_8)
-                        connection.doOutput=true; connection.setFixedLengthStreamingMode(content.size)
-                        connection.setRequestProperty("Content-Type",mediaType ?: "application/json; charset=utf-8")
+                        val content=if(transfer==null)bytes ?: body!!.toString().toByteArray(Charsets.UTF_8) else null
+                        connection.doOutput=true; connection.setFixedLengthStreamingMode(transfer?.file?.sizeBytes ?: content!!.size.toLong())
+                        connection.setRequestProperty("Content-Type",transfer?.file?.mediaType ?: mediaType ?: "application/json; charset=utf-8")
                         if(bytes!=null) connection.setRequestProperty("X-Content-SHA256",hash(bytes))
+                        transfer?.let {connection.setRequestProperty("X-Content-SHA256",it.file.sha256)}
                         connection.outputStream.use { output ->
-                            var offset=0
-                            while(offset<content.size) {
+                            if(transfer!=null)transfer.copyTo(output,{continuation.isActive},progress)
+                            else {val payload=requireNotNull(content);var offset=0
+                            while(offset<payload.size) {
                                 if(!continuation.isActive) return@submit
-                                val size=minOf(16_384,content.size-offset); output.write(content,offset,size); offset+=size
-                            }
+                                val size=minOf(16_384,payload.size-offset); output.write(payload,offset,size); offset+=size
+                            }}
                         }
                     }
                     val status=connection.responseCode
@@ -87,6 +91,26 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
             }
             continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
         }
+    }
+    private suspend fun computerFileRequest(client: MobileClient,query: Map<String,String> = emptyMap(),body: JSONObject? = null,
+        source: ComputerFileUpload? = null,progress: (Long)->Unit = {}): JSONObject =
+        exchange(client,if(source==null)"v1/file-transfers" else "v1/file-transfers/content",query,body,
+            if(body==null)null else "computerFileManifest",transfer=source,progress=progress) {input,active->
+            StrictMigrationJson.parse(NativeWireReader.read(input,1024*1024,active).toByteArray(Charsets.UTF_8))
+        }
+    override suspend fun computerFiles(client: MobileClient)=ComputerFileCodec.catalog(computerFileRequest(client),client.id)
+    override suspend fun prepareComputerFile(client: MobileClient,file: ComputerFileManifest): ComputerFileReceipt {
+        require(file.hostId==client.id);ComputerFileCodec.manifest(file.json())
+        return ComputerFileCodec.receipt(computerFileRequest(client,body=file.json()),client.id).also {it.validate(file)}
+    }
+    override suspend fun computerFile(client: MobileClient,id: String): ComputerFileReceipt {
+        ComputerFileCodec.uuid(id)
+        return ComputerFileCodec.receipt(computerFileRequest(client,mapOf("id" to id)),client.id).also {require(it.file.id==id)}
+    }
+    override suspend fun uploadComputerFile(client: MobileClient,source: ComputerFileUpload,progress: (Long)->Unit): ComputerFileReceipt {
+        require(source.file.hostId==client.id);ComputerFileCodec.manifest(source.file.json())
+        return ComputerFileCodec.receipt(computerFileRequest(client,mapOf("id" to source.file.id),source=source,progress=progress),client.id)
+            .also {it.validate(source.file);require(it.phase=="completed")}
     }
     override suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead): JSONObject {
         require(sameScope(client.scope,request.target) && client.id==request.target.hostId &&
@@ -225,7 +249,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
 
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-private val POST_ROUTES=setOf("v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
+private val POST_ROUTES=setOf("v1/file-transfers","v1/file-transfers/content","v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
 private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link")
 private val RESOURCE_READ_ROUTES=setOf("v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link")
 private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/usage","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

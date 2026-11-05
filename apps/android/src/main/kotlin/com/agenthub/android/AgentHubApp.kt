@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.first
 import com.agenthub.core.*
 
 @Composable fun AgentHubApp(session: MobileSession, onThemeChanged: (Boolean) -> Unit = {}) {
+    val computerFilesContext=LocalContext.current
     val dark = session.appearance == "dark" || session.appearance == "system" && isSystemInDarkTheme()
     SideEffect { onThemeChanged(dark) }
     val colors = nativeThemeColors(dark)
@@ -189,7 +190,7 @@ import com.agenthub.core.*
                 }.pointerInput(widthPx) {
                     detectHorizontalDragGestures(onDragStart={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
-                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
+                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },fileTransfers={session.openComputerFiles(computerFilesContext);openSheet("file-transfers")},active=sidebar&&effectiveSheet==null&&session.error==null)
                 }
                 if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration"){session.migrationController?.close();sheet=null;editing=null} else if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration")session.migrationController?.close();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
                 session.error?.let { failure ->

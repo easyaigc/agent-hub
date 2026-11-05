@@ -132,10 +132,12 @@ final class P7MainSafBoundedFd {
                 P7MainSafLeaseV3.regular(Os.fstat(sink));P7MainSafLeaseV3.same(Os.fstat(sink),Os.lstat(scope.pendingPayload().getPath()));
                 if(Os.fstat(sink).st_size!=size)throw P7MainSafLeaseV3.reject("PAYLOAD_SIZE");
                 budget();Os.fsync(sink);budget();fileSynced=true;
-                closeSink();closeRead(false);budget();
-                // No writable file descriptor escaped. Link+unlink is exclusive and leaves
-                // an explicit partial pair after a crash, never a silently adopted file.
-                P7MainSafLeaseV3.publish(scope.pendingPayload(),scope.payload());published=true;directorySynced=true;budget();
+                // Join a read-only witness while the ORIGINAL sink is still open, then
+                // retain the legacy writer/receiver close order before publication.
+                try(P7MainSafLeaseV3.Pending held=P7MainSafLeaseV3.pendingWitness(scope.pendingPayload(),sink,size)) {
+                    closeSink();closeRead(false);budget();
+                    P7MainSafLeaseV3.publish(held,scope.payload());published=true;directorySynced=true;budget();
+                }
                 scope.event("payload-ack",new JSONObject().put("status","PAYLOAD_COMMITTED").put("size",size).put("sha256",sha256)
                     .put("eofObserved",true).put("receiverFdClosed",true).put("sinkFdClosed",true).put("fileSynced",true)
                     .put("directorySynced",true).put("payloadPublished",true).put("expectedFingerprintBound",expected>0)

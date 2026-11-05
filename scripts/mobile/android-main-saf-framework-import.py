@@ -26,15 +26,21 @@ sys.dont_write_bytecode = True
 
 TOOL = "scripts/mobile/android-main-saf-framework-import.py"
 EXPORT_HELPER = "scripts/mobile/android-main-saf-framework.py"
-SDK_PROFILE = 'p7-main-saf-platform-alias-ax-v1'
-SOURCE_GUARD_FUNCTION = 'p7_platform_alias_ax_source_guard'
+SDK_PROFILE = 'p7-main-saf-explicit-fd-v1'
+SOURCE_GUARD_FUNCTION = 'p7_explicit_fd_source_guard'
+APP_FILES_SDK_PROFILE = "p7-main-saf-producer-app-files-v2"
+APP_FILES_GUARD_FUNCTION = "p7_producer_app_files_source_guard"
+APP_FILES_NATIVE_SCHEMA = "p7-main-saf-producer-admission-v2"
+APP_FILES_NATIVE_PROFILE = "p7-main-saf-producer-app-files-v2"
+APP_FILES_NAMESPACE = "files/p7-main-saf-producer-app-files-v2"
+
 PROFILE = "p7-main-saf-framework-v4"
 APP = "com.easyai.agenthub.android.acceptance"
 TEST = APP + ".test"
 CONTROL = TEST + ".p7-main-saf-control-v4"
 DOCUMENTS = TEST + ".p7-main-saf-v3"
 DOCUMENT_PROCESS = TEST + ":p7MainSafV3"
-NAMESPACE = "files/p7-main-saf-owned-v3"
+NAMESPACE = "files/p7-main-saf-owned-v4"
 NATIVE_SELECTOR = "com.agenthub.android.NativeMigrationMainUiTest#actualMainSafOpenStagesOnlyOwnedEncryptedDocument"
 PRODUCER_SELECTOR = "com.agenthub.android.NativeMigrationMainSafProducerTest#produceOnlySyntheticImportCiphertext"
 CAP, PAYLOAD_CAP, STDERR_CAP = 16384, 2 * 1024 * 1024, 2 * 1024 * 1024
@@ -47,6 +53,28 @@ PROTECTED_IDS = frozenset((
     "1419f7b0-5eea-4d13-ac85-970b92e3679a",
     "15b2a558-ac1e-406c-b801-d22c34db8acb", "17cbb017-0113-4765-ad44-ae477b38b9be",
     "bc14c713-91a7-484c-bfa7-dbab06ac9098"))
+# Preserve the current source84 unknown preparation and never-dispatched Native intent.
+# New storage/purpose is not permission to reuse or query an old operation/run.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("8e4d4440-8931-4c96-95a6-5e6ae7818980",
+    "8f9b8227-b102-470b-aba6-fddc411a7497", "9201e7bd-e9db-42c9-9c83-f9b9bdcd6eff"))
+
+
+# Preserve Source85 prepared-but-failed picker and its original immutable intent.
+# A filename phase fix only admits a fresh run; never resume or replay these IDs.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("835a58e0-d421-4f51-bcf2-82467fa68ba8",
+    "d6e02b7b-6313-4a83-8ad3-64315bd2a76c", "13543e28-9178-4439-83d7-7352ee05a4f0"))
+
+# Preserve Source86's original written payload, ACK and failed Main/owner result.
+# Fresh explicit-FD admission must never resume or replay these operations.
+PROTECTED_IDS = PROTECTED_IDS | frozenset(("0b2dd747-2a70-45fe-b348-772f6d634a12",
+    "880e07d9-42cf-48da-ae90-399d92cf98ce", "e6cdc5a7-b83e-4846-8299-e68f1ff399cf"))
+
+
+# The completed export and failed original producer are immutable protected scopes.
+PROTECTED_IDS = PROTECTED_IDS | frozenset((
+    "2b400f42-3e37-49fb-90eb-469846cd4d41", "9afd6f96-15ae-4f0a-801c-53b62ec848ae", "39fe4fc4-582a-47f8-9142-3ac3379fdeed",
+    "158ce0d8-9e4c-4f24-abf7-8515d1f64110", "84168274-cb1b-466e-b454-57b679ad2e4f", "1e2f60d2-1936-4ae1-bc99-bb16ef21e648"))
+
 ROOT_EXTRA_KEYS = {"exportHelperSha256", "producerOperationId", "sourceProducerProofSha256",
     "sourcePayloadBytes", "sourcePayloadSha256"}
 SOURCE_FILES = frozenset(("producer-binding.json", "producer-receipt.json", "producer-process.json",
@@ -127,10 +155,22 @@ def load_base(args):
         "Closed shared protocol constants changed")
     return raw, root
 
+
+def import_contract(root):
+    # Old records retain their exact purpose. A new Root may only use the new SDK
+    # and v2 producer namespace; the schemas cannot cross-select one another.
+    if root["schema"] == "p7-framework-import-explicit-fd-root-approval-v1":
+        return (SDK_PROFILE, SOURCE_GUARD_FUNCTION, "p7-main-saf-framework-import-explicit-fd-v1",
+            "p7-main-saf-admission-v1", "p7-main-saf-v2", "files/p7-main-saf-producer-v1")
+    require(root["schema"] == "p7-framework-import-app-files-root-approval-v2", "Closed IMPORT Root purpose")
+    return (APP_FILES_SDK_PROFILE, APP_FILES_GUARD_FUNCTION, "p7-main-saf-framework-import-app-files-v2",
+        APP_FILES_NATIVE_SCHEMA, APP_FILES_NATIVE_PROFILE, APP_FILES_NAMESPACE)
+
 def root_approval(args):
     raw, root = load_base(args)
-    require(set(root) == b.ROOT_KEYS | ROOT_EXTRA_KEYS and root["schema"] == "p7-framework-import-root-approval-v1" and root["kind"] == "IMPORT",
+    require(set(root) == b.ROOT_KEYS | ROOT_EXTRA_KEYS and root["kind"] == "IMPORT",
         "Exact separately admitted IMPORT Root schema")
+    contract = import_contract(root)
     ids = [root[k] for k in ("run", "operationId", "nativeOperationId", "producerOperationId")]
     for value in ids + [root["bootUuid"]]:
         b.canonical_uuid(value); require(value not in PROTECTED_IDS, "Protected unknown operation/run forbidden")
@@ -157,19 +197,20 @@ def root_approval(args):
     require(digest(runtime_raw) == root["runtimeAdmissionSha256"], "Exact runtime admission pin")
     runtime = exact_json(runtime_raw)
     require(set(runtime) == b.RUNTIME_KEYS and runtime["schema"] == "p7-framework-api33-runtime-admission-v1" and
-        runtime["purpose"] == "p7-main-saf-framework-import-v1" and runtime["api"] == 33 and type(runtime["api"]) is int and runtime["ready"] is True,
+        runtime["purpose"] == contract[2] and runtime["api"] == 33 and type(runtime["api"]) is int and runtime["ready"] is True,
         "Closed IMPORT runtime purpose")
     b.canonical_uuid(runtime["ownedRuntimeId"])
     for key in b.RUNTIME_KEYS - {"schema", "purpose", "ownedRuntimeId", "api", "ready"}:
         require(runtime[key] == root[key] and type(runtime[key]) is type(root[key]), "Runtime/Root fingerprint drift")
     return raw, root, runtime_raw, runtime
 
-def source_guard(repo, overlay):
-    # SDK integration must define this new closed60/905 guard; never fall back to an old purpose.
-    require(hasattr(b._capture, SOURCE_GUARD_FUNCTION), "UNBOUND: independently reviewed IMPORT source guard missing")
-    value = getattr(b._capture, SOURCE_GUARD_FUNCTION)(b._first, repo, overlay)
-    require(len(value["sourceOverlay"]) == 60 and len(value["inventory"]) == len(value["sources"]) == 905,
-        "Exact new IMPORT source inventory60/905")
+def source_guard(repo, overlay, root):
+    guard_function = import_contract(root)[1]
+    # SDK integration must define this new closed62/905 guard; never fall back to an old purpose.
+    require(hasattr(b._capture, guard_function), "UNBOUND: independently reviewed IMPORT source guard missing")
+    value = getattr(b._capture, guard_function)(b._first, repo, overlay)
+    require(len(value["sourceOverlay"]) == 62 and len(value["inventory"]) == len(value["sources"]) == 905,
+        "Exact new IMPORT source inventory62/905")
     return value
 
 def admitted(args, root):
@@ -178,10 +219,10 @@ def admitted(args, root):
     review_raw = b._capture.private_bytes(bundle / "workspace-review.json", 131072)
     require(digest(seal_raw) == root["sdkSealSha256"] and digest(review_raw) == root["workspaceReviewSha256"], "Root-pinned SDK/review")
     require(b._capture.parse_json(review_raw)["head"] == root["head"], "SDK reviewed HEAD")
-    build = b._capture.verify_build_bundle(bundle, b._first, repo, SDK_PROFILE)
+    build = b._capture.verify_build_bundle(bundle, b._first, repo, import_contract(root)[0])
     guard = b._first.read_guard(bundle / "source-before.json")
     require(build["sealSha256"] == root["sdkSealSha256"] and digest(canonical(guard)) == root["sourceGuardSha256"] and
-        b._first.same(guard, source_guard(repo, guard["sourceOverlay"])), "Exact reviewed IMPORT source chain")
+        b._first.same(guard, source_guard(repo, guard["sourceOverlay"], root)), "Exact reviewed IMPORT source chain")
     require(guard["sources"][TOOL] == root["hostToolSha256"] and guard["sources"][EXPORT_HELPER] == root["exportHelperSha256"] and
         guard["sources"]["scripts/mobile/android-sdk-capture.py"] == root["captureSelfSha256"], "Host/helper/capture source pins")
     require(digest(b._capture.private_bytes(bundle / "adb-version.stdout.bin", CAP)) == root["adbVersionSha256"], "Actual captured ADB version")
@@ -238,11 +279,35 @@ def original_wait(raw, intent_raw, stdout, stderr, expected_argv, repo):
     require(not stderr, "Original producer/read stderr retained as failure, never pass")
     return wait
 
+def producer_app_files_witnesses(records, binding):
+    if binding["schema"] != APP_FILES_NATIVE_SCHEMA:
+        require(not records, "Old producer cannot adopt APP-files-v2 diagnostics")
+        return
+    require(len(records) == 2, "Two original APP-files-v2 witnesses required")
+    flags = {"contextIsTarget", "appPackageMatches", "infoPackageMatches", "uidMatches", "filesBasenameMatches",
+        "lexicalFilesChild", "dataIsCanonical", "filesIsCanonical", "canonicalFilesChild", "rawDataIsDirectory",
+        "rawFilesIsDirectory", "dataSameObject", "filesSameObject"}
+    roots = {"dataRoot", "filesRoot", "canonicalDataRoot", "canonicalFilesRoot"}
+    keys = flags | roots | {"schema", "run", "stage", "category", "dataMode", "filesMode"}
+    for stage, value in zip(("FRAMEWORK_BOUND", "NEW_RUN_DURABLE"), records):
+        require(type(value) is dict and set(value) == keys and
+            value["schema"] == "p7-main-saf-producer-app-files-witness-v2" and value["run"] == binding["run"] and
+            value["stage"] == stage and value["category"] == "OK", "Exact original APP-files witness")
+        require(all(type(value[key]) is bool for key in flags) and
+            all(value[key] is True for key in flags - {"lexicalFilesChild", "dataIsCanonical", "filesIsCanonical"}) and
+            all(value[key] in ("USER0", "DATA") for key in roots) and
+            value["canonicalDataRoot"] == value["canonicalFilesRoot"] and
+            type(value["dataMode"]) is int and value["dataMode"] == 0o700 and
+            type(value["filesMode"]) is int and value["filesMode"] in (0o700, 0o771), "APP-files witness binding/mode")
+    require({k: v for k, v in records[0].items() if k != "stage"} ==
+        {k: v for k, v in records[1].items() if k != "stage"}, "APP-files witness drift")
+
+
 def parse_producer(stdout, binding):
     text = stdout.decode("utf-8", errors="strict")
     require("OK (1 test)" in text and not any(x in text for x in ("FAILURES!!!", "INSTRUMENTATION_FAILED", "Process crashed")),
         "One successful separately admitted producer Native selector")
-    fields, codes, admissions, producers = {}, [], [], []
+    fields, codes, admissions, producers, witnesses = {}, [], [], [], []
     expected_class, expected_method = PRODUCER_SELECTOR.split("#")
     for line in text.splitlines():
         if line.startswith("INSTRUMENTATION_STATUS: "):
@@ -250,12 +315,16 @@ def parse_producer(stdout, binding):
             require(sep and key not in fields, "Unique producer Native field"); fields[key] = value
         elif line.startswith("INSTRUMENTATION_STATUS_CODE: "):
             code = line[len("INSTRUMENTATION_STATUS_CODE: "):]
-            special = set(fields) & {"p7MainSafAdmission", "p7MainSafProducer", "p7MainUiCleanup"}
+            special = set(fields) & {"p7MainSafAdmission", "p7MainSafProducer", "p7MainUiCleanup", "p7MainSafProducerAppFilesV2"}
             if special:
                 require(len(special) == 1 and set(fields) == special and code == "0" and "p7MainUiCleanup" not in special,
                     "Producer cannot claim Main/consumer completion")
                 key = next(iter(special)); value = exact_json(fields[key].encode())
-                (admissions if key == "p7MainSafAdmission" else producers).append(value)
+                if key == "p7MainSafProducerAppFilesV2":
+                    require(binding["schema"] == APP_FILES_NATIVE_SCHEMA and len(witnesses) < 2, "Closed new producer witness status quota")
+                    witnesses.append(value)
+                else:
+                    (admissions if key == "p7MainSafAdmission" else producers).append(value)
             else:
                 require(set(fields) <= {"id", "stream", "numtests", "class", "test", "current", "stack"} and
                     fields.get("class") == expected_class and fields.get("test") == expected_method and
@@ -264,6 +333,7 @@ def parse_producer(stdout, binding):
             fields = {}
     require(not fields and codes == ["1", "0"] and text.count("INSTRUMENTATION_CODE: -1") == 1 and
         len(admissions) == len(producers) == 1, "One original producer admission/result")
+    producer_app_files_witnesses(witnesses, binding)
     accepted = admissions[0]
     require(accepted["binding"] == binding and accepted["admissionSha256"] == digest(canonical(binding)), "Producer admission fingerprint")
     require(producers[0]["admission"] == accepted, "Producer result admission differs")
@@ -296,7 +366,7 @@ def source_snapshot(args, root):
     legacy_keys = {"schema", "profile", "run", "phase", "operationId", "selector", "uid", "testUid", "docsUid", "bootUuid",
         "appApkSha256", "testApkSha256", "certificateSha256", "sdkSealSha256", "workspaceReviewSha256", "sourceGuardSha256",
         "profileSha256", "expiresWallMillis", "inputBytes", "inputSha256", "transportContractReviewSha256"}
-    require(set(binding) == legacy_keys and binding["schema"] == "p7-main-saf-admission-v1" and binding["profile"] == "p7-main-saf-v2" and
+    require(set(binding) == legacy_keys and binding["schema"] == import_contract(root)[3] and binding["profile"] == import_contract(root)[4] and
         binding["phase"] == "PRODUCER" and binding["selector"] == PRODUCER_SELECTOR and
         binding["run"] == root["run"] and binding["operationId"] == root["producerOperationId"] and
         binding["inputBytes"] is None and binding["inputSha256"] is None and
@@ -330,7 +400,7 @@ def source_snapshot(args, root):
         exited["kind"] in ("pid-start-replaced", "proc-enoent-and-directory-absent"), "Original producer exit independently required")
     sha(exited["statReadSha256"]); sha(exited["directoryReadSha256"])
     source_argv = [str(Path(args.adb).resolve()), "-s", args.serial, "shell", "-T",
-        shlex.join(["run-as", APP, "cat", f"files/p7-main-saf-producer-v1/{root['run']}/input.bin"])]
+        shlex.join(["run-as", APP, "cat", f"{import_contract(root)[5]}/{root['run']}/input.bin"])]
     original_wait(materials["source-read-wait.json"], materials["source-read-intent.json"], materials["payload.bin"],
         materials["source-read.stderr.bin"], source_argv, Path(args.repo).resolve())
     publication = exact_json(materials["local-publication.json"])
@@ -548,7 +618,7 @@ def run_import(args):
         "localOriginalFdClosed": True, "remoteSourceFdObserved": False})
     b.persist_json(output / "source-guard.json", guard)
     device = ImportDevice(args, root); transport = device.snapshot(build)
-    transport["sdkProfile"] = SDK_PROFILE; transport["platformContainer"] = device.platform_container()
+    transport["sdkProfile"] = import_contract(root)[0]; transport["platformContainer"] = device.platform_container()
     b.persist_json(output / "transport.json", transport)
     device.process("controller", absent=True, phase="before-prepare")
     device.process("documents", absent=True, phase="before-prepare")
@@ -580,7 +650,7 @@ def run_import(args):
         "operationId": root["operationId"], "intentSha256": digest(intent.raw), "receiptSha256": digest(prepared.stdout),
         "controllerProcess": controller, "remoteEffectConfirmed": True, "remoteExitFrameObserved": False,
         "nonceIndependentRuntimeMeasurement": False})
-    require(b._first.same(guard, source_guard(Path(args.repo).resolve(), guard["sourceOverlay"])), "Source changed after prepare")
+    require(b._first.same(guard, source_guard(Path(args.repo).resolve(), guard["sourceOverlay"], root)), "Source changed after prepare")
     device.snapshot(build); b.lease_now(root)
     b.persist_json(output / "input-once.claim", {"run": root["run"], "operationId": root["operationId"],
         "sourceProducerProofSha256": source.producer_proof_sha256, "bytes": len(source.payload), "sha256": digest(source.payload)})
@@ -607,7 +677,7 @@ def run_import(args):
     final_documents = device.process("documents", phase="final-audit")
     require(final_controller["status"] == final_documents["status"] == "present" and
         final_controller["process"] == controller and final_documents["process"] == document_owner, "Original provider owner replaced")
-    require(b._first.same(guard, source_guard(Path(args.repo).resolve(), guard["sourceOverlay"])), "Final source drift")
+    require(b._first.same(guard, source_guard(Path(args.repo).resolve(), guard["sourceOverlay"], root)), "Final source drift")
     result = {"schema": "p7-framework-import-auxiliary-proof-v1", "status": "passed-auxiliary-API33-import-preview",
         "run": root["run"], "operationId": root["operationId"], "nativeOperationId": root["nativeOperationId"],
         "producerOperationId": root["producerOperationId"], "sourceProducerProofSha256": source.producer_proof_sha256,

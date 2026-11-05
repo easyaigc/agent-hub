@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.agenthub.core.WorkspaceSidebarRules
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun Sidebar(session: MobileSession,close: () -> Unit,clients: () -> Unit,newChat: () -> Unit,settings: () -> Unit,addProject: ()->Unit={},active: Boolean=true) {
+@Composable internal fun Sidebar(session: MobileSession,close: () -> Unit,clients: () -> Unit,newChat: () -> Unit,settings: () -> Unit,addProject: ()->Unit={},fileTransfers: ()->Unit={},active: Boolean=true) {
     val colors=MaterialTheme.colorScheme
     var searchVisible by remember { mutableStateOf(false) }
     val display=session.sidebarDisplay
@@ -90,6 +90,10 @@ import com.agenthub.core.WorkspaceSidebarRules
             LaunchedEffect(Unit) { if(active)searchFocus.requestFocus() }
         }
         TextButton(onClick=newChat,enabled=session.canCreateThread,modifier=Modifier.fillMaxWidth().testTag("sidebar-new")) { ProductIcon("new");Spacer(Modifier.width(8.dp));Text(productText("新聊天"),Modifier.weight(1f),color=colors.onSurface) }
+        if(!client.isDemo)TextButton(onClick=fileTransfers,enabled=active&&session.canOpenComputerFiles,
+            modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("sidebar-file-transfers")) {
+            ProductIcon("file-transfer");Spacer(Modifier.width(8.dp));Text(productText("文件互传"),Modifier.weight(1f),color=colors.onSurface)
+        }
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing=session.loading,onRefresh={ session.refresh(userInitiated=true) },modifier=Modifier.weight(1f).fillMaxWidth().testTag("sidebar-refresh")) {
             LazyColumn(Modifier.fillMaxSize().focusRequester(resultsFocus).focusable(enabled=active).testTag("sidebar-list"),state=list) {
                 if(pinned.isNotEmpty()) {

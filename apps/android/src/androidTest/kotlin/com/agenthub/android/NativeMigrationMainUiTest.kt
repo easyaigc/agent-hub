@@ -594,7 +594,7 @@ class NativeMigrationMainUiTest {
             .put("privateMaterialRetained",true).put("preparedCandidate",prepared!=null).put("inheritedMainAssembly",true)
             .put("discoveryDisableRequested",true).put("providerProbes",probes).put("axWaits",axWaits)
             .put("nativeBack",nativeBackProof ?: JSONObject.NULL)
-            .put("safAcquisitionStarted",safAcquisitionStarted).put("safProviderDirectory",if(safAcquisitionStarted)"files/p7-main-saf-owned-v1/${fixture.run}" else JSONObject.NULL)
+            .put("safAcquisitionStarted",safAcquisitionStarted).put("safProviderDirectory",saf?.providerRelativeDirectory ?: JSONObject.NULL)
             .put("saf",saf?.summary() ?: JSONObject.NULL).put("safCallbackCompleted",safCallbackCompleted).put("safAccepted",false).put("physicalDeviceAccepted",false).put("shippingTransportAccepted",false).put("isolatedCompose",false)
         // Also emit only scalars if admission/fresh() failed before a new directory was owned.
         instrumentation.sendStatus(0,Bundle().apply {putString("p7MainUiCleanup",result.toString())})

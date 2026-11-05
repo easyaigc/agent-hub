@@ -2,6 +2,10 @@
 
 2026-11-04 F69 Windows Responses 通道：Windows Host 显式选择独立的回环转发采集，从原桌面预测请求绑定来源聊天／完成轮及 response ID，不依赖前台 UI、OCR 或额外生成。原 CLI TCP peer、IPC owner、读取前中后来源及当前结果版本分别核验；每聊天只保存最新状态，失败／取消／空值／新请求不回退旧正文。兼容领域接口增加 `responses-forwarder` 来源说明，不声称 renderer 可见或安全后确认。macOS 原 Trace／native-sample 安全判定及启动路径保持，详见[实现与验收边界](acceptance/windows-response-suggestions-20261104.md)。
 
+2026-11-05 Android F61：旧not-written不再单独授予原ID重试/恢复原文；Android依现有完整目标/信任/指纹及有效强未接受证明保守准入，未确认的failed回复须核对或显式结束等待。首次提交与KMP/iOS不改，普通journal持久消费、source/outbox与strict lineage仍待补强，不通过重写旧READY建立历史证明。功能/交互与真实验收分列于[阶段95](plans/android-alignment-20261022/records/stage95-legacy-reply-safety.md)。
+
+2026-11-05 Android F59：独立文件页及现有Host电脑级文件端点已源码接入，不创建聊天或模型任务。安装级writer、根snapshot及具名F59独占锁保护分块加密原件；严格文件同步/关闭/替换与目录确认先于UNKNOWN及POST，终态与精确删除确认先于本地额度回收。普通存储调用未全局迁移，F59域尚无portable格式，有原件/资源未知时整包迁移拒绝。Android明确的本机容量与Host未配置上限仍有差异；源码、编译、故障、UI及真实DEV分别登记，见[阶段94](plans/android-alignment-20261022/records/stage94-f59-strict-storage.md)。iOS实现不变，A6仍暂停。
+
 2026-11-04 F69 本机部署候选：在正式 R11 对应的规范提交上叠加空日志候选计数修复和 macOS 私有诊断日志，保留正式 Host 已有诊断、恢复和原生 owner 规则。空文件每次复查，增长后从零读取，已跟踪截断仍拒绝；日志记录生命周期、固定原因、阶段、心跳和结果状态。iOS／Android 共用 Host 来源规则，UI／草稿语义保持，Android 建议 UI 与 A6 状态不变。源码、辅助检查、实际部署与建议来源验收分别记录。
 
 2026-11-04 F34／F36：按最新交互要求，输入区立即预览下一轮草稿模型／推理／速度，未覆盖字段回落到准确 owner 已知值；设置页“电脑当前设置”继续只读显示真实运行参数。iOS／Android 共用 KMP 展示规则，沿用原目标隔离、持久化和实际发送边界，选择本身不写入电脑任务。此修订取代 2026-10-26 的输入区只显示当前 owner 设计；历史验收不自动升级，见[本轮记录](acceptance/next-turn-generation-display-20261104.md)。
@@ -1519,3 +1523,13 @@ The Windows regular-service continuation candidate separates immutable profile-o
 仅整合 iOS 与 EasyWork 的协议、数据、权限及执行差异。原清单保留75项范围、51项对接/16项纯手机免重验/8项排除及14条补充；68个限定场景通过与21项Native失败均按原指纹保留，整项通过数不据此扩大。详见 [原清单](acceptance/codex-easywork-feature-matrix.md)。
 
 本批包含完整目标的 usage/read、project/git/status/files、原回执与队列恢复及问题元数据；旧桌面未准入项仅读，未知输入不重发。isSecret只控制输入遮罩，回答仍按正常工具结果和会话留存。本批优先保留主线现有读取目标、建议接口、启动、附件和迁移行为；Android源码及纯手机端重复验收不开展。合并后的检查与真实DEV结果另回填，不将旧指纹通过当作新主线全量通过。
+
+阶段98 F59迁移域：Android唯一journal decoder与流式graph已调用KMP惰性描述符规则，独立闭合Schema只定义子域，不开放新的Host端点或发送权限。当前未接Export/Activation，旧整包F59拒绝与v4限额保持；strict源freeze/generation/FD/库存/barrier、独立大容量流式封包与目的端惰性publication及iOS接线继续实现。JVM6/Node3和普通Android编译是辅助，真实字节源、系统/界面/手机及跨端未验。见docs/plans/android-alignment-20261022/records/stage98-f59-portable-domain.md。
+
+阶段101 F59源：NativeSessionStorage窄入口要求实际Session/raw Frozen及准确当前generation，既有key-only解码、固定目录FD/单record读取和全cipher摘要，终态缺失要求真实fsync-close/双目录barrier；close未知保留owner。当前只支持单child、无export/activation接线，old-generation family/新容器/惰性发布/iOS与完整验收继续，旧整包拒绝保持。普通编译和8方法源码/独立940输入SDK资格不等于运行通过。见docs/plans/android-alignment-20261022/records/stage101-f59-readonly-source.md。
+
+阶段104 F59 family：实际root与全部受限retained generation按代严格只读/独立graph，保留UNKNOWN/原receipt，目录存在不授予lineage或激活权。仅新增内部source入口，旧整包F59拒绝和Host/传输边界不变；新SDK/15项Native、认证容器/目的端/iOS仍待验。见docs/plans/android-alignment-20261022/records/stage104-f59-family-source.md。
+
+阶段108 F59：Android与KMP新增独立明文内层流，绑定显式Long总量、原顺序与三摘要；读取须由外层独立认证的预期回执，所有内容在最终EOF及未来外层认证关闭前均为惰性暂存。未接SAF、加密容器、旧格式、激活或Host；iOS当前只有小向量独立验证器。详见[阶段档案](plans/android-alignment-20261022/records/stage108-f59-inner-framing.md)。
+
+阶段110 F59：源端现有冻结与认证日志产出独立惰性代际清单，保留 child 缺失、空、有记录及退役分块原证据。共享清单对实际遍历数量、现存字节与全部描述符分别限额；源指针只做审计，旧 graph JSON 保持，未增加外层认证、文件发布或激活。详见[阶段档案](plans/android-alignment-20261022/records/stage110-f59-typed-family-inventory.md)。

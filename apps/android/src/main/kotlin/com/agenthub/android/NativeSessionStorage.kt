@@ -122,6 +122,12 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         check(recovery.queuedGeneration.get()?.let { it==recovery.generation }!=false) { "旧的保存已被本地恢复替代" }
     }
     companion object {
+        /** Source snapshot decoder only. Existing namespace/key, no ordinary pointer path. */
+        internal fun existingComputerFileSourceDecoder(context: Context,namespace: String,keyAlias: String): NativeSessionStorage {
+            check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+            require(namespace.matches(Regex("[a-zA-Z0-9_-]{1,255}")))
+            return NativeSessionStorage(context,namespace,keyAlias,true,true,false,true)
+        }
         internal fun existingMigration(context: Context,base: File,namespace: String,keyAlias: String): NativeMigrationExistingView =
             NativeMigrationExistingView.open(context,base,namespace,keyAlias)
         internal fun migrationDecoder(context: Context,namespace: String,keyAlias: String,lifetime: NativeMigrationReadLifetime): NativeSessionStorage =
@@ -200,6 +206,40 @@ class NativeSessionStorage private constructor(context: Context, private val nam
             val keys=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
             require(keys.getKey(keyAlias,null) is SecretKey) {"Existing key unavailable; no fallback generation"}
         }
+    }
+    /** Bounded existing-key F59 codecs. No paths, writer/recovery helpers or keys escape. */
+    internal fun requireExistingComputerFileSourceKey() {
+        check(migrationReadOnly&&existingKeyOnly&&existingNamespaceOnly&&!retiredWriter);key
+    }
+    internal fun existingComputerFileSourcePointer(bytes: ByteArray): String {
+        requireExistingComputerFileSourceKey()
+        require(bytes.size in 29..70_000&&bytes[0]==3.toByte())
+        val raw=decodeRecord(bytes,migrationPointerName).second
+        val pointer=StrictMigrationJson.parse(raw.toByteArray(Charsets.UTF_8))
+        require(pointer.get("version") is Int&&pointer.get("records") is Int)
+        for(name in listOf("generation","candidateId","sha256","recordsSha256"))require(pointer.get(name) is String)
+        if(pointer.has("sourceRecords"))require(pointer.get("sourceRecords") is Int)
+        return raw
+    }
+    internal fun existingComputerFileSourceJournal(bytes: ByteArray): Pair<String,String> {
+        requireExistingComputerFileSourceKey();require(namespace.endsWith("-"+NativeComputerFileStore.SCOPE))
+        require(bytes.size in 29..1_048_576&&bytes[0]==3.toByte())
+        return decodeRecord(bytes,null).also {(name,raw)->
+            require(name.matches(Regex("computer-files-v1:[a-f0-9]{64}"))&&
+                raw.toByteArray(Charsets.UTF_8).size<=NativeComputerFileJournal.MAX_JOURNAL_BYTES)
+        }
+    }
+    internal fun existingComputerFileSourceChunk(bytes: ByteArray): Pair<String,ByteArray> {
+        requireExistingComputerFileSourceKey();require(namespace.endsWith("-"+NativeComputerFileStore.SCOPE))
+        require(bytes.size in 29..1_100_000&&java.nio.ByteBuffer.wrap(bytes).int==4)
+        val decoded=decodeBinary(java.io.DataInputStream(java.io.ByteArrayInputStream(bytes)),null,null,NativeComputerFileStore.CHUNK_BYTES)
+        try {
+            val parts=decoded.first.name.split(':')
+            require(parts.size==3&&parts[0]=="computer-file-original");ComputerFileCodec.uuid(parts[1])
+            val index=requireNotNull(parts[2].toIntOrNull())
+            require(index in 0 until com.agenthub.core.ComputerFileMigrationRules.MAX_ORIGINAL_CHUNKS&&index.toString()==parts[2])
+            return decoded.first.name to decoded.second
+        }catch(error: Throwable){decoded.second.fill(0);throw error}
     }
     internal fun existingMigrationText(file: NativeMigrationReadOnlyFile,name: String?=null): Pair<String,String> {
         check(migrationReadOnly&&!retiredWriter)
@@ -459,8 +499,133 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }}
     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
+    /** F59 only. Opening/refreshing an empty page never creates a child or key. */
+    internal fun computerFileStorage(context: Context,create: Boolean): NativeSessionStorage? = ioLock.withLock {
+        requireCurrentGeneration();check(!retiredWriter)
+        val generation=activeGeneration();val name=namespace+(generation?.let {"-$it"}?:"")+"-computer-file-transfers"
+        val folder=File(requireNotNull(root.parentFile),name)
+        if(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&!create)return@withLock null
+        if(java.nio.file.Files.exists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            require(java.nio.file.Files.isDirectory(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&
+                !java.nio.file.Files.isSymbolicLink(folder.toPath())&&folder.canonicalFile==File(root.parentFile!!.canonicalFile,name))
+            val st=android.system.Os.lstat(folder.path)
+            require(st.st_uid==android.os.Process.myUid()&&st.st_gid==android.os.Process.myUid()&&(st.st_mode and 0xfff)==0x1c0)
+        }else require(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+        prepareChild(context,"computer-file-transfers")
+    }
+    // F59 alone uses a strict ciphertext commit/delete port. Ordinary legacy writers
+    // retain their current behavior; this is not a global AtomicFile replacement.
+    private var computerFilesDurable: NativeComputerFileDurableFiles?=null
+    private fun requireComputerFileWritable() {
+        require(namespace.endsWith("-computer-file-transfers"))
+        // Never let the ordinary pointer reader recover an unfinished child pointer.
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+        check(dataRoot()==root) {ComputerFileCopy.LOCAL_SAVE_PENDING}
+    }
+    private fun computerFilesPort(): NativeComputerFileDurableFiles {
+        requireComputerFileWritable()
+        return computerFilesDurable?:NativeComputerFileDurableFiles(root,::requireComputerFileWritable).also {computerFilesDurable=it}
+    }
+    internal fun <T> computerFileTransaction(work: ()->T): T=ioLock.withLock {computerFilesPort().transaction(work)}
+    internal fun computerFileRead(name: String): String?=ioLock.withLock {
+        require(name.matches(Regex("computer-files-v1:[a-f0-9]{64}")))
+        val bytes=computerFilesPort().read(name,1_048_576)?:return@withLock null
+        try {decodeRecord(bytes,name).second}finally {bytes.fill(0)}
+    }
+    internal fun computerFileWrite(name: String,text: String)=ioLock.withLock {
+        require(name.matches(Regex("computer-files-v1:[a-f0-9]{64}")))
+        migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
+        val port=computerFilesPort();val nameBytes=strictBytes(name);val textBytes=strictBytes(text)
+        require(textBytes.size<=900_000)
+        val header=java.nio.ByteBuffer.allocate(4+nameBytes.size).putInt(nameBytes.size).put(nameBytes).array()
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(recordContext)}
+        val encrypted=try {byteArrayOf(3)+cipher.iv+crypt(cipher,textBytes,prefix=header)}finally {header.fill(0);textBytes.fill(0)}
+        try {port.write(name,encrypted);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)}finally {encrypted.fill(0)}
+    }
+    internal fun computerFileWriteChunk(name: String,bytes: ByteArray)=ioLock.withLock {
+        require(name.matches(Regex("computer-file-original:[a-f0-9-]{36}:[0-9]{1,4}"))&&bytes.size in 1..1_048_576)
+        migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
+        val port=computerFilesPort();binaryName(name)
+        val buffer=java.io.ByteArrayOutputStream(bytes.size+2048)
+        val out=java.io.DataOutputStream(buffer);val nonce=writeBinaryHeader(out,name,bytes.size)
+        var offset=0;var index=0
+        while(offset<bytes.size) {
+            val count=minOf(65536,bytes.size-offset);val clear=bytes.copyOfRange(offset,offset+count)
+            try {
+                val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryAAD(name,bytes.size,index++,nonce))}
+                out.write(cipher.iv);out.write(crypt(cipher,clear))
+            }finally {clear.fill(0)}
+            offset+=count
+        }
+        out.flush();val encrypted=buffer.toByteArray()
+        try {port.write(name,encrypted);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)}finally {encrypted.fill(0)}
+    }
+    internal fun computerFileReadChunk(name: String,size: Int): ByteArray=ioLock.withLock {
+        require(name.matches(Regex("computer-file-original:[a-f0-9-]{36}:[0-9]{1,4}"))&&size in 1..1_048_576)
+        val bytes=requireNotNull(computerFilesPort().read(name,1_100_000)) {ComputerFileCopy.ORIGINAL_INVALID}
+        try {decodeBinary(java.io.DataInputStream(java.io.ByteArrayInputStream(bytes)),name,size,1_048_576).second}finally {bytes.fill(0)}
+    }
+    internal fun computerFileRemoveChunk(name: String,size: Int,sha256: String)=ioLock.withLock {
+        require(name.matches(Regex("computer-file-original:[a-f0-9-]{36}:[0-9]{1,4}"))&&size in 1..1_048_576&&sha256.matches(Regex("[a-f0-9]{64}")))
+        migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
+        val port=computerFilesPort();val encrypted=port.read(name,1_100_000)
+        val cipherHash=encrypted?.let {bytes->
+            try {
+                val clear=decodeBinary(java.io.DataInputStream(java.io.ByteArrayInputStream(bytes)),name,size,1_048_576).second
+                try {require(ComputerFileCodec.hash(clear)==sha256) {ComputerFileCopy.ORIGINAL_INVALID}}finally {clear.fill(0)}
+                ComputerFileCodec.hash(bytes)
+            }finally {bytes.fill(0)}
+        }
+        port.remove(name,cipherHash);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
+    }
+    /** One exact active-generation F59 source. The actual frozen root owns all
+     * callbacks; no portable format, export exclusion or activation gate changes. */
+    internal fun <T> migrationComputerFileSourceSnapshot(context: Context,owner: NativeMigrationOwnerLease,
+        limits: NativeMigrationComputerFileSnapshot.Limits,consume: (NativeMigrationComputerFileSnapshot)->T): T = snapshotTransaction {ioLock.withLock {
+        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+        check(owner.storage===this&&migrationChildPath==null&&(migrationRoot==null||migrationRoot===this))
+        check(!namespace.endsWith("-"+NativeComputerFileStore.SCOPE))
+        check(!retiredWriter&&!existingReadOnly&&!migrationReadOnly&&!localInspectionOnly)
+        checkMigrationAccess();ComputerFileFdOwners.requireReleased()
+        val generation=writableGeneration.getOrThrow();val frozen=owner.requireRawWriters()
+        fun authority() {
+            check(!retiredWriter&&!existingReadOnly&&!migrationReadOnly&&!localInspectionOnly)
+            checkMigrationAccess();migrationPolicy?.requireHandle(migrationAccess)
+            check(writableGeneration.getOrThrow()==generation&&owner.storage===this)
+            check(owner.requireRawWriters()===frozen);ComputerFileFdOwners.requireReleased()
+        }
+        authority()
+        NativeMigrationComputerFileSnapshot.using(context,File(canonicalRoot),namespace,keyAlias,generation,owner,limits,::authority,consume)
+    }}
+    /** F59 originals from the legacy root and every retained generation. All
+     * callbacks share the actual root Session/raw freeze; no activation grant. */
+    internal fun <T> migrationComputerFileFamilySourceSnapshot(context: Context,owner: NativeMigrationOwnerLease,
+        limits: NativeMigrationComputerFileFamilySnapshot.Limits,consume: (NativeMigrationComputerFileFamilySnapshot)->T): T = snapshotTransaction {ioLock.withLock {
+        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+        check(owner.storage===this&&migrationChildPath==null&&(migrationRoot==null||migrationRoot===this))
+        check(!namespace.endsWith("-"+NativeComputerFileStore.SCOPE))
+        check(!retiredWriter&&!existingReadOnly&&!migrationReadOnly&&!localInspectionOnly)
+        checkMigrationAccess();ComputerFileFdOwners.requireReleased()
+        val generation=writableGeneration.getOrThrow();val frozen=owner.requireRawWriters()
+        fun authority() {
+            check(!retiredWriter&&!existingReadOnly&&!migrationReadOnly&&!localInspectionOnly)
+            checkMigrationAccess();migrationPolicy?.requireHandle(migrationAccess)
+            check(writableGeneration.getOrThrow()==generation&&owner.storage===this)
+            check(owner.requireRawWriters()===frozen);ComputerFileFdOwners.requireReleased()
+        }
+        authority()
+        NativeMigrationComputerFileSnapshot.usingFamily(context,File(canonicalRoot),namespace,keyAlias,generation,owner,limits,::authority,consume)
+    }}
+    internal fun requireNoComputerFilesForMigration() = ioLock.withLock {
+        checkMigrationAccess();requireCurrentGeneration()
+        val generation=activeGeneration();val name=namespace+(generation?.let {"-$it"}?:"")+"-computer-file-transfers"
+        val folder=File(requireNotNull(root.parentFile),name)
+        if(ComputerFileFdOwners.hasUnresolved()||!java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            throw NativeMigrationExport.IncompleteScope(setOf("computer-file-transfers"))
+    }
     internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {
         checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+        val resourceScopes=if(ComputerFileFdOwners.hasUnresolved())setOf("computer-file-input-resource")else emptySet()
         val generation=activeGeneration();val prefix=namespace+(generation?.let {"-$it"}?:"")+"-"
         val systemScopes=setOf("external-inbox","recent-photos","photo-permission","document-results","photo-results","camera-results")
         val writerScopes=setOf("external-inbox","document-results","photo-results","camera-results","document-results-payloads","photo-results-payloads","camera-results-payloads","camera-results-outputs","recent-photos","photo-permission")
@@ -470,6 +635,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
             if(folder.name in writerControls){NativeInboxOwnership.requireControlFile(folder);return@mapNotNull null}
             if(!folder.name.startsWith(prefix))return@mapNotNull null
             val suffix=folder.name.removePrefix(prefix)
+            if(suffix=="computer-file-transfers")return@mapNotNull "computer-file-transfers"
             // Exact operational staging is not an active user original. No broad prefix exclusion:
             // a future child, nested staging node or sidecar must not silently leave the inventory.
             if(suffix=="migration-candidates") {
@@ -482,7 +648,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
                 val children=folder.listFiles()?:error("Migration child inventory unavailable")
                 if(children.isEmpty())null else scope
             }
-        }.toSet()
+        }.toSet()+resourceScopes
     }
     /** Resolve exact legacy references and capture all names/text under the same generation lock.
      * Reading for discovery never invokes AtomicFile recovery or changes a pending .bak/.new. */

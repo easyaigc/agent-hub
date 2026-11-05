@@ -46,10 +46,11 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
         File folder=new File(parent,run);
         // mkdir is exclusive. Existing runs, even the same operation/intent, are never reused.
         P7MainSafLeaseV3.mkdirNew(folder);
+        // Created once in the exclusive new v4 run; never replaced, removed or recreated.
+        P7MainSafLeaseV3.createPublicationLock(folder);
         P7MainSafLeaseV3.writeNew(new File(folder,"scope.claimed"),new byte[0]);
         byte[] canonical=P7MainSafLeaseV3.canonical(intent);
-        P7MainSafLeaseV3.writeNew(new File(folder,"intent.pending"),canonical);
-        P7MainSafLeaseV3.publish(new File(folder,"intent.pending"),new File(folder,"intent.json"));
+        P7MainSafLeaseV3.atomicBytes(folder,"intent",canonical);
         try {
             P7MainSafLeaseV3.ownerWitness(folder,true);
             JSONObject scope=new JSONObject().put("schema",1).put("run",run).put("kind",intent.getString("kind"))
@@ -120,15 +121,21 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
         }catch(Exception failure){throw new FileNotFoundException("P7V4_READ_REJECTED_"+P7MainSafLeaseV3.rejectionCode(failure));}
     }
     private JSONObject audit(P7MainSafLeaseV3.Scope s) throws Exception {
+        try(P7MainSafLeaseV3.Publication held=P7MainSafLeaseV3.publication(s.folder)) {return auditHeld(s,held);}
+    }
+    private JSONObject auditHeld(P7MainSafLeaseV3.Scope s,P7MainSafLeaseV3.Publication held) throws Exception {
+        held.check();
         Set<String> before=P7MainSafLeaseV3.inventory(s.folder);JSONObject files=new JSONObject(),documents=new JSONObject();
         for(String name:before) {
-            byte[] bytes=P7MainSafLeaseV3.read(new File(s.folder,name),P7MainSafLeaseV3.payloadName(name)?P7MainSafLeaseV3.MAX:P7MainSafLeaseV3.JSON_MAX);
+            // Opening/closing another FD for this lock inode could release our process's
+            // POSIX lock. The held guard checks its exact regular empty inode instead.
+            byte[] bytes=name.equals(P7MainSafLeaseV3.PUBLICATION_LOCK)?new byte[0]:P7MainSafLeaseV3.read(new File(s.folder,name),P7MainSafLeaseV3.payloadName(name)?P7MainSafLeaseV3.MAX:P7MainSafLeaseV3.JSON_MAX);
             files.put(name,new JSONObject().put("bytes",bytes.length).put("sha256",P7MainSafLeaseV3.hash(bytes)));
             if(name.endsWith(".json"))documents.put(name,new JSONObject(new String(bytes,StandardCharsets.UTF_8)));
             if(name.endsWith(".claimed")&&bytes.length!=0)throw P7MainSafLeaseV3.reject("CLAIM");Arrays.fill(bytes,(byte)0);
         }
-        if(!before.equals(P7MainSafLeaseV3.inventory(s.folder)))throw P7MainSafLeaseV3.reject("AUDIT_CHANGED");
-        Set<String> complete=new HashSet<>(Arrays.asList("controller-owner.json","scope.claimed","intent.json","scope.json","receipt.json","payload.claimed",
+        held.check();if(!before.equals(P7MainSafLeaseV3.inventory(s.folder)))throw P7MainSafLeaseV3.reject("AUDIT_CHANGED");
+        Set<String> complete=new HashSet<>(Arrays.asList(P7MainSafLeaseV3.PUBLICATION_LOCK,"controller-owner.json","scope.claimed","intent.json","scope.json","receipt.json","payload.claimed",
             s.kind.equals("IMPORT")?"input.bin":"output.bin","payload-ack.claimed","payload-ack.json"));
         if(s.kind.equals("EXPORT"))complete.addAll(Arrays.asList("document-owner.json","create.claimed","create.json","open.claimed","open.json"));
         boolean done=before.equals(complete);
@@ -147,7 +154,7 @@ public final class OwnedMainMigrationControlV4 extends ContentProvider {
             }
         }
         // Consumer FD close is separate from actual full read, decrypt and business result.
-        return base(s.intent).put("schema","p7-main-saf-controller-audit-v4").put("status",status)
+        held.check();return base(s.intent).put("schema","p7-main-saf-controller-audit-v4").put("status",status)
             .put("files",files).put("documents",documents).put("auditReadFdsClosed",true);
     }
     @Override public String getType(Uri uri){try {shell();target(uri);return "application/json";}catch(Exception e){throw new SecurityException("P7V4_TYPE_REJECTED");}}

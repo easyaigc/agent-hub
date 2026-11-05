@@ -155,9 +155,15 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     }
     /** Wire method whitelist is internal to this adapter; native UI uses named domain operations. */
     suspend fun request(method: String,params: JSONObject=JSONObject(),id: String=UUID.randomUUID().toString()): JSONObject =
-        withContext(migrationContext){requestOwned(method,params,id)}
-    private suspend fun requestOwned(method: String,params: JSONObject,id: String): JSONObject {
+        withContext(migrationContext){checkNotNull(requestOwned(method,params,id,false))}
+    internal suspend fun originalQueueStatus(threadId: String,messageId: String): JSONObject? =
+        withContext(migrationContext) {
+            require(threadId.isNotEmpty()&&messageId.isNotEmpty()) { "电脑回执格式无效" }
+            requestOwned("queue/status",JSONObject().put("threadId",threadId).put("messageId",messageId),UUID.randomUUID().toString(),true)
+        }
+    private suspend fun requestOwned(method: String,params: JSONObject,id: String,nullableQueue: Boolean): JSONObject? {
         require(method in READ_METHODS||method in WRITE_METHODS) { "未注册此电脑操作" }
+        check(!nullableQueue||method=="queue/status")
         val response=CompletableDeferred<JSONObject>()
         require(pending.putIfAbsent(id,response)==null) { "同一操作正在等待电脑回执" }
         val request=JSONObject().put("protocolVersion",2).put("kind","request").put("requestId",id).put("target",target.json()).put("method",method).put("params",params)
@@ -171,7 +177,7 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                     check(!closed)
                     if(response.isCompleted) {
                         val v=response.await()
-                        return result(v)
+                        return if(nullableQueue)queueResult(v) else result(v)
                     }
                     throw lastError?:HostReadError("电脑操作结果未确认",transient=true)
                 } catch(e: EasyWorkRejection) { throw e }
@@ -196,9 +202,19 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         } finally { pending.remove(id,response);response.cancel() }
     }
     private fun result(v: JSONObject): JSONObject {
-        if(!v.getBoolean("ok"))throw EasyWorkRejection(v.optJSONObject("error")?.optString("message")?:"电脑拒绝了请求")
+        if(!v.getBoolean("ok"))throw rejection(v)
         val value=v.opt("result")
         return if(value is JSONObject)value else if(value==null||value===JSONObject.NULL)JSONObject() else JSONObject().put("value",value)
+    }
+    private fun rejection(v: JSONObject): EasyWorkRejection {
+        val error=v.optJSONObject("error")
+        return EasyWorkRejection(error?.optString("message")?:"电脑拒绝了请求",error?.opt("code") as? String)
+    }
+    private fun queueResult(v: JSONObject): JSONObject? {
+        if(!v.getBoolean("ok"))throw rejection(v)
+        val value=v.opt("result")
+        require(value==null||value===JSONObject.NULL||value is JSONObject) { "电脑回执格式无效" }
+        return value as? JSONObject
     }
     suspend fun events(threadId: String,after: Long): Long {
         val deadline=System.nanoTime()+12_000_000_000L
@@ -229,7 +245,7 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete")
     }
 }
-class EasyWorkRejection(message: String): Exception(message)
+class EasyWorkRejection(message: String,val code: String?=null): Exception(message)
 
 fun interface EasyWorkChannels { suspend fun session(client: MobileClient): EasyWorkRemoteSession }
 

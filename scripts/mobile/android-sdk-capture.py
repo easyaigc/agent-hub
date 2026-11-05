@@ -1657,5 +1657,1616 @@ def _source_guard(api, repo, overlay, profile):
     return _platform_alias_ax_previous_source_guard(api, repo, overlay, profile)
 
 
+# Stage85 publication-lock is an additive two-APK purpose. All earlier profile
+# recipes/fixed pins/guard bodies remain frozen; capture-self stays externally Root-pinned.
+P7_PUBLICATION_LOCK_PROFILE = "p7-main-saf-publication-lock-v1"
+P7_PUBLICATION_LOCK_REVIEW_SCHEMA = "p7-main-saf-publication-lock-build-review-v1"
+P7_PUBLICATION_LOCK_OVERLAY_PATHS = P7_FRAMEWORK_OBSERVERS_IMPORT_OVERLAY_PATHS
+P7_PUBLICATION_LOCK_FIXED_AFTER = {**P7_PLATFORM_ALIAS_AX_FIXED_AFTER,
+    'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': 'e3c794fc7ce53313e8006dbe4784a2c80586d2c0c5080118885f1464f02cfa73',
+    'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java': 'f3f4993066c9d9d393621bc101597c6f666196517863f68a5053e70e053a02c5',
+    'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java': '1338f8742f3c5a29f5f5cb274b54e6b7e51c36c0800ed8ba7445764d691825cd',
+    'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java': '8ec239f0574225e12ce1c4b6e72b02757e5ac29b437c41113ae368964e7a5671',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': '5470168fd63d8316e4baccd6fcbede32c84bbc2d63ca1dfb8dd4f13643a20cb9',
+    'scripts/mobile/android-main-saf-framework.py': '6e14796dc56177bdd98c5048300197515e1f268fbf6b8f3260a07e64bb5daa04',
+    'scripts/mobile/android-main-saf-framework-import.py': 'e20849c633182c8f3c711c90b8f40b7528de8630414a4144e0787ed332ee6b29',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '3628870c4806ce67c5af9dc44485affa89f7ddfe278df3a0e8397bd542a45722',
+    'scripts/mobile/android-main-preference.py': '443a2b664db8310818dbede573f5b4d1bf42101785828a82d65a308a69d2d624',
+}
+PROFILES = {**PROFILES, P7_PUBLICATION_LOCK_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_publication_lock_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_PUBLICATION_LOCK_OVERLAY_PATHS), "Publication-lock-v1 exact60 source union required")
+    require(all(overlay[name] == pin for name, pin in P7_PUBLICATION_LOCK_FIXED_AFTER.items()), "Publication-lock-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # This independent static contract also pins package.json, an EXTRA_INPUTS entry.
+    # The legacy generic guard deliberately forbids overlaying such build inputs.
+    # Reuse its strict inventory/hash/identity rules here without mutating its baseline,
+    # broadening legacy path acceptance, or accepting any non-enumerated build override.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Publication-lock-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Publication-lock-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Publication-lock-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Publication-lock-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Publication-lock-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Publication-lock-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 905 and
+        type(result["sources"]) is dict and len(result["sources"]) == 905 and
+        set(result["inventory"]) == set(result["sources"]), "Publication-lock-v1 exact905 build inputs")
+    # Capture-self remains externally Root-pinned; the seven-key generic guard is unchanged.
+    return result
+
+_publication_lock_previous_review = _review
+_publication_lock_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_PUBLICATION_LOCK_PROFILE:
+        return _publication_lock_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned framework reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
+    require(value["schema"] == P7_PUBLICATION_LOCK_REVIEW_SCHEMA, "Closed publication-lock-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Framework reviewed HEAD")
+    api.sha(value["statusSha256"])
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_PUBLICATION_LOCK_OVERLAY_PATHS), "Framework exact60 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit framework before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Framework before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(all(overlay[name] == pin for name, pin in P7_PUBLICATION_LOCK_FIXED_AFTER.items()), "Publication-lock fixed59 after pins")
+    # Capture-self is the sole omitted fixed pin and is explicitly in the independently
+    # Root-hashed review, then source guard, tools metadata and final sealed SDK chain.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_PUBLICATION_LOCK_PROFILE:
+        return p7_publication_lock_source_guard(api, repo, overlay)
+    return _publication_lock_previous_source_guard(api, repo, overlay, profile)
+
+
+# Stage86 filename-phase is an additive two-APK purpose. All earlier profile
+# recipes/fixed pins/guard bodies remain frozen; capture-self stays externally Root-pinned.
+P7_FILENAME_PHASE_PROFILE = "p7-main-saf-filename-phase-v1"
+P7_FILENAME_PHASE_REVIEW_SCHEMA = "p7-main-saf-filename-phase-build-review-v1"
+P7_FILENAME_PHASE_OVERLAY_PATHS = P7_PUBLICATION_LOCK_OVERLAY_PATHS
+P7_FILENAME_PHASE_FIXED_AFTER = {**P7_PUBLICATION_LOCK_FIXED_AFTER,
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': '3324d605369ad429d436bf91e18c798502eb099867ad904045f7d83fe2475121',
+    'scripts/mobile/android-main-saf-framework.py': '5c03a05ff048ff3c5d5e97fdd926af1074acd6c59a329643b8823d8c6ec53311',
+    'scripts/mobile/android-main-saf-framework-import.py': 'f15a17128dd8679eab46d48e090148afb28c29895966d3ad9173a97415dede42',
+    'scripts/mobile/android-main-preference.py': '27b5c007aa84882d27eaf8fef7f55cf5645edf9c8f50978e5ef0dae0a0385e9c',
+}
+PROFILES = {**PROFILES, P7_FILENAME_PHASE_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_filename_phase_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_FILENAME_PHASE_OVERLAY_PATHS), "Filename-phase-v1 exact60 source union required")
+    require(all(overlay[name] == pin for name, pin in P7_FILENAME_PHASE_FIXED_AFTER.items()), "Filename-phase-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # This independent static contract also pins package.json, an EXTRA_INPUTS entry.
+    # The legacy generic guard deliberately forbids overlaying such build inputs.
+    # Reuse its strict inventory/hash/identity rules here without mutating its baseline,
+    # broadening legacy path acceptance, or accepting any non-enumerated build override.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Filename-phase-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Filename-phase-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Filename-phase-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Filename-phase-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Filename-phase-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Filename-phase-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 905 and
+        type(result["sources"]) is dict and len(result["sources"]) == 905 and
+        set(result["inventory"]) == set(result["sources"]), "Filename-phase-v1 exact905 build inputs")
+    # Capture-self remains externally Root-pinned; the seven-key generic guard is unchanged.
+    return result
+
+_filename_phase_previous_review = _review
+_filename_phase_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_FILENAME_PHASE_PROFILE:
+        return _filename_phase_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned framework reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
+    require(value["schema"] == P7_FILENAME_PHASE_REVIEW_SCHEMA, "Closed filename-phase-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Framework reviewed HEAD")
+    api.sha(value["statusSha256"])
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_FILENAME_PHASE_OVERLAY_PATHS), "Framework exact60 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit framework before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Framework before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(all(overlay[name] == pin for name, pin in P7_FILENAME_PHASE_FIXED_AFTER.items()), "Filename-phase fixed59 after pins")
+    # Capture-self is the sole omitted fixed pin and is explicitly in the independently
+    # Root-hashed review, then source guard, tools metadata and final sealed SDK chain.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_FILENAME_PHASE_PROFILE:
+        return p7_filename_phase_source_guard(api, repo, overlay)
+    return _filename_phase_previous_source_guard(api, repo, overlay, profile)
+
+
+# Stage87 explicit-FD is an additive two-APK purpose. All earlier profile
+# recipes/fixed pins/guard bodies remain frozen; capture-self stays externally Root-pinned.
+P7_EXPLICIT_FD_PROFILE = "p7-main-saf-explicit-fd-v1"
+P7_EXPLICIT_FD_REVIEW_SCHEMA = "p7-main-saf-explicit-fd-build-review-v1"
+P7_EXPLICIT_FD_OVERLAY_PATHS = P7_FILENAME_PHASE_OVERLAY_PATHS + (
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt',
+)
+P7_EXPLICIT_FD_FIXED_AFTER = {**P7_FILENAME_PHASE_FIXED_AFTER,
+    'package.json': '86f7087dc2a891a264caef6981db53a5c3e3ead2445defcd0ea24df5177a9a48',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt': '0312f4f1e55dbc71e525596db1bc23c86286f1d9bd9ae13277f2387ec4d8fc69',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt': '6e184bc72ff0965a81807ff312a42683f87d52e4f8e9e60f7f93ef630f6276cd',
+    'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': '64aa8326a477c9f86085c234af2ebc2fe84ad04c681904a6f50be8e2edcacddb',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': 'e198dd4c0cab075d7a36d6ffa982ffdd895af71d42d7f615807812cd86b61449',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt': '857a608e1b7a57772fd62e8d02286eb223539fbbf7e5639cd649531ae78b2737',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '6f54e060bed637fc88601bb33ec59291364a0dc66a28111aae2e8fd58f69fb53',
+    'scripts/mobile/android-main-preference.py': 'cc8a5714ba03b1da3b918e400627f7cf1c5a05f37a4f749a0bb4a87e1d8216b2',
+    'scripts/mobile/android-main-saf-framework-import.py': 'cd4f9e1905ca4130e8693adc976cd0f190066ce848c9b57c000cfa40447af651',
+    'scripts/mobile/android-main-saf-framework.py': '3bf018c5277e2ab82d2ab0ab44e11de23efe2a7c6df1cbfbffa6a164eda5b328',
+}
+PROFILES = {**PROFILES, P7_EXPLICIT_FD_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_explicit_fd_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_EXPLICIT_FD_OVERLAY_PATHS), "Explicit-FD-v1 exact62 source union required")
+    require(all(overlay[name] == pin for name, pin in P7_EXPLICIT_FD_FIXED_AFTER.items()), "Explicit-FD-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # This independent static contract also pins package.json, an EXTRA_INPUTS entry.
+    # The legacy generic guard deliberately forbids overlaying such build inputs.
+    # Reuse its strict inventory/hash/identity rules here without mutating its baseline,
+    # broadening legacy path acceptance, or accepting any non-enumerated build override.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Explicit-FD-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Explicit-FD-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Explicit-FD-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Explicit-FD-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Explicit-FD-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Explicit-FD-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 905 and
+        type(result["sources"]) is dict and len(result["sources"]) == 905 and
+        set(result["inventory"]) == set(result["sources"]), "Explicit-FD-v1 exact905 build inputs")
+    # Capture-self remains externally Root-pinned; the seven-key generic guard is unchanged.
+    return result
+
+_explicit_fd_previous_review = _review
+_explicit_fd_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_EXPLICIT_FD_PROFILE:
+        return _explicit_fd_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned framework reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
+    require(value["schema"] == P7_EXPLICIT_FD_REVIEW_SCHEMA, "Closed explicit-fd-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Framework reviewed HEAD")
+    api.sha(value["statusSha256"])
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_EXPLICIT_FD_OVERLAY_PATHS), "Framework exact62 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit framework before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Framework before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(all(overlay[name] == pin for name, pin in P7_EXPLICIT_FD_FIXED_AFTER.items()), "Explicit-FD fixed61 after pins")
+    # Capture-self is the sole omitted fixed pin and is explicitly in the independently
+    # Root-hashed review, then source guard, tools metadata and final sealed SDK chain.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_EXPLICIT_FD_PROFILE:
+        return p7_explicit_fd_source_guard(api, repo, overlay)
+    return _explicit_fd_previous_source_guard(api, repo, overlay, profile)
+
+
+# Fresh APP-parent producer purpose. Earlier maps, guards, recipes and Root records
+# remain frozen. The new Root-pinned capture hash is deliberately outside its own map.
+P7_PRODUCER_APP_FILES_PROFILE = "p7-main-saf-producer-app-files-v2"
+P7_PRODUCER_APP_FILES_REVIEW_SCHEMA = "p7-main-saf-producer-app-files-build-review-v2"
+P7_PRODUCER_APP_FILES_OVERLAY_PATHS = P7_EXPLICIT_FD_OVERLAY_PATHS
+P7_PRODUCER_APP_FILES_FIXED_AFTER = {**P7_EXPLICIT_FD_FIXED_AFTER,
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': 'aae53404a620a4f59903bc2940b38b0e987a883ee9590ee8c76375f546190cde',
+    'scripts/mobile/android-main-saf-framework-import.py': 'eecf65ddd83cd9926b987db5ccf808e98e62541e2fb19ea87bfc4b1b5730dff9',
+}
+PROFILES = {**PROFILES, P7_PRODUCER_APP_FILES_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_producer_app_files_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_PRODUCER_APP_FILES_OVERLAY_PATHS), "Producer-APP-files-v2 exact62 source union required")
+    require(all(overlay[name] == pin for name, pin in P7_PRODUCER_APP_FILES_FIXED_AFTER.items()), "Producer-APP-files-v2 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # This independent static contract also pins package.json, an EXTRA_INPUTS entry.
+    # The legacy generic guard deliberately forbids overlaying such build inputs.
+    # Reuse its strict inventory/hash/identity rules here without mutating its baseline,
+    # broadening legacy path acceptance, or accepting any non-enumerated build override.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Producer-APP-files-v2 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Producer-APP-files-v2 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Producer-APP-files-v2 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Producer-APP-files-v2 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Producer-APP-files-v2 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Producer-APP-files-v2 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 905 and
+        type(result["sources"]) is dict and len(result["sources"]) == 905 and
+        set(result["inventory"]) == set(result["sources"]), "Producer-APP-files-v2 exact905 build inputs")
+    # Capture-self remains externally Root-pinned; the seven-key generic guard is unchanged.
+    return result
+
+_producer_app_files_previous_review = _review
+_producer_app_files_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_PRODUCER_APP_FILES_PROFILE:
+        return _producer_app_files_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned framework reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths"})
+    require(value["schema"] == P7_PRODUCER_APP_FILES_REVIEW_SCHEMA, "Closed producer-app-files-v2 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Framework reviewed HEAD")
+    api.sha(value["statusSha256"])
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_PRODUCER_APP_FILES_OVERLAY_PATHS), "Framework exact62 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit framework before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Framework before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(all(overlay[name] == pin for name, pin in P7_PRODUCER_APP_FILES_FIXED_AFTER.items()), "Producer-APP-files fixed61 after pins")
+    # Capture-self is the sole omitted fixed pin and is explicitly in the independently
+    # Root-hashed review, then source guard, tools metadata and final sealed SDK chain.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_PRODUCER_APP_FILES_PROFILE:
+        return p7_producer_app_files_source_guard(api, repo, overlay)
+    return _producer_app_files_previous_source_guard(api, repo, overlay, profile)
+
+
+
+# Stage91 receipt-safety is a separate two-APK source purpose. Old purposes and
+# their exact inventories, fixed pins, recipes and Root records remain frozen.
+# The reviewed selector list is SDK eligibility metadata, not Native admission.
+P8_RECEIPT_SAFETY_PROFILE = "p8-easywork-receipt-safety-v1"
+P8_RECEIPT_SAFETY_REVIEW_SCHEMA = "p8-easywork-receipt-safety-build-review-v1"
+P8_RECEIPT_SAFETY_ADDITIONAL_OVERLAY_PATHS = (
+    'apps/android/localization/native-copy.json',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt',
+    'packages/mobile-core/build.gradle.kts',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt',
+    'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json',
+    'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json',
+    'packages/protocol/fixtures/mobile/easywork-receipt-v1.json',
+    'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json',
+    'packages/protocol/fixtures/mobile/task-sound-fixtures.md',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.caf',
+    'packages/protocol/schemas/agent-management-v1.schema.json',
+    'packages/protocol/schemas/task-notifications-v1.schema.json',
+)
+P8_RECEIPT_SAFETY_OVERLAY_PATHS = P7_PRODUCER_APP_FILES_OVERLAY_PATHS + P8_RECEIPT_SAFETY_ADDITIONAL_OVERLAY_PATHS
+P8_RECEIPT_SAFETY_NATIVE_SELECTORS = (
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#actualSendAndOriginalQueryPreserveTheSameQueueEvidenceAndRunIdentity',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#acceptedNativeQueueMarkerStillQueriesOnlyTheOriginalMessageAndPreservesTerminalState',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#rawFailedOutcomeAndTurnAreNeverReplacedByOuterCompletedAcknowledgement',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#sameVersionedReceiptWireVectorsMatchTheProductionSwiftDecoder',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#actualSteerRejectionsAndOriginalQueryCannotBecomeSubmittedOrBorrowTheOldRun',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#unknownAndSubmittingCommandsReadOnlyTheirOriginalQueueWithoutReplayingInput',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#missingCommandAcknowledgementCanRecoverAnAuthoritativeQueuedAdmission',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#authenticatedNullAndOnlyTypedOldPortAbsenceKeepTheOriginalUnknown',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#authorizationAndUnclassifiedNotFoundAreNotSwallowedOrMadeRetryable',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#wrongOriginalQueueIdentityCannotSettleTheCapturedInput',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#alteredCommandMetadataIsRejectedBeforeAnyQueueRead',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#aDifferentOriginalResultCannotBeRelabeledAsTheCapturedReceipt',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#malformedCommandResultsDoNotTriggerAnOriginalQueueQuery',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#nullCompletedResultAndOtherMethodsNeverInventSubmissionOrBorrowAQueue',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#malformedOrEmptyQueueObjectsAreNotTheSameAsAuthenticatedNull',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#refreshedCandidatePathsDoNotChangeTheOriginalConnectionIdentity',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#replacedCredentialOwnerIsRejectedBeforeAnyStatusRead',
+    'com.agenthub.android.MobileEasyWorkQueueReceiptTest#delayedOriginalQueueResultCannotCompleteAfterItsOriginalOwnerCloses',
+)
+P8_RECEIPT_SAFETY_FIXED_AFTER = {**P7_PRODUCER_APP_FILES_FIXED_AFTER,
+    'apps/android/localization/native-copy.json': 'a07407cc6f498d379c7ac526d487a26444a8c7416ab422c7db9dd0b0505f9761',
+    'apps/android/src/androidTest/assets/localization-catalog.json': '0351b9a038914dc584d64234ea5a8f21e891042abaf4744ea750db14e96a5d87',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt': 'eab49df4d093dbb2c1d482001143079364fd6a7bd52751422169d090baa08ca5',
+    'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt': '856351afc999eda16534d9733ca58b87eaf1b879287449e33a716a7813bdbbdc',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt': '5222b416d5dc515cfe3e13e928581c01df44be761add15aa3619181e668b062c',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt': 'bbd13988432924ed47ba8f4120e038a4addc34f5b568b61dd08fa160712a8d28',
+    'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt': 'bdefad1b3b16194da24ae1c66d63203a89ed0543e37160bba71755be6d4c711d',
+    'apps/android/src/main/res/values-zh/product_strings.xml': 'a737dba8791dc8079431e91289ee06a089ce2d5bad66a12e3ef1d685f32aebe9',
+    'apps/android/src/main/res/values/product_strings.xml': '7185ffd8445d192922f790132b74b233803586b9772f7d134363a2af981062de',
+    'package.json': '07aeedc035684fd482372c4085873effb23afa5e0754ed872e1011f1db5c2cdd',
+    'packages/mobile-core/build.gradle.kts': '78ad08a3339f34accb7b38bf10cfd670775c842b076cb4fce1939151e1d8c58b',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt': '81c6c44047c3bbf5f7fbc368af7302ce727e0ea0505af653a5f04eca8472ee33',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt': '94e3b49ea1ccd065fd058e63c5b1d66246fbdab774ee7bc5e1903d58b1de8883',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt': 'aafd704e667a2ab115e5ab132939c14e19c5676ebd4017054da8ca78d25eae71',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt': '5823a929fe2b4ab2d4b2b9f0f76b2276071b9ecf974ce47915c1e602dcff1937',
+    'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt': '22668fe24cd9843454b5363d77286f7bf93e7a1c7b4ac5c8c2987ede4d26b397',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt': '4345c2613a399df13a3a83c3ba24a237d23ab48cff2d0946dabfe148c7432cba',
+    'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt': 'd58978a62ccaf2d09cd098c5404aeb24c16be4928cbb50dae62bcaafb517c57c',
+    'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json': '18b7490a1b4ee72dcfaafaf8b955e96814bd1b7b025458578a92b6647fdd3296',
+    'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json': '2935d6c6354004549cba7bdefd8a346446dcd3473c1bc68343cd38a5801937dd',
+    'packages/protocol/fixtures/mobile/easywork-receipt-v1.json': '38edb15d562bafc6be55ab4fdb7c5afa1eb47aa0f7378d82f204c25caeec84de',
+    'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json': 'e000a91870e89f01824c8fdd5b7093b6f6941ba3cc2d60b1534a538e29634352',
+    'packages/protocol/fixtures/mobile/task-sound-fixtures.md': 'de128ab4a57e8b1ae7e6c7d23f22b4fe71df7cc381453788ccd9e6e65af02078',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff': '948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf': '73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf': '2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav': '6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf': '6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf': '495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav': '57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf': 'fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff': '6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600',
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.caf': '4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd',
+    'packages/protocol/schemas/agent-management-v1.schema.json': '708cda4e1d5751aa9d01e19e034928bd7c313d325b69d9c8b720a2452a938553',
+    'packages/protocol/schemas/task-notifications-v1.schema.json': '630ec397ab606c4acfdb31c4d85bfe342a1efa5bacb983044d5afe0db2552899',
+}
+PROFILES = {**PROFILES, P8_RECEIPT_SAFETY_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p8_receipt_safety_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P8_RECEIPT_SAFETY_OVERLAY_PATHS), "Receipt-safety-v1 exact93 source union required")
+    require(set(P8_RECEIPT_SAFETY_FIXED_AFTER) == set(P8_RECEIPT_SAFETY_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "Receipt-safety-v1 exact92 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P8_RECEIPT_SAFETY_FIXED_AFTER.items()), "Receipt-safety-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    # Enumerate the actual full build roots. New files and build/schema changes
+    # belong only to this exact overlay; the generic baseline is not rewritten.
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "Receipt-safety-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "Receipt-safety-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "Receipt-safety-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "Receipt-safety-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "Receipt-safety-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "Receipt-safety-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 923 and
+        type(result["sources"]) is dict and len(result["sources"]) == 923 and
+        set(result["inventory"]) == set(result["sources"]), "Receipt-safety-v1 exact923 build inputs")
+    # Self remains externally Root-pinned by review, tools and final SDK seal.
+    return result
+
+_receipt_safety_previous_review = _review
+_receipt_safety_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P8_RECEIPT_SAFETY_PROFILE:
+        return _receipt_safety_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned receipt-safety reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P8_RECEIPT_SAFETY_REVIEW_SCHEMA, "Closed receipt-safety-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "Receipt-safety reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P8_RECEIPT_SAFETY_NATIVE_SELECTORS), "Receipt-safety exact18 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P8_RECEIPT_SAFETY_OVERLAY_PATHS), "Receipt-safety exact93 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit receipt-safety before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "Receipt-safety before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P8_RECEIPT_SAFETY_FIXED_AFTER) == set(P8_RECEIPT_SAFETY_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "Receipt-safety exact92 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P8_RECEIPT_SAFETY_FIXED_AFTER.items()), "Receipt-safety fixed92 after pins")
+    # The self pin is admitted only through this immutable externally hashed review.
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P8_RECEIPT_SAFETY_PROFILE:
+        return p8_receipt_safety_source_guard(api, repo, overlay)
+    return _receipt_safety_previous_source_guard(api, repo, overlay, profile)
+
+
+# Stage96 is a separate F59 + original-receipt two-APK purpose. All older
+# profile constants, function bodies, inventories and recipes remain frozen.
+# Selector metadata is eligibility only; it never grants Native or Host admission.
+P7_F59_RECEIPTS_PROFILE = "p7-f59-and-original-receipts-v1"
+P7_F59_RECEIPTS_REVIEW_SCHEMA = "p7-f59-and-original-receipts-build-review-v1"
+P7_F59_RECEIPTS_ADDITIONAL_OVERLAY_PATHS = ('apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt')
+P7_F59_RECEIPTS_OVERLAY_PATHS = P8_RECEIPT_SAFETY_OVERLAY_PATHS + P7_F59_RECEIPTS_ADDITIONAL_OVERLAY_PATHS
+P7_F59_RECEIPTS_NATIVE_SELECTORS = ('com.agenthub.android.NativeComputerFileDurabilityTest#actualWriteReplacementAndIndependentEngineReadKeepExactCiphertext',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#everyControlledSidecarRefusesReadWriteAndRemoveWithoutRecovery',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#wrongOrMissingCipherDigestCannotRetireTheOriginal',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#matchingCipherDigestRetiresOnlyTheExactRecordAndConfirmsAbsence',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#nonPrivateRecordModeRefusesAllOperationsWithoutChangingTheRecord',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#symlinkRecordCannotReadReplaceOrDeleteItsOwnedExternalTarget',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#hardLinkedRecordIsRejectedAndBothOwnedNamesKeepTheSameBytes',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#truncatedRecordAndInvalidNewCiphertextAreNotSilentlyRepaired',
+ 'com.agenthub.android.NativeComputerFileDurabilityTest#competingEngineCannotEnterHeldKernelLockAndOriginalWriterRemainsUsable',
+ 'com.agenthub.android.NativeLegacyReplyRetrySafetyTest#coldVersionOneReadyNotWrittenCannotRetryOrRestoreIntoANewDraft',
+ 'com.agenthub.android.NativeLegacyReplyRetrySafetyTest#androidGuardLeavesSharedRuleAndFirstJournalTransitionUnchanged',
+ 'com.agenthub.android.NativeLegacyReplyRetrySafetyTest#freshStrongProofStillAllowsExactlyOneJournalConsumption',
+ 'com.agenthub.android.NativeLegacyReplyRetrySafetyTest#strongLabelCannotBypassFreshnessTrustTargetOrReadOnlyGuards',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#actualSendAndOriginalQueryPreserveTheSameQueueEvidenceAndRunIdentity',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#acceptedNativeQueueMarkerStillQueriesOnlyTheOriginalMessageAndPreservesTerminalState',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#rawFailedOutcomeAndTurnAreNeverReplacedByOuterCompletedAcknowledgement',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#sameVersionedReceiptWireVectorsMatchTheProductionSwiftDecoder',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#actualSteerRejectionsAndOriginalQueryCannotBecomeSubmittedOrBorrowTheOldRun',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#unknownAndSubmittingCommandsReadOnlyTheirOriginalQueueWithoutReplayingInput',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#missingCommandAcknowledgementCanRecoverAnAuthoritativeQueuedAdmission',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#authenticatedNullAndOnlyTypedOldPortAbsenceKeepTheOriginalUnknown',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#authorizationAndUnclassifiedNotFoundAreNotSwallowedOrMadeRetryable',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#wrongOriginalQueueIdentityCannotSettleTheCapturedInput',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#alteredCommandMetadataIsRejectedBeforeAnyQueueRead',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#aDifferentOriginalResultCannotBeRelabeledAsTheCapturedReceipt',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#malformedCommandResultsDoNotTriggerAnOriginalQueueQuery',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#nullCompletedResultAndOtherMethodsNeverInventSubmissionOrBorrowAQueue',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#malformedOrEmptyQueueObjectsAreNotTheSameAsAuthenticatedNull',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#refreshedCandidatePathsDoNotChangeTheOriginalConnectionIdentity',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#replacedCredentialOwnerIsRejectedBeforeAnyStatusRead',
+ 'com.agenthub.android.MobileEasyWorkQueueReceiptTest#delayedOriginalQueueResultCannotCompleteAfterItsOriginalOwnerCloses')
+P7_F59_RECEIPTS_FIXED_AFTER = {'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java': '240537ab210090a390eac8e480dd53d0f31d062460cd89ae7aa65536f92221e8',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java': '19c69743716f5a7c599566055ff65d4f3134695aecb4f189fa41d2e897e65efc',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java': '1006bf92d477c7a9fdea00edbd9a4a8e18a7b0b522b06e88a99961ed0e784c59',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java': 'f013815ec371057ae1039cfa0ed6c5749dcb8a3d70f9b5455933935795e293da',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java': '8f765491a4c08c9fabc1da4db44af98ae4d8065830864e9996d880294f3ca33d',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java': 'a2a53d3070ed8fb2af0e59e5b7a9d4249e7e8db6ee9cc3a0d9d7ddafe265adbf',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java': '635b54a3ae32e553160b56b2b365445502ff91d75d53fb28573d0a30e1b398bf',
+ 'apps/android/localization/native-copy.json': '6b2e051f1c59e6fa3e8f19bf67ef5a9abf91abbca771fb2c22ab5f4e2e774406',
+ 'apps/android/src/androidTest/AndroidManifest.xml': 'aa82a1a072275d72ee7e29c163895cc7b1a9af8852f08d0f5d2e89d87ba3fc6c',
+ 'apps/android/src/androidTest/assets/localization-catalog.json': '8c22c1553eb50f9a23b6aed494677e6d25d944207cae1375908c2245fac5fbad',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java': 'f3f4993066c9d9d393621bc101597c6f666196517863f68a5053e70e053a02c5',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java': '7feb3256beec8bad6fb9aea06e77d20b9a7f2c9f22462b32fd329b4a81993a0d',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java': '1338f8742f3c5a29f5f5cb274b54e6b7e51c36c0800ed8ba7445764d691825cd',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java': '8ec239f0574225e12ce1c4b6e72b02757e5ac29b437c41113ae368964e7a5671',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': '64aa8326a477c9f86085c234af2ebc2fe84ad04c681904a6f50be8e2edcacddb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt': 'a9232e59346ce707fe5aa1c92a7f28a738c2aaa5ffe7d754949f6bce6a7b0523',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt': 'eab49df4d093dbb2c1d482001143079364fd6a7bd52751422169d090baa08ca5',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt': '17b81dcdf27a30d823c0cf8c1a146b66c08db416098f2a2c484d7f20cb6d6064',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt': '5e121b85a1d131f94a65f4cabadeb1f02a0690db657fa43e4f7aff5e616af817',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt': '63eb204bbd81f8de24ac1e5a742ab9da495003c87dc9dc9ae32e3cd6441e47c2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt': '856351afc999eda16534d9733ca58b87eaf1b879287449e33a716a7813bdbbdc',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt': '1ac749b91365d1042eba6f4627c978b27baf7e7dc40908713e01a87ef67d98cf',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt': '77f8f77e847c719143e5a3ad9d8b5a6454afba8b6a2071060a5c520ab4a1432b',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt': '6eef1747da82d27d4674196476026a298481ab6ba47b35761117f09b911bbb20',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': 'aae53404a620a4f59903bc2940b38b0e987a883ee9590ee8c76375f546190cde',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt': '857a608e1b7a57772fd62e8d02286eb223539fbbf7e5639cd649531ae78b2737',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt': '5600b74549464575dd554366f9cc7017baee4fb0a88f01a76325ee6e1f2e798e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt': 'a202d504df24e965bc61bab758f2ebe04870355cc3d3328a081daf4158e93c4e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt': '08e679e87726a7c5cfe4f1a4d0ab92c21a7c14b777fbd1b49ba498d75241eab2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt': '5c5e38bef9254e0c3d059e8f45068e78b9bb6d41c116cded388cb88ad1fe9781',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt': 'f8aaffcfca94f4b94171cbfd2619346693ca35f130a25023c18a32678d3719eb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt': '01b09b2d799b18040130c2170361e0c28ce7b060ea529b1264346f6026c41932',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt': 'b0e1f2593e82fc97754ef62873bd070d8b23cdf9f0bed233e79044118e93b31e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '6f54e060bed637fc88601bb33ec59291364a0dc66a28111aae2e8fd58f69fb53',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt': 'f490b3161b0baf900ad6a54717721c59cbf7405f2786e4f0639b8cb0ef08916a',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt': '90ca84c62835aa01defd18187ec046c6132b5eb88b856d016fd450b2d85f7c3c',
+ 'apps/android/src/debug/AndroidManifest.xml': '665d8491eacdfd1be56503c5d7312a829da4743a5a24d94033fb3efb2c878a6c',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt': 'ca2f8005efc4be53a0c213d59cc0e710dbe9cdb9e2793dabcad8fa4c327351ce',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt': '0403ead475d9f55dfabb40962d2cbb36af5d199db866587fc66e85456d7f40f2',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt': '1ca25c77ec44a16c32f454d95874358200783f31b84b2215df03bd6943cbfe14',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt': '038a9481b030f582d510c351f8c2ce49966005d0efa1491369f5b2890c28b1fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt': '3ee5afc1f237f6ed7f27f35ae00ec499372e7777f1e48b1b91f48b8c41b065fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt': '8334e01c9fee65e796c53f8bebda25c4a04f7d6806634d82d438defd9ecc0bc0',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt': 'b571940cbf7d795aef02260719a1df7436aaa1a2ee5d8d2063faa7caca0147fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt': '5222b416d5dc515cfe3e13e928581c01df44be761add15aa3619181e668b062c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt': 'bbd13988432924ed47ba8f4120e038a4addc34f5b568b61dd08fa160712a8d28',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt': 'bdefad1b3b16194da24ae1c66d63203a89ed0543e37160bba71755be6d4c711d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt': '221ee4171b352154238a7c019c2d80afc0a215002a6048dbbfe472d23dcd43f2',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt': '3aaebc40df41150bcf3c12f7f3ff88a014959f20a812d54384e3325e02cc055d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt': 'ce4e3d3ed0b3e19437b60ebf598b5edfc45fd0582baef082c4640f52b2472d0d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt': 'b4ae491497033e179e1b4f2549146d9d496021062c595b05a49d2f2b9742244c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt': '603addff0f87553030cb7c63ac36dfeea26a817748876df490d57546c537bf46',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt': '667dfdca68128bb294a367528c15d80dd535fe788e03750281fa55a762003e78',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt': '4837549a0c8301be8c6a28b006aecaf49ad01741d96a5aa9cccad3cd29c35ab3',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt': 'd9519869a954a9c1bed93114f77c2cb2fff4e139676df7410afe1ff309d8d3dc',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt': '52f778ac6c8878d0dfb74de0f1df15de444c553b552c91633a4673829080bf72',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt': '4049489bb89c3bca34ee32ac483cd36dc257b50ed3864e614b79ff58320dd81f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt': '034c7add951508a49fb83f118767ac764350a89e2f39a6dba2cd3ad4450956f9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt': '30414b9944b47038e665e257baf8f8a75afa6cc698e10aca9182a8f6a9b82834',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt': 'eead47bcb98181e698c375124233ebbc8d9965af6dbb154b8cb0a0e99b0733f9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt': '2204fdd39e3e2ea46dee82d1f04f420cdb5f5ffcbd9d047ece4b960f9892cc32',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt': 'abc482f97cba1342b39b767d4dd914af67d04b4c5b695cef451abb2d8ab035bf',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt': '57a48abaa41481d1dc7c751089c0d32089b7ebe7ac66d44cd60006e9d46a705f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt': '97146e786a153ddfc1ac0dc560f1fdd87aa0d03bcd7b24b8a659b1a1f93b3644',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt': '5b0bd956f8f8eb6931c75c41229f1b91073d4cbac2ed9eac57ab869d42a451ae',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt': 'c56b8e28d4990254f9e68785aa3779e6c91de2012ea0e85f3fe155fa09171ee9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt': '38cb07a63db7dc69f539febda7d44e3229f173d6068a3424035d5fbc22afd8b4',
+ 'apps/android/src/main/res/values-zh/product_strings.xml': '02192274fcedd07e86926472145e844cbdfa60bbacd8f10b39f5deda1e9fa999',
+ 'apps/android/src/main/res/values/product_strings.xml': '46a4180fe74b8f0c583fcf5f33192018df48a076136c84e8da54f19658322543',
+ 'package.json': '07aeedc035684fd482372c4085873effb23afa5e0754ed872e1011f1db5c2cdd',
+ 'packages/mobile-core/build.gradle.kts': '78ad08a3339f34accb7b38bf10cfd670775c842b076cb4fce1939151e1d8c58b',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt': '81c6c44047c3bbf5f7fbc368af7302ce727e0ea0505af653a5f04eca8472ee33',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt': '94e3b49ea1ccd065fd058e63c5b1d66246fbdab774ee7bc5e1903d58b1de8883',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt': 'aafd704e667a2ab115e5ab132939c14e19c5676ebd4017054da8ca78d25eae71',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt': 'efa63e223691a3f2f9364b99cbd3b7dcdf9eeb2099d863b156dad4f987cc5671',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt': '5823a929fe2b4ab2d4b2b9f0f76b2276071b9ecf974ce47915c1e602dcff1937',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt': '0312f4f1e55dbc71e525596db1bc23c86286f1d9bd9ae13277f2387ec4d8fc69',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt': '22668fe24cd9843454b5363d77286f7bf93e7a1c7b4ac5c8c2987ede4d26b397',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt': '4345c2613a399df13a3a83c3ba24a237d23ab48cff2d0946dabfe148c7432cba',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt': 'd58978a62ccaf2d09cd098c5404aeb24c16be4928cbb50dae62bcaafb517c57c',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt': '3c5b887f641e5e4b197c69b9f759dc883a5540d62decc3d56a18a64a78d7ef34',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt': '6e184bc72ff0965a81807ff312a42683f87d52e4f8e9e60f7f93ef630f6276cd',
+ 'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json': '18b7490a1b4ee72dcfaafaf8b955e96814bd1b7b025458578a92b6647fdd3296',
+ 'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json': '2935d6c6354004549cba7bdefd8a346446dcd3473c1bc68343cd38a5801937dd',
+ 'packages/protocol/fixtures/mobile/easywork-receipt-v1.json': '38edb15d562bafc6be55ab4fdb7c5afa1eb47aa0f7378d82f204c25caeec84de',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json': 'e000a91870e89f01824c8fdd5b7093b6f6941ba3cc2d60b1534a538e29634352',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.md': 'de128ab4a57e8b1ae7e6c7d23f22b4fe71df7cc381453788ccd9e6e65af02078',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff': '948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf': '73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf': '2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav': '6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf': '6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf': '495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav': '57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf': 'fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff': '6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.caf': '4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd',
+ 'packages/protocol/schemas/agent-management-v1.schema.json': '708cda4e1d5751aa9d01e19e034928bd7c313d325b69d9c8b720a2452a938553',
+ 'packages/protocol/schemas/task-notifications-v1.schema.json': '630ec397ab606c4acfdb31c4d85bfe342a1efa5bacb983044d5afe0db2552899',
+ 'scripts/mobile/android-child-originals-pair.py': '93d21c46d9641f6354e106721429570e1531253faa94b7cd155d4ebf0797bbb5',
+ 'scripts/mobile/android-existing-originals-pair.py': 'a2821b09d30435a6b3a6af8bd625818ebd68a879345ef0c11cf53d2d5bdfe18c',
+ 'scripts/mobile/android-main-preference.py': 'cc8a5714ba03b1da3b918e400627f7cf1c5a05f37a4f749a0bb4a87e1d8216b2',
+ 'scripts/mobile/android-main-saf-framework-import.py': 'eecf65ddd83cd9926b987db5ccf808e98e62541e2fb19ea87bfc4b1b5730dff9',
+ 'scripts/mobile/android-main-saf-framework.py': '3bf018c5277e2ab82d2ab0ab44e11de23efe2a7c6df1cbfbffa6a164eda5b328',
+ 'scripts/mobile/android-main-saf.py': '3fe7515b621e80831a8c7c0218dc6ec44d1d8dca01a996b33473836cff0c90c8',
+ 'scripts/mobile/android-nonempty-device-first.py': '47a2df7800252c46d3c466cba9df5bdf13817c7d3a67178cd73ac810e42dc775',
+ 'scripts/mobile/android-nonempty-device-pair.py': 'e0014e428525689426a2e849ff5dfc6edb719818bb2a42e831a90151de576ea3',
+ 'scripts/mobile/android-nonempty-foreground-pair.py': '951f81ebcb2d4d1998930c5edc8a29e35fc1a163fe13bf2c4fcb998d969ddbd4',
+ 'scripts/mobile/android-nonempty-pristine-first.py': '2a537c4b3270575177cd3e9661eb1383eaee688f42cdb65dcf2bd60cd6317e3a',
+ 'scripts/mobile/android-voice-originals-controller.py': '0895246bbd8336856da95ed1ac2376596cfa927262d40247fcf8ca70f029475d',
+ 'scripts/mobile/android-voice-originals-pair.py': '126d224437a1543fcc84c3358f9e40739c3bb905cd3d66265acf15b587c8eae9',
+ 'scripts/mobile/android-voice-originals-workers.py': 'ac8392bc03e76b0dc859cf79e97a1d808840c331b6fe5eeef05973d43e40f187'}
+PROFILES = {**PROFILES, P7_F59_RECEIPTS_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_f59_receipts_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_F59_RECEIPTS_OVERLAY_PATHS), "F59-receipts-v1 exact113 source union required")
+    require(set(P7_F59_RECEIPTS_FIXED_AFTER) == set(P7_F59_RECEIPTS_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-receipts-v1 exact112 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_RECEIPTS_FIXED_AFTER.items()), "F59-receipts-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "F59-receipts-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "F59-receipts-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "F59-receipts-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "F59-receipts-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "F59-receipts-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "F59-receipts-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 930 and
+        type(result["sources"]) is dict and len(result["sources"]) == 930 and
+        set(result["inventory"]) == set(result["sources"]), "F59-receipts-v1 exact930 build inputs")
+    return result
+
+_f59_receipts_previous_review = _review
+_f59_receipts_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_F59_RECEIPTS_PROFILE:
+        return _f59_receipts_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned F59-receipts reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P7_F59_RECEIPTS_REVIEW_SCHEMA, "Closed F59-receipts-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "F59-receipts reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P7_F59_RECEIPTS_NATIVE_SELECTORS), "F59-receipts exact31 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_F59_RECEIPTS_OVERLAY_PATHS), "F59-receipts exact113 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit F59-receipts before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "F59-receipts before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P7_F59_RECEIPTS_FIXED_AFTER) == set(P7_F59_RECEIPTS_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-receipts exact112 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_RECEIPTS_FIXED_AFTER.items()), "F59-receipts fixed112 after pins")
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_F59_RECEIPTS_PROFILE:
+        return p7_f59_receipts_source_guard(api, repo, overlay)
+    return _f59_receipts_previous_source_guard(api, repo, overlay, profile)
+
+
+# Independent frozen-current-F59 source snapshot build/Native purpose.
+# Prior purpose contracts and functions remain unchanged.
+P7_F59_FROZEN_SOURCE_PROFILE = "p7-f59-frozen-source-v1"
+P7_F59_FROZEN_SOURCE_REVIEW_SCHEMA = "p7-f59-frozen-source-build-review-v1"
+P7_F59_FROZEN_SOURCE_OVERLAY_PATHS = ('apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java',
+ 'apps/android/localization/native-copy.json',
+ 'apps/android/src/androidTest/AndroidManifest.xml',
+ 'apps/android/src/androidTest/assets/localization-catalog.json',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotFixture.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt',
+ 'apps/android/src/debug/AndroidManifest.xml',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileJournal.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileGraph.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSourceFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt',
+ 'apps/android/src/main/res/values-zh/product_strings.xml',
+ 'apps/android/src/main/res/values/product_strings.xml',
+ 'package.json',
+ 'packages/mobile-core/build.gradle.kts',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileMigrationRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileMigrationRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt',
+ 'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json',
+ 'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json',
+ 'packages/protocol/fixtures/mobile/easywork-receipt-v1.json',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.md',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.caf',
+ 'packages/protocol/schemas/agent-management-v1.schema.json',
+ 'packages/protocol/schemas/computer-file-originals-v1.schema.json',
+ 'packages/protocol/schemas/task-notifications-v1.schema.json',
+ 'scripts/mobile/android-child-originals-pair.py',
+ 'scripts/mobile/android-existing-originals-pair.py',
+ 'scripts/mobile/android-main-preference.py',
+ 'scripts/mobile/android-main-saf-framework-import.py',
+ 'scripts/mobile/android-main-saf-framework.py',
+ 'scripts/mobile/android-main-saf.py',
+ 'scripts/mobile/android-nonempty-device-first.py',
+ 'scripts/mobile/android-nonempty-device-pair.py',
+ 'scripts/mobile/android-nonempty-foreground-pair.py',
+ 'scripts/mobile/android-nonempty-pristine-first.py',
+ 'scripts/mobile/android-sdk-capture.py',
+ 'scripts/mobile/android-voice-originals-controller.py',
+ 'scripts/mobile/android-voice-originals-pair.py',
+ 'scripts/mobile/android-voice-originals-workers.py',
+ 'scripts/mobile/computer-file-originals-contract.test.mjs')
+P7_F59_FROZEN_SOURCE_FIXED_AFTER = {'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java': '240537ab210090a390eac8e480dd53d0f31d062460cd89ae7aa65536f92221e8',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java': '19c69743716f5a7c599566055ff65d4f3134695aecb4f189fa41d2e897e65efc',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java': '1006bf92d477c7a9fdea00edbd9a4a8e18a7b0b522b06e88a99961ed0e784c59',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java': 'f013815ec371057ae1039cfa0ed6c5749dcb8a3d70f9b5455933935795e293da',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java': '8f765491a4c08c9fabc1da4db44af98ae4d8065830864e9996d880294f3ca33d',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java': 'a2a53d3070ed8fb2af0e59e5b7a9d4249e7e8db6ee9cc3a0d9d7ddafe265adbf',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java': '635b54a3ae32e553160b56b2b365445502ff91d75d53fb28573d0a30e1b398bf',
+ 'apps/android/localization/native-copy.json': '6b2e051f1c59e6fa3e8f19bf67ef5a9abf91abbca771fb2c22ab5f4e2e774406',
+ 'apps/android/src/androidTest/AndroidManifest.xml': 'aa82a1a072275d72ee7e29c163895cc7b1a9af8852f08d0f5d2e89d87ba3fc6c',
+ 'apps/android/src/androidTest/assets/localization-catalog.json': '8c22c1553eb50f9a23b6aed494677e6d25d944207cae1375908c2245fac5fbad',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java': 'f3f4993066c9d9d393621bc101597c6f666196517863f68a5053e70e053a02c5',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java': '7feb3256beec8bad6fb9aea06e77d20b9a7f2c9f22462b32fd329b4a81993a0d',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java': '1338f8742f3c5a29f5f5cb274b54e6b7e51c36c0800ed8ba7445764d691825cd',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java': '8ec239f0574225e12ce1c4b6e72b02757e5ac29b437c41113ae368964e7a5671',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': '64aa8326a477c9f86085c234af2ebc2fe84ad04c681904a6f50be8e2edcacddb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt': 'a9232e59346ce707fe5aa1c92a7f28a738c2aaa5ffe7d754949f6bce6a7b0523',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt': 'eab49df4d093dbb2c1d482001143079364fd6a7bd52751422169d090baa08ca5',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt': '17b81dcdf27a30d823c0cf8c1a146b66c08db416098f2a2c484d7f20cb6d6064',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt': '5e121b85a1d131f94a65f4cabadeb1f02a0690db657fa43e4f7aff5e616af817',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt': '63eb204bbd81f8de24ac1e5a742ab9da495003c87dc9dc9ae32e3cd6441e47c2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotFixture.kt': '6d57f7a87cbeb34de2caa53057af569d779cc84a13909816e2c3f89316b0b1b0',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotTest.kt': 'c9780f2e0851ba7b982284a95b1b5f1eea0e5d9bf9aefdd5cd9012d869b0eac4',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt': '856351afc999eda16534d9733ca58b87eaf1b879287449e33a716a7813bdbbdc',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt': '1ac749b91365d1042eba6f4627c978b27baf7e7dc40908713e01a87ef67d98cf',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt': '77f8f77e847c719143e5a3ad9d8b5a6454afba8b6a2071060a5c520ab4a1432b',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt': '6eef1747da82d27d4674196476026a298481ab6ba47b35761117f09b911bbb20',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': 'aae53404a620a4f59903bc2940b38b0e987a883ee9590ee8c76375f546190cde',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt': '857a608e1b7a57772fd62e8d02286eb223539fbbf7e5639cd649531ae78b2737',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt': '5600b74549464575dd554366f9cc7017baee4fb0a88f01a76325ee6e1f2e798e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt': 'a202d504df24e965bc61bab758f2ebe04870355cc3d3328a081daf4158e93c4e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt': '08e679e87726a7c5cfe4f1a4d0ab92c21a7c14b777fbd1b49ba498d75241eab2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt': '5c5e38bef9254e0c3d059e8f45068e78b9bb6d41c116cded388cb88ad1fe9781',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt': 'f8aaffcfca94f4b94171cbfd2619346693ca35f130a25023c18a32678d3719eb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt': '01b09b2d799b18040130c2170361e0c28ce7b060ea529b1264346f6026c41932',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt': 'b0e1f2593e82fc97754ef62873bd070d8b23cdf9f0bed233e79044118e93b31e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '6f54e060bed637fc88601bb33ec59291364a0dc66a28111aae2e8fd58f69fb53',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt': 'f490b3161b0baf900ad6a54717721c59cbf7405f2786e4f0639b8cb0ef08916a',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt': '90ca84c62835aa01defd18187ec046c6132b5eb88b856d016fd450b2d85f7c3c',
+ 'apps/android/src/debug/AndroidManifest.xml': '665d8491eacdfd1be56503c5d7312a829da4743a5a24d94033fb3efb2c878a6c',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt': 'ca2f8005efc4be53a0c213d59cc0e710dbe9cdb9e2793dabcad8fa4c327351ce',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt': '0403ead475d9f55dfabb40962d2cbb36af5d199db866587fc66e85456d7f40f2',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt': '1ca25c77ec44a16c32f454d95874358200783f31b84b2215df03bd6943cbfe14',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt': '038a9481b030f582d510c351f8c2ce49966005d0efa1491369f5b2890c28b1fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt': '3ee5afc1f237f6ed7f27f35ae00ec499372e7777f1e48b1b91f48b8c41b065fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt': '8334e01c9fee65e796c53f8bebda25c4a04f7d6806634d82d438defd9ecc0bc0',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt': 'b571940cbf7d795aef02260719a1df7436aaa1a2ee5d8d2063faa7caca0147fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt': '5222b416d5dc515cfe3e13e928581c01df44be761add15aa3619181e668b062c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt': 'bbd13988432924ed47ba8f4120e038a4addc34f5b568b61dd08fa160712a8d28',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt': 'bdefad1b3b16194da24ae1c66d63203a89ed0543e37160bba71755be6d4c711d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt': '221ee4171b352154238a7c019c2d80afc0a215002a6048dbbfe472d23dcd43f2',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt': '3aaebc40df41150bcf3c12f7f3ff88a014959f20a812d54384e3325e02cc055d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt': 'ce4e3d3ed0b3e19437b60ebf598b5edfc45fd0582baef082c4640f52b2472d0d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt': 'b4ae491497033e179e1b4f2549146d9d496021062c595b05a49d2f2b9742244c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt': '603addff0f87553030cb7c63ac36dfeea26a817748876df490d57546c537bf46',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileJournal.kt': 'f4c15a2b593f322048b5c91ad38e97fa56b54ab9937990cb7b87397d78676646',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt': '667dfdca68128bb294a367528c15d80dd535fe788e03750281fa55a762003e78',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt': '734f5607fc8a2355ec317da9090e58081f90e0efa65ed4a63deb472ef805246b',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt': 'd9519869a954a9c1bed93114f77c2cb2fff4e139676df7410afe1ff309d8d3dc',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt': '52f778ac6c8878d0dfb74de0f1df15de444c553b552c91633a4673829080bf72',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt': '4049489bb89c3bca34ee32ac483cd36dc257b50ed3864e614b79ff58320dd81f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileGraph.kt': 'c3a68e94f507d30f10f97b9c6ad9679fee52916cdfed806e28550256328dacd6',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt': '8e31c8baef7ed4e596b45e24b8dddda5452b7794e53b4512a1faa13911b55e3d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSourceFiles.kt': 'e7e0d876c4bc94697fcd95900663ae45ef556d19feb9d27c203b1283f3223d64',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt': '034c7add951508a49fb83f118767ac764350a89e2f39a6dba2cd3ad4450956f9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt': '30414b9944b47038e665e257baf8f8a75afa6cc698e10aca9182a8f6a9b82834',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt': '9c6fa6deee999aee523246349371b38db745e64803b530243e8889dd8b1eae6a',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt': '2204fdd39e3e2ea46dee82d1f04f420cdb5f5ffcbd9d047ece4b960f9892cc32',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt': 'abc482f97cba1342b39b767d4dd914af67d04b4c5b695cef451abb2d8ab035bf',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt': '57a48abaa41481d1dc7c751089c0d32089b7ebe7ac66d44cd60006e9d46a705f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt': '97146e786a153ddfc1ac0dc560f1fdd87aa0d03bcd7b24b8a659b1a1f93b3644',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt': '5b0bd956f8f8eb6931c75c41229f1b91073d4cbac2ed9eac57ab869d42a451ae',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt': 'c56b8e28d4990254f9e68785aa3779e6c91de2012ea0e85f3fe155fa09171ee9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt': '38cb07a63db7dc69f539febda7d44e3229f173d6068a3424035d5fbc22afd8b4',
+ 'apps/android/src/main/res/values-zh/product_strings.xml': '02192274fcedd07e86926472145e844cbdfa60bbacd8f10b39f5deda1e9fa999',
+ 'apps/android/src/main/res/values/product_strings.xml': '46a4180fe74b8f0c583fcf5f33192018df48a076136c84e8da54f19658322543',
+ 'package.json': '9d6fa4d4b9366df9d4fbd08dfeb482e22646280c7d6917aee11d9a28cc7b89c1',
+ 'packages/mobile-core/build.gradle.kts': '78ad08a3339f34accb7b38bf10cfd670775c842b076cb4fce1939151e1d8c58b',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt': '81c6c44047c3bbf5f7fbc368af7302ce727e0ea0505af653a5f04eca8472ee33',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileMigrationRules.kt': '41b8cc833e4adff9761fc712853334d529831121df12695f8a77b25622795741',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt': '94e3b49ea1ccd065fd058e63c5b1d66246fbdab774ee7bc5e1903d58b1de8883',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt': 'aafd704e667a2ab115e5ab132939c14e19c5676ebd4017054da8ca78d25eae71',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt': 'efa63e223691a3f2f9364b99cbd3b7dcdf9eeb2099d863b156dad4f987cc5671',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt': '5823a929fe2b4ab2d4b2b9f0f76b2276071b9ecf974ce47915c1e602dcff1937',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt': '0312f4f1e55dbc71e525596db1bc23c86286f1d9bd9ae13277f2387ec4d8fc69',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt': '22668fe24cd9843454b5363d77286f7bf93e7a1c7b4ac5c8c2987ede4d26b397',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt': '4345c2613a399df13a3a83c3ba24a237d23ab48cff2d0946dabfe148c7432cba',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileMigrationRulesTest.kt': '8868b40cf00ae096cb8ec7a2eb0cba55336d4bd667c5a00ed0005634c881c276',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt': 'd58978a62ccaf2d09cd098c5404aeb24c16be4928cbb50dae62bcaafb517c57c',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt': '3c5b887f641e5e4b197c69b9f759dc883a5540d62decc3d56a18a64a78d7ef34',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt': '6e184bc72ff0965a81807ff312a42683f87d52e4f8e9e60f7f93ef630f6276cd',
+ 'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json': '18b7490a1b4ee72dcfaafaf8b955e96814bd1b7b025458578a92b6647fdd3296',
+ 'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json': '2935d6c6354004549cba7bdefd8a346446dcd3473c1bc68343cd38a5801937dd',
+ 'packages/protocol/fixtures/mobile/easywork-receipt-v1.json': '38edb15d562bafc6be55ab4fdb7c5afa1eb47aa0f7378d82f204c25caeec84de',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json': 'e000a91870e89f01824c8fdd5b7093b6f6941ba3cc2d60b1534a538e29634352',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.md': 'de128ab4a57e8b1ae7e6c7d23f22b4fe71df7cc381453788ccd9e6e65af02078',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff': '948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf': '73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf': '2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav': '6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf': '6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf': '495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav': '57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf': 'fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff': '6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.caf': '4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd',
+ 'packages/protocol/schemas/agent-management-v1.schema.json': '708cda4e1d5751aa9d01e19e034928bd7c313d325b69d9c8b720a2452a938553',
+ 'packages/protocol/schemas/computer-file-originals-v1.schema.json': '03d9727fd8c54be5e20505727f833967d54b8328fa9dbb96e7eff58fb8bf768a',
+ 'packages/protocol/schemas/task-notifications-v1.schema.json': '630ec397ab606c4acfdb31c4d85bfe342a1efa5bacb983044d5afe0db2552899',
+ 'scripts/mobile/android-child-originals-pair.py': '93d21c46d9641f6354e106721429570e1531253faa94b7cd155d4ebf0797bbb5',
+ 'scripts/mobile/android-existing-originals-pair.py': 'a2821b09d30435a6b3a6af8bd625818ebd68a879345ef0c11cf53d2d5bdfe18c',
+ 'scripts/mobile/android-main-preference.py': 'cc8a5714ba03b1da3b918e400627f7cf1c5a05f37a4f749a0bb4a87e1d8216b2',
+ 'scripts/mobile/android-main-saf-framework-import.py': 'eecf65ddd83cd9926b987db5ccf808e98e62541e2fb19ea87bfc4b1b5730dff9',
+ 'scripts/mobile/android-main-saf-framework.py': '3bf018c5277e2ab82d2ab0ab44e11de23efe2a7c6df1cbfbffa6a164eda5b328',
+ 'scripts/mobile/android-main-saf.py': '3fe7515b621e80831a8c7c0218dc6ec44d1d8dca01a996b33473836cff0c90c8',
+ 'scripts/mobile/android-nonempty-device-first.py': '47a2df7800252c46d3c466cba9df5bdf13817c7d3a67178cd73ac810e42dc775',
+ 'scripts/mobile/android-nonempty-device-pair.py': 'e0014e428525689426a2e849ff5dfc6edb719818bb2a42e831a90151de576ea3',
+ 'scripts/mobile/android-nonempty-foreground-pair.py': '951f81ebcb2d4d1998930c5edc8a29e35fc1a163fe13bf2c4fcb998d969ddbd4',
+ 'scripts/mobile/android-nonempty-pristine-first.py': '2a537c4b3270575177cd3e9661eb1383eaee688f42cdb65dcf2bd60cd6317e3a',
+ 'scripts/mobile/android-voice-originals-controller.py': '0895246bbd8336856da95ed1ac2376596cfa927262d40247fcf8ca70f029475d',
+ 'scripts/mobile/android-voice-originals-pair.py': '126d224437a1543fcc84c3358f9e40739c3bb905cd3d66265acf15b587c8eae9',
+ 'scripts/mobile/android-voice-originals-workers.py': 'ac8392bc03e76b0dc859cf79e97a1d808840c331b6fe5eeef05973d43e40f187',
+ 'scripts/mobile/computer-file-originals-contract.test.mjs': 'fee68f3f9165e4db0eaca2d6ec79e6e5b91c546ac9c2429bfbaaccb91db6c7cd'}
+P7_F59_FROZEN_SOURCE_NATIVE_SELECTORS = ('com.agenthub.android.NativeComputerFileSnapshotTest#boundedDirectoryOverflowClosesItsActualStreamAndExpiredRealOwnerCannotEnumerate',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#replacedRecordIdentityIsRejectedWithoutReopeningOrChangingTheReplacement',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#absentNamespaceAndChildKeyCannotBeCreatedByAnExistingOnlySnapshot',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#unknownOriginalUsesRealCiphertextAndItsCallbacksRefuseAfterTheLeaseScopeReturns',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#controlledSidecarAndAuthenticatedOrphanRejectTheWholeSourceWithoutRepair',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#wrongInstalledKeyAndReplacedActualGenerationAreBothRejected',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#completedPartialRetirementRequiresTheRealReadonlyFileAndDirectoryBarriers',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#missingUnknownAndWrongTerminalReceiptCannotBeAcceptedAsRetiredOriginals')
+PROFILES = {**PROFILES, P7_F59_FROZEN_SOURCE_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_f59_frozen_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_F59_FROZEN_SOURCE_OVERLAY_PATHS), "F59-frozen-source-v1 exact123 source union required")
+    require(set(P7_F59_FROZEN_SOURCE_FIXED_AFTER) == set(P7_F59_FROZEN_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-frozen-source-v1 exact122 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_FROZEN_SOURCE_FIXED_AFTER.items()), "F59-frozen-source-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "F59-frozen-source-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "F59-frozen-source-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "F59-frozen-source-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "F59-frozen-source-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "F59-frozen-source-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "F59-frozen-source-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 940 and
+        type(result["sources"]) is dict and len(result["sources"]) == 940 and
+        set(result["inventory"]) == set(result["sources"]), "F59-frozen-source-v1 exact940 build inputs")
+    return result
+
+_f59_frozen_source_previous_review = _review
+_f59_frozen_source_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_F59_FROZEN_SOURCE_PROFILE:
+        return _f59_frozen_source_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned F59-frozen-source reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P7_F59_FROZEN_SOURCE_REVIEW_SCHEMA, "Closed F59-frozen-source-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "F59-frozen-source reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P7_F59_FROZEN_SOURCE_NATIVE_SELECTORS), "F59-frozen-source exact8 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_F59_FROZEN_SOURCE_OVERLAY_PATHS), "F59-frozen-source exact123 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit F59-frozen-source before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "F59-frozen-source before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P7_F59_FROZEN_SOURCE_FIXED_AFTER) == set(P7_F59_FROZEN_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-frozen-source exact122 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_FROZEN_SOURCE_FIXED_AFTER.items()), "F59-frozen-source fixed122 after pins")
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_F59_FROZEN_SOURCE_PROFILE:
+        return p7_f59_frozen_source_guard(api, repo, overlay)
+    return _f59_frozen_source_previous_source_guard(api, repo, overlay, profile)
+
+
+# Independent future F59-family source purpose. Source-only preparation.
+# Previous purposes remain frozen; final capture self pin belongs to Root review.
+P7_F59_FAMILY_SOURCE_PROFILE = "p7-f59-family-source-v1"
+P7_F59_FAMILY_SOURCE_REVIEW_SCHEMA = "p7-f59-family-source-build-review-v1"
+P7_F59_FAMILY_SOURCE_OVERLAY_PATHS = ('apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java',
+ 'apps/android/localization/native-copy.json',
+ 'apps/android/src/androidTest/AndroidManifest.xml',
+ 'apps/android/src/androidTest/assets/localization-catalog.json',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileFamilySnapshotTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotFixture.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt',
+ 'apps/android/src/debug/AndroidManifest.xml',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileJournal.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileFamilySnapshot.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileGraph.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSourceFiles.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt',
+ 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt',
+ 'apps/android/src/main/res/values-zh/product_strings.xml',
+ 'apps/android/src/main/res/values/product_strings.xml',
+ 'package.json',
+ 'packages/mobile-core/build.gradle.kts',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileMigrationRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileMigrationRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt',
+ 'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json',
+ 'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json',
+ 'packages/protocol/fixtures/mobile/easywork-receipt-v1.json',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.md',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.caf',
+ 'packages/protocol/schemas/agent-management-v1.schema.json',
+ 'packages/protocol/schemas/computer-file-originals-v1.schema.json',
+ 'packages/protocol/schemas/task-notifications-v1.schema.json',
+ 'scripts/mobile/android-child-originals-pair.py',
+ 'scripts/mobile/android-existing-originals-pair.py',
+ 'scripts/mobile/android-main-preference.py',
+ 'scripts/mobile/android-main-saf-framework-import.py',
+ 'scripts/mobile/android-main-saf-framework.py',
+ 'scripts/mobile/android-main-saf.py',
+ 'scripts/mobile/android-nonempty-device-first.py',
+ 'scripts/mobile/android-nonempty-device-pair.py',
+ 'scripts/mobile/android-nonempty-foreground-pair.py',
+ 'scripts/mobile/android-nonempty-pristine-first.py',
+ 'scripts/mobile/android-sdk-capture.py',
+ 'scripts/mobile/android-voice-originals-controller.py',
+ 'scripts/mobile/android-voice-originals-pair.py',
+ 'scripts/mobile/android-voice-originals-workers.py',
+ 'scripts/mobile/computer-file-originals-contract.test.mjs')
+P7_F59_FAMILY_SOURCE_FIXED_AFTER = {'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java': '240537ab210090a390eac8e480dd53d0f31d062460cd89ae7aa65536f92221e8',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java': '19c69743716f5a7c599566055ff65d4f3134695aecb4f189fa41d2e897e65efc',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java': '1006bf92d477c7a9fdea00edbd9a4a8e18a7b0b522b06e88a99961ed0e784c59',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java': 'f013815ec371057ae1039cfa0ed6c5749dcb8a3d70f9b5455933935795e293da',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java': '8f765491a4c08c9fabc1da4db44af98ae4d8065830864e9996d880294f3ca33d',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java': 'a2a53d3070ed8fb2af0e59e5b7a9d4249e7e8db6ee9cc3a0d9d7ddafe265adbf',
+ 'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java': '635b54a3ae32e553160b56b2b365445502ff91d75d53fb28573d0a30e1b398bf',
+ 'apps/android/localization/native-copy.json': '6b2e051f1c59e6fa3e8f19bf67ef5a9abf91abbca771fb2c22ab5f4e2e774406',
+ 'apps/android/src/androidTest/AndroidManifest.xml': 'aa82a1a072275d72ee7e29c163895cc7b1a9af8852f08d0f5d2e89d87ba3fc6c',
+ 'apps/android/src/androidTest/assets/localization-catalog.json': '8c22c1553eb50f9a23b6aed494677e6d25d944207cae1375908c2245fac5fbad',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java': 'f3f4993066c9d9d393621bc101597c6f666196517863f68a5053e70e053a02c5',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java': '7feb3256beec8bad6fb9aea06e77d20b9a7f2c9f22462b32fd329b4a81993a0d',
+ 'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java': '1338f8742f3c5a29f5f5cb274b54e6b7e51c36c0800ed8ba7445764d691825cd',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java': '8ec239f0574225e12ce1c4b6e72b02757e5ac29b437c41113ae368964e7a5671',
+ 'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java': '64aa8326a477c9f86085c234af2ebc2fe84ad04c681904a6f50be8e2edcacddb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt': 'a9232e59346ce707fe5aa1c92a7f28a738c2aaa5ffe7d754949f6bce6a7b0523',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt': 'eab49df4d093dbb2c1d482001143079364fd6a7bd52751422169d090baa08ca5',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt': '17b81dcdf27a30d823c0cf8c1a146b66c08db416098f2a2c484d7f20cb6d6064',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt': '5e121b85a1d131f94a65f4cabadeb1f02a0690db657fa43e4f7aff5e616af817',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileDurabilityTest.kt': '63eb204bbd81f8de24ac1e5a742ab9da495003c87dc9dc9ae32e3cd6441e47c2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileFamilySnapshotTest.kt': '5a822e55cedccf5748f0e3b2d7cba6843765049c22dadf8aa0ad18518c1d967d',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotFixture.kt': '0b5219171f7879423efc54fde94ef931baefd0ece86c173d0a310d61c56e82f4',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotTest.kt': 'c9780f2e0851ba7b982284a95b1b5f1eea0e5d9bf9aefdd5cd9012d869b0eac4',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt': '856351afc999eda16534d9733ca58b87eaf1b879287449e33a716a7813bdbbdc',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeLegacyReplyRetrySafetyTest.kt': '1ac749b91365d1042eba6f4627c978b27baf7e7dc40908713e01a87ef67d98cf',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationChildOriginalsProfile.kt': '77f8f77e847c719143e5a3ad9d8b5a6454afba8b6a2071060a5c520ab4a1432b',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationExistingOriginalsWitness.kt': '6eef1747da82d27d4674196476026a298481ab6ba47b35761117f09b911bbb20',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainSaf.kt': 'aae53404a620a4f59903bc2940b38b0e987a883ee9590ee8c76375f546190cde',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationMainUiTest.kt': '857a608e1b7a57772fd62e8d02286eb223539fbbf7e5639cd649531ae78b2737',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceCase.kt': '5600b74549464575dd554366f9cc7017baee4fb0a88f01a76325ee6e1f2e798e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyDeviceSessionTest.kt': 'a202d504df24e965bc61bab758f2ebe04870355cc3d3328a081daf4158e93c4e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNonemptyPairContract.kt': '08e679e87726a7c5cfe4f1a4d0ab92c21a7c14b777fbd1b49ba498d75241eab2',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceCase.kt': '5c5e38bef9254e0c3d059e8f45068e78b9bb6d41c116cded388cb88ad1fe9781',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsDeviceSessionTest.kt': 'f8aaffcfca94f4b94171cbfd2619346693ca35f130a25023c18a32678d3719eb',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceOriginalsPairContract.kt': '01b09b2d799b18040130c2170361e0c28ce7b060ea529b1264346f6026c41932',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainAdmission.kt': 'b0e1f2593e82fc97754ef62873bd070d8b23cdf9f0bed233e79044118e93b31e',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP8MainPreferenceTest.kt': '6f54e060bed637fc88601bb33ec59291364a0dc66a28111aae2e8fd58f69fb53',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeP9SystemUiScopedBootstrapTest.kt': 'f490b3161b0baf900ad6a54717721c59cbf7405f2786e4f0639b8cb0ef08916a',
+ 'apps/android/src/androidTest/kotlin/com/agenthub/android/P8MainScopeBoundary.kt': '90ca84c62835aa01defd18187ec046c6132b5eb88b856d016fd450b2d85f7c3c',
+ 'apps/android/src/debug/AndroidManifest.xml': '665d8491eacdfd1be56503c5d7312a829da4743a5a24d94033fb3efb2c878a6c',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt': 'ca2f8005efc4be53a0c213d59cc0e710dbe9cdb9e2793dabcad8fa4c327351ce',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt': '0403ead475d9f55dfabb40962d2cbb36af5d199db866587fc66e85456d7f40f2',
+ 'apps/android/src/debug/kotlin/com/agenthub/android/P8MainPreferenceActivity.kt': '1ca25c77ec44a16c32f454d95874358200783f31b84b2215df03bd6943cbfe14',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt': '038a9481b030f582d510c351f8c2ce49966005d0efa1491369f5b2890c28b1fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt': '3ee5afc1f237f6ed7f27f35ae00ec499372e7777f1e48b1b91f48b8c41b065fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt': '8334e01c9fee65e796c53f8bebda25c4a04f7d6806634d82d438defd9ecc0bc0',
+ 'apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt': 'b571940cbf7d795aef02260719a1df7436aaa1a2ee5d8d2063faa7caca0147fa',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt': '5222b416d5dc515cfe3e13e928581c01df44be761add15aa3619181e668b062c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt': 'bbd13988432924ed47ba8f4120e038a4addc34f5b568b61dd08fa160712a8d28',
+ 'apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt': 'bdefad1b3b16194da24ae1c66d63203a89ed0543e37160bba71755be6d4c711d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt': '221ee4171b352154238a7c019c2d80afc0a215002a6048dbbfe472d23dcd43f2',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt': '3aaebc40df41150bcf3c12f7f3ff88a014959f20a812d54384e3325e02cc055d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt': 'ce4e3d3ed0b3e19437b60ebf598b5edfc45fd0582baef082c4640f52b2472d0d',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt': 'b4ae491497033e179e1b4f2549146d9d496021062c595b05a49d2f2b9742244c',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileDurableFiles.kt': '603addff0f87553030cb7c63ac36dfeea26a817748876df490d57546c537bf46',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileJournal.kt': 'f4c15a2b593f322048b5c91ad38e97fa56b54ab9937990cb7b87397d78676646',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileModel.kt': '667dfdca68128bb294a367528c15d80dd535fe788e03750281fa55a762003e78',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt': '734f5607fc8a2355ec317da9090e58081f90e0efa65ed4a63deb472ef805246b',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt': 'd9519869a954a9c1bed93114f77c2cb2fff4e139676df7410afe1ff309d8d3dc',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFilesPage.kt': '52f778ac6c8878d0dfb74de0f1df15de444c553b552c91633a4673829080bf72',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt': '4049489bb89c3bca34ee32ac483cd36dc257b50ed3864e614b79ff58320dd81f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileFamilySnapshot.kt': 'ddf88aded811f7912a1674d18604c8dca0791f1a3a87c2b408e10b5528ef0289',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileGraph.kt': 'c3a68e94f507d30f10f97b9c6ad9679fee52916cdfed806e28550256328dacd6',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt': 'ea8ab83cf06861d1967eee177e7a1e4f567abde64b829f22d68d7d3ed389a6e2',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSourceFiles.kt': 'e7e0d876c4bc94697fcd95900663ae45ef556d19feb9d27c203b1283f3223d64',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExistingPolicy.kt': '034c7add951508a49fb83f118767ac764350a89e2f39a6dba2cd3ad4450956f9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt': '30414b9944b47038e665e257baf8f8a75afa6cc698e10aca9182a8f6a9b82834',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt': 'efd0c0b82c3ede528d62a2db80c3db654d3a8d00c1d54e0cf7cd90be4d9e592e',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt': '2204fdd39e3e2ea46dee82d1f04f420cdb5f5ffcbd9d047ece4b960f9892cc32',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePcmWriter.kt': 'abc482f97cba1342b39b767d4dd914af67d04b4c5b695cef451abb2d8ab035bf',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt': '57a48abaa41481d1dc7c751089c0d32089b7ebe7ac66d44cd60006e9d46a705f',
+ 'apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt': '97146e786a153ddfc1ac0dc560f1fdd87aa0d03bcd7b24b8a659b1a1f93b3644',
+ 'apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt': '5b0bd956f8f8eb6931c75c41229f1b91073d4cbac2ed9eac57ab869d42a451ae',
+ 'apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt': 'c56b8e28d4990254f9e68785aa3779e6c91de2012ea0e85f3fe155fa09171ee9',
+ 'apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt': '38cb07a63db7dc69f539febda7d44e3229f173d6068a3424035d5fbc22afd8b4',
+ 'apps/android/src/main/res/values-zh/product_strings.xml': '02192274fcedd07e86926472145e844cbdfa60bbacd8f10b39f5deda1e9fa999',
+ 'apps/android/src/main/res/values/product_strings.xml': '46a4180fe74b8f0c583fcf5f33192018df48a076136c84e8da54f19658322543',
+ 'package.json': '9d6fa4d4b9366df9d4fbd08dfeb482e22646280c7d6917aee11d9a28cc7b89c1',
+ 'packages/mobile-core/build.gradle.kts': '78ad08a3339f34accb7b38bf10cfd670775c842b076cb4fce1939151e1d8c58b',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt': '81c6c44047c3bbf5f7fbc368af7302ce727e0ea0505af653a5f04eca8472ee33',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileMigrationRules.kt': '41b8cc833e4adff9761fc712853334d529831121df12695f8a77b25622795741',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DeviceReadingRules.kt': '94e3b49ea1ccd065fd058e63c5b1d66246fbdab774ee7bc5e1903d58b1de8883',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ProjectGitRules.kt': 'aafd704e667a2ab115e5ab132939c14e19c5676ebd4017054da8ca78d25eae71',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt': 'efa63e223691a3f2f9364b99cbd3b7dcdf9eeb2099d863b156dad4f987cc5671',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SubagentProjection.kt': '5823a929fe2b4ab2d4b2b9f0f76b2276071b9ecf974ce47915c1e602dcff1937',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt': '0312f4f1e55dbc71e525596db1bc23c86286f1d9bd9ae13277f2387ec4d8fc69',
+ 'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt': '22668fe24cd9843454b5363d77286f7bf93e7a1c7b4ac5c8c2987ede4d26b397',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt': '4345c2613a399df13a3a83c3ba24a237d23ab48cff2d0946dabfe148c7432cba',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileMigrationRulesTest.kt': '8868b40cf00ae096cb8ec7a2eb0cba55336d4bd667c5a00ed0005634c881c276',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/EasyWorkChatManagementRulesTest.kt': 'd58978a62ccaf2d09cd098c5404aeb24c16be4928cbb50dae62bcaafb517c57c',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt': '3c5b887f641e5e4b197c69b9f759dc883a5540d62decc3d56a18a64a78d7ef34',
+ 'packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt': '6e184bc72ff0965a81807ff312a42683f87d52e4f8e9e60f7f93ef630f6276cd',
+ 'packages/protocol/fixtures/mobile/easywork-migration-crypto-v1.json': '18b7490a1b4ee72dcfaafaf8b955e96814bd1b7b025458578a92b6647fdd3296',
+ 'packages/protocol/fixtures/mobile/easywork-push-envelope-v1.json': '2935d6c6354004549cba7bdefd8a346446dcd3473c1bc68343cd38a5801937dd',
+ 'packages/protocol/fixtures/mobile/easywork-receipt-v1.json': '38edb15d562bafc6be55ab4fdb7c5afa1eb47aa0f7378d82f204c25caeec84de',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.manifest.json': 'e000a91870e89f01824c8fdd5b7093b6f6941ba3cc2d60b1534a538e29634352',
+ 'packages/protocol/fixtures/mobile/task-sound-fixtures.md': 'de128ab4a57e8b1ae7e6c7d23f22b4fe71df7cc381453788ccd9e6e65af02078',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff': '948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf': '73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf': '2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav': '6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf': '6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf': '495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav': '57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf': 'fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff': '6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600',
+ 'packages/protocol/fixtures/mobile/task-sound-synthetic.caf': '4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd',
+ 'packages/protocol/schemas/agent-management-v1.schema.json': '708cda4e1d5751aa9d01e19e034928bd7c313d325b69d9c8b720a2452a938553',
+ 'packages/protocol/schemas/computer-file-originals-v1.schema.json': '03d9727fd8c54be5e20505727f833967d54b8328fa9dbb96e7eff58fb8bf768a',
+ 'packages/protocol/schemas/task-notifications-v1.schema.json': '630ec397ab606c4acfdb31c4d85bfe342a1efa5bacb983044d5afe0db2552899',
+ 'scripts/mobile/android-child-originals-pair.py': '93d21c46d9641f6354e106721429570e1531253faa94b7cd155d4ebf0797bbb5',
+ 'scripts/mobile/android-existing-originals-pair.py': 'a2821b09d30435a6b3a6af8bd625818ebd68a879345ef0c11cf53d2d5bdfe18c',
+ 'scripts/mobile/android-main-preference.py': 'cc8a5714ba03b1da3b918e400627f7cf1c5a05f37a4f749a0bb4a87e1d8216b2',
+ 'scripts/mobile/android-main-saf-framework-import.py': 'eecf65ddd83cd9926b987db5ccf808e98e62541e2fb19ea87bfc4b1b5730dff9',
+ 'scripts/mobile/android-main-saf-framework.py': '3bf018c5277e2ab82d2ab0ab44e11de23efe2a7c6df1cbfbffa6a164eda5b328',
+ 'scripts/mobile/android-main-saf.py': '3fe7515b621e80831a8c7c0218dc6ec44d1d8dca01a996b33473836cff0c90c8',
+ 'scripts/mobile/android-nonempty-device-first.py': '47a2df7800252c46d3c466cba9df5bdf13817c7d3a67178cd73ac810e42dc775',
+ 'scripts/mobile/android-nonempty-device-pair.py': 'e0014e428525689426a2e849ff5dfc6edb719818bb2a42e831a90151de576ea3',
+ 'scripts/mobile/android-nonempty-foreground-pair.py': '951f81ebcb2d4d1998930c5edc8a29e35fc1a163fe13bf2c4fcb998d969ddbd4',
+ 'scripts/mobile/android-nonempty-pristine-first.py': '2a537c4b3270575177cd3e9661eb1383eaee688f42cdb65dcf2bd60cd6317e3a',
+ 'scripts/mobile/android-voice-originals-controller.py': '0895246bbd8336856da95ed1ac2376596cfa927262d40247fcf8ca70f029475d',
+ 'scripts/mobile/android-voice-originals-pair.py': '126d224437a1543fcc84c3358f9e40739c3bb905cd3d66265acf15b587c8eae9',
+ 'scripts/mobile/android-voice-originals-workers.py': 'ac8392bc03e76b0dc859cf79e97a1d808840c331b6fe5eeef05973d43e40f187',
+ 'scripts/mobile/computer-file-originals-contract.test.mjs': 'fee68f3f9165e4db0eaca2d6ec79e6e5b91c546ac9c2429bfbaaccb91db6c7cd'}
+P7_F59_FAMILY_SOURCE_NATIVE_SELECTORS = ('com.agenthub.android.NativeComputerFileSnapshotTest#boundedDirectoryOverflowClosesItsActualStreamAndExpiredRealOwnerCannotEnumerate',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#replacedRecordIdentityIsRejectedWithoutReopeningOrChangingTheReplacement',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#absentNamespaceAndChildKeyCannotBeCreatedByAnExistingOnlySnapshot',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#unknownOriginalUsesRealCiphertextAndItsCallbacksRefuseAfterTheLeaseScopeReturns',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#controlledSidecarAndAuthenticatedOrphanRejectTheWholeSourceWithoutRepair',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#wrongInstalledKeyAndReplacedActualGenerationAreBothRejected',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#completedPartialRetirementRequiresTheRealReadonlyFileAndDirectoryBarriers',
+ 'com.agenthub.android.NativeComputerFileSnapshotTest#missingUnknownAndWrongTerminalReceiptCannotBeAcceptedAsRetiredOriginals',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#originalAndTwoPublishedGenerationsKeepEverySameNamedOriginalAndReceiptSeparate',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#orphanedOriginalInOldRootRefusesTheWholeFamilyWhileCurrentEmptyChildStaysAbsent',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#peerFromNoRetainedGenerationRefusesBeforeAnyFamilyConsumerOrMissingKeyCreation',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#replacingOldGenerationDirectoryWithSameNameInvalidatesTheHeldRealDirectory',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#perMemberValidRecordsCannotMultiplyTheSingleFamilyJournalBudget',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#consumerFailureReturnsAllFamilyFdsAndOldCallbacksExpireWithoutLosingTheOriginalOwner',
+ 'com.agenthub.android.NativeComputerFileFamilySnapshotTest#absentChildrenInEveryGenerationRemainAbsentAndLiveOwnerInvalidationRejectsOldAndNewReads')
+PROFILES = {**PROFILES, P7_F59_FAMILY_SOURCE_PROFILE: {
+    "tasks": [":android:assembleDebug", ":android:assembleDebugAndroidTest"], "artifacts": {
+        "app": (".build/native/android/outputs/apk/debug/android-debug.apk", APP),
+        "test": (".build/native/android/outputs/apk/androidTest/debug/android-debug-androidTest.apk", APP + ".test")}}}
+
+def p7_f59_family_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_F59_FAMILY_SOURCE_OVERLAY_PATHS), "F59-family-source-v1 exact125 source union required")
+    require(set(P7_F59_FAMILY_SOURCE_FIXED_AFTER) == set(P7_F59_FAMILY_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-family-source-v1 exact124 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_FAMILY_SOURCE_FIXED_AFTER.items()), "F59-family-source-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    require(overlay["scripts/mobile/android-sdk-capture.py"] == api.digest(Path(__file__), 32 * 1024 * 1024), "F59-family-source-v1 executing capture tool self pin differs")
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "F59-family-source-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "F59-family-source-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "F59-family-source-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "F59-family-source-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "F59-family-source-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "F59-family-source-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 942 and
+        type(result["sources"]) is dict and len(result["sources"]) == 942 and
+        set(result["inventory"]) == set(result["sources"]), "F59-family-source-v1 exact942 build inputs")
+    return result
+
+_f59_family_source_previous_review = _review
+_f59_family_source_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_F59_FAMILY_SOURCE_PROFILE:
+        return _f59_family_source_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned F59-family-source reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P7_F59_FAMILY_SOURCE_REVIEW_SCHEMA, "Closed F59-family-source-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "F59-family-source reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P7_F59_FAMILY_SOURCE_NATIVE_SELECTORS), "F59-family-source exact15 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_F59_FAMILY_SOURCE_OVERLAY_PATHS), "F59-family-source exact125 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit F59-family-source before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "F59-family-source before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P7_F59_FAMILY_SOURCE_FIXED_AFTER) == set(P7_F59_FAMILY_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-family-source exact124 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_FAMILY_SOURCE_FIXED_AFTER.items()), "F59-family-source fixed124 after pins")
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_F59_FAMILY_SOURCE_PROFILE:
+        return p7_f59_family_source_guard(api, repo, overlay)
+    return _f59_family_source_previous_source_guard(api, repo, overlay, profile)
+
+
+# Separately closed F59 inner framing build, retaining the previous family
+# inputs and adding only the five audited Android/KMP/fixture sources.
+P7_F59_INNER_SOURCE_PROFILE = "p7-f59-inner-source-v1"
+P7_F59_INNER_SOURCE_REVIEW_SCHEMA = "p7-f59-inner-source-build-review-v1"
+P7_F59_INNER_SOURCE_FIXED_AFTER = {
+    **P7_F59_FAMILY_SOURCE_FIXED_AFTER,
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileInnerPayloadTest.kt": "b966f82843aef76e1754a3682124d0f3a2d788631fe1966d0c4640870e22d4ed",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileInnerPayload.kt": "003d076e0e89fba3ee9e5f38adcb5e79965bd8e30073bdf237dcd988bc8296fa",
+    "package.json": "44092211eb62e90a04c61b56ccd8dafc2b6326151d006c5adc3aa134b0666376",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileInnerPayloadRules.kt": "dc44fabb643edef87a3a73bc8279b870849299a32db4834cb4b70c51f7484da3",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileInnerPayloadRulesTest.kt": "822799dd9ce61b18dc701554be52ee2fcb607c364e121b4425007f2a159f6f54",
+    "packages/protocol/fixtures/mobile/computer-file-inner-payload-v1.json": "0bb56c32b77e0533180fa635f814ddf334bdb33e15078deeab8bf2fae68a131d",
+    "pnpm-lock.yaml": "0f95a5393674dd868459d71c1c799b40642f7364abdfd19df8349a5bd89ea6a5",
+}
+P7_F59_INNER_SOURCE_OVERLAY_PATHS = tuple(sorted({
+    *P7_F59_INNER_SOURCE_FIXED_AFTER, "scripts/mobile/android-sdk-capture.py",
+}))
+P7_F59_INNER_SOURCE_NATIVE_SELECTORS = (*P7_F59_FAMILY_SOURCE_NATIVE_SELECTORS,
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#independentContractBytesRoundTripWithoutTreatingTheSyntheticRecordsAsACompleteGraph",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#unknownManifestTypesOrdinalsLengthsTruncationAndTrailingBytesNeverReturnSuccess",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#invalidDescriptorOrBudgetIsRejectedBeforeTheFirstDestinationByte",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#scopedStreamsExpireAndPartialConsumptionCannotBeConvertedIntoAReceipt",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#partialOutputFailureIsKeptEvenIfTheSourceCatchesItAndAttemptsAnotherWrite",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#partialInputFailureIsNotReadAgainOrHiddenByTheConsumer",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#firstPartialOutputErrorRemainsPrimaryWhenTheCallbackThenThrowsAnotherError",
+    "com.agenthub.android.NativeComputerFileInnerPayloadTest#firstPartialInputErrorRemainsPrimaryWhenTheCallbackThenThrowsAnotherError",
+)
+PROFILES = {**PROFILES, P7_F59_INNER_SOURCE_PROFILE: PROFILES[P7_F59_FAMILY_SOURCE_PROFILE]}
+
+def p7_f59_inner_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_F59_INNER_SOURCE_OVERLAY_PATHS), "F59-inner-source-v1 exact131 source union required")
+    require(set(P7_F59_INNER_SOURCE_FIXED_AFTER) == set(P7_F59_INNER_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-inner-source-v1 exact130 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_INNER_SOURCE_FIXED_AFTER.items()), "F59-inner-source-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    require(overlay["scripts/mobile/android-sdk-capture.py"] == api.digest(Path(__file__), 32 * 1024 * 1024), "F59-inner-source-v1 executing capture tool self pin differs")
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "F59-inner-source-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "F59-inner-source-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "F59-inner-source-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "F59-inner-source-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "F59-inner-source-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "F59-inner-source-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 947 and
+        type(result["sources"]) is dict and len(result["sources"]) == 947 and
+        set(result["inventory"]) == set(result["sources"]), "F59-inner-source-v1 exact947 build inputs")
+    return result
+
+_f59_inner_source_previous_review = _review
+_f59_inner_source_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_F59_INNER_SOURCE_PROFILE:
+        return _f59_inner_source_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned F59-inner-source reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P7_F59_INNER_SOURCE_REVIEW_SCHEMA, "Closed F59-inner-source-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "F59-inner-source reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P7_F59_INNER_SOURCE_NATIVE_SELECTORS), "F59-inner-source exact23 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_F59_INNER_SOURCE_OVERLAY_PATHS), "F59-inner-source exact131 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit F59-inner-source before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "F59-inner-source before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P7_F59_INNER_SOURCE_FIXED_AFTER) == set(P7_F59_INNER_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-inner-source exact130 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_INNER_SOURCE_FIXED_AFTER.items()), "F59-inner-source fixed130 after pins")
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_F59_INNER_SOURCE_PROFILE:
+        return p7_f59_inner_source_guard(api, repo, overlay)
+    return _f59_inner_source_previous_source_guard(api, repo, overlay, profile)
+
+
+# Separately closed F59 typed family projection build. Earlier source
+# profiles retain their independent exact pins and selectors.
+P7_F59_TYPED_SOURCE_PROFILE = "p7-f59-typed-source-v1"
+P7_F59_TYPED_SOURCE_REVIEW_SCHEMA = "p7-f59-typed-source-build-review-v1"
+P7_F59_TYPED_SOURCE_FIXED_AFTER = {
+    **P7_F59_INNER_SOURCE_FIXED_AFTER,
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileFamilySnapshotTest.kt": "85b9dc61d82de97c5650ec64bbea4fd57d7805e2f433ac5875e420ec4bed78d6",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComputerFileSnapshotFixture.kt": "90baf7416c9031a23a984e6446b7d8657d1b08af37eb9dd08c1abec4dfdef5da",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileFamilySnapshot.kt": "0f3f9dfe434c0205c50e4eec9f5b143bb778b3d468d2ac12eb5ad81ac7a8068c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileGraph.kt": "cde1734ac6432b175cf31b944a83787b5619eea14e852ef03f39b7e17d3c4f0d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt": "7d3da80b5f200d535cf94198473d39213fdb0c687f1b6c7de4602ce0ab37fef2",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileFamilyInventory.kt": "aecea2dd907d3cbf24363a04c8d9fbd1906f948ae7569b7e36f91340dcb4d178",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileFamilyInventoryTest.kt": "85c14b568dd22161b6844da8481cec77b287e854bfe40122935260fb642a4b5b",
+}
+P7_F59_TYPED_SOURCE_OVERLAY_PATHS = tuple(sorted({
+    *P7_F59_TYPED_SOURCE_FIXED_AFTER, "scripts/mobile/android-sdk-capture.py",
+}))
+P7_F59_TYPED_SOURCE_NATIVE_SELECTORS = (*P7_F59_INNER_SOURCE_NATIVE_SELECTORS,
+    "com.agenthub.android.NativeComputerFileFamilySnapshotTest#typedInventoryRetainsAbsentEmptyLiveAndExactRetiredRootWithOriginalPins",
+)
+PROFILES = {**PROFILES, P7_F59_TYPED_SOURCE_PROFILE: PROFILES[P7_F59_INNER_SOURCE_PROFILE]}
+
+def p7_f59_typed_source_guard(api, repo, overlay):
+    require(type(overlay) is dict and set(overlay) == set(P7_F59_TYPED_SOURCE_OVERLAY_PATHS), "F59-typed-source-v1 exact133 source union required")
+    require(set(P7_F59_TYPED_SOURCE_FIXED_AFTER) == set(P7_F59_TYPED_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-typed-source-v1 exact132 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_TYPED_SOURCE_FIXED_AFTER.items()), "F59-typed-source-v1 fixed after pins differ")
+    for value in overlay.values():
+        api.sha(value)
+    require(overlay["scripts/mobile/android-sdk-capture.py"] == api.digest(Path(__file__), 32 * 1024 * 1024), "F59-typed-source-v1 executing capture tool self pin differs")
+    names = set(overlay)
+    repo = Path(repo).resolve()
+    before = api.input_inventory(repo, names)
+    actual = {}
+    for name in before:
+        path = repo / name
+        prior = path.lstat()
+        require(stat.S_ISREG(prior.st_mode) and prior.st_nlink == 1, "F59-typed-source-v1 single-link source input required")
+        actual[name] = api.digest(path, 32 * 1024 * 1024)
+        after = path.lstat()
+        require(after.st_nlink == 1 and api.file_identity(prior) == api.file_identity(after), "F59-typed-source-v1 source alias/identity changed during hashing")
+    require(sum((repo / name).lstat().st_size for name in before) <= 64 * 1024 * 1024, "F59-typed-source-v1 build source byte quota")
+    require(all(actual[name] == value for name, value in api.BASELINE.items() if name not in names), "F59-typed-source-v1 unapproved baseline production/build input differs")
+    require(all(actual[name] == value for name, value in overlay.items()), "F59-typed-source-v1 reviewed overlay bytes differ")
+    require(api.input_inventory(repo, names) == before, "F59-typed-source-v1 build inventory changed while hashing")
+    result = {"schema": api.GUARD_SCHEMA, "baselineCommit": api.BASELINE_COMMIT,
+        "roots": api.INPUT_ROOTS, "rootBuildNames": api.ROOT_BUILD_NAMES,
+        "inventory": before, "sourceOverlay": {name: actual[name] for name in sorted(names)}, "sources": actual}
+    api.exact(result, {"schema", "baselineCommit", "roots", "rootBuildNames", "inventory", "sourceOverlay", "sources"})
+    require(type(result["inventory"]) is list and len(result["inventory"]) == 949 and
+        type(result["sources"]) is dict and len(result["sources"]) == 949 and
+        set(result["inventory"]) == set(result["sources"]), "F59-typed-source-v1 exact949 build inputs")
+    return result
+
+_f59_typed_source_previous_review = _review
+_f59_typed_source_previous_source_guard = _source_guard
+
+def _review(api, path, expected_sha, profile):
+    if profile != P7_F59_TYPED_SOURCE_PROFILE:
+        return _f59_typed_source_previous_review(api, path, expected_sha, profile)
+    raw = private_bytes(path, 131072)
+    require(sha(raw) == expected_sha, "Externally Root-pinned F59-typed-source reviewed state")
+    value = parse_json(raw)
+    api.exact(value, {"schema", "reviewId", "head", "statusSha256", "sourceOverlay", "allowedDirtyPaths", "nativeSelectors"})
+    require(value["schema"] == P7_F59_TYPED_SOURCE_REVIEW_SCHEMA, "Closed F59-typed-source-v1 reviewed-state schema")
+    api.canonical_uuid(value["reviewId"])
+    require(type(value["head"]) is str and re.fullmatch(r"[a-f0-9]{40}", value["head"]), "F59-typed-source reviewed HEAD")
+    api.sha(value["statusSha256"])
+    require(type(value["nativeSelectors"]) is list and value["nativeSelectors"] == list(P7_F59_TYPED_SOURCE_NATIVE_SELECTORS), "F59-typed-source exact24 Native eligibility selectors")
+    rows = value["sourceOverlay"]
+    require(type(rows) is dict and set(rows) == set(P7_F59_TYPED_SOURCE_OVERLAY_PATHS), "F59-typed-source exact133 reviewed source set")
+    overlay = {}
+    for name, pins in rows.items():
+        require(type(pins) is dict and set(pins) == {"beforeSha256", "afterSha256"}, "Explicit F59-typed-source before/after pins")
+        require(pins["beforeSha256"] == api.BASELINE.get(name), "F59-typed-source before pin must match frozen baseline")
+        if pins["beforeSha256"] is not None: api.sha(pins["beforeSha256"])
+        api.sha(pins["afterSha256"]); overlay[name] = pins["afterSha256"]
+    require(set(P7_F59_TYPED_SOURCE_FIXED_AFTER) == set(P7_F59_TYPED_SOURCE_OVERLAY_PATHS) - {"scripts/mobile/android-sdk-capture.py"}, "F59-typed-source exact132 fixed source set")
+    require(all(overlay[name] == pin for name, pin in P7_F59_TYPED_SOURCE_FIXED_AFTER.items()), "F59-typed-source fixed132 after pins")
+    dirty = value["allowedDirtyPaths"]
+    require(type(dirty) is list and dirty == sorted(set(dirty)) and all(type(name) is str and not name.startswith("/") and ".." not in name.split("/") for name in dirty), "Exact reviewed dirty paths")
+    return raw, value, overlay
+
+def _source_guard(api, repo, overlay, profile):
+    if profile == P7_F59_TYPED_SOURCE_PROFILE:
+        return p7_f59_typed_source_guard(api, repo, overlay)
+    return _f59_typed_source_previous_source_guard(api, repo, overlay, profile)
+
+
 if __name__ == "__main__":
     main()

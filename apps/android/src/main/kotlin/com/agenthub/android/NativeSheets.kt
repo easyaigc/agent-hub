@@ -50,7 +50,7 @@ import androidx.compose.foundation.text.KeyboardOptions
     val uri=androidx.compose.ui.platform.LocalUriHandler.current
     val colors=MaterialTheme.colorScheme
     val migration=session.migrationController
-    val migrationBusy=page=="migration"&&migration?.canDismiss==false
+    val migrationBusy=(page=="migration"&&migration?.canDismiss==false)||(page=="file-transfers"&&session.computerFiles?.busy==true)
     val inboxBusy by rememberUpdatedState((page=="external-attachments"&&session.externalInbox?.adding==true)||migrationBusy)
     val state=rememberModalBottomSheetState(skipPartiallyExpanded=true,confirmValueChange={ next -> !inboxBusy||next!=SheetValue.Hidden })
     ModalBottomSheet(onDismissRequest={ if(!inboxBusy&&(page!="add"||!session.connectionBusy)&&(page!="add-project"||!session.projectBusy))close() },sheetState=state,containerColor=colors.surface,dragHandle={ BottomSheetDefaults.DragHandle() },contentWindowInsets={ WindowInsets.safeDrawing },
@@ -60,13 +60,13 @@ import androidx.compose.foundation.text.KeyboardOptions
         // before that window can restore its old IME request over the main page.
         val focus=LocalFocusManager.current
         val keyboard=LocalSoftwareKeyboardController.current
-        DisposableEffect(page) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
+        DisposableEffect(page) { onDispose {if(page=="file-transfers")session.closeComputerFiles();focus.clearFocus(force=true); keyboard?.hide() } }
         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
         // In a short IME viewport, fixed chrome must not consume the form's scroll area.
         BoxWithConstraints(Modifier.fillMaxWidth()) {
         val compactConnectionKeyboard=page=="add"&&(maxHeight<480.dp||WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current)>0)
         Column(Modifier.fillMaxWidth().fillMaxHeight(if(compactConnectionKeyboard)1f else .9f).testTag("sheet-$page")) {
-            val title=t.tr(when(page) { "migration"->"安全迁移"; "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
+            val title=t.tr(when(page) { "file-transfers"->"文件互传"; "migration"->"安全迁移"; "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
             val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications","migration")
             val action=t.tr(if(page=="external-attachments") "稍后添加" else if(page=="ai-sharing" || page=="projects" || page=="add" && editing==null) "取消" else "完成")
             val titleStyle=LocalTextStyle.current.copy(fontSize=17.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold)
@@ -108,6 +108,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "chat-notifications" -> NativeChatNotificationsPage(session.chatNotifications)
                 "voice" -> NativeVoiceSettingsPage(session)
                 "migration" -> NativeMigrationPage(migration)
+                "file-transfers" -> NativeComputerFilesPage(session.computerFiles)
                 "generation" -> GenerationPage(session)
                 "reply-records" -> ReplyDeliveryRecordsPage(session,close)
                 "chat-search" -> ChatHistorySearchPage(session,close)

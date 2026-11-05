@@ -261,6 +261,28 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var suggestionReadsVisible=false
     private fun registry(reader: HostReads?,commands: CodexCommands?)=AgentRegistry(reader?:NativeHostReads { storage?.token(it).orEmpty() },commands?:NativeCodexCommands { storage?.token(it).orEmpty() }).apply { easyWorkAgent?.let { register("easywork",it,it) } }
     private var providers=registry(reader,commandProvider)
+    internal var computerFiles by mutableStateOf<NativeComputerFileModel?>(null);private set
+    private fun computerFileReadingClient(): MobileClient? {
+        val client=selectedClient
+        val target=client.agentConnection?.target?:client.scope?:client.codexDirect?.target?:return null
+        if(client.isDemo||target.hostId!=client.id)return null
+        return client.copy(scope=target)
+    }
+    internal val canOpenComputerFiles get()=storage!=null&&localReady&&!migrationPaused&&!migrationRawPreparing&&
+        migrationRawOwner==null&&computerFileReadingClient()!=null
+    internal fun openComputerFiles(context: android.content.Context) {
+        if(!canOpenComputerFiles)return
+        computerFiles?.cancelLocalWait()
+        val client=computerFileReadingClient()?:return;val owner=storage?:return
+        val binding=ComputerFileTarget.capture(client)
+        computerFiles=NativeComputerFileModel(context.applicationContext,client,owner,providers,tasks) {
+            localReady&&!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null&&
+                tasks.coroutineContext[Job]!!.isActive&&(computerFileReadingClient()?.let {current->
+                    binding.matches(current)&&current.endpoint==client.endpoint
+                }==true)
+        }
+    }
+    internal fun closeComputerFiles(){computerFiles?.cancelLocalWait()}
     private var reads: HostReads = providers
     private var commands: CodexCommands = providers
     val usage = MobileUsageStore { client -> commands.usage(client) }
@@ -707,7 +729,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     @Volatile private var migrationEpoch=0L
     private var migrationOperation: String?=null
     internal val migrationStorage get()=requireNotNull(storage)
-    internal val migrationReady get()=storage!=null && localReady && !migrationPaused &&
+    internal val migrationReady get()=storage!=null && localReady && !migrationPaused && computerFiles?.busy!=true &&
         !connectionBusy && !projectBusy && !importing && !attachmentRecoveryBusy &&
         externalInbox?.migrationIdle!=false &&
         recentPhotos?.migrationIdle!=false && photoAuthorization?.migrationIdle!=false &&
@@ -1479,6 +1501,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val rejected=latestSourceCreation?.takeIf { !it.detached&&it.phase=="rejected" }
         return operationRecords.filter { it.kind !in listOf("fork","chat-action","workspace-archive") && !it.detached && it.sourceKey==targetKey &&
             (it.phase in listOf("ready","preparing","prepared","submitting","received","uncertain","outcome-unknown","opening","submitted") ||
+                it.unconfirmedFailedReply ||
                 rejected?.let { original -> it.id==original.id&&it.target==original.target }==true) && (it.kind!="reply" || it.phase!="submitted") }
     }
     private val creationWorkPending get()=pendingRecords.any { it.kind in listOf("creation","thread-create")&&it.phase!="rejected" }
@@ -1980,8 +2003,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             finally { endBusy(key,owner) } }
     }
     fun mayContinueCreation(record: SavedOperation)=execution?.mayContinueCreation(record)==true
-    fun mayRetryReply(record: SavedOperation)=foreground && selectedClient.online && record.sourceKey==targetKey &&
-        record.replyRecovery?.mayRetry(selectedClient,record)==true && !busyTargets.containsKey(targetKey)
+    fun mayRetryReply(record: SavedOperation,now: Long=System.currentTimeMillis())=foreground && selectedClient.online && record.sourceKey==targetKey &&
+        record.replyRecovery?.mayRetry(selectedClient,record,now)==true && !busyTargets.containsKey(targetKey)
     fun retryReply(record: SavedOperation) {
         val flow=execution ?: return;val client=selectedClient;val key=targetKey;val selection=selectionRevision
         if(!mayRetryReply(record) || operationRecords.none { it.id==record.id && it.target==record.target }) return

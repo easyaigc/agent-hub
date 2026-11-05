@@ -204,16 +204,64 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return EasyWorkReceiptNormalization.decode(result,intent.operationId,client.id,intent.threadId,"submitted",intent.expectedTurnId)
     }
     override suspend fun receipt(client: MobileClient,threadId: String,operationId: String): DeliveryReceipt {
-        val c=channel(client);val v=c.request("command/status",JSONObject().put("commandId",operationId));require(v.has("state")) { "Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留" }
-        val response=v.optJSONObject("response");var result=response?.optJSONObject("result")
-        require(result?.opt("threadId").let { it==null||it==JSONObject.NULL||it==threadId })
-        if(result?.opt("state")=="queued" || result?.opt("queueSource") is String) {
-            require(result?.opt("threadId")==threadId)
-            result=c.request("queue/status",JSONObject().put("threadId",threadId).put("messageId",operationId))
-            return EasyWorkReceiptNormalization.decode(result,operationId,client.id,threadId,"uncertain")
+        val c=channel(client)
+        fun originalOwner() {
+            require(sameScope(client.scope,c.target.scope())&&client.agentConnection?.let {
+                easyCanonical(it.json().put("candidates",JSONArray()))==easyCanonical(c.connection.json().put("candidates",JSONArray()))
+            }==true) { "原操作回执身份或内容不匹配" }
         }
-        return EasyWorkReceiptNormalization.decode(result ?: JSONObject(),operationId,client.id,threadId,
-            if(v.opt("state")=="completed")"submitted" else v.opt("state") as? String ?: "uncertain",
+        fun targetMatches(value: JSONObject) {
+            if(value.has("target")&&value.opt("target")!==JSONObject.NULL)
+                require(value.optJSONObject("target")?.let { EasyWorkTarget.decode(it)==c.target }==true) { "原操作回执身份或内容不匹配" }
+            if(value.has("hostId")&&value.opt("hostId")!==JSONObject.NULL)
+                require(value.opt("hostId")==c.target.desktopDeviceId) { "原操作回执身份或内容不匹配" }
+        }
+        suspend fun originalQueueReceipt(): DeliveryReceipt? {
+            originalOwner()
+            val queued=c.originalQueueStatus(threadId,operationId)
+            originalOwner()
+            if(queued==null)return null
+            targetMatches(queued)
+            require(queued.opt("clientMessageId")==operationId&&queued.opt("threadId")==threadId) { "原操作回执身份或内容不匹配" }
+            return EasyWorkReceiptNormalization.decode(queued,operationId,client.id,threadId,"uncertain")
+        }
+        originalOwner()
+        val v=c.request("command/status",JSONObject().put("commandId",operationId))
+        originalOwner();targetMatches(v)
+        val state=v.opt("state") as? String
+        require(state!=null&&state.isNotEmpty()) { "Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留" }
+        if(v.has("method")&&v.opt("method")!==JSONObject.NULL)
+            require(v.opt("method") is String) { "电脑回执格式无效" }
+        for(key in listOf("operationId","clientMessageId"))if(v.has(key)&&v.opt(key)!==JSONObject.NULL)
+            require(v.opt(key)==operationId) { "原操作回执身份或内容不匹配" }
+        if(v.has("threadId")&&v.opt("threadId")!==JSONObject.NULL)
+            require(v.opt("threadId")==threadId) { "原操作回执身份或内容不匹配" }
+        val rawResponse=v.opt("response")
+        require(rawResponse==null||rawResponse===JSONObject.NULL||rawResponse is JSONObject) { "电脑回执格式无效" }
+        val response=rawResponse as? JSONObject;val rawResult=response?.opt("result")
+        require(rawResult==null||rawResult===JSONObject.NULL||rawResult is JSONObject) { "电脑回执格式无效" }
+        val result=rawResult as? JSONObject
+        if(result!=null) {
+            targetMatches(result)
+            for(key in listOf("operationId","clientMessageId"))if(result.has(key)&&result.opt(key)!==JSONObject.NULL)
+                require(result.opt(key)==operationId) { "原操作回执身份或内容不匹配" }
+            require(result.opt("threadId").let { it==null||it===JSONObject.NULL||it==threadId }) { "原操作回执身份或内容不匹配" }
+        }
+        if(result?.opt("state")=="queued" || result?.opt("queueSource") is String) {
+            require(result?.opt("threadId")==threadId) { "原操作回执身份或内容不匹配" }
+            return requireNotNull(originalQueueReceipt()) { "电脑回执格式无效" }
+        }
+        // The queue can persist the original input before the command ACK. Only
+        // this exact missing-result turn/start queries its original admission.
+        if(result==null&&v.opt("method")=="turn/start"&&state in listOf("submitting","uncertain")) {
+            require(v.opt("threadId")==threadId) { "原操作回执身份或内容不匹配" }
+            try {originalQueueReceipt()?.let { return it }}
+            catch(error: EasyWorkRejection) { if(error.code !in setOf("method_unavailable","queue_unavailable"))throw error }
+        }
+        // No result is not a completed input. Retain UNKNOWN and no borrowed run,
+        // even if an outer RPC claims completed; an actual object keeps old ACK rules.
+        val fallback=if(result!=null&&state=="completed")"submitted" else "uncertain"
+        return EasyWorkReceiptNormalization.decode(result ?: JSONObject(),operationId,client.id,threadId,fallback,
             fallbackError=response?.optJSONObject("error")?.opt("message") as? String)
     }
     override suspend fun stop(client: MobileClient,threadId: String,turnId: String) { require(channel(client).request("turn/cancel",JSONObject().put("threadId",threadId).put("turnId",turnId)).getBoolean("cancelled")) }

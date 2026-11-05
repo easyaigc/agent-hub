@@ -194,7 +194,7 @@ test(
           JSON.stringify({
             name: '@codex-manage/' + component.split('/').at(-1),
             type: 'module',
-            dependencies: {},
+            dependencies: component === 'packages/codex-adapter' ? { 'smol-toml': 'catalog:' } : {},
           }),
         );
         await write(component + '/src/index.ts', emitted);
@@ -267,13 +267,24 @@ test(
         await write(name, bytes);
       }
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
-      for (const name of ['bonjour-service', 'qrcode', 'smol-toml']) {
+      for (const name of ['bonjour-service', 'qrcode']) {
         await write(
           'node_modules/' + name + '/package.json',
           JSON.stringify({ name, version: '1.0.0', main: 'index.js' }),
         );
         await write('node_modules/' + name + '/index.js', 'module.exports = {};\n');
       }
+      // Keep the synthetic adapter dependency scoped like pnpm and hide its
+      // manifest subpath to exercise the packager's package-exports fallback.
+      const toml = 'packages/codex-adapter/node_modules/smol-toml/';
+      const tomlManifest = JSON.stringify({
+        name: 'smol-toml',
+        version: '1.9.1',
+        exports: { '.': './dist/index.cjs' },
+      });
+      const tomlEntry = 'module.exports = { parse: () => ({}) };\n';
+      await write(toml + 'package.json', tomlManifest);
+      await write(toml + 'dist/index.cjs', tomlEntry);
       await mkdir(taskHubBundle);
       await writeFile(
         join(taskHubBundle, 'manifest.json'),
@@ -292,6 +303,17 @@ test(
         output: join(tmp, 'valid.zip'),
       });
       assert.match(valid.sha256, /^[a-f0-9]{64}$/);
+      const deployedToml = 'codex-host-connect/assets/codex-manage/node_modules/smol-toml/';
+      for (const [path, contents] of [
+        ['package.json', tomlManifest],
+        ['dist/index.cjs', tomlEntry],
+      ])
+        assert.equal(
+          execFileSync('/usr/bin/unzip', ['-p', valid.archive, deployedToml + path], {
+            encoding: 'utf8',
+          }),
+          contents,
+        );
       for (const [name, bytes] of soundBytes)
         assert.deepEqual(
           execFileSync('/usr/bin/unzip', [

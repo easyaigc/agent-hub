@@ -96,3 +96,59 @@ P8 v2 SDK通过，但中文首case的准确原生AX锚点在5秒截止失败，�
 阶段84：P7认证根路径与列表同源修复、P8失败原View归属观察已采用并独审；新两包SDK/Kotlin/新prepare/系统SAF/AX/IMPORT与整项产品/物理门槛待验。原6e/15b/c609等UNKNOWN保持，不重放，不以新场景改判旧结果。见[阶段档案](records/stage84-platform-alias-and-ax-owner.md)。
 
 阶段84本次：P7 8e4d4440/run9201e7bd UNKNOWN，原intent.pending/claim保留，Native8f9b8227从未派发；原进程AVC拒绝link已只读关联，不重放。P8首次Native在原View/窗口/anchor下因边界0/AX缺失失败，App5455自然退出，cleanup未开始、原scope/alias保留。发布锁与保存后视口准备待新SDK/Native；旧泛型本地外层UNKNOWN不改写，前置失败证明与首次实际Native回执分开。
+
+阶段85：新namespace v4/协作锁发布、保存后准确视口已采用并独审，四Java、SDK7acfa0d0的Java/Kotlin及完整辅助回归通过；新prepare确认，导出在SET_FILENAME前失败，P8保存后原anchor零几何失败；SAF/AX/producer/IMPORT与完整产品/物理门槛待验。原v3的8e、旧6e/15b/c609、P8 scope/alias及P9失败原件/密钥不触碰，未知不重放。
+
+阶段85原新run835a58e0/prepare d6e02b7b已确认，Native13543e28与P8 run28fd9ce6各执行一次后失败，外层UNKNOWN保持。未保存/回调、未完成14字段，不重放；原scope/alias、授权与控制器现场保留。下一轮仅新目的/新操作验文件名阶段与原几何。PR135 Linux测试同步修复和实际新CI通过前不合并/删分支。
+
+阶段86：文件名默认值与目标值顺序修复已采用，保持原节点/路径/窗口/单次动作/截止与保存断言；新SDK/prepare/实际导出/producer/IMPORT及完整迁移仍待验。旧835a58e0/d6e02b7b/13543e28和P8失败scope不恢复、不重放。P8原几何继续诊断。
+
+阶段86本次：新0b2dd747/880e07d9/e6cdc5a7已实际写出4328字节，原ACK与Native预期相符，但metadata完整基线比较和元数据/锁FD关闭未通过；不重放、不补ACK、不冒充完整owner/双快照审计。Root正常关闭原VM，磁盘原件保留。P8首AX采样前原几何失败根因仍待确认，后19节点仅为失败诊断。
+
+阶段87A：主线78b9dda6的F73共享额度解析与Host诊断已同步到当前待校验树，Android设备/UI及当前Host真实来源不据主线/其他平台通过改判。旧SDK86的三个构建输入已变化，新FD/metadata/P8共包须重新重锁62overlay/905输入；原输入、写入回执和UNKNOWN不重放。
+
+阶段87：新SDK/905输入与API33真实Main SAF导出1方法有限通过，当前两个provider的130个FD链接无本轮UUID；不代表ACK前关闭或grant终止。IMPORT/独立producer、完整24域/F59/双端/物理与P8/P9完整UI仍待验。PR135源02c52951的iOS通过、Linux11388运行中；旧UNKNOWN不重放，见[阶段87B](records/stage87-explicit-fd-metadata-geometry.md)。
+
+阶段88：新Host独立producer与新SDK通过；本轮实际原生目录联合断言:516失败，原UNKNOWN不重放，14来源材料未生成、第二Root Main IMPORT未派发；修复后新SDK/新操作及完整UI仍待验。两阶段不可自动串派或换boot/SDK，不能用EXPORT充当IMPORT。Source87有限导出通过保持原指纹；最新主线9a01差异待整合重锁，见[阶段88](records/stage88-independent-producer-lane.md)。
+
+阶段88完整回归：唯一pnpm check在iOS自建模拟器Data Migration启动超时，后续链未执行；partial Node260=257通过/3跳过，不算完整通过。原模拟器已正常删除。当前空间不满足14GiB新运行门槛，保留原失败并先推进树外目录修复；资源恢复后对新候选继续完整检查，不下调gate。
+
+阶段89：App专属目录绑定、新namespace/SDK purpose及本地只读reader视图修复已采用；34条辅助向量与三Py compile/AST通过，未执行真实framework路径/UID/FD/14材料/IMPORT或当前完整回归。第二witness不算独立lexical采样。新运行须先满足原14GiB门槛；P8拒绝追加、无result的原队列回执查询缺口已发现，单列优先修复；未知操作不重放。
+
+阶段90：当前SDK/真实独立producer14件、原PID退出及第二Root Main系统选取/授权/解密预览/取消已有限通过；保留历史负witness/UNKNOWN，未验实际激活、完整24域/F59、grant终止、完整双端UI或物理DEV。当前完整回归待恢复；P8拒绝追加/无result原队列只读恢复已静态独审，生成、源码接入及新指纹验收仍待执行。API37横屏、蜂窝/VPN及人工原owner待验不阻塞本机开发。 见[阶段90档案](records/stage90-independent-producer-main-import-preview.md)。
+
+阶段91：主线addf26ad/P8回执安全已源码接入；当前完整检查、生成镜像、新purpose/SDK、41双端向量、17场景Swift与18项Native均待执行。原generic raw confirmed可能隐藏unknown的边界单列因果验收，不收紧通用ACK。新增主线22组差异按档案逐项推进，完整迁移/F59/语音/未读/生命周期与物理/网络依赖继续开放。 见[阶段91档案](records/stage91-main-and-easywork-receipt-safety.md)。
+
+阶段91有限执行结果：1950键原生成与mobile-parity检查通过；Swift共享41向量及17个原回执场景运行通过，Node汇总19通过/0失败/0跳过。新SDK purpose仅源码采用，真实guard/构建/18 Native/当前完整回归与手机UI仍待验；旧生成摘要遗漏失败保留，未放宽测试。
+
+阶段92：完整回归首项fixture格式失败已修正，后续组未执行；iOS构建实际通过与源码匹配范围单列。F59 R2不采用：文件sync/rename软失败、删除确认和部分清理文案均需R3；公共outbox/语音/通知/迁移/sharing及授权写入边界分组补强，旧ready不能追溯作为未发送证明。923新SDK/18Native/真实owner与手机仍待验，所有旧UNKNOWN不重放。 见[阶段92档案](records/stage92-format-main-and-durable-boundaries.md)。
+
+阶段93：a496c47a完整回归/新SDK/源CI已通过；18个Native方法尚未安装或启动，资源门槛待续，本轮API33已正常关闭且原数据保留。恢复须以新boot及当前实际包/数据/资源重新准入，旧boot材料不能直接执行。F59 R4仅静态独审通过，编译、故障、原生交互/界面和真实Host仍待验；不因等待资源停止可独立开发。见[阶段93档案](records/stage93-sdk-fullcheck-and-native-deferral.md)。
+
+阶段94：F59 R4及9项直接生产端口Native测试已源码接入，编译/执行未完成；66条场景全部保持待验，须覆盖原件/UNKNOWN/清理、SAF与目标替换、完整语言/方向/字号/AX及真实Host/手机。容量、portable F59/24域及旧普通writer的持久性缺口不由新端口追溯关闭。Native资源待验继续单列，不阻断后续原操作安全开发。见[阶段94档案](records/stage94-f59-strict-storage.md)。
+
+阶段95：旧not-written仅有效强证明恢复、failed无结果Composer门槛、原查询/显式结束等待和强证明到期重绘已源码补强；4项隔离Native待编译/执行，原生交互/视觉/AX/真实owner与手机逐项待验。普通消费/source/strict lineage与原文读取后detach竞争仍开放，F61当前Android不标整项通过。见[阶段95档案](records/stage95-legacy-reply-safety.md)。
+
+阶段96：iOS PR146/147对照及当前930输入/31方法SDK目的已源码追加，正式guard/当前新包/原生和完整检查结果待实跑；旧已关闭API33 boot不能复用，新运行须准确包/UID/数据/资源准入。iOS来源问题F17/F70不冒充Android验收，也不自动扩大跨机联络。见[阶段96档案](records/stage96-main-and-sdk-contract.md)。
+
+阶段96完整检查第一次实际wait=-15：首项Prettier期间触发全盘可用空间变化保护，格式未完成/后续0项执行，原流与失败保留，不能据此报新代码通过。自建iOS模拟器及tmp已正常回收；先推进当前Android编译，再补完整回归，启动/保留空间门槛不降低。
+
+阶段97当前替代状态：新SDK已通过，旧回复4及P8回执18原生方法、F59 8项文件方法有限通过；硬链接在OS创建即EACCES，读取器nlink拒绝仍未验。完整回归在辅助iOS预热wait0但stdout未EOF时停止，pnpm未派发，下一轮独立处理采集后继续。实际Main/完整视觉/手机、F59大容量portable/24域激活、strict outbox与自然故障保持待验。两套自有模拟器均正常关闭、原API33 wait与官方iOS不存在已核对，其他任务环境不动。见[阶段97档案](records/stage97-sdk-and-native31.md)。
+
+阶段98：F59 descriptor/graph第一切片及6 KMP/3 Node辅助、普通编译完成；strict只读源snapshot/generation/FD/barrier、完整库存、新大容量封包、candidate/pointer与惰性发布/iOS互通仍未实现。原journal loader兼容、真实byte篡改/自然故障/Main UI/手机与24域保持待验；旧hardlink reader项及预热EOF完整回归未关闭。iOS prepared/UNKNOWN404回READY风险仅候选未采用，iOS A6暂停，Android不回退安全边界。
+
+阶段100当前替代状态：aeda809b完整pnpm check已通过，旧预热缺EOF/资源终止/长TMP socket失败保持原记录，本次仅准确自建sim/短TMP回收。此前“当前完整回归待补”已按此源码关闭；新snapshot源码/原生、hardlink reader、完整迁移/24域/UI/手机/Host以及P8/P9矩阵仍开放，不把辅助结果扩大为产品通过。
+
+阶段101：current-generation单child只读源/8方法测试源码与普通Android编译完成；正式940输入SDK guard/seal、8具名实际Native、25故障/兼容场景及真实UI待验。old-generation family、新流式容器/完整源库存/目的端发布/iOS与完整24域仍未实现；旧hardlink reader、Host/手机/AX矩阵保留。9db iOS编译仅辅助，A6暂停，任务/项目/F75暂停。
+
+阶段103 F59：f38新SDK及current-generation八项Native通过，真实generation替换已实际验收；c4旧7/1保留在阶段102档案。old-generation family七项候选、大容量封包/认证加密、目的端/iOS/24域/Main/手机继续待验，reader-nlink旧EACCES缺口与未覆盖故障向量保持。
+
+阶段105 F59：520的942输入/19合同拒绝/新SDK及15项Native通过；32MiB/64MiB、alias/FD/path注入等未全fresh覆盖，旧reader-nlink EACCES、旧代缺child key及空root真实owner专项仍待。Long内层/认证容器、完整24域、目的端/iOS/Main/手机仍待；主线合并会改变两个已绑定SDK输入，需新指纹复验。P8 PR150–153新增显式速度、原回执绑定与迟到查询/新发送隔离、真实LAN撤权逐项待验。
+
+阶段108 F59：Long 内层源码与独立向量已接入。当前 947 输入 SDK、Android 原生、实际超 Int 文件流与峰值资源、外层认证容器/独立回执、目的端 24 域/故障/Main/手机保持单列。原迁移与 iOS 生产格式保持旧指纹。
+
+阶段109：85d5bc0 的 947 输入 SDK、API33 23 项、完整回归及 iOS 模拟器 SDK 构建已通过。真实超 Int 载荷、旧硬链接 reader 拒绝、旧代缺 key/空 root、认证容器及 24 域/故障/Main/iOS 迁移/手机仍待；P8/P9 私有候选未执行。
+
+阶段110：代际惰性清单、实际原日志与退役描述源码已接入；新 SDK、同原件部分退役 Native、真实大文件、认证外层、关闭结果核对、激活、完整 Main/手机仍按新指纹分别验。
+
+阶段112：a50c606 的 949 输入 SDK 与全新 API33 24 项通过，关闭同原件混合退役的本机原生用例。真实超 Int 流、旧 nlink/缺 key/空 root、认证外层、原关闭核对、完整24域与激活、iOS/Main/手机、P8/P9 并行候选仍按各自指纹待验。

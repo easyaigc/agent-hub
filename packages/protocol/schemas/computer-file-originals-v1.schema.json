@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-hub.invalid/schemas/computer-file-originals-v1.schema.json",
+  "title": "Inert Android F59 originals descriptor v1",
+  "description": "Not integrated. Container authentication, strict native journal decoding, exact complete frame inventory and streaming digest verification are mandatory in addition to this shape schema. No paths, source-device key, URI or retry authority. Old v4 size/record limits remain unchanged.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sourcePlatform",
+    "destinationPolicy",
+    "journalFormat",
+    "journals",
+    "chunks",
+    "absentCompletedChunks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "agent-hub/computer-file-originals/v1"
+    },
+    "sourcePlatform": {
+      "const": "android"
+    },
+    "destinationPolicy": {
+      "const": "inert"
+    },
+    "journalFormat": {
+      "const": "agent-hub/android-computer-files-v1"
+    },
+    "journals": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "size", "sha256"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^computer-files-v1:[a-f0-9]{64}$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 900000
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "chunks": {
+      "type": "array",
+      "maxItems": 65536,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "size", "sha256"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^computer-file-original:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}:(0|[1-9][0-9]{0,2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-5])$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "absentCompletedChunks": {
+      "type": "array",
+      "maxItems": 65536,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^computer-file-original:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}:(0|[1-9][0-9]{0,2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-5])$"
+      }
+    }
+  }
+}

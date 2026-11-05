@@ -98,6 +98,10 @@ object CodexCommandCodec {
 
 /** Commands have specific names and immutable target arguments; no arbitrary route or method API. */
 interface AgentCommands {
+    suspend fun computerFiles(client: MobileClient): ComputerFileCatalog = error("此连接尚未支持文件互传，请更新电脑连接程序。")
+    suspend fun prepareComputerFile(client: MobileClient,file: ComputerFileManifest): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
+    suspend fun computerFile(client: MobileClient,id: String): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
+    suspend fun uploadComputerFile(client: MobileClient,source: ComputerFileUpload,progress: (Long)->Unit): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
     suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead): JSONObject = throw UnsupportedOperationException("Reading acknowledgement is unavailable")
     suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")
     suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")

@@ -85,7 +85,7 @@ internal class NativeMigrationExistingPolicy(val storage: Any,val originalGenera
     fun requireNewChild(actualStorage: Any,access: Any,generation: String,path: String) {
         check(actualStorage===storage&&created==generation)
         if(access===storage) {check(path in paths);requireFrozen()}
-        else {val r=exact(access);check(r.generation==generation&&path in paths+"migration-candidates")
+        else {val r=exact(access);check(r.generation==generation&&path in paths+setOf("migration-candidates","computer-file-transfers"))
             if(phase==Phase.ACTIVE){r.live!!();check(phase==Phase.ACTIVE)}else {check(path in paths);prepared(r)}}
     }
     fun childPrepared(access: Any,path: String) {if(access!==storage){val r=exact(access);if(phase==Phase.BOUND){prepared(r);check(path in paths);r.prepared.add(path)}}}

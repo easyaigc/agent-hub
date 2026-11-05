@@ -86,9 +86,17 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     var rejection: String?
     switch name {
     case "submitting": record["state"] = "submitting"
+    case "queued-admission": var q = queued as! [String: Any]; q["state"] = "queued"; queued = q
     case "nonqueue": queued = NSNull()
+    case "submitting-nonqueue": record["state"] = "submitting"; queued = NSNull()
     case "other-method": record["method"] = "thread/create"
     case "completed": record["state"] = "completed"; record["response"] = ["result": ["threadId": "fixture-thread", "runId": "fixture-run"]]
+    case "null-completed": record["state"] = "completed"; record["response"] = ["result": NSNull()]
+    case "empty-queue": queued = [String: Any]()
+    case "malformed-result": record["response"] = ["result": "not-an-object"]
+    case "wrong-command": record["operationId"] = "another-original"
+    case "wrong-result-operation": record["state"] = "completed"; record["response"] = ["result": ["threadId": "fixture-thread", "clientMessageId": "another-original", "state": "failed"]]
+    case "queue-unavailable": rejection = "queue_unavailable"
     case "wrong-thread": var q = queued as! [String: Any]; q["threadId"] = "other-thread"; queued = q
     case "wrong-operation": var q = queued as! [String: Any]; q["clientMessageId"] = "other-operation"; queued = q
     case "unavailable": rejection = "method_unavailable"
@@ -102,8 +110,10 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     func require(_ condition: Bool, _ detail: String) throws {
       if !condition { throw NSError(domain: name + ": " + detail, code: 1) }
     }
-    if name == "wrong-thread" || name == "wrong-operation" {
+    if name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
       guard let failure, case HostServiceError.wrongHost = failure else { throw NSError(domain: name + ": wrong target was not rejected", code: 2) }
+    } else if name == "malformed-result" {
+      guard let failure, case HostServiceError.invalidResponse = failure else { throw NSError(domain: name + ": malformed value was adopted", code: 3) }
     } else if name == "denied" {
       try require((failure as? EasyWorkRemoteRejection)?.code == "device_not_authorized", "authorization rejection must remain visible")
     } else {
@@ -112,13 +122,13 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       try require(result.clientMessageId == "fixture-operation" && result.threadId == "fixture-thread" && result.hostId == "fixture-host", "original identity")
       if name == "completed" { try require(result.state == "submitted" && result.turnId == "fixture-run", "completed original root") }
       else {
-        try require(result.state == "uncertain" && result.turnId == nil, "unknown never borrows a current root")
-        if ["queue", "submitting"].contains(name) {
+        try require(result.state == (name == "queued-admission" ? "queued" : "uncertain") && result.turnId == nil, "original outcome never borrows a current root")
+        if ["queue", "submitting", "queued-admission"].contains(name) {
           try require(result.queueSource == "native" && result.queuePresent == true && result.canExecuteNow == false && result.text == "frozen queued input", "authoritative original queue fields")
         } else { try require(result.queueSource == nil && result.queuePresent == nil, "nonqueue unknown is not adopted") }
       }
     }
-    let expected = ["other-method", "completed"].contains(name) ? ["command/status"] : ["command/status", "queue/status"]
+    let expected = ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation"].contains(name) ? ["command/status"] : ["command/status", "queue/status"]
     try require(gateway.calls == expected, "only original status reads; no execute or resend")
     print("passed")
   }
@@ -144,14 +154,22 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     );
     for (const name of [
       'queue',
+      'queued-admission',
       'submitting',
       'nonqueue',
+      'submitting-nonqueue',
       'other-method',
       'completed',
       'wrong-thread',
       'wrong-operation',
       'unavailable',
       'denied',
+      'queue-unavailable',
+      'null-completed',
+      'empty-queue',
+      'malformed-result',
+      'wrong-command',
+      'wrong-result-operation',
     ]) {
       await t.test(name, async () => {
         const result = await run(binary, [name], { env, timeout: 5000 });

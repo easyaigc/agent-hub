@@ -10,6 +10,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
     private val publicationObserver: NativeSessionStorage.PublicationObserver?=null) {
     internal class ExistingInstallation: Exception("请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。")
     fun activate(receipt: NativeMigrationCandidateStore.Receipt,checkpoint: (Int)->Unit={}): String=storage.snapshotTransaction {storage.operationTransaction {
+        storage.requireNoComputerFilesForMigration()
         storage.publishedMigration(receipt.id,receipt.sha256,receipt.recordCount)?.let{return@operationTransaction it}
         // The authoritative Vault also covers pairing committed before an ordinary metadata snapshot.
         val metadata=storage.metadata()

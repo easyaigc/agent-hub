@@ -5,6 +5,10 @@ import com.agenthub.core.RuntimeIdentity
 import org.json.JSONObject
 import java.security.MessageDigest
 
+/** A soft legacy failure is not evidence that a reply never crossed the send boundary. */
+internal val SavedOperation.unconfirmedFailedReply: Boolean
+    get()=kind=="reply" && phase=="failed" && result==null && !detached
+
 /** Captured authority is metadata beside the immutable operation, never a replacement body. */
 data class NativeReplyRecovery(val capturedTarget: String,val trust: String,val fingerprint: String,
     val phase: String="not-written",val consumed: Boolean=false,val inspection: String?=null) {
@@ -23,8 +27,13 @@ data class NativeReplyRecovery(val capturedTarget: String,val trust: String,val 
         val intent=JSONObject(record.intent)
         ReplyRecoveryRules.strongNotAccepted(it,capturedTarget,intent.getString("hostId"),intent.getString("threadId"),record.id,fingerprint,now)
     } ?: false
+    // Legacy not-written is a stored claim, not proof that the pre-network write was durable.
+    // Keep first submission in the normal prepare/markSubmitting path. A user retry or
+    // restoring the original into a new draft requires the existing original-client proof.
+    // A future strict admission lineage may add an Android-only never-attempted branch.
     fun mayRetry(client: MobileClient,record: SavedOperation,now: Long=System.currentTimeMillis()): Boolean =
-        ReplyRecoveryRules.mayRetry(phase,consumed,matches(client,record) && record.result==null,strong(record,now))
+        phase=="strong-not-accepted" &&
+            ReplyRecoveryRules.mayRetry(phase,consumed,matches(client,record) && record.result==null,strong(record,now))
     fun capturedClient(client: MobileClient,record: SavedOperation): MobileClient {
         require(matches(client,record)) { "原消息的运行目标、证书或不可变内容已变化，只能查询原回执" }
         return client.copy(scope=HostReadCodec.target(JSONObject(capturedTarget)))

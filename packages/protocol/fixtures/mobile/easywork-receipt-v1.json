@@ -382,6 +382,258 @@
       "fallbackTurnId": null,
       "fallbackError": null,
       "valid": false
+    },
+    {
+      "name": "guidance-stale-clears-all-original-run-fallbacks",
+      "raw": {
+        "accepted": false,
+        "status": "stale",
+        "state": "completed",
+        "runId": "raw-old-run",
+        "turnId": "raw-older-turn"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": null,
+        "error": "原任务已变化或结束，追加未提交。"
+      }
+    },
+    {
+      "name": "guidance-stale-query-is-not-accepted",
+      "raw": {
+        "accepted": false,
+        "status": "stale"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": null,
+        "error": "原任务已变化或结束，追加未提交。"
+      }
+    },
+    {
+      "name": "guidance-inactive-clears-all-original-run-fallbacks",
+      "raw": {
+        "accepted": false,
+        "status": "inactive",
+        "state": "completed",
+        "runId": "raw-old-run",
+        "turnId": "raw-older-turn"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": null,
+        "error": "原任务已变化或结束，追加未提交。"
+      }
+    },
+    {
+      "name": "guidance-inactive-query-is-not-accepted",
+      "raw": {
+        "accepted": false,
+        "status": "inactive"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": null,
+        "error": "原任务已变化或结束，追加未提交。"
+      }
+    },
+    {
+      "name": "guidance-accepted-overrides-outer-default",
+      "raw": {
+        "accepted": true,
+        "status": "accepted",
+        "state": "queued",
+        "runId": "accepted-original-run"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "submitted",
+        "turnId": "accepted-original-run"
+      }
+    },
+    {
+      "name": "guidance-rejection-copy-wins-over-overwritten-error",
+      "raw": {
+        "accepted": false,
+        "status": "stale",
+        "error": 42
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": null,
+        "error": "原任务已变化或结束，追加未提交。"
+      }
+    },
+    {
+      "name": "invalid-guidance-false-accepted-status",
+      "raw": {
+        "accepted": false,
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-true-inactive-status",
+      "raw": {
+        "accepted": true,
+        "status": "inactive"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-number-not-bool",
+      "raw": {
+        "accepted": 1,
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-float-not-bool",
+      "raw": {
+        "accepted": 1.0,
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-string-not-bool",
+      "raw": {
+        "accepted": "true",
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-null-not-bool",
+      "raw": {
+        "accepted": null,
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-object-not-bool",
+      "raw": {
+        "accepted": {},
+        "status": "accepted"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-missing-status",
+      "raw": {
+        "accepted": false
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-missing-accepted",
+      "raw": {
+        "status": "inactive"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-unknown-status-with-accepted",
+      "raw": {
+        "accepted": false,
+        "status": "future"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-numeric-status",
+      "raw": {
+        "accepted": false,
+        "status": 0
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "invalid-guidance-null-status",
+      "raw": {
+        "accepted": false,
+        "status": null
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": "old-original-run",
+      "fallbackError": null,
+      "valid": false
     }
   ]
 }

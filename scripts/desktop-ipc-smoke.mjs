@@ -740,21 +740,26 @@ try {
   await settle();
   assert.equal(following, readFollowCount);
   assert.equal(client.state('thread').hasUnreadTurn, false);
+  const waitForReadSnapshot = (previous) =>
+    waitForFixture(() => received > previous, 'Original owner unread snapshot was not observed');
   fixtureUnread = true;
+  let beforeReadSnapshot = received;
   readState({ hostId: 'local', conversationId: 'thread', hasUnreadTurn: true });
   readState({ hostId: 'local', conversationId: 'unloaded', hasUnreadTurn: true });
-  await settle();
+  await waitForReadSnapshot(beforeReadSnapshot);
   assert.equal(client.state('thread').hasUnreadTurn, true);
   assert.equal(client.hasOwner('unloaded'), false, 'Unread metadata cannot establish an owner');
   assert.equal(client.state('unloaded'), undefined);
   assert.equal(following, readFollowCount + 1);
   // Broadcasts from another identity cannot overwrite the owner's read value.
+  beforeReadSnapshot = received;
   readState({ hostId: 'local', conversationId: 'thread', hasUnreadTurn: false });
-  await settle();
+  await waitForReadSnapshot(beforeReadSnapshot);
   assert.equal(client.state('thread').hasUnreadTurn, true);
   fixtureUnread = false;
+  beforeReadSnapshot = received;
   readState({ hostId: 'local', conversationId: 'thread', hasUnreadTurn: false });
-  await settle();
+  await waitForReadSnapshot(beforeReadSnapshot);
   assert.equal(client.state('thread').hasUnreadTurn, false);
   write({
     type: 'broadcast',

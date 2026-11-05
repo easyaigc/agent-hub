@@ -270,6 +270,11 @@ struct EasyWorkAgentClient: AgentClient {
     return data
   }
 
+  func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? {
+    guard workspace.connectionMode == "easywork-runtime", workspace.readTarget?.agentId == "easywork",
+      workspace.capabilities?.contains("desktop:suggestions:runtime-version:v1") == true else { return nil }
+    return .runtime
+  }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse {
     guard scope.target.agentId == "easywork", client.agentConnection?.target == scope.target else { throw HostServiceError.wrongHost }
     let channel = try await session(client)

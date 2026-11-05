@@ -831,8 +831,7781 @@ private struct EasyWorkSendWaitProvider: AgentClient {
 
 /// Executes inside the independently identified App through normal XCTest hosting.
 /// No second SessionStore or pairing. Model submissions and negative commands
+/// require their own separately frozen explicit case budgets.
+private final class EasyWorkKeyboardFocusObservation: @unchecked Sendable {
+  private let lock=NSLock()
+  private var shown=false
+  private var frame=CGRect.zero
+  func record(_ notification:Notification){lock.withLock{shown=true;frame=(notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey]as?NSValue)?.cgRectValue ?? .zero}}
+  func snapshot()->(shown:Bool,frame:CGRect){lock.withLock{(shown,frame)}}
+}
+
+/// Read-only sampling of this process's own main thread; never suspends it.
+private final class EasyWorkOwnMainThreadStallSampler:@unchecked Sendable {
+  private let mutex=NSLock(),queue=DispatchQueue(label:"easywork-own-main-stall-sampler",qos:.utility)
+  private let mainThread:mach_port_t
+  private var heartbeat=CACurrentMediaTime(),active=true,timer:DispatchSourceTimer?
+  private var records:[[String:Any]]=[]
+  private var dropped=0
+  init(){mainThread=mach_thread_self()}
+  func beat(){mutex.withLock{heartbeat=CACurrentMediaTime()}}
+  func start(){
+    let timer=DispatchSource.makeTimerSource(queue:queue);timer.schedule(deadline: .now() + .milliseconds(20),repeating:.milliseconds(20),leeway:.milliseconds(2))
+    timer.setEventHandler{[weak self]in self?.sample()};self.timer=timer;timer.resume()
+  }
+  private func symbol(_ address:UInt64)->[String:Any]{
+    let normalized=address & 0x0000ffffffffffff
+    var info=Dl_info();let resolved=UnsafeRawPointer(bitPattern:UInt(normalized)).map{dladdr($0,&info)} ?? 0
+    return ["address":String(normalized,radix:16),"symbol":resolved != 0 ? info.dli_sname.map{String(cString:$0)} ?? "" : "","image":resolved != 0 ? info.dli_fname.map{URL(fileURLWithPath:String(cString:$0)).lastPathComponent} ?? "" : ""]
+  }
+  private func sample(){
+    let now=CACurrentMediaTime(),snapshot=mutex.withLock{(active,heartbeat)}
+    guard snapshot.0,now-snapshot.1>0.04 else{return}
+    #if arch(arm64)
+    var state=arm_thread_state64_t(),count=mach_msg_type_number_t(MemoryLayout<arm_thread_state64_t>.size/MemoryLayout<natural_t>.size)
+    let result=withUnsafeMutablePointer(to:&state){pointer in pointer.withMemoryRebound(to:natural_t.self,capacity:Int(count)){thread_get_state(mainThread,thread_state_flavor_t(ARM_THREAD_STATE64),$0,&count)}}
+    var row:[String:Any]=["monotonic":now,"mainHeartbeatLagMs":(now-snapshot.1)*1000,"threadGetStateResult":result,"neverSuspendedTargetThread":true]
+    if result==KERN_SUCCESS{
+      var frames=[symbol(state.__pc),symbol(state.__lr)],fp=state.__fp & 0x0000ffffffffffff
+      for _ in 0..<48{
+        guard fp>4096,fp%16==0 else{break}
+        var pair=(UInt64(0),UInt64(0)),copied:vm_size_t=0
+        let status=withUnsafeMutablePointer(to:&pair){vm_read_overwrite(mach_task_self_,vm_address_t(fp),16,vm_address_t(UInt(bitPattern:$0)),&copied)}
+        guard status==KERN_SUCCESS,copied==16 else{break}
+        frames.append(symbol(pair.1));let next=pair.0 & 0x0000ffffffffffff
+        guard next>fp,next-fp<1024*1024 else{break};fp=next
+      }
+      row["ownMainThreadFrames"]=frames
+    }
+    mutex.withLock{if records.count>=2048{records.removeFirst(512);dropped+=512};records.append(row)}
+    #endif
+  }
+  func snapshot()->[String:Any]{mutex.withLock{["ownMainThreadStallsOver40ms":records,"droppedSamples":dropped,"targetScope":"Own current XCTest-hosted App main thread only","suspensions":0,"requestedExtraPrivileges":0]}}
+  func stop(){let wasActive=mutex.withLock{let old=active;active=false;return old};guard wasActive else{return};timer?.cancel();timer=nil;queue.sync{};mach_port_deallocate(mach_task_self_,mainThread)}
+}
+
+/// Own-process observation only. Never moves a view or dispatches touch input.
+@MainActor private final class EasyWorkPhysicalFrameCallbackObserver:NSObject {
+  private weak var scroll:UIScrollView?
+  private var link:CADisplayLink?
+  private var loopObserver:CFRunLoopObserver?
+  private var frames:[[String:Double]]=[]
+  private var loops:[[String:Double]]=[]
+  private var previousCallback:Double?
+  private var previousLoopTime:Double?
+  private var previousLoopActivity:Double=0
+  private var droppedFrames=0,droppedLoops=0
+  private var stalls:EasyWorkOwnMainThreadStallSampler?
+  func start(_ scroll:UIScrollView){
+    self.scroll=scroll
+    let stalls=EasyWorkOwnMainThreadStallSampler();stalls.start();self.stalls=stalls
+    let link=CADisplayLink(target:self,selector:#selector(frame(_:)))
+    link.preferredFrameRateRange=CAFrameRateRange(minimum:60,maximum:120,preferred:120)
+    link.add(to:.main,forMode:.common);self.link=link
+    let mask=CFRunLoopActivity.beforeWaiting.rawValue | CFRunLoopActivity.afterWaiting.rawValue
+    loopObserver=CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault,mask,true,0){[weak self] _,activity in
+      MainActor.assumeIsolated{self?.loop(activity)}
+    }
+    if let loopObserver{CFRunLoopAddObserver(CFRunLoopGetMain(),loopObserver,.commonModes)}
+  }
+  private func loop(_ activity:CFRunLoopActivity){
+    stalls?.beat()
+    let now=CACurrentMediaTime(),value=Double(activity.rawValue)
+    if let previousLoopTime,now-previousLoopTime>=0.005{
+      loops.append(["start":previousLoopTime,"end":now,"ms":(now-previousLoopTime)*1000,"previousActivity":previousLoopActivity,"activity":value])
+      if loops.count>16_384{loops.removeFirst(4096);droppedLoops+=4096}
+    }
+    previousLoopTime=now;previousLoopActivity=value
+  }
+  @objc private func frame(_ link:CADisplayLink){
+    guard let scroll else{return}
+    stalls?.beat()
+    let now=CACurrentMediaTime()
+    frames.append(["callbackMonotonic":now,"displayTimestamp":link.timestamp,"targetTimestamp":link.targetTimestamp,"callbackGapMs":previousCallback.map{(now-$0)*1000} ?? 0,"offsetY":scroll.contentOffset.y,"tracking":scroll.isTracking ? 1:0,"dragging":scroll.isDragging ? 1:0,"decelerating":scroll.isDecelerating ? 1:0])
+    previousCallback=now
+    if frames.count>32_768{frames.removeFirst(8192);droppedFrames+=8192}
+  }
+  func snapshot()->[String:Any]{["actualIndependentDisplayCallbacks":frames,"mainRunLoopIntervalsAtLeast5ms":loops,"ownMainThreadStallSampling":stalls?.snapshot() ?? [:],"runLoopBeforeWaitingRawValue":CFRunLoopActivity.beforeWaiting.rawValue,"runLoopAfterWaitingRawValue":CFRunLoopActivity.afterWaiting.rawValue,"droppedFrameRecords":droppedFrames,"droppedLoopRecords":droppedLoops,"doesNotDriveScrollOrInput":true,"wallSecondsAtExport":Date().timeIntervalSince1970,"monotonicAtExport":CACurrentMediaTime()]}
+  func stop(){stalls?.stop();link?.invalidate();link=nil;if let loopObserver{CFRunLoopRemoveObserver(CFRunLoopGetMain(),loopObserver,.commonModes);CFRunLoopObserverInvalidate(loopObserver)};loopObserver=nil}
+}
 
 final class EasyWorkHostedNativeTests: XCTestCase {
+  @MainActor func testPhysicalOriginalHistoryOfficialGesturesAndMovingFramesWithoutInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(encoded.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelInputsAuthorized"]as?Int==0,c["newChatsAuthorized"]as?Int==0,c["actualOriginalHistoryPhysicalGesturesAuthorized"]as?Bool==true,let threadId=c["existingThreadId"]as?String,let ids=c["existingCompleteMessageIds"]as?[String],ids.count>=100,c["minimumActualGestures"]as?Int==8,c["maximumActualGesturesAuthorized"]as?Int==16,c["minimumMovingFramesExclusive"]as?Int==250,c["p95MovingFrameBudgetMs"]as?Int==25,c["maximumMovingFrameBudgetMs"]as?Int==50 else{throw XCTSkip("Frozen physical original-history gesture observation required")}
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let reportURL=folder.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:reportURL.path)else{throw NSError(domain:"EasyWorkOriginalScroll",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier!,"newModels":0,"newLocalInputs":0,"nativeGestureInjections":0,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:reportURL,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{let deadline=Date().addingTimeInterval(seconds);while Date()<deadline{if ready(){return};try await Task.sleep(for:.milliseconds(100))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkOriginalScroll",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("awaiting-original-physical-store-and-foreground")
+    try await wait("actual original App store and physical foreground",seconds:180){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(c["target"])))
+    guard HistoryScrollProbe.enabled,!store.localRecoveryRequired,store.client?.agentConnection?.target==target,target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkOriginalScroll",code:3)}
+    if c["verifyEasyWorkLegacyIdentityCacheMatchesDirectCodec"]as?Bool==true {
+      let host=try XCTUnwrap(store.client)
+      let inputs:[(String?,String?)]=[(nil,nil),(threadId,nil),(nil,"owned-codec-only-project"),(threadId,"ignored-project")]
+      for (thread,project) in inputs {
+        let expected=MobileRules.shared.cacheKey(clientId:host.id,target:SharedMobileRules.scope(target),threadId:thread,projectId:project)
+        guard SharedMobileRules.cacheKey(host,threadId:thread,projectId:project)==expected,SharedMobileRules.cacheKey(host,threadId:thread,projectId:project)==expected else{throw NSError(domain:"EasyWorkOriginalScroll",code:12)}
+      }
+      report["actualEasyWorkIdentityMemoizedAndDirectCodecBytesExact"]=true;try save()
+    }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldUI=store.hostedEasyWorkProductUIPresented,oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects,oldDrafts=store.drafts.values
+    func protected()throws->[Data]{[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.generationPreferences),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]}
+    let originalProtected=try protected(),support=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0],metricsURL=support.appendingPathComponent("history-scroll-metrics.json"),oldMetrics=try?Data(contentsOf:metricsURL)
+    let workURL=support.appendingPathComponent("history-work-metrics.json"),oldWork=try?Data(contentsOf:support.appendingPathComponent("history-work-metrics.json"))
+    var producedMetrics:Data?,producedWork:Data?,caught:Error?,metrics:[String:Double]=[:],budgetPassed=false
+    var independentTiming:EasyWorkPhysicalFrameCallbackObserver?
+    defer{independentTiming?.stop()}
+    func captureDiagnostics()throws{
+      guard let value=(try JSONSerialization.jsonObject(with:Data(HistoryScrollProbe.shared.evidence.utf8)))as?[String:Double],(value["gestures"] ?? 0)>0 else{return}
+      metrics=value;producedMetrics=try Data(contentsOf:metricsURL)
+      try producedMetrics!.write(to:folder.appendingPathComponent(run+"-moving-frame-metrics.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      // Read-only reflection exports the existing DEBUG observer's exact array.
+      // It neither drives the scroll view nor changes samples or counters.
+      let frames=try XCTUnwrap(Mirror(reflecting:HistoryScrollProbe.shared).children.first{$0.label=="frameMS"}?.value as?[Double])
+      let sorted=frames.sorted();guard !sorted.isEmpty,Double(frames.count)==metrics["movingFrames"],abs(sorted[min(sorted.count-1,Int(Double(sorted.count)*0.95))]-(metrics["p95FrameMS"] ?? -1))<0.000001,abs(sorted.last!-(metrics["maxFrameMS"] ?? -1))<0.000001 else{throw NSError(domain:"EasyWorkOriginalScroll",code:10)}
+      let raw:[String:Any]=["caseId":run,"allMovingFrameIntervalsMsInOriginalOrder":frames,"nativeUptimeSeconds":ProcessInfo.processInfo.systemUptime,"nativeWallSeconds":Date().timeIntervalSince1970,"aggregateExactlyRecomputed":true]
+      try JSONSerialization.data(withJSONObject:raw,options:[.sortedKeys]).write(to:folder.appendingPathComponent(run+"-all-moving-frame-intervals.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      if HistoryScrollProbe.workEnabled,let bytes=try?Data(contentsOf:workURL){producedWork=bytes;try bytes.write(to:folder.appendingPathComponent(run+"-moving-frame-work.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+      budgetPassed=(metrics["gestures"] ?? 0)>=8 && (metrics["gestures"] ?? 100)<=16 && (metrics["movingFrames"] ?? 0)>250 && (metrics["p95FrameMS"] ?? 1000)<25 && (metrics["maxFrameMS"] ?? 1000)<50
+      if let independentTiming{try JSONSerialization.data(withJSONObject:independentTiming.snapshot(),options:[.sortedKeys]).write(to:folder.appendingPathComponent(run+"-independent-frame-callback-timing.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);report["independentActualCallbackTimingExported"]=true}
+      report["actualNativeMovingFrameMetrics"]=metrics;report["actualMovingFrameBudgetPassed"]=budgetPassed;report["actualAllRawFrameSamplesExportedAndAggregatesExactlyRecomputed"]=true;report["actualWorkProbeEnabled"]=HistoryScrollProbe.workEnabled
+    }
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    func views(_ root:UIView)->[UIView]{[root]+root.subviews.flatMap(views)}
+    do{
+      let thread=try XCTUnwrap(store.threads.first{$0.id==threadId && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false);try await wait("cached source hydration"){!store.historyLoading}
+      var reads=0
+      if store.messages.map(\.id) != ids{_ = await store.loadHistory(threadId:threadId,userInitiated:true);reads+=1}
+      while store.messages.map(\.id) != ids,store.historyCursor != nil,reads<3{_ = await store.loadHistory(threadId:threadId,more:true,userInitiated:true);reads+=1}
+      guard store.selectedThreadId==threadId,store.messages.map(\.id)==ids,store.drafts.values==oldDrafts,try protected()==originalProtected else{throw NSError(domain:"EasyWorkOriginalScroll",code:4)}
+      store.hostedEasyWorkProductUIPresented=true
+      var actualScroll:UIScrollView?
+      try await wait("unique actual original production history scroll view"){
+        let xs=views(window).compactMap{$0 as?UIScrollView}.filter{s in let box=s.convert(s.bounds,to:window).intersection(window.bounds);return s.window===window && !s.isHidden && s.alpha>0.9 && s.isScrollEnabled && box.height>window.bounds.height*0.35 && box.width>window.bounds.width*0.5}
+        actualScroll=xs.count==1 ? xs[0]:nil
+        return actualScroll != nil && views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.contains{$0.targetKey==store.targetKey && $0.messageCount==ids.count}
+      }
+      let scroll=try XCTUnwrap(actualScroll),key=store.targetKey,initialTimelineCount=HistoryScrollProbe.shared.timelineMS.count
+      if c["recordIndependentActualCallbackTiming"]as?Bool==true{let timing=EasyWorkPhysicalFrameCallbackObserver();timing.start(scroll);independentTiming=timing}
+      report["actualOriginalMessageIds"]=store.messages.map(\.id);report["actualOriginalMessageCount"]=store.messages.count;report["normalHistoryPreparationReadActions"]=reads
+      report["actualProductionScrollBounds"]=String(describing:scroll.convert(scroll.bounds,to:window));report["actualProductionContentHeight"]=scroll.contentSize.height;report["actualInitialContentOffsetY"]=scroll.contentOffset.y;report["timelineBuildsBeforeGestures"]=initialTimelineCount
+      let complete=folder.appendingPathComponent(run+"-gesture-sequence-complete.json")
+      guard !FileManager.default.fileExists(atPath:complete.path)else{throw NSError(domain:"EasyWorkOriginalScroll",code:5)}
+      try stage("ready-for-actual-official-device-hub-gestures")
+      let deadline=Date().addingTimeInterval(600);var lastEvidence=""
+      while Date()<deadline && !FileManager.default.fileExists(atPath:complete.path){
+        guard store.targetKey==key,store.selectedThreadId==threadId,store.client?.agentConnection?.target==target,store.messages.map(\.id)==ids,UIApplication.shared.applicationState == .active else{throw NSError(domain:"EasyWorkOriginalScroll",code:6)}
+        let observed=HistoryScrollProbe.shared.evidence
+        if observed != lastEvidence{
+          lastEvidence=observed;let current=try JSONSerialization.jsonObject(with:Data(observed.utf8));report["actualNativeMovingFrameMetrics"]=current
+          if let value=current as?[String:Double],(value["gestures"] ?? 0)>=8,(value["movingFrames"] ?? 0)>250{report["stage"]="actual-native-sample-count-reached-awaiting-official-witness"}
+          try save()
+        }
+        try await Task.sleep(for:.milliseconds(200))
+      }
+      try captureDiagnostics()
+      guard FileManager.default.fileExists(atPath:complete.path)else{report["actualMetricsPreservedDespiteExternalCompletionDeadline"]=true;throw NSError(domain:"EasyWorkOriginalScroll",code:11)}
+      let permit=try XCTUnwrap((try JSONSerialization.jsonObject(with:Data(contentsOf:complete)))as?[String:Any])
+      guard permit["caseId"]as?String==run,permit["officialGestureSequenceFinished"]as?Bool==true,permit["screenSharingStoppedVerified"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalScroll",code:7)}
+      try await wait("real drag and deceleration finished"){!scroll.isTracking && !scroll.isDragging && !scroll.isDecelerating}
+      try captureDiagnostics();report["timelineBuildsDuringGestures"]=HistoryScrollProbe.shared.timelineMS.count-initialTimelineCount
+      report["actualMovingFrameBudgetPassed"]=budgetPassed;report["actualNativeFrameSource"]="Existing production DEBUG CADisplayLink: physical App moving UIScrollView offsets only; gestures enter through official Device Hub; no setContentOffset or injected native gesture"
+      report["actualOriginalMessagesRemainExact"]=store.messages.map(\.id)==ids
+      try stage("actual-official-gestures-and-native-moving-frames-observed")
+    }catch{caught=error;report["failure"]=String(describing:error);try?captureDiagnostics();try?stage("failed-original-scroll-prefix-retained")}
+    independentTiming?.stop()
+    if producedMetrics==nil,let current=try?Data(contentsOf:metricsURL),current==Data(HistoryScrollProbe.shared.evidence.utf8),current != oldMetrics{producedMetrics=current}
+    if let producedMetrics,let current=try?Data(contentsOf:metricsURL),current==producedMetrics{if let oldMetrics{try oldMetrics.write(to:metricsURL,options:.atomic)}else{try FileManager.default.removeItem(at:metricsURL)}}
+    if let producedWork,let current=try?Data(contentsOf:workURL),current==producedWork{if let oldWork{try oldWork.write(to:workURL,options:.atomic)}else{try FileManager.default.removeItem(at:workURL)}}
+    store.hostedEasyWorkProductUIPresented=oldUI
+    if let oldThread,let thread=store.threads.first(where:{$0.id==oldThread && $0.hostId==store.client?.id}){store.openThread(thread,loadAutomatically:false)}
+    store.selectedProjectId=oldProject;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist()
+    guard store.selectedThreadId==oldThread,store.drafts.values==oldDrafts,try protected()==originalProtected else{throw NSError(domain:"EasyWorkOriginalScroll",code:8)}
+    report["originalDraftsSettingsVoiceOperationsIdentityAndSelectionsExact"]=true
+    report["originalDebugMetricsFileRestoredOrOnlyOwnNewFileRemoved"]=(try?Data(contentsOf:metricsURL))==oldMetrics && (try?Data(contentsOf:workURL))==oldWork
+    try stage("awaiting-official-screen-sharing-stop-and-case-release")
+    let release=folder.appendingPathComponent(run+"-driver-release.json")
+    try await wait("official sharing off and exact own native release",seconds:180){guard let data=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true && value["releaseNativeOnlyNoProductAction"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil && budgetPassed ? "passed-original-physical-official-gestures-native-moving-frame-budget" : "failed-original-physical-gesture-or-moving-frame-budget";try stage("completed")
+    if let caught{throw caught};guard budgetPassed else{throw NSError(domain:"EasyWorkOriginalScroll",code:9)}
+  }
+  @MainActor func testPhysicalOriginalClearDraftMenuAndStaleIntentAttachmentFences() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualClearDraftParityAndFencingAuthorized"]as?Bool==true,let threadId=c["existingThreadId"]as?String,let expectedIds=c["existingCompleteMessageIds"]as?[String],expectedIds.count>=100,let body=c["onlyTemporaryLocalInput"]as?String,body.count>=20,body.hasPrefix("EWF_CLEAR_"+String(run.prefix(8))),let p95Budget=c["p95NativeInsertionBudgetMs"]as?Double,let maxBudget=c["maxNativeInsertionBudgetMs"]as?Double,let durableBudget=c["durableFinalDraftBudgetMs"]as?Double,p95Budget==100,maxBudget==250,durableBudget==2500,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen zero-submit original cached-history local-input case required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsBusinessSubmissionsUploadsPairingOrPlanApprovals":0,"wholeFeaturePassed":false,"codexTests":false],samples:[Double]=[]
+    func save()throws{report["actualClearMenuAndStoreGuardObservations"]=SessionStore.hostedEasyWorkAcceptanceStore?.hostedEasyWorkDraftClearObservations ?? [];try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<end{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkOriginalClearDraft",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI-owned store and exact foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalDrafts=store.drafts.values,originalThread=store.selectedThreadId,originalProject=store.selectedProjectId,originalTarget=store.targetKey,originalClient=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let protectedBytes=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    func protected()throws->Bool{let actual=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)];return actual==protectedBytes && store.saved.selectedClientId==originalClient}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    guard window.rootViewController?.presentedViewController==nil,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:4)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func shot(_ suffix:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+suffix+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    let stateURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+    func persisted()->SavedSession?{guard let bytes=try?Data(contentsOf:stateURL)else{return nil};return try?AgentCache.decode(bytes)}
+    var ownedKey:String?,ownedEmpty:Draft?,prefix="",inputView:UIView?,input:(any UITextInput)?,caught:Error?
+    var prefixHashes=Set([HostService.hash(Data())])
+    do{
+      store.hostedEasyWorkProductUIPresented=true
+      let thread=try XCTUnwrap(store.threads.first{$0.id==threadId && $0.hostId==originalClient})
+      store.openThread(thread,loadAutomatically:false)
+      report["originalCachedMessageCountBeforeNormalPreparation"]=store.messages.count;report["originalCachedMessageIdsBeforeNormalPreparation"]=store.messages.map(\.id);try stage("preparing-same-original-history-through-normal-read-only-pages")
+      try await wait("original initial history read idle before normal preparation",seconds:90){!store.historyLoading}
+      var preparationReads=0
+      if store.messages.map(\.id) != expectedIds{
+        guard c["originalReadOnlyHistoryPreparationAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:15)}
+        _ = await store.loadHistory(threadId:threadId,userInitiated:true);preparationReads+=1
+        while store.messages.map(\.id) != expectedIds,store.historyCursor != nil,preparationReads<3{
+          _ = await store.loadHistory(threadId:threadId,more:true,userInitiated:true);preparationReads+=1
+        }
+      }
+      report["normalOriginalHistoryPreparationReadActions"]=preparationReads;report["actualPreparedMessageCountBeforeLocalInput"]=store.messages.count;report["actualPreparedMessageIdsBeforeLocalInput"]=store.messages.map(\.id);report["normalHistoryPreparationError"]=store.error ?? "none";try save()
+      try await wait("same original complete history after bounded normal reads"){store.selectedThreadId==threadId && !store.historyLoading && store.messages.map(\.id)==expectedIds}
+      let key=store.targetKey;ownedKey=key
+      guard store.draft.text.isEmpty,store.draft.attachments.isEmpty,try protected(),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key})else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:5)}
+      report["actualOriginalCachedMessageCount"]=store.messages.count;report["actualOriginalCachedMessageIds"]=store.messages.map(\.id);report["normalCachedNavigationNoFreshHistoryRequest"]=preparationReads==0
+      var field:UIView?
+      try await wait("unique actual visible native editable composer"){let fields=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true};field=fields.count==1 ? fields[0]:nil;return field != nil}
+      inputView=try XCTUnwrap(field);input=try XCTUnwrap(inputView as?any UITextInput)
+      guard inputView!.becomeFirstResponder()else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:6)}
+      try await wait("actual empty composer focus"){inputView!.isFirstResponder && input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==""}
+      let empty=store.draft;guard empty==Draft() else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:7)};ownedEmpty=empty
+      func actions(_ menu:UIMenu)->[UIAction]{menu.children.flatMap{element->[UIAction]in if let action=element as?UIAction{return[action]};if let child=element as?UIMenu{return actions(child)};return[]}}
+      func menu()async throws->(UIButton,UIAction){
+        // Observe the current real rendered label before touching its native button.
+        // A stale menu is deliberately rejected; waiting must not bypass that guard.
+        let expected=try XCTUnwrap(store.captureEasyWorkDraftClearIntent()).menuIdentity
+        var button:UIButton?
+        try await wait("actual current-draft rendered attachment UIButton"){
+          let markers=views(window).compactMap{$0 as?HostedNativeChromeGeometryView}.filter{$0.role=="composer-clear-intent:"+expected && $0.window===window && !$0.isHidden && !$0.bounds.isEmpty}
+          guard markers.count==1 else{return false}
+          let marker=markers[0],point=marker.convert(CGPoint(x:marker.bounds.midX,y:marker.bounds.midY),to:window)
+          guard point.x.isFinite,point.y.isFinite,window.bounds.contains(point)else{return false}
+          var current=window.hitTest(point,with:nil)
+          while let view=current{if let candidate=view as?UIButton,candidate.menu != nil,candidate.isEnabled,candidate.window===window{button=candidate;return true};current=view.superview}
+          return false
+        }
+        let actual=try XCTUnwrap(button)
+        if #available(iOS 17.4,*){if !actual.isHeld{actual.performPrimaryAction()}}else{throw XCTSkip("Public native menu API required")}
+        try await wait("actual attachment menu held"){actual.isHeld}
+        var action:UIAction?
+        try await wait("actual clear UIAction resolved after current button opened"){action=actual.menu.flatMap{actions($0).first{$0.title==L10n.tr("清空草稿")}};return action != nil}
+        return(actual,try XCTUnwrap(action))
+      }
+      func dismiss(_ button:UIButton)async throws{if button.isHeld{try XCTUnwrap(button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first).dismissMenu();try await wait("actual menu animation complete"){!button.isHeld}};try await Task.sleep(for:.milliseconds(250))}
+      prefix=body;prefixHashes.insert(HostService.hash(Data(prefix.utf8)));input!.insertText(prefix)
+      try await wait("only owned local draft visible"){store.draft.text==body}
+      inputView?.resignFirstResponder();try await Task.sleep(for:.milliseconds(350))
+      if !store.canSelectPlanMode{_ = await store.loadHistory(threadId:threadId,userInitiated:true)}
+      try await wait("original plan-mode selector ready before only owned local setting"){store.canSelectPlanMode && store.messages.map(\.id)==expectedIds}
+      store.setPlanMode(true);guard store.selectedCollaborationMode=="plan"else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:33)}
+      let stale=try await menu();try shot("actual-owned-clear-menu-before-fences")
+      prefix=body+"_new";prefixHashes.insert(HostService.hash(Data(prefix.utf8)));store.setText(prefix)
+      stale.0.sendAction(stale.1);try await Task.sleep(for:.milliseconds(150))
+      guard store.draft.text==prefix else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:20)}
+      report["actualOldMenuRejectedAfterSameTargetDraftRevision"]=true;try await dismiss(stale.0)
+      let destination=store.captureDraftImportDestination(),ownBytes=Data(("owned-clear-"+run).utf8)
+      for _ in 0..<10{try store.importData(ownBytes,name:"easywork-clear-"+String(run.prefix(8))+".txt",isImage:false,target:key,destination:destination)}
+      let ownedFiles=store.draft.attachments
+      guard ownedFiles.count==10,try ownedFiles.allSatisfy({try Data(contentsOf:store.attachmentURL($0))==ownBytes})else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:22)}
+      report["actualOwnLocalImportCount"]=10;report["actualFullTenAttachmentsClearEntryEnabled"]=true
+      let currentMenu=try await menu();try shot("actual-current-clear-menu-with-owned-attachment")
+      store.beginImport(destination);guard store.isImporting else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:23)}
+      currentMenu.0.sendAction(currentMenu.1);try await dismiss(currentMenu.0)
+      try await wait("actual native menu cleared only owned text file and settings",seconds:30){store.draft==Draft()}
+      guard store.hostedEasyWorkDraftClearObservations.contains(where:{$0["phase"]as?String=="actual-menu-handler" && $0["capturedAttachmentCount"]as?Int==10 && $0["currentAttachmentCount"]as?Int==10 && $0["draftValueStillCurrent"]as?Bool==true && $0["textRevisionStillCurrent"]as?Bool==true})else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:37)}
+      guard !store.isImporting,ownedFiles.allSatisfy({!FileManager.default.fileExists(atPath:store.attachmentURL($0).path)})else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:24)}
+      try store.importData(ownBytes,name:"late-owned-clear.txt",isImage:false,target:key,destination:destination)
+      guard store.draft==Draft(),!store.isDraftImportCurrent(destination)else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:25)}
+      let next=store.captureDraftImportDestination();store.beginImport(next);store.endImport(destination)
+      guard store.isImporting else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:26)}
+      store.endImport(next);guard !store.isImporting else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:27)}
+      try store.importData(ownBytes,name:"easywork-clear-"+String(run.prefix(8))+".txt",isImage:false,target:key,destination:next)
+      guard store.draft.attachments.count==1 else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:34)}
+      let freshMenu=try await menu();freshMenu.0.sendAction(freshMenu.1);try await dismiss(freshMenu.0)
+      guard store.draft==Draft()else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:35)}
+      report["actualOwnLocalImportCount"]=11;report["actualNewImportAfterClearAndSecondMenuClearPassed"]=true
+      report["actualNativeClearMenuTextAttachmentSettingsAndLateImportFencesPassed"]=true
+      report["actualOldImportCompletionCannotReleaseNewImport"]=true
+      let targetMenu=try await menu();try await dismiss(targetMenu.0)
+      let other=try XCTUnwrap(store.threads.first{$0.id != threadId && $0.id != "f3fed959-8511-46b5-8a50-a12437883507" && $0.hostId==originalClient})
+      let allBeforeTarget=store.drafts.values;store.openThread(other,loadAutomatically:false)
+      targetMenu.0.sendAction(targetMenu.1)
+      guard store.drafts.values==allBeforeTarget else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:21)}
+      store.openThread(thread,loadAutomatically:false);try await wait("original current target returned"){store.targetKey==key && store.draft==Draft()}
+      report["actualOldMenuRejectedAfterTargetSwitch"]=true
+      report["actualNativeRoute"]="Original physical App UIButton performPrimaryAction + held production UIAction; original native import with owned bytes; no system picker or touch gesture claim"
+      try shot("actual-owned-draft-cleared-and-original-history-retained");try stage("actual-original-clear-menu-and-fences-observed")
+    }catch{caught=error;report["failure"]=String(describing:error);report["actualCompletedLocalInsertions"]=samples.count;try?shot("actual-local-input-failed-prefix")}
+    for button in views(window).compactMap({$0 as?UIButton}).filter({$0.isHeld && $0.menu != nil}){button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first?.dismissMenu()}
+    try await Task.sleep(for:.milliseconds(250))
+    if let key=ownedKey,let empty=ownedEmpty{
+      guard store.targetKey==key else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:30)}
+      for file in store.draft.attachments{
+        guard file.name=="easywork-clear-"+String(run.prefix(8))+".txt",try Data(contentsOf:store.attachmentURL(file))==Data(("owned-clear-"+run).utf8)else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:31)}
+        store.removeAttachment(file)
+      }
+      guard store.targetKey==key,prefixHashes.contains(HostService.hash(Data(store.draft.text.utf8))),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key}),try protected()else{report["ownedTemporaryCleanupBlockedUnexpectedTargetOrValue"]=true;try save();throw NSError(domain:"EasyWorkOriginalClearDraft",code:10)}
+      if !store.draft.text.isEmpty{let current=try XCTUnwrap(input);current.selectedTextRange=current.textRange(from:current.beginningOfDocument,to:current.endOfDocument);current.insertText("");try await wait("only own temporary local text cleared via same native input"){store.draft.text.isEmpty}}
+      inputView?.resignFirstResponder()
+      var ownedPlan=Draft();ownedPlan.collaborationMode="plan"
+      if store.draft==ownedPlan{guard let cleanupIntent=store.captureEasyWorkDraftClearIntent(),store.clearEasyWorkDraft(cleanupIntent)else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:36)}}
+      guard store.draft==empty else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:11)}
+      if originalDrafts[key]==nil{guard store.drafts.values[key]==empty,store.drafts.values.filter({$0.key != key})==originalDrafts else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:12)};store.drafts.values.removeValue(forKey:key)}else{guard store.drafts.values[key]==originalDrafts[key]else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:13)}}
+      store.persist();try await wait("all original local drafts durable after only owned-text cleanup"){persisted()?.drafts==originalDrafts};report["ownedTemporaryLocalDraftCleanupExact"]=true
+    }
+    if let originalThread,let original=store.threads.first(where:{$0.id==originalThread && $0.hostId==originalClient}){store.openThread(original,loadAutomatically:false)}
+    store.selectedProjectId=originalProject;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist();store.hostedEasyWorkProductUIPresented=oldUI
+    guard store.targetKey==originalTarget,store.selectedThreadId==originalThread,store.drafts.values==originalDrafts,try protected()else{throw NSError(domain:"EasyWorkOriginalClearDraft",code:14)}
+    report["originalDraftsOperationsVoiceIdentityPreferencesAndSelectionsPreserved"]=true
+    try stage(caught==nil ? "awaiting-official-screen-sharing-stop-and-case-release":"failed-prefix-awaiting-safe-release")
+    try await wait("exact-case official sharing-off release",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil ? "passed-physical-original-clear-draft-menu-and-fences":"failed-original-clear-draft-prefix-preserved";try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved")
+    if let caught{throw caught}
+  }
+  @MainActor func testOriginalPhysicalLanOnlyPreferenceAndFreshLiveReadsWithoutProxy() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run)?.uuidString.lowercased()==run,let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["originalPhysicalLANOnlyCase"]as?Bool==true,c["newModelsAuthorized"]as?Int==0,c["newBusinessSubmissionsAuthorized"]as?Int==0,c["keepVerifiedLanOnlyPreferenceForCurrentUserScope"]as?Bool==true,env["EASYWORK_OWNED_RELAY_CONNECT_ORIGIN"]==nil,env["EASYWORK_OWNED_RELAY_CONNECT_HOST"]==nil,env["EASYWORK_OWNED_RELAY_CONNECT_PORT"]==nil else{throw XCTSkip("Frozen original physical LAN-only case without acceptance proxy required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalLAN",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"acceptanceConnectProxyInstalled":false,"originalBindingOrDeviceKeysReplaced":false,"newModelsOrBusinessSubmissions":0,"wholeFeaturePassed":false,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{let deadline=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<deadline{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try?save();throw NSError(domain:"EasyWorkOriginalLAN",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("awaiting-original-physical-App-and-foreground")
+    try await wait("actual original App store and foreground",seconds:120){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),originalClient=try XCTUnwrap(store.client),connection=try XCTUnwrap(originalClient.agentConnection)
+    guard !store.localRecoveryRequired,!originalClient.isDemo,connection.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalLAN",code:3)}
+    let endpoint=try XCTUnwrap(c["originalLiveLANEndpoint"]as?String),pin=try XCTUnwrap(c["expectedExistingLANCertificateSHA256"]as?String),url=try XCTUnwrap(URL(string:endpoint))
+    guard url.scheme=="https",url.host?.hasPrefix("192.168.")==true,url.port==c["expectedOriginalLANPort"]as?Int,url.path.isEmpty,connection.candidates.contains(where:{$0.transportId=="lan-wss" && $0.endpoint==endpoint && $0.peerFingerprint==pin})else{throw NSError(domain:"EasyWorkOriginalLAN",code:4,userInfo:[NSLocalizedDescriptionKey:"Original saved trusted LAN route must match current original Host"])}
+    let ref=connection.credentialRef,credentialRaw=try XCTUnwrap(CredentialVault.existingToken(ref)),credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(credentialRaw.utf8))
+    let originalThread=store.selectedThreadId,originalProject=store.selectedProjectId,oldUI=store.hostedEasyWorkProductUIPresented,oldPreference=connection.preference
+    func protected()throws->[String:String]{var values=try originalColdReadProtectedDigests(store);values.removeValue(forKey:"sessionExceptReplaceableHistory");values.removeValue(forKey:"clients");var clients=store.saved.clients;for index in clients.indices{clients[index].online=false;if clients[index].id==originalClient.id{clients[index].agentConnection?.preference=oldPreference}};let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];values["clientsExceptVerifiedLANPreferenceAndTransientOnline"]=HostService.hash(try encoder.encode(clients));return values}
+    let originalProtected=try protected()
+    report["originalProtectedDigestsAtLANStart"]=originalProtected
+    if let oldCipherSHA=c["interruptedR3888BeforeCiphertextSHA256"]as?String{
+      let oldCipher=try Data(contentsOf:directory.appendingPathComponent(run+"-R3888-before-session-state.json"))
+      guard HostService.hash(oldCipher)==oldCipherSHA else{throw NSError(domain:"EasyWorkOriginalLAN",code:13)}
+      let previous=try AgentCache.decode(oldCipher)
+      func userState(_ state:SavedSession)throws->String{
+        var value=state;for index in value.clients.indices{value.clients[index].online=false;if value.clients[index].id==originalClient.id{value.clients[index].agentConnection?.preference=oldPreference}}
+        let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+        var object=try XCTUnwrap(try JSONSerialization.jsonObject(with:encoder.encode(value))as?[String:Any])
+        for key in ["history","historyCacheKeys","workspaces","runtimes","agentEventCursors","mobileReads","mobileReadBaselines"]{object.removeValue(forKey:key)}
+        return HostService.hash(try JSONSerialization.data(withJSONObject:object,options:[.sortedKeys]))
+      }
+      var current=store.saved;current.drafts=store.drafts.values
+      let matches=try userState(previous)==userState(current)
+      report["interruptedR3888UserStateDecodedAndMatched"]=matches
+      report["interruptedR3888ComparisonExcludedReplaceableRuntimeAndReadCachesOnly"]=true;try save()
+      guard matches else{throw NSError(domain:"EasyWorkOriginalLAN",code:14)}
+    }
+    func grantMetadata()throws->[String:Any]?{guard let ref=credential.grantRef,let body=try CredentialVault.existingToken(ref)else{return nil};return try JSONSerialization.jsonObject(with:Data(body.utf8))as?[String:Any]}
+    let originalRefresh=(try grantMetadata())?["refreshOperation"]as?[String:Any],originalRefreshID=originalRefresh?["operationId"]as?String
+    report["originalImmutableRefreshOperationPresentAtLANStart"]=originalRefreshID != nil
+    if let originalRefreshID{report["originalRefreshOperationIdSHA256"]=HostService.hash(Data(originalRefreshID.utf8))};try save()
+    func protect()throws{guard try protected()==originalProtected,store.client?.id==originalClient.id,store.selectedThreadId==originalThread,store.selectedProjectId==originalProject,try CredentialVault.existingToken(ref)==credentialRaw else{throw NSError(domain:"EasyWorkOriginalLAN",code:5)}}
+    var interfaces:UnsafeMutablePointer<ifaddrs>?
+    guard getifaddrs(&interfaces)==0 else{throw NSError(domain:"EasyWorkOriginalLAN",code:10)}
+    defer{freeifaddrs(interfaces)}
+    var wifiAddresses:[String]=[],next=interfaces
+    while let item=next{
+      defer{next=item.pointee.ifa_next}
+      guard String(cString:item.pointee.ifa_name)=="en0",let address=item.pointee.ifa_addr,address.pointee.sa_family==UInt8(AF_INET)else{continue}
+      var numeric=[CChar](repeating:0,count:Int(NI_MAXHOST))
+      guard getnameinfo(address,socklen_t(address.pointee.sa_len),&numeric,socklen_t(numeric.count),nil,0,NI_NUMERICHOST)==0 else{throw NSError(domain:"EasyWorkOriginalLAN",code:11)}
+      wifiAddresses.append(String(cString:numeric))
+    }
+    guard wifiAddresses.count==1,wifiAddresses[0].hasPrefix("192.168.2.")else{throw NSError(domain:"EasyWorkOriginalLAN",code:12)}
+    report["physicalIPhoneWiFiIPv4"]=wifiAddresses[0]
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    func views(_ root:UIView)->[UIView]{[root]+root.subviews.flatMap(views)}
+    func actions(_ menu:UIMenu)->[UIAction]{menu.children.flatMap{element->[UIAction]in if let action=element as?UIAction{return[action]};if let child=element as?UIMenu{return actions(child)};return[]}}
+    func objects()->[NSObject]{var seen=Set<ObjectIdentifier>(),result:[NSObject]=[];func visit(_ object:NSObject){guard result.count<6000,seen.insert(ObjectIdentifier(object)).inserted else{return};result.append(object);if let view=object as?UIView{view.subviews.forEach(visit)};object.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=object.accessibilityElementCount();if count>0 && count<1000{for index in 0..<count{if let child=object.accessibilityElement(at:index)as?NSObject{visit(child)}}}};visit(window);return result}
+    func identifier(_ object:NSObject)->String{if let value=(object as?any UIAccessibilityIdentification)?.accessibilityIdentifier{return value};let getter=NSSelectorFromString("accessibilityIdentifier");return object.responds(to:getter) ? object.value(forKey:"accessibilityIdentifier")as?String ?? "":""}
+    func shot(_ label:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+label+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    var passed=false,caught:Error?
+    do{
+      try stage("verifying-original-LAN-pin-and-full-target-from-real-iPhone")
+      let host=try await EasyWorkPairing.readHost(endpoint:endpoint,fingerprint:pin,target:credential.binding.target,publicKey:credential.binding.desktopPublicKey,timeout:10)
+      guard host.fingerprint==pin,host.target==credential.binding.target,host.publicKey==credential.binding.desktopPublicKey else{throw NSError(domain:"EasyWorkOriginalLAN",code:6)}
+      report["originalPinnedCertificateAndFullTargetVerifiedFromActualPhone"]=true
+      for correct in [false,true]{
+        let expected=correct ? pin : (pin.first=="a" ? "b":"a")+String(pin.dropFirst())
+        let trust=PairedHostTrust(endpoint:endpoint,fingerprint:expected),session=URLSession(configuration:.ephemeral,delegate:trust,delegateQueue:nil)
+        defer{session.invalidateAndCancel()}
+        do{
+          let(stream,response)=try await session.bytes(for:URLRequest(url:url.appendingPathComponent("host")),delegate:trust)
+          guard correct else{throw NSError(domain:"EasyWorkOriginalLAN",code:16,userInfo:[NSLocalizedDescriptionKey:"Wrong certificate pin unexpectedly reached HTTP"])}
+          guard (response as?HTTPURLResponse)?.statusCode==200 else{throw NSError(domain:"EasyWorkOriginalLAN",code:17)}
+          var data=Data();for try await byte in stream{guard data.count<65536 else{throw NSError(domain:"EasyWorkOriginalLAN",code:18)};data.append(byte)}
+          let actual=try JSONDecoder().decode(EasyWorkHostDescriptor.self,from:data)
+          guard actual.fingerprint==pin,actual.target==credential.binding.target,actual.publicKey==credential.binding.desktopPublicKey else{throw NSError(domain:"EasyWorkOriginalLAN",code:19)}
+          report["actualAsyncBytesTaskDelegateAcceptedOriginalPinnedHostOnly"]=true
+        }catch{
+          let actual=error as NSError
+          guard !correct,!Task.isCancelled,actual.domain==NSURLErrorDomain,[-999,-1200,-1201,-1202,-1203].contains(actual.code)else{throw error}
+          report["actualAsyncBytesTaskDelegateRejectedWrongPinBeforeHTTP"]=true;report["actualWrongPinRejectionNSErrorCode"]=actual.code
+        }
+      }
+      try stage("actual-async-bytes-correct-pin-accepted-and-wrong-pin-rejected")
+      store.hostedEasyWorkProductUIPresented=true;store.sheet = .clients
+      var edit:NSObject?
+      try await wait("actual original selected client's native edit control"){edit=objects().first{identifier($0)=="edit-client-"+originalClient.id && $0.isAccessibilityElement};return edit != nil}
+      guard try XCTUnwrap(edit).accessibilityActivate()else{throw NSError(domain:"EasyWorkOriginalLAN",code:7)}
+      let titles=Set(AgentConnectionPreference.allCases.map(\.title));var menuButton:UIButton?
+      try await wait("unique actual connection preference UIButton menu"){
+        let found=views(window).compactMap{$0 as?UIButton}.filter{button in guard let menu=button.menu,button.window===window,!button.isHidden,button.isEnabled else{return false};return Set(actions(menu).map(\.title)).isSuperset(of:titles)}
+        menuButton=found.count==1 ? found[0]:nil;return menuButton != nil
+      }
+      let button=try XCTUnwrap(menuButton)
+      if #available(iOS 17.4,*){button.performPrimaryAction()}else{throw XCTSkip("Public native menu activation requires iOS17.4")}
+      try await wait("original preference menu actually held"){button.isHeld}
+      let action=try XCTUnwrap(actions(try XCTUnwrap(button.menu)).first{$0.title==AgentConnectionPreference.lanOnly.title})
+      button.sendAction(action);button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first?.dismissMenu()
+      let state=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+      try await wait("production UI choice and encrypted saved preference are only-direct"){
+        guard store.client?.agentConnection?.preference == .lanOnly,let data=try?Data(contentsOf:state),let saved=try?AgentCache.decode(data)else{return false}
+        return saved.clients.first(where:{$0.id==originalClient.id})?.agentConnection?.preference == .lanOnly
+      }
+      report["oldMenuButtonHeldAfterProductionValueChangedOnlyDiagnostic"]=button.isHeld
+      report["actualEncryptedSavedConnectionPreferenceLanOnly"]=true
+      report["actualOriginalPreferenceUISelectedLanOnly"]=true;report["nativePreferenceActionRoute"]="Actual original UIButton held menu and production UIAction; no physical touch claim"
+      try shot("actual-original-only-direct-preference");store.sheet=nil
+      try await wait("original sheets dismissed and refresh settled",seconds:100){window.rootViewController?.presentedViewController==nil && !store.loading}
+      await store.refresh(includeHistory:false,userInitiated:true)
+      let snapshot=try XCTUnwrap(store.saved.workspaces[originalClient.id])
+      guard store.client?.online==true,snapshot.agentConnectionState?.runtimeConnected==true,snapshot.readTarget==connection.target,store.client?.agentConnection?.preference == .lanOnly else{throw NSError(domain:"EasyWorkOriginalLAN",code:8)}
+      if let thread=originalThread{guard await store.loadHistory(threadId:thread,userInitiated:true),!store.messages.isEmpty else{throw NSError(domain:"EasyWorkOriginalLAN",code:9)}}
+      report["actualFreshWorkspaceRuntimeConnected"]=true;report["actualFreshHistoryMessageCount"]=store.messages.count;report["actualFreshHistoryMessageIds"]=store.messages.map(\.id);report["actualLiveProjectCount"]=store.projects.count;report["actualLiveThreadPageCount"]=store.threads.count
+      if let originalRefreshID{
+        let receipts=(try grantMetadata())?["refreshReceipts"]as?[[String:Any]] ?? []
+        guard let receipt=receipts.first(where:{$0["operationId"]as?String==originalRefreshID}),receipt["requestSha256"]as?String==HostService.hash(try easyWorkJSON(["operationId":originalRefreshID]))else{throw NSError(domain:"EasyWorkOriginalLAN",code:15)}
+        report["originalImmutableRefreshOperationReceiptReconciledWithoutReplacingIntent"]=true
+      }
+      try protect();try shot("actual-original-LAN-connected-and-live-history");try stage("awaiting-direct-LAN-peer-witness")
+      try await wait("same-case original Electron actual physical iPhone LAN peer",seconds:60){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-LAN-peer-witness.json")),let witness=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return witness["caseId"]as?String==run && witness["nativeProcessId"]as?Int==Int(ProcessInfo.processInfo.processIdentifier) && witness["physicalIPhoneWifiPeerConnectedToOriginalElectronLAN"]as?Bool==true && witness["originalElectronLANPort"]as?Int==c["expectedOriginalLANPort"]as?Int}
+      report["independentOriginalElectronLANPeerWitnessReceived"]=true;try protect();passed=true
+    }catch{caught=error;report["failure"]=String(describing:error);report["actualAppVisibleErrorAtFailure"]=store.error ?? "none";report["actualLoadingAtFailure"]=store.loading;report["actualSelectedClientOnlineAtFailure"]=store.client?.online ?? false;try?shot("actual-original-LAN-failed-prefix");try?stage("failed-original-LAN-direct-prefix")}
+    for button in views(window).compactMap({$0 as?UIButton}).filter({$0.isHeld && $0.menu != nil}){button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first?.dismissMenu()}
+    store.sheet=nil
+    if !passed,store.client?.agentConnection?.preference != oldPreference{store.setConnectionPreference(originalClient,oldPreference);try await wait("original preference restored after failed prefix",seconds:100){store.client?.agentConnection?.preference==oldPreference && !store.loading}}
+    store.hostedEasyWorkProductUIPresented=oldUI;try protect()
+    report["allOriginalDraftsPreferencesIdentityVoiceJournalsAndSelectionProtected"]=true;report["onlyVerifiedLANPreferenceChangeAuthorized"]=true;report["keptVerifiedLanOnlyPreferenceForUserScope"]=passed;report["status"]=passed ? "passed-original-physical-LAN-only-UI-and-fresh-live-target-bound-reads-no-proxy":"failed-original-LAN-prefix-original-preference-restored";try stage("completed")
+    if let caught{throw caught}
+  }
+  @MainActor private func originalReadCaseContext() throws -> (String,[String:Any],URL,URL) {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run)?.uuidString.lowercased()==run,let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["originalLocalReadFaultCase"]as?Bool==true,c["newModelsAuthorized"]as?Int==0,c["newBusinessSubmissionsAuthorized"]as?Int==0,c["directOriginalCiphertextWritesAuthorized"]as?Int==0 else{throw XCTSkip("Frozen original read-permission case required")}
+    let documents=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:documents,withIntermediateDirectories:true)
+    let initial=documents.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:initial.path)else{throw NSError(domain:"EasyWorkOriginalReadCase",code:1)}
+    let starting:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"stage":"starting-single-original-App-owned-read-case","newModelsOrBusinessInputs":0,"codexTests":false]
+    try JSONSerialization.data(withJSONObject:starting,options:[.sortedKeys]).write(to:initial,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    let state=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+    return(run,c,documents,state)
+  }
+  @MainActor private func originalColdReadProtectedDigests(_ store:SessionStore) throws -> [String:String] {
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func digest<T:Encodable>(_ value:T)throws->String{HostService.hash(try encoder.encode(value))}
+    var state=try XCTUnwrap(try JSONSerialization.jsonObject(with:encoder.encode(store.saved))as?[String:Any])
+    state.removeValue(forKey:"history");state.removeValue(forKey:"historyCacheKeys")
+    let stable=HostService.hash(try JSONSerialization.data(withJSONObject:state,options:[.sortedKeys]))
+    return ["sessionExceptReplaceableHistory":stable,"clients":try digest(store.saved.clients),"drafts":try digest(store.drafts.values),"outbox":try digest(store.saved.outbox),"replyRecovery":try digest(store.saved.replyRecovery),"threadForks":try digest(store.saved.threadForks),"appearance":try digest(store.saved.appearance),"notifications":try digest(TaskNotificationController.shared.preferences),"language":try digest(L10n.selection.rawValue),"voice":try digest(VoiceMigrationSafety.snapshot()),"identity":HostService.hash(Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)),"selectedClient":try digest(store.saved.selectedClientId),"lastThreads":try digest(store.saved.lastThreads),"lastThreadProjects":try digest(store.saved.lastThreadProjects),"newProjects":try digest(store.saved.newProjects)]
+  }
+  @MainActor func testPrepareOriginalReadDenialAndExitForColdProbe() async throws {
+    let(run,c,documents,state)=try originalReadCaseContext()
+    guard c["plannedOwnedProcessExitAfterSealing"]as?Bool==true,c["normalSameStatePersistenceForPreparationAuthorized"]as?Bool==true else{throw XCTSkip("Explicit own-process fault preparation required")}
+    let end=CACurrentMediaTime()+45
+    while SessionStore.hostedEasyWorkAcceptanceStore==nil || UIApplication.shared.applicationState != .active {guard CACurrentMediaTime()<end else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:1)};try await Task.sleep(for:.milliseconds(50))}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:2)}
+    let hashes=try originalColdReadProtectedDigests(store)
+    let oldSHA=HostService.hash(try Data(contentsOf:state));store.persist(reconcileUnread:false)
+    let savedEnd=CACurrentMediaTime()+15
+    while HostService.hash(try Data(contentsOf:state))==oldSHA {guard CACurrentMediaTime()<savedEnd else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:3)};try await Task.sleep(for:.milliseconds(50))}
+    var bytes=try Data(contentsOf:state)
+    for _ in 0..<3 {try await Task.sleep(for:.milliseconds(100));let next=try Data(contentsOf:state);guard next==bytes else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:4)};bytes=next}
+    _=try AgentCache.decode(bytes)
+    guard try originalColdReadProtectedDigests(store)==hashes else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:5)}
+    let attrs=try FileManager.default.attributesOfItem(atPath:state.path)
+    let mode=try XCTUnwrap(attrs[.posixPermissions]as?NSNumber).intValue
+    guard mode & 0o600 == 0o600,(attrs[.ownerAccountID]as?NSNumber)?.uint32Value==geteuid(),!((try state.resourceValues(forKeys:[.isSymbolicLinkKey])).isSymbolicLink ?? false)else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:6)}
+    var removed:[[String:String]]=[];var retained:[[String:String]]=[]
+    for item in c["completedNativeFileCleanup"]as?[[String:String]] ?? [] {
+      guard let name=item["name"],let expected=item["sha256"],let completed=item["completedCaseId"],UUID(uuidString:completed)?.uuidString.lowercased()==completed,name.hasPrefix(completed),!name.contains("/"),name.hasSuffix(".json") || name.hasSuffix(".png") else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:7)}
+      let file=documents.appendingPathComponent(name)
+      if let content=try?Data(contentsOf:file),HostService.hash(content)==expected,!((try file.resourceValues(forKeys:[.isSymbolicLinkKey])).isSymbolicLink ?? false){try FileManager.default.removeItem(at:file);removed.append(item)}else{retained.append(item)}
+    }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"stage":"original-mode-denial-sealed-before-owned-process-exit","originalMode":mode,"originalMetadataSHA256":HostService.hash(bytes),"originalProtectedDigests":hashes,"originalSelectedClientId":store.saved.selectedClientId ?? "none","originalSelectedThreadId":store.selectedThreadId ?? "none","sameStateNormalSaveCompletedBeforeFault":true,"plannedOwnProcessExit":true,"newModelsOrBusinessInputs":0,"directOriginalCiphertextWrites":0,"completedPriorNativeFilesRemoved":removed,"unmatchedPriorNativeFilesRetained":retained,"wholeFeaturePassed":false,"codexTests":false]
+    var intent=report;intent["stage"]="sealed-restoration-intent-before-permission-denial"
+    try JSONSerialization.data(withJSONObject:intent,options:[.sortedKeys]).write(to:documents.appendingPathComponent(run+"-read-denial-intent.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    var denied=false
+    do {
+      try FileManager.default.setAttributes([.posixPermissions:0],ofItemAtPath:state.path);denied=true
+      guard (try FileManager.default.attributesOfItem(atPath:state.path)[.posixPermissions]as?NSNumber)?.intValue==0 else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:8)}
+      do {_=try Data(contentsOf:state);throw NSError(domain:"EasyWorkOriginalReadPrepare",code:9)}catch{let value=error as NSError;guard value.domain==NSCocoaErrorDomain,value.code==NSFileReadNoPermissionError else{throw error};report["actualDirectReadErrorDomain"]=value.domain;report["actualDirectReadErrorCode"]=value.code}
+      let data=try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys])
+      try data.write(to:documents.appendingPathComponent(run+"-read-denial-prepared.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      try data.write(to:documents.appendingPathComponent(run+".json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      let release=documents.appendingPathComponent(run+"-permission-preparation-exit-authorized.json")
+      let releaseEnd=CACurrentMediaTime()+90
+      while !FileManager.default.fileExists(atPath:release.path){guard CACurrentMediaTime()<releaseEnd else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:10)};try await Task.sleep(for:.milliseconds(50))}
+      let value=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:release))as?[String:Any])
+      guard value["caseId"]as?String==run,value["nativeProcessId"]as?Int==Int(ProcessInfo.processInfo.processIdentifier),value["sameAppPIDAndImmutablePreparedReceiptVerified"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalReadPrepare",code:11)}
+      // This exact App-owned process exits without running another writer or
+      // termination save. The next single App process must read the real file.
+      Darwin._exit(0)
+    }catch{if denied{try?FileManager.default.setAttributes([.posixPermissions:mode],ofItemAtPath:state.path)};throw error}
+  }
+  @MainActor func testOriginalColdReadDenialUIAndActualRetry() async throws {
+    let(run,c,documents,state)=try originalReadCaseContext()
+    let preparedId=try XCTUnwrap(c["preparedCaseId"]as?String);guard UUID(uuidString:preparedId)?.uuidString.lowercased()==preparedId else{throw NSError(domain:"EasyWorkOriginalColdRead",code:1)}
+    let sealed=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:documents.appendingPathComponent(preparedId+"-read-denial-prepared.json")))as?[String:Any])
+    let mode=try XCTUnwrap(sealed["originalMode"]as?Int),expectedSHA=try XCTUnwrap(sealed["originalMetadataSHA256"]as?String),expected=try XCTUnwrap(sealed["originalProtectedDigests"]as?[String:String])
+    var report:[String:Any]=["caseId":run,"preparedCaseId":preparedId,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsOrBusinessInputs":0,"directOriginalCiphertextWrites":0,"wholeFeaturePassed":false,"codexTests":false]
+    let reportURL=documents.appendingPathComponent(run+".json")
+    func stage(_ value:String)throws{report["stage"]=value;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:reportURL,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<end{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try?stage("failed-wait");throw NSError(domain:"EasyWorkOriginalColdRead",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    var restored=false;var caught:Error?
+    defer{if !restored{try?FileManager.default.setAttributes([.posixPermissions:mode],ofItemAtPath:state.path)}}
+    try stage("awaiting-original-cold-recovery-store")
+    try await wait("single original App-owned failed-read store"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    do {
+      guard store.localRecoveryRequired,(try FileManager.default.attributesOfItem(atPath:state.path)[.posixPermissions]as?NSNumber)?.intValue==0 else{throw NSError(domain:"EasyWorkOriginalColdRead",code:3)}
+      report["actualColdStoreReadFailedWithoutPublishingEmptyInstallation"]=true
+      store.hostedEasyWorkProductUIPresented=true
+      let diagnostic=state.deletingLastPathComponent().appendingPathComponent("session-recovery-error.json")
+      func diagnosticTime()->Double{guard let data=try?Data(contentsOf:diagnostic),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return 0};return value["time"]as?Double ?? 0}
+      let initial=diagnosticTime();guard initial>0 else{throw NSError(domain:"EasyWorkOriginalColdRead",code:4)}
+      try stage("awaiting-actual-first-retry-while-original-file-denied")
+      let first=documents.appendingPathComponent(run+"-denied-retry-witness.json")
+      try await wait("real first production retry while denied",seconds:180){FileManager.default.fileExists(atPath:first.path)}
+      let firstWitness=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:first))as?[String:Any])
+      guard firstWitness["caseId"]as?String==run,firstWitness["actualPhysicalRetryTaps"]as?Int==1 else{throw NSError(domain:"EasyWorkOriginalColdRead",code:5)}
+      try await wait("normal retry recorded another actual read permission failure"){diagnosticTime()>initial && store.localRecoveryRequired}
+      report["actualFirstPhysicalProductionRetryRemainedBlocked"]=true
+      try FileManager.default.setAttributes([.posixPermissions:mode],ofItemAtPath:state.path);restored=true
+      guard HostService.hash(try Data(contentsOf:state))==expectedSHA else{throw NSError(domain:"EasyWorkOriginalColdRead",code:6)}
+      report["originalCiphertextPreservedAcrossColdFailureAndDeniedRetry"]=true;report["originalModeRestoredExactly"]=true
+      try stage("awaiting-actual-second-retry-after-original-mode-restoration")
+      let second=documents.appendingPathComponent(run+"-restored-retry-witness.json")
+      try await wait("real second production retry",seconds:180){FileManager.default.fileExists(atPath:second.path)}
+      let secondWitness=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:second))as?[String:Any])
+      guard secondWitness["caseId"]as?String==run,secondWitness["actualPhysicalRetryTaps"]as?Int==1 else{throw NSError(domain:"EasyWorkOriginalColdRead",code:7)}
+      try await wait("actual original local state restored by production button"){!store.localRecoveryRequired && store.client?.agentConnection?.target.agentId=="easywork"}
+      guard try originalColdReadProtectedDigests(store)==expected else{throw NSError(domain:"EasyWorkOriginalColdRead",code:8)}
+      report["actualSecondProductionRetryRecoveredOriginalData"]=true;report["allOriginalProtectedDigestsMatched"]=true
+      try stage("awaiting-official-cold-recovery-images-and-sharing-stop")
+    }catch{caught=error;report["failure"]=String(describing:error)}
+    if !restored{try FileManager.default.setAttributes([.posixPermissions:mode],ofItemAtPath:state.path);restored=true}
+    if store.localRecoveryRequired,HostService.hash(try Data(contentsOf:state))==expectedSHA{_ = store.retryLocalRecovery();try await wait("original recovery cleanup without any ciphertext replacement"){!store.localRecoveryRequired}}
+    report["originalModeRestoredExactly"]=true
+    if caught != nil{try stage("failed-prefix-awaiting-safe-release")}
+    let release=documents.appendingPathComponent(run+"-driver-release.json")
+    try await wait("official exact-case control release preserving preexisting sharing",seconds:180){guard let data=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};let stopped=value["screenSharingStoppedVerified"]as?Bool==true;let preserved=value["preexistingSharingPreservedVerified"]as?Bool==true && value["noTaskCreatedSharingSession"]as?Bool==true && value["taskPhoneControlEndedVerified"]as?Bool==true;return value["caseId"]as?String==run && (stopped || preserved)}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil ? "passed-original-physical-cold-read-denial-and-actual-production-retry":"failed-original-cold-read-prefix-original-mode-restored";try stage("completed")
+    if let caught{throw caught}
+  }
+  @MainActor func testRestoreOriginalReadDenialModeAfterInterruptedProbe() async throws {
+    let(run,c,documents,state)=try originalReadCaseContext();let preparedId=try XCTUnwrap(c["preparedCaseId"]as?String)
+    guard UUID(uuidString:preparedId)?.uuidString.lowercased()==preparedId else{throw NSError(domain:"EasyWorkOriginalReadRestore",code:1)}
+    let sealedURL=documents.appendingPathComponent(preparedId+"-read-denial-prepared.json")
+    let intentURL=documents.appendingPathComponent(preparedId+"-read-denial-intent.json")
+    let original=FileManager.default.fileExists(atPath:sealedURL.path) ? sealedURL:intentURL
+    let sealed=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:original))as?[String:Any]);let mode=try XCTUnwrap(sealed["originalMode"]as?Int),digest=try XCTUnwrap(sealed["originalMetadataSHA256"]as?String)
+    try FileManager.default.setAttributes([.posixPermissions:mode],ofItemAtPath:state.path)
+    guard HostService.hash(try Data(contentsOf:state))==digest else{throw NSError(domain:"EasyWorkOriginalReadRestore",code:2)}
+    let end=CACurrentMediaTime()+45
+    while SessionStore.hostedEasyWorkAcceptanceStore==nil{guard CACurrentMediaTime()<end else{throw NSError(domain:"EasyWorkOriginalReadRestore",code:3)};try await Task.sleep(for:.milliseconds(50))}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);if store.localRecoveryRequired{guard store.retryLocalRecovery()else{throw NSError(domain:"EasyWorkOriginalReadRestore",code:4)}}
+    let expected=try XCTUnwrap(sealed["originalProtectedDigests"]as?[String:String]);guard try originalColdReadProtectedDigests(store)==expected else{throw NSError(domain:"EasyWorkOriginalReadRestore",code:5)}
+    let report:[String:Any]=["caseId":run,"preparedCaseId":preparedId,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"stage":"completed","status":"restored-only-exact-original-mode-and-original-data-after-interruption","originalModeRestored":true,"originalCiphertextWrites":0,"allOriginalProtectedDigestsMatched":true,"newModelsOrBusinessInputs":0,"codexTests":false]
+    try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:documents.appendingPathComponent(run+".json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+  }
+
+  @MainActor func testPhysicalOriginalOfficialSystemKeyboardAndDurableDraftWithoutSending() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualExternalOfficialSystemKeyboardRequired"]as?Bool==true,let threadId=c["existingThreadId"]as?String,let expectedIds=c["existingCompleteMessageIds"]as?[String],expectedIds.count>=100,let body=c["onlyTemporaryLocalInput"]as?String,body=="1234567890",let p95Budget=c["p95NativeInsertionBudgetMs"]as?Double,let maxBudget=c["maxNativeInsertionBudgetMs"]as?Double,let durableBudget=c["durableFinalDraftBudgetMs"]as?Double,p95Budget==100,maxBudget==250,durableBudget==2500,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen zero-submit official system keyboard case required")}
+    let expectedKeyboardValues=["1","12","123","1234","12345","123456","1234567","12345678","123456789","1234567890","123456789","1234567890"]
+    guard c["expectedExternalSystemKeyboardDraftValues"]as?[String]==expectedKeyboardValues,c["nativeInProcessInputInjectionAuthorized"]as?Bool==false else{throw XCTSkip("External system keyboard sequence required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsBusinessSubmissionsUploadsImportsPairingOrPlanApprovals":0,"wholeFeaturePassed":false,"codexTests":false],samples:[Double]=[]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<end{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI-owned store and exact foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalDrafts=store.drafts.values,originalThread=store.selectedThreadId,originalProject=store.selectedProjectId,originalTarget=store.targetKey,originalClient=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let protectedBytes=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    func protected()throws->Bool{let actual=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)];return actual==protectedBytes && store.saved.selectedClientId==originalClient}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    guard window.rootViewController?.presentedViewController==nil,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:4)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func shot(_ suffix:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+suffix+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    let stateURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+    func persisted()->SavedSession?{guard let bytes=try?Data(contentsOf:stateURL)else{return nil};return try?AgentCache.decode(bytes)}
+    var ownedKey:String?,ownedEmpty:Draft?,prefix="",inputView:UIView?,input:(any UITextInput)?,caught:Error?
+    var prefixHashes=Set([HostService.hash(Data())]);for value in expectedKeyboardValues{prefixHashes.insert(HostService.hash(Data(value.utf8)))}
+    let keyboardObservation=EasyWorkKeyboardFocusObservation()
+    let keyboardToken=NotificationCenter.default.addObserver(forName:UIResponder.keyboardDidShowNotification,object:nil,queue:nil){keyboardObservation.record($0)}
+    defer{NotificationCenter.default.removeObserver(keyboardToken)}
+    do{
+      store.hostedEasyWorkProductUIPresented=true
+      let thread=try XCTUnwrap(store.threads.first{$0.id==threadId && $0.hostId==originalClient})
+      store.openThread(thread,loadAutomatically:false)
+      report["originalCachedMessageCountBeforeNormalPreparation"]=store.messages.count;report["originalCachedMessageIdsBeforeNormalPreparation"]=store.messages.map(\.id);try stage("preparing-same-original-history-through-normal-read-only-pages")
+      try await wait("original initial history read idle before normal preparation",seconds:90){!store.historyLoading}
+      var preparationReads=0
+      if store.messages.map(\.id) != expectedIds{
+        guard c["originalReadOnlyHistoryPreparationAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:15)}
+        _ = await store.loadHistory(threadId:threadId,userInitiated:true);preparationReads+=1
+        while store.messages.map(\.id) != expectedIds,store.historyCursor != nil,preparationReads<3{
+          _ = await store.loadHistory(threadId:threadId,more:true,userInitiated:true);preparationReads+=1
+        }
+      }
+      report["normalOriginalHistoryPreparationReadActions"]=preparationReads;report["actualPreparedMessageCountBeforeLocalInput"]=store.messages.count;report["actualPreparedMessageIdsBeforeLocalInput"]=store.messages.map(\.id);report["normalHistoryPreparationError"]=store.error ?? "none";try save()
+      try await wait("same original complete history after bounded normal reads"){store.selectedThreadId==threadId && !store.historyLoading && store.messages.map(\.id)==expectedIds}
+      let key=store.targetKey;ownedKey=key
+      guard store.draft.text.isEmpty,store.draft.attachments.isEmpty,try protected(),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key})else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:5)}
+      report["actualOriginalCachedMessageCount"]=store.messages.count;report["actualOriginalCachedMessageIds"]=store.messages.map(\.id);report["normalCachedNavigationNoFreshHistoryRequest"]=preparationReads==0
+      var field:UIView?
+      try await wait("unique actual visible native editable composer"){let fields=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true};field=fields.count==1 ? fields[0]:nil;return field != nil}
+      inputView=try XCTUnwrap(field);input=try XCTUnwrap(inputView as?any UITextInput)
+      guard inputView!.becomeFirstResponder()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:6)}
+      try await wait("actual empty composer focus"){inputView!.isFirstResponder && input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==""}
+      let empty=store.draft;guard empty.text.isEmpty,empty.attachments.isEmpty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:7)};ownedEmpty=empty
+      try await wait("actual system keyboard did-show notification and visible frame"){let value=keyboardObservation.snapshot();return value.shown && value.frame.height>100 && inputView!.isFirstResponder}
+      report["actualKeyboardDidShowNotificationAndFrameObserved"]=true
+      report["actualKeyboardFramePoints"]=["x":keyboardObservation.snapshot().frame.origin.x,"y":keyboardObservation.snapshot().frame.origin.y,"width":keyboardObservation.snapshot().frame.width,"height":keyboardObservation.snapshot().frame.height]
+      report["nativeInProcessInsertTextBeforeCleanupCalls"]=0
+      var observations:[[String:Any]]=[];var completedStep=0;var last="";let end=CACurrentMediaTime()+480
+      try stage("ready-for-official-system-keyboard-input")
+      while completedStep<expectedKeyboardValues.count,CACurrentMediaTime()<end{
+        guard store.targetKey==key,inputView!.isFirstResponder,store.messages.map(\.id)==expectedIds else{throw NSError(domain:"EasyWorkOfficialKeyboard",code:1)}
+        let value=input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!) ?? ""
+        if value != last{
+          guard value==expectedKeyboardValues[completedStep],prefixHashes.contains(HostService.hash(Data(value.utf8))),try protected()else{report["unexpectedInputHash"]=HostService.hash(Data(value.utf8));throw NSError(domain:"EasyWorkOfficialKeyboard",code:2)}
+          try await wait("actual external keyboard value reached production DraftStore",seconds:2){store.draft.text==value}
+          observations.append(["step":completedStep+1,"text":value,"markedTextPresent":input!.markedTextRange != nil,"nativeWallSeconds":Date().timeIntervalSince1970,"productionDraftExact":true,"realFirstResponder":inputView!.isFirstResponder]);last=value;prefix=value;completedStep+=1
+          report["actualExternalSystemKeyboardDraftObservations"]=observations;report["completedExternalSystemKeyboardSteps"]=completedStep;try stage("awaiting-official-system-keyboard-step-\(completedStep+1)")
+        }
+        try await Task.sleep(for:.milliseconds(40))
+      }
+      guard completedStep==expectedKeyboardValues.count,store.draft.text==body else{throw NSError(domain:"EasyWorkOfficialKeyboard",code:3)}
+      let completed=CACurrentMediaTime();try await wait("actual system keyboard final draft encrypted and durable",seconds:durableBudget/1000){persisted()?.drafts[key]?.text==body};let durableMs=(CACurrentMediaTime()-completed)*1000
+      report["actualSystemKeyboardFinalDraftEncryptedObservedMs"]=durableMs;report["actualFrozenLocalBodyHash"]=HostService.hash(Data(body.utf8));report["actualExternalSystemKeyboardSequencePassed"]=true
+      report["physicalTouchToGlyphLatencyAndChineseCompositionNotClaimed"]=true
+      try stage("awaiting-official-system-keyboard-image-and-sharing-stop")
+      try await wait("independent system keyboard image and exact case sharing off",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true && value["actualExternalSystemKeyboardSequenceVerified"]as?Bool==true}
+      guard store.draft.text==body,try protected()else{throw NSError(domain:"EasyWorkOfficialKeyboard",code:4)}
+      try shot("actual-original-cache-system-keyboard-typed-body")
+    }catch{caught=error;report["failure"]=String(describing:error);report["actualCompletedLocalInsertions"]=samples.count;try?shot("actual-local-input-failed-prefix")}
+    if let key=ownedKey,let empty=ownedEmpty{
+      guard store.targetKey==key,prefixHashes.contains(HostService.hash(Data(store.draft.text.utf8))),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key}),try protected()else{report["ownedTemporaryCleanupBlockedUnexpectedTargetOrValue"]=true;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:10)}
+      if !store.draft.text.isEmpty{let current=try XCTUnwrap(input);current.selectedTextRange=current.textRange(from:current.beginningOfDocument,to:current.endOfDocument);current.insertText("");try await wait("only own temporary local text cleared via same native input"){store.draft.text.isEmpty}}
+      inputView?.resignFirstResponder()
+      guard store.draft==empty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:11)}
+      if originalDrafts[key]==nil{guard store.drafts.values[key]==empty,store.drafts.values.filter({$0.key != key})==originalDrafts else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:12)};store.drafts.values.removeValue(forKey:key)}else{guard store.drafts.values[key]==originalDrafts[key]else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:13)}}
+      store.persist();try await wait("all original local drafts durable after only owned-text cleanup"){persisted()?.drafts==originalDrafts};report["ownedTemporaryLocalDraftCleanupExact"]=true
+    }
+    if let originalThread,let original=store.threads.first(where:{$0.id==originalThread && $0.hostId==originalClient}){store.openThread(original,loadAutomatically:false)}
+    store.selectedProjectId=originalProject;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist();store.hostedEasyWorkProductUIPresented=oldUI
+    guard store.targetKey==originalTarget,store.selectedThreadId==originalThread,store.drafts.values==originalDrafts,try protected()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:14)}
+    report["originalDraftsOperationsVoiceIdentityPreferencesAndSelectionsPreserved"]=true
+    try stage(caught==nil ? "awaiting-official-screen-sharing-stop-and-case-release":"failed-prefix-awaiting-safe-release")
+    try await wait("exact-case official sharing-off release",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil ? "passed-physical-original-official-system-keyboard-and-durable-draft-no-submit":"failed-original-official-system-keyboard-prefix-preserved";try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved")
+    if let caught{throw caught}
+  }
+  @MainActor func testPhysicalOriginalOfficialSoftwareKeyboardChineseCommitDeleteAndDurableDraftWithoutSending() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualOfficialSoftwareKeyboardTouchRequired"]as?Bool==true,let threadId=c["existingThreadId"]as?String,let expectedIds=c["existingCompleteMessageIds"]as?[String],expectedIds.count>=100,let body=c["onlyTemporaryLocalInput"]as?String,body=="你",let p95Budget=c["p95NativeInsertionBudgetMs"]as?Double,let maxBudget=c["maxNativeInsertionBudgetMs"]as?Double,let durableBudget=c["durableFinalDraftBudgetMs"]as?Double,p95Budget==100,maxBudget==250,durableBudget==2500,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen zero-submit official system keyboard case required")}
+    guard c["onlyNamedOfficialSoftwareKeyboardActionsAuthorized"]as?Int==4,c["ordinaryKeyboardModeSelectionAndOriginalRestorationAuthorized"]as?Bool==true,c["nativeInProcessInputInjectionAuthorized"]as?Bool==false else{throw XCTSkip("Four real official software keyboard taps and original mode restoration required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsBusinessSubmissionsUploadsImportsPairingOrPlanApprovals":0,"wholeFeaturePassed":false,"codexTests":false],samples:[Double]=[]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<end{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI-owned store and exact foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalDrafts=store.drafts.values,originalThread=store.selectedThreadId,originalProject=store.selectedProjectId,originalTarget=store.targetKey,originalClient=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let protectedBytes=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    func protected()throws->Bool{let actual=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)];return actual==protectedBytes && store.saved.selectedClientId==originalClient}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    guard window.rootViewController?.presentedViewController==nil,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:4)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func shot(_ suffix:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+suffix+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    let stateURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+    func persisted()->SavedSession?{guard let bytes=try?Data(contentsOf:stateURL)else{return nil};return try?AgentCache.decode(bytes)}
+    var ownedKey:String?,ownedEmpty:Draft?,prefix="",inputView:UIView?,input:(any UITextInput)?,caught:Error?
+    func knownOwnedKeyboardText(_ text:String)->Bool{text.isEmpty || text=="你" || text.range(of:"^[a-z]{1,8}$",options:.regularExpression) != nil}
+    var originalKeyboardLanguage:String?
+    let keyboardObservation=EasyWorkKeyboardFocusObservation()
+    let keyboardToken=NotificationCenter.default.addObserver(forName:UIResponder.keyboardDidShowNotification,object:nil,queue:nil){keyboardObservation.record($0)}
+    defer{NotificationCenter.default.removeObserver(keyboardToken)}
+    do{
+      store.hostedEasyWorkProductUIPresented=true
+      let thread=try XCTUnwrap(store.threads.first{$0.id==threadId && $0.hostId==originalClient})
+      store.openThread(thread,loadAutomatically:false)
+      report["originalCachedMessageCountBeforeNormalPreparation"]=store.messages.count;report["originalCachedMessageIdsBeforeNormalPreparation"]=store.messages.map(\.id);try stage("preparing-same-original-history-through-normal-read-only-pages")
+      try await wait("original initial history read idle before normal preparation",seconds:90){!store.historyLoading}
+      var preparationReads=0
+      if store.messages.map(\.id) != expectedIds{
+        guard c["originalReadOnlyHistoryPreparationAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:15)}
+        _ = await store.loadHistory(threadId:threadId,userInitiated:true);preparationReads+=1
+        while store.messages.map(\.id) != expectedIds,store.historyCursor != nil,preparationReads<3{
+          _ = await store.loadHistory(threadId:threadId,more:true,userInitiated:true);preparationReads+=1
+        }
+      }
+      report["normalOriginalHistoryPreparationReadActions"]=preparationReads;report["actualPreparedMessageCountBeforeLocalInput"]=store.messages.count;report["actualPreparedMessageIdsBeforeLocalInput"]=store.messages.map(\.id);report["normalHistoryPreparationError"]=store.error ?? "none";try save()
+      try await wait("same original complete history after bounded normal reads"){store.selectedThreadId==threadId && !store.historyLoading && store.messages.map(\.id)==expectedIds}
+      let key=store.targetKey;ownedKey=key
+      guard store.draft.text.isEmpty,store.draft.attachments.isEmpty,try protected(),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key})else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:5)}
+      report["actualOriginalCachedMessageCount"]=store.messages.count;report["actualOriginalCachedMessageIds"]=store.messages.map(\.id);report["normalCachedNavigationNoFreshHistoryRequest"]=preparationReads==0
+      var field:UIView?
+      try await wait("unique actual visible native editable composer"){let fields=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true};field=fields.count==1 ? fields[0]:nil;return field != nil}
+      inputView=try XCTUnwrap(field);input=try XCTUnwrap(inputView as?any UITextInput)
+      guard inputView!.becomeFirstResponder()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:6)}
+      try await wait("actual empty composer focus"){inputView!.isFirstResponder && input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==""}
+      let empty=store.draft;guard empty.text.isEmpty,empty.attachments.isEmpty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:7)};ownedEmpty=empty
+      originalKeyboardLanguage=inputView!.textInputMode?.primaryLanguage
+      report["originalKeyboardInputModeLanguage"]=originalKeyboardLanguage ?? "none"
+      report["actualInstalledKeyboardInputModeLanguages"]=UITextInputMode.activeInputModes.compactMap(\.primaryLanguage)
+      report["actualWindowKeyboardLayoutGuideFramePoints"]=["x":window.keyboardLayoutGuide.layoutFrame.origin.x,"y":window.keyboardLayoutGuide.layoutFrame.origin.y,"width":window.keyboardLayoutGuide.layoutFrame.width,"height":window.keyboardLayoutGuide.layoutFrame.height]
+      try stage("awaiting-official-software-keyboard-display")
+      try await wait("actual system keyboard did-show notification and visible frame",seconds:150){let value=keyboardObservation.snapshot();return value.shown && value.frame.height>100 && inputView!.isFirstResponder}
+      report["actualKeyboardDidShowNotificationAndFrameObserved"]=true
+      report["actualKeyboardFramePoints"]=["x":keyboardObservation.snapshot().frame.origin.x,"y":keyboardObservation.snapshot().frame.origin.y,"width":keyboardObservation.snapshot().frame.width,"height":keyboardObservation.snapshot().frame.height]
+      report["nativeInProcessInsertTextBeforeCleanupCalls"]=0
+      guard let originalMode=originalKeyboardLanguage,!originalMode.isEmpty else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:1)}
+      if !(inputView!.textInputMode?.primaryLanguage?.hasPrefix("zh-Hans") ?? false){
+        try stage("awaiting-official-Chinese-keyboard-mode-preparation")
+        try await wait("ordinary visible Simplified Chinese keyboard selection",seconds:150){inputView!.textInputMode?.primaryLanguage?.hasPrefix("zh-Hans")==true && inputView!.isFirstResponder}
+      }
+      report["actualChineseKeyboardModeLanguageBeforeInput"]=inputView!.textInputMode?.primaryLanguage ?? "none"
+      let actions=["pinyin-first-key","pinyin-second-key","select-ni-candidate","delete-committed-character"]
+      var observations:[[String:Any]]=[]
+      for (index,action) in actions.enumerated(){
+        let step=index+1
+        report["nextExactOfficialSoftwareAction"]=action;report["nextExactOfficialSoftwareStep"]=step
+        try stage("awaiting-official-software-ime-step-\(step)")
+        let marker=directory.appendingPathComponent(run+"-software-ime-step-\(step).json")
+        try await wait("actual official software keyboard action witness \(step)",seconds:150){FileManager.default.fileExists(atPath:marker.path)}
+        let data=try Data(contentsOf:marker),witness=try XCTUnwrap(try JSONSerialization.jsonObject(with:data)as?[String:Any])
+        guard witness["caseId"]as?String==run,witness["step"]as?Int==step,witness["namedAction"]as?String==action,witness["actualFreshSystemImageIndependentlyViewedBeforeTap"]as?Bool==true,witness["officialPhysicalScreenTouchActions"]as?Int==1 else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:2)}
+        guard store.targetKey==key,inputView!.isFirstResponder,store.messages.map(\.id)==expectedIds,try protected()else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:3)}
+        var value=input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!) ?? ""
+        guard knownOwnedKeyboardText(value),knownOwnedKeyboardText(store.draft.text)else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:4)}
+        if step<3{guard value != body,store.draft.text != body else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:5)}}
+        if step>=3{
+          let expected=step==3 ? body:""
+          try await wait("actual software candidate commit or delete and production draft",seconds:2){input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==expected && store.draft.text==expected && input!.markedTextRange==nil}
+        }
+        value=input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!) ?? ""
+        var entry:[String:Any]=["step":step,"namedAction":action,"actualNativeText":value,"actualProductionDraftText":store.draft.text,"markedTextPresent":input!.markedTextRange != nil,"realFirstResponder":inputView!.isFirstResponder,"nativeWallSeconds":Date().timeIntervalSince1970]
+        if step>=3{let expected=step==3 ? body:"",begin=CACurrentMediaTime();try await wait("actual Chinese commit or deletion encrypted draft",seconds:durableBudget/1000){persisted()?.drafts[key]?.text==expected};entry["actualEncryptedDraftObservedMs"]=(CACurrentMediaTime()-begin)*1000}
+        observations.append(entry);report["actualOfficialSoftwareKeyboardObservations"]=observations;report["completedOfficialSoftwareKeyboardActions"]=step
+        try shot("actual-software-Chinese-step-\(step)");try save()
+      }
+      if inputView!.textInputMode?.primaryLanguage != originalMode{
+        try stage("awaiting-official-original-keyboard-mode-restoration")
+        try await wait("actual original keyboard mode restored by ordinary official screen action",seconds:150){inputView!.textInputMode?.primaryLanguage==originalMode}
+      }
+      report["actualOriginalKeyboardModeLanguageRestored"]=true
+      report["actualOfficialSoftwareChineseCommitDeleteScopedPassed"]=true
+      report["touchToGlyphLatencyOtherIMEVariantsOrWholeFeatureNotClaimed"]=true
+      try stage("awaiting-official-software-keyboard-image-and-sharing-stop")
+      try await wait("independent software Chinese images and exact case sharing off",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true && value["actualOfficialSoftwareKeyboardSequenceVerified"]as?Bool==true && value["originalKeyboardModeRestoredVerified"]as?Bool==true}
+      guard store.draft.text.isEmpty,try protected()else{throw NSError(domain:"EasyWorkSoftwareKeyboard",code:6)}
+    }catch{caught=error;report["failure"]=String(describing:error);report["actualCompletedLocalInsertions"]=samples.count;try?shot("actual-local-input-failed-prefix")}
+    if let mode=originalKeyboardLanguage,let view=inputView,view.isFirstResponder,view.textInputMode?.primaryLanguage != mode{
+      try stage("failed-prefix-awaiting-official-original-keyboard-mode-restoration")
+      try await wait("original keyboard mode restored before failure cleanup",seconds:180){view.textInputMode?.primaryLanguage==mode}
+      report["actualOriginalKeyboardModeLanguageRestoredAfterFailure"]=true
+    }
+    if let key=ownedKey,let empty=ownedEmpty{
+      guard store.targetKey==key,knownOwnedKeyboardText(store.draft.text),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key}),try protected()else{report["ownedTemporaryCleanupBlockedUnexpectedTargetOrValue"]=true;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:10)}
+      if !store.draft.text.isEmpty{let current=try XCTUnwrap(input);current.selectedTextRange=current.textRange(from:current.beginningOfDocument,to:current.endOfDocument);current.insertText("");try await wait("only own temporary local text cleared via same native input"){store.draft.text.isEmpty}}
+      inputView?.resignFirstResponder()
+      guard store.draft==empty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:11)}
+      if originalDrafts[key]==nil{guard store.drafts.values[key]==empty,store.drafts.values.filter({$0.key != key})==originalDrafts else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:12)};store.drafts.values.removeValue(forKey:key)}else{guard store.drafts.values[key]==originalDrafts[key]else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:13)}}
+      store.persist();try await wait("all original local drafts durable after only owned-text cleanup"){persisted()?.drafts==originalDrafts};report["ownedTemporaryLocalDraftCleanupExact"]=true
+    }
+    if let originalThread,let original=store.threads.first(where:{$0.id==originalThread && $0.hostId==originalClient}){store.openThread(original,loadAutomatically:false)}
+    store.selectedProjectId=originalProject;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist();store.hostedEasyWorkProductUIPresented=oldUI
+    guard store.targetKey==originalTarget,store.selectedThreadId==originalThread,store.drafts.values==originalDrafts,try protected()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:14)}
+    report["originalDraftsOperationsVoiceIdentityPreferencesAndSelectionsPreserved"]=true
+    try stage(caught==nil ? "awaiting-official-screen-sharing-stop-and-case-release":"failed-prefix-awaiting-safe-release")
+    try await wait("exact-case official sharing-off release",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil ? "passed-physical-original-official-software-Chinese-commit-delete-and-durable-draft-no-submit":"failed-original-official-software-Chinese-prefix-preserved";try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved")
+    if let caught{throw caught}
+  }
+  @MainActor func testPhysicalOriginalCachedHistoryComposerInputAndDurableDraftPerformance() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualOriginalCachedHistoryLocalInputAuthorized"]as?Bool==true,let threadId=c["existingThreadId"]as?String,let expectedIds=c["existingCompleteMessageIds"]as?[String],expectedIds.count>=100,let body=c["onlyTemporaryLocalInput"]as?String,body.count>=90,body.hasPrefix("EWF_PERF_"+String(run.prefix(8))),let p95Budget=c["p95NativeInsertionBudgetMs"]as?Double,let maxBudget=c["maxNativeInsertionBudgetMs"]as?Double,let durableBudget=c["durableFinalDraftBudgetMs"]as?Double,p95Budget==100,maxBudget==250,durableBudget==2500,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen zero-submit original cached-history local-input case required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsBusinessSubmissionsUploadsImportsPairingOrPlanApprovals":0,"wholeFeaturePassed":false,"codexTests":false],samples:[Double]=[]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=CACurrentMediaTime()+seconds;while CACurrentMediaTime()<end{if ready(){return};try await Task.sleep(for:.milliseconds(50))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI-owned store and exact foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalDrafts=store.drafts.values,originalThread=store.selectedThreadId,originalProject=store.selectedProjectId,originalTarget=store.targetKey,originalClient=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let protectedBytes=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    func protected()throws->Bool{let actual=[try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)];return actual==protectedBytes && store.saved.selectedClientId==originalClient}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    guard window.rootViewController?.presentedViewController==nil,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:4)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func shot(_ suffix:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+suffix+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    let stateURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+    func persisted()->SavedSession?{guard let bytes=try?Data(contentsOf:stateURL)else{return nil};return try?AgentCache.decode(bytes)}
+    var ownedKey:String?,ownedEmpty:Draft?,prefix="",inputView:UIView?,input:(any UITextInput)?,caught:Error?
+    var prefixHashes=Set([HostService.hash(Data())])
+    do{
+      store.hostedEasyWorkProductUIPresented=true
+      let thread=try XCTUnwrap(store.threads.first{$0.id==threadId && $0.hostId==originalClient})
+      store.openThread(thread,loadAutomatically:false)
+      report["originalCachedMessageCountBeforeNormalPreparation"]=store.messages.count;report["originalCachedMessageIdsBeforeNormalPreparation"]=store.messages.map(\.id);try stage("preparing-same-original-history-through-normal-read-only-pages")
+      try await wait("original initial history read idle before normal preparation",seconds:90){!store.historyLoading}
+      var preparationReads=0
+      if store.messages.map(\.id) != expectedIds{
+        guard c["originalReadOnlyHistoryPreparationAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:15)}
+        _ = await store.loadHistory(threadId:threadId,userInitiated:true);preparationReads+=1
+        while store.messages.map(\.id) != expectedIds,store.historyCursor != nil,preparationReads<3{
+          _ = await store.loadHistory(threadId:threadId,more:true,userInitiated:true);preparationReads+=1
+        }
+      }
+      report["normalOriginalHistoryPreparationReadActions"]=preparationReads;report["actualPreparedMessageCountBeforeLocalInput"]=store.messages.count;report["actualPreparedMessageIdsBeforeLocalInput"]=store.messages.map(\.id);report["normalHistoryPreparationError"]=store.error ?? "none";try save()
+      try await wait("same original complete history after bounded normal reads"){store.selectedThreadId==threadId && !store.historyLoading && store.messages.map(\.id)==expectedIds}
+      let key=store.targetKey;ownedKey=key
+      guard store.draft.text.isEmpty,store.draft.attachments.isEmpty,try protected(),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key})else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:5)}
+      report["actualOriginalCachedMessageCount"]=store.messages.count;report["actualOriginalCachedMessageIds"]=store.messages.map(\.id);report["normalCachedNavigationNoFreshHistoryRequest"]=preparationReads==0
+      var field:UIView?
+      try await wait("unique actual visible native editable composer"){let fields=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true};field=fields.count==1 ? fields[0]:nil;return field != nil}
+      inputView=try XCTUnwrap(field);input=try XCTUnwrap(inputView as?any UITextInput)
+      guard inputView!.becomeFirstResponder()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:6)}
+      try await wait("actual empty composer focus"){inputView!.isFirstResponder && input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==""}
+      let empty=store.draft;guard empty.text.isEmpty,empty.attachments.isEmpty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:7)};ownedEmpty=empty
+      let began=CACurrentMediaTime();var periodic=false
+      try stage("typing-only-frozen-local-text-under-original116-message-cache")
+      for character in body{
+        guard store.targetKey==key,store.messages.map(\.id)==expectedIds,try protected()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:8)}
+        let start=CACurrentMediaTime();input!.insertText(String(character));samples.append((CACurrentMediaTime()-start)*1000);prefix.append(character);prefixHashes.insert(HostService.hash(Data(prefix.utf8)))
+        try await wait("actual UITextInput and production DraftStore same current prefix",seconds:2){input!.text(in:input!.textRange(from:input!.beginningOfDocument,to:input!.endOfDocument)!)==prefix && store.draft.text==prefix}
+        if !periodic,CACurrentMediaTime()-began>2.3,let saved=persisted(),let current=saved.drafts[key]?.text,!current.isEmpty,body.hasPrefix(current){periodic=true;report["actualPeriodicDraftSavedWhileTyping"]=true}
+        try await Task.sleep(for:.milliseconds(40))
+      }
+      let completed=CACurrentMediaTime();try await wait("actual final local draft encrypted and durable",seconds:durableBudget/1000){persisted()?.drafts[key]?.text==body};let durableMs=(CACurrentMediaTime()-completed)*1000
+      let sorted=samples.sorted(),p95=sorted[min(sorted.count-1,Int(Double(sorted.count)*0.95))],maximum=sorted.last!
+      report["actualNativeInputMetrics"]=["samples":samples.count,"p95SynchronousUITextInputInsertMs":p95,"maximumSynchronousUITextInputInsertMs":maximum,"finalInputToEncryptedDraftObservedMs":durableMs,"p95BudgetMs":p95Budget,"maximumBudgetMs":maxBudget,"durableFinalDraftBudgetMs":durableBudget,"physicalKeyboardIMEFrameAndCoreSetText8msNotClaimed":true];report["actualPeriodicDraftSavedWhileTyping"]=periodic;report["actualFrozenLocalBodyHash"]=HostService.hash(Data(body.utf8));report["actualLocalBodyCharacters"]=body.count
+      guard p95<p95Budget,maximum<maxBudget,durableMs<durableBudget,periodic,store.messages.map(\.id)==expectedIds else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:9)}
+      try shot("actual-original-cache-local-typed-body");try stage("actual-original-cache-local-input-and-durable-draft-observed")
+    }catch{caught=error;report["failure"]=String(describing:error);report["actualCompletedLocalInsertions"]=samples.count;try?shot("actual-local-input-failed-prefix")}
+    if let key=ownedKey,let empty=ownedEmpty{
+      guard store.targetKey==key,prefixHashes.contains(HostService.hash(Data(store.draft.text.utf8))),store.drafts.values.filter({$0.key != key})==originalDrafts.filter({$0.key != key}),try protected()else{report["ownedTemporaryCleanupBlockedUnexpectedTargetOrValue"]=true;try save();throw NSError(domain:"EasyWorkOriginalInputPerformance",code:10)}
+      if !store.draft.text.isEmpty{let current=try XCTUnwrap(input);current.selectedTextRange=current.textRange(from:current.beginningOfDocument,to:current.endOfDocument);current.insertText("");try await wait("only own temporary local text cleared via same native input"){store.draft.text.isEmpty}}
+      inputView?.resignFirstResponder()
+      guard store.draft==empty else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:11)}
+      if originalDrafts[key]==nil{guard store.drafts.values[key]==empty,store.drafts.values.filter({$0.key != key})==originalDrafts else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:12)};store.drafts.values.removeValue(forKey:key)}else{guard store.drafts.values[key]==originalDrafts[key]else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:13)}}
+      store.persist();try await wait("all original local drafts durable after only owned-text cleanup"){persisted()?.drafts==originalDrafts};report["ownedTemporaryLocalDraftCleanupExact"]=true
+    }
+    if let originalThread,let original=store.threads.first(where:{$0.id==originalThread && $0.hostId==originalClient}){store.openThread(original,loadAutomatically:false)}
+    store.selectedProjectId=originalProject;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist();store.hostedEasyWorkProductUIPresented=oldUI
+    guard store.targetKey==originalTarget,store.selectedThreadId==originalThread,store.drafts.values==originalDrafts,try protected()else{throw NSError(domain:"EasyWorkOriginalInputPerformance",code:14)}
+    report["originalDraftsOperationsVoiceIdentityPreferencesAndSelectionsPreserved"]=true
+    try stage(caught==nil ? "awaiting-official-screen-sharing-stop-and-case-release":"failed-prefix-awaiting-safe-release")
+    try await wait("exact-case official sharing-off release",seconds:180){guard let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-driver-release.json")),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;report["status"]=caught==nil ? "passed-physical-original-cached-history-local-input-and-durable-draft-scoped-performance":"failed-original-local-input-prefix-preserved";try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved")
+    if let caught{throw caught}
+  }
+  @MainActor func testPhysicalOriginalMaximumTextSettingsAndEasyWorkConnectionForms() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualMaximumTextSettingsAndEasyWorkFormsRequired"]as?Bool==true,c["nativeReadOnlyFormsNavigationAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",UUID(uuidString:run)?.uuidString.lowercased()==run else{throw XCTSkip("Frozen original maximum-text read-only forms case required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkMaximumSettings",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsInputsUploadsImportsExportsPairingOrPermissionRequests":0,"wholeFeaturePassed":false,"codexTests":false],observations:[[String:Any]]=[]
+    func save()throws{report["actualSelectedControlObservations"]=observations;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=90,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while Date()<end{
+      if label.hasPrefix("fully visible original selected control "),let data=try?Data(contentsOf:directory.appendingPathComponent(run+"-readonly-driver-stop.json")),data.count<=1024,let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any],Set(value.keys)==Set(["caseId","stopReadOnlyExaminer"]),value["caseId"]as?String==run,value["stopReadOnlyExaminer"]as?Bool==true{report["onlyOwnReadOnlyQueryStoppedBeforeFurtherNavigation"]=true;try save();throw NSError(domain:"EasyWorkMaximumSettings",code:9,userInfo:[NSLocalizedDescriptionKey:"Bounded own read-only query stop; no remote task cancellation"])}
+      if ready(){return};try await Task.sleep(for:.milliseconds(150))
+    };report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkMaximumSettings",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original store and active exact bundle"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkMaximumSettings",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func protected()throws->String{let values=[try encoder.encode(store.drafts.values),try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(store.saved.selectedClientId),try encoder.encode(store.selectedThreadId),try encoder.encode(store.selectedProjectId),try encoder.encode(TaskNotificationController.shared.preferences),try encoder.encode(L10n.selection.rawValue),try encoder.encode(UserDefaults.standard.string(forKey:VoiceTranscriptionPreference.storageKey)),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)];return HostService.hash(values.reduce(into:Data()){$0.append($1)})}
+    let original=try protected(),originalLocale=Locale.preferredLanguages,oldUI=store.hostedEasyWorkProductUIPresented
+    let windows=UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows),window=try XCTUnwrap(windows.first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil,window.traitCollection.preferredContentSizeCategory == .accessibilityExtraExtraExtraLarge else{throw NSError(domain:"EasyWorkMaximumSettings",code:4)}
+    let bodySize=UIFont.preferredFont(forTextStyle:.body,compatibleWith:window.traitCollection).pointSize
+    guard bodySize==53,!UIAccessibility.isVoiceOverRunning else{throw NSError(domain:"EasyWorkMaximumSettings",code:5)}
+    report["actualSystemPreferredBodyPointSize"]=bodySize;report["actualSystemContentSizeCategory"]=window.traitCollection.preferredContentSizeCategory.rawValue
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func objects()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ object:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(object)).inserted else{return};all.append(object);if let view=object as?UIView{view.subviews.forEach(visit)};object.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=object.accessibilityElementCount();if count>0&&count<1000{for index in 0..<count{if let next=object.accessibilityElement(at:index)as?NSObject{visit(next)}}}};UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).filter{!$0.isHidden}.forEach(visit);return all}
+    func identifier(_ object:NSObject)->String{
+      if let value=(object as?any UIAccessibilityIdentification)?.accessibilityIdentifier{return value}
+      let getter=NSSelectorFromString("accessibilityIdentifier")
+      return object.responds(to:getter) ? (object.value(forKey:"accessibilityIdentifier")as?String ?? "") : ""
+    }
+    func disabled(_ object:NSObject)->Bool{object.accessibilityTraits.contains(.notEnabled) || (object as?UIControl)?.isEnabled==false}
+    func visible(_ object:NSObject)->Bool{let frame=object.accessibilityFrame;guard object.isAccessibilityElement,!frame.isEmpty,frame.minX.isFinite,frame.minY.isFinite,frame.maxX.isFinite,frame.maxY.isFinite,window.bounds.insetBy(dx:-1,dy:-1).contains(frame)else{return false};if let view=object as?UIView{var parent:UIView?=view;while let item=parent{if item.isHidden || item.alpha<0.99{return false};parent=item.superview};guard view.window != nil else{return false}};return true}
+    func snapshot(_ label:String)throws->UIImage{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+label+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);return image}
+    let scenes:[(String,[(String,String)],String?)]=[
+      ("settings-connection",[("id","settings-clients"),("id","settings-add-client")],nil),
+      ("appearance-options",Appearance.allCases.map{("label",$0.title)},L10n.tr("外观")),
+      ("language-options",AppLanguage.allCases.map{("label",$0.title)},nil),
+      ("notifications-top",[("id","notifications-enabled"),("id","notification-permission")],nil),
+      ("notifications-privacy",[("id","notification-content-preview")],nil),
+      ("notifications-sounds",[("id","notification-sound-picker"),("id","notification-import-sound")],nil),
+      ("migration-password",[("id","migration-password")],nil),
+      ("migration-actions",[("id","migration-export"),("id","migration-import")],nil),
+      ("settings-about",[("id","settings-privacy-policy"),("id","settings-support")],nil),
+      ("clients-page",[("id","add-client")],nil),
+      ("connection-discovery",[("id","easywork-name"),("id","easywork-connection-method")],nil),
+      ("connection-manual",[("id","easywork-manual-address"),("id","easywork-manual-connect")],nil),
+      ("connection-qr",[("id","easywork-qr-description"),("id","easywork-pair-lan")],nil),
+      ("connection-relay",[("id","easywork-connection-method"),("id","easywork-relay-url"),("id","easywork-relay-code"),("id","easywork-pair-relay")],nil)]
+    var routes:[[String:Any]]=[],scrollMoves:[[String:Any]]=[]
+    let visualLabels=["settings-privacy-policy":L10n.tr("隐私政策"),"settings-support":L10n.tr("帮助与支持")]
+    func visualLabelVisible(_ key:String)throws->Bool{
+      guard let text=visualLabels[key]else{return true}
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+      let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=false;request.recognitionLanguages=["zh-Hans","en-US"]
+      try VNImageRequestHandler(cgImage:try XCTUnwrap(image.cgImage)).perform([request])
+      let lines=(request.results ?? []).compactMap{$0.topCandidates(1).first?.string}
+      let joined=lines.joined().filter{!$0.isWhitespace}
+      let found=joined.contains(text.filter{!$0.isWhitespace})
+      if found{report["actualVisibleLabelPixelWitness-"+key]=["expectedLabel":text,"actualRecognizedLines":lines,"route":"Vision on unmodified current native window pixels; not semantic frame alone"]}
+      return found
+    }
+    func publicScrolls()->[UIScrollView]{guard let page=root.presentedViewController else{return[]};return views(page.view).compactMap{$0 as?UIScrollView}.filter{$0.window===window && !$0.isHidden && $0.bounds.height>120 && $0.contentSize.height+$0.adjustedContentInset.top+$0.adjustedContentInset.bottom>$0.bounds.height+1}.sorted{$0.contentSize.height>$1.contentSize.height}}
+    func candidate(_ kind:String,_ key:String)->NSObject?{objects().first{object in object.isAccessibilityElement && (kind=="id" ? identifier(object)==key : object.accessibilityLabel==key || object.accessibilityLabel?.hasPrefix(key+", ")==true || object.accessibilityLabel?.hasPrefix(key+"，")==true)}}
+    func bring(_ kind:String,_ key:String,_ menuOnly:Bool=false)async throws->NSObject{
+      var reset=false,lastPosition:CGFloat?
+      for step in 0..<65{
+        if let target=candidate(kind,key){
+          let frame=target.accessibilityFrame
+          if !frame.isEmpty && frame.minX.isFinite && frame.minY.isFinite && frame.maxX.isFinite && frame.maxY.isFinite{
+            if menuOnly && visible(target){return target}
+            if let scroll=publicScrolls().first{
+              let box=scroll.convert(scroll.bounds,to:window),top=box.minY+scroll.adjustedContentInset.top+4,bottom=box.maxY-scroll.adjustedContentInset.bottom-4
+              if frame.minY>=top && frame.maxY<=bottom && visible(target){if try visualLabelVisible(key){return target}}
+              let minimum = -scroll.adjustedContentInset.top,maximum=max(minimum,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+              let delta=frame.minY<top ? frame.minY-top : frame.maxY-bottom
+              let next=min(maximum,max(minimum,scroll.contentOffset.y+delta))
+              if abs(next-scroll.contentOffset.y)>0.5{let old=scroll.contentOffset.y;scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false);scrollMoves.append(["selector":key,"before":old,"after":next,"route":"actual current Form UIScrollView public setContentOffset"]);report["actualPublicFormScrolls"]=scrollMoves;try save();try await Task.sleep(for:.milliseconds(180));continue}
+            }else if visible(target){if try visualLabelVisible(key){return target}}
+          }
+        }
+        guard !menuOnly,let scroll=publicScrolls().first else{try await Task.sleep(for:.milliseconds(150));continue}
+        let minimum = -scroll.adjustedContentInset.top,maximum=max(minimum,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom),current=scroll.contentOffset.y
+        let next:CGFloat
+        if !reset{reset=true;next=minimum}else{next=min(maximum,current+max(100,scroll.bounds.height*0.45))}
+        if abs(next-current)<0.5,lastPosition==current{break}
+        lastPosition=current;scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false);scrollMoves.append(["selector":key,"before":current,"after":next,"searchStep":step,"route":"bounded actual Form public scroll search"]);report["actualPublicFormScrolls"]=scrollMoves;try save();try await Task.sleep(for:.milliseconds(180))
+      }
+      report["actualModalScrollDiagnosticsAtFailure"]=root.presentedViewController.map{page in views(page.view).compactMap{$0 as?UIScrollView}.map{scroll in ["class":String(describing:type(of:scroll)),"bounds":String(describing:scroll.bounds),"contentSize":String(describing:scroll.contentSize),"adjustedInset":String(describing:scroll.adjustedContentInset),"windowFrame":String(describing:scroll.convert(scroll.bounds,to:window)),"hidden":scroll.isHidden,"alpha":scroll.alpha]}} ?? []
+      report["failedPublicScrollSelector"]=key;try save();throw NSError(domain:"EasyWorkMaximumSettings",code:10,userInfo:[NSLocalizedDescriptionKey:"Original selected control not fully visible after bounded public Form scroll: "+key])
+    }
+    func activateNavigation(_ key:String)async throws{
+      guard Set(["appearance-picker","language-picker","notification-settings","settings-migration","settings-clients","add-client"]).contains(key)else{throw NSError(domain:"EasyWorkMaximumSettings",code:11)}
+      let target=try await bring("id",key);guard !disabled(target)else{throw NSError(domain:"EasyWorkMaximumSettings",code:12)}
+      let activated=target.accessibilityActivate();routes.append(["identifier":key,"actualClass":String(describing:type(of:target)),"actualLabel":target.accessibilityLabel ?? "","actualFrame":String(describing:target.accessibilityFrame),"publicAccessibilityActivateReturned":activated]);report["actualReadOnlyNavigationActions"]=routes;try save();guard activated else{throw NSError(domain:"EasyWorkMaximumSettings",code:13,userInfo:[NSLocalizedDescriptionKey:"Public navigation activation returned false: "+key])};try await Task.sleep(for:.milliseconds(350))
+    }
+    func actions(_ menu:UIMenu)->[UIAction]{menu.children.flatMap{element->[UIAction]in if let action=element as?UIAction{return[action]};if let child=element as?UIMenu{return actions(child)};return[]}}
+    func menuButton(_ key:String,_ titles:Set<String>)async throws->UIButton{
+      let target=try await bring("id",key)
+      if key=="easywork-connection-method"{
+        let activated=target.accessibilityActivate()
+        routes.append(["identifier":key,"route":"one public accessibilityActivate on original visible connection Menu; deferred menu actions resolved only after opening","publicAccessibilityActivateReturned":activated]);report["actualReadOnlyNavigationActions"]=routes;try save()
+        guard activated else{throw NSError(domain:"EasyWorkMaximumSettings",code:16)}
+      }
+      var button:UIButton?
+      try await wait("unique actual production menu button "+key){let candidates=views(window).compactMap{$0 as?UIButton}.filter{$0.window===window && !$0.isHidden && $0.isEnabled};let found=candidates.filter{button in guard let menu=button.menu else{return false};return Set(actions(menu).map(\.title)).isSuperset(of:titles)};button=found.count==1 ? found[0]:nil;if button==nil{report["actualCurrentMenuButtonDiagnostics"]=candidates.filter{$0.menu != nil}.map{["class":String(describing:type(of:$0)),"identifier":$0.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? "","held":$0.isHeld,"actionTitles":$0.menu.map{actions($0).map(\.title)} ?? []]};try?save()};return button != nil}
+      return try XCTUnwrap(button)
+    }
+    func openMenu(_ key:String,_ titles:Set<String>)async throws->UIButton{
+      let button=try await menuButton(key,titles)
+      if #available(iOS 17.4,*){if !button.isHeld{button.performPrimaryAction()}}else{throw XCTSkip("Public menu activation requires iOS17.4")}
+      try await wait("actual original menu held "+key){button.isHeld};routes.append(["identifier":key,"route":"one public actual UIButton performPrimaryAction","menuHeld":true,"actualMenuTitles":actions(try XCTUnwrap(button.menu)).map(\.title)]);report["actualReadOnlyNavigationActions"]=routes;try save();return button
+    }
+    func dismissOnlyHeldMenu()async throws{
+      for button in views(window).compactMap({$0 as?UIButton}).filter({$0.isHeld && $0.menu != nil}){
+        let interaction=try XCTUnwrap(button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first);interaction.dismissMenu();try await wait("actual temporary menu dismissed without preference choice"){!button.isHeld}
+      }
+    }
+    func backToSettings()async throws{
+      guard let page=root.presentedViewController else{throw NSError(domain:"EasyWorkMaximumSettings",code:14)}
+      func controllers(_ current:UIViewController)->[UIViewController]{[current]+current.children.flatMap(controllers)}
+      let navigation=try XCTUnwrap(controllers(page).compactMap{$0 as?UINavigationController}.first{$0.view.window===window && $0.viewControllers.count>1})
+      guard navigation.popViewController(animated:true) != nil else{throw NSError(domain:"EasyWorkMaximumSettings",code:15)}
+      routes.append(["route":"actual current modal UINavigationController public popViewController; no physical back-gesture claim"]);report["actualReadOnlyNavigationActions"]=routes;try save()
+      try await wait("actual settings navigation title restored"){views(window).compactMap{$0 as?UINavigationBar}.contains{$0.topItem?.title==L10n.tr("设置") && !$0.isHidden}}
+    }
+    let connectionTitles:Set<String>=Set(["自动发现","扫码连接","手动连接","通过中继连接"].map(L10n.tr))
+    func chooseConnection(_ title:LocalizedText)async throws{
+      let button=try await openMenu("easywork-connection-method",connectionTitles),action=try XCTUnwrap(actions(try XCTUnwrap(button.menu)).first{$0.title==L10n.tr(title)})
+      button.sendAction(action);let interaction=try XCTUnwrap(button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first);interaction.dismissMenu();try await wait("actual EasyWork connection-method menu dismissed"){!button.isHeld};routes.append(["identifier":"easywork-connection-method","route":"one original held production menu UIAction","selectedLocalFormMethod":L10n.tr(title),"submitted":false]);report["actualReadOnlyNavigationActions"]=routes;try save()
+    }
+    func prepare(_ scene:String)async throws{
+      try stage("preparing-native-readonly-"+scene)
+      switch scene{
+      case "appearance-options":try await activateNavigation("appearance-picker")
+      case "language-options":try await backToSettings();_ = try await openMenu("language-picker",Set(AppLanguage.allCases.map(\.title)))
+      case "notifications-top":try await dismissOnlyHeldMenu();try await activateNavigation("notification-settings")
+      case "migration-password":try await backToSettings();try await activateNavigation("settings-migration")
+      case "settings-about":try await backToSettings()
+      case "clients-page":try await activateNavigation("settings-clients")
+      case "connection-discovery":
+        try await activateNavigation("add-client")
+        var control:UISegmentedControl?
+        try await wait("actual provider segmented control with EasyWork tab"){control=views(window).compactMap{$0 as?UISegmentedControl}.first{item in item.window===window && !item.isHidden && (0..<item.numberOfSegments).contains{item.titleForSegment(at:$0)=="EasyWork"}};return control != nil}
+        let segmented=try XCTUnwrap(control),index=try XCTUnwrap((0..<segmented.numberOfSegments).first{segmented.titleForSegment(at:$0)=="EasyWork"});segmented.selectedSegmentIndex=index;segmented.sendActions(for:.valueChanged);routes.append(["route":"actual native UISegmentedControl valueChanged only EasyWork provider tab","CodexProviderControlsTested":false]);report["actualReadOnlyNavigationActions"]=routes;try save()
+      case "connection-manual":try await chooseConnection("手动连接")
+      case "connection-qr":try await chooseConnection("扫码连接")
+      case "connection-relay":try await chooseConnection("通过中继连接")
+      default:break
+      }
+    }
+    let mustBeDisabled:Set<String>=["migration-export","migration-import","easywork-manual-connect","easywork-pair-lan","easywork-pair-relay"]
+    var caught:Error?
+    do{
+      store.hostedEasyWorkProductUIPresented=true;store.sheet = .settings
+      try await wait("actual original settings presentation"){root.presentedViewController != nil && root.presentedViewController?.transitionCoordinator==nil}
+      for (scene,selectors,title) in scenes {
+        try await prepare(scene)
+        for (ordinal,selector) in selectors.enumerated(){
+          let (kind,key)=selector;_ = try await bring(kind,key,scene=="language-options");report["expectedScene"]=scene;report["expectedSelectorKind"]=kind;report["expectedSelector"]=key;report["expectedSelectorOrdinal"]=ordinal;try stage("awaiting-readonly-visible-"+scene+"-"+String(ordinal))
+          var lastFrame=CGRect.null,lastPixels:Data?,stable=0,chosen:NSObject?,lastSample:CFTimeInterval=0,lastDiagnostic:CFTimeInterval=0
+          try await wait("fully visible original selected control "+scene+" "+key,seconds:300){
+            guard UIApplication.shared.applicationState == .active,CACurrentMediaTime()-lastSample>=0.15 else{return false};lastSample=CACurrentMediaTime()
+            let all=objects()
+            report["actualCurrentSelectedControlCandidates"]=all.filter{identifier($0)==key || $0.accessibilityLabel==key}.map{["identifier":identifier($0),"label":$0.accessibilityLabel ?? "","frame":String(describing:$0.accessibilityFrame),"element":$0.isAccessibilityElement,"disabled":disabled($0)]}
+            if CACurrentMediaTime()-lastDiagnostic>=1.5 {
+              lastDiagnostic=CACurrentMediaTime();report["actualCurrentNativeObjectCount"]=all.count
+              report["actualNativeObjectsByClass"]=Dictionary(grouping:all,by:{String(describing:type(of:$0))}).mapValues(\.count)
+              report["actualCurrentPublicIdentifiers"]=all.filter{!identifier($0).isEmpty}.prefix(100).map{["identifier":identifier($0),"frame":String(describing:$0.accessibilityFrame),"element":$0.isAccessibilityElement,"class":String(describing:type(of:$0))]}
+              try?save()
+            }
+            if let title{guard views(window).compactMap({$0 as?UINavigationBar}).contains(where:{$0.topItem?.title==title && !$0.isHidden})else{stable=0;return false}}
+            if scene=="language-options"{guard views(window).compactMap({$0 as?UIButton}).contains(where:{$0.isHeld && $0.menu != nil})else{stable=0;return false}}
+            let matches=all.filter{object in visible(object) && (kind=="id" ? identifier(object)==key : object.accessibilityLabel==key || object.accessibilityLabel?.hasPrefix(key+", ")==true || object.accessibilityLabel?.hasPrefix(key+"，")==true)}
+            guard let target=matches.first,(try?visualLabelVisible(key))==true else{stable=0;return false}
+            if mustBeDisabled.contains(key) && !disabled(target){stable=0;return false}
+            let frame=target.accessibilityFrame,image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+            guard let crop=image.cgImage?.cropping(to:CGRect(x:frame.minX*image.scale,y:frame.minY*image.scale,width:frame.width*image.scale,height:frame.height*image.scale)),let pixels=UIImage(cgImage:crop).pngData()else{stable=0;return false}
+            let digest=Data(SHA256.hash(data:pixels));stable=lastFrame==frame && lastPixels==digest ? stable+1:1;lastFrame=frame;lastPixels=digest;chosen=target;return stable>=3
+          }
+          let target=try XCTUnwrap(chosen);guard try protected()==original,Locale.preferredLanguages==originalLocale else{throw NSError(domain:"EasyWorkMaximumSettings",code:6)}
+          let label="actual-maximum-"+scene+"-"+String(ordinal);_ = try snapshot(label)
+          observations.append(["scene":scene,"selectorKind":kind,"selector":key,"actualIdentifier":identifier(target),"actualLabel":target.accessibilityLabel ?? "","actualValue":target.accessibilityValue ?? "","actualFrame":String(describing:target.accessibilityFrame),"actualDisabled":disabled(target),"stablePixelAndGeometrySamples":stable,"filename":run+"-"+label+".png","selectedControlOnlyNotFullPageOrTextTruncationAudit":true]);try save()
+        }
+      }
+      report["actualReadOnlySceneCount"]=scenes.count;report["status"]="passed-physical-maximum-text-selected-controls-of14-original-scenes-awaiting-independent-image-review"
+    }catch{caught=error;report["failure"]=String(describing:error);report["status"]="failed-original-maximum-settings-prefix-retained";_ = try?snapshot("actual-maximum-settings-failed-prefix")}
+    window.endEditing(true);store.sheet=nil
+    try await wait("close only current original forms"){root.presentedViewController==nil}
+    store.hostedEasyWorkProductUIPresented=oldUI
+    let exact=try protected()==original && Locale.preferredLanguages==originalLocale
+    report["originalDraftsOperationsVoiceIdentityPreferencesAndSelectionsPreserved"]=exact
+    guard exact else{try stage("failed-original-protection");throw NSError(domain:"EasyWorkMaximumSettings",code:7)}
+    try stage(caught==nil ? "awaiting-official-screen-sharing-stop-and-case-release":"failed-prefix-awaiting-safe-release")
+    let release=directory.appendingPathComponent(run+"-driver-release.json")
+    try await wait("verified exact-case official screen sharing stopped",seconds:180){guard let data=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true}
+    report["safeDriverReleaseVerified"]=true;try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved")
+    if let caught{throw caught}
+  }
+  @MainActor func testPhysicalOriginalComposerFocusAndKeyboardUnderReducedMotion() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["originalComposerFocusWithoutEditingAuthorized"]as?Bool==true,c["expectedSystemReduceMotion"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Explicit original keyboard and focus case required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkComposerFocus",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsInputsUploadsOrImports":0,"wholeFeaturePassed":false,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ name:String)throws{report["stage"]=name;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while Date()<end{if ready(){return};try await Task.sleep(for:.milliseconds(150))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkComposerFocus",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard UIAccessibility.isReduceMotionEnabled,store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkComposerFocus",code:3)}
+    report["actualSystemReduceMotionEnabled"]=UIAccessibility.isReduceMotionEnabled
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalDraftValues=store.drafts.values
+    let drafts=try encoder.encode(originalDraftValues),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),client=store.saved.selectedClientId,thread=store.selectedThreadId,project=store.selectedProjectId,target=store.targetKey,originalProductUI=store.hostedEasyWorkProductUIPresented
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func shot(_ label:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+label+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    guard !views(window).contains(where:{$0.isFirstResponder})else{throw NSError(domain:"EasyWorkComposerFocus",code:4)}
+    var caught:Error?;let keyboard=EasyWorkKeyboardFocusObservation()
+    let notification=NotificationCenter.default.addObserver(forName:UIResponder.keyboardDidShowNotification,object:nil,queue:.main){n in keyboard.record(n)}
+    defer{NotificationCenter.default.removeObserver(notification)}
+    do{
+      var field:UIView?
+      try await wait("unique original visible editable composer"){let values=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true};field=values.count==1 ? values[0]:nil;return field != nil}
+      let inputView=try XCTUnwrap(field),input=try XCTUnwrap(inputView as?any UITextInput)
+      let originalText=input.text(in:try XCTUnwrap(input.textRange(from:input.beginningOfDocument,to:input.endOfDocument))) ?? ""
+      report["actualOriginalComposerTextSHA256"]=SHA256.hash(data:Data(originalText.utf8)).map{String(format:"%02x",$0)}.joined();report["actualOriginalComposerTextCount"]=originalText.count
+      guard inputView.becomeFirstResponder()else{throw NSError(domain:"EasyWorkComposerFocus",code:5)}
+      try await wait("actual keyboard shown and production FocusState dismiss control"){keyboard.snapshot().shown && inputView.isFirstResponder && views(window).compactMap{$0 as?UIButton}.contains{$0.accessibilityIdentifier=="composer-dismiss-keyboard" && $0.window===window && $0.isEnabled && !$0.isHidden}}
+      let keyboardFrame=keyboard.snapshot().frame
+      guard keyboardFrame.width>0,keyboardFrame.height>0,UIAccessibility.isReduceMotionEnabled else{throw NSError(domain:"EasyWorkComposerFocus",code:6)}
+      report["actualKeyboardDidShowNotificationReceived"]=true;report["actualKeyboardEndFrame"]=String(describing:keyboardFrame);report["actualOriginalComposerFirstResponder"]=inputView.isFirstResponder
+      var previous=CGRect.null,samples=0
+      try await wait("original focused composer geometry stable"){let frame=inputView.convert(inputView.bounds,to:window);if frame==previous{samples+=1}else{previous=frame;samples=1};return samples>=3}
+      try shot("actual-original-composer-focused-keyboard");try stage("actual-original-focus-and-keyboard-verified")
+      let close=try XCTUnwrap(views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier=="composer-dismiss-keyboard" && $0.window===window && $0.isEnabled && !$0.isHidden});report["actualProductionKeyboardDismissBounds"]=String(describing:close.bounds);guard close.bounds.width>=44,close.bounds.height>=44 else{throw NSError(domain:"EasyWorkComposerFocus",code:9)};close.sendActions(for:.touchUpInside)
+      try await wait("original production keyboard dismissal and FocusState clear"){!inputView.isFirstResponder && !views(window).compactMap{$0 as?UIButton}.contains{$0.accessibilityIdentifier=="composer-dismiss-keyboard" && $0.window===window && !$0.isHidden}}
+      let afterText=input.text(in:try XCTUnwrap(input.textRange(from:input.beginningOfDocument,to:input.endOfDocument))) ?? "";guard afterText==originalText else{throw NSError(domain:"EasyWorkComposerFocus",code:7)}
+      report["actualProductionKeyboardDismissActivatedOnce"]=true;report["actualOriginalComposerTextUnchanged"]=true;try shot("actual-original-composer-keyboard-dismissed")
+    }catch{caught=error;report["actualKeyboardObservationBeforeCleanup"]=["shown":keyboard.snapshot().shown,"frame":String(describing:keyboard.snapshot().frame),"anyResponder":views(window).contains(where:{$0.isFirstResponder}),"nativeDismissButtonCount":views(window).compactMap{$0 as?UIButton}.filter{$0.accessibilityIdentifier=="composer-dismiss-keyboard"}.count];report["failure"]=String(describing:error);try?shot("actual-original-composer-focus-failed-prefix")}
+    window.endEditing(true);store.hostedEasyWorkProductUIPresented=originalProductUI
+    if c["restoreOnlyOwnedFocusEmptyDraftEntryAuthorized"]as?Bool==true,originalDraftValues[target]==nil,store.targetKey==target {
+      var explicitDefault=Draft();explicitDefault.collaborationMode="default"
+      if (store.drafts.values[target]==Draft() || store.drafts.values[target]==explicitDefault),store.drafts.values.filter({$0.key != target})==originalDraftValues {
+        report["removedOnlyProvenOwnedNewFocusEmptyDraftSHA256"]=HostService.hash(try encoder.encode(store.drafts.values[target]));store.drafts.values.removeValue(forKey:target);store.persist();report["removedOnlyProvenOwnedNewFocusEmptyDraftEntry"]=true
+      }
+    }
+    let protected:[String:Bool]=["drafts":try encoder.encode(store.drafts.values)==drafts,"outbox":try encoder.encode(store.saved.outbox)==outbox,"replyRecovery":try encoder.encode(store.saved.replyRecovery)==recovery,"threadForks":try encoder.encode(store.saved.threadForks)==forks,"voice":try VoiceMigrationSafety.snapshot()==voice,"identity":try CredentialVault.existingToken("easywork-device-identity")==identity,"client":store.saved.selectedClientId==client,"thread":store.selectedThreadId==thread,"project":store.selectedProjectId==project,"target":store.targetKey==target]
+    report["actualOriginalProtectedFieldChecks"]=protected;guard protected.values.allSatisfy({$0})else{try stage("failed-original-protection");throw NSError(domain:"EasyWorkComposerFocus",code:8)}
+    report["originalDraftsOperationsVoiceIdentityAndEntryPreserved"]=true;report["status"]=caught==nil ? "passed-original-system-reduced-motion-composer-focus-and-keyboard":"failed-original-composer-focus-prefix";try stage(caught==nil ? "completed":"failed-prefix-original-entry-preserved");if let caught{throw caught}
+  }
+  @MainActor func testPhysicalOriginalVoiceOverFocusAndSidebarAccessibilityActions() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualVoiceOverFocusAndSidebarActionsAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Explicit original VoiceOver focus case required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkVoiceOver",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsInputsUploadsOrImports":0,"wholeFeaturePassed":false,"codexTests":false],steps:[[String:Any]]=[]
+    func save()throws{report["actualFocusAndActions"]=steps;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ name:String)throws{report["stage"]=name;try save()}
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while Date()<end{if ready(){return};try await Task.sleep(for:.milliseconds(150))};report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkVoiceOver",code:2,userInfo:[NSLocalizedDescriptionKey:label])}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI store and active App"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard UIAccessibility.isVoiceOverRunning,store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkVoiceOver",code:3)}
+    report["actualSystemVoiceOverRunning"]=UIAccessibility.isVoiceOverRunning
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),client=store.saved.selectedClientId,thread=store.selectedThreadId,project=store.selectedProjectId,target=store.targetKey,originalUI=store.hostedEasyWorkProductUIPresented
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func shot(_ label:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+label+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func controls()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ o:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(o)).inserted else{return};all.append(o);if let v=o as?UIView{v.subviews.forEach(visit)};o.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=o.accessibilityElementCount();if count>0&&count<1000{for index in 0..<count{if let child=o.accessibilityElement(at:index)as?NSObject{visit(child)}}}};visit(window);return all}
+    func identifier(_ o:NSObject)->String?{(o as?any UIAccessibilityIdentification)?.accessibilityIdentifier}
+    func focusAndActivate(_ key:String,expectOpen:Bool)async throws{
+      var button:UIButton?,previous=CGRect.null,stable=0
+      try await wait("actual original visible native "+key){
+        guard let found=views(window).compactMap({$0 as?UIButton}).first(where:{$0.accessibilityIdentifier==key && $0.window===window && !$0.isHidden && $0.alpha>0.99 && $0.isEnabled && !$0.bounds.isEmpty})else{return false}
+        var ancestor:UIView?=found
+        while let view=ancestor{if view.isHidden || view.alpha<0.99{return false};ancestor=view.superview}
+        let frame=found.convert(found.bounds,to:window),center=CGPoint(x:frame.midX,y:frame.midY),hit=window.hitTest(center,with:nil)
+        guard frame.width>=44,frame.height>=44,window.bounds.contains(center),hit===found || hit?.isDescendant(of:found)==true else{return false}
+        if previous==frame{stable+=1}else{previous=frame;stable=1};button=found;return stable>=3
+      }
+      let control=try XCTUnwrap(button);guard control.isAccessibilityElement,control.accessibilityLabel?.isEmpty==false,control.accessibilityTraits.contains(.button)else{throw NSError(domain:"EasyWorkVoiceOver",code:4)}
+      let candidates=controls().filter{identifier($0)==key && $0.isAccessibilityElement && !$0.accessibilityTraits.contains(.notEnabled)}
+      report["actualPublicAXCandidates-"+key]=candidates.map{["class":String(describing:type(of:$0)),"frame":String(describing:$0.accessibilityFrame),"label":$0.accessibilityLabel ?? ""]}
+      let target:NSObject=candidates.first(where:{!$0.accessibilityFrame.isEmpty && $0.accessibilityTraits.contains(.button)}) ?? control
+      var ancestors:[[String:Any]]=[],view:UIView?=control
+      while let current=view,ancestors.count<15{ancestors.append(["class":String(describing:type(of:current)),"isAccessibilityElement":current.isAccessibilityElement,"accessibilityElementsHidden":current.accessibilityElementsHidden,"hidden":current.isHidden,"alpha":current.alpha,"accessibilityFrame":String(describing:current.accessibilityFrame)]);view=current.superview}
+      report["actualNativeControlAncestorDiagnostics-"+key]=ancestors;report["actualNativePublicAXFrame-"+key]=String(describing:control.accessibilityFrame);try stage("actual-visible-control-and-public-ax-target-"+key)
+      UIAccessibility.post(notification:.screenChanged,argument:target)
+      var focused:NSObject?,focusSamples=0
+      try await wait("actual system VoiceOver focus on "+key){
+        guard UIAccessibility.isVoiceOverRunning else{focusSamples=0;return false}
+        let raw=UIAccessibility.focusedElement(using:.notificationVoiceOver),anyRaw=UIAccessibility.focusedElement(using:nil)
+        report["actualSpecificFocusReturnedAny"]=raw != nil;report["actualAnyTechnologyFocusReturnedAny"]=anyRaw != nil
+        if let raw{report["actualSpecificFocusRawType"]=String(describing:type(of:raw))}
+        let ids=target.accessibilityAssistiveTechnologyFocusedIdentifiers() ?? []
+        report["actualTargetAssistiveFocusIdentifiers"]=ids.map(\.rawValue).sorted();report["actualTargetElementIsFocused"]=target.accessibilityElementIsFocused()
+        let object=raw as?NSObject
+        if let object{report["actualLatestFocusedClass"]=String(describing:type(of:object));report["actualLatestFocusedIdentifier"]=identifier(object) ?? ""}
+        if let object,object===target || object===control || identifier(object)==key{focused=object;report["actualFocusVerificationAPI"]="specific VoiceOver focusedElement getter"}
+        else if target.accessibilityElementIsFocused() && ids.contains(.notificationVoiceOver){focused=target;report["actualFocusVerificationAPI"]="real focused-element and exact VoiceOver focused-technology identifiers"}
+        else{focusSamples=0;return false}
+        focusSamples+=1;return focusSamples>=3
+      }
+      let actual=try XCTUnwrap(focused)
+      var row:[String:Any]=["controlIdentifier":key,"actualSystemVoiceOverRunning":UIAccessibility.isVoiceOverRunning,"actualFocusedClass":String(describing:type(of:actual)),"actualFocusedIdentifier":identifier(actual) ?? "","actualFocusedLabel":actual.accessibilityLabel ?? "","actualFocusedPublicAccessibilityFrame":String(describing:actual.accessibilityFrame),"actualNativeButtonBounds":String(describing:control.bounds),"actualFocusStableSamples":focusSamples,"onePublicScreenChangedFocusPost":true,"actualPublicFocusTargetClass":String(describing:type(of:target))]
+      if c["actualPhysicalVoiceOverDoubleTapRequired"]as?Bool==true {
+        row["actualPhysicalVoiceOverDoubleTapRequired"]=true;row["directPublicAccessibilityActivateNotCalled"]=true;steps.append(row)
+        try stage("waiting-official-physical-voiceover-double-tap-"+key)
+        try await wait("actual original sidebar state after physical VoiceOver double tap "+key,seconds:120){store.drawerOpen==expectOpen}
+        steps[steps.count-1]["actualOriginalSidebarStateChangedAfterPhysicalGesture"]=true
+      } else {
+        row["actualPublicAccessibilityActivateReturned"]=target.accessibilityActivate();steps.append(row);try stage("actual-voiceover-public-activation-"+key)
+        guard row["actualPublicAccessibilityActivateReturned"]as?Bool==true else{throw NSError(domain:"EasyWorkVoiceOver",code:5)}
+        try await wait("actual original sidebar state after "+key){store.drawerOpen==expectOpen}
+      }
+      try shot("actual-voiceover-"+key);try stage("actual-voiceover-focus-and-sidebar-state-"+key)
+    }
+    var caught:Error?
+    do{try await focusAndActivate("open-sidebar",expectOpen:true);try await focusAndActivate("close-sidebar",expectOpen:false)}catch{caught=error;report["failure"]=String(describing:error);try?shot("actual-voiceover-failed-prefix")}
+    if store.drawerOpen,let close=views(window).compactMap({$0 as?UIButton}).first(where:{$0.accessibilityIdentifier=="close-sidebar" && $0.window===window && $0.isEnabled}){close.sendActions(for:.touchUpInside);try await wait("close only this examiner opened sidebar"){!store.drawerOpen}}
+    store.hostedEasyWorkProductUIPresented=originalUI
+    let protected:[String:Bool]=["drafts":try encoder.encode(store.drafts.values)==drafts,"outbox":try encoder.encode(store.saved.outbox)==outbox,"replyRecovery":try encoder.encode(store.saved.replyRecovery)==recovery,"threadForks":try encoder.encode(store.saved.threadForks)==forks,"voice":try VoiceMigrationSafety.snapshot()==voice,"identity":try CredentialVault.existingToken("easywork-device-identity")==identity,"client":store.saved.selectedClientId==client,"thread":store.selectedThreadId==thread,"project":store.selectedProjectId==project,"target":store.targetKey==target,"sidebarClosed":!store.drawerOpen]
+    report["actualOriginalProtectedFieldChecks"]=protected;guard protected.values.allSatisfy({$0})else{try stage("failed-original-protection");throw NSError(domain:"EasyWorkVoiceOver",code:6)}
+    report["originalDraftsOperationsVoiceIdentityAndEntryPreserved"]=true;report["status"]=caught==nil ? "passed-original-actual-voiceover-focus-and-public-sidebar-actions":"failed-original-voiceover-prefix-preserved";try stage(caught==nil ? "completed":"failed-prefix-original-state-preserved");if let caught{throw caught}
+  }
+  @MainActor func testPhysicalReadOnlySystemReduceMotionState() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let config=(try?JSONSerialization.jsonObject(with:Data(raw.utf8)))as?[String:Any],config["caseId"]as?String==run,config["readOnlySystemMotionStateAuthorized"]as?Bool==true,config["newModelsAuthorized"]as?Int==0,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Exact original read-only motion probe required")}
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+"-motion-state.json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkMotionReadOnly",code:1)}
+    var report:[String:Any]=["caseId":run,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"physicalIPhone":true,"stage":"waiting-original-store-and-foreground","newModelsInputsPreferenceWrites":0,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    try save();let end=Date().addingTimeInterval(75)
+    while UIApplication.shared.applicationState != .active && Date()<end{try await Task.sleep(for:.milliseconds(150))}
+    guard UIApplication.shared.applicationState == .active else{throw NSError(domain:"EasyWorkMotionReadOnly",code:2)}
+    report["actualSystemReduceMotionEnabled"]=UIAccessibility.isReduceMotionEnabled;report["actualSystemVoiceOverRunning"]=UIAccessibility.isVoiceOverRunning;if let expected=config["expectedSystemVoiceOverRunning"]as?Bool{guard UIAccessibility.isVoiceOverRunning==expected else{throw NSError(domain:"EasyWorkMotionReadOnly",code:3)}};report["stage"]="completed";try save()
+  }
+  @MainActor func testPhysicalOriginalLocalizedDocumentationLinksAndBrowserReturn() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit physical public documentation case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["actualPublicDocumentationLinksAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkDocumentation",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+"-documentation.json")
+    guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkDocumentation",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsInputsUploadsImportsOrPairing":0,"wholeFeaturePassed":false,"codexTests":false]
+    var records:[[String:Any]]=[]
+    func save()throws{report["actualPublicLinks"]=records;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=75,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds)
+      while Date()<end{if ready(){return};try await Task.sleep(for:.milliseconds(150))}
+      report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkDocumentation",code:3,userInfo:[NSLocalizedDescriptionKey:label])
+    }
+    try stage("waiting-original-store-and-foreground")
+    try await wait("exact original foreground store"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkDocumentation",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func protectedDigest()throws->String{
+      let values=[try encoder.encode(store.drafts.values),try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(store.saved.selectedClientId),try encoder.encode(store.selectedThreadId),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+      return HostService.hash(values.reduce(into:Data()){$0.append($1)})
+    }
+    let original=try protectedDigest(),systemLanguages=Locale.preferredLanguages
+    var originalLanguage=L10n.selection
+    if let source=config["originalDocumentationSourceCaseId"]as?String{
+      guard UUID(uuidString:source) != nil else{throw NSError(domain:"EasyWorkDocumentation",code:9)}
+      let bytes=try Data(contentsOf:directory.appendingPathComponent(source+"-documentation-original.json"))
+      let prior=try XCTUnwrap(JSONSerialization.jsonObject(with:bytes)as?[String:Any])
+      guard HostService.hash(bytes)==config["originalDocumentationCheckpointSHA256"]as?String,prior["caseId"]as?String==source,prior["protectedSHA256"]as?String==original,prior["systemLanguages"]as?[String]==systemLanguages,let restored=AppLanguage(rawValue:try XCTUnwrap(prior["originalLanguage"]as?String))else{throw NSError(domain:"EasyWorkDocumentation",code:10)}
+      originalLanguage=restored;report["originalDocumentationSourceCaseId"]=source
+    }
+    let checkpoint=directory.appendingPathComponent(run+"-documentation-original.json")
+    try JSONSerialization.data(withJSONObject:["caseId":run,"originalLanguage":originalLanguage.rawValue,"protectedSHA256":original,"systemLanguages":systemLanguages],options:[.sortedKeys]).write(to:checkpoint,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    func protect()throws{guard try protectedDigest()==original,Locale.preferredLanguages==systemLanguages else{throw NSError(domain:"EasyWorkDocumentation",code:5)}}
+    let oldUI=store.hostedEasyWorkProductUIPresented;defer{store.hostedEasyWorkProductUIPresented=oldUI}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkDocumentation",code:6)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func actions(_ menu:UIMenu)->[UIAction]{menu.children.flatMap{element->[UIAction]in if let action=element as?UIAction{return[action]};if let child=element as?UIMenu{return actions(child)};return[]}}
+    func scroll(_ bottom:Bool)async throws{
+      let page=try XCTUnwrap(root.presentedViewController)
+      let scroll=try XCTUnwrap(views(page.view).compactMap{$0 as?UIScrollView}.filter{$0.window===window && $0.bounds.width>window.bounds.width*0.8 && $0.bounds.height>200 && $0.contentSize.height>$0.bounds.height}.max{$0.bounds.height<$1.bounds.height})
+      func targetY()->CGFloat{bottom ? max(-scroll.adjustedContentInset.top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom):(-scroll.adjustedContentInset.top)}
+      var y=targetY()
+      scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:y),animated:true)
+      var stable=0
+      try await wait("original settings scroll settled"){
+        let latest=targetY()
+        if abs(latest-y)>0.5{y=latest;stable=0;scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:y),animated:false)}
+        let ok=abs(scroll.contentOffset.y-y)<0.5 && !scroll.isDragging && !scroll.isDecelerating
+        stable=ok ? stable+1:0
+        report["actualSettingsScrollGeometry"]=["expectedY":Double(y),"actualY":Double(scroll.contentOffset.y),"contentHeight":Double(scroll.contentSize.height),"viewportHeight":Double(scroll.bounds.height),"stableSamples":stable]
+        return stable>=3
+      }
+    }
+    func choose(_ value:AppLanguage)async throws{
+      try stage("choosing-original-language-"+value.rawValue)
+      try await scroll(false)
+      let page=try XCTUnwrap(root.presentedViewController)
+      let matches=views(page.view).compactMap{$0 as?UIButton}.filter{button in guard button.window===window,button.isEnabled,!button.isHidden,let menu=button.menu else{return false};let titles=Set(actions(menu).map(\.title));return titles==Set(AppLanguage.allCases.map(\.title))}
+      let button=try XCTUnwrap(matches.count==1 ? matches.first:nil),action=try XCTUnwrap(button.menu.flatMap{actions($0).first{$0.title==value.title}})
+      if #available(iOS 17.4,*){button.performPrimaryAction()}else{throw XCTSkip("Public UIKit menu requires iOS17.4")}
+      try await wait("original language menu held"){button.isHeld}
+      let interaction=try XCTUnwrap(button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first)
+      button.sendAction(action);interaction.dismissMenu()
+      try await wait("original language selection applied"){L10n.selection==value && (button.window==nil || !button.isHeld)};try protect()
+    }
+    func controls()->[NSObject]{
+      var all:[NSObject]=[],seen=Set<ObjectIdentifier>()
+      func visit(_ object:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(object)).inserted else{return};all.append(object);if let view=object as?UIView{view.subviews.forEach(visit)};object.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=object.accessibilityElementCount();if count>0 && count<1000{for i in 0..<count{if let child=object.accessibilityElement(at:i)as?NSObject{visit(child)}}}}
+      visit(window);return all
+    }
+    do{
+      store.hostedEasyWorkProductUIPresented=true;store.sheet = .settings
+      try await wait("original settings presented"){root.presentedViewController != nil}
+      let rawLanguages=config["documentationLanguages"]as?[String] ?? ["en","zh-Hans"]
+      guard !rawLanguages.isEmpty,rawLanguages.count==Set(rawLanguages).count,rawLanguages.allSatisfy({["en","zh-Hans"].contains($0)})else{throw NSError(domain:"EasyWorkDocumentation",code:11)}
+      let languages=try rawLanguages.map{try XCTUnwrap(AppLanguage(rawValue:$0))}
+      report["requestedDocumentationLanguages"]=rawLanguages
+      for language in languages{
+        if L10n.selection != language{try await choose(language)}
+        for document in ["privacy","support"]{
+          try stage("scrolling-original-documentation-links")
+          try await scroll(true)
+          let index=records.count,identifier=document=="privacy" ? "settings-privacy-policy":"settings-support"
+          let expected=document=="privacy" ? L10n.privacyPolicyURL:L10n.supportURL
+          let receipt=directory.appendingPathComponent(run+"-documentation-"+String(index)+"-driver.json")
+          guard !FileManager.default.fileExists(atPath:receipt.path)else{throw NSError(domain:"EasyWorkDocumentation",code:7)}
+          let expectedLabel=L10n.tr(document=="privacy" ? "隐私政策":"帮助与支持")
+          var renderedImage:UIImage?,observedLabel:String?,observedFrame=CGRect.null
+          try stage("locating-original-documentation-link")
+          try await wait("exact visible original documentation link"){
+            let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+            guard let cg=image.cgImage else{return false}
+            let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=false;request.recognitionLanguages=["zh-Hans","en-US"]
+            guard (try?VNImageRequestHandler(cgImage:cg).perform([request])) != nil else{return false}
+            let normalized:(String)->String={String($0.lowercased().filter{!$0.isWhitespace})}
+            let matches=(request.results ?? []).filter{$0.topCandidates(1).first.map{normalized($0.string)==normalized(expectedLabel)}==true}
+            guard matches.count==1,let match=matches.first,let text=match.topCandidates(1).first?.string else{return false}
+            let box=match.boundingBox
+            observedFrame=CGRect(x:box.minX*window.bounds.width,y:(1-box.maxY)*window.bounds.height,width:box.width*window.bounds.width,height:box.height*window.bounds.height)
+            guard observedFrame.intersects(window.bounds),observedFrame.height>8 else{return false}
+            observedLabel=text;renderedImage=image;return true
+          }
+          report["expectedURL"]=expected.absoluteString;report["documentIndex"]=index;report["expectedDocument"]=document;report["expectedLanguage"]=language.rawValue
+          let image=try XCTUnwrap(renderedImage)
+          let filename=run+"-documentation-"+String(index)+"-original-settings.png";try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+          report["originalSettingScreenshot"]=filename
+          let activated=false
+          report["actualOriginalLinkIdentifier"]=identifier;report["actualOriginalVisibleLinkOCR"]=observedLabel;report["actualOriginalVisibleLinkTextFrame"]=String(describing:observedFrame)
+          report["nativePublicAccessibilityActivationAccepted"]=activated
+          try stage("awaiting-official-original-documentation-link")
+          try await wait("official original browser verification and own-app return",seconds:600){
+            guard UIApplication.shared.applicationState == .active,let raw=try?Data(contentsOf:receipt),let v=(try?JSONSerialization.jsonObject(with:raw))as?[String:Any]else{return false}
+            return v["caseId"]as?String==run && v["documentIndex"]as?Int==index && v["actualVerifiedPublicURL"]as?String==expected.absoluteString && v["actualBrowserPageVerified"]as?Bool==true && v["exactAcceptanceAppReturned"]as?Bool==true
+          }
+          try protect();records.append(["language":language.rawValue,"document":document,"expectedProductionURL":expected.absoluteString,"actualOfficialBrowserReceipt":receipt.lastPathComponent,"originalSettingScreenshot":filename,"nativeAccessibilityActivationAccepted":activated]);try stage("original-browser-returned")
+        }
+      }
+      try await choose(originalLanguage);store.sheet=nil
+      try await wait("original settings dismissed"){root.presentedViewController==nil};try protect()
+      guard L10n.selection==originalLanguage else{throw NSError(domain:"EasyWorkDocumentation",code:8)}
+      report["originalLanguageDraftsOperationsVoiceIdentitySelectionsAndSystemLocalePreserved"]=true;report["actualCompletedLinkCount"]=records.count;report["status"]="passed-requested-original-localized-links-official-browser-and-return";try stage("completed")
+    }catch{
+      report["actualLanguageAtFailure"]=L10n.selection.rawValue;report["failure"]=String(describing:error);report["status"]="failed-original-documentation-prefix-retained";try?stage("failed");throw error
+    }
+  }
+  func testHistoricalAttachmentRequiresExactExistingThreadBoundDigest() async throws {
+    let original:[String:Any] = ["resourceId":"resource-original","name":"原附件.txt","size":42]
+    let grant=original.merging(["threadId":"thread","sha256":String(repeating:"a",count:64)]) {_,rhs in rhs}
+    var calls=0
+    let metadata=try await EasyWorkHistoricalAttachment.metadata(threadId:"thread",original:original) { request in
+      calls+=1;XCTAssertEqual(Set(request.keys),Set(["threadId","resourceId"]))
+      XCTAssertEqual(request["threadId"] as? String,"thread");XCTAssertEqual(request["resourceId"] as? String,"resource-original")
+      return ["transfer":grant]
+    }
+    XCTAssertEqual(calls,1);XCTAssertEqual(metadata?["sha256"] as? String,String(repeating:"a",count:64))
+    for (key,value) in [("resourceId","other" as Any),("threadId","other"),("name","other.txt"),("size",43),("size",true),("size","42"),("size",42.5),("size",-1),("sha256","bad")] {
+      var changed=grant;changed[key]=value
+      let result=try await EasyWorkHistoricalAttachment.metadata(threadId:"thread",original:original) {_ in ["transfer":changed]}
+      XCTAssertNil(result,"Reject changed \(key)")
+    }
+    let unavailable=try await EasyWorkHistoricalAttachment.metadata(threadId:"thread",original:original) {_ in throw HostServiceError.unavailable}
+    XCTAssertNil(unavailable);XCTAssertNil(original["sha256"])
+    var referenced=original;referenced["resourceUri"]="workspace://resource/file/resource-original"
+    var methods:[String]=[]
+    let recovered=try await EasyWorkHistoricalAttachment.readOrResolve(threadId:"thread",original:referenced) {method,params in
+      methods.append(method)
+      if method=="resource/read" {throw HostServiceError.unavailable}
+      XCTAssertEqual(method,"resource/resolve");XCTAssertEqual(Set(params.keys),Set(["threadId","reference"]))
+      XCTAssertEqual(params["threadId"] as? String,"thread");XCTAssertEqual(params["reference"] as? String,referenced["resourceUri"] as? String)
+      return ["transfer":grant]
+    }
+    XCTAssertEqual(methods,["resource/read","resource/resolve"]);XCTAssertEqual(recovered?["resourceId"] as? String,"resource-original")
+    var reads=0
+    let mismatch=try await EasyWorkHistoricalAttachment.readOrResolve(threadId:"thread",original:referenced) {method,_ in
+      reads+=1;XCTAssertEqual(method,"resource/read");var wrong=grant;wrong["resourceId"]="wrong";return ["transfer":wrong]
+    }
+    XCTAssertNil(mismatch);XCTAssertEqual(reads,1)
+
+    let complete=try await EasyWorkHistoricalAttachment.metadata(threadId:"thread",original:grant) {_ in XCTFail("No extra request");return [:]}
+    XCTAssertEqual(complete?["sha256"] as? String,grant["sha256"] as? String)
+    do {_ = try await EasyWorkHistoricalAttachment.metadata(threadId:"thread",original:original) {_ in throw CancellationError()};XCTFail("Cancellation must propagate")}
+    catch is CancellationError {}
+  }
+
+  @MainActor func testPhysicalColdArchiveRestoreKeepsOriginalForkActivity() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=try JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["ownColdArchiveRestoreAuthorized"]as?Int==1,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance" else{throw XCTSkip("Explicit own physical cold archive round trip")}
+    let threadId=try XCTUnwrap(c["ownThreadId"]as?String),recoverOriginal=c["recoverOriginalConfirmedArchiveOnly"]as?Bool==true
+    if recoverOriginal { guard c["archiveActionsAuthorized"]as?Int==0,c["restoreActionsAuthorized"]as?Int==1,c["originalArchiveOperationId"]as?String != nil,c["restoreOriginalSelectionThreadId"]as?String != nil else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:13)} }
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),permit=directory.appendingPathComponent(run+"-cold-readback.json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:1)}
+    var report:[String:Any]=["caseId":run,"physicalIPhone":true,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"ownThreadId":threadId,"newModelsCapturesImportsUploadsPairing":0,"wholeFeaturePassed":false,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=90,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalColdRestore",code:2,userInfo:[NSLocalizedDescriptionKey:label])}}
+    try stage("waiting-for-original-UI-store-and-foreground");try await wait("original UI store"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let client=store.saved.selectedClientId,selected=store.selectedThreadId,oldUI=store.hostedEasyWorkProductUIPresented,drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),oldReceipts=store.saved.chatActionReceipts ?? [:]
+    func protect()throws{guard store.saved.selectedClientId==client,try encoder.encode(store.drafts.values)==drafts,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.replyRecovery)==recovery,try encoder.encode(store.saved.threadForks)==forks,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:4)};for(k,v)in oldReceipts{guard try encoder.encode(store.saved.chatActionReceipts?[k])==encoder.encode(Optional(v))else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:5)}}}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func shot(_ name:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func actualArchiveMenuAction(_ title:String)async throws{
+      guard title=="归档" || title=="恢复对话" else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:12)}
+      let localizedTitle=title=="归档" ? L10n.tr("归档") : L10n.tr("恢复对话")
+      try await wait("anchored original menu after navigation"){root.presentedViewController==nil && root.transitionCoordinator==nil && views(window).compactMap{$0 as?HostedNativeChatMenuAnchorView}.contains{$0.threadId==threadId && $0.window===window && !$0.isHidden}}
+      let anchor=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeChatMenuAnchorView}.first{$0.threadId==threadId && $0.window===window}),frame=anchor.convert(anchor.bounds,to:window)
+      let buttons=views(window).compactMap{$0 as?UIButton}.filter{b in guard b.menu != nil,b.window===window,b.isEnabled,!b.isHidden,b.alpha>0.99 else{return false};let f=b.convert(b.bounds,to:window);guard f.intersects(frame),let hit=window.hitTest(CGPoint(x:f.midX,y:f.midY),with:nil)else{return false};return hit===b || hit.isDescendant(of:b)}
+      let button=try XCTUnwrap(buttons.count==1 ? buttons.first:nil);var view:UIView?=button,interaction:UIContextMenuInteraction?
+      while let v=view{if interaction==nil{interaction=v.interactions.compactMap{$0 as?UIContextMenuInteraction}.first};view=v.superview}
+      let menu=try XCTUnwrap(interaction);if #available(iOS 17.4,*){button.performPrimaryAction()}else{throw XCTSkip("Public menu activation requires iOS17.4")}
+      var action:UIAction?,samples=0
+      try await wait("exact enabled original archive menu action "+title){guard button.isHeld else{return false};menu.updateVisibleMenu{visible in MainActor.assumeIsolated{var found:[UIAction]=[];func visit(_ x:UIMenuElement){if let a=x as?UIAction,a.title==localizedTitle,!a.attributes.contains(.disabled){found.append(a)};if let m=x as?UIMenu{m.children.forEach(visit)}};visit(visible);if found.count==1{action=found[0];samples+=1};return visible}};return action != nil && samples>=3}
+      guard store.selectedThreadId==threadId,store.canManageChat(store.conversation),let action else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:6)}
+      button.sendAction(action);menu.dismissMenu()
+    }
+    do{
+      await store.refresh(includeHistory:false,userInitiated:true);guard store.client?.online==true,let own=store.threads.first(where:{$0.id==threadId}),(own.archived==true)==recoverOriginal else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:7)}
+      store.openThread(own);await store.loadHistory(threadId:threadId);try protect();guard !store.messages.isEmpty else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:8)}
+      let originalMessages=store.messages.map{[$0.id,$0.text,$0.searchableText]};report["originalMessageIds"]=store.messages.map(\.id)
+      store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+      let prior=Set((store.saved.chatActionReceipts ?? [:]).keys),archived:ChatActionReceipt
+      if recoverOriginal {
+        let originalId=try XCTUnwrap(c["originalArchiveOperationId"]as?String)
+        archived=try XCTUnwrap(store.saved.chatActionReceipts?[originalId]);guard archived.threadId==threadId,archived.action == .archive,archived.phase=="confirmed",!(store.saved.chatActionReceipts ?? [:]).values.contains(where:{$0.threadId==threadId && $0.action == .unarchive}) else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:14)}
+        report["originalArchiveReusedNotResubmitted"]=true;report["originalUnarchiveReceiptCount"]=0
+      } else {
+        try stage("actual-original-menu-archive-on-own-fork");try await actualArchiveMenuAction("归档")
+        try await wait("one archive confirmed without retry"){(store.saved.chatActionReceipts ?? [:]).values.contains{!prior.contains($0.id)&&$0.threadId==threadId&&$0.action == .archive&&$0.phase=="confirmed"}}
+        archived=try XCTUnwrap((store.saved.chatActionReceipts ?? [:]).values.first{!prior.contains($0.id)&&$0.threadId==threadId&&$0.action == .archive})
+      }
+      report["archiveOperationId"]=archived.id
+      try await wait("archive projection and original management refresh finished"){store.selectedThreadId==threadId && store.conversation?.archived==true && !store.currentChatActionBusy && !store.loading};try protect();try stage("archive-confirmed-awaiting-independent-cold-database-readback")
+      try await wait("independent original cold archive readback",seconds:180){guard let data=try?Data(contentsOf:permit),let p=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return p["caseId"]as?String==run && p["ownThreadId"]as?String==threadId && p["archiveOperationId"]as?String==archived.id && p["actualColdDatabaseReadback"]as?Bool==true}
+      try await actualArchiveMenuAction("恢复对话")
+      try await wait("one restore confirmed without retry"){(store.saved.chatActionReceipts ?? [:]).values.contains{!prior.contains($0.id)&&$0.threadId==threadId&&$0.action == .unarchive&&$0.phase=="confirmed"}}
+      let restored=try XCTUnwrap((store.saved.chatActionReceipts ?? [:]).values.first{!prior.contains($0.id)&&$0.threadId==threadId&&$0.action == .unarchive});report["restoreOperationId"]=restored.id
+      try await wait("restore projection and original management refresh finished"){store.selectedThreadId==threadId && store.conversation?.archived != true && !store.currentChatActionBusy && !store.loading}
+      await store.loadHistory(threadId:threadId);guard store.conversation?.archived != true,store.messages.map{[$0.id,$0.text,$0.searchableText]}==originalMessages else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:10)}
+      try protect();try shot("actual-original-cold-fork-restored");report["actualOriginalPublicMenuArchiveAndRestoreActions"]=true;report["originalMessageIdsAndSearchDocumentsExact"]=true
+      let restoreSelection=recoverOriginal ? c["restoreOriginalSelectionThreadId"]as?String:selected
+      if let restoreSelection,let original=store.threads.first(where:{$0.id==restoreSelection}){store.openThread(original);await store.loadHistory(threadId:restoreSelection)}
+      guard store.selectedThreadId==restoreSelection else{throw NSError(domain:"EasyWorkPhysicalColdRestore",code:11)};try protect();store.hostedEasyWorkProductUIPresented=oldUI
+      report["originalSelectionRestoredThreadId"]=restoreSelection
+      report["allOriginalDraftsJournalsIdentityVoiceAndSelectionPreserved"]=true;report["status"]="passed-physical-original-public-menu-cold-archive-restore-awaiting-independent-index-check";try stage("completed")
+    }catch{report["failure"]=String(describing:error);report["status"]="failed-physical-cold-restore-prefix-preserved-no-replay";try?save();throw error}
+  }
+
+  @MainActor func testPhysicalRecoverExactlyOwnAccidentallyArchivedSearchThread() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=try JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any],c["caseId"] as? String==run,c["newModelsAuthorized"] as? Int==0,c["newUploadsAuthorized"] as? Int==0,c["ownThreadUnarchiveAuthorized"] as? Int==1,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance" else { throw XCTSkip("Explicit narrowly scoped own-thread recovery") }
+    let thread=try XCTUnwrap(c["originalThreadId"] as? String),archive=try XCTUnwrap(c["originalArchiveOperationId"] as? String)
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:1) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"normalProductionRecoveryAPIOnly":true,"newModelsUploadsImportsPairing":0,"originalThreadId":thread,"originalArchiveOperationId":archive,"wholeFeaturePassed":false,"codexTests":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func stage(_ s:String) throws { report["stage"]=s;try save() }
+    func wait(_ s:String,_ ready:()->Bool) async throws { let until=Date().addingTimeInterval(90);while !ready() && Date()<until { try await Task.sleep(for:.milliseconds(100)) };guard ready() else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:2,userInfo:[NSLocalizedDescriptionKey:s]) } }
+    try stage("waiting-for-original-UI-owned-store");try await wait("original physical store") { SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.selectedThreadId==thread,store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:3) }
+    let e=JSONEncoder();e.outputFormatting=[.sortedKeys]
+    let target=store.targetKey,drafts=try e.encode(store.drafts.values),outbox=try e.encode(store.saved.outbox),recovery=try e.encode(store.saved.replyRecovery),forks=try e.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),oldReceipts=store.saved.chatActionReceipts ?? [:]
+    func protect() throws { guard store.targetKey==target,store.selectedThreadId==thread,try e.encode(store.drafts.values)==drafts,try e.encode(store.saved.outbox)==outbox,try e.encode(store.saved.replyRecovery)==recovery,try e.encode(store.saved.threadForks)==forks,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:4) };for(k,v)in oldReceipts { guard try e.encode(store.saved.chatActionReceipts?[k])==e.encode(Optional(v)) else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:5) } } }
+    do {
+      let original=try XCTUnwrap(store.saved.chatActionReceipts?[archive]);guard original.threadId==thread,original.action == .archive,original.phase=="confirmed" else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:6) }
+      report["originalArchiveReceiptConfirmedBeforeAnyRecovery"]=true;try stage("normal-read-only-refresh-before-one-unarchive")
+      store.error=nil;await store.refresh(includeHistory:false,userInitiated:true)
+      let conversation=try XCTUnwrap(store.conversation);guard conversation.id==thread,conversation.archived==true,store.client?.online==true,store.canManageChat(conversation) else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:7) }
+      try protect();let result=try XCTUnwrap(store.manageChat(.unarchive,thread:conversation,showsErrorAlert:false));report["originalSingleUnarchiveOperationId"]=result.operation.id;try stage("original-single-normal-unarchive-submitted-no-retry")
+      let confirmed=await result.task.value;report["originalUnarchiveConfirmed"]=confirmed;report["actualUnarchivePhase"]=store.saved.chatActionReceipts?[result.operation.id]?.phase ?? "missing";try save()
+      guard confirmed,store.conversation?.archived != true else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:8) }
+      try protect();await store.refresh(includeHistory:false,userInitiated:true);await store.loadHistory(threadId:thread)
+      guard store.conversation?.archived != true,store.messages.contains(where:{$0.role=="assistant" && $0.text.contains("FORK_SELECTED_98400003")}) else { throw NSError(domain:"EasyWorkOriginalThreadRecovery",code:9) }
+      try protect();report["actualOriginalControlledReplyRestoredThroughNormalHistory"]=true;report["originalDraftsJournalsVoiceIdentityAndAllPriorChatActionReceiptsExact"]=true;report["status"]="passed-physical-original-own-thread-normal-unarchive-recovery";try stage("completed")
+    } catch { report["failure"]=String(describing:error);report["status"]="failed-original-recovery-prefix-preserved-no-retry";try?save();throw error }
+  }
+
+  @MainActor func testPhysicalOriginalTwoPlanVersionsAndHistoryCards() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=try JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any],c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,let threadId=c["threadId"]as?String,let plans=c["plans"]as?[[String:Any]],(plans.count==2 || (plans.count==1 && c["pendingPlanReadOnlyRequired"]as?Bool==true && c["planApprovalAndExecutionForbidden"]as?Bool==true)),Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen original real plans required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true);let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPlanHistory",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsOrImports":0,"wholeFeaturePassed":false,"codexTests":false],projections:[[String:Any]]=[]
+    func save()throws{report["actualProjectedPlans"]=projections;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ s:String)throws{report["stage"]=s;try save()}
+    func wait(_ label:String,seconds:Double=90,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPlanHistory",code:2,userInfo:[NSLocalizedDescriptionKey:label])}}
+    try stage("waiting-original-store-and-foreground");try await wait("original store"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkPlanHistory",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalReadonlyDraftValues=store.drafts.values
+    let selected=store.selectedThreadId,client=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func shot(_ name:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func canonical(_ object:Any)throws->Data{try JSONSerialization.data(withJSONObject:object,options:[.sortedKeys])}
+    func actualReadingViewport(_ scroll:UIScrollView)->CGRect {
+      let raw=scroll.convert(scroll.bounds.inset(by:scroll.adjustedContentInset),to:window)
+      let chrome=views(window).compactMap{$0 as?HostedNativeChromeGeometryView}.filter{$0.window===window && !$0.bounds.isEmpty}
+      let top=chrome.filter{$0.role=="toolbar"}.map{$0.convert($0.bounds,to:window).maxY+8}.max() ?? raw.minY
+      let bottom=chrome.filter{$0.role=="composer"}.map{$0.convert($0.bounds,to:window).minY-8}.min() ?? raw.maxY
+      report["actualFullChromeReadingViewport"]=["raw":String(describing:raw),"top":top,"bottom":bottom,"markerRoles":chrome.map(\.role).sorted()] as [String:Any]
+      return CGRect(x:raw.minX,y:max(raw.minY,top),width:raw.width,height:max(0,min(raw.maxY,bottom)-max(raw.minY,top)))
+    }
+    func reveal(_ button:UIView,_ label:String)async throws->UIScrollView {
+      var ancestor=button.superview,list:UIScrollView?
+      while let view=ancestor{if let scroll=view as?UIScrollView,scroll.alwaysBounceVertical || scroll.contentSize.height>scroll.bounds.height+1{list=scroll;break};ancestor=view.superview}
+      let scroll=try XCTUnwrap(list)
+      func place(){
+        let rect=button.convert(button.bounds,to:scroll)
+        let top = -scroll.adjustedContentInset.top
+        let bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+        let visible=actualReadingViewport(scroll),origin=scroll.convert(scroll.bounds,to:window).minY
+        scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:min(bottom,max(top,rect.minY-(visible.minY-origin)))),animated:false)
+      }
+      place();var previous=CGRect.null,samples=0,retries=0
+      try await wait(label){
+        let frame=button.convert(button.bounds,to:window)
+        let viewport=actualReadingViewport(scroll)
+        let visible=frame.intersection(viewport)
+        let oversizedUserBlock=button is HostedNativeUserBubbleStateView && frame.height>viewport.height
+        let neededHeight=oversizedUserBlock ? viewport.height : frame.height
+        if oversizedUserBlock { report["actualOversizedPreviewRequiresViewportScrolling"]=true }
+        if viewport.height<44 || visible.isNull || visible.height<neededHeight*0.95 || (oversizedUserBlock && abs(frame.minY-viewport.minY)>1){
+          retries+=1;place();samples=0;return false
+        }
+        if frame==previous{samples+=1}else{previous=frame;samples=1}
+        return button.window===window && (button as?UIControl)?.isEnabled != false && !button.isHidden && samples>=3
+      }
+      report["actualPublicReadOnlyScrollStabilizationRetries"]=(report["actualPublicReadOnlyScrollStabilizationRetries"]as?Int ?? 0)+retries
+      return scroll
+    }
+    var caught:Error?
+    do{
+      if let origin=env["EASYWORK_OWNED_RELAY_CONNECT_ORIGIN"],let url=URL(string:origin+"/health") {
+        try stage("verify-owned-original-HTTPS-authority-through-connect")
+        let session=URLSession(configuration:EasyWorkHTTPConfiguration.ephemeral(for:url),delegate:EasyWorkDeviceHTTPDelegate(),delegateQueue:nil)
+        defer{session.invalidateAndCancel()}
+        var request=URLRequest(url:url);request.timeoutInterval=15
+        let (_,response)=try await session.data(for:request)
+        guard (response as?HTTPURLResponse)?.statusCode==200,response.url?.host==url.host else{throw NSError(domain:"EasyWorkPlanHistory",code:14)}
+        report["actualOwnedOriginalHTTPSAuthorityPlatformTrustHealthPassed"]=true;try save()
+      }
+      report["originalConnectionPreference"]=store.client?.agentConnection?.preference.rawValue
+      report["originalConnectionCandidates"]=store.client?.agentConnection?.candidates.map{["transportId":$0.transportId,"endpoint":$0.endpoint]}
+      try stage("normal-read-original-plan-history");await store.refresh(includeHistory:false,userInitiated:true);let thread=try XCTUnwrap(store.threads.first{$0.id==threadId});store.openThread(thread);await store.loadHistory(threadId:threadId)
+      guard store.client?.online==true,!store.historyLoading,!store.isRunning else{throw NSError(domain:"EasyWorkPlanHistory",code:4)}
+      store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+      if c["originalLongUserPreviewRequired"]as?Bool==true {
+        let expected=try XCTUnwrap(c["expectedOriginalUserText"]as?String),messageId=try XCTUnwrap(c["expectedOriginalUserMessageId"]as?String)
+        let message=try XCTUnwrap(store.messages.first{$0.role=="user" && $0.text==expected});guard message.id==messageId else{throw NSError(domain:"EasyWorkUserPreview",code:1)}
+        var state:HostedNativeUserBubbleStateView?
+        try await wait("original user bubble actual geometry mounted"){
+          state=views(window).compactMap{$0 as?HostedNativeUserBubbleStateView}.first{$0.messageId==messageId && $0.sourceText==expected && $0.actualHeight>0 && $0.previewHeight>0 && $0.window===window};return state != nil
+        }
+        let probe=try XCTUnwrap(state),scroll=try await reveal(probe,"original user preview visible and stable")
+        func revealOriginalUserTop()async throws {
+          let rect=probe.convert(probe.bounds,to:scroll),origin=scroll.convert(scroll.bounds,to:window).minY
+          let fullViewport=actualReadingViewport(scroll)
+          let visibleTop=fullViewport.minY,top = -scroll.adjustedContentInset.top,bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+          scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:min(bottom,max(top,rect.minY-(visibleTop-origin)))),animated:false)
+          var previous=CGRect.null,samples=0
+          try await wait("original user bubble top below actual floating header"){
+            let frame=probe.convert(probe.bounds,to:window)
+            guard probe.window===window,frame.minY>=visibleTop-1 else{return false}
+            if previous==frame{samples+=1}else{previous=frame;samples=1};return samples>=3
+          }
+        }
+        if c["actualLargestSystemAccessibilityTextRequired"]as?Bool==true {
+          let category=window.traitCollection.preferredContentSizeCategory
+          report["actualSystemContentSizeCategory"]=category.rawValue;guard Set(views(window).compactMap{$0 as?HostedNativeChromeGeometryView}.filter{$0.window===window}.map(\.role)).isSuperset(of:["toolbar","composer"])else{throw NSError(domain:"EasyWorkUserPreview",code:7)};report["actualSystemPreferredBodyPointSize"]=UIFont.preferredFont(forTextStyle:.body,compatibleWith:window.traitCollection).pointSize
+          guard category == .accessibilityExtraExtraExtraLarge else{throw NSError(domain:"EasyWorkUserPreview",code:6)}
+        }
+        try await revealOriginalUserTop()
+        func settledOriginalUserPixels(_ label:String)async throws {
+          var previous:String?,samples=0,ignoredLoops=0
+          func animated(_ layer:CALayer)->Bool {
+            for key in layer.animationKeys() ?? [] {
+              guard let animation=layer.animation(forKey:key)as?CAPropertyAnimation,["contents","contentsMultiplyColor"].contains(animation.keyPath ?? ""),animation.repeatCount>=2_147_483_648,layer.bounds.size==CGSize(width:14,height:14)else{return true}
+              ignoredLoops+=1
+            }
+            return (layer.sublayers ?? []).contains(where:animated)
+          }
+          try await wait("original user presentation and actual pixels settled "+label){
+            ignoredLoops=0
+            guard UIApplication.shared.applicationState == .active,window.rootViewController?.transitionCoordinator==nil,!animated(window.layer)else{samples=0;return false}
+            window.layoutIfNeeded()
+            let anchor=probe.convert(probe.bounds,to:window),viewport=actualReadingViewport(scroll)
+            let left=max(0,anchor.minX+14),right=window.bounds.maxX-44,top=max(viewport.minY,anchor.minY),bottom=min(viewport.maxY,top+max(274,probe.actualHeight+80))
+            guard right>left,bottom>top else{samples=0;return false}
+            let region=CGRect(x:left,y:top,width:right-left,height:bottom-top)
+            let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+            guard let whole=image.cgImage else{return false}
+            let scale=CGFloat(whole.width)/window.bounds.width
+            guard let crop=whole.cropping(to:CGRect(x:region.minX*scale,y:region.minY*scale,width:region.width*scale,height:region.height*scale).integral),let bytes=crop.dataProvider?.data else{return false}
+            let digest=SHA256.hash(data:bytes as Data).map{String(format:"%02x",$0)}.joined()
+            if digest==previous{samples+=1}else{previous=digest;samples=1}
+            report["actualOriginalUserStablePixels-"+label] = ["sha256":digest,"frames":samples,"region":String(describing:region),"ignoredKnown14ptContentLoops":ignoredLoops]
+            return samples>=3
+          }
+        }
+        if let expectedMotion=c["expectedSystemReduceMotion"]as?Bool{
+          report["actualSystemReduceMotionEnabled"]=UIAccessibility.isReduceMotionEnabled;report["actualUserBubbleReduceMotionEnvironment"]=probe.reduceMotion
+          guard UIAccessibility.isReduceMotionEnabled==expectedMotion,probe.reduceMotion==expectedMotion else{throw NSError(domain:"EasyWorkUserPreview",code:5)}
+        }
+        guard !probe.expanded,probe.overflow,probe.previewLines==6,abs(probe.actualHeight-probe.previewHeight)<1,probe.extraHeight>probe.previewHeight+0.5 else{throw NSError(domain:"EasyWorkUserPreview",code:2)}
+        report["actualOriginalUserPreviewLines"]=probe.previewLines;report["actualOriginalUserCollapsedTextHeight"]=probe.actualHeight;report["actualOriginalUserMeasuredSixLineHeight"]=probe.previewHeight;report["actualOriginalUserMeasuredSeventhLineHeight"]=probe.extraHeight;try stage("actual-original-six-line-geometry-verified")
+        func controls()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ o:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(o)).inserted else{return};all.append(o);if let v=o as?UIView{v.subviews.forEach(visit)};o.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=o.accessibilityElementCount();if count>0&&count<1000{for index in 0..<count{if let child=o.accessibilityElement(at:index)as?NSObject{visit(child)}}}};visit(window);return all}
+        func toggle(_ label:String)async throws {
+          var candidate:NSObject?,previous=CGRect.null,samples=0
+          try await wait("actual visible user toggle "+label){
+            let native=views(window).compactMap{$0 as?UIButton}.filter{$0.accessibilityIdentifier=="user-message-toggle-"+messageId && $0.window===window}
+            report["actualOriginalUserAllNativeButtonIdentifiers"]=views(window).compactMap{$0 as?UIButton}.compactMap{$0.accessibilityIdentifier}
+            let candidates:[NSObject]=native.isEmpty ? controls().filter{($0 as?any UIAccessibilityIdentification)?.accessibilityIdentifier=="user-message-toggle-"+messageId}:native
+            report["actualOriginalUserToggleAXCandidates"]=candidates.map{["class":String(describing:type(of:$0)),"frame":String(describing:$0.accessibilityFrame),"isAccessibilityElement":String($0.isAccessibilityElement)]}
+            guard let object=candidates.first(where:{if let v=$0 as?UIControl{return v.isEnabled && !v.isHidden && !v.bounds.isEmpty};return $0.isAccessibilityElement && !$0.accessibilityFrame.isEmpty}),!object.accessibilityTraits.contains(.notEnabled)else{return false}
+            let frame=(object as?UIView).map{$0.convert($0.bounds,to:window)} ?? window.convert(object.accessibilityFrame,from:nil),viewport=actualReadingViewport(scroll),visible=frame.intersection(viewport)
+            if visible.isNull || visible.height<frame.height*0.95 {
+              let rect=scroll.convert(frame,from:window),origin=scroll.convert(scroll.bounds,to:window).minY,top = -scroll.adjustedContentInset.top,bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+              scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:min(bottom,max(top,rect.minY-(viewport.minY-origin)))),animated:false);samples=0;return false
+            }
+            guard frame.height>0,frame.width>0 else{return false}
+            candidate=object;if previous==frame{samples+=1}else{previous=frame;samples=1};return samples>=3
+          }
+          let object=try XCTUnwrap(candidate)
+          if let control=object as?UIControl {
+            guard control.isEnabled,control.window===window,control.bounds.height>=44 else{throw NSError(domain:"EasyWorkUserPreview",code:3)}
+            report["actualOriginalUserToggleNativeHeight"]=control.bounds.height
+            control.sendActions(for:.touchUpInside)
+          }else{
+            guard object.accessibilityActivate()else{throw NSError(domain:"EasyWorkUserPreview",code:3,userInfo:[NSLocalizedDescriptionKey:"Original public user toggle action unavailable"])}
+          }
+        }
+        try await settledOriginalUserPixels("collapsed");try shot("actual-original-long-user-six-line-preview");try await toggle("expand once")
+        try await wait("actual expanded original text geometry"){probe.expanded && probe.actualHeight>probe.extraHeight && probe.sourceText==expected}
+        report["actualOriginalUserExpandedTextHeight"]=probe.actualHeight;try await settledOriginalUserPixels("expanded");try shot("actual-original-long-user-expanded")
+        try await toggle("collapse once");try await wait("actual original six-line preview restored"){!probe.expanded && abs(probe.actualHeight-probe.previewHeight)<1 && probe.sourceText==expected};try await revealOriginalUserTop()
+        guard store.messages.first(where:{$0.id==messageId})?.text==expected else{throw NSError(domain:"EasyWorkUserPreview",code:4)}
+        report["actualOriginalUserMessageId"]=messageId;report["actualOriginalUserTextSha256"]=SHA256.hash(data:Data(expected.utf8)).map{String(format:"%02x",$0)}.joined();report["actualOriginalUserExpandedAndRecollapsedOnce"]=true;report["originalUserTextUnchangedAfterPreviewActions"]=true;try await settledOriginalUserPixels("recollapsed");try shot("actual-original-long-user-recollapsed");try stage("actual-original-user-preview-expand-recollapse-passed")
+      }
+      for(index,fixture)in plans.enumerated(){
+        let messageId=try XCTUnwrap(fixture["messageId"]as?String),expected=try XCTUnwrap(fixture["planArtifact"]as?[String:Any]),message=try XCTUnwrap(store.messages.first{$0.id==messageId})
+        guard message.kind=="plan",message.role=="assistant",message.text==fixture["markdown"]as?String,message.status==expected["status"]as?String else{throw NSError(domain:"EasyWorkPlanHistory",code:5)}
+        let encoded=try XCTUnwrap(JSONSerialization.jsonObject(with:encoder.encode(message))as?[String:Any]);projections.append(["messageId":messageId,"actualProjection":encoded]);try stage("original-plan-projection-"+String(index))
+        guard let actual=encoded["planArtifact"]as?[String:Any],try canonical(actual)==canonical(expected)else{throw NSError(domain:"EasyWorkPlanHistory",code:6,userInfo:[NSLocalizedDescriptionKey:"Original plan ID/version/step status missing or changed in production projection"])}
+        let restored=try JSONDecoder().decode(ChatMessage.self,from:encoder.encode(message));XCTAssertEqual(restored.planArtifact,message.planArtifact)
+        let expectedSteps=try XCTUnwrap(expected["steps"]as?[[String:Any]])
+        var wire=expected;wire["planId"]=expected["id"];wire["steps"]=expectedSteps.map { value in var v=value;v["stepId"]=value["id"];return v }
+        for bad:Any in [true,0,-1,"2",1.5,Int64(2147483648)]{var value=wire;value["version"]=bad;XCTAssertNil(EasyWorkPlanArtifactProjection.decode(value))}
+        var duplicate=try XCTUnwrap(wire["steps"]as?[[String:Any]]);duplicate[1]["stepId"]=duplicate[0]["stepId"];var invalid=wire;invalid["steps"]=duplicate;XCTAssertNil(EasyWorkPlanArtifactProjection.decode(invalid))
+        var legacy=encoded;legacy.removeValue(forKey:"planArtifact");let legacyMessage=try JSONDecoder().decode(ChatMessage.self,from:canonical(legacy));XCTAssertNil(legacyMessage.planArtifact);XCTAssertEqual(legacyMessage.text,message.text)
+        report["planProjectionInvalidNumbersDuplicateStepsAndLegacyCacheChecksPassed"]=true
+        let requestedPlanToggle="plan-toggle-"+messageId
+        try await wait("original plan or local earlier control mounted"){
+          for view in views(window) {
+            guard let button=view as?UIButton,button.window===window,
+              !button.isHidden,button.isEnabled else{continue}
+            let key=button.accessibilityIdentifier
+            if key==requestedPlanToggle || key=="history-local-more"{return true}
+          }
+          return false
+        }
+        var earlierActions=0
+        for _ in 0..<4 {
+          if views(window).compactMap({$0 as?UIButton}).contains(where:{$0.accessibilityIdentifier=="plan-toggle-"+messageId && $0.window===window}){break}
+          let earlier=try XCTUnwrap(views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier=="history-local-more" && $0.window===window && $0.isEnabled})
+          let oldLimit=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.first{$0.targetKey==store.targetKey}).messageLimit
+          _ = try await reveal(earlier,"actual original local earlier control stable")
+          earlier.sendActions(for:.touchUpInside);earlierActions+=1
+          try await wait("original local earlier expands actual reading window"){
+            views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.contains{$0.targetKey==store.targetKey && $0.messageLimit>oldLimit}
+          }
+        }
+        report["actualOriginalLocalEarlierActions"]=(report["actualOriginalLocalEarlierActions"]as?Int ?? 0)+earlierActions;try stage("original-plan-row-in-actual-reading-window-"+String(index))
+        var button:UIButton?
+        try await wait("original plan toggle mounted"){
+          button=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier=="plan-toggle-"+messageId && $0.window===window && !$0.isHidden && $0.isEnabled};return button != nil
+        }
+        let toggle=try XCTUnwrap(button);_ = try await reveal(toggle,"actual plan toggle layout stable")
+        toggle.sendActions(for:.touchUpInside)
+        try await wait("actual independent plan expanded"){
+          guard let value=views(window).first(where:{$0.accessibilityIdentifier=="plan-artifact-state-"+messageId})?.accessibilityValue,let bytes=value.data(using:.utf8),let state=(try?JSONSerialization.jsonObject(with:bytes))as?[String:Any]else{return false}
+          return state["expanded"]as?Bool==true && (try?canonical(state["planArtifact"]as? [String:Any] ?? [:])) == (try?canonical(expected))
+        }
+        _ = try await reveal(toggle,"opened plan card stable in actual viewport")
+        try shot("actual-plan-version-"+String(index))
+        if let expectedLabel=c["expectedPlanStatusLabel"]as?String {
+          report["actualOriginalPlanToggleLabel"]=toggle.accessibilityLabel ?? "";try save()
+          guard toggle.accessibilityLabel?.contains(expectedLabel)==true else{throw NSError(domain:"EasyWorkPlanHistory",code:8,userInfo:[NSLocalizedDescriptionKey:"Actual original pending-plan label must match its ready status"])}
+        }
+        if c["pendingPlanReadOnlyRequired"]as?Bool==true {
+          let pending=try XCTUnwrap(store.runtime?.proposedPlan)
+          let reference=try XCTUnwrap(Data(base64URL:String(pending.id.dropFirst(14))))
+          let decoded=try XCTUnwrap(JSONSerialization.jsonObject(with:reference)as?[String:Any])
+          report["actualPendingPlanReference"]=pending.id;report["actualPendingPlanReferenceDecoded"]=decoded;report["actualPendingPlanCanRespond"]=store.canRespondToPlan(pending);report["actualPendingPlanRunning"]=store.isRunning;try save()
+          guard pending.id.hasPrefix("easywork-plan."),decoded["id"]as?String==expected["id"]as?String,decoded["version"]as?Int==expected["version"]as?Int,pending.text==message.text,store.canRespondToPlan(pending),!store.isRunning else{throw NSError(domain:"EasyWorkPlanHistory",code:9)}
+          report["actualPendingPlanId"]=decoded["id"];report["approvalOrImplementationActions"]=0;try save()
+        }
+        if c["manualReadOnlyGesturesRequired"]as?Bool==true {
+          let clipboard=UIPasteboard.general.items
+          defer{UIPasteboard.general.items=clipboard}
+          let sentinel="READ_ONLY_SELECTION_"+run
+          UIPasteboard.general.string=sentinel
+          let release=directory.appendingPathComponent(run+"-gesture-release.json")
+          report["heldOriginalPlanThreadId"]=store.selectedThreadId;report["heldOriginalPlanId"]=expected["id"];report["manualReadOnlyGesturesSourceCodeSha256"]=SHA256.hash(data:Data((c["expectedCodeText"]as?String ?? "").utf8)).map{String(format:"%02x",$0)}.joined()
+          try stage("awaiting-official-device-hub-read-only-gestures")
+          var heartbeat=Date.distantPast
+          try await wait("official Device Hub read-only gestures and verified sharing stop",seconds:600){
+            if Date().timeIntervalSince(heartbeat)>=1 {
+              report["heldNativeHeartbeatTimestamp"]=ISO8601DateFormatter().string(from:Date());report["heldNativeApplicationActive"]=UIApplication.shared.applicationState == .active;report["heldNativeActualThreadId"]=store.selectedThreadId;try?save();heartbeat=Date()
+            }
+            guard let bytes=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:bytes))as?[String:Any]else{return false}
+            return value["caseId"]as?String==run && value["targetBundleIdentifier"]as?String==Bundle.main.bundleIdentifier && value["nativeProcessId"]as?Int==Int(ProcessInfo.processInfo.processIdentifier) && value["officialDeviceHubScreenSharingStoppedVerified"]as?Bool==true && value["noPlanApprovalModelInputOrExternalNavigation"]as?Bool==true
+          }
+          let driver=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:release))as?[String:Any])
+          guard driver["caseId"]as?String==run,driver["targetBundleIdentifier"]as?String==Bundle.main.bundleIdentifier,driver["nativeProcessId"]as?Int==Int(ProcessInfo.processInfo.processIdentifier),driver["officialDeviceHubScreenSharingStoppedVerified"]as?Bool==true,driver["noPlanApprovalModelInputOrExternalNavigation"]as?Bool==true else{throw NSError(domain:"EasyWorkPlanHistory",code:11)}
+          try await wait("original native App active after sharing stop",seconds:30){UIApplication.shared.applicationState == .active}
+          report["actualApplicationActiveBeforeSelectedClipboardRead"]=UIApplication.shared.applicationState == .active
+          let selectedClipboard=UIPasteboard.general.string
+          report["actualSelectedClipboardReadReturnedValue"]=selectedClipboard != nil;try save()
+          let code=try XCTUnwrap(c["expectedCodeText"]as?String),fragment=try XCTUnwrap(selectedClipboard)
+          guard fragment != sentinel,!fragment.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty,fragment.count<code.count,code.contains(fragment),store.selectedThreadId==threadId,UIApplication.shared.applicationState == .active else{throw NSError(domain:"EasyWorkPlanHistory",code:12,userInfo:[NSLocalizedDescriptionKey:"Actual selected code fragment must be copied from the held original source"])}
+          report["actualPhysicalReadOnlyTextSelectionCopied"]=true;report["actualSelectedOriginalCodeFragment"]=fragment;report["actualSelectedOriginalCodeFragmentSha256"]=SHA256.hash(data:Data(fragment.utf8)).map{String(format:"%02x",$0)}.joined();try stage("actual-selected-code-fragment-independently-verified")
+          if store.client?.online != true || store.conversationSyncFailure != nil {
+            report["oneNormalReadRecoveryAfterSharingRequired"]=true;try stage("normal-read-only-recovery-after-sharing")
+            await store.refresh(includeHistory:false,userInitiated:true);await store.loadHistory(threadId:threadId)
+          }
+          try await wait("actual original return-to-latest control after physical drag"){
+            if let state=views(window).compactMap({$0 as?HostedNativeHistoryWindowStateView}).first(where:{$0.targetKey==store.targetKey}) {
+              report["actualNativeFollowsLatestAfterPhysicalDrag"]=state.followsLatest;report["actualNativeUserScrollingAfterPhysicalDrag"]=state.nativeUserScrolling
+            }
+            return views(window).compactMap{$0 as?UIButton}.contains{$0.accessibilityIdentifier=="scroll-latest" && $0.window===window && $0.isEnabled}
+          }
+          report["actualPhysicalDragExposedLatestControl"]=true;try stage("official-read-only-gestures-independently-verified")
+        }
+        if c["markdownCopyOriginalCodeRequired"]as?Bool==true {
+          let expectedCode=try XCTUnwrap(c["expectedCodeText"]as?String)
+          let clipboard=UIPasteboard.general.items
+          defer{UIPasteboard.general.items=clipboard}
+          var codeButton:UIButton?
+          try await wait("original native code copy control mounted"){
+            let buttons=views(window).compactMap{$0 as?UIButton}.filter{$0.accessibilityIdentifier=="copy-code" && $0.window===window && $0.isEnabled}
+            codeButton=buttons.count==1 ? buttons[0]:nil;return codeButton != nil
+          }
+          let control=try XCTUnwrap(codeButton);_ = try await reveal(control,"original code copy visible and stable")
+          guard control.bounds.width>=44,control.bounds.height>=44 else{throw NSError(domain:"EasyWorkPlanHistory",code:10)}
+          let frame=control.convert(control.bounds,to:window),point=CGPoint(x:frame.midX,y:frame.midY),hit=window.hitTest(point,with:nil)
+          report["actualCodeCopyHitViewClass"]=hit.map{String(describing:type(of:$0))} ?? "none";try save()
+          guard hit===control || hit?.isDescendant(of:control)==true else{throw NSError(domain:"EasyWorkPlanHistory",code:13,userInfo:[NSLocalizedDescriptionKey:"Original code-copy hit target must be unobscured"])}
+          report["actualOriginalCodeCopyHitTargetMatched"]=true
+          control.sendActions(for:.touchUpInside)
+          try await wait("original actual code copy exact including final LF"){UIPasteboard.general.string==expectedCode}
+          report["actualOriginalCodeCopySha256"]=SHA256.hash(data:Data(expectedCode.utf8)).map{String(format:"%02x",$0)}.joined();report["actualOriginalCodeCopyHasFinalLF"]=expectedCode.hasSuffix("\n");try shot("actual-original-code-copy");try save()
+        }
+        if c["readOnlyOriginalMarkdownStructureRequired"]as?Bool==true {
+          let cells=try XCTUnwrap(c["expectedTableCells"]as?[String]),linkSource=try XCTUnwrap(c["expectedMarkdownLinkSource"]as?String),linkText=try XCTUnwrap(c["expectedMarkdownLinkText"]as?String),linkURL=try XCTUnwrap(c["expectedMarkdownLinkURL"]as?String)
+          var link:HostedNativeMarkdownFormattingStateView?
+          try await wait("actual Markdown table cells and formatted link"){
+            let actual=views(window).compactMap{$0 as?HostedNativeMarkdownFormattingStateView}.filter{$0.window===window}
+            guard cells.allSatisfy({cell in actual.contains{$0.sourceText==cell && $0.renderedText==cell}})else{return false}
+            link=actual.first{$0.sourceText==linkSource && $0.renderedText==linkText && $0.renderedLinks==[linkURL]};return link != nil
+          }
+          let cell=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeMarkdownFormattingStateView}.first{$0.sourceText==cells[0] && $0.window===window})
+          _ = try await reveal(cell,"original table visible and stable");try shot("actual-original-markdown-table-link")
+          report["actualOriginalMarkdownTableCells"]=cells;report["actualOriginalFormattedLinkText"]=link!.renderedText;report["actualOriginalFormattedLinkDestinations"]=link!.renderedLinks;report["externalLinkNavigations"]=0;try save()
+        }
+        if c["copyOriginalPlanRequired"]as?Bool==true {
+          let clipboard=UIPasteboard.general.items
+          defer{UIPasteboard.general.items=clipboard}
+          var copyButton:UIButton?
+          try await wait("original copy plan control mounted"){
+            copyButton=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier=="copy-plan-"+messageId && $0.window===window && $0.isEnabled};return copyButton != nil
+          }
+          let control=try XCTUnwrap(copyButton);_ = try await reveal(control,"original copy plan control stable")
+          control.sendActions(for:.touchUpInside)
+          try await wait("original copy plan exact body"){UIPasteboard.general.string==message.text}
+          report["actualOriginalCopyPlanBodySha256"]=SHA256.hash(data:Data(message.text.utf8)).map{String(format:"%02x",$0)}.joined()
+          report["originalClipboardRestoredAfterCopyCheck"]=true;try save()
+        }
+        _ = try await reveal(toggle,"original plan toggle before collapse")
+        toggle.sendActions(for:.touchUpInside)
+        try await wait("actual independent plan collapsed"){
+          guard let value=views(window).first(where:{$0.accessibilityIdentifier=="plan-artifact-state-"+messageId})?.accessibilityValue,let bytes=value.data(using:.utf8),let state=(try?JSONSerialization.jsonObject(with:bytes))as?[String:Any]else{return false};return state["expanded"]as?Bool==false
+        };try stage("actual-plan-card-expanded-and-collapsed-"+String(index))
+      }
+      if c["pendingReviewOriginalControlsRequired"]as?Bool==true {
+        var frames:[[String:Any]]=[]
+        for identifier in ["implement-plan","adjust-plan"] {
+          var control:UIButton?
+          try await wait("original pending-review control "+identifier){control=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier==identifier && $0.window===window && $0.isEnabled};return control != nil}
+          let button=try XCTUnwrap(control);_ = try await reveal(button,"actual pending-review control stable "+identifier)
+          frames.append(["identifier":identifier,"label":button.accessibilityLabel ?? "","x":button.frame.minX,"y":button.frame.minY,"width":button.bounds.width,"height":button.bounds.height,"enabled":button.isEnabled])
+        }
+        try shot("actual-pending-plan-original-controls");report["actualPendingReviewOriginalControlsVisibleAndEnabled"]=true;report["actualPendingReviewControlFrames"]=frames;report["approvalOrImplementationActions"]=0;try save()
+      }
+      if c["manualReadOnlyGesturesRequired"]as?Bool==true {
+        let button=try XCTUnwrap(views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier=="scroll-latest" && $0.window===window && $0.isEnabled})
+        button.sendActions(for:.touchUpInside)
+        try await wait("original latest control closes after one native action"){!views(window).compactMap{$0 as?UIButton}.contains{$0.accessibilityIdentifier=="scroll-latest" && $0.window===window}}
+        report["actualOriginalLatestButtonActivatedOnce"]=true;try shot("actual-original-latest-return");try save()
+      }
+      report["allOriginalPlanVersionsAndStepStatesExact"]=true;report["actualOriginalPlanCount"]=plans.count;report["originalPlanCardsIndependentlyExpandedCollapsed"]=true;report["status"]=c["pendingPlanReadOnlyRequired"]as?Bool==true ? "passed-original-physical-existing-pending-plan-and-card":"passed-original-physical-two-plan-versions-and-cards";try stage("original-plan-cards-passed")
+    }catch{caught=error;report["status"]="failed-original-plan-history-prefix-preserved";report["failure"]=String(describing:error);try?shot("actual-plan-failed-prefix");try?stage("failed-prefix")}
+    store.hostedEasyWorkProductUIPresented=oldUI
+    if let selected,let entry=store.threads.first(where:{$0.id==selected}){store.openThread(entry);await store.loadHistory(threadId:selected)}
+    if c["restoreOwnedNewEmptyDraftEntryAfterReadonlyUI"]as?Bool==true,let originalClient=store.client {
+      let key=SharedMobileRules.cacheKey(originalClient,threadId:threadId,projectId:nil,workspace:store.saved.workspaces[originalClient.id])
+      var explicitDefault=Draft();explicitDefault.collaborationMode="default"
+      if originalReadonlyDraftValues[key]==nil,(store.drafts.values[key]==Draft() || store.drafts.values[key]==explicitDefault),store.drafts.values.filter({$0.key != key})==originalReadonlyDraftValues {
+        store.drafts.values.removeValue(forKey:key);store.persist();report["removedOnlyProvenOwnedNewEmptyDraftEntry"]=true
+      }
+    }
+    let protectedChecks:[String:Bool]=["selectedClient":store.saved.selectedClientId==client,"drafts":try encoder.encode(store.drafts.values)==drafts,"outbox":try encoder.encode(store.saved.outbox)==outbox,"replyRecovery":try encoder.encode(store.saved.replyRecovery)==recovery,"threadForks":try encoder.encode(store.saved.threadForks)==forks,"originalVoiceRecords":try VoiceMigrationSafety.snapshot()==voice,"deviceIdentity":try CredentialVault.existingToken("easywork-device-identity")==identity]
+    report["actualOriginalProtectedFieldChecks"]=protectedChecks;try stage("original-protection-checked")
+    guard protectedChecks.values.allSatisfy({$0})else{throw NSError(domain:"EasyWorkPlanHistory",code:7)}
+    report["originalDraftsSettingsIdentityAndEntryPreserved"]=true;try stage("original-entry-restored");if let caught{throw caught}
+  }
+
+  @MainActor func testPhysicalOriginalProjectNewChatAndFrozenFirstSend() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=try JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any],c["caseId"]as?String==run,let budget=c["newModelInputsAuthorized"]as?Int,(c["originalZeroChatProjectRequired"]as?Bool==true ? (budget==0 || budget==1 && c["dualPreparedFirstSendGateRequired"]as?Bool==true):(1...2).contains(budget)),c["newChatsAuthorized"]as?Int==budget,c["newUploadsAuthorized"]as?Int==0,let turns=c["turns"]as?[[String:Any]],turns.count==budget,let projectId=c["projectId"]as?String,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Explicit frozen first-send budget required")}
+    let emptyProject=c["originalZeroChatProjectRequired"]as?Bool==true
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkFirstSend",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newSendActions":0,"wholeFeaturePassed":false,"codexTests":false],results:[[String:Any]]=[]
+    func save()throws{report["actualTurns"]=results;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ s:String)throws{report["stage"]=s;try save()}
+    func wait(_ label:String,seconds:Double=90,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkFirstSend",code:2,userInfo:[NSLocalizedDescriptionKey:label])}}
+    try stage("waiting-original-store-and-foreground");try await wait("original UI store"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil,!store.drawerOpen,store.search.isEmpty else{throw NSError(domain:"EasyWorkFirstSend",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let resumeUnsubmitted=c["resumeOriginalUnsubmittedDraft"]as?Bool==true
+    let selected=(resumeUnsubmitted ? c["restoreOriginalSelectionThreadId"]as?String:nil) ?? store.selectedThreadId,client=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,oldDrafts=store.drafts.values,voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),oldOutbox=store.saved.outbox,oldRecovery=store.saved.replyRecovery,oldForks=store.saved.threadForks,oldGeneration=store.saved.generationPreferences
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func controls()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ o:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(o)).inserted else{return};all.append(o);if let v=o as?UIView{v.subviews.forEach(visit)};o.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=o.accessibilityElementCount();if count>0&&count<1000{for index in 0..<count{if let child=o.accessibilityElement(at:index)as?NSObject{visit(child)}}}};visit(window);return all}
+    func identifier(_ o:NSObject)->String?{(o as?any UIAccessibilityIdentification)?.accessibilityIdentifier}
+    func activate(_ object:NSObject)throws{if let control=object as?UIControl{guard control.isEnabled,control.window===window,!control.isHidden,control.alpha>0.99 else{throw NSError(domain:"EasyWorkFirstSend",code:4)};control.sendActions(for:.touchUpInside)}else{guard object.accessibilityActivate()else{throw NSError(domain:"EasyWorkFirstSend",code:5)}}}
+    func control(_ key:String)async throws->NSObject{
+      var candidate:NSObject?,previous=CGRect.null,samples=0
+      try await wait("actual stable control "+key,seconds:60){
+        let native=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier==key && $0.window===window && !$0.isHidden && $0.alpha>0.99 && $0.isEnabled && !$0.bounds.isEmpty}
+        guard let found:NSObject=native ?? controls().first(where:{identifier($0)==key && $0.isAccessibilityElement && !$0.accessibilityFrame.isEmpty}),!found.accessibilityTraits.contains(.notEnabled)else{return false}
+        let frame=native.map{$0.convert($0.bounds,to:window)} ?? window.convert(found.accessibilityFrame,from:nil)
+        guard window.bounds.intersects(frame),root.transitionCoordinator==nil,root.presentedViewController==nil else{return false}
+        candidate=found;if previous==frame{samples+=1}else{previous=frame;samples=1};return samples>=3
+      };return try XCTUnwrap(candidate)
+    }
+    func projectNewControl()async throws->NSObject{
+      let key="new-in-"+projectId
+      for _ in 0..<40{
+        if views(window).compactMap({$0 as?UIButton}).contains(where:{$0.accessibilityIdentifier==key && $0.window===window && !$0.isHidden}){return try await control(key)}
+        let pull=try XCTUnwrap(views(window).first{String(describing:type(of:$0))=="SidebarPullRefreshView"});var ancestor=pull.superview,list:UIScrollView?
+        while let current=ancestor{if let scroll=current as?UIScrollView{list=scroll;break};ancestor=current.superview}
+        let scroll=try XCTUnwrap(list),top = -scroll.adjustedContentInset.top,bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+        let next=scroll.contentOffset.y>=bottom-1 ? top:min(bottom,scroll.contentOffset.y+scroll.bounds.height*0.7);scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false);try await Task.sleep(for:.milliseconds(250))
+      };throw NSError(domain:"EasyWorkFirstSend",code:6,userInfo:[NSLocalizedDescriptionKey:"Original project new-chat control unavailable"])
+    }
+    func shot(_ name:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    var sourceKey:String?
+    do{
+      try stage("refresh-original-client-before-new-first-sends");await store.refresh(includeHistory:false,userInitiated:true)
+      guard store.client?.online==true,store.canCreateThread,store.projects.contains(where:{$0.id==projectId}),store.error==nil else{throw NSError(domain:"EasyWorkFirstSend",code:7)}
+      let originalIds=Set(store.threads.map(\.id));store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+      if emptyProject {
+        guard store.threads.allSatisfy({$0.projectId != projectId}) else{throw NSError(domain:"EasyWorkZeroProject",code:1)}
+        try activate(try await control("open-sidebar"));try await wait("original empty-project sidebar open"){store.drawerOpen}
+        let probe=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeSidebarStateView}.first{$0.clientKey==store.client?.id})
+        let projectsExpanded=probe.projectsExpanded,projectExpanded=probe.projectExpandedIds.contains(projectId)
+        if !projectsExpanded{try activate(try await control("sidebar-projects-toggle"))}
+        _ = try await projectNewControl()
+        try activate(try await control("project-"+projectId));try await wait("original zero-project toggled"){probe.projectExpandedIds.contains(projectId) != projectExpanded}
+        try activate(try await control("project-"+projectId));try await wait("original zero-project expansion restored"){probe.projectExpandedIds.contains(projectId)==projectExpanded}
+        try shot("actual-original-zero-chat-project-and-new-control")
+        try activate(try await projectNewControl());try await wait("original zero-project empty composer"){!store.drawerOpen && store.selectedThreadId==nil && store.selectedProjectId==projectId}
+        sourceKey=store.targetKey
+        guard store.draft.text.isEmpty,store.draft.attachments.isEmpty,store.messages.isEmpty,!store.isRunning,store.pending==nil,store.pendingDesktopCreation==nil,Set(store.threads.map(\.id))==originalIds else{throw NSError(domain:"EasyWorkZeroProject",code:2)}
+        try await wait("actual original empty composer UITextInput enabled"){
+          views(window).contains{v in v.window===window && !v.isHidden && v.alpha>0.99 && !v.bounds.isEmpty && window.bounds.intersects(v.convert(v.bounds,to:window)) && ((v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true)}
+        }
+        report["actualZeroChatProjectId"]=projectId;report["actualProjectMemberCount"]=0;report["actualOriginalProjectCollapseExpandPreserved"]=true;report["actualOriginalProjectNewDraftControlActivatedOnce"]=true;report["actualNewDraftTargetKey"]=store.targetKey;report["actualEmptyComposerEnabled"]=true;report["actualOriginalAllThreadIdsUnchanged"]=true
+        try shot("actual-original-zero-chat-project-empty-composer");try stage("actual-zero-chat-project-empty-composer-no-send")
+        if !projectsExpanded {
+          try activate(try await control("open-sidebar"));try await wait("original sidebar reopen to restore section"){store.drawerOpen}
+          try activate(try await control("sidebar-projects-toggle"));try activate(try await control("close-sidebar"));try await wait("original sidebar section restored"){!store.drawerOpen}
+        }
+      }
+      for (index,turn) in turns.enumerated(){
+        let body=try XCTUnwrap(turn["body"]as?String),marker=try XCTUnwrap(turn["replyMarker"]as?String),bodyHash=SHA256.hash(data:Data(body.utf8)).map{String(format:"%02x",$0)}.joined()
+        guard bodyHash==turn["bodySha256"]as?String,!marker.isEmpty,!store.isRunning,store.sheet==nil else{throw NSError(domain:"EasyWorkFirstSend",code:8)}
+        let continuingOriginalDraft=resumeUnsubmitted && index==0
+        let preparedZeroProject=emptyProject && index==0
+        if continuingOriginalDraft{
+          guard store.selectedThreadId==nil,store.selectedProjectId==projectId,store.targetKey==c["originalUnsubmittedDraftTargetKey"]as?String,store.draft.text==body,c["originalNoSendCaseId"]as?String != nil else{throw NSError(domain:"EasyWorkFirstSend",code:18)}
+        }else if !preparedZeroProject{
+          try activate(try await control("open-sidebar"));try await wait("original sidebar open"){store.drawerOpen}
+          let probe=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeSidebarStateView}.first{$0.clientKey==store.client?.id})
+          if !probe.projectsExpanded{try activate(try await control("sidebar-projects-toggle"))}
+          try activate(try await projectNewControl());try await wait("original project new draft"){!store.drawerOpen && store.selectedThreadId==nil && store.selectedProjectId==projectId}
+        }
+        if sourceKey==nil{sourceKey=store.targetKey}else{guard sourceKey==store.targetKey else{throw NSError(domain:"EasyWorkFirstSend",code:9)}}
+        guard (continuingOriginalDraft ? store.draft.text==body:store.draft.text.isEmpty),store.draft.attachments.isEmpty,!store.isRunning,store.pending==nil,store.pendingDesktopCreation==nil else{throw NSError(domain:"EasyWorkFirstSend",code:10,userInfo:[NSLocalizedDescriptionKey:"Never replace an existing project draft or operation"])}
+        if c["normalModeRequired"]as?Bool==true {
+          guard store.selectedCollaborationMode != "plan" else{throw NSError(domain:"EasyWorkFirstSend",code:19,userInfo:[NSLocalizedDescriptionKey:"Original new draft must be normal mode before typing"])}
+        }
+        let model=store.draft.model ?? store.runtime?.generationSettings?.model ?? store.selectedModel?.id
+        let sharing=AISharingScope(target:try XCTUnwrap(store.client?.agentConnection?.target),model:AISharingRules.shared.model(value:model))
+        guard store.saved.aiSharingGrants?.contains(where:{$0.scope==sharing})==true else{throw NSError(domain:"EasyWorkFirstSend",code:11,userInfo:[NSLocalizedDescriptionKey:"Exact target/model sharing grant required before first Send"])}
+        var result:[String:Any]=["index":turn["index"]!,"bodySha256":bodyHash,"replyMarker":marker,"actualModel":model ?? "follow-computer","originalProjectNewChatControlActivatedOnce":!continuingOriginalDraft,"draftTargetKey":store.targetKey,"sendActionIssued":false]
+        if continuingOriginalDraft{result["originalProjectNewChatControlFromNoSendCaseId"]=c["originalNoSendCaseId"];result["originalUnsubmittedDraftContinuedWithoutReplacement"]=true}
+        results.append(result);try stage("original-project-new-draft-empty-"+String(index))
+        var field:UIView?
+        try await wait("unique original composer UITextInput"){
+          let values=views(window).filter{v in guard v.window===window,!v.isHidden,v.alpha>0.99,!v.bounds.isEmpty,window.bounds.intersects(v.convert(v.bounds,to:window))else{return false};return (v as?UITextView)?.isEditable==true || (v as?UITextField)?.isEnabled==true}
+          field=values.count==1 ? values.first:nil;return field != nil
+        }
+        let inputView=try XCTUnwrap(field),input=try XCTUnwrap(inputView as?any UITextInput)
+        let currentText=input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)
+        guard continuingOriginalDraft ? currentText==body:currentText?.isEmpty==true else{throw NSError(domain:"EasyWorkFirstSend",code:12)}
+        if !continuingOriginalDraft{inputView.becomeFirstResponder();input.insertText(body)}
+        try await wait("actual original composer body binding exact"){store.draft.text==body && input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)==body};inputView.resignFirstResponder()
+        try await wait("original first-send readiness"){store.composerAction == .send && store.canPerformComposerAction && store.draft.text==body}
+        let streaming=c["actualStreamingRequired"]as?Bool==true
+        let ending=streaming ? try XCTUnwrap(turn["replyEndMarker"]as?String):""
+        if c["dualPreparedFirstSendGateRequired"]as?Bool==true {
+          let existingProjectGate=c["originalExistingProjectGateRequired"]as?Bool==true
+          guard (preparedZeroProject || existingProjectGate && index==0),budget==1,streaming,let nonce=c["firstSendGateNonce"]as?String else{throw NSError(domain:"EasyWorkFirstSend",code:20)}
+          if existingProjectGate {
+            let count=store.threads.filter{$0.projectId==projectId}.count
+            guard count==c["initialProjectMemberCount"]as?Int,count>0,Set(store.threads.map(\.id))==originalIds else{throw NSError(domain:"EasyWorkFirstSend",code:24)}
+            report["actualInitialProjectMemberCount"]=count;report["actualOriginalAllThreadIdsUnchanged"]=true;report["actualEmptyComposerEnabled"]=true;report["actualNewDraftTargetKey"]=store.targetKey
+          }
+          result["actualUITextInputBodyExact"]=true;result["actualReadinessBeforeSend"]=store.devQueueReadiness;results[index]=result
+          report["firstSendGateNonce"]=nonce;try stage("awaiting-dual-original-zero-project-first-send-permit")
+          let permit=directory.appendingPathComponent(run+"-first-send-permit.json")
+          try await wait("both original physical empty-project drafts independently verified",seconds:600){FileManager.default.fileExists(atPath:permit.path)}
+          let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit))as?[String:Any])
+          guard value["caseId"]as?String==run,value["nonce"]as?String==nonce,value["projectId"]as?String==projectId,value["bodySha256"]as?String==bodyHash,value["bothPhysicalOriginalEmptyDraftsVerified"]as?Bool==true,value["maxSendActions"]as?Int==1,store.selectedThreadId==nil,store.selectedProjectId==projectId,store.draft.text==body,!store.isRunning else{throw NSError(domain:"EasyWorkFirstSend",code:21)}
+          result["dualPhysicalOriginalZeroProjectGateVerified"]=true
+        }
+        let send=try await control("send-message");result["actualReadinessBeforeSend"]=store.devQueueReadiness;result["actualUITextInputBodyExact"]=true;result["sendActionIssued"]=true;results[index]=result;report["newSendActions"]=index+1;try stage("immutable-first-send-intent-"+String(index))
+        try activate(send);try stage("one-original-first-send-issued-"+String(index))
+        func matchesReply(_ message:ChatMessage)->Bool {
+          let text=message.text.trimmingCharacters(in:.whitespacesAndNewlines)
+          return message.role=="assistant" && (streaming ? text.hasPrefix(marker) && text.hasSuffix(ending):text==marker)
+        }
+        if streaming {
+          var samples:[[String:Any]]=[],previous="",lastShotCount=0,lastHeartbeat=Date.distantPast,terminalFailure=false
+          try await wait("actual growing original reply and terminal state",seconds:300){
+            if Date().timeIntervalSince(lastHeartbeat)>=2{report["actualCurrentReadLoopState"]=store.hostedEasyWorkReadLoopState;report["actualCurrentAssistantCharacters"]=store.messages.filter{$0.role=="assistant"}.map{$0.text.count};try?save();lastHeartbeat=Date()}
+            if store.selectedThreadId.map({!originalIds.contains($0)})==true,!store.historyLoading,!store.isRunning,["failed","cancelled","interrupted"].contains(store.runtime?.state ?? "") {terminalFailure=true;report["actualTerminalFailureState"]=store.runtime?.state;report["actualTerminalFailureOriginalError"]=store.runtime?.error;try?save();return true}
+            if store.isRunning,let partial=store.messages.last(where:{$0.role=="assistant" && $0.text.hasPrefix(marker)}),partial.text != previous {
+              let rendered=views(window).compactMap{$0 as?HostedNativeMarkdownFormattingStateView}.filter{$0.window===window && !$0.sourceText.isEmpty && partial.text.contains($0.sourceText)}
+              let state=views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.first{$0.targetKey==store.targetKey}
+              if !rendered.isEmpty,let state {
+                let digest=SHA256.hash(data:Data(partial.text.utf8)).map{String(format:"%02x",$0)}.joined()
+                samples.append(["characters":partial.text.count,"sha256":digest,"messageId":partial.id,"runId":partial.runId ?? "","status":partial.status ?? "","running":store.isRunning,"productionMarkdownViews":rendered.count,"followsLatest":state.followsLatest,"time":Date().timeIntervalSince1970])
+                previous=partial.text;report["actualStreamingSamples"]=samples;try?save()
+                if lastShotCount<2 && (lastShotCount==0 || samples.count>=3){try?shot("actual-growing-stream-"+String(lastShotCount));lastShotCount+=1}
+              }
+            }
+            return store.selectedThreadId.map{!originalIds.contains($0)}==true && !store.historyLoading && !store.isRunning && store.messages.contains{matchesReply($0) && ["complete","completed"].contains($0.status ?? "")}
+          }
+          guard !terminalFailure else{throw NSError(domain:"EasyWorkFirstSend",code:23,userInfo:[NSLocalizedDescriptionKey:"Original model ended unsuccessfully; retained without retry"])}
+          guard samples.count>=2,Set(samples.compactMap{$0["sha256"]as?String}).count>=2,samples.allSatisfy({$0["followsLatest"]as?Bool==true}),let first=samples.first?["characters"]as?Int,let last=samples.last?["characters"]as?Int,last>first else{throw NSError(domain:"EasyWorkFirstSend",code:22,userInfo:[NSLocalizedDescriptionKey:"Actual running production reply must visibly grow before terminal"])}
+          result["actualGrowingStreamToTerminalVerified"]=true;result["actualOriginalAutoFollowDuringStreamVerified"]=true
+        }else{
+          try await wait("new thread and terminal actual reply",seconds:210){store.selectedThreadId.map{!originalIds.contains($0)}==true && !store.historyLoading && !store.isRunning && store.messages.contains{matchesReply($0) && ["complete","completed"].contains($0.status ?? "")}}
+        }
+        let reply=try XCTUnwrap(store.messages.first{matchesReply($0)})
+        guard store.conversation?.projectId==projectId,store.conversation?.hostId==store.client?.id,store.draft.text.isEmpty,store.draft.attachments.isEmpty,store.messages.filter({$0.role=="user" && $0.text==body}).count==1 else{throw NSError(domain:"EasyWorkFirstSend",code:13)}
+        result["createdThreadId"]=store.selectedThreadId;result["actualRunId"]=reply.runId;result["actualFinalMessageId"]=reply.id;result["actualFinalText"]=reply.text;result["terminalReplyVerified"]=true;result["exactProjectAndHostVerified"]=true;results[index]=result
+        try await Task.sleep(for:.milliseconds(400));try shot("actual-first-send-"+String(index));try stage("new-first-send-completed-"+String(index))
+      }
+      report["status"]=emptyProject && budget==0 ? "passed-original-zero-chat-project-and-empty-draft-no-send":"passed-original-project-new-chat-and-frozen-first-send";try stage("all-new-first-sends-terminal")
+    }catch{
+      report["status"]="failed-original-first-send-prefix-no-automatic-resend";report["failure"]=String(describing:error);try?shot("actual-first-send-failed-prefix");try?stage("failed-prefix-retained-no-replay")
+      if c["actualStreamingRequired"]as?Bool==true {
+        if let selected,let entry=store.threads.first(where:{$0.id==selected}){store.openThread(entry);await store.loadHistory(threadId:selected)}
+        store.hostedEasyWorkProductUIPresented=oldUI;report["failedStreamingOriginalEntryRestoredReadOnly"]=true;try?stage("failed-prefix-original-entry-restored-no-replay")
+      }
+      throw error
+    }
+    defer{store.hostedEasyWorkProductUIPresented=oldUI}
+    if let selected,let entry=store.threads.first(where:{$0.id==selected}){store.openThread(entry);await store.loadHistory(threadId:selected)}
+    guard store.saved.selectedClientId==client,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity,try encoder.encode(store.saved.threadForks)==encoder.encode(oldForks),try encoder.encode(store.saved.generationPreferences)==encoder.encode(oldGeneration)else{throw NSError(domain:"EasyWorkFirstSend",code:14)}
+    for(k,v)in oldOutbox ?? [:]{guard try encoder.encode(store.saved.outbox?[k])==encoder.encode(Optional(v))else{throw NSError(domain:"EasyWorkFirstSend",code:16)}}
+    for(k,v)in oldRecovery ?? [:]{guard try encoder.encode(store.saved.replyRecovery?[k])==encoder.encode(Optional(v))else{throw NSError(domain:"EasyWorkFirstSend",code:17)}}
+    for(k,v)in oldDrafts where k != sourceKey{guard try encoder.encode(store.drafts.values[k])==encoder.encode(Optional(v))else{throw NSError(domain:"EasyWorkFirstSend",code:15)}}
+    report["originalOtherDraftsIdentityGlobalSettingsAndEntryPreserved"]=true;report["consumedOnlyNewProjectDraftTarget"]=sourceKey;try stage("original-entry-restored")
+  }
+
+  @MainActor func testPhysicalOriginalProviderFailureHistoryWithoutNewSend() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let c=try JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any],c["caseId"]as?String==run,c["newModelInputsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,let thread=c["threadId"]as?String,let messageId=c["mobileMessageId"]as?String,let runId=c["runId"]as?String,let originalError=c["expectedErrorText"]as?String,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance" else{throw XCTSkip("Frozen original provider-failure read-only source required")}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkProviderFailure",code:1)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newSendActions":0,"newModelsUploadsOrApprovals":0,"wholeFeaturePassed":false,"codexTests":false]
+    func save(_ stage:String)throws{report["stage"]=stage;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func wait(_ label:String,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(90);while !ready() && Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{throw NSError(domain:"EasyWorkProviderFailure",code:2,userInfo:[NSLocalizedDescriptionKey:label])}}
+    try save("waiting-original-store-and-foreground");try await wait("original App active"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkProviderFailure",code:3)}
+    if let retained=c["retainedOriginalUnsubmittedDraft"]as?[String:Any],let key=retained["targetKey"]as?String,let expected=retained["bodySha256"]as?String {
+      let original=try XCTUnwrap(store.drafts.values[key])
+      guard HostService.hash(Data(original.text.utf8))==expected,original.attachments.isEmpty,original.operationId==nil,store.saved.outbox?[key]==nil,store.saved.desktopCreations?[key]==nil else{throw NSError(domain:"EasyWorkProviderFailure",code:10)}
+      report["originalUnsentDraftSourceCaseId"]=retained["sourceCaseId"];report["originalUnsentDraftTargetKey"]=key;report["originalUnsentDraftBodySHA256"]=expected;report["originalUnsentDraftHasNoSubmittedOperation"]=true
+      try save("original-never-sent-draft-exactly-preserved-before-read")
+    }
+    var restorationThread=store.selectedThreadId
+    if let filename=c["originalBeforeFirstSendBaselineFilename"]as?String {
+      guard filename=="pre-first-stream-"+run+".bin" else{throw NSError(domain:"EasyWorkProviderFailure",code:7)}
+      let bytes=try Data(contentsOf:directory.appendingPathComponent(filename))
+      guard HostService.hash(bytes)==c["originalBeforeFirstSendBaselineSHA256"]as?String else{throw NSError(domain:"EasyWorkProviderFailure",code:8)}
+      let baseline=try AgentCache.decode(bytes)
+      guard baseline.selectedClientId==store.saved.selectedClientId else{throw NSError(domain:"EasyWorkProviderFailure",code:9)}
+      restorationThread=baseline.selectedClientId.flatMap{baseline.lastThreads[$0]}
+      report["restorationUsesOriginalPreFirstSendSelection"]=true
+    }
+    try save("read-only-catch-up-before-protected-comparison");await store.refresh(includeHistory:false,userInitiated:true)
+    if let current=store.selectedThreadId {await store.loadHistory(threadId:current)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let selected=restorationThread,client=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity")
+    defer{store.hostedEasyWorkProductUIPresented=oldUI}
+    do{
+      try save("read-original-failed-run-after-normal-catch-up")
+      let entry=try XCTUnwrap(store.threads.first{$0.id==thread});store.hostedEasyWorkProductUIPresented=true;store.openThread(entry);await store.loadHistory(threadId:thread)
+      try await wait("original failed run loaded"){store.selectedThreadId==thread && !store.historyLoading && store.runtime?.state=="failed" && !store.isRunning}
+      let message=try XCTUnwrap(store.messages.first{$0.id==messageId})
+      guard message.role=="assistant",message.kind=="turnFailure",message.status=="failed",message.text==originalError,message.runId==runId,!message.isGroupedTool,store.runtime?.error==originalError,store.runtime?.receipts.contains(where:{$0.turnId==runId && $0.error==originalError && $0.state=="failed"})==true else{throw NSError(domain:"EasyWorkProviderFailure",code:4)}
+      let display=EasyWorkFailurePresentation.text(originalError,enabled:true)
+      guard display==L10n.tr("模型服务请求失败。本次任务未完成，原输入和执行记录已保留。"),!display.contains("<html>"),EasyWorkFailurePresentation.text(originalError,enabled:false)==originalError,EasyWorkFailurePresentation.text("ordinary failure",enabled:true)=="ordinary failure" else{throw NSError(domain:"EasyWorkProviderFailure",code:5)}
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+      func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+      var previous:Data?,stable=0
+      try await wait("actual original failure content settled"){
+        guard UIApplication.shared.applicationState == .active,window.rootViewController?.presentedViewController==nil else{return false}
+        let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+        guard let bytes=image.pngData()else{return false};let digest=Data(SHA256.hash(data:bytes));stable=digest==previous ? stable+1:1;previous=digest
+        if stable>=3{try?bytes.write(to:directory.appendingPathComponent(run+"-actual-original-provider-failure.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])};return stable>=3
+      }
+      report["actualOriginalFailedRunId"]=runId;report["actualOriginalFailureMessageId"]=messageId;report["actualRawFailureSha256"]=SHA256.hash(data:Data(originalError.utf8)).map{String(format:"%02x",$0)}.joined();report["actualFailureClassifiedAsTaskHistoryNotTool"]=true;report["actualRawMessageRuntimeAndReceiptUnchanged"]=true;report["providerHTMLReplacedInPresentationOnly"]=true;report["otherAgentAndUnknownCopyUnchanged"]=true;report["actualUIStablePixelSamples"]=stable
+      try save("original-failure-classification-and-raw-receipt-verified")
+      if c["actualOriginalNativeButtonMetadataRequired"]as?Bool==true {
+        var nativeScreens:[[String:Any]]=[]
+        func visibleButtons()->[UIButton]{
+          views(window).compactMap{$0 as?UIButton}.filter{button in
+            guard button.window===window,button.isEnabled,button.isUserInteractionEnabled else{return false}
+            var ancestor:UIView?=button
+            while let current=ancestor{if current.isHidden || current.alpha<0.99{return false};ancestor=current.superview}
+            let frame=button.convert(button.bounds,to:window),center=CGPoint(x:frame.midX,y:frame.midY)
+            guard window.bounds.contains(center),let hit=window.hitTest(center,with:nil)else{return false}
+            return hit===button || hit.isDescendant(of:button)
+          }
+        }
+        func nativeAudit(_ name:String)async throws{
+          var last:Data?,settled=0
+          try await wait("actual original native button screen settled "+name){
+            guard visibleButtons().filter({$0.accessibilityIdentifier?.isEmpty==false}).count>=2 else{return false}
+            let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+            guard let bytes=image.pngData()else{return false};let hash=Data(SHA256.hash(data:bytes));settled=hash==last ? settled+1:1;last=hash
+            if settled>=3{try?bytes.write(to:directory.appendingPathComponent(run+"-actual-native-buttons-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])};return settled>=3
+          }
+          let nativeWrappers=visibleButtons().filter{$0.accessibilityIdentifier?.isEmpty==false}
+          let rows=nativeWrappers.map{button->[String:Any]in
+            let frame=button.convert(button.bounds,to:window)
+            return ["identifier":button.accessibilityIdentifier ?? "","accessibilityLabel":button.accessibilityLabel ?? "","resolvedUIKitLabel":button.accessibilityLabel ?? button.title(for:.normal) ?? button.configuration?.title ?? button.titleLabel?.text ?? "","actualUIKitWidthPoints":frame.width,"actualUIKitHeightPoints":frame.height,"actualUIKitWindowFrame":String(describing:frame),"publicAccessibilityFrame":String(describing:button.accessibilityFrame),"nativeCenterHitBelongsToButton":true]
+          }
+          let issues=rows.filter{($0["accessibilityLabel"]as?String)?.isEmpty != false || ($0["actualUIKitWidthPoints"]as?CGFloat ?? 0)<43.5 || ($0["actualUIKitHeightPoints"]as?CGFloat ?? 0)<43.5}
+          nativeScreens.append(["screen":name,"actualVisibleExplicitNativeWrapperButtons":rows,"issues":issues,"stablePixelSamples":settled,"unmappedSwiftUIOwnedUIKitContainersOutsideThisNativeWrapperAudit":visibleButtons().count-nativeWrappers.count,"allSystemAccessibilityButtonsAudited":false,"systemAccessibilityAuditAndVoiceOverNotClaimed":true])
+          report["actualOriginalUIKitButtonScreens"]=nativeScreens;try save("actual-original-native-button-metadata-"+name)
+          guard issues.isEmpty else{throw NSError(domain:"EasyWorkProviderFailure",code:11,userInfo:[NSLocalizedDescriptionKey:"Original UIKit label or hit-region issue retained"])}
+        }
+        try await nativeAudit("chat")
+        let open=try XCTUnwrap(visibleButtons().first{$0.accessibilityIdentifier=="open-sidebar"});open.sendActions(for:.touchUpInside)
+        do{
+          try await wait("original drawer opened by its native action"){store.drawerOpen}
+          try await nativeAudit("sidebar")
+        }catch{
+          if let close=visibleButtons().first(where:{$0.accessibilityIdentifier=="close-sidebar"}){close.sendActions(for:.touchUpInside);try?await wait("original drawer restored after metadata failure"){!store.drawerOpen}}
+          throw error
+        }
+        let close=try XCTUnwrap(visibleButtons().first{$0.accessibilityIdentifier=="close-sidebar"});close.sendActions(for:.touchUpInside)
+        try await wait("original drawer restored after native metadata audit"){!store.drawerOpen}
+        report["actualUIKitNativeLabels44PointBoundsAndCenterHitTestsPassed"]=true
+        report["systemAccessibilityAuditAndVoiceOverNotClaimed"]=true
+      }
+    }catch{
+      let failure=error
+      if !store.drawerOpen,let selected,let entry=store.threads.first(where:{$0.id==selected}){store.openThread(entry);await store.loadHistory(threadId:selected)}
+      report["originalEntryRestoredAfterFailedPrefix"] = !store.drawerOpen && store.selectedThreadId==selected
+      report["status"]="failed-original-provider-failure-read-only-prefix";report["failure"]=String(describing:failure);try?save("failed-prefix-no-send");throw failure
+    }
+    if let selected,let entry=store.threads.first(where:{$0.id==selected}){store.openThread(entry);await store.loadHistory(threadId:selected)}
+    guard store.saved.selectedClientId==client,try encoder.encode(store.drafts.values)==drafts,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.replyRecovery)==recovery,try encoder.encode(store.saved.threadForks)==forks,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkProviderFailure",code:6)}
+    report["originalDraftsOperationsVoiceIdentityAndEntryPreserved"]=true;report["status"]="passed-original-provider-failure-read-only";try save("original-entry-restored")
+  }
+
+  @MainActor func testPhysicalProductionChatSearchUsingActualPublicUIAccessibilityActions() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else{throw XCTSkip("Explicit physical original search case")}
+    let c=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any]);guard c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualSearchUIAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalSearch",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),release=directory.appendingPathComponent(run+"-driver-release.json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalSearch",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsImportsPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ s:String)throws{report["stage"]=s;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalSearch",code:3,userInfo:[NSLocalizedDescriptionKey:label])}}
+    func releaseValid()->Bool{guard let data=try?Data(contentsOf:release),let v=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return v["caseId"]as?String==run && v["screenSharingStoppedVerified"]as?Bool==true && v["releaseNativeOnlyNoProductAction"]as?Bool==true}
+    try stage("waiting-for-original-store-and-foreground");try await wait("original UI-owned store and foreground"){
+      let present=SessionStore.hostedEasyWorkAcceptanceStore != nil,state=UIApplication.shared.applicationState.rawValue
+      let scenes=UIApplication.shared.connectedScenes.map{$0.activationState.rawValue}.sorted()
+      let signature="\(present):\(state):\(scenes)"
+      if report["originalStoreForegroundDiagnosticSignature"]as?String != signature {
+        report["originalStoreForegroundDiagnosticSignature"]=signature;report["originalUIOwnedStorePresent"]=present;report["originalUIApplicationState"]=state;report["originalUISceneActivationStates"]=scenes
+        report["nativeAcceptanceEnabled"]=SessionStore.hostedEasyWorkAcceptanceEnabled;report["nativeProductUIEnabled"]=SessionStore.hostedEasyWorkProductUIEnabled;try?save()
+      }
+      return present && UIApplication.shared.applicationState == .active
+    }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.error==nil,store.sheet==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:4)}
+    if let expectedMotion=c["expectedSystemReduceMotion"]as?Bool{
+      report["actualSystemReduceMotionEnabled"]=UIAccessibility.isReduceMotionEnabled
+      guard UIAccessibility.isReduceMotionEnabled==expectedMotion else{throw NSError(domain:"EasyWorkPhysicalSearch",code:36)}
+    }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let fixture=c["existingReadOnlySearchFixture"]as?[String:String]
+    let entrySelected=(fixture != nil ? c["restoreOriginalSelectionThreadId"]as?String:nil) ?? store.selectedThreadId
+    if let fixture {
+      guard c["readOnlyFixtureNavigationAuthorized"]as?Bool==true,let id=fixture["threadId"],fixture["messageId"] != nil,fixture["query"]?.isEmpty==false,["tool-output","attachment","diff"].contains(fixture["kind"] ?? "") else{throw NSError(domain:"EasyWorkPhysicalSearch",code:25)}
+      await store.refresh(includeHistory:false,userInitiated:true)
+      let own=try XCTUnwrap(store.threads.first{$0.id==id});store.openThread(own);await store.loadHistory(threadId:id)
+    }
+    let target=store.targetKey,selected=store.selectedThreadId,client=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    if c["actualLargestSystemAccessibilityTextRequired"]as?Bool==true {
+      let category=window.traitCollection.preferredContentSizeCategory
+      report["actualSystemContentSizeCategory"]=category.rawValue;report["actualSystemPreferredBodyPointSize"]=UIFont.preferredFont(forTextStyle:.body,compatibleWith:window.traitCollection).pointSize
+      guard category == .accessibilityExtraExtraExtraLarge else{throw NSError(domain:"EasyWorkPhysicalSearch",code:37)}
+    }
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:5)}
+    func protectData()throws{guard store.saved.selectedClientId==client,try encoder.encode(store.drafts.values)==drafts,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.replyRecovery)==recovery,try encoder.encode(store.saved.threadForks)==forks,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalSearch",code:6)}}
+    func protect()throws{try protectData();guard store.targetKey==target,store.selectedThreadId==selected else{throw NSError(domain:"EasyWorkPhysicalSearch",code:6)}}
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func controls()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ o:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(o)).inserted else{return};all.append(o);if let v=o as?UIView{v.subviews.forEach(visit)};o.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=o.accessibilityElementCount();if count>0&&count<1000{for i in 0..<count{if let child=o.accessibilityElement(at:i)as?NSObject{visit(child)}}}};visit(window);return all}
+    func shot(_ name:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    do{
+      try stage("refreshing-original-workspace-and-history-read-only")
+      report["actualRefreshStateBefore"]=["loading":store.loading,"sidebarInteracting":store.sidebarInteracting,"pendingConnection":store.pendingConnection != nil,"online":store.client?.online==true,"migrationNeedsVerification":store.client?.migrationNeedsVerification==true];try save()
+      await store.refresh(includeHistory:false,userInitiated:true)
+      report["actualRefreshStateAfter"]=["loading":store.loading,"sidebarInteracting":store.sidebarInteracting,"pendingConnection":store.pendingConnection != nil,"online":store.client?.online==true,"migrationNeedsVerification":store.client?.migrationNeedsVerification==true,"error":store.error ?? "none"];try save()
+      guard store.client?.online==true,store.targetKey==target,let thread=selected else{throw NSError(domain:"EasyWorkPhysicalSearch",code:7,userInfo:[NSLocalizedDescriptionKey:store.error ?? "Original workspace did not reconnect"])}
+      await store.loadHistory(threadId:thread);try protect()
+      let source:ChatMessage,query:String
+      var completeHistoryIds:[String]?
+      if let fixture {
+        let history=try await store.completeChatSearchHistory(targetKey:target)
+        completeHistoryIds=history.map(\.id);source=try XCTUnwrap(history.first{$0.id==fixture["messageId"]});query=try XCTUnwrap(fixture["query"])
+        guard source.searchableText.contains(query) else{throw NSError(domain:"EasyWorkPhysicalSearch",code:26)}
+        if fixture["kind"]=="tool-output" {
+          guard source.blocks?.contains(where:{if case .tool(_,_,_,_,let output)=$0{return output?.contains(query)==true};return false})==true else{throw NSError(domain:"EasyWorkPhysicalSearch",code:27)}
+        } else if fixture["kind"]=="diff" {
+          guard source.blocks?.contains(where:{if case .diff(_,let text)=$0{return text.contains(query)};return false})==true else{throw NSError(domain:"EasyWorkPhysicalSearch",code:30)}
+        } else {
+          guard source.attachments?.contains(where:{$0.name.contains(query)})==true else{throw NSError(domain:"EasyWorkPhysicalSearch",code:28)}
+        }
+        if c["actualMultiPageRequired"]as?Bool==true {
+          guard history.count>50,Set(history.map(\.id)).count==history.count else{throw NSError(domain:"EasyWorkPhysicalSearch",code:31)}
+          report["actualCompleteHistoryDistinctMessageCount"]=history.count
+          report["actualFullHistoryExceedsProductionPageLimit"]=true
+        }
+        report["actualExistingFixtureKind"]=fixture["kind"];report["actualCompleteHistoryMessageIds"]=completeHistoryIds
+      } else {
+        source=try XCTUnwrap(store.messages.first{$0.role=="assistant" && $0.text.range(of:"(?:FORK_SELECTED|EWF49_MENU_HELPER)_[A-Za-z0-9_-]+",options:.regularExpression) != nil})
+        let range=try XCTUnwrap(source.text.range(of:"(?:FORK_SELECTED|EWF49_MENU_HELPER)_[A-Za-z0-9_-]+",options:.regularExpression));query=String(source.text[range])
+      }
+      report["actualQuery"]=query;report["expectedMessageId"]=source.id;report["normalOriginalWorkspaceReadRecoveredOnline"]=true
+      if c["deduplicatedDocumentRequired"]as?Bool==true {
+        let sourceCount=source.text.components(separatedBy:query).count-1,document=source.searchableText,documentCount=document.components(separatedBy:query).count-1
+        report["originalControlledReplyQueryOccurrences"]=sourceCount;report["actualSearchDocumentQueryOccurrences"]=documentCount;report["actualSearchDocument"]=document
+        guard sourceCount==1,documentCount==1 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:24)};report["actualSharedProductionSearchDocumentDeduplicated"]=true
+      }
+      store.hostedEasyWorkProductUIPresented=true;await Task.yield();try stage("awaiting-official-production-chat-menu-and-search-open")
+      func identifier(_ o:NSObject)->String?{(o as? any UIAccessibilityIdentification)?.accessibilityIdentifier}
+      func actualActivate(_ object:NSObject)throws{
+        if let button=object as?UIButton,button.menu != nil { if #available(iOS 17.4,*){button.performPrimaryAction()}else{throw XCTSkip("Public menu primary action requires iOS17.4")};return }
+        if let control=object as?UIControl { guard control.isEnabled,control.window===window,!control.isHidden,control.alpha>0.99 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:20)};control.sendActions(for:.touchUpInside);return }
+        guard object.accessibilityActivate() else{throw NSError(domain:"EasyWorkPhysicalSearch",code:21)}
+      }
+      func stableControl(_ key:String)async throws->NSObject{
+        var previous=CGRect.null,samples=0,candidate:NSObject?
+        try await wait("actual visible stable control "+key,seconds:60){
+          let native=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier==key && $0.window===window && !$0.isHidden && $0.alpha>0.99 && $0.isEnabled && !$0.bounds.isEmpty}
+          guard let found:NSObject=native ?? controls().first(where:{identifier($0)==key && $0.isAccessibilityElement && !$0.accessibilityFrame.isEmpty}),!found.accessibilityTraits.contains(.notEnabled) else{return false}
+          let frame=native.map{$0.convert($0.bounds,to:window)} ?? window.convert(found.accessibilityFrame,from:nil)
+          if let native {
+            var ancestor=native.superview
+            while let current=ancestor {
+              if let scroll=current as?UIScrollView {
+                let viewport=scroll.convert(scroll.bounds.inset(by:scroll.adjustedContentInset),to:window)
+                let visible=frame.intersection(viewport)
+                if visible.isNull || visible.height<frame.height*0.95 {
+                  // Production prepend anchoring may settle after the first
+                  // scroll. Retry only the public scroll, never the action.
+                  let rect=native.convert(native.bounds,to:scroll)
+                  scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:rect.minY-scroll.adjustedContentInset.top),animated:false)
+                  samples=0;return false
+                }
+                break
+              }
+              ancestor=current.superview
+            }
+          }
+          guard window.bounds.intersects(frame),root.transitionCoordinator==nil,root.presentedViewController?.transitionCoordinator==nil,root.presentedViewController?.isBeingPresented != true,root.presentedViewController?.isBeingDismissed != true else{return false}
+          if previous==frame{samples+=1}else{previous=frame;samples=1};candidate=found;return samples>=3
+        }
+        return try XCTUnwrap(candidate)
+      }
+      if c["actualSidebarMatrixRequired"]as?Bool==true {
+        guard store.search.isEmpty,!store.drawerOpen else{throw NSError(domain:"EasyWorkPhysicalSidebar",code:1)}
+        func sidebarState()->HostedNativeSidebarStateView? {
+          let values=views(window).compactMap{$0 as?HostedNativeSidebarStateView}.filter{$0.clientKey==store.client?.id && $0.window===window}
+          return values.count==1 ? values.first:nil
+        }
+        func sidebarControl(_ key:String)async throws->NSObject {
+          var wrapped=false
+          for attempt in 0..<40 {
+            if views(window).compactMap({$0 as?UIButton}).contains(where:{$0.accessibilityIdentifier==key && $0.window===window && !$0.isHidden}) {
+              return try await stableControl(key)
+            }
+            let pull=try XCTUnwrap(views(window).first{String(describing:type(of:$0))=="SidebarPullRefreshView"})
+            var ancestor=pull.superview,list:UIScrollView?
+            while let current=ancestor{if let scroll=current as?UIScrollView{list=scroll;break};ancestor=current.superview}
+            let scroll=try XCTUnwrap(list),top = -scroll.adjustedContentInset.top
+            let bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+            let next:CGFloat
+            if scroll.contentOffset.y>=bottom-1 {
+              guard !wrapped else{break};wrapped=true;next=top
+            } else {next=min(bottom,scroll.contentOffset.y+scroll.bounds.height*0.7)}
+            scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false)
+            var previous=CGPoint(x:CGFloat.greatestFiniteMagnitude,y:CGFloat.greatestFiniteMagnitude),samples=0
+            try await wait("actual sidebar original public scroll settled"){
+              if scroll.contentOffset==previous{samples+=1}else{previous=scroll.contentOffset;samples=0}
+              return samples>=3
+            }
+            report["actualSidebarReadOnlyPublicScrollSteps"]=attempt+1;try save()
+          }
+          throw NSError(domain:"EasyWorkPhysicalSidebar",code:4,userInfo:[NSLocalizedDescriptionKey:"Original sidebar control not mounted after bounded public scroll: "+key])
+        }
+        try actualActivate(try await stableControl("open-sidebar"))
+        try await wait("original sidebar open and native state mounted"){store.drawerOpen && sidebarState() != nil}
+        let initial=try XCTUnwrap(sidebarState()),oldExpanded=initial.recentExpanded,oldSection=initial.recentSectionExpanded,oldProjects=initial.projectsExpanded,oldSearch=initial.searchVisible
+        let ids=initial.recentIds;guard ids.count>5,let sixth=ids.dropFirst(5).compactMap({id in store.threads.first{$0.id==id}}).first(where:{candidate in !candidate.title.isEmpty && store.threads.filter({$0.title==candidate.title}).count==1}) else{throw NSError(domain:"EasyWorkPhysicalSidebar",code:2)}
+        if !oldSection{try actualActivate(try await sidebarControl("sidebar-recent-toggle"))}
+        if oldExpanded{try actualActivate(try await sidebarControl("sidebar-more-recent"))}
+        try await wait("original recent list has exactly first five"){sidebarState()?.visibleRecentIds==Array(ids.prefix(5))}
+        try protect();report["actualRecentOrderedIds"]=ids;report["actualSearchedOriginalThreadId"]=sixth.id
+        try actualActivate(try await sidebarControl("sidebar-more-recent"))
+        try await wait("original recent expansion reveals all exact ids"){sidebarState()?.visibleRecentIds==ids && sidebarState()?.recentExpanded==true}
+        _ = try await sidebarControl("recent-thread-"+sixth.id)
+        try shot("actual-sixth-original-recent-chat-visible-after-expand");report["actualFiveRowLimitAndOriginalExpandPassed"]=true
+        try actualActivate(try await sidebarControl("sidebar-projects-toggle"))
+        try await wait("projects section independently toggled"){sidebarState()?.projectsExpanded != oldProjects && sidebarState()?.recentExpanded==true}
+        try actualActivate(try await sidebarControl("sidebar-projects-toggle"))
+        try await wait("projects section restored independently"){sidebarState()?.projectsExpanded==oldProjects && sidebarState()?.recentExpanded==true}
+        report["actualProjectsSectionAndRecentExpansionIndependent"]=true
+        try actualActivate(try await sidebarControl("sidebar-more-recent"))
+        try await wait("original recent collapsed again"){sidebarState()?.recentExpanded==false}
+        if c["actualPerProjectMatrixRequired"]as?Bool==true {
+          let state=try XCTUnwrap(sidebarState()),eligible=state.projectIds.filter{state.projectThreadIds[$0]?.isEmpty==false}
+          let projectId=try XCTUnwrap(c["expectedOriginalSidebarProjectId"]as?String ?? eligible.sorted{(state.projectThreadIds[$0]?.count ?? 0)>(state.projectThreadIds[$1]?.count ?? 0)}.first)
+          guard eligible.contains(projectId),let members=state.projectThreadIds[projectId],let child=members.first else{throw NSError(domain:"EasyWorkPhysicalSidebar",code:6)}
+          let oldProjectExpanded=state.projectExpandedIds.contains(projectId),listKey=state.clientKey+":"+projectId,oldAll=state.expandedProjectLists.contains(listKey)
+          report["actualOriginalProjectThreadCounts"]=eligible.map{["projectId":$0,"threads":String(state.projectThreadIds[$0]?.count ?? 0)]}
+          if !state.projectsExpanded{try actualActivate(try await sidebarControl("sidebar-projects-toggle"))}
+          if oldProjectExpanded{try actualActivate(try await sidebarControl("project-"+projectId))}
+          try await wait("actual original project collapsed and its child controls removed"){
+            sidebarState()?.projectExpandedIds.contains(projectId)==false && !views(window).compactMap({$0 as?UIButton}).contains(where:{$0.accessibilityIdentifier?.hasPrefix("project-thread-"+projectId+"-")==true})
+          }
+          try actualActivate(try await sidebarControl("project-"+projectId))
+          try await wait("actual original project expanded"){sidebarState()?.projectExpandedIds.contains(projectId)==true}
+          if oldAll && members.count>5{try actualActivate(try await sidebarControl("sidebar-more-project-"+projectId))}
+          for id in members.prefix(5){_ = try await sidebarControl("project-thread-"+projectId+"-"+id)}
+          if members.count>5 {
+            try actualActivate(try await sidebarControl("sidebar-more-project-"+projectId))
+            try await wait("actual per-project list expanded beyond five"){sidebarState()?.expandedProjectLists.contains(listKey)==true}
+            for id in members.dropFirst(5){_ = try await sidebarControl("project-thread-"+projectId+"-"+id)}
+            report["actualPerProjectBeyondFiveExpansionPassed"]=true
+            try actualActivate(try await sidebarControl("sidebar-more-project-"+projectId))
+          } else {report["actualPerProjectBeyondFiveUnavailableInOriginalData"]=true}
+          _ = try await sidebarControl("project-thread-"+projectId+"-"+child)
+          try protect();try shot("actual-original-project-expanded-members-and-five-limit")
+          try actualActivate(try await sidebarControl("project-thread-"+projectId+"-"+child))
+          try await wait("original project member opens exact target",seconds:90){store.selectedThreadId==child && !store.drawerOpen && !store.historyLoading}
+          try protectData();report["actualChosenOriginalProjectId"]=projectId;report["actualProjectMemberThreadIds"]=members;report["actualChosenOriginalProjectChildId"]=child
+          report["actualOriginalProjectCollapseExpandAndExactChildNavigationPassed"]=true
+          try shot("actual-original-project-member-opens-exact-chat-target")
+          if c["actualOriginalToolGlyphVisualRequired"]as?Bool==true {
+            let original=try XCTUnwrap(store.messages.first{$0.kind=="reasoning"})
+            let key="tool-item-"+original.id
+            var actualButton:UIButton?
+            try await wait("original reasoning tool row native control mounted"){
+              actualButton=views(window).compactMap{$0 as?UIButton}.first{$0.accessibilityIdentifier==key && $0.window===window};return actualButton != nil
+            }
+            let button=try XCTUnwrap(actualButton);var ancestor=button.superview,list:UIScrollView?
+            while let current=ancestor{if let scroll=current as?UIScrollView{list=scroll;break};ancestor=current.superview}
+            let scroll=try XCTUnwrap(list),chrome=views(window).compactMap{$0 as?HostedNativeChromeGeometryView}.filter{$0.window===window}
+            let bar=try XCTUnwrap(chrome.first{$0.role=="toolbar"}),composer=try XCTUnwrap(chrome.first{$0.role=="composer"})
+            let visibleTop=bar.convert(bar.bounds,to:window).maxY+8,visibleBottom=composer.convert(composer.bounds,to:window).minY-8
+            let rect=button.convert(button.bounds,to:scroll),origin=scroll.convert(scroll.bounds,to:window).minY
+            let top = -scroll.adjustedContentInset.top,bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+            scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:min(bottom,max(top,rect.minY-(visibleTop-origin)))),animated:false)
+            var prior=CGRect.null,samples=0,actual=CGRect.null
+            try await wait("original reasoning tool row completely within actual reading viewport"){
+              actual=button.convert(button.bounds,to:window);guard actual.minY>=visibleTop-1 && actual.maxY<=visibleBottom+1 else{return false}
+              if prior==actual{samples+=1}else{prior=actual;samples=1};return samples>=3
+            }
+            report["actualOriginalReasoningRowId"]=original.id;report["actualOriginalReasoningRowControlLabel"]=button.accessibilityLabel ?? "";report["actualOriginalReasoningRowFullViewportFrame"]=String(describing:actual)
+            report["actualOriginalReasoningRowReadOnlyScrollStableSamples"]=samples;report["reasoningToolActivationActions"]=0
+            try shot("actual-original-reasoning-row-fixed-size-glyph")
+          }
+          try actualActivate(try await stableControl("open-sidebar"));try await wait("original sidebar reopened after project navigation"){store.drawerOpen}
+          if oldAll && members.count>5{try actualActivate(try await sidebarControl("sidebar-more-project-"+projectId))}
+          if !oldProjectExpanded{try actualActivate(try await sidebarControl("project-"+projectId))}
+          if !oldProjects{try actualActivate(try await sidebarControl("sidebar-projects-toggle"))}
+          try await wait("original project preferences restored"){
+            sidebarState()?.projectExpandedIds.contains(projectId)==oldProjectExpanded && sidebarState()?.expandedProjectLists.contains(listKey)==oldAll && sidebarState()?.projectsExpanded==oldProjects
+          }
+          report["originalPerProjectPreferencesRestored"]=true;try stage("actual-original-per-project-navigation-and-state-restored")
+          if let selected,let original=store.threads.first(where:{$0.id==selected}) {
+            store.openThread(original);await store.loadHistory(threadId:selected)
+            try await wait("original search fixture target restored after project scene",seconds:90){store.targetKey==target && !store.historyLoading && !store.drawerOpen}
+            try protect();try actualActivate(try await stableControl("open-sidebar"))
+            try await wait("original sidebar reopened for next search scene"){store.drawerOpen}
+          }
+          report["actualPerProjectDriverRestoredOriginalSearchFixtureBeforeNextScene"]=true
+        }
+        if !oldSearch{try actualActivate(try await stableControl("sidebar-search-toggle"))}
+        var searchField:UITextField?
+        try await wait("unique actual sidebar UITextInput"){
+          let fields=views(window).compactMap{$0 as?UITextField}.filter{$0.placeholder==L10n.tr("搜索项目和对话") && $0.window===window && !$0.isHidden}
+          searchField=fields.count==1 ? fields[0]:nil;return searchField != nil
+        }
+        let field=try XCTUnwrap(searchField),input:any UITextInput=field
+        field.becomeFirstResponder();input.selectedTextRange=input.textRange(from:input.beginningOfDocument,to:input.endOfDocument);input.insertText(sixth.title);field.resignFirstResponder()
+        try await wait("original sidebar query finds chat outside first five"){store.search==sixth.title && sidebarState()?.visibleRecentIds.contains(sixth.id)==true}
+        try protect();try shot("actual-search-finds-original-chat-beyond-five-row-limit")
+        report["actualSearchFindsOriginalChatBeyondFiveRowLimit"]=true
+        try actualActivate(try await sidebarControl("recent-thread-"+sixth.id))
+        try await wait("original sidebar result opens exact destination",seconds:90){store.selectedThreadId==sixth.id && !store.drawerOpen && !store.historyLoading}
+        try protectData();report["actualOriginalSidebarResultOpensExactTarget"]=true
+        if c["actualStableSidebarReturnVisualsRequired"]as?Bool==true {
+          guard let expectedId=c["expectedSidebarOriginalThreadId"]as?String,expectedId==sixth.id,
+            let headline=c["expectedOriginalMarkdownHeadline"]as?String,headline.hasPrefix("**"),headline.hasSuffix("**"),
+            store.messages.contains(where:{$0.role=="assistant" && $0.text.contains(headline)}) else{throw NSError(domain:"EasyWorkPhysicalSidebar",code:5)}
+          let rendered=String(headline.dropFirst(2).dropLast(2))
+          var markdown:HostedNativeMarkdownFormattingStateView?
+          try await wait("actual original Markdown headline formatting finished") {
+            let matches=views(window).compactMap{$0 as?HostedNativeMarkdownFormattingStateView}.filter{$0.sourceText==headline && $0.renderedText==rendered && $0.window===window}
+            markdown=matches.count==1 ? matches.first:nil;return markdown != nil
+          }
+          let node=try XCTUnwrap(markdown)
+          var ancestor=node.superview,list:UIScrollView?
+          while let current=ancestor{if let scroll=current as?UIScrollView{list=scroll;break};ancestor=current.superview}
+          let scroll=try XCTUnwrap(list),rect=node.convert(node.bounds,to:scroll),frame=scroll.convert(scroll.bounds,to:window)
+          let top = -scroll.adjustedContentInset.top,bottom=max(top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+          let desired=rect.minY-(window.safeAreaInsets.top+68-frame.minY)
+          scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:min(bottom,max(top,desired))),animated:false)
+          var previous=CGRect.null,samples=0,actual=CGRect.null
+          try await wait("actual return main header stable 44 point icon") {
+            guard let button=views(window).compactMap({$0 as?UIButton}).first(where:{$0.accessibilityIdentifier=="open-sidebar" && $0.window===window}),root.presentedViewController==nil else{return false}
+            actual=button.convert(button.bounds,to:window)
+            if previous==actual && abs(actual.width-44)<1 && abs(actual.height-44)<1{samples+=1}else{previous=actual;samples=0}
+            return samples>=3
+          }
+          report["actualReturnMainHeaderIconFrame"]=String(describing:actual)
+          report["actualOriginalMarkdownHeadlineFormattedAndSourceExact"]=true
+          report["actualNativeMainHeaderIcon44PointLayoutStable"]=true
+        }
+        try shot("actual-original-search-row-opens-exact-chat-target")
+        try actualActivate(try await stableControl("open-sidebar"));try await wait("original sidebar reopened"){store.drawerOpen}
+        try actualActivate(try await stableControl("sidebar-search-toggle"));try await wait("actual original search cleared"){store.search.isEmpty && sidebarState()?.searchVisible==false}
+        if oldSearch{try actualActivate(try await stableControl("sidebar-search-toggle"))}
+        if oldExpanded{try actualActivate(try await sidebarControl("sidebar-more-recent"))}
+        if !oldSection{try actualActivate(try await sidebarControl("sidebar-recent-toggle"))}
+        try await wait("original sidebar preferences restored"){sidebarState()?.recentExpanded==oldExpanded && sidebarState()?.recentSectionExpanded==oldSection && sidebarState()?.projectsExpanded==oldProjects && sidebarState()?.searchVisible==oldSearch}
+        try actualActivate(try await stableControl("close-sidebar"));try await wait("original sidebar closed"){!store.drawerOpen}
+        try stage("awaiting-official-screen-sharing-stop-and-case-release");try await wait("exact original sidebar case release",seconds:600){releaseValid()}
+        if let entrySelected,let original=store.threads.first(where:{$0.id==entrySelected}){store.openThread(original);await store.loadHistory(threadId:entrySelected)}
+        guard store.selectedThreadId==entrySelected else{throw NSError(domain:"EasyWorkPhysicalSidebar",code:3)}
+        try protectData();store.hostedEasyWorkProductUIPresented=oldUI
+        report["originalEntrySelectionRestored"]=true;report["originalSidebarPreferencesRestored"]=true;report["safeDriverReleaseVerified"]=true
+        report["status"]="passed-physical-original-sidebar-recent-limit-search-and-navigation";try stage("completed");return
+      }
+      try await wait("actual original production menu anchor and UIKit button"){
+        views(window).compactMap{$0 as?HostedNativeChatMenuAnchorView}.contains{$0.targetKey==target && $0.threadId==selected && $0.window===window && !$0.isHidden}
+      }
+      if c["actualEarlierPageUIRequired"]as?Bool==true {
+        guard c["actualMultiPageRequired"]as?Bool==true,store.historyCursor != nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:32)}
+        var actions:[[String:Any]]=[],serverPages=0
+        report["actualInitialServerHistoryCursorPresent"]=true
+        for attempt in 0..<10 {
+          // The mounted drawer has its own full-height scroll view. Identify
+          // the actual production history list by its existing pull-view ancestry.
+          var historyLists:[UIScrollView]=[]
+          for probe in views(window) where String(describing:type(of:probe))=="EarlierHistoryPullView" {
+            var ancestor=probe.superview
+            while let current=ancestor {
+              if let scroll=current as?UIScrollView {historyLists.append(scroll);break}
+              ancestor=current.superview
+            }
+          }
+          let unique=Dictionary(grouping:historyLists,by:ObjectIdentifier.init).compactMap(\.value.first)
+          guard unique.count==1 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:35)}
+          let list=try XCTUnwrap(unique.first)
+          report["actualEarlierListIdentifiedByOriginalProductionPullViewAncestry"]=true
+          list.setContentOffset(CGPoint(x:list.contentOffset.x,y:-list.adjustedContentInset.top),animated:false)
+          await Task.yield()
+          var priorHeight:CGFloat = -1,stableHeightSamples=0
+          try await wait("actual earlier header stable scroll layout"){let height=list.contentSize.height;if height==priorHeight{stableHeightSamples+=1}else{priorHeight=height;stableHeightSamples=1};return stableHeightSamples>=3 && root.transitionCoordinator==nil}
+          if store.historyCursor==nil{break}
+          // SwiftUI's AX container may omit an offscreen row even though the
+          // production UIView is mounted. Scope to this exact history list and
+          // bring the original native header into view before asking AX to act.
+          let mounted=views(list).compactMap{$0 as?UIButton}.filter{
+            ["history-local-more","history-more"].contains($0.accessibilityIdentifier ?? "") && $0.window===window && !$0.isHidden
+          }
+          report["actualEarlierMountedControls"]=mounted.map{["identifier":$0.accessibilityIdentifier ?? "", "frame":String(describing:$0.convert($0.bounds,to:window)),"enabled":String($0.isEnabled)]}
+          report["actualEarlierScrollGeometry"]=["offset":String(describing:list.contentOffset),"size":String(describing:list.contentSize),"inset":String(describing:list.adjustedContentInset),"frame":String(describing:list.convert(list.bounds,to:window))]
+          try save()
+          guard mounted.count==1,let header=mounted.first else{throw NSError(domain:"EasyWorkPhysicalSearch",code:39)}
+          let local=header.accessibilityIdentifier=="history-local-more",key=try XCTUnwrap(header.accessibilityIdentifier)
+          list.scrollRectToVisible(header.convert(header.bounds,to:list),animated:false)
+          let control=try await stableControl(key)
+          let ids=store.messages.map(\.id),cursor=store.historyCursor,height=list.contentSize.height
+          try actualActivate(control)
+          try await wait("actual original earlier-page control completed",seconds:90){!store.historyLoading && (local ? list.contentSize.height>height+1:store.historyCursor != cursor)}
+          let current=store.messages.map(\.id)
+          guard Set(current).count==current.count,current.filter({ids.contains($0)})==ids else{throw NSError(domain:"EasyWorkPhysicalSearch",code:33)}
+          if !local{serverPages+=1}
+          actions.append(["localWindow":local,"beforeCount":ids.count,"afterCount":current.count,"cursorAdvanced":store.historyCursor != cursor,"originalSuffixOrderPreserved":true]);report["actualEarlierPageActions"]=actions
+          try stage("actual-production-earlier-page-action-"+String(attempt))
+        }
+        guard serverPages>=1,store.historyCursor==nil,store.messages.count>50 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:34)}
+        report["actualServerEarlierPages"]=serverPages;report["actualHistoryCursorExhausted"]=true
+        // The exhausted header is a SwiftUI Text, not a UIButton. Do not ask
+        // for a fourth button after the original server cursor is exhausted.
+        // Settle the actual prepend anchor before scrolling to that real row.
+        let pull=try XCTUnwrap(views(window).first{String(describing:type(of:$0))=="EarlierHistoryPullView"})
+        var exhaustedAncestor=pull.superview,exhaustedList:UIScrollView?
+        while let current=exhaustedAncestor {if let list=current as?UIScrollView{exhaustedList=list;break};exhaustedAncestor=current.superview}
+        let list=try XCTUnwrap(exhaustedList)
+        var geometry="",samples=0
+        try await wait("actual exhausted history prepend layout settled"){
+          let value=String(describing:list.contentOffset)+String(describing:list.contentSize)
+          if geometry==value{samples+=1}else{geometry=value;samples=1};return samples>=3
+        }
+        list.setContentOffset(CGPoint(x:list.contentOffset.x,y:-list.adjustedContentInset.top),animated:false)
+        samples=0;try await wait("actual exhausted history top stable"){if abs(list.contentOffset.y+list.adjustedContentInset.top)<1{samples+=1}else{samples=0};return samples>=3}
+        try shot("actual-production-history-exhausted")
+      }
+      if c["actualToolRevisitRequired"]as?Bool==true {
+        let ids=try XCTUnwrap(c["existingToolGroupMessageIds"]as?[String]),first=try XCTUnwrap(ids.first)
+        let groupId=c["existingToolGroupId"]as?String ?? first
+        guard ids.count>=2,let selected,let own=store.threads.first(where:{$0.id==selected}),
+          let awayId=c["cacheRevisitAwayThreadId"]as?String,awayId != selected,
+          let away=store.threads.first(where:{$0.id==awayId}),let completeHistoryIds,
+          ids.allSatisfy({id in store.messages.contains{$0.id==id && $0.role=="tool"}}) else{throw NSError(domain:"EasyWorkPhysicalTools",code:1)}
+        func toolState()->HostedNativeToolDisclosureStateView? {
+          let values=views(window).compactMap{$0 as?HostedNativeToolDisclosureStateView}.filter{$0.groupId==groupId && $0.window===window}
+          return values.count==1 ? values.first:nil
+        }
+        func historyList()throws->UIScrollView {
+          let pull=try XCTUnwrap(views(window).first{String(describing:type(of:$0))=="EarlierHistoryPullView"})
+          var node=pull.superview
+          while let current=node{if let scroll=current as?UIScrollView{return scroll};node=current.superview}
+          throw NSError(domain:"EasyWorkPhysicalTools",code:2)
+        }
+        let scroll=try historyList();scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:-scroll.adjustedContentInset.top),animated:false)
+        try await wait("actual original collapsed tool group mounted"){toolState()?.expanded==false}
+        let group=try await stableControl("tool-group-"+groupId);try actualActivate(group)
+        try await wait("actual original tool group expands"){toolState()?.expanded==true}
+        let item=try await stableControl("tool-item-"+first);try actualActivate(item)
+        try await wait("actual independent first tool detail expands"){toolState()?.tools.contains(first)==true && toolState()?.tools.contains(ids[1])==false}
+        report["actualToolGroupId"]=groupId;report["actualToolSourceMessageIds"]=ids;report["actualIndependentToolDetailExpansion"]=true
+        try protect();try shot("actual-original-tool-group-and-independent-detail-expanded");try stage("actual-original-tool-details-expanded-before-revisit")
+        store.openThread(away)
+        try await wait("actual away target removes original tool view",seconds:90){store.selectedThreadId==awayId && !store.historyLoading && toolState()==nil}
+        try protectData();store.openThread(own)
+        try await wait("actual original tool chat fresh read finished",seconds:90){store.targetKey==target && !store.historyLoading}
+        var windowSamples=0
+        try await wait("actual returned target history window mounted") {
+          let matches=views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.filter{$0.targetKey==target && $0.messageCount==store.messages.count && $0.window===window}
+          if matches.count==1 && root.transitionCoordinator==nil{windowSamples+=1}else{windowSamples=0}
+          return windowSamples>=3
+        }
+        var actions=0
+        while views(window).compactMap({$0 as?HostedNativeHistoryWindowStateView}).contains(where:{$0.targetKey==target && $0.messageLimit<$0.messageCount}) {
+          guard actions<6 else{throw NSError(domain:"EasyWorkPhysicalTools",code:3)}
+          let old=views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.first{$0.targetKey==target}?.messageLimit ?? 0
+          let earlier=try await stableControl("history-local-more");try actualActivate(earlier);actions+=1
+          try await wait("actual local window after tool revisit expanded"){views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.contains{$0.targetKey==target && $0.messageLimit>old}}
+        }
+        let returned=try historyList();returned.setContentOffset(CGPoint(x:returned.contentOffset.x,y:-returned.adjustedContentInset.top),animated:false)
+        try await wait("actual original tool group remounted"){toolState() != nil}
+        guard toolState()?.expanded==true,toolState()?.tools.contains(first)==true,toolState()?.tools.contains(ids[1])==false else{throw NSError(domain:"EasyWorkPhysicalTools",code:4,userInfo:[NSLocalizedDescriptionKey:"Original tool disclosure lost after target revisit"])}
+        report["actualToolGroupAndIndependentDetailPreservedAfterTargetRevisit"]=true
+        _ = try await stableControl("tool-item-"+first)
+        report["actualRevisitExpandedFirstToolControlVisible"]=true
+        try protect();try shot("actual-original-tool-group-and-detail-after-target-revisit")
+        try actualActivate(try await stableControl("tool-item-"+first));try actualActivate(try await stableControl("tool-group-"+groupId))
+        if store.historyCursor != nil {
+          try actualActivate(try await stableControl("history-more"))
+          try await wait("actual original complete history after tool revisit",seconds:90){!store.historyLoading && store.historyCursor==nil}
+        }
+        guard store.messages.map(\.id)==completeHistoryIds else{throw NSError(domain:"EasyWorkPhysicalTools",code:5)}
+        report["originalToolDisclosureRestored"]=true
+      }
+      let forcedReadFailure=c["actualReadFailureRequired"]as?Bool==true
+      let pendingSearchTargetSwitch=c["actualSearchTargetSwitchRequired"]as?Bool==true
+      let cachedHistoryIds=store.messages.map(\.id)
+      func relayFaultWitness(_ suffix:String,_ flag:String)->Bool {
+        let url=directory.appendingPathComponent(run+"-relay-"+suffix+".json")
+        guard let data=try?Data(contentsOf:url),let value=(try?JSONSerialization.jsonObject(with:data))as?[String:Any] else{return false}
+        return value["caseId"]as?String==run && value[flag]as?Bool==true && value["relayPID"]as?Int==c["relayPID"]as?Int
+      }
+      if forcedReadFailure || pendingSearchTargetSwitch {
+        guard c["readOnlyOwnedRelayPauseAuthorized"]as?Bool==true,cachedHistoryIds.contains(source.id) else{throw NSError(domain:"EasyWorkPhysicalSearch",code:40)}
+        try stage("awaiting-original-owned-relay-read-fault")
+        try await wait("exact owned Relay pause witness",seconds:60){relayFaultWitness("stopped","exactOwnedRelayPaused")}
+      }
+      let anchor=try XCTUnwrap(views(window).compactMap{$0 as?HostedNativeChatMenuAnchorView}.first{$0.targetKey==target && $0.threadId==selected && $0.window===window}),anchorFrame=anchor.convert(anchor.bounds,to:window)
+      let buttons=views(window).compactMap{$0 as?UIButton}.filter{button in
+        guard button.menu != nil,button.window===window,button.isEnabled,!button.isHidden,button.alpha>0.99 else{return false}
+        let frame=button.convert(button.bounds,to:window),point=CGPoint(x:frame.midX,y:frame.midY)
+        guard frame.intersects(anchorFrame),let hit=window.hitTest(point,with:nil)else{return false};return hit===button || hit.isDescendant(of:button)
+      }
+      report["actualAnchoredProductionMenuButtonCount"]=buttons.count;report["actualMenuAnchorFrame"]=String(describing:anchorFrame);try save()
+      let menu=try XCTUnwrap(buttons.count==1 ? buttons.first:nil)
+      var view:UIView?=menu,interaction:UIContextMenuInteraction?
+      while let current=view{if interaction==nil{interaction=current.interactions.compactMap{$0 as?UIContextMenuInteraction}.first};view=current.superview}
+      let nativeInteraction=try XCTUnwrap(interaction);try actualActivate(menu)
+      var searchAction:UIAction?,visibleSamples=0
+      try await wait("exact enabled original visible production search UIAction",seconds:60){
+        guard menu.isHeld else{return false}
+        nativeInteraction.updateVisibleMenu{visible in
+          MainActor.assumeIsolated{
+            var found:[UIAction]=[]
+            func collect(_ item:UIMenuElement){if let action=item as?UIAction,action.title==L10n.tr("在聊天中查找"),!action.attributes.contains(.disabled),!action.attributes.contains(.destructive){found.append(action)};if let sub=item as?UIMenu{sub.children.forEach(collect)}}
+            collect(visible);if found.count==1{searchAction=found[0];visibleSamples+=1};return visible
+          }
+        }
+        return searchAction != nil && visibleSamples>=3 && root.transitionCoordinator==nil
+      }
+      guard menu.isHeld,let searchAction,searchAction.title==L10n.tr("在聊天中查找"),!searchAction.attributes.contains(.disabled)else{throw NSError(domain:"EasyWorkPhysicalSearch",code:22)}
+      report["exactOriginalVisibleSearchActionSamples"]=visibleSamples;try shot("actual-stable-production-chat-menu")
+      menu.sendAction(searchAction);nativeInteraction.dismissMenu()
+      report["actualMenuSearchActivationRoute"]="actual anchored UIKit menu opened with performPrimaryAction; updateVisibleMenu observed exact enabled original UIAction three times; original UIButton.sendAction dispatched it once then public dismissMenu; no coordinates or direct sheet mutation"
+      func actualInput()->UITextField?{
+        guard store.sheet == .chatSearch,let presented=root.presentedViewController,presented.transitionCoordinator==nil,!presented.isBeingPresented,!presented.isBeingDismissed,let container=presented.viewIfLoaded,container.window===window else{return nil}
+        let fields=views(container).compactMap{$0 as?UITextField}.filter{$0.window===window && !$0.isHidden && $0.alpha>0.99 && !$0.bounds.isEmpty && $0.placeholder==L10n.tr("搜索消息、工具输出或附件名称")}
+        report["actualSearchFieldCount"]=fields.count;report["actualSearchInputIdentificationRoute"]="unique visible UITextField with exact localized production placeholder, inside current chatSearch presented controller after transition; SwiftUI AX identifier not assumed to be on inner input";try?save()
+        return fields.count==1 ? fields.first:nil
+      }
+      try await wait("actual production search sheet and uniquely scoped native text field",seconds:60){actualInput() != nil}
+      let field=try XCTUnwrap(actualInput()),input:any UITextInput=field
+      func enter(_ text:String)async throws{field.becomeFirstResponder();input.selectedTextRange=input.textRange(from:input.beginningOfDocument,to:input.endOfDocument);input.insertText(text);try await wait("actual query exact"){input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)==text};field.resignFirstResponder()}
+      if c["actualRapidQueryMatrixRequired"]as?Bool==true {
+        guard !forcedReadFailure,let completeHistoryIds else{throw NSError(domain:"EasyWorkPhysicalSearch",code:48)}
+        func currentSearch(_ expected:String,_ matches:(HostedNativeChatSearchStateView)->Bool)->Bool {
+          views(window).compactMap{$0 as?HostedNativeChatSearchStateView}.contains {
+            $0.targetKey==target && !$0.loading && !$0.failed && $0.resultsCurrent && $0.query==expected && $0.historyIds==completeHistoryIds && matches($0)
+          }
+        }
+        let absent="EASYWORK_ABSENT_QUERY_"+run
+        try await enter(query);try await enter(absent)
+        try await wait("rapid query cannot adopt stale original matches",seconds:90){currentSearch(absent){$0.resultIds.isEmpty}}
+        try protect();try shot("actual-rapid-replacement-query-no-results")
+        try await enter("")
+        try await wait("empty original query clears original results"){currentSearch(""){$0.resultIds.isEmpty}}
+        let normalized="  "+query.uppercased()+"  "
+        try await enter(normalized)
+        try await wait("actual query normalizes case and surrounding whitespace"){currentSearch(normalized){$0.resultIds.contains(source.id)}}
+        try protect();try shot("actual-case-and-whitespace-query-original-result")
+        report["actualRapidReplacementQueryHasNoStaleResults"]=true
+        report["actualEmptyQueryClearsResults"]=true
+        report["actualCaseAndWhitespaceQueryFindsOriginalSource"]=true
+      }
+      if fixture==nil {
+        let priorNoMatch=try XCTUnwrap(c["previousNoMatchVisualCaseId"]as?String);guard UUID(uuidString:priorNoMatch) != nil,priorNoMatch != run else{throw NSError(domain:"EasyWorkPhysicalSearch",code:23)}
+        report["previousNoMatchVisualCaseReferenceNotReexecuted"]=priorNoMatch
+      }
+      try await enter(query)
+      try await wait("actual production UITextInput contains complete query"){input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)==query};field.resignFirstResponder()
+      if pendingSearchTargetSwitch {
+        guard !forcedReadFailure,let awayId=c["cacheRevisitAwayThreadId"]as?String,awayId != selected,
+          let away=store.threads.first(where:{$0.id==awayId}) else{throw NSError(domain:"EasyWorkPhysicalSearchTarget",code:1)}
+        try await wait("actual original search full read is still pending"){
+          views(window).compactMap{$0 as?HostedNativeChatSearchStateView}.contains{$0.targetKey==target && $0.loading && $0.query==query}
+        }
+        report["actualOriginalSearchCompleteReadInFlightBeforeTargetSwitch"]=true
+        try protect();try shot("actual-original-search-pending-before-target-switch")
+        store.openThread(away)
+        try await wait("original pending search dismisses on target switch"){
+          store.selectedThreadId==awayId && store.targetKey != target && store.sheet==nil && root.presentedViewController==nil && store.chatSearchJump==nil
+        }
+        try protectData();try shot("actual-pending-original-search-dismissed-after-target-switch")
+        report["actualOriginalPendingSearchDismissedOnTargetSwitch"]=true;try stage("actual-pending-original-search-dismissed-after-target-switch")
+        try await wait("same original Relay restored after pending search target switch"){relayFaultWitness("restored","sameOwnedRelayContinued")}
+        try await wait("actual destination history after original search cancellation",seconds:90){store.selectedThreadId==awayId && !store.historyLoading && !store.messages.isEmpty}
+        let destinationKey=store.targetKey,fresh=try await store.completeChatSearchHistory(targetKey:store.targetKey)
+        guard store.targetKey==destinationKey,store.messages.map(\.id)==fresh.map(\.id),fresh.allSatisfy({!cachedHistoryIds.contains($0.id)}),store.chatSearchJump==nil,store.sheet==nil,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalSearchTarget",code:2)}
+        report["actualDestinationThreadId"]=awayId;report["actualDestinationMessageIds"]=fresh.map(\.id)
+        report["actualLateOriginalSearchCannotAdoptIntoDestination"]=true
+        try protectData();try shot("actual-destination-history-after-original-search-cancel-and-relay-restore")
+        try stage("awaiting-official-screen-sharing-stop-and-case-release")
+        try await wait("exact native target switch case release",seconds:600){releaseValid()}
+        if let entrySelected,let original=store.threads.first(where:{$0.id==entrySelected}){store.openThread(original);await store.loadHistory(threadId:entrySelected)}
+        guard store.selectedThreadId==entrySelected else{throw NSError(domain:"EasyWorkPhysicalSearchTarget",code:3)}
+        try protectData();store.hostedEasyWorkProductUIPresented=oldUI
+        report["originalEntrySelectionRestored"]=true;report["safeDriverReleaseVerified"]=true
+        report["status"]="passed-physical-original-pending-search-target-isolation";try stage("completed");return
+      }
+      if forcedReadFailure {
+        try await wait("actual production failed complete read retains cached original query and result",seconds:90){
+          views(window).compactMap{$0 as?HostedNativeChatSearchStateView}.contains{$0.targetKey==target && !$0.loading && $0.failed && $0.resultsCurrent && $0.query==query && $0.historyIds==cachedHistoryIds && $0.resultIds.contains(source.id)}
+        }
+        try protect();report["actualFailedCompleteReadRetainedCachedSource"]=true;report["actualCachedHistoryIdsAtFailure"]=cachedHistoryIds
+        try shot("actual-failed-complete-history-cached-original-result")
+        try stage("actual-failed-history-cached-original-result-observed")
+        try await wait("same exact owned Relay continued witness",seconds:60){relayFaultWitness("restored","sameOwnedRelayContinued")}
+        let retry=try await stableControl("chat-search-retry");try actualActivate(retry)
+        report["actualOriginalVisibleSearchRetryActivatedOnce"]=true
+        try stage("actual-original-search-retry-control-activated-once")
+      }
+      if let completeHistoryIds {
+        try await wait("actual production search finished full history and current original result",seconds:90){
+          views(window).compactMap{$0 as?HostedNativeChatSearchStateView}.contains{$0.targetKey==target && !$0.loading && !$0.failed && $0.resultsCurrent && $0.query==query && $0.historyIds==completeHistoryIds && $0.resultIds.contains(source.id)}
+        }
+        report["actualProductionSearchFullHistoryFinishedAndMatchesIndependentRead"]=true
+      }
+      report["actualUITextInputQueryExact"]=true;report["actualResultActivationRoute"]="official Device Hub result touch; Native exact original message ID, target and full query guard proves the selected original result; no AX lookup assumption"
+      try protect();try shot("actual-production-search-current-window-before-official-witness")
+      if c["actualNativeResultControlRequired"]as?Bool==true {
+        let resultKey="chat-search-result-"+source.id
+        let container=try XCTUnwrap(root.presentedViewController?.viewIfLoaded)
+        var resultFound=false
+        for attempt in 0..<12 {
+          let buttons=views(container).compactMap{$0 as?UIButton}.filter{$0.accessibilityIdentifier==resultKey && $0.window===window && !$0.isHidden && $0.isEnabled}
+          guard buttons.count<=1 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:36)}
+          if let button=buttons.first {
+            var ancestor=button.superview
+            while let current=ancestor {
+              if let scroll=current as?UIScrollView {scroll.scrollRectToVisible(button.convert(button.bounds,to:scroll),animated:false);break}
+              ancestor=current.superview
+            }
+            let actual=try await stableControl(resultKey)
+            guard actual===button else{throw NSError(domain:"EasyWorkPhysicalSearch",code:37)}
+            try protect();try shot("actual-exact-native-diff-result-before-single-activation")
+            try actualActivate(button);resultFound=true;break
+          }
+          let lists=views(container).compactMap{$0 as?UIScrollView}.filter{$0.window===window && !$0.isHidden && $0.bounds.height>200 && $0.contentSize.height>$0.bounds.height}
+          let list=try XCTUnwrap(lists.max(by:{$0.bounds.height<$1.bounds.height}))
+          let offset=min(max(-list.adjustedContentInset.top,list.contentSize.height-list.bounds.height+list.adjustedContentInset.bottom),list.contentOffset.y+list.bounds.height*0.7)
+          list.setContentOffset(CGPoint(x:list.contentOffset.x,y:offset),animated:false)
+          report["actualSearchResultPublicScrollActions"]=attempt+1;try save()
+          var samples=0,previous=list.contentOffset
+          try await wait("actual search result list stable public scroll"){if previous==list.contentOffset{samples+=1}else{samples=0;previous=list.contentOffset};return samples>=3}
+        }
+        guard resultFound else{throw NSError(domain:"EasyWorkPhysicalSearch",code:38)}
+        report["actualResultActivationRoute"]="exact original visible native production result UIButton, stable viewport and target/query/source guard, touchUpInside dispatched once; no Mac screen sharing or CUA"
+        report["actualOriginalNativeResultControlActivatedOnce"]=true
+        try stage("actual-original-result-activated-via-public-native-control")
+      } else {try stage("awaiting-official-actual-search-result-selection")}
+      try await wait("actual selected original result dismisses sheet and records location",seconds:600){store.sheet==nil && store.chatSearchJump?.message.id==source.id && store.chatSearchJump?.query==query && store.chatSearchJump?.targetKey==target}
+      try await wait("search sheet normal dismissal finished"){root.presentedViewController==nil};try protect();try shot("actual-original-message-located-after-search")
+      report["actualResultSelectionLocatedOriginalMessageAndProtectedDraftsExact"]=true
+      if c["actualCacheRevisitRequired"]as?Bool==true {
+        guard c["readOnlyOwnedRelayPauseAuthorized"]as?Bool==true,let completeHistoryIds,let selected,
+          let own=store.threads.first(where:{$0.id==selected}),let awayId=c["cacheRevisitAwayThreadId"]as?String,awayId != selected,
+          let away=store.threads.first(where:{$0.id==awayId && $0.hostId==own.hostId}),store.messages.map(\.id)==completeHistoryIds,store.historyCursor==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:41)}
+        store.openThread(own)
+        await Task.yield();try await wait("same-chat normal read settled",seconds:90){!store.historyLoading}
+        try protect();guard store.messages.map(\.id)==completeHistoryIds,store.historyCursor==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:42)}
+        report["actualSameChatReopenRetainsFullPrefixAndExhaustion"]=true
+        try stage("awaiting-original-owned-relay-cache-revisit-pause")
+        try await wait("exact owned Relay cache revisit pause witness"){relayFaultWitness("stopped","exactOwnedRelayPaused")}
+        store.openThread(away)
+        try await wait("away target and stale located result removed"){store.selectedThreadId==awayId && store.targetKey != target && store.chatSearchJump==nil}
+        try protectData();report["actualAwayTargetClearsOriginalSearchLocation"]=true
+        store.openThread(own)
+        guard store.targetKey==target,store.messages.map(\.id)==completeHistoryIds else{throw NSError(domain:"EasyWorkPhysicalSearch",code:43)}
+        func actualWindowLimit()->Int? {
+          let values=views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}
+            .filter{$0.targetKey==target && $0.messageCount==completeHistoryIds.count && $0.window===window}.map(\.messageLimit)
+          return values.count==1 ? values.first:nil
+        }
+        var mountedSamples=0
+        try await wait("cached revisit current target and original window mounted"){
+          let current=views(window).compactMap{$0 as?HostedNativeChatMenuAnchorView}.contains{$0.targetKey==target && $0.threadId==selected && $0.window===window}
+          if current && root.transitionCoordinator==nil && actualWindowLimit()==20 {mountedSamples+=1}else{mountedSamples=0}
+          return mountedSamples>=3
+        }
+        report["actualCachedRevisitInitialVisibleWindow"]=actualWindowLimit()
+        var localActions=0
+        while let limit=actualWindowLimit(),limit<completeHistoryIds.count {
+          guard localActions<6 else{throw NSError(domain:"EasyWorkPhysicalSearch",code:44)}
+          let button=try await stableControl("history-local-more");try actualActivate(button);localActions+=1
+          try await wait("cached revisit actual original window expanded"){(actualWindowLimit() ?? 0)>limit}
+          await Task.yield()
+        }
+        guard (actualWindowLimit() ?? 0)>=completeHistoryIds.count,store.messages.map(\.id)==completeHistoryIds,store.historyCursor==nil,store.chatSearchJump==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:45)}
+        let pull=try XCTUnwrap(views(window).first{String(describing:type(of:$0))=="EarlierHistoryPullView"})
+        var ancestor=pull.superview,list:UIScrollView?
+        while let current=ancestor{if let scroll=current as?UIScrollView{list=scroll;break};ancestor=current.superview}
+        let scroll=try XCTUnwrap(list);scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:-scroll.adjustedContentInset.top),animated:false)
+        var samples=0;try await wait("cached revisit original top stable"){
+          if abs(scroll.contentOffset.y+scroll.adjustedContentInset.top)<1{samples+=1}
+          else{samples=0;scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:-scroll.adjustedContentInset.top),animated:false)}
+          return samples>=3
+        }
+        try protect();try shot("actual-original-full-cache-revisited-while-relay-paused")
+        report["actualCachedRevisitMessageIds"]=store.messages.map(\.id);report["actualCacheRevisitLocalExpandActions"]=localActions
+        report["actualOriginalFullCacheRevisitedBeforeNetworkResponse"]=true
+        try stage("actual-original-cache-revisit-observed")
+        try await wait("same exact Relay continued after cached revisit"){relayFaultWitness("restored","sameOwnedRelayContinued")}
+        try await wait("normal read settled after cross-chat revisit",seconds:90){!store.historyLoading}
+        let fresh=try await store.completeChatSearchHistory(targetKey:target)
+        guard fresh.map(\.id)==completeHistoryIds else{throw NSError(domain:"EasyWorkPhysicalSearch",code:46)}
+        report["actualFreshReadAfterResumeConfirmsCachedOriginalIds"]=true
+        let latest=store.messages.map(\.id)
+        guard completeHistoryIds.filter({latest.contains($0)})==latest else{throw NSError(domain:"EasyWorkPhysicalSearch",code:46)}
+        report["actualNewReadingGenerationLatestMessageIds"]=latest
+        if store.historyCursor != nil {
+          let earlier=try await stableControl("history-more");try actualActivate(earlier)
+          try await wait("original earlier page after cached revisit",seconds:90){!store.historyLoading && store.historyCursor==nil && store.messages.map(\.id)==completeHistoryIds}
+          report["actualRevisitAdditionalServerPageControlUsed"]=true
+        } else {
+          guard latest==completeHistoryIds else{throw NSError(domain:"EasyWorkPhysicalSearch",code:47)}
+          report["actualRevisitAdditionalServerPageControlUsed"]=false
+        }
+        try protect();try shot("actual-original-earlier-page-restored-after-revisit")
+        report["actualEarlierPageReturnedAfterCachedRevisit"]=true;report["actualFinalRevisitMessageIds"]=store.messages.map(\.id)
+      }
+      try stage("awaiting-official-screen-sharing-stop-and-case-release")
+      try await wait("official sharing stopped then exact native case released",seconds:600){releaseValid()};try protect()
+      if fixture != nil,let entrySelected,let original=store.threads.first(where:{$0.id==entrySelected}){store.openThread(original);await store.loadHistory(threadId:entrySelected)}
+      guard store.selectedThreadId==entrySelected else{throw NSError(domain:"EasyWorkPhysicalSearch",code:29)}
+      store.hostedEasyWorkProductUIPresented=oldUI;report["originalEntrySelectionRestored"]=true;report["safeDriverReleaseVerified"]=true;report["status"]="passed-physical-production-chat-search-input-and-actual-result-location";try stage("completed")
+    }catch{
+      report["status"]="failed-physical-search-prefix-preserved-no-model-or-input-replay";report["failure"]=String(describing:error)
+      report["actualReadErrorAtFailure"]=store.error ?? "none";report["actualConversationSyncFailureAtFailure"]=store.conversationSyncFailure ?? "none"
+      report["actualWindowProbeValuesAtFailure"]=controls().filter{($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier=="history-scroll-evidence"}.map{$0.accessibilityValue ?? "none"}
+      report["actualNativeWindowProbeAtFailure"]=views(window).compactMap{$0 as?HostedNativeHistoryWindowStateView}.map{["target":$0.targetKey,"messages":String($0.messageCount),"window":String($0.messageLimit)]}
+      report["actualNativeToolDisclosureAtFailure"]=views(window).compactMap{$0 as?HostedNativeToolDisclosureStateView}.map{["group":$0.groupId,"expanded":String($0.expanded),"tools":$0.tools.sorted().joined(separator:",")]}
+      report["actualHistoryControlsAtFailure"]=views(window).compactMap{$0 as?UIButton}.filter{($0.accessibilityIdentifier ?? "").hasPrefix("history-")}.map{["identifier":$0.accessibilityIdentifier ?? "","frame":String(describing:$0.convert($0.bounds,to:window)),"enabled":String($0.isEnabled),"accessible":String($0.isAccessibilityElement)]}
+      try?shot("actual-failed-history-prefix");try?stage("failed-prefix-awaiting-safe-release")
+      try?await wait("failure case sharing release",seconds:600){releaseValid()}
+      for current in views(window){for interaction in current.interactions.compactMap({$0 as?UIContextMenuInteraction}){interaction.dismissMenu()}}
+      try?await wait("own native menu safely dismissed"){!views(window).compactMap{$0 as?UIButton}.contains{$0.menu != nil && $0.isHeld}}
+      if store.sheet == .chatSearch{store.sheet=nil;try?await wait("dismiss own search sheet"){root.presentedViewController==nil}};store.hostedEasyWorkProductUIPresented=oldUI;try?save();throw error
+    }
+  }
+
+  @MainActor func testPhysicalProductionChatSearchInputAndActualResultLocation() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else{throw XCTSkip("Explicit physical original search case")}
+    let c=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any]);guard c["caseId"]as?String==run,c["newModelsAuthorized"]as?Int==0,c["newUploadsAuthorized"]as?Int==0,c["actualSearchUIAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalSearch",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native");try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),release=directory.appendingPathComponent(run+"-driver-release.json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalSearch",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsImportsPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ s:String)throws{report["stage"]=s;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))};guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalSearch",code:3,userInfo:[NSLocalizedDescriptionKey:label])}}
+    func releaseValid()->Bool{guard let data=try?Data(contentsOf:release),let v=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false};return v["caseId"]as?String==run && v["screenSharingStoppedVerified"]as?Bool==true && v["releaseNativeOnlyNoProductAction"]as?Bool==true}
+    try stage("waiting-for-original-store-and-foreground");try await wait("original UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore);guard store.client?.agentConnection?.target.agentId=="easywork",!store.localRecoveryRequired,store.error==nil,store.sheet==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let target=store.targetKey,selected=store.selectedThreadId,client=store.saved.selectedClientId,oldUI=store.hostedEasyWorkProductUIPresented,drafts=try encoder.encode(store.drafts.values),outbox=try encoder.encode(store.saved.outbox),recovery=try encoder.encode(store.saved.replyRecovery),forks=try encoder.encode(store.saved.threadForks),voice=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalSearch",code:5)}
+    func protect()throws{guard store.targetKey==target,store.selectedThreadId==selected,store.saved.selectedClientId==client,try encoder.encode(store.drafts.values)==drafts,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.replyRecovery)==recovery,try encoder.encode(store.saved.threadForks)==forks,try VoiceMigrationSafety.snapshot()==voice,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalSearch",code:6)}}
+    func views(_ v:UIView)->[UIView]{[v]+v.subviews.flatMap(views)}
+    func controls()->[NSObject]{var seen=Set<ObjectIdentifier>(),all:[NSObject]=[];func visit(_ o:NSObject){guard all.count<6000,seen.insert(ObjectIdentifier(o)).inserted else{return};all.append(o);if let v=o as?UIView{v.subviews.forEach(visit)};o.accessibilityElements?.compactMap{$0 as?NSObject}.forEach(visit);let count=o.accessibilityElementCount();if count>0&&count<1000{for i in 0..<count{if let child=o.accessibilityElement(at:i)as?NSObject{visit(child)}}}};visit(window);return all}
+    func shot(_ name:String)throws{let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)};try XCTUnwrap(image.pngData()).write(to:directory.appendingPathComponent(run+"-"+name+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    do{
+      try stage("refreshing-original-workspace-and-history-read-only")
+      report["actualRefreshStateBefore"]=["loading":store.loading,"sidebarInteracting":store.sidebarInteracting,"pendingConnection":store.pendingConnection != nil,"online":store.client?.online==true,"migrationNeedsVerification":store.client?.migrationNeedsVerification==true];try save()
+      await store.refresh(includeHistory:false,userInitiated:true)
+      report["actualRefreshStateAfter"]=["loading":store.loading,"sidebarInteracting":store.sidebarInteracting,"pendingConnection":store.pendingConnection != nil,"online":store.client?.online==true,"migrationNeedsVerification":store.client?.migrationNeedsVerification==true,"error":store.error ?? "none"];try save()
+      guard store.client?.online==true,store.targetKey==target,let thread=selected else{throw NSError(domain:"EasyWorkPhysicalSearch",code:7,userInfo:[NSLocalizedDescriptionKey:store.error ?? "Original workspace did not reconnect"])}
+      await store.loadHistory(threadId:thread);try protect()
+      let source=try XCTUnwrap(store.messages.first{$0.role=="assistant" && $0.text.range(of:"(?:FORK_SELECTED|EWF49_MENU_HELPER)_[A-Za-z0-9_-]+",options:.regularExpression) != nil})
+      let range=try XCTUnwrap(source.text.range(of:"(?:FORK_SELECTED|EWF49_MENU_HELPER)_[A-Za-z0-9_-]+",options:.regularExpression)),query=String(source.text[range]);report["actualQuery"]=query;report["expectedMessageId"]=source.id;report["normalOriginalWorkspaceReadRecoveredOnline"]=true
+      store.hostedEasyWorkProductUIPresented=true;await Task.yield();try stage("awaiting-official-production-chat-menu-and-search-open")
+      try await wait("actual production search sheet and text field",seconds:600){store.sheet == .chatSearch && views(window).contains{$0.accessibilityIdentifier=="chat-search-query" && $0 is any UITextInput}}
+      let field=try XCTUnwrap(views(window).first{$0.accessibilityIdentifier=="chat-search-query" && $0 is any UITextInput}),input=try XCTUnwrap(field as?any UITextInput)
+      field.becomeFirstResponder();input.selectedTextRange=input.textRange(from:input.beginningOfDocument,to:input.endOfDocument);input.insertText(query)
+      try await wait("actual production UITextInput contains complete query"){input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)==query};field.resignFirstResponder()
+      try await wait("actual current search result accessibility element",seconds:120){controls().contains{($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier=="chat-search-result-"+source.id && !$0.accessibilityFrame.isEmpty}}
+      let control=try XCTUnwrap(controls().first{($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier=="chat-search-result-"+source.id && !$0.accessibilityFrame.isEmpty}),rect=control.accessibilityFrame
+      report["expectedResultFramePoints"]=["x":rect.origin.x,"y":rect.origin.y,"width":rect.width,"height":rect.height];report["windowBoundsPoints"]=["width":window.bounds.width,"height":window.bounds.height];report["actualUITextInputQueryExact"]=true
+      try shot("actual-production-search-results");try protect();try stage("awaiting-official-actual-search-result-selection")
+      try await wait("actual selected original result dismisses sheet and records location",seconds:600){store.sheet==nil && store.chatSearchJump?.message.id==source.id && store.chatSearchJump?.query==query && store.chatSearchJump?.targetKey==target}
+      try await wait("search sheet normal dismissal finished"){root.presentedViewController==nil};try protect();try shot("actual-original-message-located-after-search")
+      report["actualResultSelectionLocatedOriginalMessageAndProtectedDraftsExact"]=true;try stage("awaiting-official-screen-sharing-stop-and-case-release")
+      try await wait("official sharing stopped then exact native case released",seconds:600){releaseValid()};store.hostedEasyWorkProductUIPresented=oldUI;report["safeDriverReleaseVerified"]=true;report["status"]="passed-physical-production-chat-search-input-and-actual-result-location";try stage("completed")
+    }catch{
+      report["status"]="failed-physical-search-prefix-preserved-no-model-or-input-replay";report["failure"]=String(describing:error);try?stage("failed-prefix-awaiting-safe-release")
+      try?await wait("failure case sharing release",seconds:600){releaseValid()};if store.sheet == .chatSearch{store.sheet=nil;try?await wait("dismiss own search sheet"){root.presentedViewController==nil}};store.hostedEasyWorkProductUIPresented=oldUI;try?save();throw error
+    }
+  }
+
+  @MainActor func testPhysicalLocalFilesOfflineAndCapturedTargetFailures() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit physical late-photo original target case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["localFileImportsAuthorized"]as?Int==1,config["controlledInvalidFileReadsAuthorized"]as?Int==2,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),release=directory.appendingPathComponent(run+"-driver-release.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:release.path)else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual original UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.error==nil else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:7)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalState=try encoder.encode(store.saved),originalDrafts=store.drafts.values,originalDraftBytes=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),target=store.targetKey,oldUI=store.hostedEasyWorkProductUIPresented
+    let originalIDs=Set((originalDrafts[target]?.attachments ?? []).map(\.id))
+    let originalThread=try XCTUnwrap(store.conversation),otherThread=try XCTUnwrap(store.threads.first{$0.hostId==store.client?.id && $0.id != store.selectedThreadId})
+    let originalProject=store.selectedProjectId,originalLastThreads=store.saved.lastThreads,originalLastProjects=store.saved.lastThreadProjects,originalNewProjects=store.saved.newProjects
+    report["originalTarget"]=target;report["otherThreadId"]=otherThread.id
+    func restoreNavigation(){store.openThread(originalThread,loadAutomatically:false);store.selectedProjectId=originalProject;store.saved.lastThreads=originalLastThreads;store.saved.lastThreadProjects=originalLastProjects;store.saved.newProjects=originalNewProjects;store.persist(reconcileUnread:false)}
+    guard originalIDs.isEmpty else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:8)}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:9)}
+    func picker(_ c:UIViewController)->PHPickerViewController?{if let p=c as?PHPickerViewController{return p};if let p=c.presentedViewController,let found=picker(p){return found};return c.children.compactMap(picker).first}
+    func newFiles()->[LocalAttachment]{(store.drafts.values[target]?.attachments ?? []).filter{!originalIDs.contains($0.id)}}
+    func protect(allowNew:Bool)throws{
+      var drafts=store.drafts.values
+      if allowNew,var draft=drafts[target]{draft.attachments.removeAll{!originalIDs.contains($0.id)};if originalDrafts[target]==nil && draft==Draft(){drafts.removeValue(forKey:target)}else{drafts[target]=draft}}
+      var normalized=store.saved;normalized.lastThreads=originalLastThreads;normalized.lastThreadProjects=originalLastProjects;normalized.newProjects=originalNewProjects
+      guard try encoder.encode(normalized)==originalState,try encoder.encode(drafts)==originalDraftBytes,try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:10)}
+    }
+    // No Root presentation toggle: this case examines actual production APIs, not UI.
+    await Task.yield()
+    do{
+      let workspace=store.saved.workspaces[store.client!.id]
+      report["actualAccessBefore"] = ["online":store.client!.online,"isWritable":store.isWritable,"canCompose":store.canCompose,"canSend":store.canSend,"runtimeConnected":workspace?.agentConnectionState?.runtimeConnected ?? false,"connectionMode":workspace?.connectionMode ?? "absent"]
+      // Observe the current original installation; do not rewrite capability or connectivity state.
+      guard !store.client!.online || !store.isWritable else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:11,userInfo:[NSLocalizedDescriptionKey:"Actual current target is online and writable; cannot claim offline or no-write-access preparation"])}
+      let good=directory.appendingPathComponent(run+"-owned-local-file.txt"),bad=directory.appendingPathComponent(run+"-owned-invalid-image.png")
+      let content=Data(("EasyWork physical local-only file boundary "+run+"\n受控内容，无用户资料。\n").utf8)
+      try content.write(to:good,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);try Data("Not an image: ".utf8).write(to:bad,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      store.importFile(good,target:target)
+      let file=try XCTUnwrap(newFiles().first),bytes=try Data(contentsOf:store.attachmentURL(file))
+      guard bytes==content,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:12)}
+      report["actualLocalTXT"]=["sha256":HostService.hash(bytes),"sizeBytes":bytes.count,"name":file.name];report["actualAccessWithLocalAttachment"]=["online":store.client!.online,"isWritable":store.isWritable,"canCompose":store.canCompose,"canSend":store.canSend]
+      guard !store.client!.online || !store.isWritable else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:13)}
+      try protect(allowNew:true);store.removeAttachment(file)
+      if originalDrafts[target]==nil{guard store.drafts.values[target]==Draft()else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:14)};store.drafts.values.removeValue(forKey:target);store.persist(reconcileUnread:false)}
+      try protect(allowNew:false);report["actualOfflineOrNoWriteAccessLocalPreparationAndRemovalPassed"]=true
+      store.openThread(otherThread,loadAutomatically:false);await Task.yield();guard store.targetKey != target else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:15)}
+      store.importFile(bad,target:target)
+      guard store.error==nil,newFiles().isEmpty else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:16)}
+      try protect(allowNew:false);report["actualInvalidOriginalTargetFileDidNotPresentOnOtherTarget"]=true
+      store.importFile(bad,target:store.targetKey)
+      guard let actualError=store.error,!actualError.isEmpty else{throw NSError(domain:"EasyWorkPhysicalLocalFileBoundary",code:17)}
+      report["actualSameTargetInvalidFileError"]=actualError;store.error=nil
+      try protect(allowNew:false);restoreNavigation();try protect(allowNew:false)
+      report["actualSameTargetFailureStillPresentedAndNoDraftChanged"]=true
+      report["status"]="passed-physical-actual-offline-local-file-and-captured-target-error-boundaries";try stage("completed")
+    }catch{
+      report["actualNewAttachmentsOnFailure"]=newFiles().map{["id":$0.id,"name":$0.name,"isImage":$0.isImage]as[String:Any]};report["failure"]=String(describing:error);report["status"]="failed-physical-local-file-boundary-prefix-preserved-no-replay"
+      restoreNavigation();store.hostedEasyWorkProductUIPresented=oldUI;try?save();throw error
+    }
+  }
+
+  @MainActor func testPhysicalProductionPhotoCallbackAfterNormalTargetSwitch() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit physical late-photo original target case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["localPhotoImportsAuthorized"]as?Int==1,config["driverReleaseRequired"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),release=directory.appendingPathComponent(run+"-driver-release.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:release.path)else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:2)}
+    var report:[String:Any]=["caseId":run,"sourcePhotoCase":config["sourcePhotoCase"]!,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    let sources=try XCTUnwrap(config["sourceFiles"]as?[[String:Any]])
+    guard sources.count==6 else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:4)}
+    var allowed:[String:Data]=[:]
+    for row in sources{
+      let filename=try XCTUnwrap(row["evidenceFilename"]as?String)
+      guard filename.hasPrefix(run+"-source-photo-"),!filename.contains("/")else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:5)}
+      let bytes=try Data(contentsOf:directory.appendingPathComponent(filename)),digest=HostService.hash(bytes)
+      guard digest==row["sha256"]as?String,bytes.count==row["sizeBytes"]as?Int,allowed[digest]==nil else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:6)};allowed[digest]=bytes
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual original UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.error==nil else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:7)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalState=try encoder.encode(store.saved),originalDrafts=store.drafts.values,originalDraftBytes=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),target=store.targetKey,oldUI=store.hostedEasyWorkProductUIPresented
+    let originalIDs=Set((originalDrafts[target]?.attachments ?? []).map(\.id))
+    let originalThread=try XCTUnwrap(store.conversation),otherThread=try XCTUnwrap(store.threads.first{$0.hostId==store.client?.id && $0.id != store.selectedThreadId})
+    let originalProject=store.selectedProjectId,originalLastThreads=store.saved.lastThreads,originalLastProjects=store.saved.lastThreadProjects,originalNewProjects=store.saved.newProjects
+    report["originalTarget"]=target;report["otherThreadId"]=otherThread.id
+    func restoreNavigation(){store.openThread(originalThread,loadAutomatically:false);store.selectedProjectId=originalProject;store.saved.lastThreads=originalLastThreads;store.saved.lastThreadProjects=originalLastProjects;store.saved.newProjects=originalNewProjects;store.persist(reconcileUnread:false)}
+    guard originalIDs.isEmpty else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:8)}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:9)}
+    func picker(_ c:UIViewController)->PHPickerViewController?{if let p=c as?PHPickerViewController{return p};if let p=c.presentedViewController,let found=picker(p){return found};return c.children.compactMap(picker).first}
+    func newFiles()->[LocalAttachment]{(store.drafts.values[target]?.attachments ?? []).filter{!originalIDs.contains($0.id)}}
+    func protect(allowNew:Bool)throws{
+      var drafts=store.drafts.values
+      if allowNew,var draft=drafts[target]{draft.attachments.removeAll{!originalIDs.contains($0.id)};if originalDrafts[target]==nil && draft==Draft(){drafts.removeValue(forKey:target)}else{drafts[target]=draft}}
+      var normalized=store.saved;normalized.lastThreads=originalLastThreads;normalized.lastThreadProjects=originalLastProjects;normalized.newProjects=originalNewProjects
+      guard try encoder.encode(normalized)==originalState,try encoder.encode(drafts)==originalDraftBytes,try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:10)}
+    }
+    func releaseValid()->Bool{
+      guard let bytes=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:bytes))as?[String:Any]else{return false}
+      return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true && value["releaseNativeOnlyNoProductAction"]as?Bool==true
+    }
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    do{
+      try stage("awaiting-official-production-five-photo-picker-open")
+      try await wait("actual production PHPicker opened",seconds:600){picker(root)?.view.window===window}
+      guard picker(root)?.configuration.selectionLimit==5 else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:11)}
+      report["actualPublicPickerSelectionLimit"]=5
+      store.openThread(otherThread,loadAutomatically:false)
+      try await wait("production navigation changes current target while original system picker remains",seconds:30){store.targetKey != target && picker(root)?.view.window===window}
+      let switchedTarget=store.targetKey;report["switchedTarget"]=switchedTarget
+      report["navigationRoute"]="normal production openThread API while actual public system PHPicker stays presented; not an on-screen sidebar gesture"
+      try protect(allowNew:false);try stage("awaiting-official-one-owned-photo-confirm-after-normal-target-switch")
+      try await wait("actual system callback imports exactly one original-target photo",seconds:600){picker(root)==nil && newFiles().count==1}
+      let file=try XCTUnwrap(newFiles().first),bytes=try Data(contentsOf:store.attachmentURL(file)),digest=HostService.hash(bytes)
+      report["actualOneFile"]=["id":file.id,"name":file.name,"sha256":digest,"sizeBytes":bytes.count,"isImage":file.isImage]
+      guard file.isImage,allowed[digest]==bytes,store.targetKey==switchedTarget,store.drafts.values[switchedTarget]==originalDrafts[switchedTarget] else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:12)}
+      try protect(allowNew:true);report["actualOriginalTargetOnlyCallbackAndCurrentDraftUntouched"]=true
+      try stage("awaiting-official-current-target-clean-composer-capture")
+      try await wait("agent captured unchanged current composer then stopped sharing",seconds:600){releaseValid()}
+      restoreNavigation();store.removeAttachment(file)
+      if originalDrafts[target]==nil{guard store.drafts.values[target]==Draft()else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:13)};store.drafts.values.removeValue(forKey:target);store.persist(reconcileUnread:false)}
+      try protect(allowNew:false);guard store.targetKey==target else{throw NSError(domain:"EasyWorkPhysicalLatePhoto",code:14)}
+      report["normalOriginalTargetOnlyCleanupAndAllProtectedDataExact"]=true
+      try stage("awaiting-official-screen-sharing-stop-and-case-release")
+      try await wait("agent verified sharing stopped and explicitly released exact native case",seconds:600){releaseValid()}
+      store.hostedEasyWorkProductUIPresented=oldUI;report["safeDriverReleaseVerified"]=true;report["status"]="passed-physical-production-late-photo-original-target-only-current-draft-untouched";try stage("completed")
+    }catch{
+      report["actualNewAttachmentsOnFailure"]=newFiles().map{["id":$0.id,"name":$0.name,"isImage":$0.isImage]as[String:Any]};report["failure"]=String(describing:error);report["status"]="failed-physical-late-photo-prefix-preserved-no-replay"
+      try?stage("failed-prefix-awaiting-safe-driver-release")
+      try?await wait("failure release after agent stops screen sharing",seconds:600){releaseValid()}
+      if let p=picker(root){p.dismiss(animated:true);try?await wait("cleanup only own picker dismissal"){picker(root)==nil}}
+      restoreNavigation();store.hostedEasyWorkProductUIPresented=oldUI;try?save();throw error
+    }
+  }
+
+  @MainActor func testPhysicalProductionFiveControlledPhotosAndActualRemovalWithSafeDriverRelease() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit five controlled photos case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["localPhotoImportsAuthorized"]as?Int==5,config["driverReleaseRequired"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json"),release=directory.appendingPathComponent(run+"-driver-release.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:release.path)else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:2)}
+    var report:[String:Any]=["caseId":run,"sourcePhotoCase":config["sourcePhotoCase"]!,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    let sources=try XCTUnwrap(config["sourceFiles"]as?[[String:Any]])
+    guard sources.count==6 else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:4)}
+    var allowed:[String:Data]=[:]
+    for row in sources{
+      let filename=try XCTUnwrap(row["evidenceFilename"]as?String)
+      guard filename.hasPrefix(run+"-source-photo-"),!filename.contains("/")else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:5)}
+      let bytes=try Data(contentsOf:directory.appendingPathComponent(filename)),digest=HostService.hash(bytes)
+      guard digest==row["sha256"]as?String,bytes.count==row["sizeBytes"]as?Int,allowed[digest]==nil else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:6)};allowed[digest]=bytes
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual original UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.error==nil else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:7)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalState=try encoder.encode(store.saved),originalDrafts=store.drafts.values,originalDraftBytes=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),target=store.targetKey,oldUI=store.hostedEasyWorkProductUIPresented
+    let originalIDs=Set((originalDrafts[target]?.attachments ?? []).map(\.id))
+    guard originalIDs.isEmpty else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:8)}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:9)}
+    func picker(_ c:UIViewController)->PHPickerViewController?{if let p=c as?PHPickerViewController{return p};if let p=c.presentedViewController,let found=picker(p){return found};return c.children.compactMap(picker).first}
+    func newFiles()->[LocalAttachment]{(store.drafts.values[target]?.attachments ?? []).filter{!originalIDs.contains($0.id)}}
+    func protect(allowNew:Bool)throws{
+      var drafts=store.drafts.values
+      if allowNew,var draft=drafts[target]{draft.attachments.removeAll{!originalIDs.contains($0.id)};if originalDrafts[target]==nil && draft==Draft(){drafts.removeValue(forKey:target)}else{drafts[target]=draft}}
+      guard store.targetKey==target,try encoder.encode(store.saved)==originalState,try encoder.encode(drafts)==originalDraftBytes,try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:10)}
+    }
+    func releaseValid()->Bool{
+      guard let bytes=try?Data(contentsOf:release),let value=(try?JSONSerialization.jsonObject(with:bytes))as?[String:Any]else{return false}
+      return value["caseId"]as?String==run && value["screenSharingStoppedVerified"]as?Bool==true && value["releaseNativeOnlyNoProductAction"]as?Bool==true
+    }
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    do{
+      try stage("awaiting-official-production-five-photo-picker-open")
+      try await wait("actual production PHPicker opened",seconds:600){picker(root)?.view.window===window}
+      guard picker(root)?.configuration.selectionLimit==5 else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:11)}
+      report["actualPublicPickerSelectionLimit"]=5;try stage("awaiting-official-five-controlled-photo-selections-and-sixth-cap-observation")
+      try await wait("five real system selected photos returned production callback",seconds:600){picker(root)==nil && newFiles().count==5}
+      let files=newFiles();report["actualFiveAttachmentIds"]=files.map(\.id)
+      var hashes=Set<String>();var values:[[String:Any]]=[]
+      for file in files{let bytes=try Data(contentsOf:store.attachmentURL(file)),digest=HostService.hash(bytes);values.append(["id":file.id,"name":file.name,"sha256":digest,"sizeBytes":bytes.count,"isImage":file.isImage]);report["actualFiveFiles"]=values;try save();guard file.isImage,allowed[digest]==bytes,hashes.insert(digest).inserted else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:12)}}
+      try protect(allowNew:true);report["allFiveOriginalSourcePNGBytesExact"]=true;try stage("awaiting-official-five-card-capture-and-actual-production-removal")
+      try await wait("actual user interface removed only the five owned attachments",seconds:600){newFiles().isEmpty}
+      if originalDrafts[target]==nil{guard store.drafts.values[target]==Draft()else{throw NSError(domain:"EasyWorkPhysicalFivePhotos",code:13)};store.drafts.values.removeValue(forKey:target);store.persist(reconcileUnread:false)}
+      try protect(allowNew:false);report["actualProductionRemovalAndOriginalAllStateDraftsVoiceIdentitySelectionExact"]=true
+      try stage("awaiting-official-screen-sharing-stop-and-case-release")
+      try await wait("agent verified sharing stopped and explicitly released exact native case",seconds:600){releaseValid()}
+      store.hostedEasyWorkProductUIPresented=oldUI;report["safeDriverReleaseVerified"]=true;report["status"]="passed-physical-production-five-controlled-system-photos-and-actual-removal-original-data-exact";try stage("completed")
+    }catch{
+      report["actualNewAttachmentsOnFailure"]=newFiles().map{["id":$0.id,"name":$0.name,"isImage":$0.isImage]as[String:Any]};report["failure"]=String(describing:error);report["status"]="failed-physical-five-photo-prefix-preserved-no-replay"
+      try?stage("failed-prefix-awaiting-safe-driver-release")
+      try?await wait("failure release after agent stops screen sharing",seconds:600){releaseValid()}
+      if let p=picker(root){p.dismiss(animated:true);try?await wait("cleanup only own picker dismissal"){picker(root)==nil}}
+      store.hostedEasyWorkProductUIPresented=oldUI;try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalProductionComposerPhotoPickerCancel() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit production photo cancellation case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["systemPhotoCancelAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsImportsOrPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual original UI store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.error==nil else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalState=try encoder.encode(store.saved),originalDrafts=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),target=store.targetKey,oldUI=store.hostedEasyWorkProductUIPresented
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:5)}
+    func picker(_ c:UIViewController)->PHPickerViewController?{if let p=c as?PHPickerViewController{return p};if let p=c.presentedViewController,let found=picker(p){return found};return c.children.compactMap(picker).first}
+    func protect()throws{guard store.targetKey==target,try encoder.encode(store.saved)==originalState,try encoder.encode(store.drafts.values)==originalDrafts,try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity,store.error==nil else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:6)}}
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    do{
+      try stage("awaiting-official-composer-system-photo-picker-open")
+      try await wait("actual production composer opened public PHPicker",seconds:600){picker(root)?.view.window===window}
+      let actual=try XCTUnwrap(picker(root));report["actualSystemPickerClass"]=String(describing:type(of:actual));report["actualConfigurationSelectionLimit"]=actual.configuration.selectionLimit
+      guard actual.configuration.selectionLimit==5 else{throw NSError(domain:"EasyWorkPhysicalPhotoCancel",code:7)}
+      try protect();try stage("awaiting-official-system-photo-cancel-without-selecting-user-photos")
+      try await wait("actual public system cancellation returns original composer",seconds:600){picker(root)==nil && root.presentedViewController==nil}
+      try protect();store.hostedEasyWorkProductUIPresented=oldUI
+      report["actualSystemCancelOriginalDraftAndAllDataExact"]=true;report["noPhotosSelectedOrImported"]=true;report["selectionLimitConfigurationOnlyNotFivePhotoSelectionProof"]=true;report["status"]="passed-physical-production-photo-picker-and-system-cancel-original-data-exact";try stage("completed")
+    }catch{
+      if let p=picker(root){p.dismiss(animated:true);try? await wait("cleanup public own photo picker dismissal"){picker(root)==nil}}
+      store.hostedEasyWorkProductUIPresented=oldUI;report["status"]="failed-physical-production-photo-cancel-prefix-retained";report["failure"]=String(describing:error);try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalProductionComposerSystemFileCancelAndTwoSelections() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical original installation required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit production composer file case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["systemCancelAuthorized"]as?Bool==true,config["localFileImportsAuthorized"]as?Int==2,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:1)}
+    let documents=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0],directory=documents.appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsUploadsRecordingsImportsOrPairingExceptTwoLocalFiles":0,"codexTests":false,"wholeFeaturePassed":false]
+    var states:[[String:Any]]=[]
+    func save()throws{report["actualStates"]=states;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual original UI store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.error==nil else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let originalState=try encoder.encode(store.saved),originalDrafts=store.drafts.values,originalDraftBytes=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),target=store.targetKey,originalUI=store.hostedEasyWorkProductUIPresented
+    let originalIDs=Set((originalDrafts[target]?.attachments ?? []).map(\.id))
+    guard (originalDrafts[target]?.attachments.count ?? 0)<=8 else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:5)}
+    let folder=documents.appendingPathComponent("000-EasyWork-F30-"+String(run.prefix(8)),isDirectory:true)
+    guard !FileManager.default.fileExists(atPath:folder.path)else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:6)}
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:false)
+    let names=["easywork-"+String(run.prefix(8))+"-a.txt","easywork-"+String(run.prefix(8))+"-b.txt"]
+    let payloads=Dictionary(uniqueKeysWithValues:names.enumerated().map{index,name in(name,Data(("EasyWork physical system selection "+run+" item="+String(index)+"\n双端验收专用文件，无用户资料。\n").utf8))})
+    for name in names{try payloads[name]!.write(to:folder.appendingPathComponent(name),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);try payloads[name]!.write(to:directory.appendingPathComponent(run+"-source-"+name),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    report["actualSourceFolderName"]=folder.lastPathComponent;report["actualSourceFiles"]=names.map{["name":$0,"size":payloads[$0]!.count,"sha256":HostService.hash(payloads[$0]!),"evidenceFilename":run+"-source-"+$0]as[String:Any]}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:7)}
+    func picker(_ value:UIViewController)->UIDocumentPickerViewController?{if let p=value as?UIDocumentPickerViewController{return p};if let presented=value.presentedViewController,let p=picker(presented){return p};return value.children.compactMap(picker).first}
+    func newFiles()->[LocalAttachment]{(store.drafts.values[target]?.attachments ?? []).filter{!originalIDs.contains($0.id)}}
+    func protect(allowNew:Bool)throws{
+      var drafts=store.drafts.values
+      if allowNew,var draft=drafts[target]{draft.attachments.removeAll{!originalIDs.contains($0.id)};if originalDrafts[target]==nil && draft==Draft(){drafts.removeValue(forKey:target)}else{drafts[target]=draft}}
+      guard store.targetKey==target,try encoder.encode(store.saved)==originalState,try encoder.encode(drafts)==originalDraftBytes,try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:8)}
+    }
+    func shot(_ name:String)throws{
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)},data=try XCTUnwrap(image.pngData()),filename=run+"-"+name+".png"
+      try data.write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);states.append(["name":name,"filename":filename,"sha256":HostService.hash(data)]);try save()
+    }
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    do{
+      try stage("awaiting-official-composer-file-cancel-picker-open")
+      try await wait("actual production composer opened system document picker",seconds:600){picker(root)?.view.window===window}
+      report["actualSystemPickerClass"]=String(describing:type(of:try XCTUnwrap(picker(root))));try shot("actual-system-cancel-picker")
+      try stage("awaiting-official-system-file-cancel")
+      try await wait("actual system cancel and original composer restored",seconds:600){picker(root)==nil && root.presentedViewController?.transitionCoordinator==nil}
+      try protect(allowNew:false);guard store.error==nil else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:9,userInfo:[NSLocalizedDescriptionKey:"Actual system cancellation produced an error"])}
+      report["actualSystemCancelOriginalDraftAndDataExact"]=true;try shot("actual-composer-after-system-cancel")
+      try stage("awaiting-official-composer-two-files-picker-open")
+      try await wait("production composer reopened actual system document picker",seconds:600){picker(root)?.view.window===window}
+      try stage("awaiting-official-system-select-two-exact-files")
+      try await wait("actual system selection imported exactly the two controlled files",seconds:600){picker(root)==nil && newFiles().count==2}
+      let files=newFiles();guard Set(files.map(\.name))==Set(names)else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:10)}
+      for file in files{guard try Data(contentsOf:store.attachmentURL(file))==payloads[file.name]else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:11)}}
+      try protect(allowNew:true);guard store.error==nil else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:12)}
+      report["actualTwoFilesFromProductionSystemCallbackBytesExact"]=true;try shot("actual-two-system-files-in-original-composer")
+      for file in files{store.removeAttachment(file)}
+      if originalDrafts[target]==nil{guard store.drafts.values[target]==Draft()else{throw NSError(domain:"EasyWorkPhysicalComposerFiles",code:13)};store.drafts.values.removeValue(forKey:target);store.persist(reconcileUnread:false)}
+      try protect(allowNew:false);store.hostedEasyWorkProductUIPresented=originalUI
+      report["originalStateDraftsVoiceIdentitySelectionAndAttachmentValuesExact"]=true;report["cleanupUsedProductionRemoveAttachmentOnlyForTheseTwoOwnedFiles"]=true;report["status"]="passed-physical-production-composer-system-cancel-and-two-exact-file-selections-original-data-restored";try stage("completed")
+    }catch{
+      report["actualNewAttachmentNames"]=newFiles().map(\.name);try? shot("failed-system-file-prefix-observation")
+      if let p=picker(root){p.dismiss(animated:true);try? await wait("cleanup public dismissal of own system picker"){picker(root)==nil}}
+      store.hostedEasyWorkProductUIPresented=originalUI
+      report["status"]="failed-physical-production-system-file-prefix-preserved";report["failure"]=String(describing:error);try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalPrepareDarkAppearanceForNewProcess() async throws { try await physicalColdAppearance(false) }
+  @MainActor func testPhysicalPrepareEnglishLanguageForNewProcess() async throws { try await physicalColdLanguage(false) }
+  @MainActor func testPhysicalColdProcessRestoresEnglishAndOriginalLanguage() async throws { try await physicalColdLanguage(true) }
+  @MainActor func testPhysicalOriginalLanguageAnimationDiagnosticWithoutPreferenceChange() async throws { try await physicalColdLanguage(false) }
+  @MainActor private func physicalColdLanguage(_ cold:Bool) async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],let config=try JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any],config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["newUploadsAuthorized"]as?Int==0,config["coldProcessAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw XCTSkip("Frozen physical language-only case required")}
+    let phase=cold ? "cold":"prepare",directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let originalRun=config["originalLanguageSourceCaseId"]as?String ?? run
+    guard UUID(uuidString:originalRun)?.uuidString.lowercased()==originalRun else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:8)}
+    let path=directory.appendingPathComponent(run+"-"+phase+".json"),originalPath=directory.appendingPathComponent(originalRun+"-original-language-digests.json")
+    guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:1)}
+    var report:[String:Any]=["caseId":run,"phase":phase,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelsInputsUploadsImportsOrPairing":0,"codexTests":false,"wholeFeaturePassed":false],states:[[String:Any]]=[]
+    func save()throws{report["actualStates"]=states;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ name:String)throws{report["stage"]=name;try save()}
+    func wait(_ name:String,seconds:Double=75,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds)
+      while Date()<end{if ready(){return};try await Task.sleep(for:.milliseconds(150))}
+      report["failedWait"]=name;try save();throw NSError(domain:"EasyWorkPhysicalLanguage",code:2,userInfo:[NSLocalizedDescriptionKey:name])
+    }
+    try stage("waiting-original-store-and-foreground")
+    try await wait("original UI store and active bundle"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork",store.sheet==nil,!store.drawerOpen else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func protectedDigest()throws->String{
+      let values=[try encoder.encode(store.drafts.values),try encoder.encode(store.saved.outbox),try encoder.encode(store.saved.replyRecovery),try encoder.encode(store.saved.threadForks),try encoder.encode(store.saved.appearance),try encoder.encode(store.saved.selectedClientId),try encoder.encode(store.selectedThreadId),try encoder.encode(VoiceMigrationSafety.snapshot()),Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+      return HostService.hash(values.reduce(into:Data()){$0.append($1)})
+    }
+    let original:[String:Any]
+    if cold{
+      let originalBytes=try Data(contentsOf:originalPath)
+      if originalRun != run{guard HostService.hash(originalBytes)==config["originalLanguageCheckpointSHA256"]as?String else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:9)}}
+      original=try XCTUnwrap(JSONSerialization.jsonObject(with:originalBytes)as?[String:Any])
+      guard original["caseId"]as?String==originalRun,original["preparePID"]as?Int != Int(ProcessInfo.processInfo.processIdentifier),L10n.selection == .english else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:4)}
+      report["originalLanguageSourceCaseId"]=originalRun;report["originalEnglishSelectionNotRepeated"]=true
+    }else{
+      guard !FileManager.default.fileExists(atPath:originalPath.path)else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:5)}
+      original=["caseId":run,"preparePID":Int(ProcessInfo.processInfo.processIdentifier),"language":L10n.selection.rawValue,"protectedSHA256":try protectedDigest(),"systemPreferredLanguages":Locale.preferredLanguages]
+      try JSONSerialization.data(withJSONObject:original,options:[.sortedKeys]).write(to:originalPath,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    }
+    func protect()throws{guard try protectedDigest()==original["protectedSHA256"]as?String,Locale.preferredLanguages==original["systemPreferredLanguages"]as?[String]else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:6)}}
+    let oldUI=store.hostedEasyWorkProductUIPresented
+    defer{store.hostedEasyWorkProductUIPresented=oldUI}
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalLanguage",code:7)}
+    func views(_ view:UIView)->[UIView]{[view]+view.subviews.flatMap(views)}
+    func actions(_ menu:UIMenu)->[UIAction]{menu.children.flatMap{element->[UIAction]in if let action=element as?UIAction{return[action]};if let child=element as?UIMenu{return actions(child)};return[]}}
+    func shot(_ name:String)async throws{
+      var previous:Data?,stable=0,lastSample:CFTimeInterval=0,previousRegion=CGRect.null
+      try await wait("actual language UI pixels settled"){
+        guard CACurrentMediaTime()-lastSample>=0.15 else{return false};lastSample=CACurrentMediaTime()
+        guard let page=root.presentedViewController,let button=views(page.view).compactMap({$0 as?UIButton}).first(where:{button in
+          guard button.window===window,!button.isHidden,let menu=button.menu else{return false}
+          let titles=Set(actions(menu).map(\.title));return titles.contains("English") && titles.contains("中文")
+        })else{return false}
+        guard let currentMenu=button.menu else{return false}
+        let expectedTitles=Set(AppLanguage.allCases.map(\.title)),actualTitles=Set(actions(currentMenu).map(\.title))
+        report["actualCurrentLanguageMenuTitles"]=Array(actualTitles).sorted();report["expectedCurrentLanguageMenuTitles"]=Array(expectedTitles).sorted()
+        guard actualTitles==expectedTitles else{return false}
+        let frame=button.convert(button.bounds,to:window)
+        let region=CGRect(x:window.bounds.minX+12,y:frame.minY-30,width:window.bounds.width-24,height:frame.height+60).intersection(window.bounds)
+        guard !region.isEmpty else{return false}
+        let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+        let pixels=CGRect(x:region.minX*image.scale,y:region.minY*image.scale,width:region.width*image.scale,height:region.height*image.scale)
+        guard let cropped=image.cgImage?.cropping(to:pixels),let sample=UIImage(cgImage:cropped).pngData(),let bytes=image.pngData()else{return false}
+        let hash=Data(SHA256.hash(data:sample));stable=hash==previous && region==previousRegion ? stable+1:1;previous=hash;previousRegion=region
+        report["actualLanguageRowPixelSamplingRegion"]=String(describing:region);report["fullWindowPixelStabilityNotClaimed"]=true
+        if stable>=3{let filename=run+"-"+name+".png";try?bytes.write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])};return stable>=3
+      }
+      try protect();states.append(["filename":run+"-"+name+".png","language":L10n.selection.rawValue,"stablePixelSamples":stable]);try save()
+    }
+    func choose(_ value:AppLanguage)async throws{
+      let page=try XCTUnwrap(root.presentedViewController)
+      let candidates=views(page.view).compactMap{$0 as?UIButton}.filter{button in
+        guard button.window===window,button.isEnabled,!button.isHidden,let menu=button.menu else{return false}
+        let titles=Set(actions(menu).map(\.title));return titles.contains("English") && titles.contains("中文")
+      }
+      report["actualLanguageNativeMenuCandidateCount"]=candidates.count;report["expectedLanguage"]=value.rawValue
+      if let button=candidates.count==1 ? candidates.first:nil,let menu=button.menu,let action=actions(menu).first(where:{$0.title==value.title}){
+        report["actualLanguageMenuActionTitles"]=actions(menu).map(\.title)
+        if #available(iOS 17.4,*){button.performPrimaryAction()}else{throw XCTSkip("Public native menu activation requires iOS17.4")}
+        try await wait("exact original language menu visibly held"){button.isHeld}
+        let interaction=try XCTUnwrap(button.interactions.compactMap{$0 as?UIContextMenuInteraction}.first)
+        report["actualLanguageMenuWasHeldBeforeOnePublicAction"]=true;try stage("original-language-menu-held")
+        button.sendAction(action);interaction.dismissMenu()
+        try await wait("original language menu dismissed"){!button.isHeld}
+        report["languageActionRoute"]="exact visible production UIKit language menu, held state, one original UIAction and public dismissal"
+      }else{
+        // The official Device Hub can operate the same original picker. The
+        // examiner only observes its real preference and rendered result.
+        try stage("awaiting-official-original-language-picker-"+value.rawValue)
+      }
+      try await wait("original production language selection applied",seconds:600){L10n.selection==value && UserDefaults.standard.string(forKey:L10n.storageKey)==value.rawValue}
+      try protect()
+    }
+    do{
+      store.hostedEasyWorkProductUIPresented=true;store.sheet = .settings
+      try await wait("original settings presented and transition ended"){root.presentedViewController != nil && root.presentedViewController?.transitionCoordinator==nil}
+      if config["readOnlyLanguageAnimationDiagnostic"]as?Bool==true{
+        let page=try XCTUnwrap(root.presentedViewController)
+        report["actualSettingsButtonMenus"]=views(page.view).compactMap{$0 as?UIButton}.compactMap{button->[String:Any]?in
+          guard let menu=button.menu else{return nil};return["titles":actions(menu).map(\.title),"windowFrame":String(describing:button.convert(button.bounds,to:window)),"hidden":button.isHidden,"held":button.isHeld]
+        }
+        func animations(_ layer:CALayer,_ path:String)->[[String:Any]]{
+          let own=(layer.animationKeys() ?? []).map{key->[String:Any]in let animation=layer.animation(forKey:key);return["path":path,"class":String(describing:type(of:layer)),"key":key,"keyPath":(animation as?CAPropertyAnimation)?.keyPath ?? "none","duration":animation?.duration ?? 0,"repeatCount":animation?.repeatCount ?? 0,"bounds":String(describing:layer.bounds),"windowFrame":String(describing:layer.convert(layer.bounds,to:window.layer))]}
+          return own+(layer.sublayers ?? []).enumerated().flatMap{animations($0.element,path+"/"+String($0.offset))}
+        }
+        report["actualLayerAnimations"]=animations(window.layer,"window")
+        for index in 0..<3{
+          let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)},bytes=try XCTUnwrap(image.pngData()),filename=run+"-actual-language-diagnostic-"+String(index)+".png"
+          try bytes.write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);states.append(["filename":filename,"sha256":HostService.hash(bytes),"unqualifiedDiagnosticImage":true]);try save();try await Task.sleep(for:.milliseconds(300))
+        }
+        store.sheet=nil;try await wait("diagnostic settings closed"){root.presentedViewController==nil};try protect()
+        report["actualLanguageUnchanged"]=L10n.selection.rawValue==original["language"]as?String;report["status"]="passed-original-language-settings-read-only-animation-diagnostic-not-product-acceptance";try stage("completed");return
+      }
+      if cold{try await shot("actual-cold-restored-english")}
+      let desired:AppLanguage=cold ? .chinese:.english
+      try await choose(desired);try await shot(cold ? "actual-chinese-switch":"actual-live-english-switch")
+      if cold,let restore=AppLanguage(rawValue:try XCTUnwrap(original["language"]as?String)),restore != desired{try await choose(restore);try await shot("actual-original-language-restored")}
+      store.sheet=nil;try await wait("original settings dismissed"){root.presentedViewController==nil};try protect()
+      report["originalDraftsOperationsVoiceIdentitySelectionsAndSystemLocalePreserved"]=true;report["language"]=L10n.selection.rawValue
+      report["status"]=cold ? "passed-original-new-process-english-chinese-and-original-language-restored":"passed-original-production-english-persisted-for-new-process"
+      try stage("completed")
+    }catch{
+      store.sheet=nil;try?await wait("failure cleanup dismisses original settings"){root.presentedViewController==nil}
+      report["status"]="failed-original-physical-language-prefix-retained";report["failure"]=String(describing:error);report["actualLanguageAtFailure"]=L10n.selection.rawValue;try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalColdProcessRestoresDarkAndOriginalAppearance() async throws { try await physicalColdAppearance(true) }
+  @MainActor private func physicalColdAppearance(_ cold:Bool) async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit physical two-process appearance case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["coldProcessAuthorized"]as?Bool==true,Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance"else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:1)}
+    let phase=cold ? "cold":"prepare",directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+"-"+phase+".json"),originalPath=directory.appendingPathComponent(run+"-original-digests.json")
+    guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:2)}
+    var report:[String:Any]=["caseId":run,"phase":phase,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModelCaptureUploadImportPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    var states:[[String:Any]]=[]
+    func save()throws{report["actualStates"]=states;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    func wait(_ name:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds);while !ready() && Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=name;try save();throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:3,userInfo:[NSLocalizedDescriptionKey:name])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual UI-owned store and exact foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork"else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func stateDigest()throws->String{
+      var value=store.saved;value.appearance = .system;value.history=[:];value.historyCacheKeys=value.historyCacheKeys?.sorted();value.drafts=store.drafts.values
+      return HostService.hash(try encoder.encode(value))
+    }
+    func identityDigest()throws->String{HostService.hash(Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8))}
+    func voiceDigest()throws->String{HostService.hash(try encoder.encode(VoiceMigrationSafety.snapshot()))}
+    var original:[String:Any]
+    if cold{
+      original=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:originalPath))as?[String:Any])
+      guard original["caseId"]as?String==run,original["preparePID"]as?Int != Int(ProcessInfo.processInfo.processIdentifier),store.saved.appearance == .dark else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:5)}
+    }else{
+      guard !FileManager.default.fileExists(atPath:originalPath.path),store.saved.appearance == .system else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:6)}
+      original=["caseId":run,"preparePID":Int(ProcessInfo.processInfo.processIdentifier),"stateSha256":try stateDigest(),"identitySha256":try identityDigest(),"voiceSha256":try voiceDigest(),"originalAppearance":store.saved.appearance.rawValue]
+      try JSONSerialization.data(withJSONObject:original,options:[.sortedKeys]).write(to:originalPath,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    }
+    func protect()throws{
+      guard try stateDigest()==original["stateSha256"]as?String,try identityDigest()==original["identitySha256"]as?String,try voiceDigest()==original["voiceSha256"]as?String else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:7)}
+    }
+    try protect()
+    let oldUI=store.hostedEasyWorkProductUIPresented
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:8)}
+    store.hostedEasyWorkProductUIPresented=true;await Task.yield()
+    func shot(_ name:String)throws{
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)},data=try XCTUnwrap(image.pngData()),filename=run+"-"+name+".png"
+      try data.write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);states.append(["filename":filename,"name":name,"sha256":HostService.hash(data),"appearance":store.saved.appearance.rawValue]);try protect();try save()
+    }
+    do{
+      if cold{try await wait("actual cold root dark trait"){root.traitCollection.userInterfaceStyle == .dark};try shot("actual-cold-main-dark")}
+      store.sheet = .settings
+      try await wait("actual Root settings presentation"){root.presentedViewController != nil && root.presentedViewController?.transitionCoordinator==nil}
+      let page=try XCTUnwrap(root.presentedViewController)
+      func settled(_ controller:UIViewController)->Bool{
+        guard controller.transitionCoordinator==nil,!controller.isBeingPresented,!controller.isBeingDismissed,controller.children.allSatisfy(settled)else{return false}
+        func animated(_ layer:CALayer)->Bool{!(layer.animationKeys() ?? []).isEmpty || (layer.sublayers ?? []).contains(where:animated)}
+        return !animated(controller.view.layer)
+      }
+      try await wait("actual settings navigation stable"){settled(page)}
+      if cold{guard page.traitCollection.userInterfaceStyle == .dark else{throw NSError(domain:"EasyWorkPhysicalColdAppearance",code:9)};try shot("actual-cold-settings-dark")}
+      let desired:Appearance=cold ? .system:.dark
+      report["expectedAppearance"]=desired.rawValue;try stage("awaiting-official-production-appearance-"+phase)
+      try await wait("actual production picker updates preference",seconds:600){store.saved.appearance==desired}
+      let expected:UIUserInterfaceStyle=desired == .dark ? .dark:window.screen.traitCollection.userInterfaceStyle
+      try await wait("actual settings correct trait and completed navigation"){page.traitCollection.userInterfaceStyle==expected && settled(page)}
+      let stateURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+      try await wait("production persisted appearance on original encrypted state"){(try? AgentCache.decode(Data(contentsOf:stateURL)).appearance)==desired}
+      try shot(cold ? "actual-original-system-restored":"actual-persisted-dark")
+      store.sheet=nil;try await wait("actual settings closed"){page.presentingViewController==nil}
+      try protect();store.hostedEasyWorkProductUIPresented=oldUI
+      report["originalDraftsJournalsIdentityAndVoiceExact"]=true
+      report["status"]=cold ? "passed-physical-new-process-dark-restoration-and-original-system-restored":"passed-physical-production-dark-preference-persisted-for-cold-process"
+      try stage("completed")
+    }catch{
+      store.sheet=nil;try? await wait("failure cleanup closes actual settings"){root.presentedViewController==nil}
+      store.hostedEasyWorkProductUIPresented=oldUI
+      report["status"]="failed-physical-appearance-cold-prefix-retained";report["failure"]=String(describing:error);try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalProductionRootRotationAndSettingsOrientationCapability() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit Root rotation case")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["rootRotationAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkPhysicalRootRotation",code:1)}
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalRootRotation",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModels":0,"newVoiceCapturesUploadsOrPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    var frames:[[String:Any]]=[]
+    func save()throws{report["actualStates"]=frames;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String)throws{report["stage"]=value;try save()}
+    var stalledAnimations:(()->[[String:Any]])?
+    func wait(_ label:String,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(60);while !ready()&&Date()<end{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;report["actualStalledAnimations"]=stalledAnimations?() ?? [];try save();throw NSError(domain:"EasyWorkPhysicalRootRotation",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("actual UI-owned store and foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork"else{throw NSError(domain:"EasyWorkPhysicalRootRotation",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldState=try encoder.encode(store.saved),oldDrafts=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity"),oldUI=store.hostedEasyWorkProductUIPresented
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden}),scene=try XCTUnwrap(window.windowScene),root=try XCTUnwrap(window.rootViewController)
+    guard scene.interfaceOrientation == .portrait,root.presentedViewController==nil else{throw NSError(domain:"EasyWorkPhysicalRootRotation",code:5)}
+    store.hostedEasyWorkProductUIPresented=true
+    var previousGeometry:String?,geometrySamples=0,lastGeometrySample:CFTimeInterval=0
+    func rootPresentationSettled()->Bool{
+      func controllers(_ c:UIViewController)->[UIViewController]{[c]+c.children.flatMap(controllers)+(c.presentedViewController.map(controllers) ?? [])}
+      var observedContentLoops=0
+      func animated(_ layer:CALayer)->Bool{
+        for key in layer.animationKeys() ?? []{
+          // The actual physical diagnostic found these perpetual 14pt UIKit
+          // template image loops. They change pixels, never layout geometry.
+          guard let animation=layer.animation(forKey:key)as?CAPropertyAnimation,
+            ["contents","contentsMultiplyColor"].contains(animation.keyPath ?? ""),
+            animation.repeatCount>=2_147_483_648,
+            layer.bounds.size==CGSize(width:14,height:14)else{return true}
+          observedContentLoops+=1
+        }
+        return (layer.sublayers ?? []).contains(where:animated)
+      }
+      guard controllers(root).allSatisfy({$0.transitionCoordinator==nil && !$0.isBeingPresented && !$0.isBeingDismissed}),!animated(root.view.layer)else{geometrySamples=0;return false}
+      root.view.layoutIfNeeded()
+      func geometry(_ layer:CALayer)->String{String(describing:layer.bounds)+String(describing:layer.frame)+(layer.sublayers ?? []).map(geometry).joined(separator:";")}
+      let value=geometry(root.view.layer),now=CACurrentMediaTime()
+      if value != previousGeometry{previousGeometry=value;geometrySamples=0;lastGeometrySample=0}
+      if now-lastGeometrySample>=0.08{geometrySamples+=1;lastGeometrySample=now}
+      report["nonGeometricPerpetualTemplateContentLoops"]=observedContentLoops
+      report["unchangedGeometrySamples"]=geometrySamples
+      return geometrySamples>=3
+    }
+    stalledAnimations={
+      func collect(_ layer:CALayer,_ path:String)->[[String:Any]]{
+        let rows=(layer.animationKeys() ?? []).map{key->[String:Any] in
+          let animation=layer.animation(forKey:key)
+          return ["layerClass":String(describing:type(of:layer)),"layerPath":path,"key":key,"keyPath":(animation as? CAPropertyAnimation)?.keyPath ?? "none","duration":animation?.duration ?? 0,"repeatCount":animation?.repeatCount ?? 0,"repeatDuration":animation?.repeatDuration ?? 0,"bounds":String(describing:layer.bounds),"frame":String(describing:layer.frame)]
+        }
+        return rows+(layer.sublayers ?? []).enumerated().flatMap{collect($0.element,path+"/"+String($0.offset))}
+      }
+      return collect(root.view.layer,"root")
+    }
+    func protected()throws{
+      guard try encoder.encode(store.saved)==oldState,try encoder.encode(store.drafts.values)==oldDrafts,try VoiceMigrationSafety.snapshot()==voices,
+        try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalRootRotation",code:6)}
+    }
+    func shot(_ name:String)throws{
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+      let data=try XCTUnwrap(image.pngData()),name=run+"-"+name+".png";try data.write(to:directory.appendingPathComponent(name),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      frames.append(["name":name,"filename":name,"sha256":HostService.hash(data),"windowWidth":window.bounds.width,"windowHeight":window.bounds.height,"orientation":scene.interfaceOrientation.rawValue]);try protected();try save()
+    }
+    do{
+      await Task.yield();store.sheet = .settings
+      try await wait("actual production settings sheet"){root.presentedViewController != nil && root.presentedViewController?.transitionCoordinator==nil}
+      let page=try XCTUnwrap(root.presentedViewController)
+      report["applicationSupportedOrientationMask"]=UIApplication.shared.supportedInterfaceOrientations(for:window).rawValue
+      report["rootSupportedOrientationMask"]=root.supportedInterfaceOrientations.rawValue
+      report["settingsSupportedOrientationMask"]=page.supportedInterfaceOrientations.rawValue
+      report["settingsModalClass"]=String(describing:type(of:page));try shot("actual-settings-portrait-capability")
+      store.sheet=nil;try await wait("actual settings sheet closes"){root.presentedViewController==nil}
+      root.setNeedsUpdateOfSupportedInterfaceOrientations()
+      report["mainRootSupportedOrientationMaskAfterInvalidation"]=root.supportedInterfaceOrientations.rawValue
+      try stage("requesting-own-main-root-landscape")
+      scene.requestGeometryUpdate(.iOS(interfaceOrientations:.landscapeLeft)){error in report["rootLandscapeError"]=error.localizedDescription;try?save()}
+      try await wait("actual main root landscape"){scene.interfaceOrientation.isLandscape && window.bounds.width>window.bounds.height}
+      try await wait("actual main root landscape controller and layer animations settled"){rootPresentationSettled()}
+      root.view.layoutIfNeeded();report["mainLandscapeAnimationsSettled"]=true
+      try shot("actual-main-root-landscape")
+      scene.requestGeometryUpdate(.iOS(interfaceOrientations:.portrait)){error in report["rootPortraitError"]=error.localizedDescription;try?save()}
+      try await wait("actual main root portrait restored"){scene.interfaceOrientation == .portrait && window.bounds.height>window.bounds.width}
+      try await wait("actual main root portrait controller and layer animations settled"){rootPresentationSettled()}
+      root.view.layoutIfNeeded();report["mainPortraitAnimationsSettled"]=true
+      try shot("actual-main-root-portrait-restored");try protected()
+      store.hostedEasyWorkProductUIPresented=oldUI
+      report["originalAppearanceDraftsJournalsVoiceIdentityAndSelectionExact"]=true
+      report["status"]="passed-physical-main-root-rotation-and-real-settings-mask-audit-original-data-exact";try stage("completed")
+    }catch{
+      try? shot("failed-root-rotation-observation")
+      store.sheet=nil;scene.requestGeometryUpdate(.iOS(interfaceOrientations:.portrait))
+      try? await wait("restore own scene portrait after failure"){scene.interfaceOrientation == .portrait}
+      store.hostedEasyWorkProductUIPresented=oldUI
+      report["status"]="failed-physical-main-root-rotation-prefix-preserved";report["failure"]=String(describing:error);try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalProductionAppearanceControlsAndRotationPreserveOriginalData() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Original physical iPhone required")
+    #endif
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit physical production-Root appearance case") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelsAuthorized"]as?Int==0,config["appearanceUIAuthorized"]as?Bool==true,
+      config["ownSceneRotationAuthorized"]as?Bool==true else { throw NSError(domain:"EasyWorkPhysicalAppearance",code:1) }
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"physicalIPhone":true,"newModels":0,"newVoiceCapturesUploadsOrPairing":0,"codexTests":false,"wholeFeaturePassed":false]
+    var states:[[String:Any]]=[]
+    func save()throws{report["actualStates"]=states;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ name:String)throws{report["stage"]=name;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool)async throws{
+      let deadline=Date().addingTimeInterval(seconds);while !ready()&&Date()<deadline{try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalAppearance",code:3,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store-and-foreground")
+    try await wait("original UI owner and actual foreground"){SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target.agentId=="easywork"else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldAppearance=store.saved.appearance,oldState=store.saved,oldDrafts=try encoder.encode(store.drafts.values),voices=try VoiceMigrationSafety.snapshot(),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as?UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+    let scene=try XCTUnwrap(window.windowScene),root=try XCTUnwrap(window.rootViewController)
+    guard root.presentedViewController==nil,scene.interfaceOrientation == .portrait else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:5)}
+    let originalSystemStyle=window.screen.traitCollection.userInterfaceStyle
+    let originalProductUI=store.hostedEasyWorkProductUIPresented
+    store.hostedEasyWorkProductUIPresented=true
+    // Use the real Root's sheet and appearance modifier. A standalone host
+    // intentionally omits that production presentation environment.
+    await Task.yield()
+    store.sheet = .settings
+    try await wait("actual production Root settings sheet appears"){root.presentedViewController != nil && root.presentedViewController?.transitionCoordinator==nil}
+    let page=try XCTUnwrap(root.presentedViewController)
+    report["actualProductionRootAndSheetUsed"]=true
+    var ownsLandscape=false
+    func controllers(_ value:UIViewController)->[UIViewController]{[value]+value.children.flatMap(controllers)+(value.presentedViewController.map(controllers) ?? [])}
+    func actualPresentationSettled()->Bool{
+      let owners=controllers(page)
+      guard owners.allSatisfy({$0.transitionCoordinator==nil && !$0.isBeingPresented && !$0.isBeingDismissed})else{return false}
+      func animated(_ layer:CALayer)->Bool{
+        if !(layer.animationKeys() ?? []).isEmpty{return true}
+        return (layer.sublayers ?? []).contains(where:animated)
+      }
+      return page.view.window===window && !animated(page.view.layer)
+    }
+    func protected()throws{
+      var state=store.saved;state.appearance=oldAppearance
+      guard try encoder.encode(state)==encoder.encode(oldState),try encoder.encode(store.drafts.values)==oldDrafts,
+        try VoiceMigrationSafety.snapshot()==voices,try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:6)}
+    }
+    func snapshot(_ name:String)throws{
+      guard page.presentingViewController != nil,page.transitionCoordinator==nil,page.view.window===window else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:7)}
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image{_ in _=window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)}
+      let png=try XCTUnwrap(image.pngData());let filename=run+"-"+name+".png";try png.write(to:directory.appendingPathComponent(filename),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      states.append(["name":name,"appearance":store.saved.appearance.rawValue,"interfaceStyle":page.traitCollection.userInterfaceStyle.rawValue,"systemSceneStyle":scene.traitCollection.userInterfaceStyle.rawValue,"orientation":scene.interfaceOrientation.rawValue,"windowWidth":window.bounds.width,"windowHeight":window.bounds.height,"filename":filename,"sha256":HostService.hash(png)])
+      try protected();try save()
+    }
+    do{
+      try await wait("production Settings stable"){page.presentingViewController != nil && page.transitionCoordinator==nil}
+      let choices:[Appearance]=oldAppearance == .dark ? [.light,.system,.dark] : oldAppearance == .light ? [.dark,.system,.light] : [.dark,.light,.system]
+      report["originalAppearance"]=oldAppearance.rawValue;report["originalSystemStyle"]=originalSystemStyle.rawValue
+      for (index,choice) in choices.enumerated(){
+        report["expectedAppearance"]=choice.rawValue;report["expectedStep"]=index
+        try stage("awaiting-official-production-appearance-"+String(index))
+        try await wait("actual production picker changed appearance",seconds:600){store.saved.appearance==choice}
+        let expected:UIUserInterfaceStyle=choice == .dark ? .dark : choice == .light ? .light : originalSystemStyle
+        try await wait("actual UIKit traits follow appearance"){page.traitCollection.userInterfaceStyle==expected && page.transitionCoordinator==nil}
+        try await wait("actual settings navigation and layer animations settled"){actualPresentationSettled()}
+        try snapshot("appearance-"+String(index))
+      }
+      guard store.saved.appearance==oldAppearance else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:8)}
+      report["expectedAppearance"]=oldAppearance.rawValue;try stage("awaiting-appearance-page-ready-for-rotation")
+      // Rotate only this App scene through Apple's public geometry request.
+      let allowed=UIApplication.shared.supportedInterfaceOrientations(for:window)
+      guard allowed.contains(.landscapeLeft)else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:9)}
+      try await wait("production settings stable before geometry request"){actualPresentationSettled()}
+      for owner in controllers(root){owner.setNeedsUpdateOfSupportedInterfaceOrientations()}
+      report["settingsSupportedOrientationMaskBeforeGeometry"]=page.supportedInterfaceOrientations.rawValue
+      report["actualNavigationAndLayerAnimationsSettledBeforeGeometry"]=true
+      report["landscapeGeometryRequestAttempted"]=true;try save();ownsLandscape=true
+      scene.requestGeometryUpdate(.iOS(interfaceOrientations:.landscapeLeft)){error in report["rotationError"]=error.localizedDescription;try?save()}
+      try await wait("actual own iPhone scene landscape",seconds:45){scene.interfaceOrientation.isLandscape && window.bounds.width>window.bounds.height}
+      try await wait("actual landscape settings animations settled"){actualPresentationSettled()}
+      try snapshot("actual-landscape-settings")
+      scene.requestGeometryUpdate(.iOS(interfaceOrientations:.portrait)){error in report["portraitRestoreError"]=error.localizedDescription;try?save()}
+      try await wait("actual own iPhone scene portrait restored",seconds:45){scene.interfaceOrientation == .portrait && window.bounds.height>window.bounds.width}
+      try await wait("actual restored settings animations settled"){actualPresentationSettled()}
+      ownsLandscape=false;try snapshot("actual-portrait-settings-restored")
+      store.sheet=nil;try await wait("production Settings presentation closed"){page.presentingViewController==nil}
+      try protected();guard store.saved.appearance==oldAppearance else{throw NSError(domain:"EasyWorkPhysicalAppearance",code:10)}
+      store.hostedEasyWorkProductUIPresented=originalProductUI
+      report["originalAppearanceDraftsJournalsVoiceIdentityAndSelectionExact"]=true
+      report["status"]="passed-physical-production-appearance-three-modes-and-scene-rotation-original-state-restored";try stage("completed")
+    }catch{
+      if ownsLandscape{
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations:.portrait))
+        try? await wait("failure cleanup restores own scene portrait",seconds:45){scene.interfaceOrientation == .portrait}
+        report["failureCleanupPortraitRestored"]=scene.interfaceOrientation == .portrait
+      }
+      if store.saved.appearance != oldAppearance{store.saved.appearance=oldAppearance;store.persist();report["failureCleanupRestoredAppearanceThroughStore"]=true}
+      store.sheet=nil
+      try? await wait("failure cleanup closes production settings"){page.presentingViewController==nil}
+      store.hostedEasyWorkProductUIPresented=originalProductUI
+      report["status"]="failed-physical-appearance-prefix-preserved";report["failure"]=String(describing:error);try?save();throw error
+    }
+  }
+  @MainActor func testPhysicalOriginalSystemMigrationRejectsInvalidInputsAndExistingData() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("This examiner requires the original physical installation")
+    #endif
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"], let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance" else { throw XCTSkip("Explicit physical migration examiner") }
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run, config["negativeChecksAuthorized"] as? Int == 8,
+      config["newModelInputsAuthorized"] as? Int == 0, config["newImportsAuthorized"] as? Int == 0,
+      config["newRecordingsAuthorized"] as? Int == 0, config["newVoiceUploadsAuthorized"] as? Int == 0 else {
+      throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 1)
+    }
+    let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let path = directory.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 2) }
+    var report: [String: Any] = ["caseId": run, "nativeProcessId": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "physicalIPhone": true,
+      "newModels": 0, "newRecordings": 0, "newVoiceUploads": 0, "acceptedImports": 0,
+      "actualSystemPickerUsed": false, "codexTests": false, "wholeFeaturePassed": false]
+    var results: [[String: Any]] = []
+    func save() throws {
+      report["results"] = results
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    report["stage"] = "waiting-for-original-ui-owned-store-and-foreground"; try save()
+    let until = Date().addingTimeInterval(60)
+    while (SessionStore.hostedEasyWorkAcceptanceStore == nil || UIApplication.shared.applicationState != .active) && Date() < until {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    guard !store.localRecoveryRequired, target.agentId == "easywork", store.client?.agentConnection?.target == target,
+      store.saved.clients.contains(where: { !$0.isDemo }) else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 3) }
+    let sourceName = try XCTUnwrap(config["sourceArchiveFilename"] as? String)
+    guard EncryptedMigration.safeFilename(sourceName), sourceName.hasSuffix("-actual-system-export.codexmigration") else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 4) }
+    let source = directory.appendingPathComponent(sourceName), cipher = try Data(contentsOf: source)
+    guard HostService.hash(cipher) == config["sourceArchiveSHA256"] as? String else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 5) }
+    let password = try XCTUnwrap(config["archivePassword"] as? String)
+    let payload = try EncryptedMigration.open(cipher, password: password)
+    let voice = try XCTUnwrap(try CanonicalVoiceTestEvidence.entries(payload.pendingVoiceOriginals).first(where: { $0.id == config["originalVoiceOperationId"] as? String }))
+    let voices = try CanonicalVoiceTestEvidence.snapshot()
+    guard voices.contains(voice), payload.attachments.count == 2,
+      HostService.hash(voice.audio) == config["originalAudioSHA256"] as? String,
+      HostService.hash(voice.record.originalMetadata) == config["originalMetadataSHA256"] as? String else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 6) }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let oldState = try encoder.encode(store.saved), oldDrafts = try encoder.encode(store.drafts.values)
+    let credentialIds = Set(payload.credentials.keys).union(EncryptedMigration.installationCredentials)
+    let credentials = try credentialIds.map { (id: $0, value: try CredentialVault.existingToken($0)) }
+    func protected() throws {
+      guard try encoder.encode(store.saved) == oldState, try encoder.encode(store.drafts.values) == oldDrafts,
+        try CanonicalVoiceTestEvidence.snapshot() == voices, try Data(contentsOf: source) == cipher else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 7) }
+      for entry in credentials {
+        guard try CredentialVault.existingToken(entry.id) == entry.value else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 8) }
+      }
+    }
+    func reject(_ name: String, data: Data, password: String, existing: Bool = false, authenticatedDerivedInput: Bool = false) throws {
+      var caught: Error?
+      do {
+        let opened = try EncryptedMigration.open(data, password: password)
+        if existing { try store.restoreMigration(opened) }
+      } catch { caught = error }
+      let error = try XCTUnwrap(caught, "Production migration must reject " + name)
+      let expected = existing ? L10n.tr("请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。") : L10n.tr("密码错误或迁移文件已损坏，原有数据未更改。")
+      guard error.localizedDescription == expected else { throw error }
+      try protected()
+      let filename = run + "-negative-" + name + ".codexmigration"
+      if name != "existing-real-installation" { try data.write(to: directory.appendingPathComponent(filename), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+      results.append(["kind": name, "rejected": true, "error": error.localizedDescription,
+        "inputSHA256": HostService.hash(data), "authenticatedDerivedInput": authenticatedDerivedInput,
+        "originalStateDraftsCredentialsVoiceAndCipherExact": true])
+      report["stage"] = "rejected-" + name; try save()
+    }
+    do {
+      report["originalSourceCipherSHA256"] = HostService.hash(cipher)
+      report["sourcePayloadVersion"] = payload.version; report["sourceActualVoiceAndTwoFilesVerified"] = true; try save()
+      try reject("wrong-password", data: cipher, password: "wrong-password-" + run)
+      var envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: cipher) as? [String: Any])
+      var sealed = try XCTUnwrap(Data(base64Encoded: try XCTUnwrap(envelope["ciphertext"] as? String)))
+      sealed[sealed.startIndex + 20] ^= 1; envelope["ciphertext"] = sealed.base64EncodedString()
+      try reject("ciphertext-tamper", data: JSONSerialization.data(withJSONObject: envelope), password: password)
+      try reject("truncated-envelope", data: Data(cipher.prefix(cipher.count / 2)), password: password)
+      let clear = try EncryptedMigrationCrypto.open(cipher, password: password)
+      func derived(_ change: (inout [String: Any]) throws -> Void) throws -> Data {
+        var value = try XCTUnwrap(JSONSerialization.jsonObject(with: clear) as? [String: Any]); try change(&value)
+        return try EncryptedMigrationCrypto.seal(JSONSerialization.data(withJSONObject: value), password: password)
+      }
+      try reject("foreign-source", data: derived { $0["bundleIdentifier"] = "com.example.unrelated" }, password: password, authenticatedDerivedInput: true)
+      try reject("voice-hash-mismatch", data: derived { value in
+        var bundle = try XCTUnwrap(value["pendingVoiceOriginals"] as? [String: Any])
+        var originals = try XCTUnwrap(bundle["originals"] as? [[String: Any]])
+        var files = try XCTUnwrap(originals[0]["files"] as? [[String: Any]])
+        let index = try XCTUnwrap(files.firstIndex { ($0["name"] as? String)?.hasSuffix(".wav") == true })
+        var audio = try XCTUnwrap(Data(base64Encoded: try XCTUnwrap(files[index]["bytes"] as? String)))
+        audio[audio.startIndex + audio.count - 1] ^= 1; files[index]["bytes"] = audio.base64EncodedString()
+        originals[0]["files"] = files; bundle["originals"] = originals; value["pendingVoiceOriginals"] = bundle
+      }, password: password, authenticatedDerivedInput: true)
+      try reject("unsafe-attachment-name", data: derived { value in
+        var files = try XCTUnwrap(value["attachments"] as? [String: Any]); let key = try XCTUnwrap(files.keys.first)
+        files["../" + run] = files.removeValue(forKey: key); value["attachments"] = files
+      }, password: password, authenticatedDerivedInput: true)
+      try reject("unsupported-voice-policy", data: derived { value in
+        var bundle = try XCTUnwrap(value["pendingVoiceOriginals"] as? [String: Any]); bundle["version"] = 2; value["pendingVoiceOriginals"] = bundle
+      }, password: password, authenticatedDerivedInput: true)
+      try reject("existing-real-installation", data: cipher, password: password, existing: true)
+      guard results.count == 8 else { throw NSError(domain: "EasyWorkPhysicalMigrationRejection", code: 9) }
+      try protected(); report["status"] = "passed-physical-original-system-cipher-eight-rejections-original-data-exact"
+      report["stage"] = "completed"; try save()
+    } catch {
+      report["status"] = "failed-physical-migration-rejection-prefix-preserved"; report["failure"] = String(describing: error); try? save(); throw error
+    }
+  }
+  @MainActor func testExistingActualPendingVoiceProductionExportWithoutCaptureOrNetwork() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance" else { throw XCTSkip("Explicit same-recording export examiner") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newRecordingsAuthorized"]as?Int==0,
+      config["newVoiceUploadsAuthorized"]as?Int==0,config["newModelInputsAuthorized"]as?Int==0,
+      config["newLocalFilesAuthorized"]as?Int==2,config["systemExportsAuthorized"]as?Int==1 else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:1) }
+    let docs=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+    let directory=docs.appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:2) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"newRecordings":0,"newVoiceUploads":0,"newModels":0,"codexTests":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func stage(_ value:String) throws { report["stage"]=value;try save() }
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let until=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<until { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkExistingVoiceExport",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try stage("waiting-for-original-store-and-actual-foreground")
+    try await wait("original UI store and foreground",seconds:60) { SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard !store.localRecoveryRequired,store.client?.agentConnection?.target==target,target.agentId=="easywork",
+      store.hostedMigrationExportObservation==nil else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:4) }
+    let op=try XCTUnwrap(config["originalVoiceOperationId"]as?String)
+    let metadataURL=VoiceMigrationSafety.pendingDirectory.appendingPathComponent(op+".json"),audioURL=VoiceMigrationSafety.pendingDirectory.appendingPathComponent(op+".wav")
+    let metadataBytes=try Data(contentsOf:metadataURL),audioBytes=try Data(contentsOf:audioURL)
+    guard HostService.hash(metadataBytes)==config["originalMetadataSHA256"]as?String,
+      HostService.hash(audioBytes)==config["originalAudioSHA256"]as?String else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:5) }
+    let metadata=try JSONDecoder().decode(PendingVoiceMigration.Metadata.self,from:metadataBytes)
+    let voices=try CanonicalVoiceTestEvidence.snapshot(),entry=try XCTUnwrap(voices.first{$0.id==op})
+    guard entry.record.originalMetadata==metadataBytes,entry.audio==audioBytes,metadata.target==store.targetKey,
+      store.draft.text==metadata.originalText,store.draft.attachments.isEmpty else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:6) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let key=store.targetKey,oldDrafts=store.drafts.values,oldOutbox=try encoder.encode(store.saved.outbox),
+      oldRecovery=try encoder.encode(store.saved.replyRecovery),oldDetached=try encoder.encode(store.saved.detachedReplies),
+      oldSettings=try encoder.encode(store.saved.generationPreferences),oldSharing=try encoder.encode(store.saved.aiSharingGrants),
+      identity=try CredentialVault.existingToken("easywork-device-identity")
+    let password=try XCTUnwrap(config["archivePassword"]as?String)
+    var ownFiles:[LocalAttachment]=[],controller:UIViewController?
+    func restoreEditableDraft() {
+      guard store.targetKey==key else { return }
+      for file in ownFiles { store.removeAttachment(file) }
+      store.drafts.values[key]=oldDrafts[key];store.persist()
+    }
+    do {
+      try store.importData(Data(("EXISTING_PENDING_"+run+"\n").utf8),name:"existing-pending-"+run+".txt",isImage:false,target:key)
+      let image=UIGraphicsImageRenderer(size:CGSize(width:24,height:24)).image{c in UIColor.systemBlue.setFill();c.fill(CGRect(x:0,y:0,width:24,height:24))}
+      try store.importData(try XCTUnwrap(image.pngData()),name:"existing-pending-"+run+".png",isImage:true,target:key)
+      ownFiles=store.draft.attachments
+      guard ownFiles.count==2 else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:7) }
+      var fileBytes:[String:Data]=[:]
+      for file in ownFiles { fileBytes[file.fileName]=try Data(contentsOf:store.attachmentURL(file)) }
+      report["actualNewLocalFiles"]=try JSONSerialization.jsonObject(with:encoder.encode(ownFiles))
+      report["actualNewLocalFileSHA256"]=fileBytes.mapValues(HostService.hash)
+      let payload=try store.migrationPayload()
+      guard payload.version==2,try CanonicalVoiceTestEvidence.entries(payload.pendingVoiceOriginals).contains(entry),
+        ownFiles.allSatisfy({payload.attachments[$0.fileName]==fileBytes[$0.fileName]}) else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:8) }
+      let prepared=try EncryptedMigration.seal(payload,password:password)
+      let preparedURL=directory.appendingPathComponent(run+"-prepared-production-payload.codexmigration")
+      try prepared.write(to:preparedURL,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      report["preparedProductionPayloadFilename"]=preparedURL.lastPathComponent
+      report["preparedProductionPayloadSHA256"]=HostService.hash(prepared)
+      report["originalVoiceOperationId"]=op;report["originalMetadataSHA256"]=HostService.hash(metadataBytes)
+      report["originalAudioSHA256"]=HostService.hash(audioBytes)
+      try stage("same-original-voice-and-new-files-production-payload-durable")
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+      let root=try XCTUnwrap(window.rootViewController)
+      guard root.presentedViewController==nil else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:9) }
+      let page=UIHostingController(rootView:NavigationStack { EncryptedMigrationView(store:store) })
+      controller=page;root.present(page,animated:true)
+      func descendants(_ view:UIView)->[UIView] { [view]+view.subviews.flatMap(descendants) }
+      var field:UITextField?
+      try await wait("production migration SecureField and settled presentation") {
+        guard page.presentingViewController != nil,page.transitionCoordinator==nil else{return false}
+        let fields=descendants(page.view).compactMap{$0 as? UITextField}.filter{$0.isSecureTextEntry && !$0.isHidden && $0.isUserInteractionEnabled && $0.window===window && $0.bounds.width>0}
+        field=fields.count==1 ? fields[0] : nil;return field != nil
+      }
+      let input=try XCTUnwrap(field)
+      guard input.becomeFirstResponder(),let selection=input.textRange(from:input.beginningOfDocument,to:input.endOfDocument) else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:10) }
+      input.selectedTextRange=selection;input.insertText(password)
+      try await wait("actual complete migration password binding") { input.text==password }
+      input.resignFirstResponder()
+      func controls()->[NSObject] {
+        var seen=Set<ObjectIdentifier>(),result:[NSObject]=[]
+        func visit(_ object:NSObject) {
+          guard result.count<6000,seen.insert(ObjectIdentifier(object)).inserted else{return};result.append(object)
+          if let view=object as? UIView { view.subviews.forEach(visit) }
+          object.accessibilityElements?.compactMap{$0 as? NSObject}.forEach(visit)
+          let count=object.accessibilityElementCount()
+          if count>0 && count<1000 { for index in 0..<count { if let child=object.accessibilityElement(at:index)as?NSObject { visit(child) } } }
+        }
+        visit(window);return result
+      }
+      let parentDrivesExport=config["parentDrivesProductionExportControl"]as?Bool==true
+      if parentDrivesExport {
+        report["actualMigrationSecureFieldWholeInputVerified"]=true
+        report["nativeExportControlActivations"]=0
+        report["actualExportActivationAPI"]="awaiting official Apple Device Hub touchscreen"
+        try stage("actual-production-migration-page-awaiting-official-export-touch")
+      } else {
+        var button:NSObject?
+        try await wait("one enabled actual production export control") {
+          let matches=controls().filter{($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier=="migration-export" && !$0.accessibilityTraits.contains(.notEnabled)}
+          button=matches.count==1 ? matches[0] : nil
+          guard let button else{return false}
+          let frame=(button as?UIView).map{$0.convert($0.bounds,to:window)} ?? window.convert(button.accessibilityFrame,from:nil)
+          return page.transitionCoordinator==nil && frame.width>0 && frame.height>0 && window.bounds.intersects(frame)
+        }
+        let actual=try XCTUnwrap(button)
+        if let control=actual as? UIControl { control.sendActions(for:.touchUpInside);report["actualExportActivationAPI"]="UIControl.touchUpInside" }
+        else { guard actual.accessibilityActivate() else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:11) };report["actualExportActivationAPI"]="accessibilityActivate" }
+      }
+      func controllers(_ c:UIViewController)->[UIViewController] { [c]+c.children.flatMap(controllers)+(c.presentedViewController.map(controllers) ?? []) }
+      try await wait("real system file exporter",seconds:parentDrivesExport ? 600 : 90) { controllers(root).contains{$0 is UIDocumentPickerViewController} || store.hostedMigrationExportObservation != nil }
+      report["actualProductionFileExporterControllerPresent"]=controllers(root).contains{$0 is UIDocumentPickerViewController}
+      try stage("actual-production-system-file-exporter-awaiting-save")
+      try await wait("real system export completion",seconds:600) { store.hostedMigrationExportObservation != nil }
+      let observation=try XCTUnwrap(store.hostedMigrationExportObservation)
+      guard observation.caseId==run,!observation.cancelled,observation.error==nil,let url=observation.url else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:12) }
+      let access=url.startAccessingSecurityScopedResource();defer{if access{url.stopAccessingSecurityScopedResource()}}
+      let exported=try Data(contentsOf:url),opened=try EncryptedMigration.open(exported,password:password)
+      guard try CanonicalVoiceTestEvidence.entries(opened.pendingVoiceOriginals).contains(entry),
+        ownFiles.allSatisfy({opened.attachments[$0.fileName]==fileBytes[$0.fileName]}),
+        try encoder.encode(opened.state.outbox)==oldOutbox,try encoder.encode(opened.state.replyRecovery)==oldRecovery,
+        try encoder.encode(opened.state.detachedReplies)==oldDetached else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:13) }
+      let copy=directory.appendingPathComponent(run+"-actual-system-export.codexmigration")
+      try exported.write(to:copy,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      report["actualSystemExportFilename"]=url.lastPathComponent;report["actualSystemExportURLPrivate"]=url.absoluteString
+      report["actualSystemExportSHA256"]=HostService.hash(exported);report["actualSystemExportBytes"]=exported.count
+      report["actualSystemExportReadbackExactOriginalVoiceAndNewFiles"]=true
+      page.dismiss(animated:true)
+      try await wait("production export page dismisses") { page.presentingViewController==nil }
+      restoreEditableDraft()
+      guard store.drafts.values==oldDrafts,try encoder.encode(store.saved.outbox)==oldOutbox,
+        try encoder.encode(store.saved.replyRecovery)==oldRecovery,try encoder.encode(store.saved.detachedReplies)==oldDetached,
+        try encoder.encode(store.saved.generationPreferences)==oldSettings,try encoder.encode(store.saved.aiSharingGrants)==oldSharing,
+        try CredentialVault.existingToken("easywork-device-identity")==identity,
+        try Data(contentsOf:metadataURL)==metadataBytes,try Data(contentsOf:audioURL)==audioBytes,
+        try CanonicalVoiceTestEvidence.snapshot()==voices else { throw NSError(domain:"EasyWorkExistingVoiceExport",code:14) }
+      report["originalPendingVoiceAllSavedJournalsDraftsSettingsSharingIdentityExact"]=true
+      report["status"]="passed-same-original-pending-voice-production-system-export-and-readback-zero-capture-network"
+      try stage("same-original-voice-actual-system-export-complete")
+    } catch {
+      controller?.dismiss(animated:false);restoreEditableDraft()
+      report["status"]="failed-same-original-voice-export-prefix-preserved-no-recapture"
+      report["failure"]=String(describing:error);try? save();throw error
+    }
+  }
+  @MainActor func testOriginalUnknownJournalLocationsWithoutCaptureOrNetwork() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance" else { throw XCTSkip("Explicit original journal audit") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelInputsAuthorized"]as?Int==0,
+      config["newRecordingsAuthorized"]as?Int==0,config["newRemoteCommandsAuthorized"]as?Int==0 else { throw NSError(domain:"EasyWorkOriginalJournalAudit",code:1) }
+    let until=Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore==nil && Date()<until { try await Task.sleep(for:.milliseconds(100)) }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired else { throw NSError(domain:"EasyWorkOriginalJournalAudit",code:2) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let outbox=try encoder.encode(store.saved.outbox),detached=try encoder.encode(store.saved.detachedReplies),
+      recovery=try encoder.encode(store.saved.replyRecovery),drafts=try encoder.encode(store.drafts.values),
+      identity=try CredentialVault.existingToken("easywork-device-identity")
+    let expected=try JSONDecoder().decode(PendingReply.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["originalUnknownPending"])))
+    let frozen=try encoder.encode(expected)
+    var locations:[[String:Any]]=[]
+    for (key,original) in store.saved.outbox ?? [:] where original.clientMessageId==expected.clientMessageId {
+      locations.append(["location":"outbox","targetKeySHA256":HostService.hash(Data(key.utf8)),"originalPendingExact":try encoder.encode(original)==frozen])
+    }
+    for (key,records) in store.saved.detachedReplies ?? [:] {
+      for record in records where record.id==expected.clientMessageId {
+        locations.append(["location":"detachedReplies","targetKeySHA256":HostService.hash(Data(key.utf8)),"originalPendingExact":try encoder.encode(record.original)==frozen,
+          "actualReceiptState":record.receipt?.state ?? NSNull(),"actualErrorPresent":record.error != nil])
+      }
+    }
+    if let record=store.saved.replyRecovery?[expected.clientMessageId] {
+      locations.append(["location":"replyRecovery","originalPendingExact":try encoder.encode(record.original)==frozen,"phase":record.phase,"fingerprint":record.fingerprint,
+        "actualInspectionPresent":record.inspection != nil])
+    }
+    let report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,
+      "originalClientMessageId":expected.clientMessageId,"originalThreadId":expected.threadId,"actualLocations":locations,
+      "actualOutboxCount":store.saved.outbox?.count ?? 0,"actualDetachedCount":store.saved.detachedReplies?.values.reduce(0,{$0+$1.count}) ?? 0,
+      "actualReplyRecoveryCount":store.saved.replyRecovery?.count ?? 0,"currentSelectedThreadId":store.selectedThreadId,
+      "originalSavedJournalsDraftsIdentityExact":try encoder.encode(store.saved.outbox)==outbox && encoder.encode(store.saved.detachedReplies)==detached && encoder.encode(store.saved.replyRecovery)==recovery && encoder.encode(store.drafts.values)==drafts && CredentialVault.existingToken("easywork-device-identity")==identity,
+      "newRecordings":0,"newRemoteCommands":0,"newModels":0,"codexTests":false,"status":"passed-readonly-original-journal-location-census-no-reconstruction"]
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path)else{throw NSError(domain:"EasyWorkOriginalJournalAudit",code:3)}
+    try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+  }
+  /// A new physical recording may become pending only through the real provider
+  /// failing after the parent has stopped this task's Relay. No metadata fixture.
+  @MainActor func testPhysicalPendingMicrophoneAndOriginalUnknownMixedArchiveWithoutSending() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,SessionStore.hostedEasyWorkProductUIEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      !ProcessInfo.processInfo.arguments.contains(where:{$0.contains("voice-input-fixture") || $0.contains("voice-file-fixture")})
+    else { throw XCTSkip("Explicit original physical pending-voice migration budget required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelInputsAuthorized"]as?Int==0,
+      config["newRecordingsAuthorized"]as?Int==1,config["newVoiceUploadsAuthorized"]as?Int==0,
+      config["systemScreenSharingStopped"]as?Bool==true else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:1) }
+    let documents=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+    let folder=documents.appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json"),permit=folder.appendingPathComponent(run+"-speaker-relay-offline.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:2) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier!,"newModels":0,"codexTests":false,"fixtureAudio":false,"fixturePendingMetadata":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func stage(_ value:String) throws { report["stage"]=value;try save() }
+    func wait(_ label:String,_ seconds:Double=45,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try stage("waiting-for-original-root-store-and-recorder")
+    try await wait("original Root objects") { SessionStore.hostedEasyWorkAcceptanceStore != nil && SessionStore.hostedEasyWorkAcceptanceVoice != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),voice=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceVoice)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,
+      store.client?.agentConnection?.preference == .relayOnly,store.selectedThreadId==config["threadId"]as?String,
+      !store.localRecoveryRequired,!voice.isActive,VoiceTranscriptionPreference.current == .desktop,
+      AVAudioApplication.shared.recordPermission == .granted else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:4) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let requireOriginalUnknown=config["requireFrozenOriginalUnknown"]as?Bool ?? true
+    if requireOriginalUnknown {
+      let originalID=try XCTUnwrap(config["originalUnknownClientMessageId"]as?String)
+      let original=try XCTUnwrap(store.saved.outbox?.values.first{$0.clientMessageId==originalID})
+      let originalRecovery=try XCTUnwrap(store.saved.replyRecovery?[originalID])
+      let frozenOriginal=try JSONDecoder().decode(PendingReply.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["originalUnknownPending"])))
+      let frozenRecovery=try JSONDecoder().decode(ReplyRecoveryRecord.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["originalUnknownRecovery"])))
+      guard original.knownRejected != true,originalRecovery.phase=="uncertain",
+        try encoder.encode(original)==encoder.encode(frozenOriginal),try encoder.encode(originalRecovery)==encoder.encode(frozenRecovery)
+      else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:5) }
+      report["originalUnknownClientMessageId"]=originalID
+      report["originalUnknownIntentSHA256"]=HostService.hash(try encoder.encode(original))
+      report["originalUnknownRecoverySHA256"]=HostService.hash(try encoder.encode(originalRecovery))
+    } else {
+      guard config["actualPendingVoiceAndFilesOnly"]as?Bool==true,
+        config["originalUnknownPending"]==nil,config["originalUnknownRecovery"]==nil,
+        config["originalUnknownClientMessageId"]==nil else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:19) }
+    }
+    let key=store.targetKey,oldDrafts=store.drafts.values,oldText=store.draft.text
+    guard oldText.isEmpty,store.draft.attachments.isEmpty else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:6) }
+    let oldOutbox=try encoder.encode(store.saved.outbox),oldRecovery=try encoder.encode(store.saved.replyRecovery),
+      oldSettings=try encoder.encode(store.saved.generationPreferences),oldSharing=try encoder.encode(store.saved.aiSharingGrants),
+      oldForks=try encoder.encode(store.saved.threadForks),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let oldVoices=try CanonicalVoiceTestEvidence.snapshot()
+    report["frozenOriginalUnknownRequiredAndMatched"]=requireOriginalUnknown
+    store.hostedEasyWorkProductUIPresented=true
+    var ownFiles:[LocalAttachment]=[]
+    func restoreEditableDraft() {
+      for file in ownFiles { store.removeAttachment(file) }
+      store.drafts.values[key]=oldDrafts[key];store.persist()
+      store.hostedEasyWorkProductUIPresented=false
+    }
+    do {
+      try stage("waiting-for-real-foreground-before-readiness")
+      try await wait("actual foreground",60) { UIApplication.shared.applicationState == .active }
+      await store.refresh(includeHistory:false)
+      guard store.targetKey==key,store.client?.agentConnection?.target==target,store.client?.online==true else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:7) }
+      let monitor=Task{@MainActor in await store.monitorVoiceReadiness()};defer{monitor.cancel()}
+      try await wait("real original Host voice readiness",90) {
+        guard let p=store.voiceProvider(draftId:key)else{return false};return (try? p.prepare())==true
+      }
+      let provider=try XCTUnwrap(store.voiceProvider(draftId:key));guard try provider.prepare(),store.aiSharingRequest==nil else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:8) }
+      try store.importData(Data(("PENDING_MIXED_"+run+"\n").utf8),name:"pending-mixed-"+run+".txt",isImage:false,target:key)
+      let image=UIGraphicsImageRenderer(size:CGSize(width:24,height:24)).image{c in UIColor.systemBlue.setFill();c.fill(CGRect(x:0,y:0,width:24,height:24))}
+      try store.importData(try XCTUnwrap(image.pngData()),name:"pending-mixed-"+run+".png",isImage:true,target:key)
+      ownFiles=store.draft.attachments
+      guard ownFiles.count==2 else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:9) }
+      report["actualLocalFilesPreparedByProductionImport"]=try JSONSerialization.jsonObject(with:encoder.encode(ownFiles))
+      try stage("starting-one-new-real-root-owned-recording")
+      voice.start(target:key,text:oldText,provider:provider){actual,text in
+        guard store.targetKey==actual,store.draft.text==voice.originalText else{return false};store.setText(text,target:actual);return true
+      }
+      try await wait("actual physical recorder",40) { voice.phase == .listening || voice.phase == .failed || (!voice.isActive && voice.error != nil) }
+      guard voice.phase == .listening else { report["actualVoiceError"]=voice.error;try save();throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:10) }
+      report["actualAudioRoute"]=AVAudioSession.sharedInstance().currentRoute.inputs.map{["type":$0.portType.rawValue,"name":$0.portName]}
+      try stage("actual-listening-awaiting-speaker-and-real-relay-offline")
+      var peak:CGFloat=0;let deadline=Date().addingTimeInterval(90)
+      while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline && voice.phase == .listening {
+        peak=max(peak,voice.levels.max() ?? 0);try await Task.sleep(for:.milliseconds(70))
+      }
+      let done=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit))as?[String:Any])
+      guard done["caseId"]as?String==run,done["nonce"]as?String==config["nonce"]as?String,
+        done["actualMacSpeakerPlaybackFinished"]as?Bool==true,done["actualTaskOwnedRelayOfflineVerified"]as?Bool==true,
+        voice.phase == .listening else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:11) }
+      report["actualMeterPeak"]=Double(peak);try stage("finishing-once-through-real-offline-provider")
+      let finished=await voice.finish();report["actualProductionFinishSucceeded"]=finished;report["actualVoiceError"]=voice.error ?? NSNull()
+      guard !finished,voice.phase == .failed,!voice.blocksMigration,store.draft.text==oldText else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:12) }
+      let voices=try CanonicalVoiceTestEvidence.snapshot(),oldIDs=Set(oldVoices.map(\.id))
+      let added=voices.filter{!oldIDs.contains($0.id)};guard added.count==1,oldVoices.allSatisfy({voices.contains($0)}) else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:13) }
+      let entry=added[0],metadata=try entry.record.metadata()
+      guard metadata.target==key,metadata.scopeKey==provider.scopeKey,metadata.originalText==oldText,
+        entry.audio.count==metadata.sizeBytes,HostService.hash(entry.audio)==metadata.sha256 else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:14) }
+      let actualWAV=try AVAudioFile(forReading:VoiceMigrationSafety.pendingDirectory.appendingPathComponent(entry.id+".wav"))
+      guard actualWAV.length>0 else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:15) }
+      report["newActualPendingVoiceOperationId"]=entry.id;report["actualVoiceMetadataSHA256"]=entry.record.metadataSha256
+      report["actualVoiceAudioSHA256"]=metadata.sha256;report["actualVoiceBytes"]=entry.audio.count;report["actualVoiceFrames"]=actualWAV.length
+      let payload=try store.migrationPayload()
+      guard payload.version==2,try CanonicalVoiceTestEvidence.entries(payload.pendingVoiceOriginals).contains(entry),
+        try encoder.encode(payload.state.outbox)==oldOutbox,try encoder.encode(payload.state.replyRecovery)==oldRecovery else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:16) }
+      for file in ownFiles {
+        let bytes=try Data(contentsOf:store.attachmentURL(file))
+        guard payload.attachments[file.fileName]==bytes else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:17) }
+      }
+      let cipher=try EncryptedMigration.seal(payload,password:try XCTUnwrap(config["archivePassword"]as?String))
+      let archive=documents.appendingPathComponent("actual-pending-voice-original-unknown-"+run+".codexmigration")
+      try cipher.write(to:archive,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      report["archiveFilename"]=archive.lastPathComponent;report["archiveSHA256"]=HostService.hash(cipher)
+      report["actualNewPendingVoiceAndTwoLocalFilesInProductionPayload"]=true
+      report["actualOriginalUnknownInProductionPayload"]=requireOriginalUnknown
+      restoreEditableDraft()
+      guard store.drafts.values==oldDrafts,try encoder.encode(store.saved.outbox)==oldOutbox,
+        try encoder.encode(store.saved.replyRecovery)==oldRecovery,try encoder.encode(store.saved.generationPreferences)==oldSettings,
+        try encoder.encode(store.saved.aiSharingGrants)==oldSharing,try encoder.encode(store.saved.threadForks)==oldForks,
+        try CredentialVault.existingToken("easywork-device-identity")==identity else { throw NSError(domain:"EasyWorkPhysicalPendingMigration",code:18) }
+      report["originalDraftsUnknownJournalsSettingsForksSharingIdentityExact"]=true
+      report["status"]=requireOriginalUnknown
+        ? "passed-actual-pending-microphone-original-unknown-mixed-production-archive-awaiting-independent-system-export-import"
+        : "passed-actual-pending-microphone-and-files-production-archive-awaiting-independent-system-export-import"
+      try stage("actual-pending-voice-and-private-mixed-archive-preserved")
+    } catch {
+      report["status"]="failed-actual-pending-voice-migration-prefix-preserved-no-replay"
+      report["failure"]=String(describing:error)
+      voice.cancel();restoreEditableDraft();try? save();throw error
+    }
+  }
+  /// Audits the already completed original acoustic operation. No recorder,
+  /// transport request or transcription is started or retried by this method.
+  @MainActor func testAuditOriginalCompletedAcousticStateWithoutCaptureOrNetwork() throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]else{throw XCTSkip("Explicit original acoustic state audit required")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelInputsAuthorized"]as?Int==0,
+      config["newRecordingsAuthorized"]as?Int==0,config["networkRequestsAuthorized"]as?Int==0,
+      config["restoreOnlyOwnedEmptyDraftEntryAuthorized"]as?Bool==true else{throw NSError(domain:"EasyWorkAcousticStateAudit",code:1)}
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    let cipherURL=folder.appendingPathComponent(run+"-original-state.bin"),bytes=try Data(contentsOf:cipherURL)
+    guard HostService.hash(bytes)==config["originalStateSHA256"]as?String else{throw NSError(domain:"EasyWorkAcousticStateAudit",code:2)}
+    let original=try AgentCache.decode(bytes),store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,
+      store.selectedThreadId==config["threadId"]as?String,!store.localRecoveryRequired,
+      SessionStore.hostedEasyWorkAcceptanceVoice?.isActive != true else{throw NSError(domain:"EasyWorkAcousticStateAudit",code:3)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let key=store.targetKey,oldDrafts=original.drafts,current=store.drafts.values
+    var checks:[String:Bool]=[
+      "outboxExact":try encoder.encode(original.outbox)==encoder.encode(store.saved.outbox),
+      "forksExact":try encoder.encode(original.threadForks)==encoder.encode(store.saved.threadForks),
+      "sharingExact":try encoder.encode(original.aiSharingGrants)==encoder.encode(store.saved.aiSharingGrants),
+      "generationPreferencesExact":try encoder.encode(original.generationPreferences)==encoder.encode(store.saved.generationPreferences),
+      "replyRecoveryExact":try encoder.encode(original.replyRecovery)==encoder.encode(store.saved.replyRecovery),
+      "detachedRepliesExact":try encoder.encode(original.detachedReplies)==encoder.encode(store.saved.detachedReplies),
+      "desktopCreationsExact":try encoder.encode(original.desktopCreations)==encoder.encode(store.saved.desktopCreations),
+      "selectedClientExact":original.selectedClientId==store.saved.selectedClientId,
+      "lastThreadsExact":original.lastThreads==store.saved.lastThreads,
+      "lastProjectsExact":original.lastThreadProjects==store.saved.lastThreadProjects,
+      "newProjectsExact":original.newProjects==store.saved.newProjects,
+      "appearanceExact":original.appearance==store.saved.appearance,
+      "connectionsExact":try encoder.encode(original.clients.map(\.agentConnection))==encoder.encode(store.saved.clients.map(\.agentConnection))]
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,
+      "nativeBundleId":Bundle.main.bundleIdentifier!,"originalAcousticOperationId":config["originalAcousticOperationId"] ?? NSNull(),
+      "originalEncryptedStateSHA256":HostService.hash(bytes),"protectedFieldChecks":checks,
+      "draftsBeforeAuditExact":current==oldDrafts,"newRecordings":0,"networkRequests":0,"newModels":0,"codexTests":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:folder.appendingPathComponent(run+".json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    guard checks.values.allSatisfy({$0})else{report["status"]="failed-original-acoustic-protected-fields-differ";try save();throw NSError(domain:"EasyWorkAcousticStateAudit",code:4)}
+    if current != oldDrafts {
+      guard oldDrafts[key]==nil,current[key]==Draft(),current.filter({$0.key != key})==oldDrafts else{
+        report["status"]="failed-original-acoustic-draft-difference-preserved";try save();throw NSError(domain:"EasyWorkAcousticStateAudit",code:5)
+      }
+      // setText("") restores the text, but retains the new, empty dictionary
+      // entry created by this test. Remove only that proven test-owned entry.
+      store.drafts.values.removeValue(forKey:key);store.persist()
+      report["removedOnlyProvenOwnedNewEmptyDraftEntry"]=true
+    }else{report["removedOnlyProvenOwnedNewEmptyDraftEntry"]=false}
+    checks["allOriginalDraftsExactAfterOwnedCleanup"]=store.drafts.values==oldDrafts
+    guard checks.values.allSatisfy({$0})else{throw NSError(domain:"EasyWorkAcousticStateAudit",code:6)}
+    report["protectedFieldChecks"]=checks;report["status"]="passed-original-completed-acoustic-protected-state-audit-zero-network-capture"
+    try save()
+  }
+  /// Uses the actual RootView-owned production recorder, physical microphone and
+  /// original Host. The parent supplies acoustic speech through the Mac speaker.
+  @MainActor func testPhysicalOriginalMicrophoneAndHostTranscriptionWithoutChatSend() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,SessionStore.hostedEasyWorkProductUIEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {throw XCTSkip("Explicit original physical acoustic budget required")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8))as?[String:Any])
+    guard config["caseId"]as?String==run,config["newModelInputsAuthorized"]as?Int==0,
+      config["newRecordingsAuthorized"]as?Int==1,config["newVoiceUploadsAuthorizedAtMost"]as?Int==1,
+      config["systemScreenSharingStopped"]as?Bool==true,
+      !ProcessInfo.processInfo.arguments.contains(where:{$0.contains("voice-input-fixture") || $0.contains("voice-file-fixture")}) else {throw NSError(domain:"EasyWorkPhysicalAcoustic",code:1)}
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json"),permit=folder.appendingPathComponent(run+"-speaker-finished.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:permit.path)else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:2)}
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier!,"newModels":0,"codexTests":false,"fixtureAudio":false,"fixtureTranscript":false]
+    func save()throws{try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ s:String)throws{report["stage"]=s;try save()}
+    func wait(_ name:String,_ seconds:Double=45,_ ready:()->Bool)async throws{
+      let end=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<end {try await Task.sleep(for:.milliseconds(100))}
+      guard ready()else{report["failedWait"]=name;try save();throw NSError(domain:"EasyWorkPhysicalAcoustic",code:3,userInfo:[NSLocalizedDescriptionKey:name])}
+    }
+    try stage("waiting-for-original-ui-owned-store-and-voice")
+    try await wait("original RootView objects"){SessionStore.hostedEasyWorkAcceptanceStore != nil && SessionStore.hostedEasyWorkAcceptanceVoice != nil}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),voice=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceVoice)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,
+      store.selectedThreadId==config["threadId"]as?String,!store.localRecoveryRequired,
+      !voice.isActive,VoiceTranscriptionPreference.current == .desktop,
+      AVAudioApplication.shared.recordPermission == .granted else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:4)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldText=store.draft.text,key=store.targetKey,drafts=store.drafts.values,
+      oldOutbox=try encoder.encode(store.saved.outbox),oldForks=try encoder.encode(store.saved.threadForks),
+      oldSharing=try encoder.encode(store.saved.aiSharingGrants),oldSettings=try encoder.encode(store.saved.generationPreferences),
+      identity=try CredentialVault.existingToken("easywork-device-identity")
+    guard oldText.isEmpty else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:5)}
+    store.hostedEasyWorkProductUIPresented=true
+    do{
+      try stage("waiting-for-real-foreground-before-original-connection-refresh")
+      try await wait("actual foreground",60){UIApplication.shared.applicationState == .active}
+      await store.refresh(includeHistory:false)
+      guard store.client?.agentConnection?.target==target,store.selectedThreadId==config["threadId"]as?String,
+        store.targetKey==key,store.client?.online==true else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:13)}
+      let monitor=Task{@MainActor in await store.monitorVoiceReadiness()};defer{monitor.cancel()}
+      try stage("waiting-for-real-foreground-and-host-readiness")
+      try await wait("actual foreground and original Host readiness",90){
+        guard UIApplication.shared.applicationState == .active,let provider=store.voiceProvider(draftId:key)else{return false}
+        return (try? provider.prepare()) == true
+      }
+      let provider=try XCTUnwrap(store.voiceProvider(draftId:key))
+      guard try provider.prepare(),store.aiSharingRequest==nil else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:6)}
+      report["usesExactRootViewOwnedVoiceController"]=true;report["originalMicrophonePermissionAlreadyGranted"]=true
+      report["audioRouteBefore"]=AVAudioSession.sharedInstance().currentRoute.inputs.map{["type":$0.portType.rawValue,"name":$0.portName]}
+      try stage("starting-one-real-production-recording")
+      voice.start(target:key,text:oldText,provider:provider){actual,text in
+        guard store.targetKey==actual,store.draft.text==voice.originalText else{return false}
+        store.setText(text,target:actual);return true
+      }
+      try await wait("production physical recorder starts",40){voice.phase == .listening || voice.phase == .failed || (!voice.isActive && voice.error != nil)}
+      guard voice.phase == .listening else{report["actualRecorderError"]=voice.error;try save();throw NSError(domain:"EasyWorkPhysicalAcoustic",code:7)}
+      report["audioRouteDuring"]=AVAudioSession.sharedInstance().currentRoute.inputs.map{["type":$0.portType.rawValue,"name":$0.portName]}
+      try stage("actual-physical-listening-awaiting-mac-speaker")
+      var peak:CGFloat=0;let deadline=Date().addingTimeInterval(70)
+      while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline && voice.phase == .listening {
+        peak=max(peak,voice.levels.max() ?? 0);try await Task.sleep(for:.milliseconds(70))
+      }
+      guard FileManager.default.fileExists(atPath:permit.path),voice.phase == .listening else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:8)}
+      let done=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit))as?[String:Any])
+      guard done["caseId"]as?String==run,done["nonce"]as?String==config["nonce"]as?String,
+        done["actualMacDefaultSpeakerPlaybackFinished"]as?Bool==true else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:9)}
+      report["actualMeterPeak"]=Double(peak);try stage("finishing-original-recording-once")
+      let completed=await voice.finish()
+      report["actualProductionFinishSucceeded"]=completed;report["actualRecorderError"]=voice.error ?? NSNull()
+      guard completed,store.targetKey==key,!store.draft.text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else{try save();throw NSError(domain:"EasyWorkPhysicalAcoustic",code:10)}
+      report["actualTranscribedDraft"]=store.draft.text;report["originalThreadId"]=store.selectedThreadId
+      report["newDraftStillUnsent"]=true;try stage("actual-transcript-awaiting-independent-host-audit")
+      guard try encoder.encode(store.saved.outbox)==oldOutbox else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:11)}
+      store.setText(oldText,target:key)
+      guard store.drafts.values==drafts,try encoder.encode(store.saved.outbox)==oldOutbox,
+        try encoder.encode(store.saved.threadForks)==oldForks,try encoder.encode(store.saved.aiSharingGrants)==oldSharing,
+        try encoder.encode(store.saved.generationPreferences)==oldSettings,
+        try CredentialVault.existingToken("easywork-device-identity")==identity else{throw NSError(domain:"EasyWorkPhysicalAcoustic",code:12)}
+      report["originalDraftsSettingsOutboxForksSharingAndIdentityExact"]=true;report["status"]="passed-physical-original-ui-recorder-host-transcription-awaiting-independent-audio-audit"
+      try stage("finished-original-acoustic-no-chat-send")
+    }catch{
+      report["status"]="failed-physical-original-recorder-prefix-preserved";report["failure"]=String(describing:error)
+      voice.cancel();try? save();throw error
+    }
+  }
+  /// Read OS permission before a separately budgeted real microphone capture.
+  /// This preflight never requests permission, starts audio, or uploads a file.
+  @MainActor func testPhysicalMicrophonePermissionWithoutCaptureOrNetwork() throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run) != nil,
+      let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {throw XCTSkip("Explicit own microphone permission preflight required")}
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newRecordingsAuthorized"] as? Int==0,config["permissionRequestsAuthorized"] as? Int==0,
+      config["networkRequestsAuthorized"] as? Int==0 else {throw NSError(domain:"EasyWorkMicrophonePreflight",code:1)}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired else {throw NSError(domain:"EasyWorkMicrophonePreflight",code:2)}
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let saved=try encoder.encode(store.saved),drafts=store.drafts.values,identity=try CredentialVault.existingToken("easywork-device-identity")
+    let permission:String
+    switch AVAudioApplication.shared.recordPermission {
+    case .granted:permission="granted"
+    case .denied:permission="denied"
+    case .undetermined:permission="undetermined"
+    @unknown default:permission="unknown"
+    }
+    guard try encoder.encode(store.saved)==saved,store.drafts.values==drafts,
+      try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkMicrophonePreflight",code:3)}
+    let report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,
+      "nativeBundleId":Bundle.main.bundleIdentifier!,"status":"passed-read-only-original-microphone-permission-preflight",
+      "actualRecordPermission":permission,"physicalMicrophoneCapturePassed":false,
+      "recordings":0,"uploads":0,"permissionRequests":0,"networkRequests":0,"newModels":0,
+      "originalStateDraftsAndIdentityExact":true,"codexTests":false]
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:path.path) else {throw NSError(domain:"EasyWorkMicrophonePreflight",code:4)}
+    try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+  }
+  /// Observe the real production menu, including arrivals submitted by a separate
+  /// independently budgeted native sender. This examiner never acknowledges or sends.
+  @MainActor func testActualProductionChatMenuReadingCoverWithoutLocalInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]
+    else { throw XCTSkip("Explicit own physical chat menu observer required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    let arrivals=try XCTUnwrap(config["newRootInputsByOtherDeviceAuthorized"] as? Int)
+    guard config["caseId"] as? String==run,UUID(uuidString:run) != nil,
+      config["newModelInputsAuthorized"] as? Int==0,config["newChatsAuthorized"] as? Int==0,
+      [0,1].contains(arrivals),!ProcessInfo.processInfo.arguments.contains("-easywork-local-dev")
+    else { throw NSError(domain:"EasyWorkNativeMenuReading",code:1) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    let baseline=try JSONDecoder().decode(ReadPosition.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["baselineLatest"])))
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json"),permit=folder.appendingPathComponent(run+"-menu-close-permit.json"),abort=folder.appendingPathComponent(run+".abort.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkNativeMenuReading",code:2) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier!,"newLocalInputs":0,"externalInputBudget":arrivals,"codexTests":false]
+    func save() throws {try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func stage(_ value:String) throws {report["stage"]=value;try save()}
+    func wait(_ label:String,seconds:Double=60,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<deadline {
+        if FileManager.default.fileExists(atPath:abort.path) { throw NSError(domain:"EasyWorkNativeMenuReading",code:3,userInfo:[NSLocalizedDescriptionKey:"Independent examiner ended this wait; no operation cancelled or replayed"]) }
+        try await Task.sleep(for:.milliseconds(150))
+      }
+      guard ready() else {report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativeMenuReading",code:4,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store");try await wait("App-owned store"){SessionStore.hostedEasyWorkAcceptanceStore != nil}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeMenuReading",code:5)}
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),forks=try encoder.encode(store.saved.threadForks),sharing=try encoder.encode(store.saved.aiSharingGrants),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    var interaction:UIContextMenuInteraction?
+    var originalMenuButton:UIButton?
+    func transitioning(_ controller:UIViewController?)->Bool {
+      guard let controller else{return false}
+      return controller.isBeingPresented || controller.isBeingDismissed || controller.transitionCoordinator != nil
+        || transitioning(controller.presentedViewController) || controller.children.contains{transitioning($0)}
+    }
+    func restore() async -> Bool {
+      if originalMenuButton?.isHeld==true {interaction?.dismissMenu()}
+      let deadline=Date().addingTimeInterval(10)
+      while Date()<deadline && (originalMenuButton?.isHeld==true || UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows).contains{transitioning($0.rootViewController)}) {
+        try? await Task.sleep(for:.milliseconds(50))
+      }
+      guard originalMenuButton?.isHeld != true else {report["cleanupActualMenuStillHeldUIRetained"]=true;try? save();return false}
+      store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist();return true
+    }
+    do {
+      try stage("refresh-original-reading-thread");await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first{$0.id==config["threadId"] as? String && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false)
+      var readAttempts:[[String:Any]]=[]
+      for attempt in 1...3 {
+        guard store.selectedThreadId==thread.id,store.client?.agentConnection?.target==target else {throw NSError(domain:"EasyWorkNativeMenuReading",code:14)}
+        let applied=await store.loadHistory(threadId:thread.id)
+        if store.historyLoading {try await wait("existing original history read completes",seconds:90){!store.historyLoading}}
+        readAttempts.append(["attempt":attempt,"normalHistoryReadApplied":applied,
+          "applicationState":UIApplication.shared.applicationState.rawValue,
+          "visibleReadPosition":try JSONSerialization.jsonObject(with:encoder.encode(store.visibleReadPosition))])
+        report["initialHistoryReadAttempts"]=readAttempts;try save()
+        if store.visibleReadPosition==baseline && store.error==nil && store.sheet==nil {break}
+        if attempt<3 {try await Task.sleep(for:.seconds(1))}
+      }
+      report["initialHistoryLoading"]=store.historyLoading
+      report["initialHistoryError"]=store.error ?? NSNull()
+      report["initialHistoryReadState"]=try JSONSerialization.jsonObject(with:encoder.encode(store.conversation?.readState))
+      report["initialVisibleReadPosition"]=try JSONSerialization.jsonObject(with:encoder.encode(store.visibleReadPosition))
+      try save()
+      guard !store.historyLoading,store.error==nil,store.sheet==nil,store.visibleReadPosition==baseline else {throw NSError(domain:"EasyWorkNativeMenuReading",code:6)}
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      func sceneDiagnostics()->[[String:Any]] {
+        UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.map{scene in
+          ["session":scene.session.persistentIdentifier,"role":scene.session.role.rawValue,"activationState":scene.activationState.rawValue,"isMainScreen":scene.screen===UIScreen.main,
+           "screenBounds":String(describing:scene.screen.bounds),"windows":scene.windows.map{["key":$0.isKeyWindow,"hidden":$0.isHidden,"bounds":String(describing:$0.bounds),"root":$0.rootViewController.map{String(describing:type(of:$0))} ?? "nil"] as [String:Any]}]
+        }
+      }
+      report["ownScenesBeforeExactSceneActivation"]=sceneDiagnostics();try stage("activating-original-physical-scene")
+      let windows=UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}
+        .filter{$0.session.role == .windowApplication && $0.screen===UIScreen.main}.flatMap(\.windows).filter{$0.isKeyWindow && !$0.isHidden}
+      let window=try XCTUnwrap(windows.count==1 ? windows.first : nil),scene=try XCTUnwrap(window.windowScene)
+      if scene.activationState != .foregroundActive {
+        UIApplication.shared.requestSceneSessionActivation(scene.session,userActivity:nil,options:nil){error in report["exactOriginalSceneActivationError"]=String(describing:error);try? save()}
+        window.makeKeyAndVisible();report["publicExactOriginalSceneActivationRequested"]=true
+      } else {report["originalExactSceneAlreadyForegroundActive"]=true}
+      try stage("awaiting-original-physical-foreground");try await wait("same exact physical scene active"){
+        report["ownScenesDuringExactSceneActivation"]=sceneDiagnostics();try? save()
+        return scene.activationState == .foregroundActive && window.isKeyWindow
+      }
+      guard SessionStore.hostedEasyWorkAcceptanceStore===store else {throw NSError(domain:"EasyWorkNativeMenuReading",code:13)}
+      func buttons()->[UIButton] {
+        func visit(_ view:UIView)->[UIButton] {(view as? UIButton).map{[$0]} ?? view.subviews.flatMap(visit)}
+        return (window.windowScene?.windows.filter{!$0.isHidden && $0.alpha>0.01} ?? [window]).flatMap(visit)
+          .filter{$0.menu != nil && $0.window != nil && !$0.isHidden && $0.alpha>0.01}
+      }
+      @MainActor func titles(_ element:UIMenuElement)->[String] {if let menu=element as? UIMenu{return [menu.title]+menu.children.flatMap(titles)};return [element.title]}
+      guard SessionStore.hostedEasyWorkAcceptanceStore===store else {throw NSError(domain:"EasyWorkNativeMenuReading",code:12)}
+      report["baselineReadState"]=try JSONSerialization.jsonObject(with:encoder.encode(store.conversation?.readState))
+      // Resolve the production button from its passive, target-bound layout
+      // anchor. The action remains the actual UIKit menu primary action.
+      func views(_ view:UIView)->[UIView] {[view]+view.subviews.flatMap(views)}
+      func frame(_ view:UIView)->CGRect {view.convert(view.bounds,to:window)}
+      var anchors:[HostedNativeChatMenuAnchorView]=[],menus:[UIButton]=[]
+      try stage("locating-original-target-bound-production-menu")
+      try await wait("one actual current chat menu anchor and native button") {
+        anchors=views(window).compactMap{$0 as? HostedNativeChatMenuAnchorView}.filter{anchor in
+          let rect=frame(anchor),visible=rect.intersection(window.bounds)
+          return anchor.window===window && anchor.targetKey==store.targetKey && anchor.threadId==thread.id && rect.width>1 && visible.width>=rect.width*0.8 && visible.height>=rect.height*0.8
+        }
+        guard anchors.count==1 else{return false}
+        let rect=frame(anchors[0]),center=CGPoint(x:rect.midX,y:rect.midY)
+        menus=buttons().filter{button in
+          guard button.window===window,button.isEnabled,frame(button).contains(center),let hit=window.hitTest(center,with:nil) else{return false}
+          return hit===button || hit.isDescendant(of:button)
+        }
+        return menus.count==1
+      }
+      let button=try XCTUnwrap(menus.first)
+      originalMenuButton=button
+      var covers:[MenuReadingCoverProbeView]=[]
+      try await wait("production reading cover bound to the actual chat menu button") {
+        covers=views(window).compactMap{$0 as? MenuReadingCoverProbeView}
+          .filter{$0.menuButton===button && $0.isRegistered}
+        return covers.count==1
+      }
+      report["actualProductionReadingCoverBoundToNativeMenu"]=true
+      report["actualExactProductionChatMenuAnchorFound"]=true;report["actualChatMenuAnchorFrame"]=String(describing:frame(try XCTUnwrap(anchors.first)))
+      var ancestor:UIView?=button
+      while let current=ancestor {if interaction==nil {interaction=current.interactions.compactMap{$0 as? UIContextMenuInteraction}.first};ancestor=current.superview}
+      guard let interaction else {throw NSError(domain:"EasyWorkNativeMenuReading",code:7)}
+      if config["menuOpenAfterSenderReady"] as? Bool==true {
+        try stage("actual-menu-anchor-ready-awaiting-other-device")
+        let openPermit=folder.appendingPathComponent(run+"-menu-open-permit.json")
+        try await wait("independent actual sender ready before menu opening",seconds:600){FileManager.default.fileExists(atPath:openPermit.path)}
+        let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:openPermit)) as? [String:Any])
+        guard value["caseId"] as? String==run,value["nonce"] as? String==config["menuCheckpointNonce"] as? String,value["threadId"] as? String==thread.id else {throw NSError(domain:"EasyWorkNativeMenuReading",code:16)}
+      }
+      if #available(iOS 17.4,*) {button.performPrimaryAction();report["actualPublicUIKitPrimaryActionDispatched"]=true}
+      else {throw XCTSkip("Public native menu action requires iOS17.4")}
+      var observedTitles:[String]=[]
+      func menuHeld()->Bool {
+        if button.isHeld && observedTitles.isEmpty {interaction.updateVisibleMenu{menu in observedTitles=titles(menu);return menu}}
+        let values=observedTitles
+        report["actualPublicVisibleMenuTitles"]=values;report["actualMenuButtonHeld"]=button.isHeld
+        report["actualProductionReadingCoverStillTracksHeldMenu"]=covers.count==1 && covers[0].isRegistered && covers[0].menuButton===button && button.isHeld
+        return button.isHeld && values.contains(L10n.tr("在聊天中查找")) && values.contains(L10n.tr("设置"))
+      }
+      try await wait("actual public native menu held"){menuHeld()}
+      report["actualPhysicalProductionMenuPresentationObserved"]=true;report["readerId"]=store.conversation?.readState?.readerId
+      try stage("actual-menu-held-ready-awaiting-independent-witness")
+      let beforeSourceDeadline=Date().addingTimeInterval(600)
+      var afterSourceDeadline:Date?,acceptedSourceRun:String?,nextHistoryProbe=Date.distantPast,historyProbes=0
+      while !FileManager.default.fileExists(atPath:permit.path) && Date()<(afterSourceDeadline ?? beforeSourceDeadline) {
+        guard !FileManager.default.fileExists(atPath:abort.path),menuHeld(),store.selectedThreadId==thread.id,store.client?.agentConnection?.target==target else {throw NSError(domain:"EasyWorkNativeMenuReading",code:8)}
+        let sourceProof=folder.appendingPathComponent(run+"-source-accepted-permit.json")
+        if acceptedSourceRun==nil,FileManager.default.fileExists(atPath:sourceProof.path) {
+          let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:sourceProof)) as? [String:Any])
+          let accepted=try XCTUnwrap(value["runId"] as? String)
+          guard value["caseId"] as? String==run,value["nonce"] as? String==config["menuCheckpointNonce"] as? String,value["threadId"] as? String==thread.id,UUID(uuidString:accepted) != nil else {throw NSError(domain:"EasyWorkNativeMenuReading",code:17)}
+          acceptedSourceRun=accepted;afterSourceDeadline=Date().addingTimeInterval(300)
+          report["originalAcceptedSourceRunId"]=accepted;report["postSourceObservationWindowSeconds"]=300;try save()
+        }
+        if acceptedSourceRun != nil,Date()>=nextHistoryProbe,historyProbes<12,report["newFinalObservedWhileActualMenuHeld"] as? Bool != true {
+          let applied=await store.loadHistory(threadId:thread.id);historyProbes+=1;nextHistoryProbe=Date().addingTimeInterval(5)
+          report["menuNormalHistoryProbeCount"]=historyProbes;report["lastMenuNormalHistoryReadApplied"]=applied
+        }
+        if arrivals==1,let marker=config["replyMarker"] as? String,
+          let message=store.messages.last(where:{$0.role=="assistant" && $0.text.trimmingCharacters(in:.whitespacesAndNewlines)==marker && (acceptedSourceRun==nil || $0.runId==acceptedSourceRun) && ["complete","completed"].contains($0.status ?? "")}) {
+          report["newFinalProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(message));report["newFinalReadStateWhileMenuHeld"]=try JSONSerialization.jsonObject(with:encoder.encode(store.conversation?.readState));report["newFinalObservedWhileActualMenuHeld"]=true
+        }
+        report["menuHoldingHeartbeat"]=(report["menuHoldingHeartbeat"] as? Int ?? 0)+1;try save();try await Task.sleep(for:.milliseconds(300))
+      }
+      let permission=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+      guard permission["caseId"] as? String==run,permission["nonce"] as? String==config["menuCheckpointNonce"] as? String,
+        permission["action"] as? String=="close-original-menu",permission["threadId"] as? String==thread.id,
+        arrivals==0 || report["newFinalObservedWhileActualMenuHeld"] as? Bool==true else {throw NSError(domain:"EasyWorkNativeMenuReading",code:9)}
+      interaction.dismissMenu();try await wait("same native menu dismissed"){!button.isHeld}
+      report["actualPublicUIKitMenuDismissObserved"]=true
+      if arrivals==1 {
+        try stage("menu-dismissed-awaiting-normal-latest-visibility")
+        try await wait("new reply acknowledged by production visibility",seconds:90){
+          guard let position=store.visibleReadPosition,position.revision>baseline.revision else{return false}
+          return store.saved.mobileReads?.values.contains{$0.position==position && !$0.pending}==true
+        }
+        report["newFinalReadStateAfterMenuDismiss"]=try JSONSerialization.jsonObject(with:encoder.encode(store.conversation?.readState))
+        try stage("new-final-visible-awaiting-independent-witness")
+        let finalPermit=folder.appendingPathComponent(run+"-final-visible-permit.json")
+        try await wait("independent final viewport witness",seconds:180){FileManager.default.fileExists(atPath:finalPermit.path)}
+        let last=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:finalPermit)) as? [String:Any])
+        guard last["caseId"] as? String==run,last["nonce"] as? String==config["menuCheckpointNonce"] as? String else {throw NSError(domain:"EasyWorkNativeMenuReading",code:10)}
+      }
+      guard store.drafts.values==drafts,try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.threadForks)==forks,try encoder.encode(store.saved.aiSharingGrants)==sharing,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkNativeMenuReading",code:11)}
+      guard await restore() else {throw NSError(domain:"EasyWorkNativeMenuReading",code:18)}
+      report["originalSelectionDraftsSettingsOperationsSharingRecoveryAndIdentityPreserved"]=true;report["status"]="passed-actual-production-menu-observation-zero-local-input";try stage("completed")
+    } catch {_=await restore();report["failure"]=String(describing:error);report["status"]="failed-menu-reading-observer-prefix-no-local-input-or-replay";try? stage("failed");throw error}
+  }
+  private struct PhysicalPendingTransfer: Codable, Equatable {
+    let file: ComputerFileManifest
+    let phase: String
+    let error: String?
+  }
+  @MainActor private func physicalTransferDirectory(_ client:Client) throws -> URL {
+    let target=client.agentConnection?.target ?? client.readingTarget
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let key=HostService.hash(Data(client.id.utf8)+(try encoder.encode(target)))
+    return FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0]
+      .appendingPathComponent("FileTransfersAcceptance",isDirectory:true).appendingPathComponent(key,isDirectory:true)
+  }
+  @MainActor private func physicalPendingTransfers(_ directory:URL) throws -> [PhysicalPendingTransfer] {
+    let url=directory.appendingPathComponent("pending.dat")
+    guard FileManager.default.fileExists(atPath:url.path) else{return []}
+    return try AgentCache.open(Data(contentsOf:url),as:[PhysicalPendingTransfer].self)
+  }
+  @MainActor func testActualDeviceHubSidebarInputWithoutRemoteCommands() async throws {
+    try await actualDeviceHubInput(transfers:false)
+  }
+  @MainActor func testActualDeviceHubSystemFileSelectionAndStandaloneTransfersWithoutModel() async throws {
+    try await actualDeviceHubInput(transfers:true)
+  }
+  @MainActor func testActualDeviceHubSingleInvalidSystemFileSelectionWithoutUploads() async throws {
+    try await actualDeviceHubInput(transfers:true,negativeSelection:true)
+  }
+  @MainActor func testActualExternalFileSourceSelectionAndStandaloneTransfersWithoutModel() async throws {
+    try await actualDeviceHubInput(transfers:true,externalFileSource:true)
+  }
+  @MainActor func testActualExternalFileCompletionLocalDeliveryLossRetainsOriginalPendingWithoutReplay() async throws {
+    try await actualDeviceHubInput(transfers:true,externalFileSource:true,completionDeliveryLoss:true)
+  }
+  @MainActor func testActualExternalFileRelayLossRetainsOriginalIDsAndResumesOnlyAfterPhysicalQuery() async throws {
+    try await actualDeviceHubInput(transfers:true,externalFileSource:true,realRelayLoss:true)
+  }
+  @MainActor func testActualExternalFileRelayLossUnknownAndPreparedBackgroundRecovery() async throws {
+    try await actualDeviceHubInput(transfers:true,externalFileSource:true,realRelayLoss:true,backgroundProof:true)
+  }
+  @MainActor func testActualColdFileCatalogRecoveryClearsOriginalUnknownWithoutUploadReplay() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original EasyWork cold file recovery required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newFileTransfersAuthorized"] as? Int==0,env["EASYWORK_DROP_FILE_COMPLETION_ONCE"] != "1",
+      !ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") else { throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:1) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let expected=try JSONDecoder().decode(PhysicalPendingTransfer.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["originalUnknownPendingTransfer"])))
+    let originalPID=try XCTUnwrap(config["originalNativeProcessId"] as? Int)
+    guard originalPID != Int(ProcessInfo.processInfo.processIdentifier),expected.phase=="unknown",expected.error?.contains("验收注入：完成回执未交付")==true else { throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:2) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:3) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","originalNativeProcessId":originalPID,"newModels":0,"newFileTransfers":0,"codexTests":false,"localCompletionDeliveryFaultNotWireLoss":true]
+    func stage(_ value:String) throws {report["stage"]=value;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func wait(_ label:String,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(600)
+      while Date()<deadline {if ready(){return};try await Task.sleep(for:.milliseconds(100))}
+      guard ready() else {report["failedWait"]=label;throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:4,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store");try await wait("original App store"){SessionStore.hostedEasyWorkAcceptanceStore != nil}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:5)}
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),forks=try encoder.encode(store.saved.threadForks),sharing=try encoder.encode(store.saved.aiSharingGrants),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    func restore(){store.sheet=nil;store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist()}
+    do {
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first{$0.id==config["threadId"] as? String && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      guard !store.historyLoading,store.error==nil,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:6)}
+      let client=try XCTUnwrap(store.client),provider=try AgentClients.resolve(client)
+      let directory=try physicalTransferDirectory(try XCTUnwrap(store.fileTransferClient)),dataURL=directory.appendingPathComponent(expected.file.id+".data")
+      guard directory.lastPathComponent==config["originalTransferJournalScopeKey"] as? String,
+        try physicalPendingTransfers(directory)==[expected] else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:7)}
+      let values=try dataURL.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:dataURL)
+      guard values.isRegularFile==true,values.isSymbolicLink != true,bytes.count==expected.file.sizeBytes,HostService.hash(bytes)==expected.file.sha256 else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:8)}
+      let originalCatalog=try await provider.fileTransfers(client)
+      let originalReceipt=try XCTUnwrap(originalCatalog.files.first{$0.id==expected.file.id});try originalReceipt.validate(expected.file)
+      guard originalReceipt.phase=="completed" else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:9)}
+      report["originalUnknownPendingTransferBeforeOpeningSheet"]=try JSONSerialization.jsonObject(with:encoder.encode(expected));report["originalUnknownLocalBytesPersistedAcrossNativeProcesses"]=true
+      report["originalHostCompletionExistsBeforeRecovery"]=try JSONSerialization.jsonObject(with:encoder.encode(originalReceipt))
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      try await wait("original physical foreground"){UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}}
+      try stage("awaiting-actual-device-hub-sidebar-open")
+      try await wait("actual external sidebar open"){store.drawerOpen};report["actualExternalSidebarOpenObserved"]=true
+      try stage("awaiting-actual-device-hub-file-transfers-entry")
+      try await wait("actual external file transfers entry"){store.sheet == .fileTransfers};report["actualExternalFileTransfersEntryObserved"]=true
+      // The production view's normal refresh owns journal recovery. This test
+      // observes durable effects only; it never constructs/calls its model.
+      try await wait("normal catalog refresh resolves the same original pending transfer") {
+        (try? self.physicalPendingTransfers(directory).isEmpty)==true && !FileManager.default.fileExists(atPath:dataURL.path)
+      }
+      let current=try await provider.fileTransfers(client)
+      guard try encoder.encode(current.files.sorted{$0.id<$1.id})==encoder.encode(originalCatalog.files.sorted{$0.id<$1.id}) else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:10)}
+      report["sameOriginalCompletedReceiptApplied"]=true;report["originalUnknownJournalAndLocalDataClearedByProductionRefresh"]=true;report["originalCatalogExact"]=true
+      try stage("original-cold-unknown-resolved-without-replay-awaiting-external-sheet-close")
+      try await wait("actual sheet Done and drawer close"){store.sheet==nil && !store.drawerOpen};report["actualExternalFileTransferSheetCloseObserved"]=true
+      guard store.selectedThreadId==thread.id,store.drafts.values==drafts,try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.threadForks)==forks,try encoder.encode(store.saved.aiSharingGrants)==sharing,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkNativeColdFileRecovery",code:11)}
+      restore();report["originalSelectionDraftsSettingsOperationsAndIdentityPreserved"]=true;report["status"]="passed-actual-cold-file-original-unknown-catalog-recovery-zero-upload-replay";try stage("completed")
+    } catch {restore();report["failure"]=String(describing:error);report["status"]="failed-original-cold-file-recovery-prefix";try? stage("failed");throw error}
+  }
+  @MainActor func testActualOriginalWireLossPendingFileQueriesAndManualResumeWithoutNewIDs() async throws {
+    try await originalWireFileRecovery(preparedOnly:false)
+  }
+  @MainActor func testActualOriginalPreparedFilesBackgroundAndReconciledExplicitResumeWithoutNewIDs() async throws {
+    try await originalWireFileRecovery(preparedOnly:true)
+  }
+  @MainActor private func originalWireFileRecovery(preparedOnly:Bool) async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original EasyWork wire file recovery required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newFileTransfersAuthorized"] as? Int==0,config["resumeExistingTransfersAuthorized"] as? Int==2,env["EASYWORK_DROP_FILE_COMPLETION_ONCE"] != "1",
+      !ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") else { throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:1) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let expected=try JSONDecoder().decode([PhysicalPendingTransfer].self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config[preparedOnly ? "originalPreparedPendingTransfers" : "originalUnknownPendingTransfers"])))
+    let originalPID=try XCTUnwrap(config["originalNativeProcessId"] as? Int)
+    guard originalPID != Int(ProcessInfo.processInfo.processIdentifier),expected.count==2,Set(expected.map{$0.file.id}).count==2,
+      expected.allSatisfy({preparedOnly ? $0.phase=="ready" && $0.error==nil : $0.phase=="unknown" && !($0.error ?? "").isEmpty}),
+      (config["preparedBackgroundAndReceiptReconciliationRequired"] as? Bool ?? false)==preparedOnly else { throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:2) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:3) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","originalNativeProcessId":originalPID,"newModels":0,"newFileTransfers":0,"codexTests":false,"originalGenuineWireLossNoLocalFaultInjection":!preparedOnly]
+    func stage(_ value:String) throws {report["stage"]=value;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func wait(_ label:String,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(600)
+      while Date()<deadline {
+        let abort=folder.appendingPathComponent(run+".abort.json")
+        if FileManager.default.fileExists(atPath:abort.path) {
+          let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:abort)) as? [String:Any])
+          guard value["caseId"] as? String==run,value["endExaminerWaitOnly"] as? Bool==true else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:21)}
+          throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:22,userInfo:[NSLocalizedDescriptionKey:"Owned examiner wait ended; original remote operations and files retained"])
+        }
+        if ready(){return};try await Task.sleep(for:.milliseconds(100))
+      }
+      guard ready() else {report["failedWait"]=label;throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:4,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store");try await wait("original App store"){SessionStore.hostedEasyWorkAcceptanceStore != nil}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:5)}
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),forks=try encoder.encode(store.saved.threadForks),sharing=try encoder.encode(store.saved.aiSharingGrants),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    var originalProtectedBaseline:SavedSession?
+    if preparedOnly {
+      let baselineName=try XCTUnwrap(config["originalProtectedBaselineFilename"] as? String)
+      guard baselineName=="pre2059-protected-"+run+".bin" else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:18)}
+      let bytes=try Data(contentsOf:folder.appendingPathComponent(baselineName))
+      guard HostService.hash(bytes)==config["originalProtectedBaselineSHA256"] as? String else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:19)}
+      originalProtectedBaseline=try AgentCache.decode(bytes)
+    }
+    func originalProtectedBaselineMatches() throws -> Bool {
+      guard let baseline=originalProtectedBaseline else{return true}
+      return try store.drafts.values==baseline.drafts
+        && encoder.encode(store.saved.generationPreferences)==encoder.encode(baseline.generationPreferences)
+        && encoder.encode(store.saved.outbox)==encoder.encode(baseline.outbox)
+        && encoder.encode(store.saved.threadForks)==encoder.encode(baseline.threadForks)
+        && encoder.encode(store.saved.aiSharingGrants)==encoder.encode(baseline.aiSharingGrants)
+        && store.saved.replyRecovery?.mapValues(\.fingerprint)==baseline.replyRecovery?.mapValues(\.fingerprint)
+        && store.saved.selectedClientId==baseline.selectedClientId
+    }
+    guard try originalProtectedBaselineMatches() else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:20)}
+    if preparedOnly {report["originalPre2059ProtectedDraftsSettingsOperationsSharingRecoveryAndClientMatch"]=true}
+    func restore(){store.sheet=nil;store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist()}
+    do {
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first{$0.id==config["threadId"] as? String && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      guard !store.historyLoading,store.error==nil,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:6)}
+      let client=try XCTUnwrap(store.client),provider=try AgentClients.resolve(client)
+      let directory=try physicalTransferDirectory(try XCTUnwrap(store.fileTransferClient))
+      guard directory.lastPathComponent==config["originalTransferJournalScopeKey"] as? String,
+        try physicalPendingTransfers(directory)==expected else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:7)}
+      for entry in expected {
+        let url=directory.appendingPathComponent(entry.file.id+".data"),values=try url.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:url)
+        guard entry.file.hostId==client.id,values.isRegularFile==true,values.isSymbolicLink != true,bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:8)}
+      }
+      let originalCatalog=try await provider.fileTransfers(client),expectedIDs=Set(expected.map{$0.file.id})
+      let originals=originalCatalog.files.filter{expectedIDs.contains($0.id)}
+      guard originals.count==1,originals[0].phase=="prepared",let manifest=expected.first(where:{$0.file.id==originals[0].id})?.file else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:9)}
+      try originals[0].validate(manifest)
+      report[preparedOnly ? "originalPreparedPendingTransfersBeforeOpeningSheet" : "originalUnknownPendingTransfersBeforeOpeningSheet"]=try JSONSerialization.jsonObject(with:encoder.encode(expected));report[preparedOnly ? "originalPreparedLocalBytesPersistedAcrossNativeProcesses" : "originalUnknownLocalBytesPersistedAcrossNativeProcesses"]=true
+      report["originalPreparedHostReceiptBeforeRecovery"]=try JSONSerialization.jsonObject(with:encoder.encode(originals[0]))
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      try await wait("original physical foreground"){UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}}
+      try stage("awaiting-actual-device-hub-sidebar-open")
+      try await wait("actual external sidebar open"){store.drawerOpen};report["actualExternalSidebarOpenObserved"]=true
+      try stage("awaiting-actual-device-hub-file-transfers-entry")
+      try await wait("actual external file transfers entry"){store.sheet == .fileTransfers};report["actualExternalFileTransfersEntryObserved"]=true
+      try await wait("production catalog confirms the original prepared ID without uploading") {
+        guard let pending=try? self.physicalPendingTransfers(directory),pending.count==2,Set(pending.map{$0.file.id})==expectedIDs else{return false}
+        return pending.first(where:{$0.file.id==originals[0].id})?.phase=="ready" && pending.filter{$0.file.id != originals[0].id}.allSatisfy{$0.phase==(preparedOnly ? "ready" : "unknown")}
+      }
+      report["productionCatalogConfirmedOriginalPreparedIntentReadyWithoutUploading"]=true
+      try stage("awaiting-actual-original-missing-query-and-same-id-upload-controls")
+      try await wait("actual query confirms missing original ID, both saved intents ready without uploading") {
+        guard let pending=try? self.physicalPendingTransfers(directory),pending.count==2,Set(pending.map{$0.file.id})==expectedIDs else{return false}
+        return pending.allSatisfy{$0.phase=="ready" && $0.error==nil}
+      }
+      if preparedOnly {
+        report["previousActualQueriesRemainSameOriginalReadyIntents"]=true
+        let ready=try physicalPendingTransfers(directory)
+        report["originalPreparedReadyTransfersBeforeBackground"]=try JSONSerialization.jsonObject(with:encoder.encode(ready))
+        var backgroundObserved=false
+        let observer=NotificationCenter.default.addObserver(forName:UIScene.didEnterBackgroundNotification,object:nil,queue:.main) { notification in
+          let observedScene=notification.object as? UIWindowScene
+          MainActor.assumeIsolated {
+            guard let scene=observedScene,scene.activationState == .background,
+              (try? self.physicalPendingTransfers(directory))==ready,
+              ready.allSatisfy({entry in
+                guard let bytes=try? Data(contentsOf:directory.appendingPathComponent(entry.file.id+".data")) else{return false}
+                return bytes.count==entry.file.sizeBytes && HostService.hash(bytes)==entry.file.sha256
+              }) else{return}
+            backgroundObserved=true;report["preparedActualSystemSceneBackgroundNotification"]=true;report["preparedOriginalPendingAndBytesExactWhileBackground"]=true
+            try? stage("actual-prepared-background-observed-awaiting-original-foreground")
+          }
+        }
+        defer {NotificationCenter.default.removeObserver(observer)}
+        try stage("awaiting-actual-prepared-background")
+        try await wait("actual original prepared scene background"){backgroundObserved}
+        try await wait("same original prepared scene foreground"){UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}}
+        guard try physicalPendingTransfers(directory)==ready else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:13)}
+        for entry in ready {
+          let bytes=try Data(contentsOf:directory.appendingPathComponent(entry.file.id+".data"))
+          guard bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:14)}
+        }
+        report["preparedOriginalPendingAndBytesExactAfterForeground"]=true
+        try stage("actual-prepared-foreground-awaiting-parent-zero-write-permit")
+        let permit=folder.appendingPathComponent(run+".prepared-background.permit.json")
+        try await wait("parent verifies original prepared background zero-write gate"){FileManager.default.fileExists(atPath:permit.path)}
+        let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+        guard value["caseId"] as? String==run,value["sameOriginalProcessActivated"] as? Bool==true,value["newFileWritesDuringBackground"] as? Int==0 else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:15)}
+        let channel=try await EasyWorkSessions.shared.session(client)
+        let wireTarget=await channel.target,mobileId=await channel.mobileDeviceId
+        let originalRecord=try XCTUnwrap(config["originalPreparedCommandReceipt"] as? [String:Any])
+        let operationId="file-prepare-"+originals[0].id
+        let request=try XCTUnwrap(config["originalPrepareRequest"] as? [String:Any]),parameters=try XCTUnwrap(request["params"] as? [String:Any])
+        let result=try EasyWorkRemoteSession.verifiedWriteResult(originalRecord,target:wireTarget,mobileDeviceId:mobileId,operationId:operationId,method:"resource/upload",params:parameters)
+        guard try easyWorkObject(result)["transfer"] is [String:Any] else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:16)}
+        for field in ["operationId","method","deviceId","requestHash","target","response","state"] {
+          var invalid=originalRecord;invalid[field]=field=="state" ? "uncertain" : NSNull()
+          XCTAssertThrowsError(try EasyWorkRemoteSession.verifiedWriteResult(invalid,target:wireTarget,mobileDeviceId:mobileId,operationId:operationId,method:"resource/upload",params:parameters))
+        }
+        report["actualOriginalCanonicalReceiptAndSevenRejectionBoundariesVerified"]=true
+        try await EasyWorkFilePrepareReconciliationFault.shared.arm(caseId:run,target:wireTarget,operationId:operationId)
+        report["oneLocalAuthenticatedPrepareResponseFaultArmedForOriginalID"]=operationId
+        try stage("original-prepared-background-verified-awaiting-explicit-upload-controls")
+      } else {
+        report["actualMissingQueryConfirmedBothOriginalIntentsReadyWithoutUploading"]=true
+        try stage("actual-original-missing-query-confirmed-both-ready-awaiting-upload-controls")
+      }
+      let deadline=Date().addingTimeInterval(900)
+      var completed:[ComputerFileReceipt]=[]
+      while Date()<deadline {
+        let current=try await provider.fileTransfers(client)
+        completed=current.files.filter{expectedIDs.contains($0.id) && $0.phase=="completed"}
+        if completed.count==2 {
+          for value in completed {try value.validate(try XCTUnwrap(expected.first{$0.file.id==value.id}).file)}
+          guard try encoder.encode(current.files.filter{!expectedIDs.contains($0.id)}.sorted{$0.id<$1.id})==encoder.encode(originalCatalog.files.filter{!expectedIDs.contains($0.id)}.sorted{$0.id<$1.id}) else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:10)}
+          break
+        }
+        try await Task.sleep(for:.seconds(1))
+      }
+      guard completed.count==2 else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:12)}
+      if preparedOnly {
+        let witness=await EasyWorkFilePrepareReconciliationFault.shared.witness()
+        guard witness.consumed,witness.recovered,witness.operationId=="file-prepare-"+originals[0].id else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:17)}
+        report["actualLocalPrepareDeliveryFaultConsumedAndExactReceiptRecovered"]=true
+      }
+      // A Host completion can precede the production uploader's authenticated
+      // status read and local persistence. Wait for those real effects too.
+      try await wait("production uploader has applied original completions and cleared local data") {
+        (try? self.physicalPendingTransfers(directory).isEmpty)==true && expected.allSatisfy({!FileManager.default.fileExists(atPath:directory.appendingPathComponent($0.file.id+".data").path)})
+      }
+      report["actualCompletedStandaloneFileReceipts"]=try JSONSerialization.jsonObject(with:encoder.encode(completed))
+      report["sameOriginalTransferIDsCompletedAfterPhysicalQueryAndUploadControls"]=true;report["originalUnknownJournalAndLocalDataClearedByProductionRecovery"]=true;report["otherOriginalCatalogRecordsExact"]=true
+      try stage("original-wire-loss-same-ids-completed-awaiting-external-sheet-close")
+      try await wait("actual sheet Done and drawer close"){store.sheet==nil && !store.drawerOpen};report["actualExternalFileTransferSheetCloseObserved"]=true
+      guard try originalProtectedBaselineMatches(),store.selectedThreadId==thread.id,store.drafts.values==drafts,try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.threadForks)==forks,try encoder.encode(store.saved.aiSharingGrants)==sharing,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkNativeOriginalWireFileRecovery",code:11)}
+      restore();report["originalSelectionDraftsSettingsOperationsAndIdentityPreserved"]=true;report["status"]="passed-actual-original-wire-loss-file-query-and-manual-resume-same-ids-zero-new-intents";try stage("completed")
+    } catch {restore();report["failure"]=String(describing:error);report["status"]="failed-original-wire-file-recovery-prefix";try? stage("failed");throw error}
+  }
+  @MainActor func testActualOriginalCompletedWireFilesColdConfirmationWithoutNewUploads() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original completed wire file confirmation required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newFileTransfersAuthorized"] as? Int==0,env["EASYWORK_DROP_FILE_COMPLETION_ONCE"] != "1",
+      !ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") else { throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:1) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let expected=try JSONDecoder().decode([ComputerFileManifest].self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["originalTransferManifests"])))
+    let originalPID=try XCTUnwrap(config["originalNativeProcessId"] as? Int)
+    guard originalPID != Int(ProcessInfo.processInfo.processIdentifier),expected.count==2,Set(expected.map(\.id)).count==2 else { throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:2) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:3) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","originalNativeProcessId":originalPID,"newModels":0,"newFileTransfers":0,"codexTests":false,"originalGenuineWireLossNoLocalFaultInjection":true]
+    func stage(_ value:String) throws {report["stage"]=value;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}
+    func wait(_ label:String,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(600)
+      while Date()<deadline {if ready(){return};try await Task.sleep(for:.milliseconds(100))}
+      guard ready() else {report["failedWait"]=label;throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:4,userInfo:[NSLocalizedDescriptionKey:label])}
+    }
+    try stage("waiting-for-original-store");try await wait("original App store"){SessionStore.hostedEasyWorkAcceptanceStore != nil}
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:5)}
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),forks=try encoder.encode(store.saved.threadForks),sharing=try encoder.encode(store.saved.aiSharingGrants),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let baselineName=try XCTUnwrap(config["originalProtectedBaselineFilename"] as? String)
+    guard baselineName=="pre1993-protected-"+run+".bin" else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:13)}
+    let baselineBytes=try Data(contentsOf:folder.appendingPathComponent(baselineName))
+    guard HostService.hash(baselineBytes)==config["originalProtectedBaselineSHA256"] as? String else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:14)}
+    let baseline=try AgentCache.decode(baselineBytes)
+    func protectedBaselineMatches() throws -> Bool {
+      return try store.drafts.values==baseline.drafts
+        && encoder.encode(store.saved.generationPreferences)==encoder.encode(baseline.generationPreferences)
+        && encoder.encode(store.saved.outbox)==encoder.encode(baseline.outbox)
+        && encoder.encode(store.saved.threadForks)==encoder.encode(baseline.threadForks)
+        && encoder.encode(store.saved.aiSharingGrants)==encoder.encode(baseline.aiSharingGrants)
+        && store.saved.replyRecovery?.mapValues(\.fingerprint)==baseline.replyRecovery?.mapValues(\.fingerprint)
+        && store.saved.selectedClientId==baseline.selectedClientId
+    }
+    guard try protectedBaselineMatches() else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:15)}
+    report["originalPre1993ProtectedDraftsSettingsOperationsSharingAndRecoveryMatch"]=true
+    func restore(){store.sheet=nil;store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist()}
+    do {
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first{$0.id==config["threadId"] as? String && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      guard !store.historyLoading,store.error==nil,store.sheet==nil else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:6)}
+      let client=try XCTUnwrap(store.client),provider=try AgentClients.resolve(client)
+      let directory=try physicalTransferDirectory(try XCTUnwrap(store.fileTransferClient))
+      guard directory.lastPathComponent==config["originalTransferJournalScopeKey"] as? String else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:7)}
+      let pending=try physicalPendingTransfers(directory),ids=Set(expected.map(\.id))
+      guard pending.count<=2,Set(pending.map{$0.file.id}).count==pending.count,pending.allSatisfy({entry in expected.contains(entry.file) && ["unknown","ready"].contains(entry.phase)}) else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:8)}
+      for entry in pending {
+        let url=directory.appendingPathComponent(entry.file.id+".data"),metadata=try url.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:url)
+        guard metadata.isRegularFile==true,metadata.isSymbolicLink != true,bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:9)}
+      }
+      let originalCatalog=try await provider.fileTransfers(client),completed=originalCatalog.files.filter{ids.contains($0.id)}
+      guard completed.count==2,completed.allSatisfy({$0.phase=="completed"}) else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:10)}
+      for receipt in completed {try receipt.validate(try XCTUnwrap(expected.first{$0.id==receipt.id}))}
+      report["actualOriginalPendingEntriesBeforeColdConfirmation"]=try JSONSerialization.jsonObject(with:encoder.encode(pending))
+      report["originalPendingCountAtColdStart"]=pending.count
+      report["originalPendingLocalBytesAndSHA256VerifiedBeforeOpeningSheet"]=true
+      report["actualCompletedStandaloneFileReceipts"]=try JSONSerialization.jsonObject(with:encoder.encode(completed))
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      try await wait("original physical foreground"){UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}}
+      try stage("awaiting-actual-device-hub-sidebar-open")
+      try await wait("actual external sidebar open"){store.drawerOpen};report["actualExternalSidebarOpenObserved"]=true
+      try stage("awaiting-actual-device-hub-file-transfers-entry")
+      try await wait("actual external file transfers entry"){store.sheet == .fileTransfers};report["actualExternalFileTransfersEntryObserved"]=true
+      // The production view's normal refresh owns journal recovery. This test
+      // observes durable effects only; it never constructs/calls its model.
+      try await wait("normal catalog refresh resolves the same original pending transfer") {
+        (try? self.physicalPendingTransfers(directory).isEmpty)==true && expected.allSatisfy({!FileManager.default.fileExists(atPath:directory.appendingPathComponent($0.id+".data").path)})
+      }
+      let current=try await provider.fileTransfers(client)
+      guard try encoder.encode(current.files.sorted{$0.id<$1.id})==encoder.encode(originalCatalog.files.sorted{$0.id<$1.id}) else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:10)}
+      report["sameOriginalCompletedReceiptsApplied"]=true;report["originalUnknownJournalAndLocalDataClearedByProductionRefresh"]=true;report["originalCatalogExact"]=true
+      try stage("original-completed-wire-files-cold-confirmed-awaiting-external-sheet-close")
+      try await wait("actual sheet Done and drawer close"){store.sheet==nil && !store.drawerOpen};report["actualExternalFileTransferSheetCloseObserved"]=true
+      guard try protectedBaselineMatches(),store.selectedThreadId==thread.id,store.drafts.values==drafts,try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.threadForks)==forks,try encoder.encode(store.saved.aiSharingGrants)==sharing,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkNativeCompletedWireConfirmation",code:11)}
+      restore();report["originalSelectionDraftsSettingsOperationsAndIdentityPreserved"]=true;report["status"]="passed-actual-original-completed-wire-files-cold-confirmation-zero-new-uploads";try stage("completed")
+    } catch {restore();report["failure"]=String(describing:error);report["status"]="failed-original-completed-wire-confirmation-prefix";try? stage("failed");throw error}
+  }
+  @MainActor private func actualDeviceHubInput(transfers:Bool,negativeSelection:Bool=false,externalFileSource:Bool=false,completionDeliveryLoss:Bool=false,realRelayLoss:Bool=false,backgroundProof:Bool=false) async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original EasyWork physical input case required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      transfers ? config["newFileTransfersAuthorized"] as? Int==(negativeSelection ? 0 : 2) : config["newRemoteCommandsAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:1) }
+    let foreignSource=config["externalFileSource"] as? [String:Any]
+    guard externalFileSource ? transfers && !negativeSelection && foreignSource != nil : foreignSource == nil else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:19) }
+    guard (config["completionDeliveryLoss"] as? Bool ?? false)==completionDeliveryLoss,
+      completionDeliveryLoss ? externalFileSource && env["EASYWORK_DROP_FILE_COMPLETION_ONCE"]=="1" && ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") : env["EASYWORK_DROP_FILE_COMPLETION_ONCE"] != "1" else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:23) }
+    guard (config["realRelayLossRequired"] as? Bool ?? false)==realRelayLoss,
+      !realRelayLoss || (externalFileSource && !completionDeliveryLoss && !negativeSelection) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:28) }
+    guard (config["fileBackgroundProofRequired"] as? Bool ?? false)==backgroundProof,
+      !backgroundProof || realRelayLoss else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:34)}
+    if let foreignSource {
+      guard foreignSource["caseId"] as? String==run,foreignSource["syntheticFilesOnly"] as? Bool==true,
+        let bundle=foreignSource["bundleId"] as? String,
+        bundle.range(of:#"^com\.easyai\.agenthub\.easyworkfilefixture[0-9a-f]{0,32}$"#,options:.regularExpression) != nil else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:20) }
+    }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:2) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","newModels":0,"newRemoteCommands":0,"codexTests":false]
+    if transfers { report.removeValue(forKey:"newRemoteCommands");report["newFileTransferBudget"]=negativeSelection ? 0 : 2 }
+    let externalInputWait=config["externalInputWaitSeconds"] as? Double ?? 120
+    guard (120...900).contains(externalInputWait) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:15) }
+    func stage(_ value:String) throws { report["stage"]=value;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label:String,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(externalInputWait)
+      while Date()<deadline {
+        if ready() { return }
+        try await Task.sleep(for:.milliseconds(100))
+      }
+      guard ready() else { report["failedWait"]=label;throw NSError(domain:"EasyWorkNativePhysicalInput",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try stage("waiting-for-original-store");try await wait("original App-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",store.client?.agentConnection?.target==target,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:4) }
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen,oldSheet=store.sheet
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),forks=try encoder.encode(store.saved.threadForks),sharing=try encoder.encode(store.saved.aiSharingGrants),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    func restore() { store.sheet=oldSheet;store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist() }
+    do {
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first{$0.id==config["threadId"] as? String && $0.hostId==store.client?.id})
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      guard !store.historyLoading,store.error==nil,store.sheet==nil else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:5) }
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      try await wait("original physical scene foreground") { UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive} }
+      report["actualThreadId"]=thread.id;report["originalSceneForeground"]=true
+      try stage("awaiting-actual-device-hub-sidebar-open")
+      // Only observe the production state. This test never toggles the drawer
+      // between these two checkpoints and never injects a UIKit/AX action.
+      try await wait("actual external physical sidebar open") { store.drawerOpen }
+      report["actualExternalSidebarOpenObserved"]=true
+      try stage(transfers ? "awaiting-actual-device-hub-file-transfers-entry" : "awaiting-actual-device-hub-sidebar-close")
+      if transfers {
+        try await wait("actual external file transfer entry") { store.sheet == .fileTransfers }
+        report["actualExternalFileTransfersEntryObserved"]=true
+        let client=try XCTUnwrap(store.client),provider=try AgentClients.resolve(client)
+        let originalCatalog=try await provider.fileTransfers(client)
+        let originalMaxFileBytes = try XCTUnwrap(originalCatalog.maxFileBytes)
+        let transferDirectory=try physicalTransferDirectory(try XCTUnwrap(store.fileTransferClient))
+        if completionDeliveryLoss || realRelayLoss {
+          guard try physicalPendingTransfers(transferDirectory).isEmpty else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:24) }
+          report["originalCurrentTargetTransferJournalEmpty"]=true
+          report["transferJournalScopeKey"]=transferDirectory.lastPathComponent
+          report["localCompletionDeliveryFaultNotWireLoss"]=completionDeliveryLoss
+          report["actualRelayInterruptionRequired"]=realRelayLoss
+        }
+        let files=try XCTUnwrap(config["files"] as? [[String:Any]])
+        let directoryName="easywork-files-"+run
+        guard files.count==2,config["testDocumentDirectory"] as? String==directoryName else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:7) }
+        let documents=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0]
+        let directory=documents.appendingPathComponent(directoryName,isDirectory:true)
+        var expected:[String:(Int,String)]=[:]
+        var foreignReadRefusals:[[String:Any]]=[]
+        for file in files {
+          let name=try XCTUnwrap(file["name"] as? String),size=try XCTUnwrap(file["sizeBytes"] as? Int),digest=try XCTUnwrap(file["sha256"] as? String)
+          guard name.range(of:#"^easywork-[a-f0-9]{8}-[ab]\.txt$"#,options:.regularExpression) != nil,
+            (negativeSelection ? [0,originalMaxFileBytes+1].contains(size) : size>0 && size<=1024*1024),digest.range(of:#"^[a-f0-9]{64}$"#,options:.regularExpression) != nil,expected[name]==nil else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:8) }
+          if externalFileSource {
+            let source=try XCTUnwrap(file["sourcePath"] as? String),url=URL(fileURLWithPath:source)
+            guard source.range(of:#"^/(private/)?var/mobile/Containers/Data/Application/[A-Fa-f0-9-]{36}/Documents/"#,options:.regularExpression) != nil,
+              url.standardizedFileURL.path==source,url.lastPathComponent==name,
+              url.deletingLastPathComponent().lastPathComponent==directoryName,
+              url.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent=="Documents" else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:21) }
+            var refused=false
+            do { _=try Data(contentsOf:url) } catch {
+              let error=error as NSError
+              guard error.domain==NSCocoaErrorDomain && [257,260].contains(error.code) || error.domain==NSPOSIXErrorDomain && [1,2,13].contains(error.code) else { throw error }
+              refused=true;foreignReadRefusals.append(["name":name,"domain":error.domain,"code":error.code])
+            }
+            guard refused else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:22) }
+          } else {
+            let path=directory.appendingPathComponent(name),values=try path.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:path)
+            guard values.isRegularFile==true,values.isSymbolicLink != true,bytes.count==size,HostService.hash(bytes)==digest else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:9) }
+          }
+          expected[name]=(size,digest)
+        }
+        if externalFileSource {
+          report["foreignSyntheticSourceDirectReadsRefusedBeforePicker"]=foreignReadRefusals
+          report["foreignSyntheticSourceBundleId"]=foreignSource?["bundleId"]
+          report["foreignSourceByteExistenceRequiresIndependentContainerProof"]=true
+        }
+        guard originalCatalog.files.allSatisfy({expected[$0.name]==nil}) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:10) }
+        func actualPicker()->UIDocumentPickerViewController? {
+          var seen=Set<ObjectIdentifier>()
+          func visit(_ controller:UIViewController)->UIDocumentPickerViewController? {
+            guard seen.insert(ObjectIdentifier(controller)).inserted else{return nil}
+            if let picker=controller as? UIDocumentPickerViewController{return picker}
+            if let shown=controller.presentedViewController,let picker=visit(shown){return picker}
+            return controller.children.compactMap(visit).first
+          }
+          return UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows).filter{!$0.isHidden}.compactMap(\.rootViewController).compactMap(visit).first
+        }
+        if negativeSelection {
+          let scenarios=try XCTUnwrap(config["scenarios"] as? [String])
+          guard [["empty"],["oversize"],["cancel","empty"]].contains(scenarios),Set(expected.values.map{$0.0})==Set([0,originalMaxFileBytes+1]) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:16) }
+          var lastValidationOCR=Date.distantPast
+          func validationErrorVisible()->Bool {
+            var seen=Set<ObjectIdentifier>()
+            let expectedText=L10n.tr("请选择非空且不超过 20 MB 的文件。")
+            func visit(_ object:NSObject)->Bool {
+              guard seen.count<8000,seen.insert(ObjectIdentifier(object)).inserted else { return false }
+              if object.accessibilityLabel?.contains(expectedText)==true{return true}
+              if let label=object as? UILabel,label.text?.contains(expectedText)==true{return true}
+              if (object as? UIView)?.subviews.contains(where:visit)==true{return true}
+              if object.accessibilityElements?.compactMap({$0 as? NSObject}).contains(where:visit)==true{return true}
+              let count=object.accessibilityElementCount()
+              if count>0 && count<1000 { for index in 0..<count { if let child=object.accessibilityElement(at:index) as? NSObject,visit(child){return true} } }
+              return false
+            }
+            let windows=UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows).filter{!$0.isHidden}
+            if windows.contains(where:visit) { report["actualValidationMessageObservation"]="production-accessibility-text";return true }
+            guard Date().timeIntervalSince(lastValidationOCR)>=2 else{return false}
+            lastValidationOCR=Date()
+            guard let window=windows.first(where:{$0.isKeyWindow}) else{return false}
+            let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+            guard let cg=image.cgImage else{return false}
+            let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=false;request.recognitionLanguages=["zh-Hans","en-US"]
+            do { try VNImageRequestHandler(cgImage:cg,options:[:]).perform([request]) } catch { report["actualValidationOCRFailure"]=String(describing:error);return false }
+            let lines=request.results?.compactMap{$0.topCandidates(1).first?.string} ?? []
+            report["lastActualValidationWindowOCR"]=lines
+            let normalized=lines.joined().filter{!$0.isWhitespace}.lowercased()
+            guard normalized.contains("请选择非空且不超过20mb的文件") else{return false}
+            report["actualValidationMessageObservation"]="production-window-pixels-vision-ocr"
+            if let data=image.pngData() {
+              let name=run+"-actual-validation-window-diagnostic.png",url=folder.appendingPathComponent(name)
+              if !FileManager.default.fileExists(atPath:url.path) { try? data.write(to:url,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+              report["actualValidationWindowDiagnosticFilename"]=name;report["actualValidationWindowDiagnosticSHA256"]=HostService.hash(data)
+            }
+            return true
+          }
+          guard !validationErrorVisible() else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:18) }
+          var observations:[[String:Any]]=[]
+          for scenario in scenarios {
+            try stage("awaiting-actual-system-"+scenario+"-picker")
+            try await wait("actual production "+scenario+" picker") { actualPicker() != nil }
+            guard actualPicker()?.allowsMultipleSelection==true else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:11) }
+            try stage("awaiting-actual-system-"+scenario+"-selection-and-dismissal")
+            try await wait("actual system "+scenario+" picker dismissed") { actualPicker()==nil }
+            if scenario != "cancel" { try await wait("actual production invalid-file message") { validationErrorVisible() } }
+            let current=try await provider.fileTransfers(client)
+            guard try encoder.encode(current.files.sorted{$0.id<$1.id})==encoder.encode(originalCatalog.files.sorted{$0.id<$1.id}) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:17) }
+            observations.append(["scenario":scenario,"actualSystemPickerPresentedAndDismissed":true,"actualProductionValidationMessageVisible":scenario != "cancel","originalCatalogExact":true])
+            report["actualNegativeSelections"]=observations
+          }
+          report["actualProductionSystemPickerAllowsMultipleSelection"]=true
+          report["pickerCallbackOrResultReplaced"]=false
+          report["externalProviderGrantCovered"]=false
+          report["originalCatalogRecordsPreserved"]=true
+          try stage("actual-system-negative-selections-completed-awaiting-external-sheet-close")
+        } else {
+        try stage("awaiting-actual-system-document-picker")
+        try await wait("production fileImporter system picker") { actualPicker() != nil }
+        let picker=try XCTUnwrap(actualPicker());guard picker.allowsMultipleSelection else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:11) }
+        // The normal public starting-directory hint assists navigation only.
+        // Actual system selection and the production importer callback remain required.
+        if !externalFileSource { picker.directoryURL=directory }
+        report["actualProductionSystemPickerAllowsMultipleSelection"]=true
+        report["publicPickerStartingDirectoryHintProvided"] = !externalFileSource
+        report["pickerCallbackOrResultReplaced"]=false
+        report["externalProviderGrantCovered"]=false
+        try stage("awaiting-actual-system-two-file-selection-and-upload")
+        var wireLossPending:[PhysicalPendingTransfer]=[]
+        func actualBackgroundRoundtrip(_ label:String,expectedPending:[PhysicalPendingTransfer]) async throws {
+          guard backgroundProof,UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive}) else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:35)}
+          var backgroundObserved=false
+          let observer=NotificationCenter.default.addObserver(forName:UIScene.didEnterBackgroundNotification,object:nil,queue:.main) { notification in
+            let observedScene=notification.object as? UIWindowScene
+            MainActor.assumeIsolated {
+              guard let scene=observedScene,scene.activationState == .background,
+                (try? self.physicalPendingTransfers(transferDirectory))==expectedPending else {return}
+              let bytesExact=expectedPending.allSatisfy { entry in
+                guard let bytes=try? Data(contentsOf:transferDirectory.appendingPathComponent(entry.file.id+".data")) else{return false}
+                return bytes.count==entry.file.sizeBytes && HostService.hash(bytes)==entry.file.sha256
+              }
+              guard bytesExact else{return}
+              backgroundObserved=true
+              report[label+"ActualSystemSceneBackgroundNotification"]=true
+              report[label+"OriginalPendingAndBytesExactWhileBackground"]=true
+              try? stage("actual-"+label+"-background-observed-awaiting-original-foreground")
+            }
+          }
+          defer {NotificationCenter.default.removeObserver(observer)}
+          try stage("awaiting-actual-"+label+"-background")
+          try await wait("actual "+label+" system background notification"){backgroundObserved}
+          try await wait("same original "+label+" App scene foreground"){UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}}
+          guard try physicalPendingTransfers(transferDirectory)==expectedPending else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:36)}
+          for entry in expectedPending {
+            let bytes=try Data(contentsOf:transferDirectory.appendingPathComponent(entry.file.id+".data"))
+            guard bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:37)}
+          }
+          report[label+"OriginalPendingAndBytesExactAfterForeground"]=true
+          try stage("actual-"+label+"-foreground-awaiting-parent-zero-write-permit")
+          let permit=folder.appendingPathComponent(run+"."+label+"-background.permit.json")
+          try await wait("independent "+label+" background zero-write permit"){FileManager.default.fileExists(atPath:permit.path)}
+          let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+          guard value["caseId"] as? String==run,value["sameOriginalProcessActivated"] as? Bool==true,value["newFileWritesDuringBackground"] as? Int==0 else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:38)}
+        }
+        if realRelayLoss {
+          // The independent desktop examiner interrupts only this task's Relay
+          // after the first genuine prepare receipt. No local response fault.
+          try await wait("two actual failed original upload intents and files retained during real Relay loss") {
+            guard let values=try? self.physicalPendingTransfers(transferDirectory),values.count==2 else{return false}
+            return Set(values.map{$0.file.name})==Set(expected.keys) && values.allSatisfy{$0.phase=="unknown" && !($0.error ?? "").isEmpty}
+          }
+          wireLossPending=try physicalPendingTransfers(transferDirectory)
+          for entry in wireLossPending {
+            let url=transferDirectory.appendingPathComponent(entry.file.id+".data"),values=try url.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:url)
+            guard entry.file.hostId==client.id,UUID(uuidString:entry.file.id) != nil,entry.file.sizeBytes==expected[entry.file.name]?.0,entry.file.sha256==expected[entry.file.name]?.1,values.isRegularFile==true,values.isSymbolicLink != true,bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:29)}
+          }
+          var failure:Error?
+          do {_=try await provider.fileTransfers(client)}catch{failure=error}
+          let unavailable=try XCTUnwrap(failure as? EasyWorkServiceAvailabilityFailure)
+          guard unavailable.status==502 else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:30)}
+          report["actualTemporaryServiceStatus"]=unavailable.status
+          report["wireLossOriginalPendingTransfers"]=try JSONSerialization.jsonObject(with:encoder.encode(wireLossPending))
+          report["originalUnknownFilesRetainedDuringActualRelayLoss"]=true
+          if backgroundProof {try await actualBackgroundRoundtrip("unknown",expectedPending:wireLossPending)}
+          try stage("actual-wire-loss-original-unknowns-retained-awaiting-relay-restore")
+          let permit=folder.appendingPathComponent(run+".permit.json")
+          try await wait("independently restored original owned Relay permit"){FileManager.default.fileExists(atPath:permit.path)}
+          let value=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+          guard value["caseId"] as? String==run,value["ownedRelayRestored"] as? Bool==true else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:31)}
+          await provider.close(client)
+          // Restart receipt confirms spawn, not listener/Host handshake readiness.
+          // Retry only this read; authorization, identity and protocol errors fail.
+          var restoredCatalog:ComputerFileCatalog?,readinessFailures:[[String:Any]]=[]
+          let readinessDeadline=Date().addingTimeInterval(90)
+          while restoredCatalog==nil && Date()<readinessDeadline {
+            try Task.checkCancellation()
+            do {restoredCatalog=try await provider.fileTransfers(client)} catch {
+              if Task.isCancelled {throw error}
+              var temporary=error is EasyWorkServiceAvailabilityFailure
+              if case HostServiceError.unavailable = error {temporary=true}
+              if let code=(error as? URLError)?.code,[URLError.Code.timedOut,.notConnectedToInternet,.networkConnectionLost,.cannotConnectToHost,.cannotFindHost,.dnsLookupFailed,.cancelled].contains(code) {temporary=true}
+              guard temporary else {throw error}
+              let failure=error as NSError;readinessFailures.append(["domain":failure.domain,"code":failure.code])
+              try await Task.sleep(for:.milliseconds(500))
+            }
+          }
+          report["actualRelayReadinessTransientReadFailures"]=readinessFailures
+          let current=try XCTUnwrap(restoredCatalog),prepared=current.files.filter{expected[$0.name] != nil}
+          guard prepared.count==1,prepared[0].phase=="prepared",wireLossPending.contains(where:{$0.file.id==prepared[0].id}),try physicalPendingTransfers(transferDirectory)==wireLossPending else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:32)}
+          report["oneOriginalHostPreparationAndOneUnreceivedOriginalIntentAfterReconnect"]=true
+          try stage("awaiting-actual-original-transfer-query-and-upload-controls")
+          if backgroundProof {
+            try await wait("two original records ready after actual explicit query controls") {
+              guard let entries=try? self.physicalPendingTransfers(transferDirectory) else{return false}
+              return entries.count==2 && entries.allSatisfy{entry in wireLossPending.contains{$0.file==entry.file}} && entries.allSatisfy{$0.phase=="ready"}
+            }
+            let ready=try physicalPendingTransfers(transferDirectory)
+            report["originalPreparedReadyTransfersBeforeBackground"]=try JSONSerialization.jsonObject(with:encoder.encode(ready))
+            try await actualBackgroundRoundtrip("prepared",expectedPending:ready)
+            try stage("original-ids-query-and-both-backgrounds-verified-awaiting-explicit-upload-controls")
+          }
+        }
+        let deadline=Date().addingTimeInterval(externalFileSource ? 900 : 480)
+        var completed:[ComputerFileReceipt]=[]
+        while Date()<deadline {
+          let catalog=try await provider.fileTransfers(client)
+          completed=catalog.files.filter{expected[$0.name] != nil && $0.phase=="completed"}
+          if completed.count==2 {
+            for file in completed { guard file.hostId==client.id,file.sizeBytes==expected[file.name]!.0,file.sha256==expected[file.name]!.1 else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:12) } }
+            let old=try encoder.encode(originalCatalog.files.sorted{$0.id<$1.id})
+            guard try encoder.encode(catalog.files.filter{v in originalCatalog.files.contains{$0.id==v.id}}.sorted{$0.id<$1.id})==old else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:13) }
+            break
+          }
+          try await Task.sleep(for:.seconds(1))
+        }
+        guard completed.count==2 else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:14) }
+        report["actualCompletedStandaloneFileReceipts"]=try JSONSerialization.jsonObject(with:encoder.encode(completed))
+        report["originalCatalogRecordsPreserved"]=true
+        if realRelayLoss {
+          guard Set(completed.map(\.id))==Set(wireLossPending.map{$0.file.id}) else {throw NSError(domain:"EasyWorkNativePhysicalInput",code:33)}
+          try await wait("production uploader persists original wire recovery and clears local data") {
+            (try? self.physicalPendingTransfers(transferDirectory).isEmpty)==true && wireLossPending.allSatisfy({!FileManager.default.fileExists(atPath:transferDirectory.appendingPathComponent($0.file.id+".data").path)})
+          }
+          report["sameOriginalTransferIDsCompletedAfterPhysicalQueryAndUploadControls"]=true
+          report["originalUnknownJournalAndLocalDataClearedAfterCompletion"]=true
+          try stage("actual-wire-loss-original-ids-completed-awaiting-external-sheet-close")
+        } else if completionDeliveryLoss {
+          try await wait("one original local unknown result durably retained after actual Host completion") {
+            guard let entries=try? self.physicalPendingTransfers(transferDirectory),entries.count==1 else{return false}
+            return entries[0].phase=="unknown" && entries[0].error?.contains("验收注入：完成回执未交付")==true && expected[entries[0].file.name] != nil
+          }
+          let entry=try XCTUnwrap(try physicalPendingTransfers(transferDirectory).first)
+          guard UUID(uuidString:entry.file.id) != nil,entry.file.hostId==client.id,
+            completed.contains(where:{$0.id==entry.file.id && $0.name==entry.file.name && $0.sha256==entry.file.sha256 && $0.sizeBytes==entry.file.sizeBytes}) else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:25) }
+          let dataURL=transferDirectory.appendingPathComponent(entry.file.id+".data"),metadata=try dataURL.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey]),bytes=try Data(contentsOf:dataURL)
+          guard metadata.isRegularFile==true,metadata.isSymbolicLink != true,bytes.count==entry.file.sizeBytes,HostService.hash(bytes)==entry.file.sha256 else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:26) }
+          report["actualOriginalUnknownPendingTransfer"]=try JSONSerialization.jsonObject(with:encoder.encode(entry))
+          report["actualOriginalUnknownLocalFileBytesAndSHA256Retained"]=true
+          report["actualOriginalUnknownJournalSHA256"]=HostService.hash(try Data(contentsOf:transferDirectory.appendingPathComponent("pending.dat")))
+          try stage("actual-host-files-completed-one-original-local-result-unknown-awaiting-external-sheet-close")
+        } else { try stage("actual-two-files-completed-awaiting-external-sheet-close") }
+        }
+        try await wait("actual external file transfer sheet Done") { store.sheet == nil && !store.drawerOpen }
+        report["actualExternalFileTransferSheetCloseObserved"]=true
+        if completionDeliveryLoss {
+          let entries=try physicalPendingTransfers(transferDirectory)
+          guard entries.count==1,entries[0].phase=="unknown",HostService.hash(try Data(contentsOf:transferDirectory.appendingPathComponent(entries[0].file.id+".data")))==entries[0].file.sha256 else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:27) }
+          report["originalUnknownPendingAndBytesRemainAfterActualSheetClose"]=true
+        }
+      } else {
+        try await wait("actual external physical sidebar close") { !store.drawerOpen }
+        report["actualExternalSidebarCloseObserved"]=true
+      }
+      guard store.selectedThreadId==thread.id,store.drafts.values==drafts,try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,try encoder.encode(store.saved.threadForks)==forks,try encoder.encode(store.saved.aiSharingGrants)==sharing,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else { throw NSError(domain:"EasyWorkNativePhysicalInput",code:6) }
+      restore();report["originalSelectionDraftsSettingsOperationsAndIdentityPreserved"]=true;report["status"]=realRelayLoss ? "passed-actual-file-relay-loss-original-ids-physical-query-and-upload-resume-zero-model" : completionDeliveryLoss ? "passed-actual-local-file-completion-delivery-loss-original-pending-retained-zero-model" : negativeSelection ? "passed-actual-system-negative-selections-zero-upload" : transfers ? "passed-actual-system-two-file-selection-standalone-transfers-zero-model" : "passed-actual-device-hub-two-physical-sidebar-actions-zero-command";try stage("completed")
+    } catch { restore();report["failure"]=String(describing:error);report["status"]="failed-original-physical-input-prefix";try? stage("failed");throw error }
+  }
+  @MainActor func testOriginalExactReplyForkMenuReadinessWithoutCreatingFork() async throws {
+    try await originalExactReplyForkMenu(createsChild:false)
+  }
+  @MainActor func testOriginalExactReplyForkMenuCreatesOneMetadataChildWithoutModel() async throws {
+    try await originalExactReplyForkMenu(createsChild:true)
+  }
+  @MainActor private func originalExactReplyForkMenu(createsChild:Bool) async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original fork menu UI case required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,config["newActualForksAuthorized"] as? Int==(createsChild ? 1 : 0) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:1) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:2) }
+    var report:[String:Any]=["nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","caseId":run,"newModels":0,"newActualForks":0,"environmentSelectionAttempted":false,"codexTests":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func stage(_ value:String) throws { report["stage"]=value;try save() }
+    func wait(_ name:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=name;try save();throw NSError(domain:"EasyWorkNativeForkMenu",code:3,userInfo:[NSLocalizedDescriptionKey:name]) }
+    }
+    try save();try await wait("original App-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    let clients=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+    let client=try XCTUnwrap(clients.count==1 ? clients.first : nil)
+    guard target.agentId=="easywork",store.saved.selectedClientId==client.id,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativeForkMenu",code:4) }
+    let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity")),encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let drafts=store.drafts.values,defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),forks=try encoder.encode(store.saved.threadForks)
+    let originalSharing=try encoder.encode(store.saved.aiSharingGrants)
+    let expectedWorktreeAvailable=config["expectedWorktreeAvailable"] as? Bool ?? true
+    let oldForks=store.saved.threadForks ?? [:]
+    var menuInteraction:UIContextMenuInteraction?,selectedAction:UIAction?
+    var dispatchedOperationID:String?
+    let requestedEnvironment=createsChild ? try XCTUnwrap(ThreadForkEnvironment(rawValue:try XCTUnwrap(config["environment"] as? String))) : ThreadForkEnvironment.sameDirectory
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    func restore() { store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist() }
+    do {
+      try stage("refresh-original-source")
+      await store.refresh(includeHistory:false)
+      let source=try XCTUnwrap(store.threads.first { $0.id==config["sourceThreadId"] as? String && $0.hostId==client.id })
+      store.openThread(source,loadAutomatically:false);await store.loadHistory(threadId:source.id)
+      let replyID=try XCTUnwrap(config["sourceReplyUIId"] as? String),selectedRun=try XCTUnwrap(config["selectedRunId"] as? String)
+      guard !store.historyLoading,store.messages.contains(where:{$0.id==replyID && $0.runId==selectedRun && $0.role=="assistant" && ["completed","complete"].contains($0.status ?? "")}),store.sheet==nil,store.error==nil else { throw NSError(domain:"EasyWorkNativeForkMenu",code:5) }
+      let originalSourceMessages=store.messages,sourceDraftKey=store.targetKey,sourceDraft=store.draft
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows).first{$0.isKeyWindow && !$0.isHidden})
+      func ownSceneDiagnostics()->[[String:Any]] {
+        UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.map { scene in
+          ["session":scene.session.persistentIdentifier,"role":scene.session.role.rawValue,"activationState":scene.activationState.rawValue,
+           "screenBounds":String(describing:scene.screen.bounds),"screenNativeBounds":String(describing:scene.screen.nativeBounds),"screenScale":scene.screen.scale,
+           "isMainScreen":scene.screen===UIScreen.main,"windows":scene.windows.map{view in ["selected":view===window,"key":view.isKeyWindow,"hidden":view.isHidden,"alpha":view.alpha,"level":view.windowLevel.rawValue,"bounds":String(describing:view.bounds),"root":view.rootViewController.map{String(describing:type(of:$0))} ?? "nil"] as [String:Any]}] as [String:Any]
+        }
+      }
+      report["ownSceneDiagnosticsBeforeActivation"]=ownSceneDiagnostics()
+      report["nativeExpectedTestingArguments"]=ProcessInfo.processInfo.arguments.contains("-ui-testing") && ProcessInfo.processInfo.arguments.contains("-restore-testing")
+      if config["activateOriginalSceneForPhysicalWindow"] as? Bool==true {
+        let scene=try XCTUnwrap(window.windowScene)
+        UIApplication.shared.requestSceneSessionActivation(scene.session,userActivity:nil,options:nil) { error in
+          report["originalSceneActivationError"]=String(describing:error);try? save()
+        }
+        window.makeKeyAndVisible()
+        report["publicExistingOriginalSceneActivationRequested"]=true
+        try await wait("same App-owned existing scene active",seconds:20) { scene.activationState == .foregroundActive && window.isKeyWindow }
+        guard SessionStore.hostedEasyWorkAcceptanceStore===store else { throw NSError(domain:"EasyWorkNativeForkMenu",code:24) }
+        report["ownSceneDiagnosticsAfterActivation"]=ownSceneDiagnostics()
+        let renderer=UIGraphicsImageRenderer(bounds:window.bounds)
+        let pixels=renderer.image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+        let image=try XCTUnwrap(pixels.pngData()),name=run+"-own-window-diagnostic-not-system-proof.png"
+        try image.write(to:folder.appendingPathComponent(name),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+        report["ownWindowDiagnosticFilename"]=name;report["ownWindowDiagnosticSHA256"]=SHA256.hash(data:image).map{String(format:"%02x",$0)}.joined()
+      }
+      try save()
+      func windows()->[UIWindow] { window.windowScene?.windows.filter{!$0.isHidden && $0.alpha>0.01} ?? [window] }
+      func objects(_ roots:[NSObject]?=nil)->[NSObject] {
+        var seen=Set<ObjectIdentifier>(),result:[NSObject]=[]
+        func visit(_ object:NSObject) {
+          guard result.count<8000,seen.insert(ObjectIdentifier(object)).inserted else { return };result.append(object)
+          (object as? UIView)?.subviews.forEach(visit);object.accessibilityElements?.compactMap{$0 as? NSObject}.forEach(visit)
+          let count=object.accessibilityElementCount()
+          if count>0 && count<1000 { for index in 0..<count { if let child=object.accessibilityElement(at:index) as? NSObject { visit(child) } } }
+        }
+        (roots ?? windows().map{$0 as NSObject}).forEach(visit);return result
+      }
+      func id(_ object:NSObject)->String? { (object as? UIView)?.accessibilityIdentifier ?? (object as? any UIAccessibilityIdentification)?.accessibilityIdentifier }
+      func rect(_ object:NSObject)->CGRect {
+        if let view=object as? UIView,view.window != nil { return view.convert(view.bounds,to:window) }
+        return window.convert(object.accessibilityFrame,from:nil)
+      }
+      func visible(_ object:NSObject)->Bool {
+        guard !object.accessibilityTraits.contains(.notEnabled) else { return false }
+        if let control=object as? UIControl,!control.isEnabled { return false }
+        let frame=rect(object),intersection=frame.intersection(window.bounds)
+        return frame.width>1 && frame.height>1 && intersection.width>=frame.width*0.8 && intersection.height>=frame.height*0.8
+      }
+      func matches(_ identifier:String)->[NSObject] { objects().filter { id($0)==identifier && visible($0) } }
+      try await wait("production source window active") { window.windowScene?.activationState == .foregroundActive }
+      func scrolls(_ view:UIView)->[UIScrollView] { (view as? UIScrollView).map{[$0]} ?? view.subviews.flatMap(scrolls) }
+      let candidates=scrolls(window).filter { let frame=$0.convert($0.bounds,to:window).intersection(window.bounds);return $0.isScrollEnabled && frame.height>window.bounds.height*0.35 && frame.width>window.bounds.width*0.5 }
+      if candidates.count==1 { let scroll=candidates[0];scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:max(-scroll.adjustedContentInset.top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)),animated:false) }
+      let rowID="run-reply-actions-"+replyID
+      let anchorID="hosted-native-reply-actions-"+replyID
+      try stage("locate-exact-original-reply-fork-menu")
+      try await wait("exact reply action container") {
+        let values=objects()
+        report["actualReplyActionContainerDiagnostics"]=values.filter{(id($0) ?? "").hasPrefix("run-reply-actions-")}.map{["id":id($0) ?? "","class":String(describing:type(of:$0)),"frame":String(describing:rect($0))]}
+        report["actualNativeMenuButtonDiagnostics"]=values.compactMap{$0 as? UIButton}.filter{$0.menu != nil}.map{["id":$0.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? "","class":String(describing:type(of:$0)),"frame":String(describing:rect($0)),"menuTitles":$0.menu?.children.map(\.title) ?? []] as [String:Any]}
+        try? save()
+        return values.contains { object in
+          if let anchor=object as? HostedNativeReplyActionAnchorView {
+            return id(anchor)==anchorID && anchor.sourceThreadId==source.id && anchor.sourceRunId==selectedRun && anchor.window===window && visible(anchor)
+          }
+          return id(object)==rowID
+        }
+      }
+      let anchors=objects().compactMap{$0 as? HostedNativeReplyActionAnchorView}.filter{$0.accessibilityIdentifier==anchorID && $0.sourceThreadId==source.id && $0.sourceRunId==selectedRun && $0.window===window && visible($0)}
+      let row:NSObject=try XCTUnwrap(anchors.count==1 ? anchors[0] : objects().first{id($0)==rowID}),rowFrame=rect(row)
+      report["actualExactReplyNativeLayoutAnchorUsed"]=anchors.count==1
+      // A logical AX container can have no local frame. Its real child button
+      // must still be visible; do not infer the container's visibility from a
+      // zero accessibilityFrame or substitute a different reply.
+      var buttons=objects([row]).filter { visible($0) && (id($0)=="fork-reply" || ($0 as? UIButton)?.menu != nil) }
+      if anchors.count==1 {
+        buttons=objects().compactMap{$0 as? UIButton}.filter { button in
+          guard button.window===window,button.menu != nil,button.isEnabled,visible(button),!button.isHidden,button.alpha>0.01 else { return false }
+          let frame=rect(button)
+          guard rowFrame.contains(CGPoint(x:frame.midX,y:frame.midY)),let hit=window.hitTest(CGPoint(x:frame.midX,y:frame.midY),with:nil) else { return false }
+          return hit===button || hit.isDescendant(of:button)
+        }
+      }
+      if buttons.isEmpty,!rowFrame.isEmpty { buttons=matches("fork-reply").filter{rowFrame.contains(CGPoint(x:rect($0).midX,y:rect($0).midY))} }
+      let native=buttons.compactMap{$0 as? UIButton}.filter{$0.menu != nil}
+      let accessible=buttons.filter(\.isAccessibilityElement),choices:[NSObject]=native.count==1 ? [native[0]] : (accessible.isEmpty ? buttons : accessible)
+      report["actualExactReplyRowFrame"]=String(describing:rowFrame);report["actualMatchingMenuButtons"]=choices.count;try save()
+      let button=try XCTUnwrap(choices.count==1 ? choices.first : nil),frame=rect(button)
+      var view=window.hitTest(CGPoint(x:frame.midX,y:frame.midY),with:nil),nativeMenuButton=button as? UIButton
+      while let current=view {
+        if menuInteraction==nil { menuInteraction=current.interactions.compactMap{$0 as? UIContextMenuInteraction}.first }
+        if nativeMenuButton?.menu==nil,let value=current as? UIButton,value.menu != nil { nativeMenuButton=value }
+        view=current.superview
+      }
+      let activated:Bool
+      if let nativeMenuButton,nativeMenuButton.menu != nil {
+        guard nativeMenuButton.window===window,nativeMenuButton.isEnabled else { throw NSError(domain:"EasyWorkNativeForkMenu",code:12) }
+        if #available(iOS 17.4,*) { nativeMenuButton.performPrimaryAction();activated=true;report["actualPublicUIKitPrimaryActionDispatched"]=true }
+        else { throw XCTSkip("This public menu primary action requires iOS17.4 or newer") }
+      } else { activated=button.accessibilityActivate();report["actualMenuAccessibilityActivationAccepted"]=activated }
+      try save()
+      guard activated else { throw NSError(domain:"EasyWorkNativeForkMenu",code:6) }
+      func actualVisibleOptions()->Bool {
+        var options:[String:Bool]=[:]
+        if nativeMenuButton?.isHeld==true {
+          menuInteraction?.updateVisibleMenu { menu in
+            func collect(_ value:UIMenuElement) {
+              if let action=value as? UIAction {
+                options[action.title] = !action.attributes.contains(.disabled)
+                if createsChild,action.title==requestedEnvironment.title,!action.attributes.contains(.disabled) { selectedAction=action }
+              }
+              if let submenu=value as? UIMenu { submenu.children.forEach(collect) }
+            }
+            collect(menu);return menu
+          }
+        }
+        if !options.isEmpty { report["actualPublicVisibleMenuOptionStates"]=options }
+        let nativeReady=options[ThreadForkEnvironment.sameDirectory.title]==true && options[ThreadForkEnvironment.worktree.title]==expectedWorktreeAvailable
+        let axReady = !matches("fork-same-directory").isEmpty && !matches("fork-worktree").isEmpty
+        return (nativeReady || axReady) && store.forkReason(source:store.forkSource,turnId:selectedRun,environment:.sameDirectory)==nil && (store.forkReason(source:store.forkSource,turnId:selectedRun,environment:.worktree)==nil)==expectedWorktreeAvailable
+      }
+      try await wait("actual two enabled environment options") { actualVisibleOptions() }
+      report["actualBothEnvironmentOptionsDisplayedAndEnabled"]=expectedWorktreeAvailable;report["actualExpectedEnvironmentAvailabilityVerified"]=true;report["expectedWorktreeAvailable"]=expectedWorktreeAvailable;report["originalSelectedReplyId"]=replyID;report["originalSelectedRunId"]=selectedRun;report["actualPublicMenuDismissInteractionAvailable"]=menuInteraction != nil
+      let permit=folder.appendingPathComponent(run+"-menu-close-permit.json"),nonce=try XCTUnwrap(config["menuCheckpointNonce"] as? String)
+      guard UUID(uuidString:nonce) != nil,!FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:7) }
+      try stage("ios-fork-menu-ready-awaiting-independent-system-witness")
+      let deadline=Date().addingTimeInterval(600)
+      while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline {
+        let menuStillVisible=nativeMenuButton?.isHeld==true || (!matches("fork-same-directory").isEmpty && !matches("fork-worktree").isEmpty)
+        guard store.selectedThreadId==source.id,store.client?.agentConnection?.target==target,menuStillVisible else { throw NSError(domain:"EasyWorkNativeForkMenu",code:8) }
+        report["menuHoldingHeartbeat"]=(report["menuHoldingHeartbeat"] as? Int ?? 0)+1;try save()
+        try await Task.sleep(for:.seconds(1))
+      }
+      let permission=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+      guard permission["caseId"] as? String==run,permission["nonce"] as? String==nonce,permission["action"] as? String==(createsChild ? "select-original-menu-environment" : "close-original-menu"),permission["sourceThreadId"] as? String==source.id else { throw NSError(domain:"EasyWorkNativeForkMenu",code:9) }
+      guard let menuInteraction else { throw NSError(domain:"EasyWorkNativeForkMenu",code:10) }
+      if createsChild {
+        guard let action=selectedAction,let button=nativeMenuButton,button.isHeld,
+          action.title==requestedEnvironment.title,!action.attributes.contains(.disabled),
+          store.selectedThreadId==source.id,store.forkSource?.target==target,
+          Set(store.saved.threadForks?.keys.map{$0} ?? [])==Set(oldForks.keys) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:13) }
+        // Dispatch this actual visible native menu's original UIAction once.
+        // All recovery below inspects the persisted immutable operation only.
+        report["environmentSelectionAttempted"]=true;report["selectedEnvironment"]=requestedEnvironment.rawValue
+        try stage("dispatch-exact-original-visible-menu-action-once")
+        button.sendAction(action)
+        menuInteraction.dismissMenu()
+        try await wait("one immutable original fork operation persisted",seconds:20) {
+          let fresh=(store.saved.threadForks ?? [:]).filter{oldForks[$0.key]==nil}
+          return fresh.count==1
+        }
+        let pending=try XCTUnwrap((store.saved.threadForks ?? [:]).values.first{oldForks[$0.id]==nil})
+        dispatchedOperationID=pending.id;report["originalOperationId"]=pending.id
+        report["originalImmutableRequest"]=try JSONSerialization.jsonObject(with:encoder.encode(pending.request))
+        guard pending.request.hostId==client.id,pending.sourceTarget==target,pending.request.threadId==source.id,
+          pending.request.turnId==selectedRun,pending.request.environment==requestedEnvironment else { throw NSError(domain:"EasyWorkNativeForkMenu",code:14) }
+        try stage("one-original-operation-saved-no-resubmission")
+        try await wait("same original fork receipt terminal",seconds:150) { store.saved.threadForks?[pending.id]?.phase.isPending==false }
+        let confirmed=try XCTUnwrap(store.saved.threadForks?[pending.id])
+        report["actualOriginalForkOutcome"]=try JSONSerialization.jsonObject(with:encoder.encode(confirmed));try save()
+        guard confirmed.phase == .confirmed,confirmed.request==pending.request,
+          let childID=confirmed.forkedThreadId,childID != source.id else { throw NSError(domain:"EasyWorkNativeForkMenu",code:15) }
+        try await wait("actual automatic child navigation and history",seconds:150) { store.selectedThreadId==childID && !store.historyLoading && !store.messages.isEmpty }
+        let child=store.messages
+        func sourceText(_ message:ChatMessage)->String {
+          let text=(message.blocks ?? []).compactMap{block->String? in if case .text(let value)=block { return value };return nil}
+          return text.isEmpty ? message.text : text.joined(separator:"\n")
+        }
+        report["actualSourceProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(originalSourceMessages))
+        report["actualChildProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(child));try save()
+        guard !child.isEmpty,child.count<=originalSourceMessages.count,child.allSatisfy({$0.runId==nil}),
+          originalSourceMessages.prefix(child.count).contains(where:{$0.runId==selectedRun}) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:16) }
+        for (copied,original) in zip(child,originalSourceMessages.prefix(child.count)) {
+          guard copied.role==original.role,sourceText(copied)==sourceText(original),copied.kind==original.kind,copied.detail==original.detail else { throw NSError(domain:"EasyWorkNativeForkMenu",code:17) }
+        }
+        if config["requireComplexToolReasoning"] as? Bool==true {
+          guard child.contains(where:{$0.kind=="reasoning"}),child.filter({$0.role=="tool" && $0.kind != "reasoning"}).count>=2 else { throw NSError(domain:"EasyWorkNativeForkMenu",code:18) }
+        }
+        let expectedChildProject=requestedEnvironment == .sameDirectory ? source.projectId : confirmed.projectId
+        guard store.selectedProjectId==expectedChildProject,
+          (store.drafts.values[sourceDraftKey] ?? Draft())==sourceDraft,
+          drafts.allSatisfy({store.drafts.values[$0.key]==$0.value}),
+          store.drafts.values.filter({drafts[$0.key]==nil}).values.allSatisfy({$0==Draft()}),
+          oldForks.allSatisfy({(try? encoder.encode(store.saved.threadForks?[$0.key])) == (try? encoder.encode(Optional($0.value)))}),
+          (store.saved.threadForks ?? [:]).count==oldForks.count+1 else { throw NSError(domain:"EasyWorkNativeForkMenu",code:19) }
+        report["newActualForks"]=1;report["actualChildThreadId"]=childID
+        report["actualPrefixRunClearingAndOriginalDraftsProtected"]=true
+        try stage("actual-child-selected-inherited-prefix-and-original-intent-verified")
+        if config["independentCreatedChildWitnessRequired"] as? Bool==true {
+          let nonce=try XCTUnwrap(config["childCheckpointNonce"] as? String),permit=folder.appendingPathComponent(run+"-created-child-visible-permit.json")
+          guard UUID(uuidString:nonce) != nil,!FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkNativeForkMenu",code:21) }
+          try stage("ios-created-fork-child-awaiting-independent-system-witness")
+          let deadline=Date().addingTimeInterval(600)
+          while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline {
+            guard store.selectedThreadId==childID,store.client?.agentConnection?.target==target,!store.messages.isEmpty else { throw NSError(domain:"EasyWorkNativeForkMenu",code:22) }
+            report["createdChildHoldingHeartbeat"]=(report["createdChildHoldingHeartbeat"] as? Int ?? 0)+1;try save()
+            try await Task.sleep(for:.seconds(1))
+          }
+          let proof=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+          guard proof["caseId"] as? String==run,proof["nonce"] as? String==nonce,proof["childThreadId"] as? String==childID,proof["actualInheritedReplyVisible"] as? Bool==true else { throw NSError(domain:"EasyWorkNativeForkMenu",code:23) }
+          report["independentActualCreatedChildSystemImageWitnessAccepted"]=true
+        }
+      }
+      menuInteraction.dismissMenu()
+      try await wait("original context menu closed") { nativeMenuButton?.isHeld != true && matches("fork-same-directory").isEmpty && matches("fork-worktree").isEmpty }
+      report["actualPublicUIKitMenuDismissAndStateWait"]=true
+      guard store.aiSharingRequest==nil,try encoder.encode(store.saved.aiSharingGrants)==originalSharing else { throw NSError(domain:"EasyWorkNativeForkMenu",code:20) }
+      report["metadataForkDidNotRequestOrModifyAISharingConsent"]=true
+      let currentForks=try encoder.encode(store.saved.threadForks)
+      guard (createsChild || store.drafts.values==drafts),try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,(createsChild || currentForks==forks),try CredentialVault.existingToken("easywork-device-identity")==identity else { throw NSError(domain:"EasyWorkNativeForkMenu",code:11) }
+      restore()
+      let originalSelectionURL=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+      try await wait("original navigation metadata durably restored",seconds:15) {
+        guard let bytes=try? Data(contentsOf:originalSelectionURL),let disk=try? AgentCache.decode(bytes) else{return false}
+        return disk.lastThreads==oldLastThreads && disk.lastThreadProjects==oldLastProjects && disk.newProjects==oldNewProjects && disk.selectedClientId==store.saved.selectedClientId
+      }
+      report["originalNavigationMetadataDurablyRestored"]=true
+      report["originalSelectionDraftsSettingsRecoveryIdentityExact"]=true;report["status"]=createsChild ? "passed-original-physical-menu-one-metadata-child-zero-model" : "passed-original-physical-fork-menu-readiness-public-dismiss-zero-fork";try save()
+    } catch {
+      menuInteraction?.dismissMenu();restore();report["failure"]=String(describing:error);report["dispatchedOriginalOperationId"]=dispatchedOperationID;report["status"]="failed-original-fork-menu-ui-prefix";try? save();throw error
+    }
+  }
+  @MainActor func testOriginalConfirmedMetadataForkStatusOpensSameChildWithoutCreatingAgain() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit same original receipt recovery required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,config["newActualForksAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkKnownFork",code:1) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkKnownFork",code:2) }
+    var report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"nativeBundleId":Bundle.main.bundleIdentifier ?? "","newModels":0,"newActualForks":0,"codexTests":false]
+    func save(_ stage:String) throws { report["stage"]=stage;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    let limit=Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore==nil && Date()<limit { try await Task.sleep(for:.milliseconds(100)) }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore),encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let op=try XCTUnwrap(config["operationId"] as? String),pending=try XCTUnwrap(store.saved.threadForks?[op])
+    guard pending.phase == .confirmed,pending.forkedThreadId==config["childThreadId"] as? String,pending.request.threadId==config["sourceThreadId"] as? String,pending.request.turnId==config["selectedRunId"] as? String else { throw NSError(domain:"EasyWorkKnownFork",code:3) }
+    let drafts=store.drafts.values,oldForks=try encoder.encode(store.saved.threadForks),defaults=try encoder.encode(store.saved.generationPreferences),outbox=try encoder.encode(store.saved.outbox),recovery=store.saved.replyRecovery?.mapValues(\.fingerprint),identity=try CredentialVault.existingToken("easywork-device-identity")
+    let originalSharing=try encoder.encode(store.saved.aiSharingGrants)
+    if let filename=config["originalSharingStateArchiveFilename"] as? String {
+      guard filename=="easywork-readonly-sharing-"+run+".bin",let digest=config["originalSharingStateArchiveSHA256"] as? String else { throw NSError(domain:"EasyWorkKnownFork",code:12) }
+      let bytes=try Data(contentsOf:folder.appendingPathComponent(filename))
+      guard SHA256.hash(data:bytes).map({String(format:"%02x",$0)}).joined()==digest,
+        try encoder.encode(AgentCache.decode(bytes).aiSharingGrants)==originalSharing else { throw NSError(domain:"EasyWorkKnownFork",code:13) }
+      report["originalPreCreationAISharingArchiveReadOnlyMatched"]=true
+    }
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    func restore() async {
+      func buttons(_ view:UIView)->[UIButton] { (view as? UIButton).map{[$0]} ?? view.subviews.flatMap{buttons($0)} }
+      let windows=UIApplication.shared.connectedScenes.compactMap{$0 as? UIWindowScene}.flatMap(\.windows)
+      let retainedButtons=windows.flatMap{buttons($0)}
+      for button in retainedButtons where button.isHeld {button.interactions.compactMap{$0 as? UIContextMenuInteraction}.first?.dismissMenu()}
+      func transitioning(_ controller:UIViewController?)->Bool {
+        guard let controller else{return false}
+        return controller.isBeingPresented || controller.isBeingDismissed || controller.transitionCoordinator != nil
+          || transitioning(controller.presentedViewController) || controller.children.contains{transitioning($0)}
+      }
+      let deadline=Date().addingTimeInterval(10)
+      while Date()<deadline && (retainedButtons.contains{$0.isHeld} || windows.contains{transitioning($0.rootViewController)}) {try? await Task.sleep(for:.milliseconds(50))}
+      store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer
+      store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist()
+      await Task.yield();withExtendedLifetime(retainedButtons){}
+    }
+    func diagnostics()->[String:Any] {
+      let names=["clientGeneration","historyGeneration","forkNavigationOwners","forkSubmittingIDs","forkQueryingIDs","sidebarInteracting"]
+      var values=Dictionary(uniqueKeysWithValues:Mirror(reflecting:store).children.compactMap { value->(String,String)? in guard let label=value.label,names.contains(label) else{return nil};return(label,String(describing:value.value)) })
+      values["selectedThreadId"]=store.selectedThreadId ?? "nil";values["selectedProjectId"]=store.selectedProjectId ?? "nil";values["drawerOpen"]=String(store.drawerOpen);values["historyLoading"]=String(store.historyLoading);values["messageCount"]=String(store.messages.count);values["error"]=store.error ?? "nil";values["forkError"]=store.saved.threadForks?[op]?.error ?? "nil";values["draft"]=String(describing:store.draft)
+      values["originalQueryStillInFlight"]=String(store.isQueryingFork(op));values["originalForkSourceStillMatches"]=String(store.forkSource==pending.source)
+      return values
+    }
+    do {
+      try save("awaiting-original-physical-foreground-before-source-read")
+      let foregroundDeadline=Date().addingTimeInterval(45)
+      while Date()<foregroundDeadline && !UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive}) {try await Task.sleep(for:.milliseconds(100))}
+      guard UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive}) else {throw NSError(domain:"EasyWorkKnownFork",code:14)}
+      try save("refresh-original-client-before-same-receipt-read");await store.refresh(includeHistory:false)
+      let source=try XCTUnwrap(store.threads.first{$0.id==pending.request.threadId && $0.hostId==pending.request.hostId})
+      store.openThread(source,loadAutomatically:false)
+      var sourceReadApplied=false,sourceReadAttempts:[[String:Any]]=[]
+      for attempt in 1...3 {
+        guard store.selectedThreadId==source.id,store.client?.agentConnection?.target==pending.sourceTarget else {throw NSError(domain:"EasyWorkKnownFork",code:4)}
+        let applied=await store.loadHistory(threadId:source.id)
+        let readDeadline=Date().addingTimeInterval(90)
+        while store.historyLoading && Date()<readDeadline {try await Task.sleep(for:.milliseconds(100))}
+        sourceReadApplied = sourceReadApplied || applied
+        sourceReadAttempts.append(["attempt":attempt,"normalHistoryReadApplied":applied,"stillLoading":store.historyLoading,"error":store.error ?? NSNull()])
+        report["actualInitialSourceReadAttempts"]=sourceReadAttempts;try save("original-source-normal-history-read")
+        if sourceReadApplied && !store.historyLoading && store.error==nil && store.forkSource==pending.source {break}
+      }
+      guard sourceReadApplied,!store.historyLoading,store.error==nil,store.forkSource==pending.source else { throw NSError(domain:"EasyWorkKnownFork",code:4) }
+      let original=store.messages;store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      let activeDeadline=Date().addingTimeInterval(30)
+      while Date()<activeDeadline && !UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive}) { try await Task.sleep(for:.milliseconds(100)) }
+      guard UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive}) else { throw NSError(domain:"EasyWorkKnownFork",code:14) }
+      report["originalAppSceneForegroundBeforeQuery"]=true
+      report["beforeOriginalStatusQuery"]=diagnostics();try save("query-original-confirmed-operation-only")
+      store.queryFork(pending)
+      let querySeconds=config["originalStatusQueryWaitSeconds"] as? Int ?? 120
+      guard (120...300).contains(querySeconds) else {throw NSError(domain:"EasyWorkKnownFork",code:16)}
+      let deadline=Date().addingTimeInterval(Double(querySeconds))
+      while Date()<deadline && !(store.selectedThreadId==pending.forkedThreadId && !store.historyLoading && !store.messages.isEmpty) {
+        report["currentOriginalQueryDiagnostics"]=diagnostics();try save("waiting-only-for-same-original-child")
+        if !store.isQueryingFork(op) && !store.historyLoading {break}
+        try await Task.sleep(for:.seconds(1))
+      }
+      report["finalOriginalQueryDiagnostics"]=diagnostics();try save("original-query-wait-ended")
+      guard store.selectedThreadId==pending.forkedThreadId,!store.historyLoading,!store.messages.isEmpty else { throw NSError(domain:"EasyWorkKnownFork",code:5) }
+      let copied=store.messages
+      func text(_ message:ChatMessage)->String { let values=(message.blocks ?? []).compactMap{block->String? in if case .text(let value)=block{return value};return nil};return values.isEmpty ? message.text : values.joined(separator:"\n") }
+      guard copied.count<=original.count,copied.allSatisfy({$0.runId==nil}) else {throw NSError(domain:"EasyWorkKnownFork",code:6)}
+      for(a,b) in zip(copied,original) { guard a.role==b.role,text(a)==text(b),a.kind==b.kind,a.detail==b.detail else {throw NSError(domain:"EasyWorkKnownFork",code:7)} }
+      report["actualSourceProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(original));report["actualChildProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(copied))
+      if config["independentChildVisibleWitnessRequired"] as? Bool==true {
+        let child=try XCTUnwrap(pending.forkedThreadId),nonce=try XCTUnwrap(config["visibleCheckpointNonce"] as? String)
+        let permit=folder.appendingPathComponent(run+"-child-visible-permit.json")
+        guard UUID(uuidString:nonce) != nil,!FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkKnownFork",code:9) }
+        report["actualChildThreadId"]=child;report["sameOriginalReceiptAndChildNoReplay"]=true
+        try save("ios-known-fork-child-awaiting-independent-system-witness")
+        let deadline=Date().addingTimeInterval(240)
+        while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline {
+          let foreground=UIApplication.shared.connectedScenes.contains(where:{$0.activationState == .foregroundActive})
+          report["originalChildSceneForeground"]=foreground
+          report["originalChildHoldingHeartbeat"]=(report["originalChildHoldingHeartbeat"] as? Int ?? 0)+1
+          try save("ios-known-fork-child-awaiting-independent-system-witness")
+          guard foreground,store.selectedThreadId==child,!store.messages.isEmpty,store.client?.agentConnection?.target==pending.sourceTarget else { throw NSError(domain:"EasyWorkKnownFork",code:10) }
+          try await Task.sleep(for:.seconds(1))
+        }
+        let witness=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit)) as? [String:Any])
+        guard witness["caseId"] as? String==run,witness["nonce"] as? String==nonce,witness["childThreadId"] as? String==child,witness["actualInheritedReplyVisible"] as? Bool==true else { throw NSError(domain:"EasyWorkKnownFork",code:11) }
+        report["independentActualChildSystemImageWitnessAccepted"]=true
+      }
+      var expectedForks=try JSONDecoder().decode([String:PendingThreadFork].self,from:oldForks)
+      expectedForks[op]?.detached=false // The existing product's explicit Open action activates this receipt.
+      report["originalOtherForksExactAndOnlyKnownReceiptActivated"]=(try encoder.encode(store.saved.threadForks)==encoder.encode(expectedForks))
+      guard drafts.allSatisfy({store.drafts.values[$0.key]==$0.value}),store.drafts.values.filter({drafts[$0.key]==nil}).values.allSatisfy({$0==Draft()}),try encoder.encode(store.saved.threadForks)==encoder.encode(expectedForks),try encoder.encode(store.saved.generationPreferences)==defaults,try encoder.encode(store.saved.outbox)==outbox,store.saved.replyRecovery?.mapValues(\.fingerprint)==recovery,try CredentialVault.existingToken("easywork-device-identity")==identity else {throw NSError(domain:"EasyWorkKnownFork",code:8)}
+      guard store.aiSharingRequest==nil,try encoder.encode(store.saved.aiSharingGrants)==originalSharing else { throw NSError(domain:"EasyWorkKnownFork",code:15) }
+      report["metadataReadDidNotRequestOrModifyAISharingConsent"]=true
+      report["originalOperationId"]=op;report["actualChildThreadId"]=pending.forkedThreadId;report["sameOriginalReceiptAndChildNoReplay"]=true;await restore();report["status"]="passed-same-original-confirmed-fork-status-navigation-no-new-fork";try save("completed")
+    } catch { report["failure"]=String(describing:error);report["finalOriginalQueryDiagnostics"]=diagnostics();await restore();report["status"]="failed-original-receipt-read-prefix";try? save("failed");throw error }
+  }
+  @MainActor func testArchivedOriginalPendingReadingPositionWithoutNetworkOrWrites() throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let raw=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit archived pending-read audit required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(raw.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,config["newActualForksAuthorized"] as? Int==0,config["networkRequestsAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkArchivedRead",code:1) }
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    let thread=try XCTUnwrap(config["threadId"] as? String),position=try JSONDecoder().decode(ReadPosition.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["acknowledgedPosition"])))
+    let docs=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0],folder=docs.appendingPathComponent("easywork-hosted-native")
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkArchivedRead",code:2) }
+    let key=SharedMobileRules.nativeReadingKey(target,threadId:thread)
+    var records:[[String:Any]]=[]
+    for item in try XCTUnwrap(config["archivedStates"] as? [[String:Any]]) {
+      let name=try XCTUnwrap(item["filename"] as? String),hash=try XCTUnwrap(item["sha256"] as? String)
+      guard !name.contains("/"),name.hasPrefix(run+"-") else { throw NSError(domain:"EasyWorkArchivedRead",code:3) }
+      let data=try Data(contentsOf:docs.appendingPathComponent(name))
+      guard SHA256.hash(data:data).map({String(format:"%02x",$0)}).joined()==hash else { throw NSError(domain:"EasyWorkArchivedRead",code:4) }
+      let state=try AgentCache.decode(data),record=state.mobileReads?[key]
+      guard state.clients.contains(where:{$0.agentConnection?.target==target}),record?.position==position,record?.pending==true else { throw NSError(domain:"EasyWorkArchivedRead",code:5) }
+      records.append(["archiveLabel":item["label"] ?? "","sourceSHA256":hash,"originalPending":true,"originalPosition":try JSONSerialization.jsonObject(with:JSONEncoder().encode(try XCTUnwrap(record)))])
+    }
+    guard records.count==2 else { throw NSError(domain:"EasyWorkArchivedRead",code:6) }
+    let report:[String:Any]=["caseId":run,"status":"passed-archived-original-pending-read-exact-before-following-case","records":records,"newModels":0,"newActualForks":0,"networkRequests":0,"codexTests":false]
+    try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+  }
+  @MainActor func testOriginalInheritedResourceRejectsScopePathAndIntegrityWithoutWrites() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original resource boundary case required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newDownloadCompletionsAuthorized"] as? Int==0,config["negativeResourceVariantsAuthorized"] as? Int==6 else { throw NSError(domain:"EasyWorkResourceBoundary",code:1) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkResourceBoundary",code:2) }
+    var report:[String:Any]=["caseId":run,"newModels":0,"newDownloadCompletionsAuthorized":0,"productUIPresented":false,"codexTests":false]
+    var results:[[String:Any]]=[]
+    func save() throws { report["results"]=results;try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    do {
+      try save();let deadline=Date().addingTimeInterval(30)
+      while SessionStore.hostedEasyWorkAcceptanceStore==nil && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+      let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+      let matches=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+      let client=try XCTUnwrap(matches.count==1 ? matches.first : nil)
+      guard target.agentId=="easywork",store.saved.selectedClientId==client.id,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkResourceBoundary",code:3) }
+      let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+      guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw NSError(domain:"EasyWorkResourceBoundary",code:4) }
+      let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity"))
+      let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+      func protected() throws ->Data { var value=store.saved;value.drafts=store.drafts.values;return try encoder.encode(value) }
+      let original=try protected(),provider=try AgentClients.resolve(client)
+      let thread=try XCTUnwrap(config["threadId"] as? String),other=try XCTUnwrap(config["otherThreadId"] as? String)
+      guard other != thread else { throw NSError(domain:"EasyWorkResourceBoundary",code:5) }
+      let history=try await provider.history(client,threadId:thread,cursor:nil)
+      let files=history.messages.flatMap { $0.attachments ?? [] }.filter { $0.name==config["filename"] as? String && $0.sha256==config["sha256"] as? String }
+      let file=try XCTUnwrap(files.first)
+      guard file.sizeBytes==config["sizeBytes"] as? Int,file.sizeBytes>0,file.sizeBytes<1024*1024,
+        file.sha256 != String(repeating:"0",count:64) else { throw NSError(domain:"EasyWorkResourceBoundary",code:6) }
+      let cachedCandidate=try await provider.cachedDownload(client,file:file)
+      let cached=try XCTUnwrap(cachedCandidate),bytes=try Data(contentsOf:cached)
+      guard bytes.count==file.sizeBytes,SHA256.hash(data:bytes).map({String(format:"%02x",$0)}).joined()==file.sha256 else { throw NSError(domain:"EasyWorkResourceBoundary",code:7) }
+      report["actualOriginalCachedPath"]=cached.path
+      report["actualOriginalResourceMetadata"]=try JSONSerialization.jsonObject(with:encoder.encode(file));try save()
+      func clone(id:String?=nil,host:String?=nil,thread:String?=nil,name:String?=nil,size:Int?=nil,hash:String?=nil)->RemoteAttachment {
+        RemoteAttachment(id:id ?? file.id,hostId:host ?? file.hostId,threadId:thread ?? file.threadId,name:name ?? file.name,
+          mediaType:file.mediaType,sizeBytes:size ?? file.sizeBytes,sha256:hash ?? file.sha256)
+      }
+      let variants:[(String,RemoteAttachment)]=[("wrong-local-client",clone(host:"unrelated-"+client.id)),
+        ("traversal-name",clone(name:"../"+file.name)),("other-original-thread",clone(thread:other)),
+        ("wrong-content-sha",clone(hash:String(repeating:"0",count:64))),("wrong-size",clone(size:file.sizeBytes+1)),
+        ("missing-resource",clone(id:try XCTUnwrap(config["missingResourceId"] as? String)))]
+      for (label,candidate) in variants {
+        report["stage"]=label;try save();var rejected:Error?
+        do { _ = try await provider.download(client,file:candidate) } catch { rejected=error }
+        guard let rejected else { throw NSError(domain:"EasyWorkResourceBoundary",code:8,userInfo:[NSLocalizedDescriptionKey:label+" unexpectedly succeeded"]) }
+        guard try Data(contentsOf:cached)==bytes else { throw NSError(domain:"EasyWorkResourceBoundary",code:9) }
+        results.append(["variant":label,"rejected":true,"failureType":String(describing:type(of:rejected)),"failure":String(describing:rejected),"originalCacheBytesExact":true]);try save()
+      }
+      guard try protected()==original,try CredentialVault.existingToken("easywork-device-identity")==identity,
+        try await provider.cachedDownload(client,file:file)==cached,try Data(contentsOf:cached)==bytes else { throw NSError(domain:"EasyWorkResourceBoundary",code:10) }
+      report["originalSavedStateIdentityAndCacheBytesExact"]=true;report["status"]="passed-original-physical-resource-scope-path-integrity-rejections-zero-completion";try save()
+    } catch {
+      report["status"]="failed-original-resource-negative-prefix";report["failure"]=String(describing:error);try? save();throw error
+    }
+  }
+  @MainActor func testAuthenticatedOriginalSnapshotProtectedStateWithoutInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,let run=env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original snapshot audit required") }
+    let config=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newChatsAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkStateAudit",code:1) }
+    let deadline=Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore==nil && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,let key=try CredentialVault.existingToken("agent-cache-key-v1") else { throw NSError(domain:"EasyWorkStateAudit",code:2) }
+    let bytes:Data,maximum:Int
+    if let filename=config["originalEncryptedStateFilename"]as?String {
+      guard filename=="baseline-"+run+".bin"else{throw NSError(domain:"EasyWorkStateAudit",code:3)}
+      let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+      bytes=try Data(contentsOf:folder.appendingPathComponent(filename));maximum=512_000
+    }else{bytes=try XCTUnwrap(Data(base64Encoded:try XCTUnwrap(config["originalEncryptedStateBase64"] as? String)));maximum=100_000}
+    guard bytes.count<=maximum,SHA256.hash(data:bytes).map({String(format:"%02x",$0)}).joined()==config["originalEncryptedStateSha256"] as? String else { throw NSError(domain:"EasyWorkStateAudit",code:3) }
+    // AgentCache.open explicitly reads an existing key and never creates one.
+    func logicalSnapshot()->SavedSession {
+      var value=store.saved
+      // SessionStore moves restored drafts into its single editable DraftStore
+      // and clears the staging field. Compare the data actually in use.
+      value.drafts=store.drafts.values
+      return value
+    }
+    let before=try AgentCache.decode(bytes),current=logicalSnapshot()
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",before.selectedClientId==current.selectedClientId,
+      let old=before.clients.first(where:{ $0.id==before.selectedClientId }),let selected=current.clients.first(where:{ $0.id==current.selectedClientId }),
+      old.agentConnection?.target==target,selected.agentConnection?.target==target,
+      old.agentConnection?.credentialRef==selected.agentConnection?.credentialRef else { throw NSError(domain:"EasyWorkStateAudit",code:4) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func checks(_ value:SavedSession) throws -> [String:Bool] {
+      ["lastThreads":before.lastThreads==value.lastThreads,"lastThreadProjects":before.lastThreadProjects==value.lastThreadProjects,
+       "drafts":before.drafts==value.drafts,
+       "generationPreferences":try encoder.encode(before.generationPreferences)==encoder.encode(value.generationPreferences),
+       "outbox":try encoder.encode(before.outbox)==encoder.encode(value.outbox),
+       "replyRecovery":try encoder.encode(before.replyRecovery)==encoder.encode(value.replyRecovery),
+       "threadForks":try encoder.encode(before.threadForks)==encoder.encode(value.threadForks),
+       "existingCacheKey":try CredentialVault.existingToken("agent-cache-key-v1")==key]
+    }
+    let initialChecks=try checks(current);var navigationRecovered=false,ownedEmptyDraftRemoved=false
+    if let threadId=config["removeOnlyOwnedEmptyDraftForThreadId"]as?String,
+      config["removeOnlyProvenOwnedNewEmptyDraftEntry"]as?Bool==true,
+      initialChecks.filter({$0.key != "drafts"}).values.allSatisfy({$0}) {
+      let key=SharedMobileRules.cacheKey(selected,threadId:threadId,projectId:nil,workspace:current.workspaces[selected.id])
+      var expectedOwnedEmpty=Draft();if config["ownedEmptyDraftPlainNilModeRequired"]as?Bool != true{expectedOwnedEmpty.collaborationMode="default"}
+      let emptyChecks:[String:Bool]=["exactNamedTargetKey":key==config["ownedEmptyDraftKey"]as?String,"absentInOriginal":before.drafts[key]==nil,"exactObservedEmptyDefaultMode":current.drafts[key]==expectedOwnedEmpty,"exactObservedValueHash":HostService.hash(try encoder.encode(current.drafts[key]))==config["expectedOwnedEmptyDraftSha256"]as?String,"allOtherDraftsExact":current.drafts.filter({$0.key != key})==before.drafts]
+      let diagnosticFolder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+      try JSONSerialization.data(withJSONObject:["caseId":run,"checks":emptyChecks,"writesBeforeGuard":0],options:[.sortedKeys]).write(to:diagnosticFolder.appendingPathComponent(run+"-cleanup-guard.json"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      guard emptyChecks.values.allSatisfy({$0})else{throw NSError(domain:"EasyWorkStateAudit",code:8)}
+      store.drafts.values.removeValue(forKey:key);store.persist()
+      let file=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+      let end=Date().addingTimeInterval(15)
+      while Date()<end {
+        if let bytes=try?Data(contentsOf:file),let saved=try?AgentCache.decode(bytes),(try?checks(saved).values.allSatisfy({$0}))==true{ownedEmptyDraftRemoved=true;break}
+        try await Task.sleep(for:.milliseconds(100))
+      }
+    }
+    if config["recoverOnlyOriginalNavigationSelection"] as? Bool==true,
+      !initialChecks.values.allSatisfy({ $0 }),initialChecks.filter({ !["lastThreads","lastThreadProjects"].contains($0.key) }).values.allSatisfy({ $0 }) {
+      guard before.lastThreads.filter({$0.key != old.id})==current.lastThreads.filter({$0.key != old.id}),
+        (before.lastThreadProjects ?? [:]).filter({$0.key != old.id})==(current.lastThreadProjects ?? [:]).filter({$0.key != old.id}),
+        let originalThread=before.lastThreads[old.id] else { throw NSError(domain:"EasyWorkStateAudit",code:7) }
+      if !store.threads.contains(where:{$0.id==originalThread && $0.hostId==old.id}) { await store.refresh(includeHistory:false) }
+      let thread=try XCTUnwrap(store.threads.first { $0.id==originalThread && $0.hostId==old.id })
+      store.openThread(thread,loadAutomatically:false)
+      store.selectedProjectId=before.lastThreadProjects?[old.id]
+      var projects=store.saved.lastThreadProjects ?? [:]
+      if let original=before.lastThreadProjects?[old.id] { projects[old.id]=original } else { projects.removeValue(forKey:old.id) }
+      store.saved.lastThreadProjects=before.lastThreadProjects==nil && projects.isEmpty ? nil : projects
+      store.persist()
+      let file=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Acceptance/session-state-v1.json")
+      let deadline=Date().addingTimeInterval(15);var durable=false
+      while Date()<deadline && !durable {
+        if let data=try? Data(contentsOf:file),let saved=try? AgentCache.decode(data) { durable=(try? checks(saved).values.allSatisfy({$0}))==true }
+        if !durable { try await Task.sleep(for:.milliseconds(100)) }
+      }
+      navigationRecovered=durable
+    }
+    let finalChecks=try checks(logicalSnapshot()),passed=finalChecks.values.allSatisfy({$0}) && (initialChecks.values.allSatisfy({$0}) || navigationRecovered || ownedEmptyDraftRemoved)
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkStateAudit",code:6) }
+    let draftKeys=Set(before.drafts.keys).union(current.drafts.keys).filter{before.drafts[$0] != current.drafts[$0]}.sorted()
+    let draftDifferences=try draftKeys.map{key->[String:Any] in
+      ["key":key,"beforePresent":before.drafts[key] != nil,"currentPresent":current.drafts[key] != nil,"beforeSha256":HostService.hash(try encoder.encode(before.drafts[key])),"currentSha256":HostService.hash(try encoder.encode(current.drafts[key])),"beforeValue":try JSONSerialization.jsonObject(with:encoder.encode(before.drafts[key]),options:[.fragmentsAllowed]),"currentValue":try JSONSerialization.jsonObject(with:encoder.encode(current.drafts[key]),options:[.fragmentsAllowed])]
+    }
+    let report:[String:Any]=["caseId":run,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"status":passed ? "passed-original-authenticated-encrypted-state-selection-drafts-settings-outbox-recovery-readonly" : "failed-original-authenticated-state-protected-checks",
+      "originalEncryptedStateSha256":config["originalEncryptedStateSha256"]!,"existingCacheKeyUnchanged":true,"keysGenerated":0,
+      "protectedChecksBefore":initialChecks,"protectedChecksAfter":finalChecks,"onlyOriginalNavigationRecoveredAndDurable":navigationRecovered,
+      "removedOnlyProvenOwnedNewEmptyDraftEntryAndDurable":ownedEmptyDraftRemoved,
+      "originalDraftDifferencesPrivate":draftDifferences,"deviceIdentitySha256":HostService.hash(Data((try CredentialVault.existingToken("easywork-device-identity") ?? "").utf8)),
+      "selectedClientAndAllOriginalThreadSelectionsExact":finalChecks["lastThreads"]==true && finalChecks["lastThreadProjects"]==true,"originalDraftsGenerationOutboxAndReplyRecoveryExact":finalChecks.filter({ !["lastThreads","lastThreadProjects"].contains($0.key) }).values.allSatisfy({$0}),
+      "metadataOrCredentialSnapshotRestored":false,"newModels":0,"newRemoteCommands":0,"productUIPresented":false,"codexFunctionalTests":false]
+    try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+    guard passed else { throw NSError(domain:"EasyWorkStateAudit",code:5) }
+  }
+  @MainActor func testOriginalPDFProductionPreviewWithoutInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]
+    else { throw XCTSkip("Explicit original PDF zero-input examiner required") }
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newChatsAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkNativePDF",code:1) }
+    let historicalAttachment=config["originalHistoricalUserAttachment"] as? Bool==true
+    let clearOnlyOwnedEmptyDraftDuringPreview=config["clearOnlyOwnedEmptyDraftDuringPreview"] as? Bool==true
+    if historicalAttachment {
+      let cacheOnly=config["requireExistingPDFCacheWithoutDownloadAction"] as? Bool==true && config["existingResourceDownloadAuthorized"] as? Int==0
+      guard config["newUploadsAuthorized"] as? Int==0,(config["existingResourceDownloadAuthorized"] as? Int==1 || cacheOnly),
+        config["originalMessageId"] as? String != nil,config["resourceId"] as? String != nil,config["sizeBytes"] as? Int != nil else { throw NSError(domain:"EasyWorkHistoricalAttachmentPreview",code:1) }
+    }
+    let originalIdleTimer=UIApplication.shared.isIdleTimerDisabled
+    UIApplication.shared.isIdleTimerDisabled=true
+    defer { UIApplication.shared.isIdleTimerDisabled=originalIdleTimer }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativePDF",code:2) }
+    var report:[String:Any]=["caseId":run,"bodyEntered":true,"nativeProcessId":ProcessInfo.processInfo.processIdentifier,"appBundleIdentifier":Bundle.main.bundleIdentifier!,"newModelInputBudget":0,"uiAutomationUsed":false,"codexTests":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativePDF",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    func releaseDriver() async throws {
+      guard historicalAttachment,config["driverReleaseRequired"] as? Bool==true else{return}
+      report["stage"]="awaiting-official-screen-sharing-stop-and-case-release";try save()
+      let release=folder.appendingPathComponent(run+"-driver-release.json")
+      try await wait("official sharing stopped then current historical preview case released",seconds:600){
+        guard let data=try?Data(contentsOf:release),let v=(try?JSONSerialization.jsonObject(with:data))as?[String:Any]else{return false}
+        return v["caseId"]as?String==run && v["screenSharingStoppedVerified"]as?Bool==true && v["releaseNativeOnlyNoProductAction"]as?Bool==true
+      }
+      report["safeDriverReleaseVerified"]=true
+    }
+    try save();try await wait("original App-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    let clients=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+    guard target.agentId=="easywork",clients.count==1,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativePDF",code:4) }
+    let client=try XCTUnwrap(clients.first)
+    let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard store.saved.selectedClientId==client.id,try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw NSError(domain:"EasyWorkNativePDF",code:5) }
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let oldDrafts=store.drafts.values,oldDefaults=store.saved.generationPreferences,oldRecovery=store.saved.replyRecovery?.mapValues(\.fingerprint)
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldOutbox=try encoder.encode(store.saved.outbox),identity=try CredentialVault.existingToken("easywork-device-identity")
+    var activePreview:QLPreviewController?
+    var ownEmptyClearKey:String?
+    let protectedResourceClearBytes=[try encoder.encode(store.saved.threadForks),try encoder.encode(VoiceMigrationSafety.snapshot())]
+    func cleanupOwnEmptyClear() -> Bool {
+      guard let key=ownEmptyClearKey else{return true}
+      guard store.drafts.values[key]==Draft(),store.drafts.values.filter({$0.key != key})==oldDrafts.filter({$0.key != key}) else{return false}
+      if oldDrafts[key]==nil{store.drafts.values.removeValue(forKey:key)}else if oldDrafts[key] != Draft(){return false}
+      store.persist();ownEmptyClearKey=nil;return store.drafts.values==oldDrafts
+    }
+    var eventsStartedByCase=false
+    let expectedReply=config["expectedReplyMarker"] as? String
+    if let expectedReply {
+      guard !expectedReply.isEmpty,expectedReply.utf8.count<=200,
+        config["coordinatedCoverReadiness"] as? Bool==true else { throw NSError(domain:"EasyWorkNativePDF",code:18) }
+    }
+    func stage(_ value:String) throws { report["stage"]=value;try save() }
+    func restore() { if eventsStartedByCase { store.suspendEvents();eventsStartedByCase=false };store.hostedEasyWorkProductUIPresented=false;store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer;store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects;store.persist() }
+    do {
+      try stage("awaiting-original-physical-foreground")
+      try await wait("original physical App foreground",seconds:historicalAttachment ? 180 : 45) {
+        report["actualNativeForegroundWaitState"]=["applicationState":UIApplication.shared.applicationState.rawValue,"scenes":UIApplication.shared.connectedScenes.map{$0.activationState.rawValue},"observedAt":Date().timeIntervalSince1970];try?save()
+        return UIApplication.shared.connectedScenes.contains{$0.activationState == .foregroundActive}
+      }
+      try stage("refresh-original-client")
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first { $0.id==config["threadId"] as? String && $0.hostId==client.id })
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      let complexResource=config["originalComplexInheritedResource"] as? Bool==true
+      let originalWorktreeSource=config["originalWorktreeSourceResource"] as? Bool==true
+      guard !originalWorktreeSource || complexResource else { throw NSError(domain:"EasyWorkNativeComplexResource",code:4) }
+      if complexResource {
+        guard config["newForkWritesAuthorized"] as? Int==0,
+          (config["coordinatedCoverReadiness"] as? Bool != true || config["readinessOnly"] as? Bool==true),
+          let sourceID=config["originalComplexSourceThreadId"] as? String,
+          (originalWorktreeSource ? sourceID==thread.id : sourceID != thread.id),
+          let selectedRun=config["originalComplexSelectedRunId"] as? String else { throw NSError(domain:"EasyWorkNativeComplexResource",code:1) }
+        let provider=try AgentClients.resolve(client)
+        let original=try await provider.history(client,threadId:sourceID,cursor:nil)
+        let child=store.messages
+        report["actualComplexSourceProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(original.messages))
+        report["actualComplexChildProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(child));try save()
+        guard !child.isEmpty,original.messages.count>=child.count,
+          original.messages.prefix(child.count).contains(where:{$0.runId==selectedRun}),
+          (originalWorktreeSource || child.allSatisfy({$0.runId==nil})),child.contains(where:{$0.kind=="reasoning"}),
+          child.filter({$0.role=="tool" && $0.kind != "reasoning"}).count>=2 else { throw NSError(domain:"EasyWorkNativeComplexResource",code:2) }
+        // Resource links carry a thread-bound ID, so the visible projection can
+        // legitimately differ across the two threads. Compare its original text
+        // block and independently verify the selected inherited resource bytes.
+        func sourceText(_ message:ChatMessage)->String {
+          let values=(message.blocks ?? []).compactMap { part->String? in if case .text(let text)=part { return text };return nil }
+          return values.isEmpty ? message.text : values.joined(separator:"\n")
+        }
+        for (copied,source) in zip(child,original.messages.prefix(child.count)) {
+          guard copied.role==source.role,sourceText(copied)==sourceText(source),copied.kind==source.kind,copied.detail==source.detail else { throw NSError(domain:"EasyWorkNativeComplexResource",code:3) }
+          if originalWorktreeSource {
+            guard child.count==original.messages.count,copied.runId==source.runId else { throw NSError(domain:"EasyWorkNativeComplexResource",code:5) }
+          }
+        }
+        report["originalComplexToolReasoningPrefixAndClearedRunReferencesVerified"] = !originalWorktreeSource
+        report["originalWorktreeSourceFullProjectionAndRunReferencesVerified"]=originalWorktreeSource
+        report["newForkWrites"]=0;try save()
+      }
+      if expectedReply != nil || config["observeNormalSelectedThreadEvents"] as? Bool==true {
+        store.startEvents(initialReadGrace:10);eventsStartedByCase=true;report["normalSelectedThreadEventsStarted"]=true
+      }
+      try stage("original-history-loaded")
+      let filename=try XCTUnwrap(config["filename"] as? String),expected=try XCTUnwrap(config["sha256"] as? String)
+      try await wait("original PDF metadata") {
+        guard !store.historyLoading else { return false }
+        for message in store.messages {
+          for attachment in message.attachments ?? [] {
+            if attachment.name==filename && attachment.sha256==expected && attachment.mediaType==((complexResource || historicalAttachment) ? "text/plain" : "application/pdf") { return true }
+          }
+        }
+        return false
+      }
+      if historicalAttachment {
+        let original=try XCTUnwrap(store.messages.first{$0.id==config["originalMessageId"] as? String}),file=try XCTUnwrap(original.attachments?.first)
+        guard original.role=="user",file.id==config["resourceId"] as? String,file.threadId==thread.id,
+          file.name==filename,file.sha256==expected,file.sizeBytes==config["sizeBytes"] as? Int else{throw NSError(domain:"EasyWorkHistoricalAttachmentPreview",code:2)}
+        let cached=try await AgentClients.resolve(client).cachedDownload(client,file:file)
+        report["cacheAlreadyPresentBeforeCase"]=cached != nil
+        if config["requireNoExistingResourceCache"] as? Bool==true,cached != nil {throw NSError(domain:"EasyWorkHistoricalAttachmentPreview",code:3)}
+        report["originalHistoricalUserAttachmentMessageAndLogicalResourceExact"]=true
+      }
+      guard store.sheet==nil,store.error==nil else { throw NSError(domain:"EasyWorkNativePDF",code:6) }
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow && !$0.isHidden })
+      func windows()->[UIWindow] {
+        let values=window.windowScene?.windows.filter { !$0.isHidden && $0.alpha>0.01 } ?? []
+        return values.contains(where:{ $0===window }) ? values : values+[window]
+      }
+      func controllers()->[UIViewController] {
+        var seen=Set<ObjectIdentifier>()
+        func visit(_ c:UIViewController)->[UIViewController] { guard seen.insert(ObjectIdentifier(c)).inserted else { return [] };return [c]+c.children.flatMap(visit)+(c.presentedViewController.map(visit) ?? []) }
+        return windows().compactMap(\.rootViewController).flatMap(visit)
+      }
+      func settled()->Bool { controllers().allSatisfy { !$0.isBeingPresented && !$0.isBeingDismissed && $0.transitionCoordinator==nil } }
+      func controls()->[NSObject] {
+        var seen=Set<ObjectIdentifier>(),result:[NSObject]=[]
+        func visit(_ object:NSObject) {
+          guard result.count<8000,seen.insert(ObjectIdentifier(object)).inserted else { return }
+          result.append(object)
+          if let view=object as? UIView { view.subviews.forEach(visit) }
+          object.accessibilityElements?.compactMap { $0 as? NSObject }.forEach(visit)
+          let count=object.accessibilityElementCount()
+          if count>0 && count<1000 { for index in 0..<count { if let element=object.accessibilityElement(at:index) as? NSObject { visit(element) } } }
+        }
+        windows().forEach(visit)
+        controllers().filter(\.isViewLoaded).forEach { visit($0.view) }
+        return result
+      }
+      func button(_ id:String)->NSObject? {
+        guard settled() else { return nil }
+        let matches=controls().filter { object in
+          guard ((object as? UIView)?.accessibilityIdentifier ?? (object as? any UIAccessibilityIdentification)?.accessibilityIdentifier)==id,
+            !object.accessibilityTraits.contains(.notEnabled) else { return false }
+          return windows().contains { owner in
+            guard owner.windowScene?.activationState == .foregroundActive else { return false }
+            if let b=object as? UIButton {
+              guard b.window===owner,b.isEnabled,b.isUserInteractionEnabled,!b.isHidden,b.alpha>0.01 else { return false }
+              let frame=b.convert(b.bounds,to:owner),visible=frame.intersection(owner.bounds)
+              guard frame.width>1,frame.height>1,visible.width>=frame.width*0.8,visible.height>=frame.height*0.8,
+                let hit=owner.hitTest(CGPoint(x:frame.midX,y:frame.midY),with:nil) else { return false }
+              return hit === b || hit.isDescendant(of:b)
+            }
+            let frame=owner.convert(object.accessibilityFrame,from:nil),visible=frame.intersection(owner.bounds)
+            guard frame.width>1,frame.height>1,visible.width>=frame.width*0.8,visible.height>=frame.height*0.8 else { return false }
+            let center=CGPoint(x:frame.midX,y:frame.midY)
+            guard let hit=owner.hitTest(center,with:nil) else { return false }
+            return true
+          }
+        }
+        let elements=matches.filter(\.isAccessibilityElement)
+        return elements.count==1 ? elements[0] : (matches.count==1 ? matches[0] : nil)
+      }
+      var chatScroll:UIScrollView?
+      func activate(_ id:String) async throws {
+        try stage("locate-production-control-"+id)
+        let deadline=Date().addingTimeInterval(historicalAttachment ? 120 : 45)
+        while button(id)==nil && Date()<deadline {
+          let candidates=controls().compactMap { $0 as? UIButton }.filter { $0.accessibilityIdentifier==id && $0.window===window && $0.isEnabled }
+          if candidates.count==1,let scroll=chatScroll {
+            let rect=candidates[0].convert(candidates[0].bounds,to:scroll),insets=scroll.adjustedContentInset
+            let desired=rect.midY-insets.top-max(0,scroll.bounds.height-insets.top-insets.bottom)/2
+            let bottom=max(-insets.top,scroll.contentSize.height-scroll.bounds.height+insets.bottom)
+            let next=max(-insets.top,min(bottom,desired))
+            if abs(next-scroll.contentOffset.y)>1 { scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false);window.layoutIfNeeded() }
+          }
+          await Task.yield();try await Task.sleep(for:.milliseconds(100))
+        }
+        try await wait("actual resource control "+id,seconds:1) { button(id) != nil }
+        let control=try XCTUnwrap(button(id))
+        if let native=control as? UIButton { native.sendActions(for:.touchUpInside) }
+        else { guard control.accessibilityActivate() else { throw NSError(domain:"EasyWorkNativePDF",code:11) };report["actualResourceAccessibilityActionAccepted"]=true }
+        report["lastProductionControl"]=id;try save()
+      }
+      func scrolls(_ view:UIView)->[UIScrollView] { guard !view.isHidden,view.alpha>0.01 else { return [] };return (view as? UIScrollView).map { [$0] } ?? view.subviews.flatMap(scrolls) }
+      try await wait("active production chat window") {
+        report["actualProductionWindowReadiness"]=windows().map { value in
+          ["class":String(describing:type(of:value)),"isCapturedKeyWindow":value===window,"key":value.isKeyWindow,
+           "sceneState":value.windowScene?.activationState.rawValue ?? -99,"hidden":value.isHidden,
+           "appState":UIApplication.shared.applicationState.rawValue] as [String:Any]
+        }
+        report["actualProductionControllerTransitions"]=controllers().map { value in
+          ["class":String(describing:type(of:value)),"presenting":value.isBeingPresented,
+           "dismissing":value.isBeingDismissed,"transition":value.transitionCoordinator != nil] as [String:Any]
+        }
+        try? save()
+        let originalRootMounted=controls().compactMap{$0 as?HostedNativeChatMenuAnchorView}.contains{$0.targetKey==store.targetKey && $0.threadId==thread.id && $0.window===window && !$0.isHidden}
+        return window.windowScene?.activationState == .foregroundActive && settled() && originalRootMounted
+      }
+      try stage("search-original-resource-control")
+      window.layoutIfNeeded()
+      try await wait("mounted current chat resource control or scrollable original history") {
+        button("preview-"+filename) != nil || button("download-"+filename) != nil || scrolls(window).contains { value in
+          let visible=value.convert(value.bounds,to:window).intersection(window.bounds)
+          return value.isScrollEnabled && visible.height>window.bounds.height*0.35 && visible.width>window.bounds.width*0.5 && value.contentSize.height>value.bounds.height
+        }
+      }
+      if button("preview-"+filename)==nil && button("download-"+filename)==nil {
+        report["actualResourceObjectCount"]=controls().count
+        report["actualResourceWindowState"]=windows().map { ["class":String(describing:type(of:$0)),"hidden":$0.isHidden,"alpha":$0.alpha,"accessibilityHidden":$0.accessibilityElementsHidden] as [String:Any] }
+        let candidates=scrolls(window).filter { scroll in
+          let rect=scroll.convert(scroll.bounds,to:window).intersection(window.bounds)
+          return scroll.isScrollEnabled && rect.height>window.bounds.height*0.35 && rect.width>window.bounds.width*0.5 && scroll.contentSize.height>scroll.bounds.height
+        }
+        let exact=candidates.filter { $0.accessibilityIdentifier=="message-list" }
+        let selected=exact.count==1 ? exact : candidates
+        guard selected.count==1 else { report["scrollCandidates"]=candidates.map { ["id":$0.accessibilityIdentifier ?? "","class":String(describing:type(of:$0))] };try save();throw NSError(domain:"EasyWorkNativePDF",code:7) }
+        chatScroll=selected[0]
+        selected[0].setContentOffset(CGPoint(x:0,y: -selected[0].adjustedContentInset.top),animated:false)
+        window.layoutIfNeeded();await Task.yield()
+        report["productionScrollViewMovedToOriginalResource"]=true
+      }
+      func revealTop() async throws {
+        guard let scroll=chatScroll else { return }
+        let deadline=Date().addingTimeInterval(12)
+        while Date()<deadline {
+          let top = -scroll.adjustedContentInset.top
+          if abs(scroll.contentOffset.y-top)>1 { scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:top),animated:false) }
+          window.layoutIfNeeded();await Task.yield()
+          if button("history-local-more") != nil || button("history-more") != nil || button("preview-"+filename) != nil || button("download-"+filename) != nil { return }
+          try await Task.sleep(for:.milliseconds(100))
+        }
+        report["topControlStates"]=controls().compactMap { $0 as? UIButton }.map { b in
+          let rect=b.convert(b.bounds,to:window),hit=window.hitTest(CGPoint(x:rect.midX,y:rect.midY),with:nil)
+          return ["id":b.accessibilityIdentifier ?? "","enabled":b.isEnabled,"hidden":b.isHidden,"alpha":b.alpha,"interactive":b.isUserInteractionEnabled,"traits":String(b.accessibilityTraits.rawValue),"frame":String(describing:rect),"hit":hit.map { String(describing:type(of:$0)) } ?? "nil"] as [String:Any]
+        };try save()
+      }
+      for _ in 0..<20 where button("preview-"+filename)==nil && button("download-"+filename)==nil {
+        try await revealTop()
+        if button("history-local-more") != nil {
+          let previousHeight=chatScroll?.contentSize.height
+          try await activate("history-local-more")
+          try await wait("production earlier local message layout") {
+            !store.historyLoading && settled() && (previousHeight != chatScroll?.contentSize.height || button("preview-"+filename) != nil || button("download-"+filename) != nil)
+          }
+          try await revealTop()
+        } else { break }
+      }
+      if let scroll=chatScroll {
+        for _ in 0..<80 where button("preview-"+filename)==nil && button("download-"+filename)==nil {
+          let bottom=max(-scroll.adjustedContentInset.top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+          let next=min(bottom,scroll.contentOffset.y+scroll.bounds.height*0.65)
+          guard next>scroll.contentOffset.y+1 else { break }
+          scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false);window.layoutIfNeeded()
+          await Task.yield();try await Task.sleep(for:.milliseconds(100))
+        }
+      }
+      if button("preview-"+filename)==nil && button("download-"+filename)==nil {
+        report["actualResourceControls"]=controls().filter { ($0 as? UIView)?.accessibilityIdentifier != nil || ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier != nil }.prefix(150).map { ["class":String(describing:type(of:$0)),"id":($0 as? UIView)?.accessibilityIdentifier ?? ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier ?? "","frame":String(describing:$0.accessibilityFrame),"nativeFrame":($0 as? UIView).map { String(describing:$0.frame) } ?? "","element":$0.isAccessibilityElement] as [String:Any] }
+        let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+        try image.pngData()?.write(to:folder.appendingPathComponent(run+"-resource-control-search.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]);try save()
+      }
+      try await wait("visible original PDF download or preview control") { button("preview-"+filename) != nil || button("download-"+filename) != nil }
+      let requireExistingCache=config["requireExistingPDFCacheWithoutDownloadAction"] as? Bool==true
+      if !requireExistingCache,button("preview-"+filename)==nil { try await activate("download-"+filename) }
+      try await activate("preview-"+filename)
+      if requireExistingCache { report["actualExistingPDFCacheRestoredWithoutDownloadAction"]=true;try save() }
+      try await wait("actual settled QuickLook PDF controller",seconds:60) {
+        let matches=controllers().compactMap { $0 as? QLPreviewController }.filter { $0.viewIfLoaded?.window != nil }
+        if matches.count==1 && settled() { activePreview=matches[0];return true };return false
+      }
+      let preview=try XCTUnwrap(activePreview),source=try XCTUnwrap(preview.dataSource)
+      let item=source.previewController(preview,previewItemAt:preview.currentPreviewItemIndex)
+      let url=try XCTUnwrap(item.previewItemURL),bytes=try Data(contentsOf:url)
+      guard bytes.count<=20*1024*1024,SHA256.hash(data:bytes).map({String(format:"%02x",$0)}).joined()==expected else { throw NSError(domain:"EasyWorkNativePDF",code:8) }
+      report["actualQuickLookOriginalPDFBytesVerified"]=true;report["actualQuickLookControllerPresentedAndSettled"]=true
+      report["pdfSha256"]=expected;report["pdfBytes"]=bytes.count
+      if clearOnlyOwnedEmptyDraftDuringPreview {
+        let key=store.targetKey
+        guard store.draft==Draft(),oldDrafts[key]==nil || oldDrafts[key]==Draft(),config["requireExistingPDFCacheWithoutDownloadAction"] as? Bool==true else{throw NSError(domain:"EasyWorkResourceClearBoundary",code:1)}
+        let destination=store.captureDraftImportDestination(),intent=try XCTUnwrap(store.captureEasyWorkDraftClearIntent())
+        ownEmptyClearKey=key
+        try stage("clearing-only-own-empty-draft-with-original-quicklook-open")
+        guard store.clearEasyWorkDraft(intent),!store.isDraftImportCurrent(destination) else{throw NSError(domain:"EasyWorkResourceClearBoundary",code:2)}
+        let end=Date().addingTimeInterval(1)
+        while Date()<end {
+          await Task.yield();try await Task.sleep(for:.milliseconds(50))
+          guard store.targetKey==key,preview.viewIfLoaded?.window != nil,controllers().contains(where:{$0===preview}),settled(),source.previewController(preview,previewItemAt:preview.currentPreviewItemIndex).previewItemURL==url,HostService.hash(try Data(contentsOf:url))==expected else{throw NSError(domain:"EasyWorkResourceClearBoundary",code:3)}
+        }
+        report["ownEmptyDraftClearPreservesExistingResourcePreview"]=true
+        report["oldLocalDraftImportDestinationStillRejected"]=true
+        report["sameOriginalQuickLookControllerAndBytesSurviveOneSecondSettledRedraws"]=true
+        try save()
+      }
+      let marker=try XCTUnwrap(config["pageMarker"] as? String)
+      func normalized(_ value:String)->String { value.uppercased().filter { $0.isLetter || $0.isNumber } }
+      let appPixelWait=config["appWindowPixelReadinessSeconds"] as? Int ?? 45
+      guard (1...45).contains(appPixelWait) else { throw NSError(domain:"EasyWorkNativePDF",code:13) }
+      let pixelDeadline=Date().addingTimeInterval(Double(appPixelWait));var pixelsReady=false,attempts=0
+      while Date()<pixelDeadline && !pixelsReady {
+        guard preview.viewIfLoaded?.window != nil,settled() else { throw NSError(domain:"EasyWorkNativePDF",code:12) }
+        let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+        let data=try XCTUnwrap(image.pngData());attempts+=1
+        let recognized=try await Task.detached(priority:.utility) {
+          let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=false;request.recognitionLanguages=["en-US"]
+          try VNImageRequestHandler(data:data,options:[:]).perform([request])
+          return request.results?.compactMap { $0.topCandidates(1).first?.string } ?? []
+        }.value
+        pixelsReady=normalized(recognized.joined(separator:" ")).contains(normalized(marker))
+        report["actualPDFPageMarkerRecognizedOnDevice"]=pixelsReady;report["actualPDFPixelReadinessAttempts"]=attempts
+        report["actualPDFPageRecognizedText"]=recognized
+        try data.write(to:folder.appendingPathComponent(run+"-pdf-preview.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+        report["screenshotRequiresIndependentPageMarkerProof"]=true;report["stage"]="actual-quicklook-page-pixel-readiness";try save()
+        if !pixelsReady { try await Task.sleep(for:.milliseconds(200)) }
+      }
+      if !pixelsReady {
+        report["appWindowCaptureDidNotProvePDFPagePixels"]=true
+        // System preview surfaces can require an independent device capture.
+        // A bounded observation window does not turn a blank App capture into
+        // proof; the parent still requires the exact page marker in real pixels.
+        let observation=config["independentSystemCaptureWindowSeconds"] as? Int ?? 0
+        guard (0...120).contains(observation) else { throw NSError(domain:"EasyWorkNativePDF",code:13) }
+        try stage("awaiting-independent-system-pdf-page-witness")
+        if observation>0 { try await Task.sleep(for:.seconds(observation)) }
+      }
+      if config["coordinatedCoverReadiness"] as? Bool==true {
+        let nonce=try XCTUnwrap(config["coverCheckpointNonce"] as? String)
+        guard UUID(uuidString:nonce) != nil else { throw NSError(domain:"EasyWorkNativePDF",code:14) }
+        let permit=folder.appendingPathComponent(run+"-pdf-close-permit.json")
+        guard !FileManager.default.fileExists(atPath:permit.path) else { throw NSError(domain:"EasyWorkNativePDF",code:15) }
+        report["coordinatedClosePermitFilename"]=permit.lastPathComponent
+        try stage("ios-pdf-covered-awaiting-coordinated-readiness")
+        let waitSeconds=config["coverCheckpointWaitSeconds"] as? Int ?? 120
+        guard (1...480).contains(waitSeconds) else { throw NSError(domain:"EasyWorkNativePDF",code:19) }
+        let deadline=Date().addingTimeInterval(Double(waitSeconds))
+        while !FileManager.default.fileExists(atPath:permit.path) && Date()<deadline {
+          guard store.selectedThreadId==thread.id,store.client?.agentConnection?.target==target,
+            preview.viewIfLoaded?.window != nil,settled() else { throw NSError(domain:"EasyWorkNativePDF",code:16) }
+          if let state=store.conversation?.readState {
+            report["actualCoveredConversationReadState"]=try JSONSerialization.jsonObject(with:encoder.encode(state))
+          }
+          if let expectedReply,let reply=store.messages.last(where:{$0.role=="assistant" && $0.text.trimmingCharacters(in:.whitespacesAndNewlines)==expectedReply}) {
+            report["actualFinalProjectionReceivedWhileCovered"]=try JSONSerialization.jsonObject(with:encoder.encode(reply))
+          }
+          report["actualCoordinatedCoverObservedAt"]=Date().timeIntervalSince1970;try save()
+          try await Task.sleep(for:.seconds(1))
+        }
+        let bytes=try Data(contentsOf:permit)
+        let value=try XCTUnwrap(JSONSerialization.jsonObject(with:bytes) as? [String:Any])
+        guard value["caseId"] as? String==run,value["nonce"] as? String==nonce,
+          value["threadId"] as? String==thread.id,value["stage"] as? String=="ios-pdf-covered",
+          value["action"] as? String=="close" else { throw NSError(domain:"EasyWorkNativePDF",code:17) }
+        report["coordinatedClosePermitSha256"]=SHA256.hash(data:bytes).map { String(format:"%02x",$0) }.joined()
+        report["coordinatedReadinessPermitConsumed"]=true;try save()
+        if let expectedReply {
+          guard let reply=store.messages.last(where:{$0.role=="assistant" && $0.text.trimmingCharacters(in:.whitespacesAndNewlines)==expectedReply}),
+            let latest=store.conversation?.readState?.latest,
+            latest.matches(messageId:reply.id,text:reply.text,status:reply.status,projection:reply.readingProjection) else { throw NSError(domain:"EasyWorkNativePDF",code:20) }
+          report["actualFinalProjectionAtAuthorizedClose"]=try JSONSerialization.jsonObject(with:encoder.encode(reply))
+        }
+      }
+      let items=controllers().flatMap { c in (c.navigationItem.leftBarButtonItems ?? [])+(c.navigationItem.rightBarButtonItems ?? []) }
+      let done=items.filter { $0.isEnabled && ["完成","Done"].contains($0.title ?? $0.accessibilityLabel ?? "") && $0.action != nil }
+      if done.count==1 {
+        guard UIApplication.shared.sendAction(try XCTUnwrap(done[0].action),to:done[0].target,from:done[0],for:nil) else { throw NSError(domain:"EasyWorkNativePDF",code:10) }
+        report["actualDiscoveredDoneBarItemActivated"]=true
+      } else {
+        // Current QuickLook uses the visibly identified top-leading close icon.
+        // Resolve its actual native control and hit region; no private selector
+        // or synthetic dismiss is used for this production return assertion.
+        let closes=controls().compactMap { $0 as? UIControl }.filter { b in
+          guard b.window===window,b.isEnabled,!b.isHidden,b.alpha>0.01,b.isUserInteractionEnabled else { return false }
+          let frame=b.convert(b.bounds,to:window)
+          guard frame.width>=24,frame.height>=24,frame.midX<80,frame.midY>window.safeAreaInsets.top,frame.midY<window.safeAreaInsets.top+100,
+            let hit=window.hitTest(CGPoint(x:frame.midX,y:frame.midY),with:nil) else { return false }
+          return hit === b || hit.isDescendant(of:b)
+        }
+        report["actualQuickLookCloseCandidates"]=closes.map { ["class":String(describing:type(of:$0)),"id":$0.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? "","events":String($0.allControlEvents.rawValue),"frame":String(describing:$0.convert($0.bounds,to:window))] }
+        guard closes.count==1 else { try save();throw NSError(domain:"EasyWorkNativePDF",code:9) }
+        if #available(iOS 17.4,*) { closes[0].performPrimaryAction();report["actualSystemCloseInputAPI"]="UIControl.performPrimaryAction" }
+        else { closes[0].sendActions(for:.touchUpInside);report["actualSystemCloseInputAPI"]="UIControl.touchUpInside" }
+        report["actualVisibleNativeSystemCloseControlActivated"]=true
+      }
+      try await wait("QuickLook fully dismissed and production presentation settled") { preview.viewIfLoaded?.window==nil && !controllers().contains { $0 is QLPreviewController } && settled() }
+      activePreview=nil
+      if let expectedReply {
+        let reply=try XCTUnwrap(store.messages.last(where:{$0.role=="assistant" && $0.text.trimmingCharacters(in:.whitespacesAndNewlines)==expectedReply}))
+        try stage("ios-new-final-real-viewport-and-normal-read-ack")
+        let deadline=Date().addingTimeInterval(60);var visible=false
+        while Date()<deadline && !visible {
+          guard store.selectedThreadId==thread.id,store.client?.agentConnection?.target==target,settled() else { throw NSError(domain:"EasyWorkNativePDF",code:21) }
+          let candidates=scrolls(window).filter { scroll in
+            let rect=scroll.convert(scroll.bounds,to:window).intersection(window.bounds)
+            return scroll.isScrollEnabled && rect.height>window.bounds.height*0.35 && rect.width>window.bounds.width*0.5
+          }
+          if candidates.count==1 {
+            let scroll=candidates[0],bottom=max(-scroll.adjustedContentInset.top,scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom)
+            if abs(scroll.contentOffset.y-bottom)>1 { scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:bottom),animated:false);window.layoutIfNeeded() }
+          }
+          await Task.yield()
+          if let state=store.conversation?.readState,state.read==state.latest,
+            state.latest.matches(messageId:reply.id,text:reply.text,status:reply.status,projection:reply.readingProjection) {
+            let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+            let data=try XCTUnwrap(image.pngData())
+            let recognized=try await Task.detached(priority:.utility) {
+              let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=false;request.recognitionLanguages=["en-US"]
+              try VNImageRequestHandler(data:data,options:[:]).perform([request]);return request.results?.compactMap { $0.topCandidates(1).first?.string } ?? []
+            }.value
+            visible=normalized(recognized.joined(separator:" ")).contains(normalized(expectedReply))
+            if visible {
+              try data.write(to:folder.appendingPathComponent(run+"-new-final-visible.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+              report["actualVisibleFinalProjection"]=try JSONSerialization.jsonObject(with:encoder.encode(reply))
+              report["actualVisibleConversationReadState"]=try JSONSerialization.jsonObject(with:encoder.encode(state))
+              report["actualFinalVisiblePixelsAndNormalReadAcknowledgement"]=true;try save()
+            }
+          }
+          if !visible { try await Task.sleep(for:.milliseconds(200)) }
+        }
+        guard visible else { throw NSError(domain:"EasyWorkNativePDF",code:22) }
+      }
+      guard cleanupOwnEmptyClear() else{throw NSError(domain:"EasyWorkResourceClearBoundary",code:4)}
+      XCTAssertEqual([try encoder.encode(store.saved.threadForks),try encoder.encode(VoiceMigrationSafety.snapshot())],protectedResourceClearBytes)
+      report["originalVoiceAndImmutableOperationJournalsExact"]=true
+      XCTAssertEqual(store.drafts.values,oldDrafts);XCTAssertEqual(try encoder.encode(store.saved.generationPreferences),try encoder.encode(oldDefaults))
+      XCTAssertEqual(store.saved.replyRecovery?.mapValues(\.fingerprint),oldRecovery);XCTAssertEqual(try encoder.encode(store.saved.outbox),oldOutbox)
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"),identity)
+      restore();report["originalDraftsDefaultsOutboxRecoveryIdentitySelectionPreserved"]=true
+      try await releaseDriver()
+      report["status"]=historicalAttachment ? "passed-original-production-historical-user-attachment-download-preview-return-awaiting-independent-pixels" : "passed-original-production-pdf-open-close-awaiting-independent-page-pixels";report["stage"]="completed";try save()
+    } catch {
+      // End only this own test presentation; this cleanup is not counted as the product Done control.
+      if let activePreview,activePreview.viewIfLoaded?.window != nil { activePreview.dismiss(animated:false) }
+      report["onlyOwnedEmptyClearCleanupExact"]=cleanupOwnEmptyClear()
+      restore();report["failure"]=String(describing:error);report["status"]="failed-original-pdf-readiness-prefix-zero-input";try? save();try? await releaseDriver();report["stage"]="failed-prefix-retained";try?save();throw error
+    }
+  }
+  /// Reads one independently frozen, actually generated desktop artifact, then
+  /// activates the production UIKit controls. Draft setup is explicitly local.
+  @MainActor func testGeneratedSuggestionProductionControlsWithoutSending() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,
+      let caseID = env["EASYWORK_HOSTED_NATIVE_CASE"], let encoded = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]
+    else { throw XCTSkip("Explicit own production Root suggestion examiner required") }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == caseID, config["newModelInputsAuthorized"] as? Int == 0,
+      config["newChatsAuthorized"] as? Int == 0 else { throw NSError(domain: "EasyWorkSuggestionUI", code: 1) }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(caseID + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw NSError(domain: "EasyWorkSuggestionUI", code: 2) }
+    var report: [String: Any] = ["caseId": caseID, "bodyEntered": true,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "newModelInputBudget": 0,
+      "uiAutomationUsed": false, "draftSetupRoute": "local SessionStore.setText, no UI typing claimed", "codexTests": false]
+    func save() throws { try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label: String, seconds: Double = 35, _ ready: () -> Bool) async throws {
+      let deadline = Date().addingTimeInterval(seconds)
+      while !ready() && Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
+      guard ready() else { report["failedWait"] = label; try save(); throw NSError(domain: "EasyWorkSuggestionUI", code: 3, userInfo: [NSLocalizedDescriptionKey: label]) }
+    }
+    try save(); try await wait("original App-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let clients = store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target == target }
+    guard target.agentId == "easywork", clients.count == 1, !store.localRecoveryRequired else { throw NSError(domain: "EasyWorkSuggestionUI", code: 4) }
+    let client = try XCTUnwrap(clients.first)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard store.saved.selectedClientId == client.id,
+      try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId)
+    else { throw NSError(domain: "EasyWorkSuggestionUI", code: 5) }
+    let expectedText = try XCTUnwrap(config["suggestionText"] as? String), expectedHash = try XCTUnwrap(config["suggestionSha256"] as? String)
+    let sourceTurn = try XCTUnwrap(config["sourceTurnId"] as? String), threadID = try XCTUnwrap(config["threadId"] as? String)
+    guard !expectedText.isEmpty, SHA256.hash(data: Data(expectedText.utf8)).map({ String(format: "%02x", $0) }).joined() == expectedHash else { throw NSError(domain: "EasyWorkSuggestionUI", code: 6) }
+    let oldThread = store.selectedThreadId, oldProject = store.selectedProjectId, oldDrawer = store.drawerOpen
+    let oldDrafts = store.drafts.values, oldDefaults = store.saved.generationPreferences
+    let oldRecovery = store.saved.replyRecovery?.mapValues(\.fingerprint)
+    guard store.drafts.suggestionUndo == nil else { throw NSError(domain: "EasyWorkSuggestionUI", code: 7) }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let oldOutbox = try encoder.encode(store.saved.outbox), identity = try CredentialVault.existingToken("easywork-device-identity")
+    var caseTarget: String?
+    func restore() {
+      store.hostedEasyWorkProductUIPresented = false
+      if let key = caseTarget {
+        store.setText(oldDrafts[key]?.text ?? "", target: key)
+        store.drafts.values[key] = oldDrafts[key]
+      }
+      store.selectedThreadId = oldThread; store.selectedProjectId = oldProject; store.drawerOpen = oldDrawer
+      store.persist()
+    }
+    do {
+      await store.refresh(includeHistory: false)
+      let thread = try XCTUnwrap(store.threads.first { $0.id == threadID && $0.hostId == client.id })
+      store.openThread(thread, loadAutomatically: false); await store.loadHistory(threadId: thread.id)
+      try await wait("exact idle generated-source target") { store.nextTurnSuggestionScope?.requiresRuntimeSource == true && store.nextTurnSuggestionScope?.sourceTurnId == sourceTurn && store.canCompose }
+      let expectedSettings = try JSONDecoder().decode(GenerationOptions.self, from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["expectedGenerationSettings"])))
+      XCTAssertEqual(try encoder.encode(store.runtime?.generationSettings), try encoder.encode(Optional(expectedSettings)))
+      report["actualNativeHistoryRunSettingsVerified"] = true
+      caseTarget = store.targetKey
+      store.setText("")
+      store.drawerOpen = false; store.hostedEasyWorkProductUIPresented = true
+      let window = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow && !$0.isHidden })
+      func buttons(_ view: UIView) -> [UIButton] {
+        guard !view.isHidden, view.alpha > 0.01 else { return [] }
+        return (view as? UIButton).map { [$0] } ?? view.subviews.flatMap(buttons)
+      }
+      func ownedWindows() -> [UIWindow] {
+        window.windowScene?.windows.filter { !$0.isHidden && $0.alpha > 0.01 } ?? [window]
+      }
+      func presentationsSettled() -> Bool {
+        var seen = Set<ObjectIdentifier>()
+        func settled(_ controller: UIViewController) -> Bool {
+          guard seen.insert(ObjectIdentifier(controller)).inserted else { return true }
+          guard !controller.isBeingPresented, !controller.isBeingDismissed, controller.transitionCoordinator == nil else { return false }
+          return controller.children.allSatisfy(settled) && (controller.presentedViewController.map(settled) ?? true)
+        }
+        return ownedWindows().compactMap(\.rootViewController).allSatisfy(settled)
+      }
+      func button(_ id: String) -> UIButton? {
+        guard presentationsSettled() else { return nil }
+        let matches = ownedWindows().flatMap(buttons).filter { candidate in
+          guard candidate.accessibilityIdentifier == id, candidate.isEnabled, candidate.isUserInteractionEnabled,
+            let owner = candidate.window, owner.windowScene?.activationState == .foregroundActive else { return false }
+          let center = candidate.convert(CGPoint(x: candidate.bounds.midX, y: candidate.bounds.midY), to: owner)
+          guard owner.bounds.contains(center), let hit = owner.hitTest(center, with: nil) else { return false }
+          return hit === candidate || hit.isDescendant(of: candidate)
+        }
+        return matches.count == 1 ? matches[0] : nil
+      }
+      func activate(_ id: String) async throws {
+        try await wait("actual enabled UIKit button " + id) { button(id) != nil }
+        try XCTUnwrap(button(id)).sendActions(for: .touchUpInside)
+        report["productionControlHitTestAndPresentationStateChecked"] = true
+        report["lastActivatedProductionControl"] = id; try save()
+      }
+      func artifactVisible() -> Bool {
+        guard let scope = store.nextTurnSuggestionScope, let suggestion = store.desktopSuggestionReader.visibleSuggestion(for: scope) else { return false }
+        return scope.sourceTurnId == sourceTurn && suggestion.text == expectedText && suggestion.contentSha256 == expectedHash && suggestion.isRuntimeBound && suggestion.isValid(at: Date())
+      }
+      func screenshot(_ suffix: String) throws {
+        window.layoutIfNeeded()
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        try XCTUnwrap(image.pngData()).write(to: folder.appendingPathComponent(caseID + "-" + suffix + ".png"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+      }
+      try await wait("actual generated artifact and ghost controls") { artifactVisible() && button("suggestion-adopt") != nil && button("suggestion-details") != nil }
+      report["sourceTurnId"] = sourceTurn; report["suggestionSha256"] = expectedHash
+      report["exactGeneratedArtifactRead"] = true; try screenshot("ghost")
+      let replacementOnly = config["replacementOnly"] as? Bool == true
+      let readLifecycleOnly = config["readLifecycleOnly"] as? Bool == true
+      let attachmentOnly = config["attachmentOnly"] as? Bool == true
+      let sourceBindingOnly = config["sourceBindingOnly"] as? Bool == true
+      let readonlyLeaseOnly = config["readonlyLeaseOnly"] as? Bool == true
+      if readonlyLeaseOnly {
+        try await activate("suggestion-details")
+        try await wait("real readonly preview before lease suspension") { button("suggestion-details-close") != nil && button("suggestion-apply") != nil }
+        let scope = try XCTUnwrap(store.nextTurnSuggestionScope)
+        let lease = try XCTUnwrap(store.desktopSuggestionReader.visibleSuggestion(for: scope))
+        let expiry = try XCTUnwrap(lease.expiration), snapshot = store.suggestionDraftSnapshot
+        store.desktopSuggestionReader.suspend(keeping: scope)
+        try await wait("actual expired lease leaves readonly preview and disables adoption", seconds: 12) {
+          let adopt = ownedWindows().flatMap(buttons).filter { $0.accessibilityIdentifier == "suggestion-apply" }
+          return Date() > expiry && store.desktopSuggestionReader.suggestion == nil && adopt.count == 1 && !adopt[0].isEnabled
+            && button("suggestion-details-close") != nil
+        }
+        XCTAssertFalse(store.desktopSuggestionReader.sourceIsAbsent)
+        XCTAssertEqual(store.suggestionDraftSnapshot, snapshot)
+        try screenshot("readonly-lease-expired")
+        let resumedRead = Task {
+          await store.desktopSuggestionReader.read(scope) { try await store.readNextTurnSuggestion(client, scope: scope) }
+        }
+        defer { resumedRead.cancel() }
+        try await wait("same actual source renews and enables current preview") { artifactVisible() && button("suggestion-apply") != nil && button("suggestion-details-close") != nil }
+        XCTAssertEqual(store.suggestionDraftSnapshot, snapshot)
+        try screenshot("readonly-lease-renewed")
+        try await activate("suggestion-details-close")
+        try await wait("readonly preview normally closed after real renewal") { window.rootViewController?.presentedViewController == nil && button("suggestion-adopt") != nil }
+        try screenshot("readonly-preview-closed")
+        report["actualReadonlyPreviewRetainedWithAdoptionDisabledUntilRealLeaseRenewed"] = true
+        report["readPauseRoute"] = "normal App-owned DesktopSuggestionReader.suspend/read with actual server lease; no network fault or system gesture claimed"
+      } else if sourceBindingOnly {
+        let originalScope = try XCTUnwrap(store.nextTurnSuggestionScope)
+        let originalValue = try XCTUnwrap(store.desktopSuggestionReader.visibleSuggestion(for: originalScope))
+        let originalAction = DesktopSuggestionDraftAction(scope: originalScope, suggestion: originalValue, draft: store.suggestionDraftSnapshot)
+        let staleSource = try XCTUnwrap(config["staleSourceTurnId"] as? String)
+        guard staleSource != sourceTurn else { throw NSError(domain: "EasyWorkSuggestionUI", code: 9) }
+        let staleScope = DesktopSuggestionScope(target: target, threadId: threadID, sourceTurnId: staleSource,
+          navigation: originalScope.navigation, connection: originalScope.connection, requiresRuntimeSource: true)
+        let staleResponse = try await AgentClients.resolve(client).nextTurnSuggestion(client, scope: staleScope)
+        XCTAssertTrue(staleResponse.matches(staleScope)); XCTAssertNil(staleResponse.suggestion)
+        XCTAssertEqual(store.suggestionDraftSnapshot, originalAction.draft)
+        try screenshot("stale-source-rejected")
+        store.hostedEasyWorkProductUIPresented = false
+        let other = try XCTUnwrap(store.threads.first { $0.hostId == client.id && $0.id != threadID })
+        store.openThread(other, loadAutomatically: false)
+        store.openThread(thread, loadAutomatically: false); await store.loadHistory(threadId: thread.id)
+        store.hostedEasyWorkProductUIPresented = true
+        try await wait("fresh real artifact after changed local navigation") { artifactVisible() && button("suggestion-adopt") != nil }
+        let currentScope = try XCTUnwrap(store.nextTurnSuggestionScope)
+        let currentValue = try XCTUnwrap(store.desktopSuggestionReader.visibleSuggestion(for: currentScope))
+        XCTAssertNotEqual(currentScope, originalScope); XCTAssertEqual(currentScope.sourceTurnId, originalScope.sourceTurnId)
+        XCTAssertEqual(currentValue, originalValue); XCTAssertTrue(currentValue.isValid(at: Date()))
+        XCTAssertEqual(store.suggestionDraftSnapshot, originalAction.draft)
+        XCTAssertFalse(store.adoptDesktopSuggestion(originalAction, mode: .fill, currentSuggestion: currentValue))
+        XCTAssertEqual(store.suggestionDraftSnapshot, originalAction.draft); XCTAssertNil(store.drafts.suggestionUndo)
+        try screenshot("navigation-old-intent-rejected")
+        let expiringAction = DesktopSuggestionDraftAction(scope: currentScope, suggestion: currentValue, draft: store.suggestionDraftSnapshot)
+        let expiry = try XCTUnwrap(currentValue.expiration)
+        try await wait("original actual server lease naturally expires", seconds: 12) { Date() > expiry }
+        XCTAssertEqual(store.nextTurnSuggestionScope, currentScope)
+        XCTAssertEqual(store.suggestionDraftSnapshot, expiringAction.draft)
+        XCTAssertFalse(currentValue.isValid(at: Date()))
+        XCTAssertFalse(store.adoptDesktopSuggestion(expiringAction, mode: .fill, currentSuggestion: currentValue))
+        XCTAssertEqual(store.suggestionDraftSnapshot, expiringAction.draft); XCTAssertNil(store.drafts.suggestionUndo)
+        try screenshot("expired-real-lease-rejected")
+        report["actualSourceBindingNavigationAndExpiredLeaseRejectionPassed"] = true
+        report["negativeRoutes"] = "real registered provider stale-source read; normal Store navigation and actual expired server lease through native adoption API; no UI adoption claimed"
+      } else if attachmentOnly {
+        guard store.draft.attachments.isEmpty else { throw NSError(domain: "EasyWorkSuggestionUI", code: 8) }
+        let bytes = Data(("EASYWORK_SUGGESTION_LOCAL_FILE_" + caseID + "\n").utf8)
+        try store.importData(bytes, name: "suggestion-local-" + caseID + ".txt", isImage: false, target: store.targetKey)
+        XCTAssertEqual(store.draft.attachments.count, 1)
+        let file = try XCTUnwrap(store.draft.attachments.first)
+        let fileURL = store.attachmentURL(file)
+        defer { store.removeAttachment(file) }
+        XCTAssertEqual(try Data(contentsOf: fileURL), bytes)
+        try await wait("actual generated ghost with original local attachment") { button("suggestion-adopt") != nil && artifactVisible() }
+        try await activate("suggestion-adopt")
+        try await wait("adoption retained original local attachment") { store.draft.text == expectedText && button("suggestion-undo") != nil }
+        XCTAssertEqual(store.draft.attachments, [file]); XCTAssertEqual(try Data(contentsOf: fileURL), bytes)
+        try screenshot("adopted-with-attachment")
+        try await activate("suggestion-undo")
+        try await wait("undo retained local attachment and original empty text") { store.draft.text.isEmpty && button("suggestion-adopt") != nil }
+        XCTAssertEqual(store.draft.attachments, [file]); XCTAssertEqual(try Data(contentsOf: fileURL), bytes)
+        try screenshot("undone-with-attachment")
+        store.removeAttachment(file)
+        XCTAssertTrue(store.draft.attachments.isEmpty); XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+        try screenshot("own-local-attachment-removed")
+        report["productionLocalImportAdoptUndoAndExactAttachmentBytesPreserved"] = true
+        report["onlyNewOwnedAttachmentNormallyRemoved"] = true
+        report["attachmentImportRoute"] = "production local importData, no system picker or upload claimed"
+      } else if readLifecycleOnly {
+        try await activate("suggestion-details")
+        try await wait("same-source preview before normal history refresh") { button("suggestion-details-close") != nil }
+        await store.loadHistory(threadId: thread.id)
+        try await wait("same-source history refresh preserves current preview") { artifactVisible() && button("suggestion-details-close") != nil }
+        try screenshot("same-source-refresh-preview")
+        try await activate("suggestion-details-close")
+        try await wait("preview closed before overlay lease check") { button("suggestion-adopt") != nil }
+        let leased = try XCTUnwrap(store.desktopSuggestionReader.suggestion)
+        let expiry = try XCTUnwrap(leased.expiration)
+        store.drawerOpen = true
+        try await wait("actual overlay stops refreshing original lease", seconds: 12) {
+          Date() > expiry && store.desktopSuggestionReader.visibleSuggestion(for: store.nextTurnSuggestionPresentationScope) == nil
+        }
+        XCTAssertEqual(store.draft.text, "")
+        try screenshot("overlay-expired")
+        store.drawerOpen = false
+        try await wait("same real source recovers with a new readonly lease") { artifactVisible() && button("suggestion-adopt") != nil }
+        report["sameSourcePreviewRefreshAndRealLeaseExpiryRecoveryPassed"] = true
+        store.hostedEasyWorkProductUIPresented = false
+        let other = try XCTUnwrap(store.threads.first { $0.hostId == client.id && $0.id != threadID })
+        store.openThread(other, loadAutomatically: false)
+        XCTAssertNil(store.desktopSuggestionReader.suggestion)
+        await store.loadHistory(threadId: other.id)
+        XCTAssertNotEqual(store.nextTurnSuggestionScope?.sourceTurnId, sourceTurn)
+        store.openThread(thread, loadAutomatically: false)
+        await store.loadHistory(threadId: thread.id)
+        store.hostedEasyWorkProductUIPresented = true
+        try await wait("original real source recovered after local navigation") { artifactVisible() && button("suggestion-adopt") != nil }
+        XCTAssertEqual(store.draft.text, "")
+        try screenshot("original-source-returned")
+        report["navigationInvalidatedOriginalLeaseAndRecoveredWithoutInput"] = true
+        report["navigationSetupRoute"] = "normal App-owned Store navigation, other conversation not presented"
+      } else if replacementOnly {
+        let prefix = "保留待确认原草稿🙂\n" + caseID
+        store.setText(prefix)
+        try await wait("replacement entry on exact current source") { button("suggestion-entry") != nil && artifactVisible() }
+        try await activate("suggestion-entry")
+        try await wait("replacement preview stable") { button("suggestion-replace") != nil && window.rootViewController?.presentedViewController?.transitionCoordinator == nil }
+        defer { try? screenshot("replacement-last-window") }
+        try await activate("suggestion-replace")
+        try await activate("suggestion-cancel-replace")
+        try await wait("cancel preserved exact Unicode draft and returned preview") { store.draft.text == prefix && button("suggestion-replace") != nil }
+        try screenshot("replacement-cancelled")
+        try await activate("suggestion-replace")
+        try await activate("suggestion-confirm-replace")
+        try await wait("actual confirmed replacement dismissed preview") { store.draft.text == expectedText && window.rootViewController?.presentedViewController == nil && button("suggestion-undo") != nil }
+        try screenshot("replacement-confirmed")
+        try await activate("suggestion-undo")
+        try await wait("replacement undo restored exact original") { store.draft.text == prefix && button("suggestion-entry") != nil }
+        try screenshot("replacement-undone")
+        report["actualReplacementCancelConfirmAndUndoPassed"] = true
+      } else {
+      await store.loadHistory(threadId: thread.id)
+      try await wait("same artifact after readonly refresh") { artifactVisible() && button("suggestion-details") != nil }
+      try await activate("suggestion-details")
+      try await wait("production details sheet presented and stable") { window.rootViewController?.presentedViewController?.transitionCoordinator == nil && button("suggestion-details-close") != nil && button("suggestion-apply") != nil }
+      try screenshot("full-preview")
+      XCTAssertEqual(store.draft.text, "")
+      try await activate("suggestion-details-close")
+      try await wait("actual Done dismissed details") { window.rootViewController?.presentedViewController == nil && button("suggestion-adopt") != nil }
+      report["actualPreviewAndDonePassed"] = true
+      try await activate("suggestion-adopt")
+      try await wait("actual adoption changed only local text") { store.draft.text == expectedText && button("suggestion-undo") != nil }
+      try screenshot("adopted")
+      try await activate("suggestion-undo")
+      try await wait("actual undo restored empty draft") { store.draft.text.isEmpty && button("suggestion-adopt") != nil }
+      let prefix = "保留原草稿🙂\n" + caseID
+      store.setText(prefix)
+      try await wait("existing draft suggestion entry") { button("suggestion-entry") != nil && artifactVisible() }
+      try await activate("suggestion-entry")
+      try await wait("append preview stable") { button("suggestion-apply") != nil && window.rootViewController?.presentedViewController?.transitionCoordinator == nil }
+      try await activate("suggestion-apply")
+      try await wait("actual append and sheet dismissal") { store.draft.text == prefix + "\n\n" + expectedText && window.rootViewController?.presentedViewController == nil && button("suggestion-undo") != nil }
+      try screenshot("appended")
+      try await activate("suggestion-undo")
+      try await wait("append undo preserved exact Unicode original") { store.draft.text == prefix && button("suggestion-entry") != nil }
+      try await activate("suggestion-entry")
+      try await wait("same preview before editing invalidates it") { button("suggestion-details-close") != nil }
+      store.setText(prefix + "\n编辑后保留")
+      try await wait("edit invalidated captured preview") { window.rootViewController?.presentedViewController == nil && store.drafts.suggestionUndo == nil }
+      report["actualAdoptUndoAppendUndoAndEditedPreviewInvalidationPassed"] = true
+      report["replacementConfirmationNotCovered"] = true
+      }
+      for (key, value) in oldDrafts where key != caseTarget { XCTAssertEqual(store.drafts.values[key], value) }
+      XCTAssertEqual(try encoder.encode(store.saved.generationPreferences), try encoder.encode(oldDefaults))
+      XCTAssertEqual(try encoder.encode(store.saved.outbox), oldOutbox)
+      XCTAssertEqual(store.saved.replyRecovery?.mapValues(\.fingerprint), oldRecovery)
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"), identity)
+      restore()
+      XCTAssertEqual(store.drafts.values, oldDrafts)
+      report["originalDraftsDefaultsOutboxRecoveryIdentitySelectionPreserved"] = true
+      report["status"] = readonlyLeaseOnly ? "passed-current-generated-artifact-readonly-lease-no-send"
+        : sourceBindingOnly ? "passed-current-generated-artifact-source-binding-no-send"
+        : attachmentOnly ? "passed-current-generated-artifact-local-attachment-no-send"
+        : readLifecycleOnly ? "passed-current-generated-artifact-read-lifecycle-no-send"
+        : replacementOnly ? "passed-current-generated-artifact-replacement-controls-no-send" : "passed-current-generated-artifact-production-controls-no-send"
+      try save()
+    } catch {
+      report["error"] = String(describing: error); report["status"] = "failed-native-controls-prefix-retained"
+      restore(); try? save(); throw error
+    }
+  }
+
+  /// The actual RootView determines visibility and acknowledges an existing reply.
+  /// This case neither submits input nor calls the reading mutation API itself.
+  @MainActor func testExistingReplyInProductionRootWithoutInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkProductUIEnabled,
+      let run=env["EASYWORK_HOSTED_NATIVE_CASE"],let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]
+    else { throw XCTSkip("Explicit independently owned production Root examiner required") }
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newChatsAuthorized"] as? Int==0 else { throw NSError(domain:"EasyWorkNativeRoot",code:1) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeRoot",code:2) }
+    var report:[String:Any]=["caseId":run,"appBundleIdentifier":Bundle.main.bundleIdentifier!,
+      "nativeProcessId":ProcessInfo.processInfo.processIdentifier,
+      "bodyEntered":true,"newModelInputBudget":0,"uiAutomationUsed":false,"codexTests":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let deadline=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativeRoot",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try save();try await wait("App-owned restored store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    let expectedPosition=try JSONDecoder().decode(ReadPosition.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["expectedReadPosition"])))
+    let marker=try XCTUnwrap(config["replyMarker"] as? String)
+    let clients=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+    guard target.agentId=="easywork",clients.count==1,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativeRoot",code:4) }
+    let client=try XCTUnwrap(clients.first)
+    let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard store.saved.selectedClientId==client.id,
+      try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId)
+    else { throw NSError(domain:"EasyWorkNativeRoot",code:5) }
+    let oldThread=store.selectedThreadId,oldProject=store.selectedProjectId,oldDrawer=store.drawerOpen
+    let oldDefaults=store.saved.generationPreferences,oldDrafts=store.drafts.values
+    let oldLastThreads=store.saved.lastThreads,oldLastProjects=store.saved.lastThreadProjects,oldNewProjects=store.saved.newProjects
+    let oldRecovery=store.saved.replyRecovery?.mapValues(\.fingerprint)
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let oldOutbox=try encoder.encode(store.saved.outbox)
+    let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity"))
+    func restore() {
+      store.hostedEasyWorkProductUIPresented=false
+      store.selectedThreadId=oldThread;store.selectedProjectId=oldProject;store.drawerOpen=oldDrawer
+      store.saved.lastThreads=oldLastThreads;store.saved.lastThreadProjects=oldLastProjects;store.saved.newProjects=oldNewProjects
+      store.persist()
+    }
+    do {
+      report["stage"]="waiting-for-actual-foreground-before-original-root-read";try save()
+      try await wait("actual foreground before original connection read",seconds:60){UIApplication.shared.applicationState == .active}
+      report["stage"]="read-only-own-target-refresh";try save()
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first { $0.id==config["threadId"] as? String && $0.hostId==client.id })
+      store.openThread(thread,loadAutomatically:false)
+      var readApplied=false,attempts:[[String:Any]]=[]
+      for attempt in 1...3 {
+        guard store.selectedThreadId==thread.id,store.client?.agentConnection?.target==target else{throw NSError(domain:"EasyWorkNativeRoot",code:8)}
+        let applied=await store.loadHistory(threadId:thread.id);readApplied = readApplied || applied
+        try await wait("existing child history read settles",seconds:90){!store.historyLoading}
+        attempts.append(["attempt":attempt,"normalHistoryReadApplied":applied,"error":store.error ?? NSNull()])
+        report["actualOriginalChildNormalReadAttempts"]=attempts;try save()
+        if readApplied,store.error==nil,store.visibleReadPosition==expectedPosition,
+          store.messages.contains(where:{$0.role=="assistant" && $0.text.contains(marker)}){break}
+      }
+      guard readApplied else{throw NSError(domain:"EasyWorkNativeRoot",code:9)}
+      try await wait("exact original completed reply in native history") {
+        !store.historyLoading && !store.isRunning && store.visibleReadPosition==expectedPosition
+          && store.messages.contains { $0.role=="assistant" && $0.text.contains(marker) }
+      }
+      guard store.sheet==nil,store.error==nil else { throw NSError(domain:"EasyWorkNativeRoot",code:6) }
+      store.drawerOpen=false;store.hostedEasyWorkProductUIPresented=true
+      report["stage"]="actual-production-root-visible";try save()
+      try await wait("production geometry-driven read persisted and acknowledged",seconds:60) {
+        store.saved.mobileReads?.values.contains { $0.position==expectedPosition && !$0.pending }==true
+      }
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        .flatMap(\.windows).first { $0.isKeyWindow && !$0.isHidden })
+      try await wait("actual active App window") { window.windowScene?.activationState == .foregroundActive && window.bounds.width>0 && window.bounds.height>0 }
+      window.layoutIfNeeded()
+      // Yield complete layout transactions, then save the actual composited App window.
+      await Task.yield();await Task.yield()
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in
+        XCTAssertTrue(window.drawHierarchy(in:window.bounds,afterScreenUpdates:true))
+      }
+      let png=try XCTUnwrap(image.pngData())
+      try png.write(to:folder.appendingPathComponent(run+"-production-root.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+      let attachment=XCTAttachment(image:image);attachment.name="actual-production-root-existing-reply";attachment.lifetime = .keepAlways;add(attachment)
+      report["actualRootScreenshotSaved"]=true
+      report["expectedPositionAcknowledgedByProductionVisibility"]=true
+      report["historyMarkerPresent"]=true
+      report["screenshotRequiresIndependentOCR"]=true
+      report["readPosition"]=try JSONSerialization.jsonObject(with:encoder.encode(expectedPosition))
+      report["actualRootImageSHA256"]=HostService.hash(png)
+      if config["requireIndependentActualRootWitness"]as?Bool==true {
+        let permit=folder.appendingPathComponent(run+"-root-visible-permit.json")
+        report["stage"]="actual-original-root-awaiting-independent-viewport-witness";try save()
+        try await wait("independent actual original reply viewport",seconds:120){FileManager.default.fileExists(atPath:permit.path)}
+        let witness=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:permit))as?[String:Any])
+        guard witness["caseId"]as?String==run,witness["nonce"]as?String==config["nonce"]as?String,
+          witness["actualOriginalReplyVisible"]as?Bool==true else{throw NSError(domain:"EasyWorkNativeRoot",code:10)}
+        report["independentActualRootSystemImageWitnessAccepted"]=true
+      }
+      XCTAssertEqual(store.drafts.values,oldDrafts)
+      XCTAssertEqual(try encoder.encode(store.saved.generationPreferences),try encoder.encode(oldDefaults))
+      XCTAssertEqual(store.saved.replyRecovery?.mapValues(\.fingerprint),oldRecovery)
+      XCTAssertEqual(try encoder.encode(store.saved.outbox),oldOutbox)
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"),identity)
+      restore()
+      report["originalDraftsRecoveryOutboxIdentityDefaultsSelectionPreserved"]=true
+      report["status"]="passed-production-root-existing-reply-awaiting-independent-viewport-proof";try save()
+    } catch {
+      restore();report["failure"]=String(describing:error);report["status"]="failed-production-root-prefix-no-model-or-replay";try? save();throw error
+    }
+  }
+  /// One frozen native input. A failed or unknown outcome is never resubmitted.
+  @MainActor func testSubmitOneFrozenGenerationSpeedInput() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run)?.uuidString.lowercased()==run,
+      let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),ProcessInfo.processInfo.arguments.contains("-restore-testing")
+    else { throw XCTSkip("Frozen independently owned native speed input required") }
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    let speed=try XCTUnwrap(config["requestedSpeed"] as? String),prompt=try XCTUnwrap(config["prompt"] as? String)
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==1,config["newChatsAuthorized"] as? Int==0,
+      ["standard","fast"].contains(speed),prompt.contains(run) else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:1) }
+    let folder=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+    let path=folder.appendingPathComponent(run+".json"),permitPath=folder.appendingPathComponent(run+".permit.json")
+    guard !FileManager.default.fileExists(atPath:path.path),!FileManager.default.fileExists(atPath:permitPath.path) else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:2) }
+    var report:[String:Any]=["caseId":run,"bodyEntered":true,"appPID":ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier":Bundle.main.bundleIdentifier!,"requestedSpeed":speed,"newModelInputBudget":1,
+      "normalSubmissionAPI":"SessionStore.send(content:)","uiAutomationUsed":false,"codexTests":false,"wholeFeaturePassed":false]
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let end=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<end { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativeSpeedInput",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try save();try await wait("original UI-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"])))
+    guard target.agentId=="easywork",!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:4) }
+    let clients=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+    guard clients.count==1 else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:5) }
+    let client=try XCTUnwrap(clients.first)
+    let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:6) }
+    let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity")),oldThread=store.selectedThreadId,oldClient=store.saved.selectedClientId
+    let oldDefaults=store.saved.generationPreferences,oldDrafts=store.drafts.values,oldRecovery=store.saved.replyRecovery?.mapValues(\.fingerprint)
+    var ownKey:String?
+    do {
+      report["stage"]="refresh-own-target";try save();await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first { $0.id==config["threadId"] as? String && $0.hostId==client.id })
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id);await store.loadModels()
+      ownKey=store.targetKey
+      try await wait("exact original chat writable without another pending input") { store.selectedThreadId==thread.id && store.canConfigureGeneration && store.canCompose && !store.isRunning }
+      guard store.saved.outbox?[store.targetKey]==nil,!store.isRunning,store.canConfigureGeneration else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:7) }
+      let model=try XCTUnwrap(config["modelId"] as? String)
+      if config["requirePersistedFastDraft"] as? Bool==true {
+        guard store.draft.model==model,store.draft.speed=="fast" else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:8) }
+        report["originalFastDraftRestoredInNewProcess"]=true
+      }
+      store.model=model;store.speed=speed
+      guard store.selectedModel?.id==model,store.availableSpeeds.contains(speed),store.draft.speed==speed else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:9) }
+      let content=Draft(text:prompt,collaborationMode:store.draft.collaborationMode,model:model,effort:store.draft.effort,permissionMode:store.draft.permissionMode,speed:speed)
+      let originalIDs=Set((store.saved.replyRecovery ?? [:]).keys)
+      if !(store.saved.aiSharingGrants?.contains(where:{ $0.scope.target==target && $0.scope.model==model }) ?? false) {
+        // The normal product gate creates the real scoped consent request and
+        // returns before transport. Granting it never automatically submits.
+        report["consentGateCallWithoutTransport"]=true;try save();store.send(content:content)
+        guard store.aiSharingRequest?.scope.target==target,store.aiSharingRequest?.scope.model==model,
+          store.saved.outbox?[store.targetKey]==nil,Set((store.saved.replyRecovery ?? [:]).keys)==originalIDs,
+          !store.sendingKeys.contains(store.targetKey) else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:10) }
+        store.allowAISharing();report["newConsentThroughNormalProductAPI"]=true
+      }
+      guard store.saved.aiSharingGrants?.contains(where:{ $0.scope.target==target && $0.scope.model==model })==true else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:11) }
+      let bytes=try encoder.encode(content),fingerprint=HostService.hash(bytes)
+      report["preparedContent"]=try JSONSerialization.jsonObject(with:bytes);report["preparedContentSha256"]=fingerprint
+      report["readyForSingleSubmission"]=true;try save()
+      try await wait("outside frozen single-input permit",seconds:90) { FileManager.default.fileExists(atPath:permitPath.path) }
+      let permit=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(contentsOf:permitPath)) as? [String:Any])
+      guard permit["caseId"] as? String==run,permit["preparedContentSha256"] as? String==fingerprint,permit["singleSubmissionAllowed"] as? Bool==true else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:12) }
+      report["singleTransportEligibleSendAttempted"]=true;try save();store.send(content:content)
+      try await wait("original persisted immutable input",seconds:30) { (store.saved.replyRecovery ?? [:]).values.contains { !originalIDs.contains($0.original.clientMessageId) && $0.original.text==prompt } }
+      let records=(store.saved.replyRecovery ?? [:]).values.filter { !originalIDs.contains($0.original.clientMessageId) && $0.original.text==prompt }
+      guard records.count==1,let record=records.first,record.target==target,record.original.threadId==thread.id,
+        record.original.model==model,record.original.speed==speed else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:13) }
+      report["originalOperationId"]=record.original.clientMessageId;report["actualOriginalRecovery"]=try JSONSerialization.jsonObject(with:encoder.encode(record));try save()
+      try await wait("original send released without retry",seconds:120) { !store.sendingKeys.contains(store.targetKey) }
+      guard store.saved.outbox?[store.targetKey]==nil else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:14) }
+      let marker=try XCTUnwrap(config["replyMarker"] as? String),deadline=Date().addingTimeInterval(180)
+      while Date()<deadline {
+        await store.loadHistory(threadId:thread.id)
+        if !store.isRunning && store.messages.contains(where:{ $0.role=="assistant" && $0.text.contains(marker) }) { break }
+        try await Task.sleep(for:.seconds(1))
+      }
+      guard !store.isRunning,store.messages.contains(where:{ $0.role=="assistant" && $0.text.contains(marker) }) else { throw NSError(domain:"EasyWorkNativeSpeedInput",code:15) }
+      report["originalReplyMarkerVisible"]=true;report["runtimeGenerationSettings"]=try JSONSerialization.jsonObject(with:encoder.encode(store.runtime?.generationSettings))
+      report["actualOriginalRecoveryAfterReply"]=try JSONSerialization.jsonObject(with:encoder.encode(store.saved.replyRecovery?[record.original.clientMessageId]))
+      for (key,value) in oldDrafts where key != ownKey { XCTAssertEqual(store.drafts.values[key],value) }
+      for (key,value) in oldRecovery ?? [:] { XCTAssertEqual(store.saved.replyRecovery?[key]?.fingerprint,value) }
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"),identity)
+      store.saved.generationPreferences=oldDefaults
+      if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+      XCTAssertEqual(store.saved.selectedClientId,oldClient);store.persist()
+      report["originalOtherDraftsRecoveryIdentityDefaultsSelectionPreserved"]=true;report["status"]="passed-native-one-frozen-speed-input-awaiting-independent-provider-tier-proof";try save()
+    } catch {
+      store.saved.generationPreferences=oldDefaults
+      if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+      store.persist();report["status"]="failed-frozen-speed-input-prefix-retained-never-replay";report["failure"]=String(describing:error);try? save();throw error
+    }
+  }
+  /// Production speed controls, original App/store/keys, and zero submissions.
+  @MainActor func testGenerationSpeedSettingsWithoutSending() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run)?.uuidString.lowercased()==run,
+      let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),ProcessInfo.processInfo.arguments.contains("-restore-testing")
+    else { throw XCTSkip("Explicit owned native speed UI case required") }
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,config["newChatsAuthorized"] as? Int==0,
+      config["requestedSpeed"] as? String=="fast" else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:1) }
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json");guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:2) }
+    var report:[String:Any]=["caseId":run,"bodyEntered":true,"appPID":ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier":Bundle.main.bundleIdentifier!,"productionGenerationSettings":true,"modelSelectionViaNativeStore":true,
+      "speedChangesViaProductionNativeControl":true,"newModelInputs":0,"uiAutomationUsed":false,"codexTests":false,"wholeFeaturePassed":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label:String,seconds:Double=45,_ ready:()->Bool) async throws {
+      let end=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<end { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativeSpeedUI",code:3,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try save();try await wait("original UI-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let expectedTarget=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"] as? [String:Any])))
+    let clients=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==expectedTarget }
+    guard expectedTarget.agentId=="easywork",clients.count==1,!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:4) }
+    let client=try XCTUnwrap(clients.first)
+    let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:5) }
+    let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity"))
+    let oldThread=store.selectedThreadId,oldClient=store.saved.selectedClientId,oldDefaults=store.saved.generationPreferences
+    let originalDrafts=store.drafts.values,originalRecovery=store.saved.replyRecovery?.mapValues(\.fingerprint)
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    var caseTarget:String?,controller:UIHostingController<GenerationSettings>?
+    do {
+      await store.refresh(includeHistory:false)
+      let thread=try XCTUnwrap(store.threads.first { $0.id==config["threadId"] as? String && $0.hostId==client.id })
+      store.openThread(thread,loadAutomatically:false);await store.loadHistory(threadId:thread.id)
+      try await wait("exact owned chat writable settings") { store.selectedThreadId==thread.id && store.canConfigureGeneration }
+      caseTarget=store.targetKey
+      await store.loadModels()
+      let model=try XCTUnwrap(store.models.first { $0.id==config["modelId"] as? String })
+      guard model.supportedSpeeds?.contains("fast")==true,model.supportedSpeeds?.contains("standard")==true else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:6) }
+      store.model=model.id
+      try await wait("actual selected model speed capability") { store.selectedModel?.id==model.id && store.availableSpeeds.contains("fast") && store.supportsGenerationSpeed }
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow })
+      let root=try XCTUnwrap(window.rootViewController);store.sheet = .generation
+      controller=UIHostingController(rootView:GenerationSettings(store:store));root.present(try XCTUnwrap(controller),animated:true)
+      func controllers(_ value:UIViewController)->[UIViewController] {
+        [value]+value.children.flatMap(controllers)+(value.presentedViewController.map(controllers) ?? [])
+      }
+      func objects()->[NSObject] {
+        var seen=Set<ObjectIdentifier>(),result:[NSObject]=[]
+        func visit(_ object:NSObject) {
+          guard result.count<8000,seen.insert(ObjectIdentifier(object)).inserted else { return }
+          result.append(object)
+          if let view=object as? UIView { view.subviews.forEach(visit) }
+          object.accessibilityElements?.compactMap { $0 as? NSObject }.forEach(visit)
+          let count=object.accessibilityElementCount()
+          if count>0 && count<1000 { for index in 0..<count { if let element=object.accessibilityElement(at:index) as? NSObject { visit(element) } } }
+        }
+        // NavigationStack may mount its navigation and Form hosts beside the
+        // presenting controller's root. Inspect only this App's exact window.
+        visit(window)
+        for owner in controllers(root) {
+          if owner.isViewLoaded { visit(owner.view) }
+          for item in owner.navigationItem.rightBarButtonItems ?? [] {
+            visit(item)
+            if let view=item.customView { visit(view) }
+          }
+        }
+        return result
+      }
+      func button(_ identifier:String)->NSObject? {
+        if identifier=="fast-mode-toggle" {
+          let switches=objects().compactMap { $0 as? UISwitch }.filter { $0.window===window && $0.isEnabled }
+          if switches.count==1 { return switches[0] }
+        }
+        let matches=objects().filter {
+          (($0 as? UIView)?.accessibilityIdentifier ?? ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier)==identifier
+            && !$0.accessibilityTraits.contains(.notEnabled)
+        }
+        if let control=matches.first(where:{ $0 is UISwitch }) { return control }
+        return matches.first(where:{ $0.isAccessibilityElement }) ?? matches.first
+      }
+      func snapshot(_ suffix:String) throws {
+        report["actualObjectCount"]=objects().count
+        report["actualViewClasses"]=objects().compactMap { $0 as? UIView }.prefix(200).map { String(describing:type(of:$0)) }
+        report["nativeSwitches"]=objects().compactMap { $0 as? UISwitch }.map { ["identifier":$0.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? "","enabled":String($0.isEnabled),"traits":String($0.accessibilityTraits.rawValue)] }
+        report["visibleControls"]=objects().filter { $0.isAccessibilityElement || ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier != nil }.prefix(100).map {
+          ["class":String(describing:type(of:$0)),"identifier":($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? ""]
+        }
+        let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in _ = window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+        if let data=image.pngData() { try data.write(to:directory.appendingPathComponent(run+"-"+suffix+".png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+        try save()
+      }
+      try await wait("production settings presentation stable") { controller?.presentingViewController != nil && controller?.transitionCoordinator==nil }
+      try snapshot("before-speed-search")
+      // Form cells are lazy. Scroll the actual native form until its speed
+      // control is mounted; setting the draft is never a substitute for UI.
+      for _ in 0..<10 where button("fast-mode-toggle")==nil {
+        let scroll=objects().compactMap { $0 as? UIScrollView }.filter { $0.window===window && $0.contentSize.height>$0.bounds.height }.max { $0.contentSize.height<$1.contentSize.height }
+        guard let scroll else { break }
+        let next=min(scroll.contentSize.height-scroll.bounds.height+scroll.adjustedContentInset.bottom,scroll.contentOffset.y+scroll.bounds.height*0.4)
+        guard next>scroll.contentOffset.y else { break }
+        scroll.setContentOffset(CGPoint(x:scroll.contentOffset.x,y:next),animated:false)
+        await Task.yield()
+        try await Task.sleep(for:.milliseconds(100))
+      }
+      try snapshot("after-speed-search")
+      try await wait("production fast-mode toggle rendered") { button("fast-mode-toggle") != nil }
+      var modes:[String]=[]
+      // Exercise both actual control states and leave this owned chat at Fast.
+      for _ in 0..<3 {
+        let next=store.selectedSpeed=="fast" ? "standard" : "fast"
+        let toggle=try XCTUnwrap(button("fast-mode-toggle"));guard toggle.accessibilityLabel==L10n.tr("快速模式") || toggle is UISwitch else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:7) }
+        report["nextToggleExpected"]=next;report["nextToggleActivationAttempted"]=true;try save()
+        let activated:Bool
+        if let control=toggle as? UISwitch {
+          control.setOn(next=="fast",animated:true);control.sendActions(for:.valueChanged);activated=true
+          report["actualToggleInputAPI"]="production UISwitch.setOn / UIControl.valueChanged"
+        } else {
+          activated=toggle.accessibilityActivate();report["actualToggleInputAPI"]="production accessibilityActivate"
+        }
+        report["lastActivationAccepted"]=activated;try save()
+        try await wait("production toggle changed the original draft") { store.draft.speed==next }
+        modes.append(next);report["actualModes"]=modes;report["nextToggleActivationAttempted"]=false;try save()
+        if Set(modes)==Set(["standard","fast"]) && store.draft.speed=="fast" { break }
+      }
+      guard Set(modes)==Set(["standard","fast"]),store.draft.model==model.id,store.draft.speed=="fast" else { throw NSError(domain:"EasyWorkNativeSpeedUI",code:8) }
+      let image=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in window.drawHierarchy(in:window.bounds,afterScreenUpdates:true) }
+      if let data=image.pngData() { try data.write(to:directory.appendingPathComponent(run+"-actual-speed-controls.png"),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+      // This examiner owns the UIHostingController presentation. Its cleanup
+      // is separate from testing a SwiftUI toolbar's virtual Done action.
+      report["toolbarDoneNotCovered"]=true
+      report["dismissalRoute"]="owned UIHostingController.dismiss and confirmed presentation state"
+      store.sheet=nil
+      controller?.dismiss(animated:true);try await wait("owned settings presentation dismissed") { controller?.presentingViewController==nil };controller=nil
+      report["caseTarget"]=caseTarget;report["caseDraft"]=try JSONSerialization.jsonObject(with:encoder.encode(store.draft))
+      store.saved.generationPreferences=oldDefaults
+      if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+      for (key,value) in originalDrafts where key != caseTarget { XCTAssertEqual(store.drafts.values[key],value) }
+      XCTAssertEqual(try encoder.encode(store.saved.generationPreferences),try encoder.encode(oldDefaults))
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"),identity)
+      XCTAssertEqual(store.saved.replyRecovery?.mapValues(\.fingerprint),originalRecovery);XCTAssertEqual(store.saved.selectedClientId,oldClient)
+      store.persist();report["originalDefaultsOtherDraftsIdentityRecoveryAndSelectionPreserved"]=true
+      report["status"]="passed-physical-production-speed-settings-no-input";try save()
+    } catch {
+      controller?.dismiss(animated:false);store.sheet=nil
+      if store.saved.selectedClientId==oldClient {
+        store.saved.generationPreferences=oldDefaults
+        if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+        store.persist()
+      }
+      report["status"]="failed-native-speed-ui-prefix-retained-no-model";report["failure"]=String(describing:error);try? save();throw error
+    }
+  }
+  /// Exercises the production sheet and UIKit text input inside the actual
+  /// independently identified App. It needs no system UI automation service.
+  @MainActor func testNativeRenameSheetWholeUnicodeInputAndStateDrivenDismissal() async throws {
+    let env=ProcessInfo.processInfo.environment
+    guard let run=env["EASYWORK_HOSTED_NATIVE_CASE"],UUID(uuidString:run)?.uuidString.lowercased()==run,
+      let encoded=env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),ProcessInfo.processInfo.arguments.contains("-restore-testing")
+    else { throw XCTSkip("Explicit independently identified native UI examiner required") }
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(encoded.utf8)) as? [String:Any])
+    let retainedThread=config["retainedCreatedThreadId"] as? String
+    guard config["caseId"] as? String==run,config["newModelInputsAuthorized"] as? Int==0,
+      config["newChatsAuthorized"] as? Int==(retainedThread == nil ? 1 : 0),
+      config["newRenameActionsAuthorized"] as? Int==2 else { throw NSError(domain:"EasyWorkNativeUI",code:5) }
+    let directory=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    let path=directory.appendingPathComponent(run+".json")
+    guard !FileManager.default.fileExists(atPath:path.path) else { throw NSError(domain:"EasyWorkNativeUI",code:1) }
+    var report:[String:Any]=["caseId":run,"bodyEntered":true,"appPID":ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier":Bundle.main.bundleIdentifier!,"uiAutomationUsed":false,"productionRenameSheet":true,
+      "textInputAPI":"UITextInput.selectedTextRange / UIKeyInput.insertText","newModelInputs":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:path,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    try save()
+    func wait(_ label:String,seconds:Double=30,_ ready:()->Bool) async throws {
+      let end=Date().addingTimeInterval(seconds)
+      while !ready() && Date()<end { try await Task.sleep(for:.milliseconds(100)) }
+      guard ready() else { report["failedWait"]=label;try save();throw NSError(domain:"EasyWorkNativeUI",code:2,userInfo:[NSLocalizedDescriptionKey:label]) }
+    }
+    try await wait("actual UI-owned store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target=try JSONDecoder().decode(AgentRuntimeTarget.self,from:JSONSerialization.data(withJSONObject:try XCTUnwrap(config["target"] as? [String:Any])))
+    guard target.agentId=="easywork",!store.localRecoveryRequired else { throw NSError(domain:"EasyWorkNativeUI",code:3) }
+    let matches=store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target==target }
+    guard matches.count==1 else { throw NSError(domain:"EasyWorkNativeUI",code:8) }
+    let client=try XCTUnwrap(matches.first)
+    let identity=try XCTUnwrap(try CredentialVault.existingToken("easywork-device-identity"))
+    let credential=try JSONDecoder().decode(EasyWorkCredential.self,from:Data(try XCTUnwrap(try CredentialVault.existingToken(client.agentConnection!.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw NSError(domain:"EasyWorkNativeUI",code:6) }
+    let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
+    let drafts=try encoder.encode(store.drafts.values),oldThread=store.selectedThreadId,oldClient=store.saved.selectedClientId
+    let oldRecovery=store.saved.replyRecovery?.mapValues(\.fingerprint)
+    let creation=try XCTUnwrap(config["createOperationId"] as? String)
+    report["creationAttempted"]=retainedThread == nil;report["createOperationId"]=creation;try save()
+    do {
+      let provider=try AgentClients.resolve(client)
+      let created:Conversation
+      if let retainedThread {
+        await store.refresh(includeHistory:false)
+        created=try XCTUnwrap(store.threads.first { $0.id==retainedThread && $0.hostId==client.id })
+        guard created.title==config["retainedOriginalTitle"] as? String else { throw NSError(domain:"EasyWorkNativeUI",code:7) }
+        report["adoptedOriginalCreatedThreadWithoutCreate"]=true
+      } else { created=try await provider.createThread(client,projectId:nil,operationId:creation) }
+      report["createdThreadId"]=created.id;report["originalCreatedTitle"]=created.title;try save()
+      await store.refresh(includeHistory:false)
+      store.openThread(created,loadAutomatically:false)
+      await store.loadHistory(threadId:created.id)
+      try await wait("new empty chat ready") { store.selectedThreadId==created.id && store.captureChatRename() != nil }
+      let window=try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow })
+      let root=try XCTUnwrap(window.rootViewController)
+      var receipts:[[String:Any]]=[]
+      let titles=[try XCTUnwrap(config["unicodeTitle"] as? String),created.title]
+      for title in titles {
+        let context=try XCTUnwrap(store.captureChatRename()),oldIDs=Set((store.saved.chatActionReceipts ?? [:]).keys)
+        var closed=false
+        var controller:UIHostingController<ChatRenameSheet>!
+        controller=UIHostingController(rootView:ChatRenameSheet(store:store,context:context,close:{ closed=true;controller.dismiss(animated:true) }))
+        root.present(controller,animated:true)
+        var textView:UIView?
+        func descendants(_ view:UIView)->[UIView] { [view]+view.subviews.flatMap(descendants) }
+        try await wait("rename sheet text input and presentation complete") {
+          guard controller.presentingViewController != nil,controller.transitionCoordinator==nil else { return false }
+          let inputs=descendants(controller.view).filter { $0 is UITextView || $0 is UITextField }
+          textView=inputs.count==1 ? inputs[0] : nil
+          return textView?.window===window && textView?.isUserInteractionEnabled==true
+        }
+        let view=try XCTUnwrap(textView),input=try XCTUnwrap(view as? any UITextInput)
+        XCTAssertTrue(view.becomeFirstResponder())
+        let range=try XCTUnwrap(input.textRange(from:input.beginningOfDocument,to:input.endOfDocument))
+        input.selectedTextRange=range
+        input.insertText(title)
+        try await wait("entire Unicode input exact") { input.text(in:input.textRange(from:input.beginningOfDocument,to:input.endOfDocument)!)==title }
+        report["wholeUnicodeInputExact"]=true;try save()
+        view.resignFirstResponder()
+        // Enumerate actual accessibility elements exposed by the production
+        // SwiftUI view. No reflection, synthetic binding, or duplicate action.
+        func controls()->[NSObject] {
+          var seen=Set<ObjectIdentifier>(),result:[NSObject]=[]
+          func visit(_ object:NSObject) {
+            guard result.count<5000,seen.insert(ObjectIdentifier(object)).inserted else { return }
+            result.append(object)
+            if let view=object as? UIView { view.subviews.forEach(visit) }
+            if let values=object.accessibilityElements { values.compactMap { $0 as? NSObject }.forEach(visit) }
+            let count=object.accessibilityElementCount()
+            if count>0 && count<1000 { for index in 0..<count { if let element=object.accessibilityElement(at:index) as? NSObject { visit(element) } } }
+          }
+          // Navigation chrome can be mounted outside the hosting view's
+          // subtree. Inspect the actual presented window, then retain the
+          // unique identified Save control and its real visibility fence.
+          visit(window);return result
+        }
+        var button:NSObject?
+        try await wait("one enabled Save control with stable presentation") {
+          let values=controls()
+          let identified=values.filter { ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier=="chat-rename-save" && !$0.accessibilityTraits.contains(.notEnabled) }
+          let matches=identified.isEmpty ? values.filter { $0.accessibilityLabel==L10n.tr("保存") && $0.accessibilityTraits.contains(.button) && !$0.accessibilityTraits.contains(.notEnabled) } : identified
+          button=matches.count==1 ? matches[0] : nil
+          if button==nil { report["actualRenameControls"]=values.filter { $0.accessibilityLabel != nil || ($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier != nil }.map { ["class":String(describing:type(of:$0)),"id":($0 as? any UIAccessibilityIdentification)?.accessibilityIdentifier ?? "","label":$0.accessibilityLabel ?? "","traits":String($0.accessibilityTraits.rawValue)] } }
+          guard let candidate=button else { return false }
+          let local: CGRect
+          if let view=candidate as? UIView { local=view.convert(view.bounds,to:window) }
+          else { local=window.convert(candidate.accessibilityFrame,from:nil) }
+          let hit=window.hitTest(CGPoint(x:local.midX,y:local.midY),with:nil)
+          report["actualSaveReadiness"]=["class":String(describing:type(of:candidate)),"windowFrame":String(describing:local),
+            "transitionSettled":controller.transitionCoordinator==nil,"presenting":controller.isBeingPresented,
+            "dismissing":controller.isBeingDismissed,"activeScene":window.windowScene?.activationState == .foregroundActive,
+            "actualHitClass":hit.map { String(describing:type(of:$0)) } ?? "none",
+            "enabled":(candidate as? UIControl)?.isEnabled ?? !candidate.accessibilityTraits.contains(.notEnabled),
+            "sameWindow":(candidate as? UIView)?.window===window]
+          try? save()
+          guard controller.transitionCoordinator==nil,
+            controller.presentingViewController != nil,!controller.isBeingPresented,!controller.isBeingDismissed,
+            window.windowScene?.activationState == .foregroundActive else { return false }
+          guard !local.isEmpty,window.bounds.intersects(local),
+            let hit else { return false }
+          if let view=candidate as? UIView {
+            return view.window===window && !view.isHidden && view.alpha>0.99 && (hit===view || hit.isDescendant(of:view))
+          }
+          return hit.window===window
+        }
+        let screenshotName=run+"-rename-before-save-"+String(receipts.count+1)+".png"
+        let screenshot=UIGraphicsImageRenderer(bounds:window.bounds).image { _ in
+          window.drawHierarchy(in:window.bounds,afterScreenUpdates:true)
+        }
+        let png=try XCTUnwrap(screenshot.pngData())
+        try png.write(to:directory.appendingPathComponent(screenshotName),options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+        report["actualRenameWindowScreenshot"]=screenshotName
+        report["actualRenameWindowScreenshotSha256"]=SHA256.hash(data:png).map { String(format:"%02x",$0) }.joined()
+        report["nextRenameTitle"]=title;report["nextRenameActivationAttempted"]=true;try save()
+        let activated=try XCTUnwrap(button)
+        let accepted:Bool
+        if let control=activated as? UIControl {
+          guard control.isEnabled,control.window===window,!control.isHidden,control.alpha>0.99 else { throw NSError(domain:"EasyWorkNativeUI",code:9) }
+          control.sendActions(for:.touchUpInside)
+          report["renameActivationRoute"]="actual enabled UIControl touchUpInside"
+          accepted=true
+        } else {
+          accepted=activated.accessibilityActivate()
+          report["renameActivationRoute"]="actual accessibilityActivate"
+        }
+        report["lastActivationAccepted"]=accepted;try save();XCTAssertTrue(accepted)
+        guard accepted else { throw NSError(domain:"EasyWorkNativeUI",code:4) }
+        try await wait("original operation confirmation and sheet dismissal",seconds:60) {
+          closed && controller.presentingViewController==nil && controller.transitionCoordinator==nil &&
+            !controller.isBeingDismissed && controller.viewIfLoaded?.window==nil && root.presentedViewController==nil
+        }
+        report["actualRenameDismissalAndWindowRemovalSettled"]=true;try save()
+        let fresh=(store.saved.chatActionReceipts ?? [:]).filter { !oldIDs.contains($0.key) }.map(\.value)
+        XCTAssertEqual(fresh.count,1)
+        let receipt=try XCTUnwrap(fresh.first);XCTAssertEqual(receipt.phase,"confirmed");XCTAssertEqual(receipt.title,title);XCTAssertEqual(receipt.threadId,created.id)
+        receipts.append(["id":receipt.id,"title":title,"threadId":receipt.threadId,"phase":receipt.phase])
+        report["confirmedRenames"]=receipts;report["nextRenameActivationAttempted"]=false;try save()
+        controller=nil
+      }
+      if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+      XCTAssertEqual(store.saved.selectedClientId,oldClient)
+      XCTAssertEqual(try encoder.encode(store.drafts.values),drafts)
+      XCTAssertEqual(store.saved.replyRecovery?.mapValues(\.fingerprint),oldRecovery)
+      XCTAssertEqual(try CredentialVault.existingToken("easywork-device-identity"),identity)
+      store.persist()
+      report["originalDraftsIdentityRecoveryAndSelectionPreserved"]=true
+      report["status"]="passed-production-sheet-native-unicode-two-confirmed-renames-state-driven-dismissal"
+      try save()
+    } catch {
+      report["status"]="failed-native-ui-prefix-retained-no-replay";report["failure"]=String(describing:error)
+      if let oldThread,let original=store.threads.first(where:{ $0.id==oldThread && $0.hostId==client.id }) { store.openThread(original,loadAutomatically:false);await store.loadHistory(threadId:oldThread) }
+      store.persist();try? save();throw error
+    }
+  }
+  @MainActor func testReadIndependentSystemNotificationPermissionWithoutRequest() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      let config = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+      config["caseId"] as? String == run,
+      config["readSystemPermissionOnly"] as? Bool == true,
+      config["newModelInputsAuthorized"] as? Int == 0,
+      config["newBusinessCommandsAuthorized"] as? Int == 0,
+      env["EASYWORK_HOSTED_NATIVE_APNS_REGISTRATION"] == nil else {
+      throw XCTSkip("Explicit independent read-only OS permission case required")
+    }
+    let settings = await UNUserNotificationCenter.current().notificationSettings()
+    let value: [String: Any] = ["caseId": run, "bodyEntered": true,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!,
+      "appPID": ProcessInfo.processInfo.processIdentifier,
+      "authorizationStatus": settings.authorizationStatus.rawValue,
+      "alertSetting": settings.alertSetting.rawValue,
+      "soundSetting": settings.soundSetting.rawValue,
+      "badgeSetting": settings.badgeSetting.rawValue,
+      "applicationState": UIApplication.shared.applicationState.rawValue,
+      "permissionRequestCalls": 0, "registrationCalls": 0,
+      "newModelInputs": 0, "newBusinessCommands": 0,
+      "wholeFeaturePassed": false, "status": "passed-system-state-read-only"]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
+      .write(to: folder.appendingPathComponent(run + ".json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+  }
+
+  /// Capability preflight only: asks UIKit for this Simulator app's real token.
+  /// Never asks for alert authorization, enables preferences or sends a push.
+  @MainActor func testSimulatorActualUIKitAPNsTokenWithoutPermissionOrCloudRegistration() async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Frozen Simulator-only UIKit registration preflight")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"], UUID(uuidString: run)?.uuidString.lowercased() == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-restore-testing") else {
+      throw XCTSkip("Explicit existing Simulator identity and UIKit APNs case required")
+    }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "bodyEntered": true,
+      "newModels": 0, "newBusinessCommands": 0, "permissionRequestCalls": 0,
+      "registrationCalls": 0, "cloudRegistrationCalls": 0,
+      "applePushAccepted": false, "simulatorPushArrived": false, "wholeFeaturePassed": false]
+    defer {
+      if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+        let folder = documents.appendingPathComponent("easywork-hosted-native", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? data.write(to: folder.appendingPathComponent(run + ".json"),
+          options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+      }
+    }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run, config["newModelInputsAuthorized"] as? Int == 0,
+      config["newBusinessCommandsAuthorized"] as? Int == 0,
+      config["actualUIKitTokenRegistrationAuthorized"] as? Bool == true,
+      config["maximumUIKitTokenRegistrationCalls"] as? Int == 1 else {
+      throw NSError(domain: "EasyWorkSimulatorAPNsToken", code: 1)
+    }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil && Date() < ready {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let matches = store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target == target }
+    report["matchingOriginalClients"] = matches.count
+    guard !store.localRecoveryRequired, target.agentId == "easywork", matches.count == 1 else {
+      throw HostServiceError.wrongHost
+    }
+    let connection = try XCTUnwrap(matches.first?.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else {
+      throw HostServiceError.wrongHost
+    }
+    let controller = TaskNotificationController.shared
+    guard !controller.preferences.enabled else { throw NSError(domain: "EasyWorkSimulatorAPNsToken", code: 2) }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protected() throws -> [Data] {
+      [try encoder.encode(store.saved.clients), try encoder.encode(store.drafts.values),
+        try encoder.encode(store.saved.outbox), try encoder.encode(store.saved.replyRecovery),
+        try encoder.encode(store.saved.selectedClientId), try encoder.encode(store.selectedThreadId),
+        try encoder.encode(controller.preferences),
+        Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    }
+    let original = try protected()
+    let permission = await UNUserNotificationCenter.current().notificationSettings()
+    report["authorizationStatusBefore"] = permission.authorizationStatus.rawValue
+    report["stage"] = "actual-uikit-register-call-with-disabled-cloud-preferences"
+    let before = controller.apnsRegistration
+    UIApplication.shared.registerForRemoteNotifications()
+    report["registrationCalls"] = 1
+    let deadline = Date().addingTimeInterval(35)
+    while controller.apnsRegistration == before && Date() < deadline {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    report["actualUIKitRegistrationPresentation"] = controller.apnsRegistration
+    let afterPermission = await UNUserNotificationCenter.current().notificationSettings()
+    report["authorizationStatusAfter"] = afterPermission.authorizationStatus.rawValue
+    guard controller.apnsRegistration == L10n.tr("APNs 设备已注册") else {
+      report["status"] = "actual-uikit-registration-did-not-obtain-token"
+      throw NSError(domain: "EasyWorkSimulatorAPNsToken", code: 3)
+    }
+    XCTAssertEqual(try protected(), original)
+    XCTAssertEqual(afterPermission.authorizationStatus, permission.authorizationStatus)
+    report["originalIdentityDraftOutboxRecoveryPreferencesAndSelectionUnchanged"] = true
+    report["actualUIKitTokenCallbackObserved"] = true
+    report["status"] = "passed-actual-simulator-uikit-token-only-no-cloud-or-push"
+    #endif
+  }
+
+  @MainActor func testSimulatorNotificationSharedContainerAndKeychainWithoutCloudRegistration() async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Frozen Simulator notification-only sharing boundary")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"], UUID(uuidString: run)?.uuidString.lowercased() == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      env["CODEX_NOTIFICATION_TEST_DIRECTORY"] == nil,
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      Bundle.main.object(forInfoDictionaryKey: "NotificationSimulatorUsesSharedKeychain") as? Bool == true,
+      ProcessInfo.processInfo.arguments.contains("-restore-testing") else {
+      throw XCTSkip("Explicit normally entitled notification-sharing case required")
+    }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "newModels": 0, "newBusinessCommands": 0, "cloudRegistrationCalls": 0,
+      "permissionRequests": 0, "pushes": 0, "wholeFeaturePassed": false]
+    defer {
+      if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+        let folder = documents.appendingPathComponent("easywork-hosted-native", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? data.write(to: folder.appendingPathComponent(run + ".json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+      }
+    }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run, config["newModelInputsAuthorized"] as? Int == 0,
+      config["newBusinessCommandsAuthorized"] as? Int == 0,
+      config["maximumMarkerKeyWritesAuthorized"] as? Int == 1,
+      config["maximumMarkerFilesAuthorized"] as? Int == 1,
+      let expectedGroup = config["notificationKeychainGroup"] as? String,
+      let expectedContainer = config["notificationAppGroup"] as? String else {
+      throw NSError(domain: "EasyWorkNotificationSharing", code: 1)
+    }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil && Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let clients = store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target == target }
+    guard !store.localRecoveryRequired, target.agentId == "easywork", clients.count == 1 else { throw HostServiceError.wrongHost }
+    let connection = try XCTUnwrap(clients.first?.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protected() throws -> [Data] {
+      [try encoder.encode(store.saved.clients), try encoder.encode(store.drafts.values),
+        try encoder.encode(store.saved.outbox), try encoder.encode(store.saved.replyRecovery),
+        try encoder.encode(store.saved.selectedClientId), try encoder.encode(store.selectedThreadId),
+        try encoder.encode(TaskNotificationShared.preferences),
+        Data(try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity")).utf8)]
+    }
+    let original = try protected()
+    guard TaskNotificationShared.group == expectedContainer,
+      TaskNotificationShared.keychainQuery("scope-check")[kSecAttrAccessGroup as String] as? String == expectedGroup,
+      let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: expectedContainer),
+      TaskNotificationShared.directory.resolvingSymlinksInPath() == container.resolvingSymlinksInPath() else {
+      throw NSError(domain: "EasyWorkNotificationSharing", code: 2)
+    }
+    let account = "acceptance-scope-" + run, marker = Data(UUID().uuidString.utf8)
+    let file = container.appendingPathComponent(".acceptance-scope-" + run)
+    var createdKey = false, createdFile = false
+    defer {
+      if createdKey { TaskNotificationShared.removeSecret(account) }
+      if createdFile { try? FileManager.default.removeItem(at: file) }
+    }
+    guard TaskNotificationShared.secret(account) == nil, !FileManager.default.fileExists(atPath: file.path) else {
+      throw NSError(domain: "EasyWorkNotificationSharing", code: 3)
+    }
+    report["stage"] = "real-os-notification-only-keychain-and-group-container"
+    try TaskNotificationShared.setSecret(marker, account: account); createdKey = true
+    XCTAssertEqual(TaskNotificationShared.secret(account), marker)
+    var query = TaskNotificationShared.keychainQuery(account)
+    query[kSecReturnAttributes as String] = true; query[kSecMatchLimit as String] = kSecMatchLimitOne
+    var attributes: CFTypeRef?
+    guard SecItemCopyMatching(query as CFDictionary, &attributes) == errSecSuccess,
+      (attributes as? [String: Any])?[kSecAttrAccessGroup as String] as? String == expectedGroup else {
+      throw NSError(domain: "EasyWorkNotificationSharing", code: 4)
+    }
+    try marker.write(to: file, options: [.atomic]); createdFile = true
+    XCTAssertEqual(try Data(contentsOf: file), marker)
+    TaskNotificationShared.removeSecret(account); createdKey = false
+    try FileManager.default.removeItem(at: file); createdFile = false
+    XCTAssertNil(TaskNotificationShared.secret(account)); XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+    XCTAssertEqual(try protected(), original)
+    report["notificationOnlyAccessGroupVerifiedByOS"] = true
+    report["realAppGroupContainerRoundtrip"] = true
+    report["onlyOwnMarkerKeyAndFileRemoved"] = true
+    report["originalIdentityDraftsOutboxRecoveryPreferencesSelectionUnchanged"] = true
+    report["status"] = "passed-simulator-notification-only-group-and-container-no-cloud"
+    #endif
+  }
+
+  @MainActor func testRevokeOnlyOwnSimulatorNotificationSubscriptionWithoutModelInput() async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Independent Simulator subscription lifecycle only")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_SIMULATOR_NOTIFICATION_REVOKE"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      let c = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+      c["caseId"] as? String == run,
+      c["newModelInputsAuthorized"] as? Int == 0,
+      c["newBusinessCommandsAuthorized"] as? Int == 0,
+      c["maximumOwnUnregisterCallsAuthorized"] as? Int == 1,
+      c["keepOtherDeliveredNotices"] as? Bool == true,
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      TaskNotificationShared.group == "group.com.easyai.agenthub.easyworkacceptance.notifications" else {
+      throw XCTSkip("Explicit one-device revocation intent required")
+    }
+    let end = Date().addingTimeInterval(45)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < end {
+      try await Task.sleep(for: .milliseconds(200))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(c["target"])))
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, target.agentId == "easywork",
+      clients[0].agentConnection?.target == target else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(c["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId),
+      let device = TaskNotificationShared.read(String.self, name: "device-id.json"),
+      device == c["expectedOwnNotificationDeviceId"] as? String,
+      let binding = c["expectedOwnCloudBindingId"] as? String,
+      TaskNotificationShared.preferences.revision == c["expectedOwnedPreferenceRevision"] as? String else {
+      throw HostServiceError.wrongHost
+    }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let identity = try CredentialVault.existingToken("easywork-device-identity")
+    let drafts = try encoder.encode(store.drafts.values), outbox = try encoder.encode(store.saved.outbox)
+    let recovery = try encoder.encode(store.saved.replyRecovery)
+    let generation = try encoder.encode(store.saved.generationPreferences)
+    let preferences = try encoder.encode(TaskNotificationShared.preferences)
+    let selectedClient = store.saved.selectedClientId, thread = store.selectedThreadId, project = store.selectedProjectId
+    let center = UNUserNotificationCenter.current()
+    let beforeNotices = Set(await center.deliveredNotifications().map { $0.request.identifier })
+    var report: [String: Any] = ["caseId": run, "newModels": 0, "newBusinessCommands": 0,
+      "unregisterAttempts": 0, "otherDeviceUnregisterCalls": 0,
+      "notificationPermissionRequests": 0, "notificationPreferenceWrites": 0,
+      "deliveredNoticeDeletionCalls": 0, "oldCloudBindingId": binding, "wholeFeaturePassed": false]
+    func save() throws {
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        .write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    try save()
+    // Do not call global enable(false): it clears other delivered notices and
+    // also disables A6. Only this device's normal Provider API is exercised.
+    TaskNotificationController.shared.setActive(false)
+    let provider = try AgentClients.resolve(client)
+    let before = try await provider.notificationEvents(client, deviceId: device, after: "")
+    guard before.status?.target == target, before.status?.state == "ready",
+      before.status?.bindingId == binding else { throw HostServiceError.wrongHost }
+    report["unregisterAttempts"] = 1; try save()
+    do {
+      try await provider.unregisterNotifications(client, deviceId: device)
+      let after = try await provider.notificationEvents(client, deviceId: device, after: before.cursor)
+      report["normalProviderStatusAfter"] = after.status?.state
+      report["normalProviderDeliveryAfter"] = after.status?.delivery
+      report["normalProviderBindingAbsentAfter"] = after.status?.bindingId == nil
+      guard after.status?.target == target, after.status?.state == "disabled",
+        after.status?.delivery == "foreground-only", after.status?.bindingId == nil else {
+        throw HostServiceError.invalidResponse
+      }
+      let afterNotices = Set(await center.deliveredNotifications().map { $0.request.identifier })
+      let protected = try CredentialVault.existingToken("easywork-device-identity") == identity
+        && encoder.encode(store.drafts.values) == drafts && encoder.encode(store.saved.outbox) == outbox
+        && encoder.encode(store.saved.replyRecovery) == recovery
+        && encoder.encode(store.saved.generationPreferences) == generation
+        && encoder.encode(TaskNotificationShared.preferences) == preferences
+        && store.saved.selectedClientId == selectedClient && store.selectedThreadId == thread && store.selectedProjectId == project
+      report["identityDraftsOutboxRecoveryGenerationPreferencesSelectionUnchanged"] = protected
+      report["allOriginalDeliveredNoticesPreserved"] = beforeNotices.isSubset(of: afterNotices)
+      report["normalMonitorKeptInactiveForIndependentCloudVerification"] = true
+      guard protected, beforeNotices.isSubset(of: afterNotices) else { throw HostServiceError.invalidResponse }
+      report["status"] = "passed-native-own-device-revocation-cloud-verification-required"
+      try save()
+    } catch {
+      report["status"] = "failed-or-unknown-preserve-one-attempt-no-replay"
+      try save(); throw error
+    }
+    #endif
+  }
+
+  @MainActor func testRestoreOwnedCompletedPreferenceAndResumeSimulatorRegistration() async throws {
+    try await restoreOwnCompletedPreferenceAndRegistration(afterVerifiedBackgroundDelivery: false)
+  }
+
+  @MainActor func testRestoreOwnCompletedPreferenceAfterVerifiedBackgroundDelivery() async throws {
+    try await restoreOwnCompletedPreferenceAndRegistration(afterVerifiedBackgroundDelivery: true)
+  }
+
+  @MainActor private func restoreOwnCompletedPreferenceAndRegistration(afterVerifiedBackgroundDelivery: Bool) async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Independent Simulator subscription resume only")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env[afterVerifiedBackgroundDelivery ? "EASYWORK_SIMULATOR_BACKGROUND_PREFERENCE_RESTORE" : "EASYWORK_SIMULATOR_NOTIFICATION_RESUME"] == run,
+      env["EASYWORK_HOSTED_NATIVE_APNS_REGISTRATION"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      let c = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+      c["caseId"] as? String == run,
+      c["newModelInputsAuthorized"] as? Int == 0,
+      c["newBusinessCommandsAuthorized"] as? Int == 0,
+      c["independentSandboxRegistrationAuthorized"] as? Bool == true,
+      c["keepSubscriptionForNextPushAcceptance"] as? Bool == true,
+      c["maximumOwnPreferenceWritesAuthorized"] as? Int == 2,
+      c[afterVerifiedBackgroundDelivery ? "independentBackgroundDeliveryAlreadyVerified" : "independentCloudRevocationAlreadyVerified"] as? Bool == true,
+      c["restoreOnlyOwnedTemporaryCompletedKind"] as? Bool == true,
+      TaskNotificationShared.preferences.enabled,
+      TaskNotificationShared.preferences.kinds.contains(.completed),
+      TaskNotificationShared.preferences.revision == c["expectedOwnedPreferenceRevision"] as? String,
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      TaskNotificationShared.group == "group.com.easyai.agenthub.easyworkacceptance.notifications" else {
+      throw XCTSkip("Exact owned revision and independent cloud revocation proof required")
+    }
+    let end = Date().addingTimeInterval(45)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < end {
+      try await Task.sleep(for: .milliseconds(200))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(c["target"])))
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, target.agentId == "easywork",
+      clients[0].agentConnection?.target == target else { throw HostServiceError.wrongHost }
+    let connection = try XCTUnwrap(clients[0].agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(c["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId),
+      TaskNotificationShared.read(String.self, name: "device-id.json") == c["expectedOwnNotificationDeviceId"] as? String else {
+      throw HostServiceError.wrongHost
+    }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let consumed = folder.appendingPathComponent(run + "-resume-consumed.json")
+    guard !FileManager.default.fileExists(atPath: consumed.path) else { throw HostServiceError.invalidResponse }
+    try JSONSerialization.data(withJSONObject: ["caseId": run, "restoreAttempts": 1])
+      .write(to: consumed, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    TaskNotificationController.shared.update { $0.kinds.removeAll { $0 == .completed } }
+    guard !TaskNotificationShared.preferences.kinds.contains(.completed) else { throw HostServiceError.invalidResponse }
+    try await testIndependentSandboxAPNsRegistrationWithoutModelInput()
+    let path = folder.appendingPathComponent(run + ".json")
+    var report = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: path)) as? [String: Any])
+    report["ownedTemporaryCompletedKindRestored"] = !TaskNotificationShared.preferences.kinds.contains(.completed)
+    report["normalProviderRegistrationUsed"] = true
+    report["notificationPreferenceWritesAuthorized"] = 2
+    report["afterVerifiedBackgroundDeliveryOnly"] = afterVerifiedBackgroundDelivery
+    try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+      .write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    #endif
+  }
+
+  @MainActor func testIndependentSandboxAPNsRegistrationWithoutModelInput() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_HOSTED_NATIVE_APNS_REGISTRATION"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {
+      throw XCTSkip("Explicit independent Sandbox registration case required")
+    }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run,
+      config["newModelInputsAuthorized"] as? Int == 0,
+      config["newBusinessCommandsAuthorized"] as? Int == 0,
+      config["independentSandboxRegistrationAuthorized"] as? Bool == true,
+      config["keepSubscriptionForNextPushAcceptance"] as? Bool == true,
+      Bundle.main.object(forInfoDictionaryKey: "NotificationEnvironment") as? String == "development",
+      TaskNotificationShared.group == "group.com.easyai.agenthub.easyworkacceptance.notifications" else {
+      throw NSError(domain: "EasyWorkSandboxRegistration", code: 1)
+    }
+    var report: [String: Any] = ["caseId": run, "bodyEntered": true,
+      "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!,
+      "newModelInputs": 0, "newBusinessCommands": 0, "wholeFeaturePassed": false,
+      "applePushAccepted": false, "iPhonePushArrived": false]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    func save() throws {
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        .write(to: folder.appendingPathComponent(run + ".json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    func wait(_ label: String, seconds: Double = 90, _ ready: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(seconds)
+      while !ready(), Date() < end { try await Task.sleep(for: .milliseconds(200)) }
+      guard ready() else {
+        report["failedWait"] = label; try save()
+        throw NSError(domain: "EasyWorkSandboxRegistration", code: 2, userInfo: [NSLocalizedDescriptionKey: label])
+      }
+    }
+    try save()
+    try await wait("original App store and foreground") {
+      SessionStore.hostedEasyWorkAcceptanceStore != nil && UIApplication.shared.applicationState == .active
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, target.agentId == "easywork", clients.count == 1,
+      clients[0].agentConnection?.target == target else { throw NSError(domain: "EasyWorkSandboxRegistration", code: 3) }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId) else {
+      throw NSError(domain: "EasyWorkSandboxRegistration", code: 4)
+    }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let controller = TaskNotificationController.shared
+    // Keep product state in its own container. The examiner records only the
+    // public registration result; it does not export App Group preferences.
+    report["originalNotificationBindingIds"] = TaskNotificationShared.bindings.keys.sorted()
+    let identity = try CredentialVault.existingToken("easywork-device-identity")
+    let drafts = try encoder.encode(store.drafts.values), outbox = try encoder.encode(store.saved.outbox)
+    let recovery = try encoder.encode(store.saved.replyRecovery), selected = store.saved.selectedClientId
+    let thread = store.selectedThreadId, project = store.selectedProjectId
+    let originalUI = store.hostedEasyWorkProductUIPresented
+    defer { store.hostedEasyWorkProductUIPresented = originalUI }
+    do {
+      let settings = await UNUserNotificationCenter.current().notificationSettings()
+      report["authorizationStatus"] = settings.authorizationStatus.rawValue; try save()
+      // Never synthesize an OS grant. Only a separately frozen case may ask
+      // for permission in this already foregrounded independent App.
+      let requestPermission = settings.authorizationStatus == .notDetermined
+        && config["requestRealSystemPermissionIfNeeded"] as? Bool == true
+      guard settings.authorizationStatus == .authorized || requestPermission else {
+        throw NSError(domain: "EasyWorkSandboxRegistration", code: 5, userInfo: [NSLocalizedDescriptionKey: "Independent App notification permission is not authorized"])
+      }
+      // Hosted examiners deliberately skip RootView's automatic background
+      // tasks. Bind the same original App store through the production API.
+      controller.attach(store)
+      store.hostedEasyWorkProductUIPresented = true
+      if requestPermission {
+        report["stage"] = "requesting-real-system-notification-permission"
+        report["humanSystemAllowMayBeRequired"] = true
+        try save()
+      }
+      controller.enable(true)
+      try await wait("actual UIKit token and EasyWork cloud registration", seconds: requestPermission ? 300 : 90) {
+        controller.statuses[client.id]?.delivery == "apns" && controller.statuses[client.id]?.state == "ready"
+      }
+      let status = try XCTUnwrap(controller.statuses[client.id])
+      guard status.target == target, status.bindingId != nil,
+        status.relayURL == "https://notify-ios.51easyai.com", status.revision == controller.preferences.revision else {
+        throw NSError(domain: "EasyWorkSandboxRegistration", code: 6)
+      }
+      report["actualRegistrationDelivery"] = status.delivery
+      report["actualRegistrationState"] = status.state
+      report["notificationBindingId"] = status.bindingId
+      report["preferencesRevision"] = status.revision
+      report["actualUIKitAPNsRegistration"] = controller.apnsRegistration
+      report["target"] = try JSONSerialization.jsonObject(with: encoder.encode(status.target))
+      guard try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try encoder.encode(store.drafts.values) == drafts, try encoder.encode(store.saved.outbox) == outbox,
+        try encoder.encode(store.saved.replyRecovery) == recovery,
+        store.saved.selectedClientId == selected, store.selectedThreadId == thread, store.selectedProjectId == project else {
+        throw NSError(domain: "EasyWorkSandboxRegistration", code: 7)
+      }
+      report["originalIdentityDraftsOutboxRecoverySelectionUnchanged"] = true
+      report["status"] = "passed-real-registration-only"
+      report["subscriptionRetainedForNextPushAcceptance"] = true
+      try save()
+    } catch {
+      report["status"] = "failed-preserve-no-model-input"
+      report["apnsRegistration"] = controller.apnsRegistration
+      // Status also contains management credentials. Record only the public
+      // presentation fields needed to distinguish transport from APNs failure.
+      report["notificationStatusState"] = controller.statuses[client.id]?.state
+      report["notificationStatusDelivery"] = controller.statuses[client.id]?.delivery
+      report["notificationStatusReason"] = controller.statuses[client.id]?.reason
+      report["notificationStatusRevision"] = controller.statuses[client.id]?.revision
+      report["phonePreferencesRevision"] = controller.preferences.revision
+      report["phoneCompletedPreference"] = controller.preferences.kinds.contains(.completed)
+      report["connectionPreference"] = connection.preference.rawValue
+      report["connectionCandidates"] = connection.candidates.compactMap { candidate -> [String: String]? in
+        guard let url = URLComponents(string: candidate.endpoint), let scheme = url.scheme, let host = url.host else { return nil }
+        return ["scheme": scheme, "host": host, "port": url.port.map(String.init) ?? "",
+          "transportId": candidate.transportId, "peerFingerprint": candidate.peerFingerprint ?? ""]
+      }
+      report["failure"] = error.localizedDescription
+      try save(); throw error
+    }
+  }
+
+  @MainActor func testReadActualSimulatorPushEnvelopeAndPresentationWithoutSending() async throws {
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Frozen Simulator-only delivered push observation")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_SIMULATOR_DELIVERED_PUSH_READ"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {
+      throw XCTSkip("Frozen read-only delivered push case required")
+    }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let singleBackgroundCompletion = config["singleCompletedAfterOrdinaryBackground"] as? Bool == true
+    guard config["caseId"] as? String == run,
+      config["newModelInputsAuthorized"] as? Int == 0,
+      config["newBusinessCommandsAuthorized"] as? Int == 0,
+      let root = config["rootRunId"] as? String,
+      let thread = config["threadId"] as? String,
+      let binding = config["notificationBindingId"] as? String,
+      let eventIDs = config["expectedEventIds"] as? [String], eventIDs.count == (singleBackgroundCompletion ? 1 : 2),
+      Set(eventIDs).count == eventIDs.count else { throw HostServiceError.invalidResponse }
+    let backgroundAt = config["backgroundObservedAtUnix"] as? Double
+    let verificationAt = config["verificationLaunchStartedAtUnix"] as? Double
+    let completedMarker = config["expectedCompletedMarker"] as? String
+    if singleBackgroundCompletion {
+      guard config["ordinaryAppNoXCTestAndZeroBackgroundAssertionsVerified"] as? Bool == true,
+        let backgroundAt, let verificationAt, backgroundAt > 0, backgroundAt < verificationAt,
+        let completedMarker, !completedMarker.isEmpty else { throw HostServiceError.invalidResponse }
+    }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let end = Date().addingTimeInterval(40)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < end {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, target.agentId == "easywork",
+      let client = clients.first, client.agentConnection?.target == target,
+      let connection = client.agentConnection else { throw HostServiceError.invalidResponse }
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId)
+      else { throw HostServiceError.invalidResponse }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let identity = try CredentialVault.existingToken("easywork-device-identity")
+    let drafts = try encoder.encode(store.drafts.values), outbox = try encoder.encode(store.saved.outbox)
+    let preferences = TaskNotificationShared.preferences
+    var rows: [[String: Any]] = []
+    for notice in await UNUserNotificationCenter.current().deliveredNotifications() {
+      let info = notice.request.content.userInfo
+      guard info["event"] == nil,
+        let envelope = info["notification"] as? [String: Any],
+        envelope["bindingId"] as? String == binding,
+        let event = try? TaskNotificationShared.decodeEnvelope(info),
+        event.target == target, event.threadId == thread, event.runId == root,
+        eventIDs.contains(event.id) else { continue }
+      let presentation = TaskNotificationPresentation(event: event, computer: client.name,
+        showPreview: preferences.showThreadTitle)
+      let insideBackgroundWindow = backgroundAt.map { notice.date.timeIntervalSince1970 >= $0 } == true
+        && verificationAt.map { notice.date.timeIntervalSince1970 < $0 } == true
+      let completedMarkerMatches = completedMarker.map {
+        event.kind == .completed && event.taskSummary?.contains($0) == true && notice.request.content.body.contains($0)
+      } == true
+      rows.append(["eventId": event.id, "kind": event.kind.rawValue,
+        "requestIdentifier": notice.request.identifier,
+        "actualPushTrigger": notice.request.trigger is UNPushNotificationTrigger,
+        "encryptedEnvelopeValidated": true, "plaintextEventInjectionAbsent": true,
+        "systemDeliveredAt": notice.date.ISO8601Format(),
+        "systemDeliveredAtUnix": notice.date.timeIntervalSince1970,
+        "insideIndependentlyVerifiedBackgroundWindow": insideBackgroundWindow,
+        "completedMarkerMatches": completedMarkerMatches,
+        "presentationMatches": notice.request.content.title == presentation.title
+          && notice.request.content.subtitle == presentation.metadata
+          && notice.request.content.body == presentation.summary,
+        "bodySHA256": HostService.hash(Data(notice.request.content.body.utf8))])
+    }
+    let afterIdentity = try CredentialVault.existingToken("easywork-device-identity")
+    let afterDrafts = try encoder.encode(store.drafts.values)
+    let afterOutbox = try encoder.encode(store.saved.outbox)
+    let preserved = afterIdentity == identity && afterDrafts == drafts && afterOutbox == outbox
+    let backgroundVerified = singleBackgroundCompletion && preserved && rows.count == 1 && rows.allSatisfy {
+      $0["actualPushTrigger"] as? Bool == true && $0["presentationMatches"] as? Bool == true
+        && $0["insideIndependentlyVerifiedBackgroundWindow"] as? Bool == true
+        && $0["completedMarkerMatches"] as? Bool == true
+    }
+    let report: [String: Any] = ["caseId": run, "rootRunId": root, "threadId": thread,
+      "status": "read-actual-system-notices-no-input", "notices": rows,
+      "originalIdentityDraftsOutboxUnchanged": preserved, "newModels": 0,
+      "newBusinessCommands": 0, "notificationRegistrationCalls": 0,
+      "notificationPermissionRequests": 0, "backgroundDeliveryClaimed": backgroundVerified,
+      "ordinarySimulatorBackgroundOnly": singleBackgroundCompletion,
+      "physicalNaturalSuspensionOrLockScreenClaimed": false,
+      "historicalFailedRootFalseCompletedKindNotAcceptedAsCorrect": !singleBackgroundCompletion,
+      "wholeFeaturePassed": false]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+      .write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    XCTAssertTrue(preserved)
+    XCTAssertEqual(Set(rows.compactMap { $0["eventId"] as? String }), Set(eventIDs))
+    XCTAssertTrue(rows.allSatisfy { $0["actualPushTrigger"] as? Bool == true })
+    XCTAssertTrue(rows.allSatisfy { $0["presentationMatches"] as? Bool == true })
+    if singleBackgroundCompletion {
+      XCTAssertTrue(rows.allSatisfy { $0["insideIndependentlyVerifiedBackgroundWindow"] as? Bool == true })
+      XCTAssertTrue(rows.allSatisfy { $0["completedMarkerMatches"] as? Bool == true })
+    }
+    #endif
+  }
+
+  @MainActor func testOneFrozenTaskArrivesThroughRealSandboxAPNs() async throws {
+    try await runOneFrozenRealSandboxTask(independentSimulatorPreparation: false)
+  }
+
+  @MainActor func testPrepareOneFrozenSimulatorRootForIndependentBackgroundDelivery() async throws {
+    #if targetEnvironment(simulator)
+    let env = ProcessInfo.processInfo.environment
+    guard let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_SIMULATOR_FROZEN_ROOT_PREPARATION"] == run else {
+      throw XCTSkip("Frozen simulator-only background preparation required")
+    }
+    try await runOneFrozenRealSandboxTask(independentSimulatorPreparation: true)
+    #else
+    throw XCTSkip("This preparation is simulator-only")
+    #endif
+  }
+
   /// Reads only this independent App's existing voice files, without restore/expiry side effects.
   @MainActor private func originalVoiceProtectedState() throws -> [String: String] {
     let support = try XCTUnwrap(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first)
@@ -6060,6 +13833,89 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     }
   }
 
+  /// Late real file failure, exact rollback, then one import of the same cipher.
+  @MainActor func testOriginalMixedMigrationRollsBackOnAttachmentDirectoryFailure() async throws {
+    let env=ProcessInfo.processInfo.environment
+    let run=try XCTUnwrap(env["EASYWORK_HOSTED_NATIVE_CASE"])
+    let config=try XCTUnwrap(try JSONSerialization.jsonObject(with:Data(try XCTUnwrap(env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"]).utf8)) as? [String:Any])
+    guard UUID(uuidString:run)?.uuidString.lowercased()==run,config["caseId"] as? String==run,
+      config["ownedFreshDestination"] as? Bool==true,config["newModelInputsAuthorized"] as? Int==0,config["newRemoteCommandsAuthorized"] as? Int==0,
+      Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),ProcessInfo.processInfo.arguments.contains("-restore-testing") else {
+      throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:1)
+    }
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Fresh owned receiver required; never import into the original physical iPhone")
+    #endif
+    let manager=FileManager.default,documents=try XCTUnwrap(FileManager.default.urls(for:.documentDirectory,in:.userDomainMask).first)
+    let reports=documents.appendingPathComponent("easywork-hosted-native",isDirectory:true)
+    try manager.createDirectory(at:reports,withIntermediateDirectories:true)
+    let reportPath=reports.appendingPathComponent(run+".json")
+    guard !manager.fileExists(atPath:reportPath.path) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:2) }
+    var report:[String:Any]=["caseId":run,"bodyEntered":true,"appPID":ProcessInfo.processInfo.processIdentifier,"uiAutomationUsed":false,
+      "physicalIPhone":false,"newModelInputs":0,"newPairingOrVoiceInputs":0,"codexTests":false,"wholeFeaturePassed":false]
+    func save() throws { try JSONSerialization.data(withJSONObject:report,options:[.sortedKeys]).write(to:reportPath,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication]) }
+    try save();defer { try? save() }
+    do {
+      let deadline=Date().addingTimeInterval(30)
+      while SessionStore.hostedEasyWorkAcceptanceStore==nil && Date()<deadline { try await Task.sleep(for:.milliseconds(100)) }
+      let store=try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+      guard !store.localRecoveryRequired,store.saved.clients.allSatisfy(\.isDemo) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:3) }
+      let name=try XCTUnwrap(config["archiveFilename"] as? String)
+      guard EncryptedMigration.safeFilename(name) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:4) }
+      let cipher=try Data(contentsOf:documents.appendingPathComponent(name))
+      guard HostService.hash(cipher)==config["archiveSha256"] as? String else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:5) }
+      let payload=try EncryptedMigration.open(cipher,password:try XCTUnwrap(config["archivePassword"] as? String))
+      guard payload.version==2,payload.attachments.count==2,try CanonicalVoiceTestEvidence.entries(payload.pendingVoiceOriginals).count==1,
+        payload.state.clients.contains(where: { !$0.isDemo && $0.agentConnection?.target.agentId=="easywork" }) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:6) }
+      try await Task.sleep(for:.seconds(1))
+      let encoder=JSONEncoder();encoder.outputFormatting = [.sortedKeys]
+      let oldState=try encoder.encode(store.saved),oldDrafts=try encoder.encode(store.drafts.values)
+      let ids=Set(payload.credentials.keys).union(EncryptedMigration.installationCredentials)
+      let credentials=try ids.map { (id:$0,value:try CredentialVault.existingToken($0)) }
+      guard credentials.filter({ EncryptedMigration.installationCredentials.contains($0.id) }).allSatisfy({ $0.value==nil }) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:7) }
+      func files(_ directory:URL) throws -> [String:String] {
+        guard manager.fileExists(atPath:directory.path) else { return [:] }
+        return try Dictionary(uniqueKeysWithValues:manager.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil).map { ($0.lastPathComponent,HostService.hash(try Data(contentsOf:$0))) })
+      }
+      let oldNotifications=try files(TaskNotificationShared.directory)
+      let oldVoices=try CanonicalVoiceTestEvidence.snapshot()
+      guard oldVoices.isEmpty else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:8) }
+      let support=try XCTUnwrap(manager.urls(for:.applicationSupportDirectory,in:.userDomainMask).first)
+      let attachmentDirectory=support.appendingPathComponent("Acceptance/Attachments",isDirectory:true)
+      guard !manager.fileExists(atPath:attachmentDirectory.path) else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:9) }
+      let sentinel=Data(("owned-migration-rollback-sentinel-"+run).utf8)
+      try sentinel.write(to:attachmentDirectory,options:[.atomic])
+      report["existingUIStoreRegistered"]=true;report["sourceArchiveSha256"]=HostService.hash(cipher);report["attachmentDirectoryObstacleCreated"]=true;try save()
+      var failure:NSError?
+      do { try store.restoreMigration(payload) } catch { failure=error as NSError }
+      let actual=try XCTUnwrap(failure,"The actual attachment-directory collision must fail")
+      guard actual.domain==NSCocoaErrorDomain,actual.code==NSFileWriteFileExistsError else { throw actual }
+      report["actualFailureDomain"]=actual.domain;report["actualFailureCode"]=actual.code
+      guard try Data(contentsOf:attachmentDirectory)==sentinel,try encoder.encode(store.saved)==oldState,
+        try encoder.encode(store.drafts.values)==oldDrafts,try files(TaskNotificationShared.directory)==oldNotifications,
+        try CanonicalVoiceTestEvidence.snapshot()==oldVoices else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:10) }
+      for item in credentials { guard try CredentialVault.existingToken(item.id)==item.value else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:11) } }
+      report["failedInstallRestoredAllCredentialsStateDraftsVoicesNotifications"]=true;report["sentinelFileByteExact"]=true;try save()
+      guard try Data(contentsOf:attachmentDirectory)==sentinel else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:12) }
+      try manager.removeItem(at:attachmentDirectory) // Exact test-owned file only.
+      try store.restoreMigration(payload)
+      guard try encoder.encode(store.drafts.values)==encoder.encode(payload.state.drafts),
+        try CanonicalVoiceTestEvidence.snapshot(includeLive:false)==CanonicalVoiceTestEvidence.entries(payload.pendingVoiceOriginals),
+        store.saved.clients.filter({ !$0.isDemo && $0.agentConnection?.target.agentId=="easywork" }).allSatisfy({ $0.migrationNeedsVerification==true && !$0.online }),
+        store.saved.aiSharingGrants==nil else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:13) }
+      for (name,data) in payload.attachments { guard try Data(contentsOf:attachmentDirectory.appendingPathComponent(name))==data else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:14) } }
+      for id in EncryptedMigration.installationCredentials { guard try CredentialVault.existingToken(id)==nil else { throw NSError(domain:"EasyWorkHostedMigrationExaminer",code:15) } }
+      report["sameOriginalCipherAcceptedAfterRollback"]=true;report["sourceDraftsTwoAttachmentsAndOriginalReadOnlyVoiceExact"]=true
+      report["originalInstallationIdentityNotImported"]=true;report["status"]="passed-scoped-real-app-hosted-mixed-migration-rollback-and-retry"
+    } catch {
+      report["status"]="failed-fresh-receiver-migration-prefix-retained";report["failureType"]=String(describing:type(of:error))
+      report["failureDescription"]=error.localizedDescription;throw error
+    }
+  }
+
+  /// One fresh production send; a Mac-owned relay outage must leave its real
+  /// persisted original intact before the normal archive code snapshots it.
   @MainActor func testArchiveOneActuallyUnconfirmedEasyWorkFileReply() async throws {
     #if !targetEnvironment(simulator)
     throw XCTSkip("This controlled relay-loss case is restricted to its original owned simulator")
@@ -7379,5 +15235,380 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["parentMustRemoveOwnLocalRowBeforeReleasingOrStoppingRoot"] = true
       try? save(); throw error
     }
+  }
+  @MainActor private func runOneFrozenRealSandboxTask(independentSimulatorPreparation: Bool) async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      env["EASYWORK_HOSTED_NATIVE_APNS_REGISTRATION"] == run,
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else {
+      throw XCTSkip("Frozen real Sandbox delivery case required")
+    }
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run,
+      config["newRootInputsAuthorized"] as? Int == 1,
+      config["newThreadsAuthorized"] as? Int == 1,
+      config["maxChildRunsAuthorized"] as? Int == 0,
+      let createID = config["createOperationId"] as? String, UUID(uuidString: createID) != nil,
+      let sendID = config["sendOperationId"] as? String, UUID(uuidString: sendID) != nil,
+      createID != sendID, let body = config["body"] as? String,
+      HostService.hash(Data(body.utf8)) == config["bodySHA256"] as? String,
+      let marker = config["replyMarker"] as? String, !marker.isEmpty,
+      let expectedBinding = config["notificationBindingId"] as? String else {
+      throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 1)
+    }
+    let homeBeforeInput = config["waitForHumanHomeBeforeModelInput"] as? Bool == true
+    let humanBackground = homeBeforeInput || config["waitForHumanHomeBackground"] as? Bool == true
+    let boundedDelay = config["independentBackgroundGateMode"] as? String == "bounded-sleep-stdout-only"
+    if independentSimulatorPreparation {
+      guard config["independentSimulatorPreparation"] as? Bool == true,
+        boundedDelay || config["independentBackgroundGateMode"] as? String == "task-owned-fifo-read-only",
+        config["maximumGateReleasesAuthorized"] as? Int == (boundedDelay ? 0 : 1),
+        config["temporaryBackgroundAssertionsAuthorized"] as? Int == 0,
+        config["desktopAnswersAuthorized"] as? Int == 0,
+        config["holdForTerminatedDelivery"] as? Bool != true,
+        !humanBackground else { throw HostServiceError.invalidResponse }
+      if boundedDelay {
+        guard config["boundedDelaySeconds"] as? Int == 90,
+          config["maximumReadOnlyTerminalCallsAuthorized"] as? Int == 1,
+          let command = config["boundedReadOnlyCommand"] as? String,
+          command.hasPrefix("sleep 90; printf "), body.contains(command),
+          HostService.hash(Data(command.utf8)) == config["boundedReadOnlyCommandSHA256"] as? String else {
+          throw HostServiceError.invalidResponse
+        }
+      }
+    } else {
+      guard config["independentSimulatorPreparation"] as? Bool != true else {
+        throw HostServiceError.invalidResponse
+      }
+    }
+    if humanBackground {
+      guard config["temporaryBackgroundAssertionsAuthorized"] as? Int == 1,
+        config["stopOwnRootOnFailureAuthorized"] as? Int == 1,
+        let stopID = config["stopOperationId"] as? String, UUID(uuidString: stopID) != nil,
+        ![createID, sendID].contains(stopID) else { throw HostServiceError.invalidResponse }
+      if homeBeforeInput {
+        guard config["desktopAnswersAuthorized"] as? Int == 0,
+          config["holdForTerminatedDelivery"] as? Bool != true else { throw HostServiceError.invalidResponse }
+      } else {
+        guard config["holdForTerminatedDelivery"] as? Bool == true,
+          config["desktopAnswersAuthorized"] as? Int == 1,
+          let questionToken = config["completionQuestionToken"] as? String, !questionToken.isEmpty else { throw HostServiceError.invalidResponse }
+      }
+    }
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else {
+      throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 2)
+    }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "createOperationId": createID,
+      "sendOperationId": sendID, "inputSHA256": config["bodySHA256"]!,
+      "status": "prepared-no-input", "wholeFeaturePassed": false,
+      "modelSubmissionAttempted": false, "homeBeforeModelInput": homeBeforeInput,
+      "appleAcceptanceRequiresIndependentExactEventStatus": true,
+      "backgroundOrLockScreenTested": false, "syntheticEvents": 0]
+    func save() throws {
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        .write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    func wait(_ label: String, seconds: Double = 90, _ ready: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(seconds)
+      while !ready(), Date() < end { try await Task.sleep(for: .milliseconds(200)) }
+      guard ready() else { report["failedWait"] = label; try save(); throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 3) }
+    }
+    try save()
+    try await wait("original App store") { SessionStore.hostedEasyWorkAcceptanceStore != nil }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: JSONSerialization.data(withJSONObject: try XCTUnwrap(config["target"])))
+    let clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1,
+      clients[0].agentConnection?.target == target, target.agentId == "easywork",
+      UIApplication.shared.applicationState == .active else { throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 4) }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId),
+      await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized else {
+      throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 5)
+    }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let identity = try CredentialVault.existingToken("easywork-device-identity")
+    let drafts = try encoder.encode(store.drafts.values), outbox = try encoder.encode(store.saved.outbox)
+    let recoveries = store.saved.replyRecovery?.mapValues(\.fingerprint)
+    let selectedClient = store.saved.selectedClientId, selectedThread = store.selectedThreadId, selectedProject = store.selectedProjectId
+    let controller = TaskNotificationController.shared, oldUI = store.hostedEasyWorkProductUIPresented
+    let completedWasEnabled = controller.preferences.kinds.contains(.completed)
+    var temporaryRevision: String?
+    var retainPreferenceForTerminatedDelivery = false
+    var backgroundAssertion: UIBackgroundTaskIdentifier = .invalid
+    var ownedThreadID: String?, ownedRootID: String?
+    defer {
+      if !retainPreferenceForTerminatedDelivery, !completedWasEnabled, controller.preferences.revision == temporaryRevision {
+        controller.update { $0.kinds.removeAll { $0 == .completed } }
+        report["temporaryCompletedKindLocallyRestoredIfStillOwned"] = !controller.preferences.kinds.contains(.completed)
+        report["postRestorePhonePreferencesRevision"] = controller.preferences.revision
+        report["serverPreferenceRestoreAcknowledgementVerified"] = false
+        try? save()
+      }
+      if backgroundAssertion != .invalid { UIApplication.shared.endBackgroundTask(backgroundAssertion) }
+      store.hostedEasyWorkProductUIPresented = oldUI
+    }
+    func waitForActualHumanHome(status: String) async throws {
+      backgroundAssertion = UIApplication.shared.beginBackgroundTask(withName: "FrozenRealPushObservation", expirationHandler: nil)
+      guard backgroundAssertion != .invalid else { throw HostServiceError.unavailable }
+      report["status"] = status; report["naturalSuspensionTested"] = false
+      report["homeWaitStartedAt"] = Date().timeIntervalSince1970; try save()
+      let deadline = Date().addingTimeInterval(300)
+      var since: Date?, lastSample: Date?, lastState: Int?
+      var samples: [[String: Any]] = []
+      var stable = false
+      while Date() < deadline {
+        let now = Date(), state = UIApplication.shared.applicationState
+        if lastState != state.rawValue || lastSample == nil || now.timeIntervalSince(lastSample!) >= 5 {
+          samples.append(["at": now.timeIntervalSince1970, "applicationState": state.rawValue,
+            "sceneStates": UIApplication.shared.connectedScenes.map { $0.activationState.rawValue }.sorted()])
+          report["homeStateSamples"] = Array(samples.suffix(64)); try save()
+          lastState = state.rawValue; lastSample = now
+        }
+        if state == .background {
+          if since == nil { since = now }
+          if now.timeIntervalSince(since!) >= 1 { stable = true; break }
+        } else { since = nil }
+        try await Task.sleep(for: .milliseconds(200))
+      }
+      guard stable else {
+        report["failedWait"] = "actual human Home background stable for one second"; try save()
+        throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 9)
+      }
+      report["actualBackgroundObservedAt"] = Date().timeIntervalSince1970
+      report["actualBackgroundState"] = UIApplication.shared.applicationState.rawValue
+      report["status"] = homeBeforeInput
+        ? "actual-background-ready-to-submit-single-frozen-input"
+        : "actual-background-ready-for-single-independent-desktop-answer"
+      try save()
+    }
+    do {
+      guard controller.preferences.enabled else { throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 6) }
+      controller.attach(store); store.hostedEasyWorkProductUIPresented = true
+      if !completedWasEnabled {
+        controller.update { $0.kinds.append(.completed) }
+        temporaryRevision = controller.preferences.revision
+      }
+      controller.registerAPNs()
+      try await wait("real registered subscriber with current preferences") {
+        let status = controller.statuses[client.id]
+        return status?.state == "ready" && status?.delivery == "apns"
+          && status?.bindingId == expectedBinding && status?.revision == controller.preferences.revision
+      }
+      // Let the normal observer seed existing completed runs before the new input.
+      try await Task.sleep(for: .seconds(4))
+      let provider = try AgentClients.resolve(client)
+      if homeBeforeInput {
+        try await waitForActualHumanHome(status: "waiting-for-human-home-before-any-model-input")
+        guard UIApplication.shared.applicationState == .background else { throw HostServiceError.unavailable }
+      }
+      report["stage"] = "single-create-about-to-submit"; try save()
+      let thread = try await provider.createThread(client, projectId: nil, operationId: createID)
+      ownedThreadID = thread.id
+      report["threadId"] = thread.id; report["stage"] = "created-not-yet-sent"; try save()
+      let input = PendingReply(hostId: client.id, threadId: thread.id, clientMessageId: sendID,
+        text: body, attachmentIds: [], mode: "next-turn", expectedTurnId: nil,
+        model: nil, effort: nil, permissionMode: "confirm_high_risk", sourceAttachments: nil, knownRejected: nil)
+      report["originalFrozenInputSHA256"] = HostService.hash(try encoder.encode(input))
+      report["stage"] = "single-input-about-to-submit"
+      report["modelSubmissionAttempted"] = true; try save()
+      let receipt = try await provider.send(client, reply: input)
+      guard receipt.clientMessageId == sendID, receipt.threadId == thread.id,
+        receipt.state == "submitted", let root = receipt.turnId, !root.isEmpty else { throw HostServiceError.invalidResponse }
+      report["rootRunId"] = root; report["stage"] = "accepted-query-only"; try save()
+      ownedRootID = root
+      if independentSimulatorPreparation {
+        guard try CredentialVault.existingToken("easywork-device-identity") == identity,
+          try encoder.encode(store.drafts.values) == drafts,
+          try encoder.encode(store.saved.outbox) == outbox,
+          store.saved.replyRecovery?.mapValues(\.fingerprint) == recoveries,
+          store.saved.selectedClientId == selectedClient,
+          store.selectedThreadId == selectedThread,
+          store.selectedProjectId == selectedProject else { throw HostServiceError.invalidResponse }
+        report["notificationBindingId"] = expectedBinding
+        report["completedOriginallyEnabled"] = completedWasEnabled
+        report["temporaryPreferenceRevision"] = temporaryRevision
+        report["originalIdentityDraftsOutboxRecoverySelectionUnchanged"] = true
+        report["status"] = boundedDelay
+          ? "prepared-single-accepted-root-awaiting-independent-home-and-bounded-delay"
+          : "prepared-single-accepted-root-awaiting-independent-home-and-gate-release"
+        report["boundedReadOnlyDelaySeconds"] = boundedDelay ? 90 : 0
+        report["controllerGateWritesAuthorized"] = boundedDelay ? 0 : 1
+        report["deliveryObserved"] = false
+        report["backgroundOrLockScreenTested"] = false
+        report["temporaryBackgroundAssertions"] = 0
+        report["requiresIndependentBackgroundAndActualAppleDeliveryEvidence"] = true
+        retainPreferenceForTerminatedDelivery = true
+        try save()
+        return
+      }
+      if !homeBeforeInput, config["holdForTerminatedDelivery"] as? Bool == true {
+        guard let questionToken = config["completionQuestionToken"] as? String, !questionToken.isEmpty,
+          config["desktopAnswersAuthorized"] as? Int == 1 else { throw HostServiceError.invalidResponse }
+        let deadline = Date().addingTimeInterval(150)
+        var question: Approval?
+        while Date() < deadline {
+          let history = try await provider.history(client, threadId: thread.id, cursor: nil)
+          if let found = history.runtime?.approvals.first(where: {
+            $0.kind == "question" && $0.threadId == thread.id && $0.turnId == root
+              && $0.questions.contains { $0.question.contains(questionToken) }
+          }), history.runtime?.state == "waiting-for-approval" {
+            question = found; break
+          }
+          if ["failed", "cancelled", "interrupted"].contains(history.runtime?.state ?? "") { break }
+          try await Task.sleep(for: .milliseconds(500))
+        }
+        let approval = try XCTUnwrap(question)
+        guard try CredentialVault.existingToken("easywork-device-identity") == identity,
+          try encoder.encode(store.drafts.values) == drafts, try encoder.encode(store.saved.outbox) == outbox,
+          store.saved.replyRecovery?.mapValues(\.fingerprint) == recoveries,
+          store.saved.selectedClientId == selectedClient, store.selectedThreadId == selectedThread,
+          store.selectedProjectId == selectedProject else { throw HostServiceError.invalidResponse }
+        report["questionApprovalPrivate"] = try JSONSerialization.jsonObject(with: encoder.encode(approval))
+        report["notificationBindingId"] = expectedBinding
+        report["completedOriginallyEnabled"] = completedWasEnabled
+        report["temporaryPreferenceRevision"] = temporaryRevision
+        report["preparationPhoneTime"] = Date().timeIntervalSince1970
+        report["originalIdentityDraftsOutboxRecoverySelectionUnchanged"] = true
+        report["status"] = "prepared-real-question-awaiting-app-termination-and-independent-desktop-answer"
+        report["deliveryObserved"] = false
+        try save()
+        if !humanBackground {
+          retainPreferenceForTerminatedDelivery = true
+          return
+        }
+        try await waitForActualHumanHome(status: "waiting-for-human-home-before-desktop-answer")
+      }
+      let end = Date().addingTimeInterval(150)
+      var actual: UNNotification?, actualEvent: TaskNotificationEvent?, completed = false
+      while Date() < end {
+        if humanBackground, UIApplication.shared.applicationState != .background {
+          throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 10)
+        }
+        let history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        completed = history.runtime?.state == "idle" && history.messages.contains { $0.role == "assistant" && $0.text.contains(marker) }
+        for row in await UNUserNotificationCenter.current().deliveredNotifications() {
+          let info = row.request.content.userInfo
+          guard !row.request.identifier.hasPrefix("local."), info["event"] == nil,
+            let envelope = info["notification"] as? [String: Any],
+            envelope["bindingId"] as? String == expectedBinding,
+            let event = try? TaskNotificationShared.decodeEnvelope(info),
+            event.target == target, event.threadId == thread.id, event.runId == root,
+            event.kind == .completed, event.taskSummary?.contains(marker) == true else { continue }
+          actual = row; actualEvent = event
+        }
+        if completed && actual != nil { break }
+        try await Task.sleep(for: .seconds(1))
+      }
+      guard completed, let notification = actual, let event = actualEvent,
+        notification.request.content.categoryIdentifier == TaskNotificationPresentation.category,
+        notification.request.content.body.contains(marker) else {
+        throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 7, userInfo: [NSLocalizedDescriptionKey: "Real model completion and exact encrypted system notification not both observed"])
+      }
+      if humanBackground {
+        guard let began = report["actualBackgroundObservedAt"] as? Double,
+          notification.date.timeIntervalSince1970 >= began else { throw HostServiceError.invalidResponse }
+      }
+      report["eventId"] = event.id; report["notificationBindingId"] = expectedBinding
+      report["notificationRequestId"] = notification.request.identifier
+      report["actualNotificationDate"] = notification.date.timeIntervalSince1970
+      report["actualDecryptedEvent"] = try JSONSerialization.jsonObject(with: encoder.encode(event))
+      report["actualSystemNotificationBody"] = notification.request.content.body
+      report["realModelReplyObserved"] = true
+      report["foregroundEncryptedSystemDeliveryObserved"] = !humanBackground
+      report["actualBackgroundEncryptedSystemDeliveryObserved"] = humanBackground
+      report["backgroundOrLockScreenTested"] = humanBackground
+      report["lockScreenTested"] = false
+      report["notificationServicePresentationMatchesGeneratedMarker"] = true
+      guard try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try encoder.encode(store.drafts.values) == drafts, try encoder.encode(store.saved.outbox) == outbox,
+        store.saved.replyRecovery?.mapValues(\.fingerprint) == recoveries,
+        store.saved.selectedClientId == selectedClient, store.selectedThreadId == selectedThread,
+        store.selectedProjectId == selectedProject else { throw NSError(domain: "EasyWorkRealSandboxDelivery", code: 8) }
+      report["originalIdentityDraftsOutboxRecoverySelectionUnchanged"] = true
+      report["status"] = humanBackground
+        ? "passed-real-background-under-debugger-and-own-assertion-system-arrival-only"
+        : "passed-foreground-real-task-encrypted-system-arrival-only"
+      try save()
+      UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [notification.request.identifier])
+      report["onlyOwnProvenNotificationRemovedAfterEvidence"] = true; try save()
+    } catch {
+      report["status"] = "failed-preserve-original-ids-no-input-replay"
+      report["apnsRegistration"] = controller.apnsRegistration
+      report["notificationStatusState"] = controller.statuses[client.id]?.state
+      report["notificationStatusDelivery"] = controller.statuses[client.id]?.delivery
+      report["notificationStatusReason"] = controller.statuses[client.id]?.reason
+      report["notificationStatusRevision"] = controller.statuses[client.id]?.revision
+      report["phonePreferencesRevision"] = controller.preferences.revision
+      report["phoneCompletedPreference"] = controller.preferences.kinds.contains(.completed)
+      report["failure"] = error.localizedDescription; try save()
+      if humanBackground, let ownedThreadID, let ownedRootID,
+        let stopID = config["stopOperationId"] as? String {
+        do {
+          let history = try await AgentClients.resolve(client).history(client, threadId: ownedThreadID, cursor: nil)
+          if let state = history.runtime?.state, ["running", "waiting-for-approval"].contains(state) {
+            report["ownFailureCleanupStopOperationId"] = stopID
+            report["ownFailureCleanupStopAttempted"] = true; try save()
+            let channel = try await EasyWorkSessions.shared.session(client)
+            let bytes = try await channel.request("turn/cancel", ["threadId": ownedThreadID, "turnId": ownedRootID], id: stopID)
+            report["ownFailureCleanupStopResponse"] = try JSONSerialization.jsonObject(with: bytes)
+          } else if let state = history.runtime?.state, ["idle", "failed", "cancelled", "interrupted"].contains(state) {
+            report["ownFailureCleanupNoActiveRootConfirmed"] = true
+          } else { report["ownFailureCleanupRuntimeUnknownNoStop"] = true }
+        } catch {
+          report["ownFailureCleanupNeedsOriginalIDLookupNoReplay"] = true
+          report["ownFailureCleanupError"] = error.localizedDescription
+        }
+        try save()
+      }
+      throw error
+    }
+  }
+
+
+}
+
+/// Test-only complete original evidence. It reads the canonical graph; it has no installer,
+/// recorder, upload or alternate migration format. Partial files participate in equality too.
+private enum CanonicalVoiceTestEvidence {
+  struct Record: Equatable {
+    let originalMetadata: Data
+    var metadataSha256: String { HostService.hash(originalMetadata) }
+    func metadata() throws -> PendingVoiceMigration.Metadata { try JSONDecoder().decode(PendingVoiceMigration.Metadata.self, from: originalMetadata) }
+  }
+  struct Entry: Equatable {
+    let originalId: String, id: String
+    let files: [String: Data]
+    var record: Record { Record(originalMetadata: files[id + ".json"] ?? Data()) }
+    var audio: Data { files[id + ".wav"] ?? Data() }
+  }
+  static func entries(_ bundle: PendingVoiceMigration.Bundle?) throws -> [Entry] {
+    guard let bundle else { return [] }; try bundle.validate(); try bundle.unchanged()
+    var result: [Entry] = []
+    for original in bundle.originals {
+      let ids = try Set(original.files.map { try PendingVoiceMigration.operation($0.name) }).sorted()
+      for id in ids {
+        var files: [String: Data] = [:]
+        for file in original.files where try PendingVoiceMigration.operation(file.name) == id {
+          try file.bytes.verify(size: file.size, sha256: file.sha256)
+          files[file.name] = try file.bytes.data()
+        }
+        result.append(Entry(originalId: original.id, id: id, files: files))
+      }
+    }
+    return result
+  }
+  static func snapshot(includeLive: Bool = true) throws -> [Entry] {
+    let capture = try PendingVoiceMigration.captureFinalized(includeLive: includeLive)
+    let result = try entries(capture.bundle); try capture.unchanged(); return result
   }
 }

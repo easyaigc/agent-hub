@@ -40,6 +40,10 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   private var active = true
   private var generation = UUID()
   private var pendingTap: TaskNotificationEvent?
+  #if DEBUG
+  private var easyWorkObservationTask: Task<Void, Never>?
+  private var easyWorkActualNotificationResponse: [String: Any]?
+  #endif
   private var deviceId: String
   private var revoking = false
   private var revocationRetry: Task<Void, Never>?
@@ -68,6 +72,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   }
   func attach(_ store: SessionStore) {
     self.store = store
+    #if DEBUG
+    startEasyWorkNotificationObservation()
+    #endif
     store.synchronizeMobileUnread()
     if let event = pendingTap { pendingTap = nil; route(event) }
     Task { await refreshPermission(); if preferences.enabled { registerAPNs() }; startMonitoring(); await drainRevocations() }
@@ -89,11 +96,15 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   func update(_ change: (inout TaskNotificationPreferences) -> Void) {
     var next = preferences; change(&next); next.revision = UUID().uuidString; next.generation += 1
     do {
+      var presentationFailure = false
+      do { try EasyWorkNoticePresentationLedger.suppress(next) } catch { presentationFailure = true }
       try TaskNotificationShared.write(next, name: "preferences.json"); preferences = next; generation = UUID(); synced = [:]; cursors = [:]
+      if presentationFailure { self.error = L10n.tr("原通知记录无法校验，原资料已保留。") }
       updateBadge()
       queueRevocations { !next.enabled || next.excludedHosts.contains($0.target.hostId) }
       for host in store?.saved.clients.filter({ !$0.isDemo }) ?? [] where !next.enabled || next.excludedHosts.contains(target(host).hostId) { queueHostRevocation(host) }
-      startMonitoring(); Task { await drainRevocations() }
+      let owner = generation
+      startMonitoring(); Task { await refreshEasyWorkDelivered(owner: owner); await drainRevocations() }
     }
     catch { self.error = L10n.tr("无法保存通知设置。") }
   }
@@ -125,8 +136,29 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     }
   }
   func registerAPNs() {
-    guard preferences.enabled, !ProcessInfo.processInfo.arguments.contains("-ui-testing") else { return }
+    guard preferences.enabled else { return }
+    if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+      #if DEBUG
+      // Permit the actual UIKit registration only for one explicitly frozen
+      // independent EasyWork examiner. Never supplies a token or push event.
+      let process = ProcessInfo.processInfo
+      let clients = store?.saved.clients.filter { !$0.isDemo } ?? []
+      let hosted = SessionStore.hostedEasyWorkAcceptanceEnabled
+        && process.environment["EASYWORK_HOSTED_NATIVE_APNS_REGISTRATION"] == process.environment["EASYWORK_HOSTED_NATIVE_CASE"]
+      // The same acceptance storage can also be opened by an ordinary process.
+      // Its explicit independent lifecycle case validates the target before attach.
+      let ordinary = IndependentAcceptanceLifecycle.enabled
+        && process.arguments.contains("-acceptance-lifecycle-observer")
+      guard hosted || ordinary,
+        clients.count == 1, clients.first?.agentConnection?.target.agentId == "easywork" else { return }
+      #else
+      return
+      #endif
+    }
     if token == nil { apnsRegistration = L10n.tr("等待系统分配 APNs 设备令牌") }
+    #if DEBUG
+    IndependentAcceptanceLifecycle.notificationCallback("actual-uikit-apns-register-invoked")
+    #endif
     UIApplication.shared.registerForRemoteNotifications()
   }
   func receiveToken(_ data: Data) {
@@ -201,6 +233,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     guard generation == currentGeneration, store?.saved.clients.contains(where: { $0.id == host.id && target($0) == expected }) == true else { return }
     if let status = feed.status {
       guard status.target == expected else { throw HostServiceError.wrongHost }
+      if expected.agentId == "easywork", let remoteRevision = status.revision, remoteRevision != revision {
+        throw NSError(domain: "EasyWork.NoticePreferences", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("电脑通知设置仍待同步。")])
+      }
       statuses[host.id] = status
     }
     for event in feed.events {
@@ -210,10 +245,16 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       guard event.target == expected else { throw HostServiceError.wrongHost }
       try MobileUnreadBadge.receive(event)
       updateBadge()
-      if statuses[host.id]?.delivery != "apns" { await present(event, clientName: host.name) }
+      if statuses[host.id]?.delivery != "apns" {
+        let restore = event.target.agentId == "easywork" ? try EasyWorkNoticePresentationLedger.mayRestore(event, activeIds: feed.activeIds, remoteRevision: feed.status?.revision, preferences: preferences) : false
+        try await present(event, clientName: host.name, restoreOriginal: restore)
+      }
     }
+    try Task.checkCancellation()
+    guard generation == currentGeneration, store?.saved.clients.contains(where: { $0.id == host.id && target($0) == expected }) == true else { return }
     cursors[host.id] = feed.cursor
     if let activeIds = feed.activeIds {
+      if expected.agentId == "easywork", feed.status?.revision == revision { try EasyWorkNoticePresentationLedger.resolve(expected, activeIds: activeIds) }
       // Reading/decrypting the notice archive can take several frames on a real phone.
       // Only immutable identifiers return to the UI actor.
       let (resolvedIds, removedIds) = await Task.detached(priority: .utility) {
@@ -239,10 +280,20 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       }.value
     }
   }
-  private func present(_ event: TaskNotificationEvent, clientName: String) async {
+  private func present(_ event: TaskNotificationEvent, clientName: String, restoreOriginal: Bool = false) async throws {
+    let owner = generation
     guard preferences.enabled, preferences.kinds.contains(event.kind), !preferences.excludedHosts.contains(event.target.hostId) else { return }
     var seen = TaskNotificationShared.read([String].self, name: "seen.json") ?? []
-    guard !seen.contains(event.id) else { return }
+    if seen.contains(event.id) && !restoreOriginal {
+      if event.target.agentId == "easywork" { try EasyWorkNoticePresentationLedger.seedPosted(event) }
+      return
+    }
+    if event.target.agentId == "easywork", !preferences.foregroundBanner {
+      try TaskNotificationShared.remember(event); try EasyWorkNoticePresentationLedger.posted(event)
+      try EasyWorkNoticePresentationLedger.suppress(preferences)
+      if !seen.contains(event.id) { seen.append(event.id); try TaskNotificationShared.write(Array(seen.suffix(2048)), name: "seen.json") }
+      return
+    }
     let content = UNMutableNotificationContent()
     let presentation = TaskNotificationPresentation(event: event, computer: clientName, showPreview: preferences.showThreadTitle)
     presentation.apply(to: content)
@@ -253,9 +304,110 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     if let data = try? JSONEncoder().encode(event), let value = try? JSONSerialization.jsonObject(with: data) { content.userInfo = ["event": value, "clientName": clientName] }
     do {
       try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "local." + event.id, content: content, trigger: nil))
-      try TaskNotificationShared.remember(event); seen.append(event.id); try TaskNotificationShared.write(Array(seen.suffix(2048)), name: "seen.json")
-    } catch { self.error = L10n.tr("无法显示通知，请检查系统通知设置。") }
+      if event.target.agentId == "easywork", generation != owner {
+        await refreshEasyWorkDelivered(owner: generation); return
+      }
+      try TaskNotificationShared.remember(event)
+      if event.target.agentId == "easywork" { try EasyWorkNoticePresentationLedger.posted(event) }
+      if !seen.contains(event.id) { seen.append(event.id) }; try TaskNotificationShared.write(Array(seen.suffix(2048)), name: "seen.json")
+    } catch {
+      self.error = L10n.tr("无法显示通知，请检查系统通知设置。")
+      if event.target.agentId == "easywork" { throw error }
+    }
   }
+  private func refreshEasyWorkDelivered(owner: UUID) async {
+    let center = UNUserNotificationCenter.current()
+    let delivered = await center.deliveredNotifications()
+    guard generation == owner else { return }
+    for notification in delivered {
+      guard generation == owner else { return }
+      let info = notification.request.content.userInfo
+      let event: TaskNotificationEvent?
+      if let value = info["event"], let data = try? JSONSerialization.data(withJSONObject: value) { event = try? JSONDecoder().decode(TaskNotificationEvent.self, from: data) }
+      else { event = try? TaskNotificationShared.decodeEnvelope(info) }
+      guard let event, event.target.agentId == "easywork", TaskNotificationValidation.event(event) else { continue }
+      guard preferences.enabled, preferences.foregroundBanner, preferences.kinds.contains(event.kind), !preferences.excludedHosts.contains(event.target.hostId),
+        let host = store?.saved.clients.first(where: { !$0.isDemo && target($0).matchesCapturedPayload(event.target) }) else {
+        center.removeDeliveredNotifications(withIdentifiers: [notification.request.identifier]); continue
+      }
+      let preview = TaskNotificationPresentation(event: event, computer: host.name, showPreview: preferences.showThreadTitle)
+      let original = notification.request.content
+      let badge = preferences.badgeEnabled ? NSNumber(value: MobileUnreadBadge.count) : nil
+      if original.title == preview.title && original.subtitle == preview.metadata && original.body == preview.summary && original.badge == badge { continue }
+      guard let content = original.mutableCopy() as? UNMutableNotificationContent else { continue }
+      preview.apply(to: content); content.badge = badge; content.sound = nil; content.interruptionLevel = .passive
+      do {
+        try await center.add(UNNotificationRequest(identifier: notification.request.identifier, content: content, trigger: nil))
+        if generation != owner { await refreshEasyWorkDelivered(owner: generation); return }
+      }
+      catch { self.error = L10n.tr("部分系统提醒未能更新，原资料已保留。") }
+    }
+  }
+  #if DEBUG
+  /// Read-only OS observation for the exact independent native examiner. No event/settings injection.
+  private func startEasyWorkNotificationObservation() {
+    guard easyWorkObservationTask == nil, Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"], UUID(uuidString: run)?.uuidString.lowercased() == run else { return }
+    let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Acceptance", isDirectory: true)
+    let file = folder.appendingPathComponent("notification-observation-" + run + ".json")
+    guard !FileManager.default.fileExists(atPath: file.path) else { return }
+    easyWorkObservationTask = Task { [weak self] in
+      while !Task.isCancelled {
+        guard let self else { return }
+        if self.active {
+          let actual = await UNUserNotificationCenter.current().deliveredNotifications()
+          let notices: [[String: Any]] = actual.compactMap { row in
+            let info = row.request.content.userInfo
+            let event: TaskNotificationEvent?
+            if let value = info["event"], let data = try? JSONSerialization.data(withJSONObject: value) { event = try? JSONDecoder().decode(TaskNotificationEvent.self, from: data) }
+            else { event = try? TaskNotificationShared.decodeEnvelope(info) }
+            guard let event, event.target.agentId == "easywork", TaskNotificationValidation.event(event),
+              let encoded = try? JSONEncoder().encode(event), let value = try? JSONSerialization.jsonObject(with: encoded) else { return nil }
+            return ["identifier": row.request.identifier, "event": value, "title": row.request.content.title,
+              "subtitle": row.request.content.subtitle, "body": row.request.content.body,
+              "badge": row.request.content.badge as Any? ?? NSNull(), "hasSound": row.request.content.sound != nil]
+          }
+          do {
+            let encoded = try JSONEncoder().encode(self.preferences)
+            let preferences = try JSONSerialization.jsonObject(with: encoded)
+            let statuses: [[String: Any]] = self.statuses.values.filter { $0.target.agentId == "easywork" }.map {
+              ["hostId": $0.target.hostId, "state": $0.state, "delivery": $0.delivery, "revision": $0.revision as Any? ?? NSNull(), "reason": $0.reason.map { String($0.prefix(512)) } as Any? ?? NSNull()]
+            }
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            let selected: [String: Any]
+            if let store = self.store, store.client?.agentConnection?.target.agentId == "easywork" {
+              let approvals = (store.runtime?.approvals ?? []).map { approval -> [String: Any] in
+                ["id": approval.id, "threadId": approval.threadId, "turnId": approval.turnId,
+                 "kind": approval.kind, "decisions": approval.decisions,
+                 "notificationRequestId": approval.notificationRequestId as Any? ?? NSNull()]
+              }
+              let expectedNonce = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_EXPECTED_MESSAGE_NONCE"]
+              selected = ["threadId": store.selectedThreadId as Any? ?? NSNull(), "approvals": approvals,
+                "clientId": store.client?.id as Any? ?? NSNull(), "visibleMessageCount": store.messages.count,
+                "runtimeState": store.runtime?.state as Any? ?? NSNull(),
+                "expectedTaskMessageSeen": expectedNonce.map { nonce in
+                  !nonce.isEmpty && store.messages.contains { message in message.text.contains(nonce) }
+                } ?? false,
+                "permissionMode": store.selectedPermissionMode as Any? ?? NSNull(), "sheetPresented": store.sheet != nil]
+            } else { selected = [:] }
+            let value: [String: Any] = ["version": 1, "runId": run, "bundleIdentifier": Bundle.main.bundleIdentifier!,
+              "capturedAt": Date().timeIntervalSince1970, "preferences": preferences, "statuses": statuses,
+              "authorizationStatus": settings.authorizationStatus.rawValue, "delivered": notices, "selectedEasyWork": selected,
+              "testNotices": actual.filter { $0.request.identifier == "notification-test" }.map { ["identifier": $0.request.identifier, "title": $0.request.content.title, "subtitle": $0.request.content.subtitle, "body": $0.request.content.body] },
+              "actualNotificationResponse": self.easyWorkActualNotificationResponse as Any? ?? NSNull(),
+              "originalProtectedComponentMatches": IndependentAcceptanceLifecycle.protectedComponentMatches(),
+              "hasLocalNotificationKey": TaskNotificationShared.secret("device-key") != nil,
+              "notificationDeviceIdHash": SHA256.hash(data: Data(self.deviceId.utf8)).map { String(format: "%02x", $0) }.joined()]
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+          } catch { print("EASYWORK_NOTIFICATION_READONLY_OBSERVATION_FAILED") }
+        }
+        do { try await Task.sleep(for: .seconds(1)) } catch { return }
+      }
+    }
+  }
+  #endif
   func sound(for kind: TaskNoticeKind? = nil) -> UNNotificationSound? {
     guard preferences.soundEnabled else { return nil }
     let name = kind.flatMap { preferences.categorySounds[$0.rawValue] } ?? preferences.sound
@@ -267,6 +419,16 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       let settings = await UNUserNotificationCenter.current().notificationSettings()
       guard settings.authorizationStatus == .authorized else { error = L10n.tr("请先开启系统通知权限。"); return }
       let content = UNMutableNotificationContent(); content.title = L10n.tr("Agent Hub 测试通知"); content.body = L10n.tr("通知和铃声设置已应用。"); content.sound = sound()
+      #if DEBUG
+      if Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+        ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+        let run=ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"],UUID(uuidString:run)?.uuidString.lowercased()==run,
+        ProcessInfo.processInfo.environment["EASYWORK_TEST_NOTICE_TALL"]=="1" {
+        // Explicit auxiliary local-utility layout; no domain event or synthetic response.
+        content.subtitle="EasyWork · 本机测试"
+        content.body="这是一条本机测试通知，用于核对原生系统打开和铃声设置。"
+      }
+      #endif
       do { try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "notification-test", content: content, trigger: nil)) }
       catch { self.error = L10n.tr("测试通知发送失败。") }
     }
@@ -437,6 +599,20 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   }
   nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     let info = response.notification.request.content.userInfo
+    #if DEBUG
+    let responseIdentifier = response.notification.request.identifier, responseAction = response.actionIdentifier
+    let responseIsPush = response.notification.request.trigger is UNPushNotificationTrigger
+    let responseHasEnvelope = info["notification"] != nil, responseHasPlainEvent = info["event"] != nil
+    Task { @MainActor in
+      if Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+        ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+        let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"], UUID(uuidString: run)?.uuidString.lowercased() == run {
+        self.easyWorkActualNotificationResponse = ["identifier": responseIdentifier, "action": responseAction,
+          "actualPushTrigger": responseIsPush, "encryptedEnvelopePresent": responseHasEnvelope,
+          "plaintextEventPresent": responseHasPlainEvent]
+      }
+    }
+    #endif
     if info["businessNotification"] != nil {
       if let (event, _) = try? BusinessNotificationShared.decode(info) { Task { @MainActor in TaskHubBusinessNotifications.shared.receiveTap(event) } }
       completionHandler(); return
@@ -457,6 +633,16 @@ final class TaskNotificationAppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
     completionHandler(TaskNotificationController.shared.receiveBackground(userInfo))
   }
-  func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) { TaskNotificationController.shared.receiveToken(deviceToken) }
-  func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) { TaskNotificationController.shared.registrationFailed(error) }
+  func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    TaskNotificationController.shared.receiveToken(deviceToken)
+    #if DEBUG
+    IndependentAcceptanceLifecycle.notificationCallback("actual-uikit-apns-token-callback")
+    #endif
+  }
+  func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+    TaskNotificationController.shared.registrationFailed(error)
+    #if DEBUG
+    IndependentAcceptanceLifecycle.notificationCallback("actual-uikit-apns-error-callback")
+    #endif
+  }
 }

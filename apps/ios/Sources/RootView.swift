@@ -1,5 +1,9 @@
+import CryptoKit
 import MobileCore
 import PhotosUI
+import CoreTransferable
+import Darwin
+import ImageIO
 import QuickLook
 import QuartzCore
 import SwiftUI
@@ -32,12 +36,14 @@ struct IconButton: View {
   let symbol: String
   let label: String
   let id: String
+  var native = false
   var action: () -> Void
   var body: some View {
-    Button(action: action) {
+    AssistedContentButton(native:native,identifier:id,label:label) {
       Image(systemName: symbol).font(.system(size: 17)).frame(minWidth: 44, minHeight: 44)
         .contentShape(Rectangle())
-    }
+    } action: { action() }
+    .frame(width:native ? 44:nil,height:native ? 44:nil)
     .buttonStyle(.plain).accessibilityLabel(label).accessibilityIdentifier(id)
   }
 }
@@ -68,10 +74,23 @@ private struct ComposerActionAppearance: ViewModifier {
 }
 
 extension View {
+  @ViewBuilder func easyWorkCompactMenuSymbol(_ enabled: Bool) -> some View {
+    if enabled { self.font(.system(size: 17)) } else { self }
+  }
+
   func floatingSurface(cornerRadius: CGFloat = MobileDesignGeometry.floatingRadius) -> some View {
     modifier(FloatingSurface(cornerRadius: cornerRadius))
   }
 }
+
+#if DEBUG
+final class HostedNativeChromeGeometryView: UIView { var role="" }
+private struct HostedNativeChromeGeometryMarker: UIViewRepresentable {
+  let role:String
+  func makeUIView(context:Context)->HostedNativeChromeGeometryView {let view=HostedNativeChromeGeometryView();view.role=role;view.isUserInteractionEnabled=false;return view}
+  func updateUIView(_ view:HostedNativeChromeGeometryView,context:Context){view.role=role}
+}
+#endif
 
 private struct ComposerHeightPreference: PreferenceKey {
   static let defaultValue: CGFloat = 0
@@ -168,6 +187,34 @@ private struct ChatBottomPosition: PreferenceKey {
 private struct ChatScrollLayout: Equatable {
   let viewportHeight: CGFloat
   let composerHeight: CGFloat
+}
+
+private struct NativeUserScrollPhaseObserver:ViewModifier {
+  let enabled:Bool
+  let update:(Bool,Bool?)->Void
+  @State private var userDriven=false
+  @available(iOS 18.0,*) private func nearBottom(_ geometry:ScrollGeometry)->Bool {
+    let bottom=max(-geometry.contentInsets.top,
+      geometry.contentSize.height-geometry.containerSize.height+geometry.contentInsets.bottom)
+    return geometry.contentOffset.y>=bottom-120
+  }
+  @ViewBuilder func body(content:Content)->some View {
+    if #available(iOS 18.0,*),enabled {
+      content
+        .onScrollPhaseChange { old,phase,context in
+          let active=phase == .tracking || phase == .interacting || phase == .decelerating
+          let wasActive=old == .tracking || old == .interacting || old == .decelerating
+          userDriven=active
+          // Preference delivery can happen after the gesture has ended. Use
+          // the native geometry on that final transition too; programmatic
+          // scrolling and streaming growth must not disable automatic follow.
+          update(active,active || wasActive ? nearBottom(context.geometry):nil)
+        }
+        .onScrollGeometryChange(for:Bool.self,of:nearBottom) { _,near in
+          if userDriven { update(true,near) }
+        }
+    }else{content}
+  }
 }
 
 @MainActor private final class EarlierHistoryPosition {
@@ -992,8 +1039,26 @@ private final class SidebarDrawerController: UIViewController {
   private var onBegin: (() -> Void)?
   private var onSettle: ((Bool) -> Void)?
   private var onInteractionEnd: (() -> Void)?
+  private var applyingSwiftUIViewUpdate = false
+  private var interactionRevision: UInt64 = 0
   #if DEBUG
   private let animationProbe = SidebarAnimationProbe()
+  private func recordStateCallback(_ callback: String) {
+    guard Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      let run = ProcessInfo.processInfo.environment["EASYWORK_SIDEBAR_STATE_TRACE"],
+      run.range(of: #"^[a-zA-Z0-9_-]{1,80}$"#, options: .regularExpression) != nil else { return }
+    let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-sidebar-state-" + run + ".json")
+    var events = (try? Data(contentsOf: file)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [[String: Any]] } ?? []
+    guard events.count < 500 else { return }
+    events.append(["callback": callback, "duringSwiftUIViewUpdate": applyingSwiftUIViewUpdate,
+      "at": Date().timeIntervalSince1970, "stack": Thread.callStackSymbols])
+    do {
+      try JSONSerialization.data(withJSONObject: events, options: [.sortedKeys]).write(to: file,
+        options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    } catch { print("EASYWORK_SIDEBAR_STATE_TRACE_WRITE_FAILED", error) }
+  }
   #endif
 
   init(content: @escaping @MainActor () -> AnyView, width: CGFloat, isOpen: Bool) {
@@ -1056,6 +1121,11 @@ private final class SidebarDrawerController: UIViewController {
   func update(content: @escaping @MainActor () -> AnyView, width: CGFloat, isOpen: Bool, isEnabled: Bool,
     reduceMotion: Bool, onBegin: @escaping () -> Void, onSettle: @escaping (Bool) -> Void,
     onInteractionEnd: @escaping () -> Void) {
+    applyingSwiftUIViewUpdate = true
+    defer { applyingSwiftUIViewUpdate = false }
+    #if DEBUG
+    recordStateCallback("update")
+    #endif
     self.onBegin = onBegin
     self.onSettle = onSettle
     self.onInteractionEnd = onInteractionEnd
@@ -1106,7 +1176,29 @@ private final class SidebarDrawerController: UIViewController {
   private func beginInteraction() {
     guard !interacting else { return }
     interacting = true
-    onBegin?()
+    interactionRevision &+= 1
+    notifyStateCallback("onBegin", revision: interactionRevision, when: { $0.interacting }) { $0.onBegin?() }
+  }
+
+  private func notifyStateCallback(_ name: String, revision: UInt64,
+    when isCurrent: @escaping @MainActor @Sendable (SidebarDrawerController) -> Bool,
+    perform: @escaping @MainActor @Sendable (SidebarDrawerController) -> Void) {
+    let deliver: @MainActor @Sendable () -> Void = { [weak self] in
+      guard let self, self.interactionRevision == revision, isCurrent(self) else { return }
+      #if DEBUG
+      self.recordStateCallback(name)
+      #endif
+      perform(self)
+    }
+    if applyingSwiftUIViewUpdate {
+      // A representable update must not publish FocusState/ObservableObject
+      // changes into the SwiftUI pass that is currently applying it. UIKit's
+      // motion and hit-testing state already changed synchronously above.
+      #if DEBUG
+      recordStateCallback("deferred-" + name)
+      #endif
+      DispatchQueue.main.async(execute: deliver)
+    } else { deliver() }
   }
 
   private func beginDrag() {
@@ -1116,7 +1208,6 @@ private final class SidebarDrawerController: UIViewController {
     dragOrigin = position
     dragging = true
     beginInteraction()
-    panelSurface.isHidden = false
     updateInteraction()
     #if DEBUG
     SidebarGestureProbe.begin(position: position)
@@ -1157,7 +1248,6 @@ private final class SidebarDrawerController: UIViewController {
       return
     }
     beginInteraction()
-    panelSurface.isHidden = false
     updateInteraction()
     // One transform animates from the current position; no insertion/removal transition.
     let motion = UIViewPropertyAnimator(duration: 0.22, curve: .easeOut)
@@ -1195,17 +1285,35 @@ private final class SidebarDrawerController: UIViewController {
 
   private func updateInteraction() {
     (view as? SidebarContainerView)?.capturesTouches = targetOpen || interacting
-    panelSurface.isUserInteractionEnabled = targetOpen && !interacting
-    panelSurface.accessibilityElementsHidden = !targetOpen || interacting
-    panelSurface.accessibilityViewIsModal = targetOpen && !interacting
     backdrop.isUserInteractionEnabled = targetOpen && !interacting
+    let revision = interactionRevision, expectedOpen = targetOpen, expectedInteraction = interacting
+    let apply: @MainActor @Sendable () -> Void = { [weak self] in
+      guard let self, self.interactionRevision == revision, self.targetOpen == expectedOpen,
+        self.interacting == expectedInteraction else { return }
+      #if DEBUG
+      self.recordStateCallback("panelInteraction")
+      #endif
+      // Disabling/hiding a hosting view can synchronously commit a focused
+      // TextField's binding. Finish editing outside the representable update
+      // before changing its interaction or accessibility visibility.
+      if !expectedOpen || expectedInteraction { self.panelSurface.endEditing(true) }
+      self.panelSurface.isUserInteractionEnabled = expectedOpen && !expectedInteraction
+      self.panelSurface.accessibilityElementsHidden = !expectedOpen || expectedInteraction
+      self.panelSurface.accessibilityViewIsModal = expectedOpen && !expectedInteraction
+      self.panelSurface.isHidden = !expectedOpen && !expectedInteraction
+    }
+    if applyingSwiftUIViewUpdate {
+      #if DEBUG
+      recordStateCallback("deferred-panelInteraction")
+      #endif
+      DispatchQueue.main.async(execute: apply)
+    } else { apply() }
   }
 
   private func finishInteraction() {
     #if DEBUG
     animationProbe.finish(interrupted: false)
     #endif
-    panelSurface.isHidden = !targetOpen
     let wasInteracting = interacting
     interacting = false
     updateInteraction()
@@ -1215,8 +1323,14 @@ private final class SidebarDrawerController: UIViewController {
     refreshContent()
     let settled = pendingSettlement
     pendingSettlement = nil
-    if let settled { onSettle?(settled) }
-    if wasInteracting { onInteractionEnd?() }
+    if let settled {
+      notifyStateCallback("onSettle", revision: interactionRevision,
+        when: { !$0.interacting && $0.targetOpen == settled }) { $0.onSettle?(settled) }
+    }
+    if wasInteracting {
+      notifyStateCallback("onInteractionEnd", revision: interactionRevision,
+        when: { !$0.interacting }) { $0.onInteractionEnd?() }
+    }
   }
 
   func detach() {
@@ -1275,6 +1389,88 @@ private final class SidebarDrawerController: UIViewController {
 }
 #endif
 
+/// Presentation ownership is local to one chat window. An old cover can still
+/// obscure a newly selected target; only its matching dismissal releases it.
+@MainActor private final class ChatReadingCovers: ObservableObject {
+  @Published private var owners: [UUID: String] = [:]
+  private final class NativeMenu {
+    weak var button: UIButton?
+    init(_ button: UIButton) { self.button = button }
+  }
+  private var nativeMenus: [UUID: NativeMenu] = [:]
+  private var menuNotificationPending = false
+  @Published private(set) var imagePreview: ResourceImagePreviewItem?
+  private var imageOwner: (id: UUID, context: String)?
+  private var currentContext = ""
+  var isCovered: Bool { !owners.isEmpty || nativeMenus.values.contains { $0.button?.isHeld == true } }
+  func trackMenu(_ owner: UUID, button: UIButton) { nativeMenus[owner] = NativeMenu(button) }
+  func menuChanged() {
+    guard !menuNotificationPending else { return }
+    menuNotificationPending = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self else { return }
+      self.menuNotificationPending = false
+      self.objectWillChange.send()
+    }
+  }
+  func releaseMenu(_ owner: UUID) {
+    nativeMenus.removeValue(forKey: owner)
+    menuChanged()
+  }
+  func activate(_ context: String) { currentContext = context }
+  @discardableResult func begin(_ owner: UUID, context: String) -> Bool {
+    guard !context.isEmpty, context == currentContext else { return false }
+    if owners[owner] != context { owners[owner] = context }
+    return true
+  }
+  func end(_ owner: UUID, context: String) {
+    guard owners[owner] == context else { return }
+    owners.removeValue(forKey: owner)
+  }
+  @discardableResult func presentImage(_ item: ResourceImagePreviewItem, owner: UUID, context: String) -> Bool {
+    guard imagePreview == nil, imageOwner == nil, begin(owner, context: context) else { return false }
+    imageOwner = (owner, context)
+    imagePreview = item
+    return true
+  }
+  func dismissImage() {
+    if imagePreview != nil { imagePreview = nil }
+  }
+  func imageDidDismiss() {
+    guard imagePreview == nil, let owner = imageOwner else { return }
+    imageOwner = nil
+    end(owner.id, context: owner.context)
+  }
+}
+private struct NativeMenuReadingCover: View {
+  @Environment(\.chatReadingCovers) private var environmentCovers
+  @Environment(\.chatReadingContext) private var environmentContext
+  var covers: ChatReadingCovers? = nil
+  var context: String? = nil
+  var body: some View {
+    let gate = covers ?? environmentCovers
+    MenuReadingCoverProbe(resolved: { owner, button in gate?.trackMenu(owner, button: button) },
+      changed: { gate?.menuChanged() }, released: { gate?.releaseMenu($0) })
+      .id(context ?? environmentContext)
+  }
+}
+private struct ChatReadingCoversKey: EnvironmentKey {
+  static let defaultValue: ChatReadingCovers? = nil
+}
+private struct ChatReadingContextKey: EnvironmentKey {
+  static let defaultValue = ""
+}
+private extension EnvironmentValues {
+  var chatReadingCovers: ChatReadingCovers? {
+    get { self[ChatReadingCoversKey.self] }
+    set { self[ChatReadingCoversKey.self] = newValue }
+  }
+  var chatReadingContext: String {
+    get { self[ChatReadingContextKey.self] }
+    set { self[ChatReadingContextKey.self] = newValue }
+  }
+}
+
 struct RootView: View {
   private static var initialHistoryWindow: Int {
     #if DEBUG
@@ -1288,6 +1484,7 @@ struct RootView: View {
   @StateObject private var taskHub = TaskHubStore()
   @StateObject private var voice = VoiceInputController()
   @StateObject private var sidebarMotion = SidebarDrawerCommands()
+  @StateObject private var readingCovers = ChatReadingCovers()
   @ObservedObject private var notifications = TaskNotificationController.shared
   @ObservedObject private var businessNotifications = TaskHubBusinessNotifications.shared
   @State private var showComposerActions = false
@@ -1296,6 +1493,8 @@ struct RootView: View {
   @State private var followsLatest = true
   @State private var latestMessageVisibility: ChatBottomVisibility?
   @State private var visibleMessageLimit = RootView.initialHistoryWindow
+  @State private var toolDisclosures: [ToolDisclosureKey: ToolDisclosureState] = [:]
+  @State private var toolDisclosureOrder: [ToolDisclosureKey] = []
   @State private var timelineCache = ChatTimelineCache()
   @State private var readySearchJump: UUID?
   @State private var renameChatTarget: ChatRenameContext?
@@ -1311,6 +1510,7 @@ struct RootView: View {
   @State private var revealedEarlierHistory = false
   @State private var composerHeight: CGFloat = 104
   @State private var userScrolling = false
+  @State private var nativeUserScrolling = false
   @State private var sidebarSearchVisible = false
   @State private var sidebarRefreshRequest: UUID?
   @State private var expandedRecentClients: Set<String> = []
@@ -1321,6 +1521,9 @@ struct RootView: View {
   @FocusState private var composerFocused: Bool
   @FocusState private var sidebarSearchFocused: Bool
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.colorScheme) private var inheritedColorScheme
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   @ViewBuilder var body: some View {
     #if DEBUG
@@ -1364,17 +1567,29 @@ struct RootView: View {
     false
     #endif
   }
-  private var normalBody: some View {
+  private var presentedRootContent: some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
         SidebarBackground(motionState: sidebarMotion.motionState) {
-        chatBody.frame(maxWidth: .infinity, maxHeight: .infinity)
-          .overlay(alignment: .top) { toolbar }
+        chatBody
+          .environment(\.chatReadingCovers, readingCovers)
+          .environment(\.chatReadingContext, store.readingContextKey)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .safeAreaInset(edge: .top, spacing: 0) {
+            if accessibleEasyWorkToolbar { toolbarWithNativeGeometry }
+          }
+          .overlay(alignment: .top) {
+            if !accessibleEasyWorkToolbar { toolbarWithNativeGeometry }
+          }
           .overlay(alignment: .bottom) {
             if store.client != nil {
-              composer.background {
+              composer.environment(\.chatReadingCovers, readingCovers)
+                .environment(\.chatReadingContext, store.readingContextKey).background {
                 GeometryReader { size in
                   Color.clear.preference(key: ComposerHeightPreference.self, value: size.size.height)
+                  #if DEBUG
+                  if SessionStore.hostedEasyWorkProductUIEnabled { HostedNativeChromeGeometryMarker(role:"composer").allowsHitTesting(false).accessibilityHidden(true) }
+                  #endif
                 }
               }
             }
@@ -1416,6 +1631,7 @@ struct RootView: View {
     }
     .preferredColorScheme(store.colorScheme)
     .task {
+      guard !hostedExaminerOwnsRefresh else { return }
       TaskNotificationController.shared.attach(store)
       #if DEBUG
       if !voiceDEVPairingApplied, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
@@ -1433,33 +1649,38 @@ struct RootView: View {
       #endif
     }
     .task(id: scenePhase == .active) {
-      guard scenePhase == .active else { return }
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
       await EasyWorkKnownHosts.shared.run(store)
     }
     .task(id: scenePhase == .active && voicePreference == .desktop ? store.voiceReadinessScope : nil) {
-      guard scenePhase == .active, voicePreference == .desktop else { return }
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active, voicePreference == .desktop else { return }
       await store.monitorVoiceReadiness()
     }
     .task(id: scenePhase == .active) {
-      guard scenePhase == .active else { return }
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
       await CodexHostDiscovery.shared.run(store)
     }
     .task(id: scenePhase == .active) {
-      guard scenePhase == .active else { return }
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
       await VPNHostDiscovery.shared.run(store)
     }
     .onChange(of: scenePhase) { _, phase in
+      guard !hostedExaminerOwnsRefresh else { return }
       if phase != .active { store.sidebarInteracting = false; taskHub.stop() }
       else { Task { await taskHub.refresh() } }
       TaskNotificationController.shared.setActive(phase == .active)
       if phase != .active { EasyWorkKnownHosts.shared.stop(); CodexHostDiscovery.shared.stop(); VPNHostDiscovery.shared.stop() }
     }
     .onChange(of: businessNotifications.pendingNavigation?.id) { _, eventId in
-      if eventId != nil { store.sheet = .taskHub }
+      if !hostedExaminerOwnsRefresh, eventId != nil { store.sheet = .taskHub }
     }
     .tint(.primary)
     .environmentObject(voice)
     .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented))
+    .onChange(of: store.readingContextKey, initial: true) { _, context in readingCovers.activate(context) }
+    .fullScreenCover(item: Binding(get: { readingCovers.imagePreview }, set: { item in
+      if item == nil { readingCovers.dismissImage() }
+    }), onDismiss: { readingCovers.imageDidDismiss() }) { ResourceImagePreview(item: $0) }
       .confirmationDialog(L10n.tr("结束等待？"), isPresented: Binding(get: { endChatActionTarget != nil }, set: { if !$0 { endChatActionTarget = nil } }), titleVisibility: .visible) {
         Button(L10n.tr("结束等待")) { if let receipt = endChatActionTarget { store.endChatActionWaiting(receipt) }; endChatActionTarget = nil }
         Button(L10n.tr("取消"), role: .cancel) { endChatActionTarget = nil }
@@ -1479,25 +1700,34 @@ struct RootView: View {
       }
       .sheet(item: $store.sheet, onDismiss: {
         if let jump = store.chatSearchJump, jump.targetKey == store.targetKey, jump.token != readySearchJump { readySearchJump = jump.token }
-      }) { route in sheets(route).presentationDragIndicator(.visible) }
-    .alert(store.errorTitle, isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
+      }) { route in
+        sheets(route).preferredColorScheme(store.colorScheme ?? inheritedColorScheme).presentationDragIndicator(.visible)
+      }
+  }
+
+  private var normalBody: some View {
+    presentedRootContent.alert(
+      store.errorTitle,
+      isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })
+    ) {
       Button(L10n.tr("好"), role: .cancel) { store.error = nil }
     } message: {
       Text(store.error ?? "")
     }
     .task {
+      guard !hostedExaminerOwnsRefresh else { return }
       await store.recoverLocalAttachmentImports()
       if store.client?.isDemo == false { await store.refresh() }
     }
     .task(id: scenePhase == .active) {
-      guard scenePhase == .active else { return }
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
       while !Task.isCancelled {
         await store.refreshMobileUnread()
         do { try await Task.sleep(for: .seconds(10)) } catch { return }
       }
     }
     .task(id: sidebarRefreshKey) {
-      guard store.drawerOpen, scenePhase == .active, store.client?.isDemo == false,
+      guard !hostedExaminerOwnsRefresh, store.drawerOpen, scenePhase == .active, store.client?.isDemo == false,
         store.client?.online == true else { return }
       // Let the opening/settling animation finish before applying a workspace response.
       do { try await Task.sleep(for: .milliseconds(220)) } catch { return }
@@ -1509,14 +1739,26 @@ struct RootView: View {
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
         if store.localRecoveryRequired { store.retryLocalRecovery() }
-        store.prepareForegroundConnections()
-        if store.client?.isDemo == false { Task { await store.refresh() } }
+        if !hostedExaminerOwnsRefresh {
+          store.prepareForegroundConnections()
+          if store.client?.isDemo == false { Task { await store.refresh() } }
+        }
       }
-      if phase == .background || (phase == .inactive && voice.phase != .requesting) { voice.suspend() }
+      voice.handleScenePhase(phase)
       if phase != .active { store.suspendEvents(); store.persistForBackground() }
     }
     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("CodexNetworkPathChanged"))) { _ in
-      if scenePhase == .active { store.recoverNetworkReads() }
+      if !hostedExaminerOwnsRefresh, scenePhase == .active { store.recoverNetworkReads() }
+    }
+    .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
+      guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
+        let context = store.currentProjectGitContext else { return }
+      await ProjectGitStore.shared.refresh(context.client, context.target, context.project.id)
+    }
+    .onChange(of: store.conversation?.projectId) { _, projectId in
+      if store.sheet == .projectGit, store.projectGitContext?.project.id != projectId {
+        store.sheet = nil; store.projectGitContext = nil
+      }
     }
     .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
       guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
@@ -1533,6 +1775,7 @@ struct RootView: View {
       store.chatSearchJump = nil
       readySearchJump = nil
       if store.sheet == .chatSearch || store.sheet == .projectGit { store.sheet = nil }
+      store.projectGitContext = nil
       renameChatTarget = nil
       deleteChatTarget = nil
       endChatActionTarget = nil
@@ -1562,14 +1805,39 @@ struct RootView: View {
     }
   }
 
+  private var accessibleEasyWorkToolbar: Bool {
+    store.client?.agentConnection?.target.agentId=="easywork" && dynamicTypeSize.isAccessibilitySize
+  }
+
+  private var sidebarToggle: some View {
+    IconButton(symbol: "line.3.horizontal", label: L10n.tr("打开项目和对话"), id: "open-sidebar", native:store.client?.agentConnection?.target.agentId=="easywork", action: openSidebar)
+      .floatingSurface()
+  }
+
+  private var toolbarWithNativeGeometry: some View {
+    toolbar.background {
+      #if DEBUG
+      if SessionStore.hostedEasyWorkProductUIEnabled { HostedNativeChromeGeometryMarker(role:"toolbar").allowsHitTesting(false).accessibilityHidden(true) }
+      #endif
+    }
+  }
+
   private var toolbar: some View {
-    HStack(spacing: 8) {
-      IconButton(symbol: "line.3.horizontal", label: L10n.tr("打开项目和对话"), id: "open-sidebar", action: openSidebar)
-        .floatingSurface()
-      Spacer(minLength: 0)
-      clientSelector.layoutPriority(-1)
-      Spacer(minLength: 0)
-      chatActions
+    Group {
+      if accessibleEasyWorkToolbar {
+        VStack(alignment: .leading, spacing: 4) {
+          HStack(spacing: 8) { sidebarToggle; Spacer(minLength: 0); chatActions }
+          clientSelector.fixedSize(horizontal: false, vertical: true)
+        }
+      } else {
+        HStack(spacing: 8) {
+          sidebarToggle
+          Spacer(minLength: 0)
+          clientSelector.layoutPriority(-1)
+          Spacer(minLength: 0)
+          chatActions
+        }
+      }
     }.padding(.horizontal, 12).padding(.top, 1).padding(.bottom, 9)
   }
 
@@ -1584,7 +1852,7 @@ struct RootView: View {
   private var chatActions: some View {
       HStack(spacing: 0) {
         if composerFocused {
-          IconButton(symbol: "keyboard.chevron.compact.down", label: L10n.tr("收起键盘"), id: "composer-dismiss-keyboard") {
+          IconButton(symbol: "keyboard.chevron.compact.down", label: L10n.tr("收起键盘"), id: "composer-dismiss-keyboard", native: store.client?.agentConnection?.target.agentId=="easywork") {
             composerFocused = false
           }
         }
@@ -1620,6 +1888,7 @@ struct RootView: View {
               }
             }
           }
+          if store.client?.agentConnection?.target.agentId == "easywork" { ProjectGitMenuEntry(store: store) }
           if store.supportsChatManagement {
             Button(L10n.tr("已归档对话"), systemImage: "archivebox") { store.sheet = .archivedChats }.accessibilityIdentifier("archived-chats")
           }
@@ -1664,7 +1933,15 @@ struct RootView: View {
           }
           Button(L10n.tr("设置"), systemImage: "gearshape") { store.sheet = .settings }
         } label: {
-          Image(systemName: "ellipsis").frame(width: 44, height: 44)
+          Image(systemName: "ellipsis").easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork").frame(width: 44, height: 44)
+            .background {
+              NativeMenuReadingCover(covers: readingCovers, context: store.readingContextKey)
+              #if DEBUG
+              if SessionStore.hostedEasyWorkProductUIEnabled {
+                HostedNativeChatMenuAnchor(targetKey:store.targetKey,threadId:store.selectedThreadId ?? "")
+              }
+              #endif
+            }
         }
         .id(store.targetKey)
         .accessibilityLabel(L10n.tr("对话选项")).accessibilityIdentifier("chat-menu")
@@ -1692,7 +1969,7 @@ struct RootView: View {
             }
           }
           Image(systemName: "chevron.down").font(.caption2)
-        }.padding(.horizontal, 10).frame(minHeight: 44).frame(maxWidth: 145)
+        }.padding(.horizontal, 10).frame(minHeight: 44).frame(maxWidth: accessibleEasyWorkToolbar ? .infinity : 145)
           .floatingSurface()
       }.buttonStyle(.plain).accessibilityIdentifier("client-switch")
         .accessibilityLabel(
@@ -1744,6 +2021,7 @@ struct RootView: View {
       ScrollViewReader { proxy in
         GeometryReader { viewport in
           let target = store.targetKey
+          let latestReservedHeight:CGFloat = store.client?.agentConnection?.target.agentId=="easywork" && !followsLatest ? 68:0
           let timeline = timelineCache.project(targetKey: target, messages: store.messages, messageLimit: visibleMessageLimit,
             activeRunId: store.runtime?.turnId, isRunning: store.isRunning || store.runtime?.state == "paused", focusedMessageId: store.chatSearchJump?.message.id)
           ScrollView {
@@ -1759,16 +2037,19 @@ struct RootView: View {
                     } else if message.kind == "turnFailure" {
                       VStack(alignment: .leading, spacing: 4) {
                         Label(L10n.tr("任务失败记录"), systemImage: "exclamationmark.circle")
-                        Text(message.text).textSelection(.enabled)
+                        Text(EasyWorkFailurePresentation.text(message.text,enabled:store.client?.agentConnection?.target.agentId=="easywork")).textSelection(.enabled)
                       }.font(.caption).foregroundStyle(Palette.secondary)
                         .accessibilityIdentifier("task-failure-history-\(message.id)")
+                    } else if message.kind == "subAgent" {
+                      EasyWorkSubagentMessageView(message: message)
                     } else if message.kind == "plan" {
-                      ProposedPlanMessageView(message: message)
+                      ProposedPlanMessageView(message: message,native:store.client?.agentConnection?.target.agentId=="easywork")
                     } else {
                       MessageView(message: message, client: store.client, threadId: store.selectedThreadId).equatable()
                     }
                   case .tools(let id, let messages):
-                    ToolCallGroupView(id: id, messages: messages, client: store.client)
+                    ToolCallGroupView(id: id, messages: messages, client: store.client,
+                      disclosure: toolDisclosure(targetKey: target, groupId: id))
                       .padding(.vertical, messages.count > 1 ? -6 : 0)
                   case .replyActions(let id, let text, let turnId):
                     ReplyActionsView(store: store, id: id, text: text, turnId: turnId, source: store.forkSource)
@@ -1817,7 +2098,7 @@ struct RootView: View {
                       key: ChatBottomPosition.self,
                       value: ChatBottomVisibility(targetKey: target,
                         bottom: position.frame(in: .named("chat-scroll")).maxY,
-                        visibleBottom: max(0, viewport.size.height - composerHeight)))
+                        visibleBottom: max(0, viewport.size.height - composerHeight - latestReservedHeight)))
                   }
                 }
               }
@@ -1838,7 +2119,7 @@ struct RootView: View {
             .scrollBounceBehavior(.always, axes: .vertical)
             .safeAreaInset(edge: .top, spacing: 0) {
               VStack(spacing: 0) {
-                Color.clear.frame(height: 54).allowsHitTesting(false)
+                Color.clear.frame(height: accessibleEasyWorkToolbar ? 0 : 54).allowsHitTesting(false)
                 if store.conversation?.archived == true {
                   Label(L10n.tr("此对话已归档，恢复后可继续。"), systemImage: "archivebox")
                     .font(.caption).frame(maxWidth: .infinity, alignment: .leading)
@@ -1863,9 +2144,9 @@ struct RootView: View {
             // Let the native scroll view account for the floating input and
             // keyboard in its visible area while keeping this inset transparent.
             .safeAreaInset(edge: .bottom, spacing: 0) {
-              Color.clear.frame(height: composerHeight).allowsHitTesting(false)
+              Color.clear.frame(height: composerHeight + latestReservedHeight).allowsHitTesting(false)
             }
-            .contentMargins(.bottom, composerHeight, for: .scrollIndicators)
+            .contentMargins(.bottom, composerHeight + latestReservedHeight, for: .scrollIndicators)
             .coordinateSpace(name: "chat-scroll")
             .onPreferenceChange(ChatBottomPosition.self) { visibility in
               guard let visibility, visibility.targetKey == store.targetKey else { return }
@@ -1876,7 +2157,9 @@ struct RootView: View {
                 || latestMessageVisibility?.isVisible != visibility.isVisible {
                 latestMessageVisibility = visibility
               }
-              if userScrolling {
+              let nativeGeometry:Bool
+              if #available(iOS 18.0,*) {nativeGeometry=store.client?.agentConnection?.target.agentId=="easywork"}else{nativeGeometry=false}
+              if userScrolling && !nativeGeometry {
                 let follows = visibility.isNearBottom
                 if followsLatest != follows { followsLatest = follows }
               }
@@ -1885,13 +2168,17 @@ struct RootView: View {
               DragGesture().onChanged { _ in if !userScrolling { userScrolling = true } }
                 .onEnded { _ in userScrolling = false }
             )
+            .modifier(NativeUserScrollPhaseObserver(enabled:store.client?.agentConnection?.target.agentId=="easywork"){active,near in
+              nativeUserScrolling=active
+              if let near,followsLatest != near {followsLatest=near}
+            })
             .task(id: readingVisibilityKey) {
               await Task.yield()
               // A read that starts during drawer settlement must resume after it,
               // including a cancelled drag that leaves drawerOpen unchanged.
               do { try await store.waitForSidebarInteraction() } catch { return }
-              guard !Task.isCancelled, scenePhase == .active, !store.drawerOpen,
-                store.sheet == nil, latestMessageVisible, !store.historyLoading else { return }
+              guard !Task.isCancelled, readingSurfaceUnobscured,
+                latestMessageVisible, !store.historyLoading else { return }
               store.recordVisibleContent()
             }
             .onAppear {
@@ -1912,10 +2199,13 @@ struct RootView: View {
               Task { @MainActor in
                 await Task.yield()
                 guard store.chatSearchJump?.token == token else { return }
-                withAnimation { proxy.scrollTo("message-" + jump.message.id, anchor: .center) }
+                withAnimation(store.client?.agentConnection?.target.agentId=="easywork" && reduceMotion ? nil : .default) {
+                  proxy.scrollTo("message-" + jump.message.id, anchor: .center)
+                }
               }
             }
             .onChange(of: store.selectedThreadId) { _, _ in
+              nativeUserScrolling = false
               followsLatest = true
               proxy.scrollTo("bottom", anchor: .bottom)
             }
@@ -1939,7 +2229,11 @@ struct RootView: View {
             }
             .onChange(of: composerFocused) { _, focused in
               if focused { earlierHistoryPosition.cancel() }
-              if focused { withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
+              if focused {
+                withAnimation(store.client?.agentConnection?.target.agentId=="easywork" && reduceMotion ? nil : .default) {
+                  proxy.scrollTo("bottom", anchor: .bottom)
+                }
+              }
             }
             .onChange(of: followsLatest) { _, follows in
               if follows { earlierHistoryBottomSlack = 0 }
@@ -1953,13 +2247,12 @@ struct RootView: View {
             }
             .overlay(alignment: .bottomTrailing) {
               if !followsLatest {
-                Button {
-                  followsLatest = true
-                  proxy.scrollTo("bottom", anchor: .bottom)
-                } label: {
+                AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",identifier:"scroll-latest",label:L10n.tr("跳转最新消息")) {
                   Image(systemName: "arrow.down").frame(width: 44, height: 44)
                     .floatingSurface()
-                }.accessibilityLabel(L10n.tr("跳转最新消息")).padding(.horizontal, 12)
+                } action:{followsLatest=true;proxy.scrollTo("bottom",anchor:.bottom)}
+                  .frame(width:44,height:44)
+                  .accessibilityLabel(L10n.tr("跳转最新消息")).padding(.horizontal, 12)
                   .padding(.bottom, composerHeight + 8)
               }
             }
@@ -1970,6 +2263,9 @@ struct RootView: View {
                   targetMatches: HistoryScrollProbe.matches(host: store.client?.id, thread: store.selectedThreadId),
                   hostMatches: HistoryScrollProbe.matchesHost(store.client?.id), threadSelected: store.selectedThreadId != nil,
             selectedThreadId: store.selectedThreadId)
+                HostedNativeHistoryWindowState(targetKey: store.targetKey, messageCount: store.messages.count,
+                  messageLimit: visibleMessageLimit,followsLatest:followsLatest,
+                  nativeUserScrolling:nativeUserScrolling).frame(width: 1, height: 1).allowsHitTesting(false)
               }
             }
             #endif
@@ -1980,22 +2276,19 @@ struct RootView: View {
 
   @ViewBuilder private func earlierHistoryControl(timeline: ChatTimeline) -> some View {
     if timeline.hasEarlierMessages || store.historyCursor != nil || earlierHistoryRequest != nil {
-      Button {
+      AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+        identifier:timeline.hasEarlierMessages ? "history-local-more" : "history-more",
+        label:earlierHistoryRequest != nil ? L10n.tr("正在加载更早消息…") : L10n.tr("显示更早消息")) {
+        HStack(spacing: 6) {
+          if earlierHistoryRequest != nil { ProgressView().controlSize(.mini) }
+          else { Image(systemName:"chevron.up").font(.caption2) }
+          Text(earlierHistoryRequest != nil ? L10n.tr("正在加载更早消息…") : L10n.tr("显示更早消息")).font(.caption)
+        }.foregroundStyle(Palette.secondary).frame(maxWidth:.infinity,minHeight:44).contentShape(Rectangle())
+      } action: {
         #if DEBUG
         earlierHistoryPosition.markAttempt(-1, loading: store.historyLoading, local: timeline.hasEarlierMessages)
         #endif
         Task { await loadEarlierHistory(timeline: timeline) }
-      } label: {
-        HStack(spacing: 6) {
-          if earlierHistoryRequest != nil {
-            ProgressView().controlSize(.mini)
-          } else {
-            Image(systemName: "chevron.up").font(.caption2)
-          }
-          Text(earlierHistoryRequest != nil ? L10n.tr("正在加载更早消息…") : L10n.tr("显示更早消息"))
-            .font(.caption)
-        }.foregroundStyle(Palette.secondary)
-          .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
       }.buttonStyle(.plain)
         .disabled(earlierHistoryRequest != nil)
         .accessibilityHint(L10n.tr("也可以在列表顶部下拉加载"))
@@ -2059,9 +2352,13 @@ struct RootView: View {
           voice.cancel()
         }.id(store.targetKey).padding(.horizontal, 16)
       }
-      ComposerView(suggestionReader: store.desktopSuggestionReader, store: store, drafts: store.drafts, voice: voice,
+      let editor = ComposerView(suggestionReader: store.desktopSuggestionReader, store: store, drafts: store.drafts, voice: voice,
         attachmentModalPresented: $attachmentModalPresented,
-        showComposerActions: $showComposerActions, composerFocused: $composerFocused)
+        showComposerActions: $showComposerActions, composerFocused: $composerFocused,
+        parentInputs: ComposerParentInputs(store: ObjectIdentifier(store), drafts: ObjectIdentifier(store.drafts),
+          voice: ObjectIdentifier(voice), suggestion: ObjectIdentifier(store.desktopSuggestionReader),
+          attachmentModalPresented: attachmentModalPresented, showActions: showComposerActions, focused: composerFocused))
+      if store.client?.agentConnection?.target.agentId == "easywork" { editor.equatable() } else { editor }
     }
   }
 
@@ -2090,7 +2387,7 @@ struct RootView: View {
         }.accessibilityLabel(L10n.tr("切换客户端，\(store.client?.name ?? L10n.tr("未连接"))，\(store.sourceLabel(for: store.client))"))
           .accessibilityIdentifier("sidebar-client-switch")
           .accessibilityValue(L10n.tr("手机共\(notifications.unreadCount)个未读对话"))
-        IconButton(symbol: "magnifyingglass", label: L10n.tr("搜索项目和对话"), id: "sidebar-search-toggle") {
+        IconButton(symbol: "magnifyingglass", label: L10n.tr("搜索项目和对话"), id: "sidebar-search-toggle",native:store.client?.agentConnection?.target.agentId=="easywork") {
           sidebarSearchVisible.toggle()
           sidebarSearchFocused = sidebarSearchVisible
           if !sidebarSearchVisible { store.search = "" }
@@ -2173,12 +2470,9 @@ struct RootView: View {
             }.id("sidebar-pinned-section")
           }
           if !recentThreads.isEmpty {
-            Button {
-              var collapsed = collapsedRecentSections
-              toggleSidebarSet(&collapsed, key: sidebarClientKey)
-              if let data = try? JSONEncoder().encode(collapsed.sorted()),
-                let value = String(data: data, encoding: .utf8) { collapsedRecentClients = value }
-            } label: {
+            AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+              identifier:"sidebar-recent-toggle",label:recentSectionExpanded ? L10n.tr("收起最近聊天") : L10n.tr("展开最近聊天"),
+              value:recentSectionExpanded ? L10n.tr("已展开") : L10n.tr("已折叠")) {
               HStack(spacing: 6) {
                 Text(L10n.tr("最近"))
                 Image(systemName: recentSectionExpanded ? "chevron.down" : "chevron.right")
@@ -2186,6 +2480,11 @@ struct RootView: View {
               }.font(.subheadline).foregroundStyle(Palette.secondary)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
+            } action: {
+              var collapsed = collapsedRecentSections
+              toggleSidebarSet(&collapsed, key: sidebarClientKey)
+              if let data = try? JSONEncoder().encode(collapsed.sorted()),
+                let value = String(data: data, encoding: .utf8) { collapsedRecentClients = value }
             }.padding(.horizontal, 9)
               .accessibilityIdentifier("sidebar-recent-toggle")
               .accessibilityLabel(recentSectionExpanded ? L10n.tr("收起最近聊天") : L10n.tr("展开最近聊天"))
@@ -2197,7 +2496,11 @@ struct RootView: View {
                 threadRow(thread, idPrefix: "recent-thread")
               }
               if store.search.isEmpty && recentThreads.count > 5 {
-                Button(expanded ? L10n.tr("收起显示") : L10n.tr("展开显示")) {
+                AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+                  identifier:"sidebar-more-recent",label:expanded ? L10n.tr("收起更多最近聊天") : L10n.tr("展开更多最近聊天")) {
+                  Text(expanded ? L10n.tr("收起显示") : L10n.tr("展开显示"))
+                    .frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
+                } action: {
                   toggleSidebarSet(&expandedRecentClients, key: sidebarClientKey)
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                   .padding(.horizontal, 9).foregroundStyle(Palette.secondary)
@@ -2208,9 +2511,9 @@ struct RootView: View {
           }
           if !filteredProjects.isEmpty || store.canCreateProject {
             HStack(spacing: 0) {
-              Button {
-                toggleSidebarSet(&collapsedProjectSections, key: sidebarClientKey)
-              } label: {
+              AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+                identifier:"sidebar-projects-toggle",label:L10n.tr("项目"),
+                value:projectsSectionExpanded ? L10n.tr("已展开") : L10n.tr("已折叠")) {
                 HStack(spacing: 6) {
                   Text(L10n.tr("项目"))
                   Image(systemName: projectsSectionExpanded ? "chevron.down" : "chevron.right")
@@ -2218,7 +2521,8 @@ struct RootView: View {
                 }.foregroundStyle(Palette.secondary)
                   .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                   .contentShape(Rectangle())
-              }.accessibilityIdentifier("sidebar-projects-toggle")
+              } action: { toggleSidebarSet(&collapsedProjectSections, key: sidebarClientKey) }
+                .accessibilityIdentifier("sidebar-projects-toggle")
                 .accessibilityValue(projectsSectionExpanded ? L10n.tr("已展开") : L10n.tr("已折叠"))
                 .disabled(!store.search.isEmpty)
               if store.canCreateProject {
@@ -2281,6 +2585,18 @@ struct RootView: View {
       }.padding(.top, 6).overlay(alignment: .top) { Divider().allowsHitTesting(false) }
     }.padding(.horizontal, 10).padding(.top, 6).padding(.bottom, 8)
       .font(.callout).foregroundStyle(Color.primary).buttonStyle(.plain).background(Palette.sidebar)
+      .background {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled {
+          HostedNativeSidebarState(clientKey:sidebarClientKey,recentIds:recentThreads.map(\.id),
+            visibleRecentIds:recentSectionExpanded ? limitedThreads(recentThreads,expanded:expandedRecentClients.contains(sidebarClientKey)).map(\.id) : [],
+            recentExpanded:expandedRecentClients.contains(sidebarClientKey),recentSectionExpanded:recentSectionExpanded,
+            projectsExpanded:projectsSectionExpanded,searchVisible:sidebarSearchVisible,
+            projectIds:filteredProjects.map(\.id),projectThreadIds:order.projectThreadIds,
+            projectExpandedIds:store.saved.expanded[sidebarClientKey] ?? [],expandedProjectLists:expandedProjectLists)
+        }
+        #endif
+      }
       .accessibilityAction(.escape, closeSidebar)
   }
 
@@ -2305,11 +2621,32 @@ struct RootView: View {
       String(store.visibleReadPosition != nil),
       String(latestMessageVisible), String(store.historyLoading), String(store.drawerOpen),
       String(store.sheet == nil), String(scenePhase == .active), String(notifications.unreadCount),
-      notifications.unreadRevision, runtime?.state ?? "", runtime?.turnId ?? "", notices].joined(separator: "|")
+      notifications.unreadRevision, runtime?.state ?? "", runtime?.turnId ?? "", notices,
+      String(readingSurfaceUnobscured)].joined(separator: "|")
+  }
+  private var readingSurfaceUnobscured: Bool {
+    scenePhase == .active && !store.drawerOpen && store.sheet == nil
+      && !attachmentModalPresented && !voice.isActive && store.error == nil && !readingCovers.isCovered
   }
   private var latestMessageVisible: Bool {
     latestMessageVisibility?.targetKey == store.targetKey && latestMessageVisibility?.isVisible == true
   }
+  private func toolDisclosure(targetKey: String, groupId: String) -> Binding<ToolDisclosureState> {
+    let key = ToolDisclosureKey(targetKey: targetKey, groupId: groupId)
+    return Binding(get: { toolDisclosures[key] ?? ToolDisclosureState() }, set: { value in
+      toolDisclosureOrder.removeAll { $0 == key }
+      if !value.groupExpanded && value.expandedTools.isEmpty {
+        toolDisclosures.removeValue(forKey: key)
+      } else {
+        toolDisclosures[key] = value
+        toolDisclosureOrder.append(key)
+        while toolDisclosureOrder.count > 256 {
+          toolDisclosures.removeValue(forKey: toolDisclosureOrder.removeFirst())
+        }
+      }
+    })
+  }
+
   private var projectsSectionExpanded: Bool {
     SharedMobileRules.sidebarExpanded(preference: !collapsedProjectSections.contains(sidebarClientKey), searching: !store.search.isEmpty)
   }
@@ -2374,19 +2711,30 @@ struct RootView: View {
     let showAll = expandedProjectLists.contains(listKey)
     let rows = Group {
       HStack(spacing: 0) {
-        Button { store.toggleProject(project.id) } label: {
+        AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+          identifier:"project-\(project.id)",label:project.name,
+          value:expanded ? L10n.tr("已展开") : L10n.tr("已折叠")) {
+          if let client = store.projectGitClient {
+            ProjectGitProjectLabel(client: client, target: store.mobileReadingTarget(client), project: project,
+              supported: store.supportsProjectGit, active: !hostedExaminerOwnsRefresh && store.drawerOpen && store.sheet == nil, expanded: expanded)
+          } else {
           HStack(spacing: 10) {
-            Image(systemName: "folder").frame(width: 20)
+            Image(systemName: "folder").easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork" && dynamicTypeSize.isAccessibilitySize).frame(width: 20)
             Text(project.name).lineLimit(1).truncationMode(.tail)
               .frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: expanded ? "chevron.down" : "chevron.right")
               .font(.caption2).foregroundStyle(Palette.secondary)
           }.frame(minHeight: 44).contentShape(Rectangle())
-        }.accessibilityIdentifier("project-\(project.id)")
+          }
+        } action: { store.toggleProject(project.id) }
+          .accessibilityIdentifier("project-\(project.id)")
           .accessibilityValue(expanded ? L10n.tr("已展开") : L10n.tr("已折叠"))
           .disabled(!store.search.isEmpty)
+        if store.supportsProjectGit, let client = store.projectGitClient {
+          ProjectGitCycleButton(client: client, target: store.mobileReadingTarget(client), projectId: project.id)
+        }
         if store.canCreateThread {
-          IconButton(symbol: "square.and.pencil", label: L10n.tr("在 \(project.name) 新建对话"), id: "new-in-\(project.id)") {
+          IconButton(symbol: "square.and.pencil", label: L10n.tr("在 \(project.name) 新建对话"), id: "new-in-\(project.id)", native:store.client?.agentConnection?.target.agentId=="easywork") {
             sidebarSearchFocused = false
             store.newConversation(in: project)
           }.disabled(store.client?.online != true)
@@ -2394,10 +2742,14 @@ struct RootView: View {
       }.padding(.leading, 9)
       if expanded {
         ForEach(limitedThreads(children, expanded: showAll)) { thread in
-          threadRow(thread, project: project).padding(.leading, 24)
+          threadRow(thread,idPrefix:store.client?.agentConnection?.target.agentId=="easywork" ? "project-thread-\(project.id)" : "thread",project:project).padding(.leading,24)
         }
         if store.search.isEmpty && children.count > 5 {
-          Button(showAll ? L10n.tr("收起显示") : L10n.tr("展开显示")) {
+          AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+            identifier:"sidebar-more-project-\(project.id)",label:showAll ? L10n.tr("折叠 \(project.name) 的聊天") : L10n.tr("展开 \(project.name) 的更多聊天")) {
+            Text(showAll ? L10n.tr("收起显示") : L10n.tr("展开显示"))
+              .frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
+          } action: {
             toggleSidebarSet(&expandedProjectLists, key: listKey)
           }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(.leading, 33).foregroundStyle(Palette.secondary)
@@ -2433,10 +2785,8 @@ struct RootView: View {
     let status = [thread.state == "running" ? L10n.tr("执行中") : thread.state == "waiting-for-approval" ? L10n.tr("等待审批") : nil,
       questionCount > 0 ? L10n.tr("\(questionCount) 个问题待回答") : nil,
       questionCount == 0 && store.showsUnreadDot(thread) ? L10n.tr("未读") : nil].compactMap { $0 }.joined(separator: L10n.tr("，"))
-    return Button {
-      sidebarSearchFocused = false
-      store.openThread(thread, in: project)
-    } label: {
+    return AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+      identifier:"\(idPrefix)-\(thread.id)",label:thread.title,value:status,selected:thread.id==store.selectedThreadId) {
       HStack(spacing: 8) {
         Text(thread.title).lineLimit(1).truncationMode(.tail)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading).clipped()
@@ -2461,6 +2811,9 @@ struct RootView: View {
           in: RoundedRectangle(cornerRadius: 10)
         )
         .contentShape(Rectangle())
+    } action: {
+      sidebarSearchFocused = false
+      store.openThread(thread, in: project)
     }.accessibilityIdentifier("\(idPrefix)-\(thread.id)").accessibilityLabel(thread.title)
       .accessibilityValue(status)
       .accessibilityAddTraits(
@@ -2469,6 +2822,12 @@ struct RootView: View {
 
   @ViewBuilder private func sheets(_ route: AppSheet) -> some View {
     switch route {
+    case .projectGit:
+      if let context = store.projectGitContext, context.target.agentId == "easywork" { ProjectGitDetailsView(context: context) }
+    case .usage:
+      if let client = store.client, client.agentConnection?.target.agentId == "easywork" {
+        UsageDetailsView(client: client, target: store.mobileReadingTarget(client))
+      }
     case .chatSearch: ChatHistorySearchView(store: store, targetKey: store.targetKey)
     case .archivedChats: ArchivedChatsView(store: store)
     case .taskHub: TaskHubView(store: taskHub, openExecution: { navigation in try await store.openTaskExecution(navigation) }).presentationDetents([.large])
@@ -2500,10 +2859,14 @@ private struct UserMessageBubble: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isExpanded = false
   @State private var hasOverflow = false
+  #if DEBUG
+  @State private var measuredHeights: [Int: CGFloat] = [:]
+  #endif
   private let previewLines = Int(MobileDesignGeometry.userBubblePreviewLines)
   let id: String
   let text: String
   let files: [String]
+  var native = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
@@ -2513,6 +2876,15 @@ private struct UserMessageBubble: View {
           .fixedSize(horizontal: false, vertical: true)
           .textSelection(.enabled)
           .accessibilityIdentifier("user-message-text-\(id)")
+          .background {
+            #if DEBUG
+            if SessionStore.hostedEasyWorkProductUIEnabled && ProcessInfo.processInfo.arguments.contains("-history-scroll-probe") {
+              GeometryReader { geometry in
+                Color.clear.preference(key:UserMessageTextHeights.self,value:[0:geometry.size.height])
+              }
+            }
+            #endif
+          }
           .background(alignment: .topLeading) {
             // Measure only the preview and one extra line, even for very large inputs.
             ZStack(alignment: .topLeading) {
@@ -2529,6 +2901,9 @@ private struct UserMessageBubble: View {
             }.hidden().accessibilityHidden(true).allowsHitTesting(false)
           }
           .onPreferenceChange(UserMessageTextHeights.self) { heights in
+            #if DEBUG
+            if SessionStore.hostedEasyWorkProductUIEnabled && ProcessInfo.processInfo.arguments.contains("-history-scroll-probe") { measuredHeights = heights }
+            #endif
             guard let preview = heights[previewLines], let extra = heights[previewLines + 1] else { return }
             hasOverflow = extra > preview + 0.5
           }
@@ -2537,9 +2912,9 @@ private struct UserMessageBubble: View {
         Label(name, systemImage: "paperclip").font(.caption)
       }
       if hasOverflow {
-        Button {
-          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { isExpanded.toggle() }
-        } label: {
+        AssistedContentButton(native:native,identifier:"user-message-toggle-\(id)",
+          label:isExpanded ? L10n.tr("收起"):L10n.tr("展开"),
+          value:isExpanded ? L10n.tr("已展开"):L10n.tr("已折叠")) {
           HStack(spacing: 5) {
             Spacer(minLength: 0)
             Text(isExpanded ? L10n.tr("收起") : L10n.tr("展开"))
@@ -2547,6 +2922,8 @@ private struct UserMessageBubble: View {
               .font(.system(size: 10, weight: .semibold))
           }.font(.caption).fontWeight(.medium).frame(minHeight: 44)
             .contentShape(Rectangle())
+        } action: {
+          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { isExpanded.toggle() }
         }.buttonStyle(.plain)
           .accessibilityIdentifier("user-message-toggle-\(id)")
           .accessibilityLabel(isExpanded ? L10n.tr("收起") : L10n.tr("展开"))
@@ -2556,6 +2933,16 @@ private struct UserMessageBubble: View {
       .foregroundStyle(Palette.bubbleText)
       .background(Palette.bubble, in: RoundedRectangle(cornerRadius: 20))
       .onChange(of: id) { _, _ in isExpanded = false }
+      .background(alignment: .topLeading) {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled && ProcessInfo.processInfo.arguments.contains("-history-scroll-probe") {
+          HostedNativeUserBubbleState(messageId:id,sourceText:text,previewLines:previewLines,
+            expanded:isExpanded,overflow:hasOverflow,reduceMotion:reduceMotion,actualHeight:measuredHeights[0] ?? 0,
+            previewHeight:measuredHeights[previewLines] ?? 0,extraHeight:measuredHeights[previewLines+1] ?? 0)
+            .frame(width:0,height:0).allowsHitTesting(false)
+        }
+        #endif
+      }
   }
 }
 
@@ -2594,15 +2981,18 @@ struct MessageView: View, Equatable {
   var body: some View {
     VStack(alignment: message.role == "user" ? .trailing : .leading, spacing: 6) {
       if message.role == "user" {
-        HStack {
-          Spacer(minLength: 24)
-          UserMessageBubble(id: message.id, text: message.text, files: message.files)
+        if !message.text.isEmpty || !message.files.isEmpty {
+          HStack {
+            Spacer(minLength: 24)
+            UserMessageBubble(id: message.id, text: message.text, files: message.files,
+              native:client?.agentConnection?.target.agentId=="easywork")
+          }
         }
       } else {
         if message.status == "inProgress" {
           Text(verbatim: message.text).textSelection(.enabled).lineSpacing(4)
         } else {
-          MarkdownBody(text: message.text).equatable()
+          MarkdownBody(text: message.text,native:client?.agentConnection?.target.agentId=="easywork").equatable()
         }
         if message.status == "inProgress" {
           HStack(spacing: 4) {
@@ -2626,7 +3016,205 @@ struct MessageView: View, Equatable {
   }
 }
 
+#if DEBUG
+final class HostedNativeUserBubbleStateView: UIView {
+  var messageId="",sourceText=""
+  var previewLines=0
+  var expanded=false,overflow=false,reduceMotion=false
+  var actualHeight:CGFloat=0,previewHeight:CGFloat=0,extraHeight:CGFloat=0
+}
+private struct HostedNativeUserBubbleState:UIViewRepresentable {
+  let messageId:String,sourceText:String
+  let previewLines:Int
+  let expanded:Bool,overflow:Bool,reduceMotion:Bool
+  let actualHeight:CGFloat,previewHeight:CGFloat,extraHeight:CGFloat
+  func makeUIView(context:Context)->HostedNativeUserBubbleStateView {
+    let view=HostedNativeUserBubbleStateView();view.backgroundColor = .clear
+    view.isUserInteractionEnabled=false;view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeUserBubbleStateView,context:Context) {
+    view.messageId=messageId;view.sourceText=sourceText;view.previewLines=previewLines
+    view.expanded=expanded;view.overflow=overflow;view.reduceMotion=reduceMotion;view.actualHeight=actualHeight;view.previewHeight=previewHeight;view.extraHeight=extraHeight
+  }
+}
+final class HostedNativeMarkdownFormattingStateView: UIView {
+  var sourceText=""
+  var renderedText:String?
+  var renderedLinks:[String]=[]
+}
+private struct HostedNativeMarkdownFormattingState: UIViewRepresentable {
+  let sourceText:String
+  let renderedText:String?
+  let renderedLinks:[String]
+  func makeUIView(context:Context)->HostedNativeMarkdownFormattingStateView {
+    let view=HostedNativeMarkdownFormattingStateView();view.backgroundColor = .clear
+    view.isUserInteractionEnabled=false;view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeMarkdownFormattingStateView,context:Context) {
+    view.sourceText=sourceText;view.renderedText=renderedText;view.renderedLinks=renderedLinks
+  }
+}
+final class HostedNativeSidebarStateView: UIView {
+  var clientKey=""
+  var recentIds:[String]=[]
+  var visibleRecentIds:[String]=[]
+  var recentExpanded=false
+  var recentSectionExpanded=false
+  var projectsExpanded=false
+  var searchVisible=false
+  var projectIds:[String]=[]
+  var projectThreadIds:[String:[String]]=[:]
+  var projectExpandedIds=Set<String>()
+  var expandedProjectLists=Set<String>()
+}
+private struct HostedNativeSidebarState: UIViewRepresentable {
+  let clientKey:String
+  let recentIds:[String]
+  let visibleRecentIds:[String]
+  let recentExpanded:Bool
+  let recentSectionExpanded:Bool
+  let projectsExpanded:Bool
+  let searchVisible:Bool
+  let projectIds:[String]
+  let projectThreadIds:[String:[String]]
+  let projectExpandedIds:Set<String>
+  let expandedProjectLists:Set<String>
+  func makeUIView(context:Context)->HostedNativeSidebarStateView {
+    let view=HostedNativeSidebarStateView();view.backgroundColor = .clear
+    view.isUserInteractionEnabled=false;view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeSidebarStateView,context:Context) {
+    view.clientKey=clientKey;view.recentIds=recentIds;view.visibleRecentIds=visibleRecentIds
+    view.recentExpanded=recentExpanded;view.recentSectionExpanded=recentSectionExpanded
+    view.projectsExpanded=projectsExpanded;view.searchVisible=searchVisible
+    view.projectIds=projectIds;view.projectThreadIds=projectThreadIds
+    view.projectExpandedIds=projectExpandedIds;view.expandedProjectLists=expandedProjectLists
+  }
+}
+/// Read-only window provenance. SwiftUI may omit the clipped diagnostic Text
+/// from accessibility; this view never handles input or changes history state.
+final class HostedNativeHistoryWindowStateView: UIView {
+  var targetKey=""
+  var messageCount=0
+  var messageLimit=0
+  var followsLatest=true
+  var nativeUserScrolling=false
+}
+final class HostedNativeToolDisclosureStateView: UIView {
+  var groupId=""
+  var expanded=false
+  var tools=Set<String>()
+}
+private struct HostedNativeToolDisclosureState: UIViewRepresentable {
+  let groupId:String
+  let expanded:Bool
+  let tools:Set<String>
+  func makeUIView(context:Context)->HostedNativeToolDisclosureStateView {
+    let view=HostedNativeToolDisclosureStateView()
+    view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeToolDisclosureStateView,context:Context) {
+    view.groupId=groupId;view.expanded=expanded;view.tools=tools
+  }
+}
+private struct HostedNativeHistoryWindowState: UIViewRepresentable {
+  let targetKey:String
+  let messageCount:Int
+  let messageLimit:Int
+  let followsLatest:Bool
+  let nativeUserScrolling:Bool
+  func makeUIView(context:Context)->HostedNativeHistoryWindowStateView {
+    let view=HostedNativeHistoryWindowStateView()
+    view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeHistoryWindowStateView,context:Context) {
+    view.targetKey=targetKey;view.messageCount=messageCount;view.messageLimit=messageLimit
+    view.followsLatest=followsLatest;view.nativeUserScrolling=nativeUserScrolling
+  }
+}
+/// Passive layout provenance for the current production chat menu. It never
+/// handles input or changes presentation, reading state, or command delivery.
+final class HostedNativeChatMenuAnchorView: UIView {
+  var targetKey=""
+  var threadId=""
+}
+private struct HostedNativeChatMenuAnchor: UIViewRepresentable {
+  let targetKey:String
+  let threadId:String
+  func makeUIView(context:Context)->HostedNativeChatMenuAnchorView {
+    let view=HostedNativeChatMenuAnchorView()
+    view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeChatMenuAnchorView,context:Context) {
+    view.accessibilityIdentifier="hosted-native-chat-menu-anchor"
+    view.targetKey=targetKey;view.threadId=threadId
+  }
+}
+/// Read-only provenance of the production search view's own state. This view
+/// cannot load history, change a query, select a result, or handle input.
+final class HostedNativeChatSearchStateView: UIView {
+  var targetKey=""
+  var loading=true
+  var failed=false
+  var query=""
+  var resultsCurrent=false
+  var historyIds:[String]=[]
+  var resultIds:[String]=[]
+}
+private struct HostedNativeChatSearchState: UIViewRepresentable {
+  let targetKey:String
+  let loading:Bool
+  let failed:Bool
+  let query:String
+  let resultsCurrent:Bool
+  let historyIds:[String]
+  let resultIds:[String]
+  func makeUIView(context:Context)->HostedNativeChatSearchStateView {
+    let view=HostedNativeChatSearchStateView()
+    view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeChatSearchStateView,context:Context) {
+    view.targetKey=targetKey;view.loading=loading;view.failed=failed;view.query=query
+    view.resultsCurrent=resultsCurrent;view.historyIds=historyIds;view.resultIds=resultIds
+  }
+}
+/// Layout provenance for the explicitly gated, independently identified native
+/// EasyWork examiner. It draws nothing, handles no input, and invokes no action.
+/// Real menu presentation still belongs to the production UIKit button.
+final class HostedNativeReplyActionAnchorView: UIView {
+  var sourceThreadId=""
+  var sourceRunId:String?
+}
+private struct HostedNativeReplyActionAnchor: UIViewRepresentable {
+  let replyId:String
+  let threadId:String
+  let runId:String?
+  func makeUIView(context:Context)->HostedNativeReplyActionAnchorView {
+    let view=HostedNativeReplyActionAnchorView()
+    view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true
+    return view
+  }
+  func updateUIView(_ view:HostedNativeReplyActionAnchorView,context:Context) {
+    view.accessibilityIdentifier="hosted-native-reply-actions-"+replyId
+    view.sourceThreadId=threadId;view.sourceRunId=runId
+  }
+}
+#endif
+
 private struct ReplyActionsView: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @ObservedObject var store: SessionStore
   let id: String
@@ -2651,14 +3239,15 @@ private struct ReplyActionsView: View {
             .accessibilityIdentifier("fork-\(environment.rawValue)")
             .accessibilityHint(reason ?? L10n.tr("继承此轮次之前的对话，不发送新消息"))
         }
-        if let reason = store.forkReason(source: source, turnId: turnId, environment: .worktree) {
+        if source?.target.agentId != "easywork",
+          let reason = store.forkReason(source: source, turnId: turnId, environment: .worktree) {
           Text(reason)
         }
       } label: {
         Group {
           if store.forkBusy(source) { ProgressView().controlSize(.small) }
           else { Image(systemName: "arrow.triangle.branch") }
-        }.frame(width: 44, height: 44)
+        }.easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork" && dynamicTypeSize.isAccessibilitySize).frame(width: 44, height: 44).background { NativeMenuReadingCover() }
       }.accessibilityLabel(L10n.tr("分支对话")).accessibilityIdentifier("fork-reply")
         .simultaneousGesture(TapGesture().onEnded {
           if turnId?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
@@ -2666,9 +3255,16 @@ private struct ReplyActionsView: View {
           }
         })
       ShareLink(item: text) {
-        Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
+        Image(systemName: "square.and.arrow.up").easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork" && dynamicTypeSize.isAccessibilitySize).frame(width: 44, height: 44)
       }.accessibilityLabel(L10n.tr("分享回复")).accessibilityIdentifier("share-reply")
     }.foregroundStyle(Palette.secondary).padding(.leading, -10)
+      .background {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled {
+          HostedNativeReplyActionAnchor(replyId:id,threadId:source?.threadId ?? "",runId:turnId)
+        }
+        #endif
+      }
       .accessibilityElement(children: .contain)
       .accessibilityIdentifier("run-reply-actions-\(id)")
       .task(id: source?.key) {
@@ -2762,20 +3358,60 @@ private final class NativeToolPresentationText: NSObject, ToolPresentationText {
   func text(key: String) -> String { L10n.tr(LocalizedText(stringLiteral: key)) }
 }
 
+private struct ToolDisclosureKey: Hashable {
+  let targetKey: String
+  let groupId: String
+}
+struct ToolDisclosureState {
+  var groupExpanded = false
+  var expandedTools: Set<String> = []
+}
+/// Native presentation of an authenticated child-run projection. No commands.
+struct EasyWorkSubagentMessageView: View {
+  let message: ChatMessage
+  @State private var expanded = false
+  private var detail: String { message.detail ?? "" }
+  private var preview: String {
+    String(detail.split(separator: "\n", omittingEmptySubsequences: false).suffix(6).joined(separator: "\n").suffix(1200))
+  }
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Image(systemName: "person.2")
+        Text(L10n.tr("子 Agent") + " · " + message.text).fontWeight(.medium)
+        Spacer(minLength: 0)
+        if message.status == "inProgress" { ProgressView().controlSize(.mini) }
+        Text(L10n.tr(LocalizedText(stringLiteral: SharedMobileRules.toolStatus(message.status)))).font(.caption)
+      }
+      if !detail.isEmpty {
+        Text(verbatim: expanded ? detail : preview).font(.callout)
+          .lineLimit(expanded ? nil : 5).textSelection(.enabled)
+        Button(expanded ? L10n.tr("收起") : L10n.tr("展开")) { expanded.toggle() }
+          .font(.caption).accessibilityIdentifier("subagent-expand-\(message.id)")
+      } else { Text(L10n.tr("等待子 Agent 更新…")).font(.caption).foregroundStyle(.secondary) }
+    }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
+      .background(Palette.toolDetail, in: RoundedRectangle(cornerRadius: 12))
+      .accessibilityIdentifier("subagent-\(message.id)")
+  }
+}
+
 struct ToolCallGroupView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let id: String
   let messages: [ChatMessage]
   var client: Client?
-  @State private var groupExpanded = false
-  @State private var expandedTools: Set<String> = []
+  @Binding var disclosure: ToolDisclosureState
+  private var groupExpanded: Bool { disclosure.groupExpanded }
+  private var expandedTools: Set<String> { disclosure.expandedTools }
 
   private var summary: String { SharedMobileRules.toolSummary(messages, native: NativeToolPresentationText.shared) }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       if messages.count > 1 {
-        Button { groupExpanded.toggle() } label: {
+        AssistedContentButton(native:client?.agentConnection?.target.agentId=="easywork",
+          identifier:"tool-group-\(id)",label:summary,
+          value:groupExpanded ? L10n.tr("已展开") : L10n.tr("已折叠")) {
           HStack(spacing: 8) {
             ToolGroupIcon()
             Text(summary).fontWeight(.regular).lineLimit(1)
@@ -2784,7 +3420,8 @@ struct ToolCallGroupView: View {
             Spacer(minLength: 0)
           }.font(.callout).foregroundStyle(Palette.secondary).frame(minHeight: 44)
             .contentShape(Rectangle())
-        }.buttonStyle(.plain)
+        } action: { disclosure.groupExpanded.toggle() }
+          .buttonStyle(.plain)
           .accessibilityIdentifier("tool-group-\(id)")
           .accessibilityLabel(summary)
           .accessibilityValue(groupExpanded ? L10n.tr("已展开") : L10n.tr("已折叠"))
@@ -2803,6 +3440,13 @@ struct ToolCallGroupView: View {
         }
       }
     }.frame(maxWidth: .infinity, alignment: .leading)
+      .background {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled {
+          HostedNativeToolDisclosureState(groupId:id,expanded:groupExpanded,tools:expandedTools)
+        }
+        #endif
+      }
   }
 
   private var toolRows: some View {
@@ -2812,7 +3456,7 @@ struct ToolCallGroupView: View {
           expanded: Binding(
             get: { expandedTools.contains(message.id) },
             set: { value in
-              if value { expandedTools.insert(message.id) } else { expandedTools.remove(message.id) }
+              if value { disclosure.expandedTools.insert(message.id) } else { disclosure.expandedTools.remove(message.id) }
             }))
       }
     }.padding(.top, messages.count > 1 ? 4 : 0)
@@ -2839,6 +3483,7 @@ private struct ToolActivityStyle {
 }
 
 struct ToolCallView: View {
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let message: ChatMessage
   var client: Client?
@@ -2852,9 +3497,11 @@ struct ToolCallView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      Button { expanded.toggle() } label: {
+      AssistedContentButton(native:client?.agentConnection?.target.agentId=="easywork",
+        identifier:"tool-item-\(message.id)",label:title,
+        value:L10n.tr("\(statusLabel)，\(expanded ? L10n.tr("已展开") : L10n.tr("已折叠"))")) {
         HStack(spacing: 8) {
-          Image(systemName: style.symbol).frame(width: 18)
+          Image(systemName: style.symbol).easyWorkCompactMenuSymbol(client?.agentConnection?.target.agentId=="easywork" && dynamicTypeSize.isAccessibilitySize).frame(width: 18)
           Text(title).lineLimit(1).fontWeight(single || emphasized ? .semibold : .regular)
             .foregroundStyle(emphasized ? Color.primary : Palette.secondary)
           if single || expanded || hovered {
@@ -2866,7 +3513,8 @@ struct ToolCallView: View {
           .foregroundStyle(Palette.secondary)
           .opacity(message.status == "inProgress" && !expanded ? 0.55 : 1)
           .frame(minHeight: 44).contentShape(Rectangle())
-      }.buttonStyle(.plain)
+      } action: { expanded.toggle() }
+        .buttonStyle(.plain)
         .onHover { hovered = $0 }
         .accessibilityIdentifier("tool-item-\(message.id)")
         .accessibilityLabel(title)
@@ -2942,6 +3590,7 @@ extension Optional where Wrapped == String {
 
 struct MarkdownBody: View, Equatable {
   let text: String
+  var native=false
   var body: some View {
     #if DEBUG
     let _ = { if HistoryScrollProbe.enabled { HistoryScrollProbe.shared.markdownBodies += 1 } }()
@@ -2957,10 +3606,7 @@ struct MarkdownBody: View, Equatable {
               Text(language.isEmpty ? L10n.tr("代码") : language).font(.caption2)
                 .foregroundStyle(Palette.secondary)
               Spacer()
-              Button(L10n.tr("复制")) {
-                UIPasteboard.general.string = lines.dropFirst().joined(
-                  separator: "\n")
-              }.font(.caption).accessibilityIdentifier("copy-code")
+              copyCode(lines.dropFirst().joined(separator:"\n"))
             }
             ScrollView(.horizontal) {
               Text(lines.dropFirst().joined(separator: "\n")).font(
@@ -2975,6 +3621,17 @@ struct MarkdownBody: View, Equatable {
           }
         }
       }
+    }
+  }
+  @ViewBuilder private func copyCode(_ code:String)->some View {
+    if native {
+      AssistedContentButton(native:true,identifier:"copy-code",label:L10n.tr("复制代码")) {
+        Text(L10n.tr("复制")).font(.caption).frame(width:44,height:44)
+      } action:{UIPasteboard.general.string=code}
+        .frame(width:44,height:44)
+    }else{
+      Button(L10n.tr("复制")){UIPasteboard.general.string=code}
+        .font(.caption).accessibilityIdentifier("copy-code")
     }
   }
 }
@@ -3128,6 +3785,13 @@ struct MarkdownParagraph: View {
         else { openURL(url) }
         return .handled
       })
+      .background {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled {
+          HostedNativeMarkdownFormattingState(sourceText:text,renderedText:formatted.map{String($0.characters)},renderedLinks:formatted.map{$0.runs.compactMap{$0.link?.absoluteString}} ?? [])
+        }
+        #endif
+      }
       .task(id: text) {
         // Partial streams stay plain; completed Markdown is parsed away from the UI thread.
         let input = text
@@ -3154,62 +3818,227 @@ struct MarkdownParagraph: View {
   }
 }
 
+// File sharing is lazy: validate when the system requests bytes, then hand it
+// a versioned snapshot so later cache refreshes cannot change the shared file.
+struct VerifiedResourceExport: Transferable {
+  let source: URL
+  let name: String
+  let mediaType: String
+  let sizeBytes: Int
+  let sha256: String
+  init(file: RemoteAttachment, url: URL) {
+    source=url;name=file.name;mediaType=file.mediaType;sizeBytes=file.sizeBytes;sha256=file.sha256
+  }
+  static var transferRepresentation: some TransferRepresentation {
+    FileRepresentation(exportedContentType:.png) { (item:Self) in try await item.transfer() }
+      .exportingCondition { $0.mediaType=="image/png" }.suggestedFileName { $0.name }
+    FileRepresentation(exportedContentType:.jpeg) { (item:Self) in try await item.transfer() }
+      .exportingCondition { $0.mediaType=="image/jpeg" }.suggestedFileName { $0.name }
+    FileRepresentation(exportedContentType:.pdf) { (item:Self) in try await item.transfer() }
+      .exportingCondition { $0.mediaType=="application/pdf" }.suggestedFileName { $0.name }
+    FileRepresentation(exportedContentType:.plainText) { (item:Self) in try await item.transfer() }
+      .exportingCondition { $0.mediaType.hasPrefix("text/") }.suggestedFileName { $0.name }
+    FileRepresentation(exportedContentType:.data) { (item:Self) in try await item.transfer() }
+      .suggestedFileName { $0.name }
+  }
+  private func transfer() async throws -> SentTransferredFile {
+    let url=try await Task.detached(priority:.userInitiated) { try validatedSnapshot() }.value
+    return SentTransferredFile(url)
+  }
+  func validatedSnapshot() throws -> URL {
+    guard source.isFileURL,name==(name as NSString).lastPathComponent,!name.isEmpty,
+      source.lastPathComponent==name,sizeBytes>=0,
+      sha256.range(of:"^[a-f0-9]{64}$",options:.regularExpression) != nil else { throw HostServiceError.message(L10n.tr("文件完整性校验失败")) }
+    let descriptor=Darwin.open(source.path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW)
+    guard descriptor>=0 else { throw HostServiceError.message(L10n.tr("文件完整性校验失败")) }
+    let input=FileHandle(fileDescriptor:descriptor,closeOnDealloc:true);defer { try? input.close() }
+    var before=stat()
+    guard fstat(descriptor,&before)==0,before.st_mode & S_IFMT == S_IFREG,before.st_size==sizeBytes else { throw HostServiceError.message(L10n.tr("文件完整性校验失败")) }
+    let parent=source.deletingLastPathComponent()
+    let alreadyImmutable=parent.lastPathComponent==sha256 && parent.deletingLastPathComponent().lastPathComponent=="immutable-exports"
+    let directory=alreadyImmutable ? parent : parent.appendingPathComponent("immutable-exports",isDirectory:true).appendingPathComponent(sha256,isDirectory:true)
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    guard directory.standardizedFileURL.path==directory.resolvingSymlinksInPath().standardizedFileURL.path else { throw HostServiceError.invalidResponse }
+    let temporary=directory.appendingPathComponent(".snapshot-"+UUID().uuidString)
+    let outputDescriptor=Darwin.open(temporary.path,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW,S_IRUSR|S_IWUSR)
+    guard outputDescriptor>=0 else { throw HostServiceError.invalidResponse }
+    let output=FileHandle(fileDescriptor:outputDescriptor,closeOnDealloc:true)
+    defer { try? output.close();try? FileManager.default.removeItem(at:temporary) }
+    try FileManager.default.setAttributes([.protectionKey:FileProtectionType.completeUnlessOpen],ofItemAtPath:temporary.path)
+    var digest=SHA256(),count=0
+    while let chunk=try input.read(upToCount:65_536),!chunk.isEmpty {
+      guard chunk.count<=sizeBytes-count else { throw HostServiceError.invalidResponse }
+      count+=chunk.count;digest.update(data:chunk);try output.write(contentsOf:chunk)
+    }
+    var after=stat()
+    guard count==sizeBytes,digest.finalize().map({String(format:"%02x",$0)}).joined()==sha256,
+      fstat(descriptor,&after)==0,before.st_dev==after.st_dev,before.st_ino==after.st_ino,before.st_size==after.st_size,
+      before.st_mtimespec.tv_sec==after.st_mtimespec.tv_sec,before.st_mtimespec.tv_nsec==after.st_mtimespec.tv_nsec,
+      before.st_ctimespec.tv_sec==after.st_ctimespec.tv_sec,before.st_ctimespec.tv_nsec==after.st_ctimespec.tv_nsec else { throw HostServiceError.message(L10n.tr("文件完整性校验失败")) }
+    try output.synchronize();try output.close()
+    if alreadyImmutable { return source }
+    let snapshot=directory.appendingPathComponent(name)
+    guard Darwin.rename(temporary.path,snapshot.path)==0 else { throw HostServiceError.invalidResponse }
+    return snapshot
+  }
+}
+
+enum ResourceImageDecoder {
+  static func load(_ url:URL) throws -> UIImage {
+    guard let source=CGImageSourceCreateWithURL(url as CFURL,nil),
+      let properties=CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any],
+      let width=properties[kCGImagePropertyPixelWidth] as? NSNumber,
+      let height=properties[kCGImagePropertyPixelHeight] as? NSNumber,
+      width.doubleValue>0,height.doubleValue>0,width.doubleValue*height.doubleValue<=100_000_000,
+      let image=CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,
+        kCGImageSourceCreateThumbnailWithTransform:true,kCGImageSourceThumbnailMaxPixelSize:2048] as CFDictionary) else {
+      throw HostServiceError.message(L10n.tr("图片暂不可预览，可保存后打开。"))
+    }
+    return UIImage(cgImage:image)
+  }
+}
+
+struct ResourceImagePreviewItem: Identifiable {
+  let id=UUID()
+  let file:RemoteAttachment
+  let url:URL
+  let image:UIImage
+}
+
+struct ResourceImagePreview: View {
+  let item:ResourceImagePreviewItem
+  @Environment(\.dismiss) private var dismiss
+  @State private var zoom:CGFloat=1
+  @GestureState private var pinch:CGFloat=1
+  var body:some View {
+    NavigationStack {
+      GeometryReader { geometry in
+        ScrollView([.horizontal,.vertical]) {
+          Image(uiImage:item.image).resizable().scaledToFit()
+            .frame(width:geometry.size.width*min(8,max(1,zoom*pinch)),height:geometry.size.height*min(8,max(1,zoom*pinch)))
+            .accessibilityIdentifier("resource-image-preview-image")
+            .accessibilityLabel(item.file.name).accessibilityValue("\(Int(zoom*100))%")
+            .gesture(MagnificationGesture().updating($pinch) { value,state,_ in state=value }
+              .onEnded { zoom=min(8,max(1,zoom*$0)) })
+            .onTapGesture(count:2) { zoom=zoom>1 ? 1 : 2 }
+        }
+      }.background(Palette.background).accessibilityIdentifier("resource-image-preview")
+        .navigationTitle(item.file.name).navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+          ToolbarItem(placement:.topBarLeading) {
+            Button(L10n.tr("完成")) { dismiss() }.accessibilityIdentifier("resource-image-preview-close")
+          }
+          ToolbarItem(placement:.topBarTrailing) {
+            ShareLink(item:VerifiedResourceExport(file:item.file,url:item.url),preview:SharePreview(item.file.name)) {
+              Image(systemName:"square.and.arrow.up")
+            }.accessibilityLabel(L10n.tr("保存或分享文件")).accessibilityIdentifier("resource-image-preview-share")
+          }
+        }
+    }
+  }
+}
+
+private struct ResourceDisplayVersion: Equatable {
+  let clientId:String
+  let target:AgentRuntimeTarget?
+  let credentialRef:String?
+  let file:RemoteAttachment
+}
+
 struct RemoteFileView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
+  @Environment(\.chatReadingCovers) private var readingCovers
+  @Environment(\.chatReadingContext) private var readingContext
   let client: Client
   let file: RemoteAttachment
+  @State private var localURL: URL?
   @State private var preview: FilePreviewItem?
   @State private var share: PreparedFileShare?
+  @State private var imagePreview: ResourceImagePreviewItem?
   @State private var image: UIImage?
   @State private var loading = false
   @State private var error: String?
-  @State private var downloadTask: Task<Void, Never>?
-  @State private var downloadGeneration = UUID()
+  @State private var activeVersion:ResourceDisplayVersion?
+  @State private var downloadOwner:UUID?
+  @State private var mounted = false
+  @State private var readingCoverOwner = UUID()
+  @State private var readingCoverContext: String?
+  private var displayVersion:ResourceDisplayVersion {
+    .init(clientId:client.id,target:client.agentConnection?.target ?? client.codexDirect?.target ?? client.readingTarget,
+      credentialRef:client.agentConnection?.credentialRef,file:file)
+  }
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
       if let image {
         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 220)
           .clipShape(RoundedRectangle(cornerRadius: 12)).onTapGesture {
-            prepare(.preview)
+            Task { await download(preview: true) }
           }
           .accessibilityIdentifier("received-image-\(file.name)")
       }
-      HStack(spacing: 8) {
-        Button { prepare(.preview) } label: {
+      if localURL == nil && !loading {
+        AssistedContentButton(native:client.agentConnection?.target.agentId=="easywork",identifier:"download-\(file.name)",label:file.name+L10n.tr("，下载")) {
           HStack(spacing: 8) {
             fileSummary
             Spacer()
-            Text(L10n.tr("预览")).font(.caption)
-          }.frame(minHeight: 44).contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(loading).accessibilityIdentifier("preview-\(file.name)")
-        Button { prepare(.share) } label: {
-          Group {
-            if loading { ProgressView() }
-            else { Image(systemName: "square.and.arrow.up") }
-          }.frame(width: 44, height: 44).contentShape(Rectangle())
+            Text(L10n.tr("下载")).font(.caption)
+          }.frame(minHeight: 44).frame(maxWidth: .infinity).contentShape(Rectangle())
+        } action: { Task { await download() } }
+          .buttonStyle(.plain).accessibilityIdentifier("download-\(file.name)")
+      } else {
+        HStack(spacing: 8) {
+          fileSummary
+          Spacer()
+          if loading && localURL == nil { ProgressView() }
+          else if let localURL {
+            AssistedContentButton(native:client.agentConnection?.target.agentId=="easywork",identifier:"preview-\(file.name)",label:file.name+L10n.tr("，预览")) {
+              Text(L10n.tr("预览")).font(.caption).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+            } action: { Task { await download(preview:true) } }
+              .frame(width:44).buttonStyle(.plain).accessibilityIdentifier("preview-\(file.name)")
+            Button { Task { await shareFile(localURL) } } label: {
+              Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
+            }.accessibilityLabel(L10n.tr("保存或分享文件")).accessibilityIdentifier("share-resource-\(file.name)")
+          }
         }
-        .buttonStyle(.plain).disabled(loading)
-        .accessibilityLabel(L10n.tr("保存或分享文件"))
-        .accessibilityIdentifier("share-\(file.name)")
       }
-      if loading {
-        Text(L10n.tr("正在准备文件…")).font(.caption).foregroundStyle(Palette.secondary)
-          .accessibilityIdentifier("file-preparation-loading")
-      }
+      if loading && localURL != nil { Text(L10n.tr("文件已校验，可预览；正在等待电脑回执。")).font(.caption2).foregroundStyle(Palette.secondary) }
       if let error { Text(error).font(.caption2).foregroundStyle(.red) }
     }.padding(10).background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 12))
-      .filePreview($preview)
-      .sheet(item: $share) { FileShareSheet(url: $0.url) }
-      .task(id: file.id) {
-        if file.mediaType.hasPrefix("image/"), !loading {
-          loading = true
-          await download(.image)
-        }
+      .filePreview($preview, onDismiss: { endReadingCover() })
+      .sheet(item: $share, onDismiss: { endReadingCover() }) { FileShareSheet(url: $0.url) }
+      .fullScreenCover(item:$imagePreview, onDismiss: { endReadingCover() }) { ResourceImagePreview(item:$0) }
+      .onAppear { mounted = true }
+      .onDisappear {
+        mounted = false
+        // The presenting row can disappear while its full-screen cover is shown.
+        // Retain ownership until the actual presentation dismissal completes.
+        if imagePreview == nil && preview == nil && share == nil { endReadingCover() }
       }
-      .onDisappear { downloadTask?.cancel(); downloadTask = nil; loading = false; downloadGeneration = UUID() }
-      .onChange(of: client.id) { _, _ in reset() }
-      .onChange(of: client.readingTarget) { _, _ in reset() }
-      .onChange(of: client.agentConnection?.target) { _, _ in reset() }
+      .task(id:displayVersion) {
+        // A logical resource ID survives content changes. Clear the card's old
+        // availability and fence late downloads by the full current version.
+        activeVersion=displayVersion;downloadOwner=nil;loading=false
+        localURL=nil;image=nil;error=nil
+        if client.agentConnection?.target.agentId=="easywork" {
+          let version=displayVersion,owner=UUID();downloadOwner=owner;loading=true
+          defer { if downloadOwner==owner { loading=false;downloadOwner=nil } }
+          if let cached=try? await AgentClients.resolve(client).cachedDownload(client,file:file) {
+            let resource=file
+            let prepared=try? await Task.detached(priority:.utility) { try VerifiedResourceExport(file:resource,url:cached).validatedSnapshot() }.value
+            guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+            if let prepared {
+              if file.mediaType.hasPrefix("image/") {
+                let decoded=try? await Task.detached(priority:.utility) { try ResourceImageDecoder.load(prepared) }.value
+                guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+                if let decoded { localURL=prepared;image=decoded }
+              } else { localURL=prepared }
+            }
+          }
+          guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+          loading=false;downloadOwner=nil
+        }
+        if localURL==nil && file.mediaType.hasPrefix("image/") { await download() }
+      }
   }
   private var fileSummary: some View {
     HStack(spacing: 8) {
@@ -3221,38 +4050,80 @@ struct RemoteFileView: View {
       }
     }
   }
-  private enum FileAction { case image, preview, share }
-  private func reset() {
-    downloadTask?.cancel(); downloadTask = nil; loading = false
-    downloadGeneration = UUID()
-    preview = nil; share = nil; image = nil; error = nil
-  }
-  private func prepare(_ action: FileAction) {
-    guard !loading else { return }
-    loading = true
-    error = nil
-    UISelectionFeedbackGenerator().selectionChanged()
-    downloadTask = Task { await download(action) }
-  }
-  private func download(_ action: FileAction) async {
-    let generation = downloadGeneration
-    error = nil
-    defer { if !Task.isCancelled && generation == downloadGeneration { loading = false; downloadTask = nil } }
+  private func download(preview: Bool = false) async {
+    let version=displayVersion
+    let context=readingContext
+    guard activeVersion==version,displayVersion==version,(!loading || (preview && localURL != nil)) else { return }
+    let owner=UUID();downloadOwner=owner;loading=true
+    // The current authenticated download can already have stored verified bytes
+    // while its original completion receipt remains pending. Observe only that
+    // exact target/thread/content cache; never replay a transfer to open it.
+    let verifiedLocalObserver=Task {
+      while !Task.isCancelled,mounted,activeVersion==version,displayVersion==version,downloadOwner==owner {
+        if let cached=try? await AgentClients.resolve(client).cachedDownload(client,file:file) {
+          let resource=file
+          if let snapshot=try? await Task.detached(priority:.utility) { try VerifiedResourceExport(file:resource,url:cached).validatedSnapshot() }.value {
+            guard !Task.isCancelled,mounted,activeVersion==version,displayVersion==version,downloadOwner==owner else{return}
+            if file.mediaType.hasPrefix("image/") {
+              let decoded=try? await Task.detached(priority:.utility) { try ResourceImageDecoder.load(snapshot) }.value
+              guard !Task.isCancelled,mounted,activeVersion==version,displayVersion==version,downloadOwner==owner else{return}
+              if let decoded { localURL=snapshot;image=decoded }
+            } else { localURL=snapshot }
+            return
+          }
+        }
+        try? await Task.sleep(for:.milliseconds(250))
+      }
+    }
+    defer { verifiedLocalObserver.cancel();if downloadOwner==owner { loading=false } }
     do {
       let downloaded = try await AgentClients.resolve(client).download(client, file: file)
-      guard !Task.isCancelled, generation == downloadGeneration else { return }
+      guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+      let resource=file
+      let snapshot=try await Task.detached(priority:.userInitiated) { try VerifiedResourceExport(file:resource,url:downloaded).validatedSnapshot() }.value
+      guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
       if file.mediaType.hasPrefix("image/") {
-        image = UIImage(contentsOfFile: downloaded.path)
+        let decoded=try await Task.detached(priority:.userInitiated) { try ResourceImageDecoder.load(snapshot) }.value
+        guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+        localURL=snapshot;image=decoded
+        if preview {
+          let item = ResourceImagePreviewItem(file:file,url:snapshot,image:decoded)
+          if let readingCovers {
+            // The chat window owns this immutable presentation, so removing or
+            // virtualizing its source row cannot dismiss the user's preview.
+            if mounted { readingCovers.presentImage(item, owner: readingCoverOwner, context: context) }
+          } else if beginReadingCover(context) { imagePreview = item }
+        }
+      } else {
+        localURL=snapshot
+        if preview, beginReadingCover(context) { self.preview=FilePreviewItem(url:snapshot,file:file,client:client) }
       }
-      switch action {
-      case .image: break
-      case .preview: preview = FilePreviewItem(url: downloaded, file: file, client: client)
-      case .share: share = PreparedFileShare(url: downloaded)
-      }
+      error = nil
     } catch {
-      guard !Task.isCancelled, generation == downloadGeneration else { return }
-      self.error = error.localizedDescription
+      guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
+      if localURL == nil { image=nil;self.error=error.localizedDescription }
+      else { self.error=L10n.tr("文件已校验，可预览；电脑回执尚未确认。") }
     }
+  }
+  private func shareFile(_ url: URL) async {
+    let version=displayVersion,context=readingContext,resource=file
+    do {
+      let snapshot=try await Task.detached(priority:.userInitiated) { try VerifiedResourceExport(file:resource,url:url).validatedSnapshot() }.value
+      guard !Task.isCancelled,mounted,activeVersion==version,displayVersion==version,beginReadingCover(context) else { return }
+      share=PreparedFileShare(url:snapshot)
+    }catch { if mounted,activeVersion==version,displayVersion==version { self.error=error.localizedDescription } }
+  }
+  private func beginReadingCover(_ context: String) -> Bool {
+    guard mounted else { return false }
+    guard let readingCovers else { return true }
+    guard readingCovers.begin(readingCoverOwner, context: context) else { return false }
+    readingCoverContext = context
+    return true
+  }
+  private func endReadingCover() {
+    guard let context = readingCoverContext else { return }
+    readingCovers?.end(readingCoverOwner, context: context)
+    readingCoverContext = nil
   }
 }
 
@@ -3358,7 +4229,7 @@ struct RuntimePanel: View {
                 .font(.caption)
             }
             if let error = receipt.error, !error.isEmpty {
-              Text(error).font(.caption).foregroundStyle(Palette.secondary).textSelection(.enabled)
+              Text(EasyWorkFailurePresentation.text(error,enabled:store.client?.agentConnection?.target.agentId=="easywork")).font(.caption).foregroundStyle(Palette.secondary).textSelection(.enabled)
             }
           }.frame(maxWidth: .infinity, alignment: .leading)
           if receipt.state == "failed" {
@@ -3373,7 +4244,7 @@ struct RuntimePanel: View {
           .accessibilityIdentifier("receipt-notice-\(receipt.id)")
       }
       if let error = runtime.error {
-        Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled)
+        Text(EasyWorkFailurePresentation.text(error,enabled:store.client?.agentConnection?.target.agentId=="easywork")).font(.caption).foregroundStyle(.red).textSelection(.enabled)
       }
     }
   }
@@ -3382,9 +4253,52 @@ struct RuntimePanel: View {
 struct ProposedPlanMessageView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let message: ChatMessage
-  var body: some View {
+  var native=false
+  @State private var expanded=false
+  @ViewBuilder var body: some View {
+    if native,let plan=message.planArtifact {
+      VStack(alignment:.leading,spacing:8) {
+        AssistedContentButton(native:true,identifier:"plan-toggle-"+message.id,
+          label:L10n.tr("计划 · 版本 \(String(plan.version))")+"，"+planStatusLabel(plan.status),
+          value:expanded ? L10n.tr("已展开"):L10n.tr("已折叠")) {
+          HStack {
+            Image(systemName:"lightbulb")
+            VStack(alignment:.leading,spacing:4) {
+              Text(L10n.tr("计划 · 版本 \(String(plan.version))")).font(.subheadline)
+                .accessibilityIdentifier("plan-version-"+message.id)
+              Text(planStatusLabel(plan.status)).font(.caption).foregroundStyle(Palette.secondary)
+            }
+            Spacer()
+            Image(systemName:expanded ? "chevron.up":"chevron.down").font(.caption)
+          }.frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
+        } action:{expanded.toggle()}
+        if expanded {
+          Text(plan.title).font(.subheadline.weight(.semibold))
+          ForEach(plan.steps.sorted{$0.order<$1.order}) { step in
+            Text("\(step.order). \(step.title) · \(planStatusLabel(step.status))").font(.caption)
+              .accessibilityIdentifier("plan-step-"+message.id+"-"+step.id)
+          }
+          MarkdownBody(text:message.text,native:native).padding(.top,8)
+          AssistedContentButton(native:true,identifier:"copy-plan-"+message.id,label:L10n.tr("复制计划")) {
+            Label(L10n.tr("复制计划"),systemImage:"doc.on.doc").font(.caption)
+              .frame(maxWidth:.infinity,minHeight:44,alignment:.leading)
+          } action:{UIPasteboard.general.string=message.text}
+        }
+      }.padding(12).background(Palette.sidebar,in:RoundedRectangle(cornerRadius:16))
+        .accessibilityIdentifier("plan-artifact-"+message.id)
+        .background {
+          #if DEBUG
+          if SessionStore.hostedEasyWorkProductUIEnabled,
+            ProcessInfo.processInfo.arguments.contains("-history-scroll-probe") {
+            HostedNativePlanArtifactState(messageId:message.id,plan:plan,expanded:expanded)
+          }
+          #endif
+        }
+    }else{ legacyPlan }
+  }
+  private var legacyPlan:some View {
     DisclosureGroup {
-      MarkdownBody(text: message.text).padding(.top, 8)
+      MarkdownBody(text: message.text,native:native).padding(.top, 8)
       Button(L10n.tr("复制计划"), systemImage: "doc.on.doc") { UIPasteboard.general.string = message.text }
         .font(.caption).padding(.top, 4)
     } label: {
@@ -3395,19 +4309,59 @@ struct ProposedPlanMessageView: View {
   }
 }
 
+private func planStatusLabel(_ status:String)->String {
+  switch status {
+  case "completed","complete":L10n.tr("已完成")
+  case "superseded":L10n.tr("已被新版本替代")
+  case "pending","draft":L10n.tr("待执行")
+  case "ready","awaiting_approval","awaiting-approval":L10n.tr("待确认")
+  case "saved":L10n.tr("已保存")
+  case "completed_with_drift":L10n.tr("已完成，存在偏差")
+  case "interrupted":L10n.tr("已中断")
+  case "approved":L10n.tr("已批准")
+  case "executing","running","in_progress","in-progress":L10n.tr("进行中")
+  case "failed":L10n.tr("失败")
+  case "blocked":L10n.tr("受阻")
+  case "paused":L10n.tr("已暂停")
+  case "cancelled","canceled":L10n.tr("已取消")
+  case "skipped":L10n.tr("已跳过")
+  default:L10n.tr("状态待同步")
+  }
+}
+
+#if DEBUG
+private struct HostedNativePlanArtifactState:UIViewRepresentable {
+  let messageId:String
+  let plan:PlanArtifactSnapshot
+  let expanded:Bool
+  func makeUIView(context:Context)->UIView {
+    let view=UIView();view.backgroundColor = .clear;view.isUserInteractionEnabled=false
+    view.isAccessibilityElement=false;view.accessibilityElementsHidden=true;return view
+  }
+  func updateUIView(_ view:UIView,context:Context) {
+    view.accessibilityIdentifier="plan-artifact-state-"+messageId
+    if let data=try?JSONEncoder().encode(plan),let artifact=try?JSONSerialization.jsonObject(with:data),
+      let state=try?JSONSerialization.data(withJSONObject:["planArtifact":artifact,"expanded":expanded],options:[.sortedKeys]) {
+      view.accessibilityValue=String(data:state,encoding:.utf8)
+    }
+  }
+}
+#endif
+
 struct PlanReviewCard: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @ObservedObject var store: SessionStore
   let plan: ProposedPlan
   @State private var feedback = ""
   @State private var adjusting = false
+  private var native:Bool {store.client?.agentConnection?.target.agentId=="easywork"}
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(L10n.tr("实施此计划？")).font(.subheadline.weight(.semibold))
       if !store.messages.contains(where: { $0.kind == "plan" && $0.text == plan.text }) {
-        DisclosureGroup(L10n.tr("查看计划")) { MarkdownBody(text: plan.text).padding(.top, 8) }
+        DisclosureGroup(L10n.tr("查看计划")) { MarkdownBody(text: plan.text,native:native).padding(.top, 8) }
       }
-      Button { store.implementPlan(plan) } label: {
+      AssistedContentButton(native:native,identifier:"implement-plan",label:L10n.tr("是，实施此计划")) {
         HStack {
           Image(systemName: "play")
           Text(L10n.tr("是，实施此计划"))
@@ -3415,7 +4369,8 @@ struct PlanReviewCard: View {
           Image(systemName: "arrow.right")
         }.font(.subheadline).padding(12)
           .background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 12))
-      }.buttonStyle(.plain).disabled(!store.canRespondToPlan(plan))
+      } action:{store.implementPlan(plan)}
+        .buttonStyle(.plain).disabled(!store.canRespondToPlan(plan))
         .accessibilityIdentifier("implement-plan")
       if adjusting {
         TextField(L10n.tr("告诉助手应该如何调整计划"), text: $feedback, axis: .vertical)
@@ -3425,7 +4380,9 @@ struct PlanReviewCard: View {
           .disabled(!store.canRespondToPlan(plan) || feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           .accessibilityIdentifier("submit-plan-feedback")
       } else {
-        Button(L10n.tr("调整计划"), systemImage: "pencil") { adjusting = true }
+        AssistedContentButton(native:native,identifier:"adjust-plan",label:L10n.tr("调整计划")) {
+          Label(L10n.tr("调整计划"),systemImage:"pencil").frame(minHeight:44)
+        } action:{adjusting=true}
           .font(.subheadline).disabled(!store.canRespondToPlan(plan))
           .accessibilityIdentifier("adjust-plan")
       }
@@ -3749,7 +4706,7 @@ private struct QuestionAnswerField: View {
       }
       .onChange(of: composerVoice.isActive) { _, active in if active { voice.cancel() } }
       .onChange(of: scenePhase) { _, phase in
-        if phase == .background || (phase == .inactive && voice.phase != .requesting) { voice.suspend() }
+        voice.handleScenePhase(phase)
       }
       .onChange(of: store.targetKey) { _, _ in voice.cancel() }
       .onChange(of: approval) { _, _ in voice.cancel() }
@@ -3776,6 +4733,65 @@ private struct ApprovalSubmitButtonStyle: ButtonStyle {
 #Preview { RootView() }
 
 
+/// Keep one visible label and one production action for each input route.
+private struct AssistedContentButton<Content: View>: View {
+  let native: Bool
+  let identifier: String
+  let label: String
+  var value: String? = nil
+  var selected = false
+  @ViewBuilder let content: () -> Content
+  let action: () -> Void
+  var body: some View {
+    if native { NativeContentButton(identifier:identifier,label:label,value:value,selected:selected,content:content,action:action) }
+    else { Button(action:action,label:content).accessibilityIdentifier(identifier) }
+  }
+}
+
+private struct SuggestionActionButton: View {
+  let title: String
+  let identifier: String
+  let native: Bool
+  var secondary = false
+  var filled = false
+  var symbol: String? = nil
+  var font: Font = .subheadline
+  let action: () -> Void
+  var body: some View {
+    if native {
+      NativeSuggestionButton(title: title, identifier: identifier, secondary: secondary, filled: filled, symbol: symbol, action: action)
+        .frame(minWidth: 44, minHeight: 44)
+    } else {
+      Button(action: action) {
+        Group {
+          if let symbol { Label(title, systemImage: symbol) } else { Text(title) }
+        }.font(font).foregroundStyle(secondary ? Palette.secondary : Color.primary)
+          .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+      }
+        .accessibilityIdentifier(identifier)
+    }
+  }
+}
+
+private struct GeneratedSuggestionReplacement: View {
+  let canApply: Bool
+  let replace: () -> Void
+  let cancel: () -> Void
+  var body: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      Text(L10n.tr("替换现有草稿？")).font(.headline)
+      Text(L10n.tr("原草稿将被替换，填入后仍可编辑。"))
+        .foregroundStyle(Palette.secondary)
+      if !canApply { Text(L10n.tr("建议正在核对，确认后可采用。")).font(.caption).foregroundStyle(Palette.secondary) }
+      NativeSuggestionButton(title: L10n.tr("确认替换"), identifier: "suggestion-confirm-replace", filled: true, action: replace)
+        .frame(minHeight: 44).disabled(!canApply)
+      NativeSuggestionButton(title: L10n.tr("保留原草稿"), identifier: "suggestion-cancel-replace", action: cancel)
+        .frame(minHeight: 44)
+    }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+      .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+  }
+}
+
 private struct DesktopSuggestionDetails: View {
   let action: DesktopSuggestionDraftAction
   let canApply: Bool
@@ -3791,33 +4807,34 @@ private struct DesktopSuggestionDetails: View {
           Text(L10n.tr("来自桌面的建议")).font(.caption).foregroundStyle(Palette.secondary)
           Text(action.suggestion.text).font(.body).textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading).accessibilityIdentifier("suggestion-full-text")
+          if action.scope.requiresRuntimeSource && !canApply {
+            Text(L10n.tr("建议正在核对，确认后可采用。")).font(.caption).foregroundStyle(Palette.secondary)
+              .accessibilityIdentifier("suggestion-preview-refreshing")
+          }
         }.padding(20)
       }
       .navigationTitle(L10n.tr("下一步建议")).navigationBarTitleDisplayMode(.inline)
       .toolbar { ToolbarItem(placement: .confirmationAction) {
-        Button(L10n.tr("完成")) { dismiss() }.accessibilityIdentifier("suggestion-details-close")
+        SuggestionActionButton(title: L10n.tr("完成"), identifier: "suggestion-details-close", native: action.scope.requiresRuntimeSource) { dismiss() }
       } }
       .safeAreaInset(edge: .bottom) {
         VStack(spacing: 4) {
-          Button {
+          SuggestionActionButton(title: action.draft.text.isEmpty ? L10n.tr("采用到输入框") : L10n.tr("追加到草稿末尾"), identifier: "suggestion-apply", native: action.scope.requiresRuntimeSource, filled: true) {
             apply(action.draft.text.isEmpty ? .fill : .append)
-          } label: {
-            Text(action.draft.text.isEmpty ? L10n.tr("采用到输入框") : L10n.tr("追加到草稿末尾"))
-              .frame(maxWidth: .infinity, minHeight: 44)
-          }.buttonStyle(ApprovalSubmitButtonStyle(fill: Color(uiColor: .label)))
+          }.frame(maxWidth: .infinity).buttonStyle(ApprovalSubmitButtonStyle(fill: Color(uiColor: .label)))
             .disabled(!canApply).accessibilityIdentifier("suggestion-apply")
           if !action.draft.text.isEmpty {
-            Button { confirmReplacement = true } label: {
-              Text(L10n.tr("替换现有草稿…")).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
-            }.disabled(!canApply).accessibilityIdentifier("suggestion-replace")
+            SuggestionActionButton(title: L10n.tr("替换现有草稿…"), identifier: "suggestion-replace", native: action.scope.requiresRuntimeSource) { confirmReplacement = true }
+              .frame(maxWidth: .infinity).disabled(!canApply)
           }
-          Button { ignore() } label: {
-            Text(L10n.tr("忽略这条建议")).font(.subheadline).foregroundStyle(Palette.secondary)
-              .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
-          }.accessibilityIdentifier("suggestion-ignore")
+          SuggestionActionButton(title: L10n.tr("忽略这条建议"), identifier: "suggestion-ignore", native: action.scope.requiresRuntimeSource, secondary: true) { ignore() }
+            .frame(maxWidth: .infinity)
         }.padding(.horizontal, 20).padding(.bottom, 8).background(Palette.background)
       }
-      .alert(L10n.tr("替换现有草稿？"), isPresented: $confirmReplacement) {
+      .sheet(isPresented: Binding(get: { action.scope.requiresRuntimeSource && confirmReplacement }, set: { confirmReplacement = $0 })) {
+        GeneratedSuggestionReplacement(canApply: canApply, replace: { apply(.replace) }, cancel: { confirmReplacement = false })
+      }
+      .alert(L10n.tr("替换现有草稿？"), isPresented: Binding(get: { !action.scope.requiresRuntimeSource && confirmReplacement }, set: { confirmReplacement = $0 })) {
         Button(L10n.tr("确认替换"), role: .destructive) { apply(.replace) }
           .accessibilityIdentifier("suggestion-confirm-replace")
         Button(L10n.tr("保留原草稿"), role: .cancel) {}.accessibilityIdentifier("suggestion-cancel-replace")
@@ -3839,7 +4856,22 @@ private struct SuggestionSelectableTextField: View {
   }
 }
 
-private struct ComposerView: View {
+/// Compare immutable parent inputs, not live Binding getters. The editor's
+/// observed store/drafts/voice/suggestion and environment still invalidate it;
+/// unrelated chat scroll state need not rebuild its full control subtree.
+private struct ComposerParentInputs:Equatable,Sendable {
+  let store:ObjectIdentifier
+  let drafts:ObjectIdentifier
+  let voice:ObjectIdentifier
+  let suggestion:ObjectIdentifier
+  let attachmentModalPresented: Bool
+  let showActions:Bool
+  let focused:Bool
+}
+
+private struct ComposerView: View,Equatable {
+  nonisolated static func == (lhs:Self,rhs:Self)->Bool { lhs.parentInputs==rhs.parentInputs }
+
   private struct HandledSuggestion: Hashable {
     let target: String
     let version: String
@@ -3870,7 +4902,9 @@ private struct ComposerView: View {
   @Binding var attachmentModalPresented: Bool
   @Binding var showComposerActions: Bool
   @FocusState.Binding var composerFocused: Bool
+  let parentInputs:ComposerParentInputs
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
   var body: some View {
     // Presentation values live for this render only. User actions still recheck live state.
@@ -3920,7 +4954,14 @@ private struct ComposerView: View {
         }
       }
       .onChange(of: suggestionReader.suggestion) { _, current in
-        if let action = suggestionPreview, current != action.suggestion { suggestionPreview = nil }
+        if let action = suggestionPreview, current != action.suggestion {
+          if action.scope.requiresRuntimeSource, current == nil, !suggestionReader.sourceIsAbsent,
+            store.nextTurnSuggestionPresentationScope == action.scope { return }
+          suggestionPreview = nil
+        }
+      }
+      .onChange(of: suggestionReader.sourceIsAbsent) { _, absent in
+        if absent, suggestionPreview?.scope.requiresRuntimeSource == true { suggestionPreview = nil }
       }
       .onDisappear {
         attachmentPhotos.setActive(false)
@@ -3996,6 +5037,14 @@ private struct ComposerView: View {
   }
   private func applySuggestion(_ action: DesktopSuggestionDraftAction, mode: DesktopSuggestionAdoptionMode) {
     guard suggestionPreview == nil || suggestionPreview?.id == action.id else { return }
+    #if DEBUG
+    if action.scope.requiresRuntimeSource {
+      NSLog("Runtime suggestion guards scope=%d draft=%d source=%d fresh=%d writable=%d",
+        suggestionReadScope == action.scope ? 1 : 0, store.suggestionDraftSnapshot == action.draft ? 1 : 0,
+        availableSuggestion == action.suggestion ? 1 : 0, availableSuggestion?.isValid(at: Date()) == true ? 1 : 0,
+        store.canCompose ? 1 : 0)
+    }
+    #endif
     guard canApplySuggestion(action), store.adoptDesktopSuggestion(action, mode: mode, currentSuggestion: availableSuggestion) else {
       suggestionPreview = nil; return
     }
@@ -4009,14 +5058,11 @@ private struct ComposerView: View {
       if let undo = validSuggestionUndo {
         Text(L10n.tr("已填入输入框")).font(.caption).foregroundStyle(Palette.secondary)
         Spacer()
-        Button {
+        SuggestionActionButton(title: L10n.tr("撤销"), identifier: "suggestion-undo", native: undo.scope.requiresRuntimeSource, font: .body) {
           guard store.undoDesktopSuggestion(undo) else { return }
           handledSuggestions.remove(HandledSuggestion(target: undo.applied.targetKey, version: undo.handledVersionKey))
           composerFocused = true; insertionRequest = UUID()
-        } label: {
-          Text(L10n.tr("撤销")).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-        }.accessibilityIdentifier("suggestion-undo")
-          .id(SuggestionUndoIdentity(target: undo.applied.targetKey, revision: undo.applied.revision))
+        }.id(SuggestionUndoIdentity(target: undo.applied.targetKey, revision: undo.applied.revision))
       } else if presentation.available != nil && !store.draft.text.isEmpty {
         Button { presentSuggestion(presentation.action) } label: {
           Label(L10n.tr("下一步建议"), systemImage: "sparkles").font(.caption)
@@ -4030,7 +5076,11 @@ private struct ComposerView: View {
 
   private var composerDetails: some View {
     VStack(spacing: 5) {
-      if let client = store.client, store.isConnecting(client) {
+      if store.client?.migrationNeedsVerification == true {
+        Text(L10n.tr("迁移的 EasyWork 连接需要重新配对，请先核对电脑身份。"))
+          .font(.caption2).foregroundStyle(Palette.secondary)
+          .accessibilityIdentifier("migration-verification-required")
+      } else if let client = store.client, store.isConnecting(client) {
         HStack(spacing: 5) {
           ProgressView().controlSize(.mini)
           Text(L10n.tr("\(store.connectionLabel(for: client)) 草稿保存在此对话。"))
@@ -4289,6 +5339,7 @@ private struct ComposerView: View {
   // Build one toolbar. Multiple proposed layouts can leave duplicate action
   // accessibility elements with stale frames after keyboard/sheet transitions.
   private func toolbarDensity(width: CGFloat) -> ToolbarDensity {
+    if store.client?.agentConnection?.target.agentId=="easywork", dynamicTypeSize.isAccessibilitySize { return .icons }
     let plan = store.supportsPlanMode || store.selectedCollaborationMode == "plan"
     if width >= (plan ? 480 : 420) { return .full }
     if width >= (plan ? 330 : 280) { return .compact }
@@ -4345,7 +5396,7 @@ private struct ComposerView: View {
   private func toolbarPermissionButton(_ density: ToolbarDensity) -> some View {
     Button { composerFocused = false; store.sheet = .generation } label: {
       HStack(spacing: 4) {
-        Image(systemName: store.selectedPermissionOption?.icon ?? "shield")
+        Image(systemName: store.selectedPermissionOption?.icon ?? "shield").easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork" && density == .icons)
         if density == .full || density == .compact {
           Text(density == .full ? store.permissionLabel : store.permissionLabel.replacingOccurrences(of: L10n.tr("权限"), with: ""))
             .lineLimit(1)
@@ -4433,28 +5484,38 @@ private struct ComposerView: View {
   }
 
   private var composerActionButton: some View {
-      ZStack {
-        Button {
-          store.performComposerAction()
-          composerFocused = false
-        } label: {
-          if store.composerAction == .busy {
+      // Render EasyWork's icon, label and enabled state from the same live
+      // decision once. Execution and long-press guards still query the store.
+      let easyWorkDecision=store.client?.agentConnection?.target.agentId=="easywork" ? store.composerDecision:nil
+      let presentationAction = { easyWorkDecision?.action ?? store.composerAction }
+      let presentationEnabled = { easyWorkDecision?.enabled ?? store.canPerformComposerAction }
+      let nativeSend=store.client?.agentConnection?.target.agentId=="easywork" && presentationAction() == .send
+      return ZStack {
+        AssistedContentButton(native:nativeSend,identifier:presentationAction().identifier,
+          label:presentationAction().label,
+          value:presentationAction() == .busy ? L10n.tr("正在提交") : presentationEnabled() ? L10n.tr("可用") : L10n.tr("不可用")) {
+          if presentationAction() == .busy {
             ProgressView().tint(Palette.background).frame(width: 44, height: 44)
           } else {
-            Image(systemName: store.composerAction.symbol).font(.system(size: store.composerAction == .stop ? 14 : 18, weight: .medium))
+            Image(systemName: presentationAction().symbol).font(.system(size: presentationAction() == .stop ? 14 : 18, weight: .medium))
               .frame(width: 44, height: 44)
           }
-        }.buttonStyle(.plain)
-          .modifier(ComposerActionAppearance(enabled: store.canPerformComposerAction,
-            busy: store.composerAction == .busy))
-          .disabled(!store.canPerformComposerAction)
-          .accessibilityLabel(store.composerAction.label)
-          .accessibilityValue(store.composerAction == .busy ? L10n.tr("正在提交") : store.canPerformComposerAction ? L10n.tr("可用") : L10n.tr("不可用"))
-          .accessibilityIdentifier(store.composerAction.identifier)
+        } action: {
+          store.performComposerAction()
+          composerFocused = false
+        }
+          .frame(width:nativeSend ? 44:nil,height:nativeSend ? 44:nil)
+          .buttonStyle(.plain)
+          .modifier(ComposerActionAppearance(enabled: presentationEnabled(),
+            busy: presentationAction() == .busy))
+          .disabled(!presentationEnabled())
+          .accessibilityLabel(presentationAction().label)
+          .accessibilityValue(presentationAction() == .busy ? L10n.tr("正在提交") : presentationEnabled() ? L10n.tr("可用") : L10n.tr("不可用"))
+          .accessibilityIdentifier(presentationAction().identifier)
           .highPriorityGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
             if store.canStop || store.canRunAgain { showComposerActions = true }
           })
-        if !store.canPerformComposerAction && store.canRunAgain {
+        if !presentationEnabled() && store.canRunAgain {
           Circle().fill(Color.clear).frame(width: 44, height: 44)
             .contentShape(Circle())
             .onLongPressGesture(minimumDuration: 0.5) { showComposerActions = true }
@@ -4519,27 +5580,40 @@ private struct ChatHistorySearchView: View {
         if loading { ProgressView(L10n.tr("正在读取完整历史…")) }
         if let failure {
           Text(failure).foregroundStyle(.secondary)
-          Button(L10n.tr("重试")) { reload = UUID() }.accessibilityIdentifier("chat-search-retry")
+          AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+            identifier:"chat-search-retry",label:L10n.tr("重试")) {
+            Text(L10n.tr("重试")).foregroundStyle(.tint)
+          } action: { reload = UUID() }
         }
         if !resultsCurrent && hasQuery { ProgressView() }
         if !loading && failure == nil && resultsCurrent && hasQuery && results.isEmpty { Text(L10n.tr("没有匹配结果")) }
         ForEach(resultsCurrent ? results : []) { message in
-          Button {
-            guard resultsCurrent else { return }
-            store.locateSearchMessage(message, query: resultQuery, targetKey: targetKey, history: history, complete: failure == nil && !loading)
-            dismiss()
-          } label: {
+          AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
+            identifier:"chat-search-result-"+message.id,
+            label:(message.role == "tool" ? L10n.tr("工具输出") : message.role == "user" ? L10n.tr("你") : L10n.tr("回复"))+"，"+searchSnippet(message.searchableText,query:query)) {
             VStack(alignment: .leading, spacing: 4) {
               Text(message.role == "tool" ? L10n.tr("工具输出") : message.role == "user" ? L10n.tr("你") : L10n.tr("回复")).font(.caption).foregroundStyle(.secondary)
               Text(highlightedSearchText(searchSnippet(message.searchableText, query: query), query: query)).lineLimit(4)
             }.frame(maxWidth: .infinity, alignment: .leading)
-          }.accessibilityIdentifier("chat-search-result-" + message.id)
+          } action: {
+            guard resultsCurrent else { return }
+            store.locateSearchMessage(message, query: resultQuery, targetKey: targetKey, history: history, complete: failure == nil && !loading)
+            dismiss()
+          }
         }
       }
       }
 
       .navigationTitle(L10n.tr("在聊天中查找"))
       .toolbar { ToolbarItem(placement: .topBarTrailing) { Button(L10n.tr("完成")) { dismiss() }.accessibilityIdentifier("chat-search-close") } }
+      .background {
+        #if DEBUG
+        if SessionStore.hostedEasyWorkProductUIEnabled {
+          HostedNativeChatSearchState(targetKey:targetKey,loading:loading,failed:failure != nil,
+            query:query,resultsCurrent:resultsCurrent,historyIds:history.map(\.id),resultIds:results.map(\.id))
+        }
+        #endif
+      }
       .task(id: reload) {
         loading = true; failure = nil
         history = store.messages; historyVersion = UUID()
@@ -4627,6 +5701,11 @@ private struct ArchivedChatsView: View {
               Text(store.chatLifecycleStatus(thread)).font(.caption).foregroundStyle(.secondary)
             }
           }.accessibilityIdentifier("archived-chat-" + thread.id)
+        }
+        if let workspace = store.client.flatMap({ store.saved.workspaces[$0.id] }),
+          workspace.nextProjectCursor != nil || workspace.nextThreadCursor != nil {
+          Button(L10n.tr("加载更多")) { Task { await store.refresh(loadMore: true, includeHistory: false, userInitiated: true) } }
+            .disabled(store.loading).accessibilityIdentifier("archived-load-more")
         }
       }.navigationTitle(L10n.tr("已归档对话"))
         .refreshable { await store.refresh() }

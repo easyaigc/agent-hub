@@ -3975,6 +3975,66 @@
       "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationComputerFileSnapshot.kt",
       "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ComputerFileFamilyInventory.kt",
       "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ComputerFileFamilyInventoryTest.kt"
+    ],
+    "EasyWorkIOSBacklog": [
+      "apps/ios/AcceptanceFileSource/AcceptanceFileSource.xcodeproj/project.pbxproj",
+      "apps/ios/AcceptanceFileSource/FixtureApp.swift",
+      "apps/ios/AcceptanceFileSource/Info.plist",
+      "apps/ios/AcceptanceFileSource/README.md",
+      "apps/ios/AppStore/site/privacy-en.html",
+      "apps/ios/AppStore/site/privacy.html",
+      "apps/ios/AttachmentAction/PrivacyInfo.xcprivacy",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+      "apps/ios/NativeTests/EasyWorkAttachmentFailureNativeTests.swift",
+      "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift",
+      "apps/ios/NotificationContent/PrivacyInfo.xcprivacy",
+      "apps/ios/NotificationService/PrivacyInfo.xcprivacy",
+      "apps/ios/Resources/PrivacyInfo.xcprivacy",
+      "apps/ios/Resources/en.lproj/IOSNative.strings",
+      "apps/ios/Resources/zh-Hans.lproj/IOSNative.strings",
+      "apps/ios/Sources/AgentClient.swift",
+      "apps/ios/Sources/DesktopSuggestions.swift",
+      "apps/ios/Sources/EasyWorkAgentClient.swift",
+      "apps/ios/Sources/EasyWorkDiscovery.swift",
+      "apps/ios/Sources/EasyWorkPairing.swift",
+      "apps/ios/Sources/EasyWorkSession.swift",
+      "apps/ios/Sources/EncryptedMigration.swift",
+      "apps/ios/Sources/FilePreview.swift",
+      "apps/ios/Sources/FileTransfers.swift",
+      "apps/ios/Sources/Localization.swift",
+      "apps/ios/Sources/MenuReadingCover.swift",
+      "apps/ios/Sources/Models.swift",
+      "apps/ios/Sources/NotificationModels.swift",
+      "apps/ios/Sources/OperationFailure.swift",
+      "apps/ios/Sources/ProjectGit.swift",
+      "apps/ios/Sources/QuickAttachmentViews.swift",
+      "apps/ios/Sources/RootView.swift",
+      "apps/ios/Sources/SessionStore.swift",
+      "apps/ios/Sources/Sheets.swift",
+      "apps/ios/Sources/TaskNotifications.swift",
+      "apps/ios/Sources/VoiceInput.swift",
+      "apps/ios/Tests/CodexManageUITests.swift",
+      "apps/ios/Tests/EasyWorkChatManagementUITests.swift",
+      "scripts/easywork-project-directory.test.mjs",
+      "scripts/localization-native-smoke.swift",
+      "scripts/localization-smoke.mjs",
+      "scripts/mobile/build-ios-core.sh",
+      "scripts/mobile/check-app-store-submission.mjs",
+      "scripts/mobile/easywork-live-host.mjs",
+      "scripts/mobile/easywork-message-file-native.mjs",
+      "scripts/mobile/easywork-message-file-native.swift",
+      "scripts/mobile/easywork-migration-crypto-vectors.swift",
+      "scripts/mobile/easywork-notification-presentation-native.swift",
+      "scripts/mobile/easywork-reading-native-smoke.mjs",
+      "scripts/mobile/easywork-reading-native-smoke.swift",
+      "scripts/mobile/ios-physical-easywork.py",
+      "scripts/mobile/ios-physical-easywork.test.py",
+      "scripts/mobile/ios-physical-hosted-activation.py",
+      "scripts/mobile/ios-physical-hosted-activation.test.py",
+      "scripts/mobile/ios-physical-native-preflight.py",
+      "scripts/mobile/ios-physical-native-preflight.test.py",
+      "scripts/mobile/ios-source-fingerprint.py",
+      "scripts/mobile/requirements-ios-physical-examiner.txt"
     ]
   },
   "groups": [
@@ -4641,7 +4701,8 @@
         "AndroidSidebarGestureReal",
         "AndroidDesktopVersionRead",
         "AndroidDesktopIdentityRead",
-        "AndroidMainIntegration"
+        "AndroidMainIntegration",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S02", "S05", "S11", "S18"],
       "ui": ["UI02", "UI05", "UI06"],
@@ -5287,7 +5348,8 @@
         "AndroidParentRecoveryResults",
         "AndroidParallelAttachmentStorage",
         "AndroidParallelAttachmentHandoff",
-        "AndroidSystemOriginals"
+        "AndroidSystemOriginals",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S06", "S11"],
       "ui": ["UI04", "UI07"],
@@ -5535,7 +5597,8 @@
         "AndroidParallelAttachmentHandoff",
         "AndroidParallelStageTwoIntegration",
         "AndroidSystemMigrationLifecycle",
-        "AndroidSystemOriginals"
+        "AndroidSystemOriginals",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S04", "S18"],
       "ui": ["UI07"],
@@ -5589,7 +5652,8 @@
         "HostNativeCursorFrozenRfive",
         "HostFrozenRnineRtenLegacy",
         "HostNativeFirstDirectory",
-        "HostFormalStartupPreflight"
+        "HostFormalStartupPreflight",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S04", "S11"],
       "ui": ["UI07"],
@@ -5633,7 +5697,8 @@
         "HostNativeCursorFrozenRfive",
         "HostFrozenRnineRtenLegacy",
         "HostNativeFirstDirectory",
-        "HostFormalStartupPreflight"
+        "HostFormalStartupPreflight",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S04", "S18"],
       "ui": ["UI05", "UI07", "UI12"],
@@ -6916,7 +6981,8 @@
         "AndroidNativeAcceptanceFixtureCorrections",
         "AndroidLongNoticeCoverage",
         "AndroidNoticeGlyphWitness",
-        "AndroidNativeProbeStrictSynchronousTransport"
+        "AndroidNativeProbeStrictSynchronousTransport",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S12"],
       "ui": ["UI02"],
@@ -6965,7 +7031,8 @@
         "AndroidLongNoticeCoverage",
         "AndroidNoticeGlyphWitness",
         "AndroidNativeProbeStrictSynchronousTransport",
-        "AndroidNotificationMainGraphColdEntry"
+        "AndroidNotificationMainGraphColdEntry",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S12", "S16"],
       "ui": ["UI11"],
@@ -7020,7 +7087,8 @@
         "AndroidDebugHomeResolverVisibility",
         "AndroidNoticeOriginalInspection",
         "AndroidNotificationExistingReceiptRead",
-        "AndroidNotificationMainGraphColdEntry"
+        "AndroidNotificationMainGraphColdEntry",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
@@ -7176,7 +7244,8 @@
         "AndroidNotificationExistingReceiptRead",
         "AndroidNotificationMainGraphColdEntry",
         "AndroidOwnedSystemUiSemantics",
-        "AndroidSharedSafBindingAndNoticeDiagnostics"
+        "AndroidSharedSafBindingAndNoticeDiagnostics",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
@@ -7306,7 +7375,8 @@
         "AndroidMainSafProducerAppFiles",
         "AndroidMainSafProducerReaderContract",
         "AndroidStandaloneComputerFiles",
-        "AndroidFileReceiptCapture"
+        "AndroidFileReceiptCapture",
+        "EasyWorkIOSBacklog"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
@@ -7633,7 +7703,8 @@
         "AndroidDesktopIdentityRead",
         "AndroidMainIntegration",
         "AndroidActionCopy",
-        "AndroidPresentationCaptions"
+        "AndroidPresentationCaptions",
+        "EasyWorkIOSBacklog"
       ],
       "androidStages": ["A4"],
       "scenarios": ["S03", "S10", "S11", "S13"],
@@ -7803,7 +7874,8 @@
         "IOSPendingVoiceMigrationNativePayload",
         "IOSMigrationSessionStoreErrorAtomic",
         "AndroidMigrationVoiceOriginalsPaired",
-        "AndroidStandaloneComputerFiles"
+        "AndroidStandaloneComputerFiles",
+        "EasyWorkIOSBacklog"
       ],
       "androidStages": ["A6"],
       "scenarios": ["S04", "S11", "S17", "S18"],
@@ -7984,7 +8056,8 @@
         "FrozenRtwoHostRuntime",
         "HostNativeCursorFrozenRfive",
         "HostFrozenRnineRtenLegacy",
-        "HostNativeFirstDirectory"
+        "HostNativeFirstDirectory",
+        "EasyWorkIOSBacklog"
       ],
       "androidStages": ["A4"],
       "scenarios": ["S07", "S13"],
@@ -8110,7 +8183,8 @@
         "AndroidParallelAttachmentStorage",
         "AndroidParallelAttachmentHandoff",
         "AndroidInertInboxAndVoiceRecovery",
-        "AndroidSystemOriginals"
+        "AndroidSystemOriginals",
+        "EasyWorkIOSBacklog"
       ],
       "androidStages": ["A6"],
       "scenarios": ["S04", "S05", "S11", "S13", "S18"],
@@ -20736,6 +20810,87 @@
       "summary": "主线合并 Linux CI 的未读提示 smoke 改为等原 owner 快照实际收到，保留已加载/未加载、提示与权威值不一致及清除断言。仅调整合成夹具。",
       "files": {
         "scripts/desktop-ipc-smoke.mjs": "03a8c057e560528e22c69de1a5f23bdeae00cc8990dae688bd824a5b867a9cd8"
+      }
+    },
+    {
+      "id": "ios-easywork-backlog-mainline-20261105",
+      "baseCommit": "4f77677747d221b53be7737bbb19b4cfdcb7d081",
+      "features": [
+        "F13",
+        "F25",
+        "F30",
+        "F31",
+        "F32",
+        "F49",
+        "F50",
+        "F51",
+        "F54",
+        "F55",
+        "F62",
+        "F64",
+        "F69",
+        "F71"
+      ],
+      "summary": "Integrate existing iOS/EasyWork backlog while retaining canonical runtime suggestions, original receipts, device-reading and migration identity boundaries. Keep iOS-only copy in IOSNative.strings with shared-catalog priority; do not change Android or KMP sources or generated resources. Native localization fixtures verify both languages and preserve original provider diagnostics. Compilation, auxiliary checks and scoped real DEV acceptance remain separate.",
+      "files": {
+        "apps/ios/AcceptanceFileSource/AcceptanceFileSource.xcodeproj/project.pbxproj": "8458f92c51d9d547d406e2e6637929d3b3118d8b527a3288ee31bc7df392c51e",
+        "apps/ios/AcceptanceFileSource/FixtureApp.swift": "96493fe39633792f2ebbae3ec5c1420abd8a61af9043ce467f169b673a5d11c9",
+        "apps/ios/AcceptanceFileSource/Info.plist": "0512c2f3b9b8d3c4e1699c4fa277a70e084a805b8243b2a1b431806d4345269e",
+        "apps/ios/AcceptanceFileSource/README.md": "4432d75d400aef6abb3021f812f88f5827b88c380f2609bb400f41f914f24767",
+        "apps/ios/AppStore/site/privacy-en.html": "155d15048efe60a4abf7effd25ef77f4454e9449cce6440069bd0b4e0c67541c",
+        "apps/ios/AppStore/site/privacy.html": "ce261fc269424b97d475162aaee47a802cfd98a2ab26f41feddbeb10662f7a23",
+        "apps/ios/AttachmentAction/PrivacyInfo.xcprivacy": "26b14929f1b3970d5639ac56c6756f00b2e3464f8c1dbf028d6365987490fe9f",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9594b5b72f08eb0df536afd5af3ad8a2e34b8a3328a266e547d62a6545c462fa",
+        "apps/ios/NativeTests/EasyWorkAttachmentFailureNativeTests.swift": "3ae5d63d195ce54cdf94f832ebef52cbd3a4646bfa53708d4ee7c8dec353216f",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "94b26cc92c72d1c0648e961d5041982f7a6902f3cc9a6490237cc1db47897c1c",
+        "apps/ios/NotificationContent/PrivacyInfo.xcprivacy": "a8b4083935a4396c9b26b10d04b65645851b6df790c8c162d3e8877ec777dfbe",
+        "apps/ios/NotificationService/PrivacyInfo.xcprivacy": "607c399be36b63ff17a0bf0a2280ff9c6b39b5b7744e0ea4a548d277e56f87fc",
+        "apps/ios/Resources/PrivacyInfo.xcprivacy": "11fa416e7513a2a75367164d8d66b81068bd3b192e0ae6e8904fc625a8e11451",
+        "apps/ios/Resources/en.lproj/IOSNative.strings": "1deb1e673f32477cba9ba9b016c4d7fd61ee57c012405d0de4c89d4109e3e451",
+        "apps/ios/Resources/zh-Hans.lproj/IOSNative.strings": "1bf9549e2c44f040119b6a37dbb7964d952639ad9e3fdf669430522c6da2bc83",
+        "apps/ios/Sources/AgentClient.swift": "5917f30f8378ff779c0f40b0d71635d8f1cbe42444c9234a6cabb616d5c5a754",
+        "apps/ios/Sources/DesktopSuggestions.swift": "505b343efa0d6976d88bb5ab13147061f18f3cc85c1794f8f131d593d2267c54",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "aabc204669e3c4f52ed16286103c8aaf713eee4e9ea86b414cd351763dd70c98",
+        "apps/ios/Sources/EasyWorkDiscovery.swift": "dd20881dfb71ddba8a096ee495a820e5643d1fa03bf2e6fc03f5ba291d1ceabe",
+        "apps/ios/Sources/EasyWorkPairing.swift": "06220b364ca68c870aac3dfe2ab0613dcc944caa7c0dee1e63221839a2bba448",
+        "apps/ios/Sources/EasyWorkSession.swift": "ffb45cfd375cd4785c6b4ce6abad73f8267ce06f13f2c6292352622912ab099e",
+        "apps/ios/Sources/EncryptedMigration.swift": "f21a6a0af12c80808e1c3738993a0030123ae3860a4afab6e6472f02490c429f",
+        "apps/ios/Sources/FilePreview.swift": "5e8d31c08a95ff62315eecd050f60c59d461c876b39773b5d3118b7c815a2250",
+        "apps/ios/Sources/FileTransfers.swift": "324de62a1a3a58ab60ded39e1c44c0774b3a9b3cd6957bb79fb82ee6060408c3",
+        "apps/ios/Sources/Localization.swift": "80cf7bc8c3bdc39fb121c9e5e87d11e353523ec201d52a03be933d43c8f22705",
+        "apps/ios/Sources/MenuReadingCover.swift": "1351320d1cc0a50e617296df3eab9602bd4d396c663f45be15a26189f2a4f417",
+        "apps/ios/Sources/Models.swift": "1c958c6755e43bd6093b0158f3ed310a5d4c6d82ac0852176c487921f4d234a3",
+        "apps/ios/Sources/NotificationModels.swift": "c052fcf62e1fa05530c5e2f06021e84f1d0c1cf064889e034c6fa88ab564e951",
+        "apps/ios/Sources/OperationFailure.swift": "1413fd193d5f8b6180d1ea07ec81f2c36251d94a8c00bab611b73771213ad1c8",
+        "apps/ios/Sources/ProjectGit.swift": "1824c2d6f0e79c7b73e17c6a3ead89ad342fb0909ab276d2385d8cd0c1c59610",
+        "apps/ios/Sources/QuickAttachmentViews.swift": "5e2aa5537575642bb5e3408711dedad6430af809605974fb0388cb2429e10ea6",
+        "apps/ios/Sources/RootView.swift": "0bab5d00da54a0b7cded71be663c22d24518446352392bbcb6e6a027294e27a9",
+        "apps/ios/Sources/SessionStore.swift": "f3b10f7278adf16e52802df4ea1711ceec33c018776edd7bf5fff863221bc7ba",
+        "apps/ios/Sources/Sheets.swift": "07fa6f1aba621bbc2e35c22c655708e97276a2d0169ab9ba658d715adf708970",
+        "apps/ios/Sources/TaskNotifications.swift": "056fe0e59a2efadf056a87449c849cabb4a8804e8befd2475905dcd315292dd8",
+        "apps/ios/Sources/VoiceInput.swift": "2d98a0b1ff97cbe5bd9f69d43c45d450456770cd34a5dcdd6c6a8dbff9057391",
+        "apps/ios/Tests/CodexManageUITests.swift": "5113bbc6b3686b284d4b5d4866416f97137b79d342b1cddd8931317dd9cb677e",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "58e152159bf405b4d458a5bb4ab10f49ca1346927c6ab206431e1da638bcd8fc",
+        "scripts/easywork-project-directory.test.mjs": "4080837056b9c1ac3a1ffc8dc08d31346fa700a1c76a8e146bc25e0b9a106eeb",
+        "scripts/localization-native-smoke.swift": "8d44fb681b318b6ad15918e7b21113e1fda826a14f49225b9d62f2e94002380a",
+        "scripts/localization-smoke.mjs": "65f355f539fab4ea37295e00836d4bad75277f7f913a342e88af2da15928875f",
+        "scripts/mobile/build-ios-core.sh": "9b79353476e117ba10913e2b9184e851015ccdd84c3f46816dbc0c266ebbd078",
+        "scripts/mobile/check-app-store-submission.mjs": "7be5a4016a169f32b5b8aa6f564afb9d09f70ace4b6059c7c77764996de5d12a",
+        "scripts/mobile/easywork-live-host.mjs": "7c3ddb909e78bc5ff0d91989979520764f042fd1ba56a6614c8f041ad7ee3bfd",
+        "scripts/mobile/easywork-message-file-native.mjs": "20a4c14b4ca414ac8209f240244808372adaf28c159dd2980992e62df1a3944b",
+        "scripts/mobile/easywork-message-file-native.swift": "4c98a3c648e79708eafab2e82913a25153bb8f2504a6350e8933a8234bc54dcb",
+        "scripts/mobile/easywork-migration-crypto-vectors.swift": "94b8319e0de5708124db046702d14802c951b232937203a3a7135174ebb440cf",
+        "scripts/mobile/easywork-notification-presentation-native.swift": "8ac01c18d7c0cc7798a90a26027ba741a03d204cce25533e23e85d1771d77510",
+        "scripts/mobile/easywork-reading-native-smoke.mjs": "4e32f3d16d9019a42144906f2a8781ea362405e3c20c083bf26803535943c635",
+        "scripts/mobile/easywork-reading-native-smoke.swift": "45260c5f3aad814ba52c1c31736aa421080fcadf8d1507525b49486bfb5457a0",
+        "scripts/mobile/ios-physical-easywork.py": "f73dce453d3a2738d0f63f3839bf57d8c7aa11631223faa4c3781fad38f66646",
+        "scripts/mobile/ios-physical-easywork.test.py": "e0de43038b8b360a21135c9953587ec430516cf4ddefcf39583709c4244b2d2a",
+        "scripts/mobile/ios-physical-hosted-activation.py": "986ace31ad3e0bc99020f076fd32fdac519e6f022c0cea43b27c2fb006ec65e6",
+        "scripts/mobile/ios-physical-hosted-activation.test.py": "6de273c048be6ad0026ec0bcc24b78af021c0cc87b6ac69a7595edd8da8a13ae",
+        "scripts/mobile/ios-physical-native-preflight.py": "af8cb667fee3f83a3e42103116fbbf66cef31f312575d0591f0a7b28695cae18",
+        "scripts/mobile/ios-physical-native-preflight.test.py": "130291c3a27190f32f9d58d5958c0b46d6030843d283fcb07235a0bf2026eb83",
+        "scripts/mobile/ios-source-fingerprint.py": "aa1c77b13d93047a194d1cee28f542a5a103b17a65b93288b73441265b70f771",
+        "scripts/mobile/requirements-ios-physical-examiner.txt": "33d9d19829e3e8c49050b172a530307b86c7198502a7405a4addf5b4d51cf468"
       }
     }
   ]

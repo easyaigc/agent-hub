@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-05T13:15:32.735173+00:00",
+  "updatedAt": "2026-11-06",
   "taskId": "easywork-ios-sync-20261101",
   "scope": {
     "mobilePlatform": "ios",
@@ -834,7 +834,7 @@
         "implementation": "code-present",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
         "verification": "not-verified",
-        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.100当前Native62/V30只读目录/原执行设置重新确认，38模型、Fast声明0；0新增功能场景/模型/回执。原Fast/权限工具效果不推定通过。I7.103不支持生成设置拒绝驱动待验。 I7.113当前严格权限和实际owner设置/中风险pwd拒绝限定通过，四规范回执/五字段/权限hash/MCP派发前阻断及完成Root均独立核；电脑默认继承/owner默认策略仍补证，整项继续。 I7.119–120默认owner启动快照修复并通过Native66真实模型限定验收，提交省略权限字段，实际confirm_high_risk策略、手机设置回读及原工具执行一致，旧历史未知/原意图/手机偏好保留。其余整项断言继续，新批正式合并待核。",
+        "currentNote": "原整项未关闭；已有子项与失败保留在原台账，不推定本次通过 I7.100当前Native62/V30只读目录/原执行设置重新确认，38模型、Fast声明0；0新增功能场景/模型/回执。原Fast/权限工具效果不推定通过。I7.103不支持生成设置拒绝驱动待验。 I7.113当前严格权限和实际owner设置/中风险pwd拒绝限定通过，四规范回执/五字段/权限hash/MCP派发前阻断及完成Root均独立核；电脑默认继承/owner默认策略仍补证，整项继续。 I7.119–120默认owner启动快照修复并通过Native66真实模型限定验收，提交省略权限字段，实际confirm_high_risk策略、手机设置回读及原工具执行一致，旧历史未知/原意图/手机偏好保留。I7.121–122已核PR61/156分别合入master/main；其余整项断言继续。",
         "acceptanceDisposition": "integration-only; existing matching passes reused"
       },
       "acceptanceAction": "映射具名动作、实际生效设置、原ID与唯一执行；缺能力明确拒绝，不伪造成功",
@@ -876,7 +876,7 @@
         "implementation": "implemented",
         "implementationNote": "原renderer队列、queue/execute及已接收guidance/send的原回执恢复已接入；旧桌面无准入项及接收前owner失联等组合待闭环。",
         "verification": "passed",
-        "currentNote": "本任务iOS/EasyWork对接范围验收通过：唯一原客户端队列/完整目标原ID、执行/取消/顺序推进/unknown查询不重发，以及两类旧记录只读；历史函数匹配、当前Native53/V29真实guidance和原cold回执补证。仅授权Simulator LAN及匹配历史，主线交付中；不提升全产品/Codex/Android或物理/VPN，纯手机UI免重验。",
+        "currentNote": "本任务iOS/EasyWork对接范围验收通过：唯一原客户端队列/完整目标原ID、执行/取消/顺序推进/unknown查询不重发，以及两类旧记录只读；历史函数匹配、当前Native53/V29真实guidance和原cold回执补证。仅授权Simulator LAN及匹配历史，既有主线交付已核（APP PR154/156，EasyWork PR59/61）；本次再盘点并整合遗漏iOS增量；不提升全产品/Codex/Android或物理/VPN，纯手机UI免重验。",
         "acceptanceDisposition": "integration-scope-closed; Simulator LAN, matched historical native and current cold original receipt",
         "deliveryStatus": "ios-mainline-merged-easywork-mainline-pending"
       },
@@ -982,7 +982,7 @@
         "implementation": "implemented",
         "implementationNote": "已实现（源码；能力由Desktop声明）",
         "verification": "passed",
-        "currentNote": "本任务iOS/EasyWork对接验收通过：单/多选、自定义、保密元数据/桌面遮罩、双端先答/迟到拒绝及原目标/唯一执行已核；完整性由匹配的生产Store实编译31项边界与真实Native链路组合覆盖。仅限授权模拟器LAN及匹配历史场景，主线交付中；不提升全产品/Codex/Android或物理/VPN，纯手机按钮视觉免重验。",
+        "currentNote": "本任务iOS/EasyWork对接验收通过：单/多选、自定义、保密元数据/桌面遮罩、双端先答/迟到拒绝及原目标/唯一执行已核；完整性由匹配的生产Store实编译31项边界与真实Native链路组合覆盖。仅限授权模拟器LAN及匹配历史场景，既有主线交付已核（APP PR154/156，EasyWork PR59/61）；本次再盘点并整合遗漏iOS增量；不提升全产品/Codex/Android或物理/VPN，纯手机按钮视觉免重验。",
         "acceptanceDisposition": "integration-scope-closed; Simulator LAN and source-matched historical native; pure phone UI waived",
         "deliveryStatus": "ios-mainline-merged-easywork-mainline-pending"
       },
@@ -10539,6 +10539,56 @@
       ],
       "native152SourceInputsMatchActualNative66": true,
       "at": "2026-11-05T13:15:32.735173+00:00"
+    },
+    "I7.123": {
+      "title": "双项目既有工作与开发分支合线盘点",
+      "status": "development-and-scoped-acceptance-passed",
+      "appBase": "4f77677747d221b53be7737bbb19b4cfdcb7d081",
+      "easyworkMaster": "24b20f267c06d73b07445bd3c9436c286575697e",
+      "appScope": "已整合旧工作区独有iOS增量；保留最新规范建议与原回执契约，修复重复声明、旧测试接线、迁移规范类型及独立包module；119条iOS专用文案独立资源表，不改Android/KMP或其生成文案",
+      "easyworkScope": "PR59与PR61已实际合master；干净永久master已快进24b20f267c06d73b07445bd3c9436c286575697e。保留当前owner权限、原生队列与单一规范建议来源，旧快照不恢复重复生产者",
+      "verification": "编译、辅助检查与当前候选真实验收分别登记；80限定场景143Run791回执不新增计数",
+      "originalWorktrees": "保留原未提交工作及冻结index，不reset/stash/覆盖",
+      "excluded": [
+        "Android独立主线与KMP源码保持",
+        "A6人类暂停",
+        "纯手机端不重复验收",
+        "过时双建议生产者/平行迁移格式/旧自有队列不恢复",
+        "无编码来源证明且无引用的3音频样本保持原源",
+        "旧独立Agent-service架构与规则/环境WIP分开保留"
+      ],
+      "checks": {
+        "workspace": "pnpm check passed, 802.4s; final manifest/parity/format checked separately",
+        "ios": "production and UITests builds passed; final independent hosted native build passed, 263.94s",
+        "auxiliary": "reading/message-file/directory bounds, 119-key bilingual native lookup, crypto/canonical voice/presentation and examiner Python unit checks passed",
+        "realDEV": "Native67 actual independent Simulator App-hosted runtime read: official 1 passed, 0 failed, 0 skipped; runtime connected and original complete target matched"
+      },
+      "nativeCaseId": "20154957-7125-4c08-85b9-423b1299ad33",
+      "sourceAndArtifactQualification": {
+        "nativeInputs": 201,
+        "packageFiles": 51,
+        "signatureRoles": 5,
+        "drift": 0
+      },
+      "protection": "15张既有业务/执行表逐行相等：143 Run、791原回执保持；手机身份/草稿/选择/原意图指纹不变，0模型/0新授权/0远端业务命令",
+      "counting": "历史80限定场景不重新计数；本批只读切换单项通过，不扩成整项或全产品通过",
+      "originalWorkPreservation": "原5个脏现场状态及302来源指纹未变；独立永久EasyWork干净master正常快进单列",
+      "deliveryTarget": "APP main；EasyWork master；实际交付按关联PR及远端主线回执核验",
+      "postAcceptanceFormatting": {
+        "file": "apps/ios/NativeTests/EasyWorkAttachmentFailureNativeTests.swift",
+        "removedTrailingSpaces": 6,
+        "codeTokensUnchanged": true,
+        "acceptedSourceReconstructable": true,
+        "evidenceReuse": "Native67，其他原生输入字节一致；仅测试代码逗号后行尾空格，不重跑有效验收"
+      },
+      "submissionToolQualification": {
+        "rootResolution": "corrected to ../../; standalone tool now reads the repository metadata",
+        "currentResult": "not-ready-under-existing-internal-naming-rule",
+        "observedInput": "Existing English subtitle includes iPhone; the checker conservatively disallows Apple product terms in name/subtitle.",
+        "scope": "Only root resolution and the actual first metadata diagnostic were exercised. Full submission check and App Store approval are not passed or claimed.",
+        "policy": "No marketing metadata or checker assertion changed. This is an internal rule/input mismatch, not a verified conclusion about Apple policy.",
+        "integrationImpact": "Not an iOS application or Native67 build/runtime dependency; integration evidence unchanged."
+      }
     }
   }
 }

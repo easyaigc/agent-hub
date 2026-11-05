@@ -60,6 +60,7 @@ struct QuickAttachmentPresentation: ViewModifier {
   @State private var shareURL: URL?
   @State private var selectedPhotos: [PhotosPickerItem] = []
   @State private var destination: AttachmentDraftDestination?
+  @State private var clearIntent: EasyWorkDraftClearIntent?
   @State private var importId = UUID().uuidString
   @State private var nextAction: Action?
   @State private var pasting = false
@@ -74,6 +75,7 @@ struct QuickAttachmentPresentation: ViewModifier {
       .onChange(of: request) { _, request in
         guard let request else { return }
         destination = request.destination
+        clearIntent = store.captureEasyWorkDraftClearIntent()
         importId = request.id
         photoSelection.photos = []
         photoSelection.error = nil
@@ -207,7 +209,9 @@ struct QuickAttachmentPresentation: ViewModifier {
         } footer: { Text(L10n.tr("仅在你添加后保存在手机，点击发送才上传。")) }
         Section {
           Button(L10n.tr("清空草稿"), systemImage: "trash", role: .destructive) {
-            if let target = destination { store.clearDraft(target: target.key) }; panel = false
+            if let intent = clearIntent { _ = store.clearEasyWorkDraft(intent) }
+            else if let target = destination, store.client?.agentConnection?.target.agentId != "easywork" { store.clearDraft(target: target.key) }
+            panel = false
           }.accessibilityIdentifier("clear-composer-draft")
           #if DEBUG
           if ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") {

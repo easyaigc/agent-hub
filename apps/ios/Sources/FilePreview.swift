@@ -45,15 +45,15 @@ enum FilePreviewRegistry {
 }
 
 extension View {
-  func filePreview(_ selection: Binding<FilePreviewItem?>) -> some View {
+  func filePreview(_ selection: Binding<FilePreviewItem?>, onDismiss: (() -> Void)? = nil) -> some View {
     sheet(item: Binding(get: {
       selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) != nil || VisualizationPreview.accepts($0) ? $0 : nil }
-    }, set: { selection.wrappedValue = $0 })) { item in
+    }, set: { selection.wrappedValue = $0 }), onDismiss: onDismiss) { item in
       if VisualizationPreview.accepts(item) { VisualizationFilePreview(item: item).id(item.id) }
       else if let renderer = FilePreviewRegistry.renderer(item) { DocumentFilePreview(item: item, renderer: renderer).id(item.id) }
     }.quickLookPreview(Binding(get: {
       selection.wrappedValue.flatMap { FilePreviewRegistry.renderer($0) == nil && !VisualizationPreview.accepts($0) ? $0.url : nil }
-    }, set: { if $0 == nil { selection.wrappedValue = nil } }))
+    }, set: { if $0 == nil { selection.wrappedValue = nil; onDismiss?() } }))
   }
 }
 
@@ -468,9 +468,15 @@ enum VisualizationPreview {
     ["html", "htm"].contains((item.name as NSString).pathExtension.lowercased())
       || item.mediaType.lowercased().split(separator: ";").first == "text/html"
   }
-  static func document(_ fragment: String) -> String {
-    let sources = "https://cdnjs.cloudflare.com https://esm.sh https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://fonts.bunny.net https://persistent.oaistatic.com/plugins/visualize/"
-    let policy = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' \(sources); style-src 'unsafe-inline' \(sources); img-src data: blob: \(sources); font-src data: \(sources); connect-src \(sources); worker-src blob:; media-src data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  static let externalSources = [
+    "https://cdnjs.cloudflare.com", "https://esm.sh", "https://cdn.jsdelivr.net", "https://unpkg.com",
+    "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://fonts.bunny.net",
+    "https://persistent.oaistatic.com/plugins/visualize/"
+  ]
+  static func document(_ fragment: String, allowExternalResources: Bool = false) -> String {
+    let sources = allowExternalResources ? externalSources.joined(separator: " ") : ""
+    let connections = allowExternalResources ? sources : "'none'"
+    let policy = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' \(sources); style-src 'unsafe-inline' \(sources); img-src data: blob: \(sources); font-src data: \(sources); connect-src \(connections); worker-src blob:; media-src data: blob:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
     func escape(_ text: String) -> String {
       text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "\"", with: "&quot;")
         .replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
@@ -494,13 +500,35 @@ enum VisualizationPreview {
 private struct VisualizationFilePreview: View {
   let item: FilePreviewItem
   @Environment(\.dismiss) private var dismiss
-  @State private var html: String?
+  @State private var fragment: String?
+  @State private var loadedItemId: String?
+  @State private var externalResourcesForItem: String?
+  @State private var showExternalResourceDisclosure = false
+  @State private var disclosureItemId: String?
   @State private var failure: String?
   @State private var share: PreparedFileShare?
   var body: some View {
     NavigationStack {
       Group {
-        if let html, failure == nil { VisualizationWebView(html: html, failure: $failure) }
+        if let fragment, loadedItemId == item.id, failure == nil {
+          VStack(spacing: 0) {
+            HStack {
+              Text(L10n.tr(externalResourcesForItem == item.id ? "已允许本次预览联网" : "默认离线预览，外部资源已阻止"))
+                .font(.caption).foregroundStyle(.secondary)
+              Spacer()
+              Button {
+                if externalResourcesForItem == item.id { externalResourcesForItem = nil }
+                else { disclosureItemId = item.id; showExternalResourceDisclosure = true }
+              } label: {
+                Text(L10n.tr(externalResourcesForItem == item.id ? "切回离线" : "允许联网…"))
+                  .font(.caption)
+              }.accessibilityIdentifier("visualization-network-permission")
+            }.padding(.horizontal).padding(.vertical, 8)
+            VisualizationWebView(html: VisualizationPreview.document(fragment,
+              allowExternalResources: externalResourcesForItem == item.id), failure: $failure)
+              .id(item.id + (externalResourcesForItem == item.id ? ":online" : ":offline"))
+          }
+        }
         else if failure == nil { ProgressView(L10n.tr("正在准备预览…")) }
         if let failure { ContentUnavailableView(L10n.tr("无法显示可视化"), systemImage: "chart.xyaxis.line", description: Text(failure)) }
       }
@@ -515,7 +543,34 @@ private struct VisualizationFilePreview: View {
         }
       }
       .sheet(item: $share) { FileShareSheet(url: $0.url) }
+      .sheet(isPresented: $showExternalResourceDisclosure, onDismiss: { disclosureItemId = nil }) {
+        NavigationStack {
+          Form {
+            Section {
+              Text(L10n.tr("允许后，此文档可从下列第三方站点加载脚本、字体和图片。这些站点会收到你的 IP 地址和请求信息；加载的脚本也能读取此文档及你在预览中输入的内容，并可向下列站点发送数据。请只为你信任的文档允许联网。"))
+              ForEach(VisualizationPreview.externalSources, id: \.self) { Text($0).font(.caption).textSelection(.enabled) }
+              Text(L10n.tr("预览不提供电脑凭据或原生操作接口。联网许可仅适用于当前打开的这个文件，关闭后不保存。选择离线仍可查看不依赖外部资源的内容。"))
+              Link(L10n.tr("阅读隐私政策"), destination: L10n.privacyPolicyURL)
+            }
+            Section {
+              Button(L10n.tr("允许本次预览联网")) {
+                guard disclosureItemId == item.id, loadedItemId == item.id, fragment != nil else { return }
+                externalResourcesForItem = item.id
+                showExternalResourceDisclosure = false
+              }.accessibilityIdentifier("visualization-network-allow")
+              Button(L10n.tr("保持离线"), role: .cancel) { showExternalResourceDisclosure = false }
+                .accessibilityIdentifier("visualization-network-decline")
+            }
+          }
+          .navigationTitle(L10n.tr("预览联网许可")).navigationBarTitleDisplayMode(.inline)
+          .toolbar { ToolbarItem(placement: .cancellationAction) {
+            Button(L10n.tr("取消")) { showExternalResourceDisclosure = false }
+          } }
+        }
+      }
       .task(id: item.id) {
+        fragment = nil; loadedItemId = nil; externalResourcesForItem = nil
+        showExternalResourceDisclosure = false; disclosureItemId = nil; failure = nil
         let url = item.url
         do {
           let fragment = try await Task.detached(priority: .userInitiated) {
@@ -527,7 +582,7 @@ private struct VisualizationFilePreview: View {
             return text
           }.value
           guard !Task.isCancelled else { return }
-          html = VisualizationPreview.document(fragment)
+          self.fragment = fragment; loadedItemId = item.id
         } catch {
           guard !Task.isCancelled else { return }
           failure = L10n.tr("此可视化文件过大、编码不支持或无法读取，可保存原文件后查看。")

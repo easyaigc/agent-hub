@@ -22,7 +22,13 @@ const previous =
     ? undefined
     : JSON.parse(await readFile(resolve(process.argv[resumeIndex + 1]), 'utf8'));
 if (previous) {
-  assert.equal(previous.identityScope, 'explicit-loopback-DEV-only');
+  assert(
+    previous.identityScope === 'explicit-loopback-DEV-only' ||
+      (previous.identityScope === 'isolated-physical-dev-https' &&
+        previous.relayOrigin === process.env.EASYWORK_ACCEPTANCE_RELAY_ORIGIN &&
+        previous.observerBaseURL === process.env.EASYWORK_ACCEPTANCE_OBSERVER_ORIGIN),
+    'Resume only the same explicitly selected private DEV origins',
+  );
   assert.equal(previous.desktopRoot, root, 'Resume only the same isolated source');
   assert(dirname(previous.userData).startsWith(root + '/.devenv-acceptance/'));
   assert.match(basename(dirname(previous.userData)), /^android-a5-[a-f0-9-]+$/);
@@ -57,6 +63,22 @@ const port = async () => {
 const [relayPort, lanPort, rendererPort, observerPort] = previous
   ? [previous.relayPort, previous.lanPort, previous.rendererPort, previous.observerPort]
   : await Promise.all([port(), port(), port(), port()]);
+const relayOrigin = process.env.EASYWORK_ACCEPTANCE_RELAY_ORIGIN ?? `http://127.0.0.1:${relayPort}`;
+const observerBaseURL = process.env.EASYWORK_ACCEPTANCE_OBSERVER_ORIGIN;
+for (const origin of [relayOrigin, observerBaseURL].filter(Boolean)) {
+  const parsed = new URL(origin);
+  assert(
+    !parsed.username &&
+      !parsed.password &&
+      !parsed.search &&
+      !parsed.hash &&
+      parsed.pathname === '/',
+  );
+  assert(
+    parsed.protocol === 'https:' ||
+      (parsed.protocol === 'http:' && parsed.hostname === '127.0.0.1'),
+  );
+}
 const profile = await prepareDevAcceptanceProfile({
   repositoryRoot: root,
   mode: 'persistent',
@@ -75,11 +97,12 @@ const supervisor = new CodexPlusRealSupervisor({
     EASYAI_REMOTE_LOCAL_DEVELOPMENT: '1',
     EASYAI_REMOTE_LOCAL_STATE_PATH: join(profile.root, 'relay.json'),
     EASYAI_EWDAP_DEV_ACCESS_LIFETIME_MS: '120000',
+    EASYAI_MOBILE_PUBLIC_ORIGIN: relayOrigin,
   },
   desktopEnvironment: {
     EASYAI_BROWSER_AGENT_DEV_ACCEPTANCE_REPORT: desktopReport,
     EASYAI_BROWSER_AGENT_DEV_ACCEPTANCE_SCENARIO: 'codex-plus-real',
-    EASYAI_REMOTE_ACCESS_URL: `http://127.0.0.1:${relayPort}`,
+    EASYAI_REMOTE_ACCESS_URL: relayOrigin,
     EASYAI_EMBEDDED_HOST_PORT: String(lanPort),
     EASYAI_DESKTOP_DEV_RENDERER_PORT: String(rendererPort),
     EASYAI_DESKTOP_SKIP_STARTUP_RUNTIME_WARMUP: '1',
@@ -121,10 +144,12 @@ async function nativeEvidence(threadId) {
   const source = cachedEvidence;
   // The owned child is the DEV launcher; its Electron may exit while the launcher
   // remains alive. Fresh canonical observations are also required for readiness.
-  const ownerAlive =
-    supervisor.desktop?.exitCode === null &&
-    supervisor.desktop?.signalCode === null &&
-    Date.now() - Date.parse(source.timestamp) < 120_000;
+  const launcherAlive =
+    supervisor.desktop?.exitCode === null && supervisor.desktop?.signalCode === null;
+  const observationAgeMs = Date.now() - Date.parse(source.timestamp);
+  const observationFresh =
+    Number.isFinite(observationAgeMs) && observationAgeMs >= 0 && observationAgeMs < 120_000;
+  const ownerAlive = launcherAlive && observationFresh;
   const pick = (value, keys) =>
     Object.fromEntries(
       keys.filter((key) => value?.[key] !== undefined).map((key) => [key, value[key]]),
@@ -133,6 +158,7 @@ async function nativeEvidence(threadId) {
   const retainedMethods = new Set([
     'project/create',
     'thread/create',
+    'thread/fork',
     'turn/start',
     'turn/steer',
     'turn/cancel',
@@ -153,6 +179,9 @@ async function nativeEvidence(threadId) {
     sourceTimestamp: source.timestamp,
     status: ownerAlive ? source.status : 'desktop-disconnected',
     desktopOwnerAlive: ownerAlive,
+    desktopLauncherAlive: launcherAlive,
+    observationFresh,
+    observationAgeMs,
     deviceOffer: source.deviceOffer,
     hostEpoch: source.hostEpoch,
     target: source.target,
@@ -171,6 +200,9 @@ async function nativeEvidence(threadId) {
         params: pick(entry.request.params, [
           'threadId',
           'clientRequestId',
+          'clientOperationId',
+          'operationId',
+          'environment',
           'guidanceId',
           'commandId',
           'turnId',
@@ -194,6 +226,8 @@ async function nativeEvidence(threadId) {
           'accepted',
           'denied',
           'cancelled',
+          'phase',
+          'forkedThreadId',
         ]),
         error: entry.response?.error,
       },
@@ -218,6 +252,19 @@ async function nativeEvidence(threadId) {
         ? [
             {
               id: snapshot.id,
+              messagesHash: createHash('sha256')
+                .update(JSON.stringify(snapshot.snapshot?.messages ?? snapshot.messages))
+                .digest('hex'),
+              messageHeadersComplete:
+                (snapshot.snapshot?.messages ?? snapshot.messages).length <= 256,
+              messageHeaders: (snapshot.snapshot?.messages ?? snapshot.messages)
+                .slice(-256)
+                .map((message) => ({
+                  ...pick(message, ['id', 'seq', 'role', 'status', 'sourceRunId']),
+                  contentHash: createHash('sha256')
+                    .update(JSON.stringify(message.content))
+                    .digest('hex'),
+                })),
               messages: snapshot.messages
                 .filter((message) => message.role === 'user')
                 .map((message) => ({
@@ -355,11 +402,15 @@ try {
         lanPort,
         rendererPort,
         observerPort,
+        ...(observerBaseURL ? { observerBaseURL } : {}),
+        relayOrigin,
         authorization,
         workspace: profile.workspacePath,
         userData: profile.userDataPath,
         model: 'easyai/GLM-5.2',
-        identityScope: 'explicit-loopback-DEV-only',
+        identityScope: observerBaseURL
+          ? 'isolated-physical-dev-https'
+          : 'explicit-loopback-DEV-only',
         grantAccessLifetimeMs: 120000,
         pid: process.pid,
         desktopRoot: root,

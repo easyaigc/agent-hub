@@ -71,6 +71,9 @@ actor EasyWorkSessions {
   private var preparing: Set<String> = []
   func session(_ client: Client) async throws -> EasyWorkRemoteSession {
     try Task.checkCancellation()
+    guard client.migrationNeedsVerification != true else {
+      throw HostServiceError.message(L10n.tr("迁移的 EasyWork 连接需要重新配对，请先核对电脑身份。"))
+    }
     guard let connection = client.agentConnection else { throw HostServiceError.invalidResponse }
     // Closing a previous actor yields. Serialize the transition so concurrent
     // sends and subscriptions cannot create two consumers of one Relay mailbox.
@@ -102,8 +105,7 @@ actor EasyWorkSessions {
     if let (_, session) = sessions.removeValue(forKey: clientId) { await session.close() }
   }
 }
-/// Wake subscriptions on actual frames, disconnects or their single deadline.
-/// Keeping the revision closes the gap between inspecting state and suspending.
+/// An authenticated provider rejection is distinct from transport failure.
 struct EasyWorkRemoteRejection: LocalizedError, Sendable {
   let code: String?
   let message: String
@@ -187,7 +189,7 @@ actor EasyWorkRemoteSession {
   private static let readMethods: Set<String> = [
     "usage/read", "runtime/context", "runtime/summary", "project/list", "thread/list", "thread/search",
     "thread/read", "thread/history", "thread/sync", "thread/subscribe", "thread/unsubscribe",
-    "thread/next-turn-suggestion",
+    "thread/suggestion/read",
     "thread/fork-options", "thread/fork-status", "workspace/manage-status", "thread/read-state", "thread/read-state-list",
     "model/list", "queue/list", "queue/status",
     "filesystem/access-status", "filesystem/roots", "filesystem/list-directories", "filesystem/list-entries",

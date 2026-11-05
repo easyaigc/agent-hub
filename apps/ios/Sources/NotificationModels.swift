@@ -360,9 +360,19 @@ enum TaskNotificationShared {
   }
   static func keychainQuery(_ account: String) -> [String: Any] {
     var result: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "com.codexmanage.notifications", kSecAttrAccount as String: account]
-    #if !targetEnvironment(simulator)
-    if let group = Bundle.main.object(forInfoDictionaryKey: "NotificationKeychainGroup") as? String, !group.contains("$(") { result[kSecAttrAccessGroup as String] = group }
+    #if targetEnvironment(simulator)
+    #if DEBUG
+    // Explicitly entitled independent Simulator builds can exercise the same
+    // notification-only group as their extensions. Existing Simulator storage
+    // keeps its default group unless that build opts in; no secrets migrate.
+    let configuredGroup = Bundle.main.object(forInfoDictionaryKey: "NotificationSimulatorUsesSharedKeychain") as? Bool == true
+    #else
+    let configuredGroup = false
     #endif
+    #else
+    let configuredGroup = true
+    #endif
+    if configuredGroup, let group = Bundle.main.object(forInfoDictionaryKey: "NotificationKeychainGroup") as? String, !group.contains("$(") { result[kSecAttrAccessGroup as String] = group }
     return result
   }
   static func secret(_ account: String) -> Data? {
@@ -415,5 +425,78 @@ enum TaskNotificationShared {
   static var notices: [TaskNotificationEvent] {
     ((try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
       .filter { $0.lastPathComponent.hasPrefix("notice-") }.compactMap { read(TaskNotificationEvent.self, name: $0.lastPathComponent) }
+  }
+}
+
+/// EasyWork presentation state is separate from independent conversation reading.
+/// A muted original actionable may return only after the current authenticated active set confirms it.
+@MainActor enum EasyWorkNoticePresentationLedger {
+  struct Row: Codable {
+    var target: AgentRuntimeTarget
+    var kind: TaskNoticeKind
+    var eventHash: String
+    var phase: String
+  }
+  struct Document: Codable { var version = 1; var records: [String: Row] = [:] }
+  private static let name = "easywork-presentation-v1.json"
+  private static let phases: Set<String> = ["posted", "suppressed", "resolved"]
+  private static func invalid() -> NSError { NSError(domain: "EasyWork.NoticePresentation", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("原通知记录无法校验，原资料已保留。")]) }
+  private static func read() throws -> Document {
+    let url = TaskNotificationShared.directory.appendingPathComponent(name)
+    guard FileManager.default.fileExists(atPath: url.path) else { return Document() }
+    guard (try url.resourceValues(forKeys: [.isSymbolicLinkKey])).isSymbolicLink != true else { throw invalid() }
+    let data = try Data(contentsOf: url)
+    guard data.count <= 8 * 1024 * 1024,
+      let raw = try JSONSerialization.jsonObject(with: data) as? [String: Any], Set(raw.keys) == ["version", "records"],
+      let records = raw["records"] as? [String: [String: Any]], records.values.allSatisfy({ Set($0.keys) == ["target", "kind", "eventHash", "phase"] }) else { throw invalid() }
+    let document = try JSONDecoder().decode(Document.self, from: data)
+    guard document.version == 1, document.records.count <= 10_000, document.records.allSatisfy({ id, row in
+      TaskNotificationValidation.eventId(id) && row.target.agentId == "easywork" && TaskNotificationValidation.target(row.target)
+        && TaskNotificationValidation.eventId(row.eventHash) && phases.contains(row.phase)
+    }) else { throw invalid() }
+    return document
+  }
+  private static func hash(_ event: TaskNotificationEvent) throws -> String {
+    guard event.target.agentId == "easywork", TaskNotificationValidation.event(event) else { throw invalid() }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    return SHA256.hash(data: try encoder.encode(event)).map { String(format: "%02x", $0) }.joined()
+  }
+  private static func matching(_ row: Row, _ event: TaskNotificationEvent) throws -> Bool {
+    let fingerprint = try hash(event)
+    return row.target.matchesCapturedPayload(event.target) && row.kind == event.kind && row.eventHash == fingerprint
+  }
+  static func seedPosted(_ event: TaskNotificationEvent) throws {
+    if let row = try read().records[event.id] { guard try matching(row, event) else { throw invalid() } }
+    else { try posted(event) }
+  }
+  static func posted(_ event: TaskNotificationEvent) throws {
+    var document = try read()
+    if let old = document.records[event.id], try !matching(old, event) { throw invalid() }
+    guard document.records[event.id] != nil || document.records.count < 10_000 else { throw invalid() }
+    document.records[event.id] = Row(target: event.target, kind: event.kind, eventHash: try hash(event), phase: "posted")
+    try TaskNotificationShared.write(document, name: name)
+  }
+  static func suppress(_ preferences: TaskNotificationPreferences) throws {
+    var document = try read(); var changed = false
+    for (id, row) in document.records where row.phase == "posted" {
+      if !preferences.enabled || !preferences.foregroundBanner || !preferences.kinds.contains(row.kind) || preferences.excludedHosts.contains(row.target.hostId) {
+        document.records[id]?.phase = "suppressed"; changed = true
+      }
+    }
+    if changed { try TaskNotificationShared.write(document, name: name) }
+  }
+  static func mayRestore(_ event: TaskNotificationEvent, activeIds: [String]?, remoteRevision: String?, preferences: TaskNotificationPreferences) throws -> Bool {
+    guard let row = try read().records[event.id] else { return false }
+    guard try matching(row, event) else { throw invalid() }
+    return row.kind.actionable && ["suppressed", "resolved"].contains(row.phase) && activeIds?.contains(event.id) == true
+      && remoteRevision == preferences.revision && preferences.enabled && preferences.foregroundBanner
+      && preferences.kinds.contains(event.kind) && !preferences.excludedHosts.contains(event.target.hostId)
+  }
+  static func resolve(_ target: AgentRuntimeTarget, activeIds: [String]) throws {
+    var document = try read(); var changed = false
+    for (id, row) in document.records where row.target.matchesCapturedPayload(target) && row.kind.actionable && !activeIds.contains(id) && row.phase != "resolved" {
+      document.records[id]?.phase = "resolved"; changed = true
+    }
+    if changed { try TaskNotificationShared.write(document, name: name) }
   }
 }

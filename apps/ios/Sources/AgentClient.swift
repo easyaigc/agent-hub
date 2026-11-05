@@ -181,6 +181,7 @@ protocol AgentClient: Sendable {
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse
+  func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind?
   func acknowledgeRead(_ client: Client, threadId: String, readerId: String, position: ReadPosition) async throws -> ReadAcknowledgement
   func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt
   func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt
@@ -228,6 +229,7 @@ extension AgentClient {
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { nil }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
+  func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? { nil }
   func chatAction(_ client: Client, request: ChatActionRequest) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }
   func chatActionStatus(_ client: Client, threadId: String, operationId: String) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }
   func searchHistory(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await history(client, threadId: threadId, cursor: cursor) }
@@ -279,6 +281,11 @@ extension AgentClient {
 enum AgentDEVReplayOperation: String, Sendable { case create, reply }
 #endif
 struct CodexAgentClient: AgentClient {
+  func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? {
+    guard workspace.connectionMode == "desktop-runtime", workspace.readTarget?.agentId == "codex" else { return nil }
+    if workspace.capabilities?.contains("desktop:suggestions:displayed:v1") == true { return .desktopDisplay }
+    return workspace.capabilities?.contains("desktop:suggestions:native-version:v1") == true ? .nativeTrace : nil
+  }
   func chatAction(_ client: Client, request: ChatActionRequest) async throws -> ChatActionReceipt {
     guard request.hostId == client.id else { throw HostServiceError.wrongHost }
     return try await HostService.load(HostService.request(try HostService.url(client, "v1/threads/actions"), token: CredentialVault.token(client.id), method: "POST", body: JSONEncoder().encode(request)))

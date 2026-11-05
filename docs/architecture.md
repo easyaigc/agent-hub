@@ -1533,3 +1533,7 @@ The Windows regular-service continuation candidate separates immutable profile-o
 阶段108 F59：Android与KMP新增独立明文内层流，绑定显式Long总量、原顺序与三摘要；读取须由外层独立认证的预期回执，所有内容在最终EOF及未来外层认证关闭前均为惰性暂存。未接SAF、加密容器、旧格式、激活或Host；iOS当前只有小向量独立验证器。详见[阶段档案](plans/android-alignment-20261022/records/stage108-f59-inner-framing.md)。
 
 阶段110 F59：源端现有冻结与认证日志产出独立惰性代际清单，保留 child 缺失、空、有记录及退役分块原证据。共享清单对实际遍历数量、现存字节与全部描述符分别限额；源指针只做审计，旧 graph JSON 保持，未增加外层认证、文件发布或激活。详见[阶段档案](plans/android-alignment-20261022/records/stage110-f59-typed-family-inventory.md)。
+
+### iOS backlog integration (2026-11-05)
+
+iOS resolves suggestion source kinds through the Agent adapter while EasyWork keeps `thread/suggestion/read` and the runtime-version contract. The native reading DTO bridge remains in `EasyWorkReading.swift`; identity-only Swift consumers do not acquire reading or MobileCore dependencies. EasyWork migration restores inert original records, requires re-pairing before remote access, and preserves the destination installation identity and notification authorization. It does not replay imported commands. iOS-only copy lives in the disjoint `IOSNative.strings` table. Shared `Localizable.strings` wins existing keys; its missing-key fallback consults the iOS table without changing Android generated resources.

@@ -122,7 +122,7 @@
     </header>
     <main>
       <h1>Agent Hub Privacy Policy</h1>
-      <p class="meta">Effective October 12, 2026 · Last updated October 16, 2026</p>
+      <p class="meta">Effective October 12, 2026 · Last updated November 4, 2026</p>
       <p>
         Hefei Bocui Artificial Intelligence Technology Co., Ltd. (合肥博璀人工智能科技有限公司,
         “we”) provides the Agent Hub iOS app. This policy explains how information is handled when
@@ -140,9 +140,11 @@
         <li>
           <strong>Connection and pairing:</strong> Computer names and addresses, host, project and
           conversation identifiers, device public keys, pairing keys and credentials identify the
-          target, authorize connections and restore sessions. EasyAI sign-in also involves account
-          identifiers, sign-in status and connection authorization. Credentials are stored in the
-          system Keychain. The app does not ask for your computer’s Apple or Codex account password.
+          target, authorize connections and restore sessions. Relay pairing involves
+          desktop-approved device authorization, public keys, scoped grants and connection status.
+          Legacy account-based connections may also process account identifiers and session status.
+          Credentials are stored in the system Keychain. The app does not ask for your computer’s
+          Apple or Codex account password.
         </li>
         <li>
           <strong>Messages and tasks:</strong> Messages, drafts, model responses, tool activity,
@@ -151,23 +153,30 @@
           computer and its configured agent or model services.
         </li>
         <li>
-          <strong>Images and files:</strong> We process attachments you explicitly select, capture
-          or upload, and files you request to download, for tasks, transfers and previews. The app
-          does not automatically upload your entire photo library or file directories.
+          <strong>Images and files:</strong> With photo-library permission, the app reads recent
+          image thumbnails and metadata locally to offer attachment shortcuts and recent-image
+          suggestions. Images you select, capture or import from the system share menu are added to
+          a local draft or inbox. Only attachments you submit are uploaded to the selected computer
+          or service. Downloaded files support local previews and export; the app does not
+          automatically upload your entire photo library or file directories.
         </li>
         <li>
           <strong>Voice input:</strong> You can choose phone system transcription or computer
-          transcription. If the computer reports transcription unavailable, the app can use phone
-          system transcription. The phone system uses on-device recognition when available or
-          Apple's online speech service; this path does not send audio to your selected computer.
-          After you allow sharing and end a computer recording, the original audio is sent to the
-          selected computer, which uses its current Codex / ChatGPT login to call OpenAI
+          transcription. If computer transcription fails, you can retry the original operation,
+          choose phone system transcription for the same recording, or record again; a retry does
+          not blindly submit a second operation. The phone system uses on-device recognition when
+          available or Apple's online speech service; this path does not send audio to your selected
+          computer. After you allow sharing and end a computer recording, the original audio is sent
+          to the selected computer, which uses its current Codex / ChatGPT login to call OpenAI
           transcription. Returned text remains an editable draft until you send it. Temporary audio
-          supports transfer and recovery. Unsubmitted device audio is removed when cancelled;
-          prepared audio is removed after successful insertion, and unfinished copies expire after
-          24 hours and are cleaned when accessed. Computer audio/transcripts are cleaned after their
-          24-hour expiry, while operation records remain to prevent duplicate submissions. Apple's
-          or the selected transcription provider's policies govern their processing.
+          supports transfer and recovery. Explicitly discarding or re-recording deletes the local
+          audio; leaving a screen or cancelling a wait may retain it for recovery. Successful
+          computer transcription removes the local recovery copy. Choosing phone transcription after
+          a computer failure can retain the original recording and operation metadata until their
+          24-hour expiry, with cleanup when accessed; it does not cancel or replay an already
+          submitted computer operation. Computer audio/transcripts are cleaned after their 24-hour
+          expiry, while operation records remain to prevent duplicate submissions. Apple's or the
+          selected transcription provider's policies govern their processing.
         </li>
         <li>
           <strong>Notifications:</strong> When enabled, app-generated device identifiers, APNs push
@@ -193,12 +202,14 @@
       </p>
       <h2>2. Permissions</h2>
       <p>
-        The camera scans pairing codes; the microphone records voice input and speech recognition
+        The camera scans pairing codes or captures draft attachments; optional photo-library access
+        shows recent image shortcuts. The microphone records voice input and speech recognition
         enables phone system transcription; local network permission discovers and connects to
         selected computers; notifications provide task reminders. Permissions are requested when
         needed. You can withdraw them in iOS Settings; affected features stop or become unavailable,
-        while features that do not need those permissions remain usable. System pickers control
-        image and file selection.
+        while features that do not need those permissions remain usable. System pickers remain
+        available for image and file selection. Declining photo-library access disables recent-image
+        shortcuts without granting broader access.
       </p>
       <h2>3. Recipients and third parties</h2>
       <p>
@@ -233,6 +244,23 @@
         tracking. The app does not integrate advertising tracking SDKs. We may disclose necessary
         information to comply with applicable law or valid legal process, or protect service
         security.
+      </p>
+      <p>
+        <strong>HTML visualization previews:</strong> Previews are offline by default. Inline
+        document scripts run in a sandbox without computer credentials, a native action bridge or
+        persistent website storage. Before allowing external resources for the current open file,
+        the app lists the permitted sites: Cloudflare cdnjs, esm.sh, jsDelivr, unpkg, Google Fonts,
+        Bunny Fonts and OpenAI static visualization resources. These services receive IP addresses
+        and request information. External scripts can read the document and your preview inputs and
+        send data to the listed sites. Permission is optional, can be withdrawn by switching back to
+        offline mode, and is not saved after the preview closes. Only allow it for trusted
+        documents; offline mode may omit content requiring those resources.
+      </p>
+      <p>
+        The separate offline/online preview controls apply from build 114. Earlier versions that
+        include HTML visualization previews may load their permitted external resources when the
+        preview opens, without a separate preview network prompt. Close that preview or update to
+        use the new controls.
       </p>
       <h2>4. Retention and deletion</h2>
       <p>

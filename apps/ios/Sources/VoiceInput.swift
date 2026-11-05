@@ -79,6 +79,7 @@ private enum PendingVoiceStore {
     var locallyResolvedAt: Date?
     var discardedAt: Date?
   }
+  static var existingDirectory: URL { FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(PendingVoiceMigration.liveDirectory, isDirectory: true) }
   static func directory() throws -> URL {
     let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
       .appendingPathComponent("voice-transcriptions", isDirectory: true)
@@ -154,6 +155,26 @@ private enum PendingVoiceStore {
   }
 }
 
+@MainActor enum VoiceMigrationSafety {
+  private final class WeakController { weak var value: VoiceInputController?; init(_ value: VoiceInputController) { self.value = value } }
+  private static var controllers: [WeakController] = []
+  static var pendingDirectory: URL { PendingVoiceStore.existingDirectory }
+  static var archiveDirectory: URL { pendingDirectory.deletingLastPathComponent().appendingPathComponent(PendingVoiceMigration.archiveDirectory, isDirectory: true) }
+  static func track(_ controller: VoiceInputController) {
+    controllers.removeAll { $0.value == nil || $0.value === controller }
+    controllers.append(WeakController(controller))
+  }
+  static func requireCaptureStable() throws {
+    guard !controllers.contains(where: { $0.value?.blocksMigration == true }) else {
+      throw HostServiceError.message(L10n.tr("录音仍在采集或处理，未生成部分备份。原录音和草稿已保留。"))
+    }
+  }
+  static func snapshot() throws -> [PreservedVoiceOriginals.Row] {
+    try requireCaptureStable()
+    return try PreservedVoiceOriginals.rows(includeLive: true)
+  }
+}
+
 /// Select a backend before capture. Submitted desktop operations keep their original receipt.
 @MainActor
 final class VoiceInputController: ObservableObject {
@@ -169,6 +190,7 @@ final class VoiceInputController: ObservableObject {
   private var recorder: AVAudioRecorder?
   private var fileURL: URL?
   private var recording: VoiceRecording?
+  private var recordingPersisted = false
   private var provider: VoiceTranscriptionProvider?
   private var usesLocalRecognition = false
   private var usesLocalFallback = false
@@ -199,6 +221,9 @@ final class VoiceInputController: ObservableObject {
   private var simulatesTranscriptionFailure: Bool {
     isFixture && ProcessInfo.processInfo.arguments.contains("-voice-transcription-failed")
   }
+  var blocksMigration: Bool {
+    phase != .idle && !(phase == .failed && !usesLocalRecognition && recordingPersisted)
+  }
   var draftText: String {
     guard !transcript.isEmpty else { return originalText }
     let separator = originalText.isEmpty || originalText.last?.isWhitespace == true ? "" : "\n"
@@ -218,8 +243,9 @@ final class VoiceInputController: ObservableObject {
   func start(target: String, text: String, provider: VoiceTranscriptionProvider, restorePending: Bool = true,
     onChange: @escaping (String, String) -> Bool) {
     guard !isActive else { return }
+    VoiceMigrationSafety.track(self)
     targetKey = target; originalText = text; self.provider = provider; onDraftChange = onChange
-    transcript = ""; error = nil; diagnosticInfo = ""; recording = nil
+    transcript = ""; error = nil; diagnosticInfo = ""; recording = nil; recordingPersisted = false
     usesLocalRecognition = VoiceTranscriptionPreference.current == .local
     usesLocalFallback = false
     usesSavedLocalRecognition = false
@@ -230,7 +256,7 @@ final class VoiceInputController: ObservableObject {
       do {
         if !usesLocalRecognition, restorePending, let (saved, audio) = try PendingVoiceStore.restore(target: target, scopeKey: provider.scopeKey, text: text) {
           guard generation == id, !Task.isCancelled else { return }
-          recording = saved; fileURL = audio; phase = .failed
+          recording = saved; recordingPersisted = true; fileURL = audio; phase = .failed
           error = L10n.tr("已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。")
           return
         }
@@ -273,6 +299,9 @@ final class VoiceInputController: ObservableObject {
         }
         guard generation == id, !Task.isCancelled else { return }
         guard granted else { throw HostServiceError.message(L10n.tr("麦克风权限未开启，请在系统设置中允许访问麦克风。")) }
+        // Permission completion may precede the system sheet's foreground
+        // transition. Keep setup pending until the real application is active.
+        try await waitForCaptureForeground(id: id)
         try await audioSession.activate(id: id)
         guard generation == id, !Task.isCancelled else { audioSession.deactivate(id: id); return }
         activeAudioSession = id
@@ -286,6 +315,8 @@ final class VoiceInputController: ObservableObject {
         // off Main and abandon a late recorder after timeout/cancel.
         let prepared = try await audioSession.prepareRecorder(url: url, id: id)
         guard generation == id, !Task.isCancelled else { prepared.recorder.stop(); return }
+        do { try await waitForCaptureForeground(id: id) }
+        catch { prepared.recorder.stop(); throw error }
         let recorder = prepared.recorder
         self.recorder = recorder; phase = .listening
         if ProcessInfo.processInfo.arguments.contains("-ui-testing") { diagnosticInfo = "backend=HostTranscription format=16000/1 file=wav" }
@@ -378,6 +409,7 @@ final class VoiceInputController: ObservableObject {
           }
           guard let provider, let recording else { throw HostServiceError.unavailable }
           try PendingVoiceStore.save(recording, target: targetKey, scopeKey: provider.scopeKey, text: originalText)
+          recordingPersisted = true
           text = try await provider.transcribe(recording)
         }
         guard generation == id, !Task.isCancelled else { return false }
@@ -430,6 +462,23 @@ final class VoiceInputController: ObservableObject {
     reset(discard: true)
     error = nil
     return true
+  }
+  private func waitForCaptureForeground(id: UUID) async throws {
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: .seconds(10))
+    while UIApplication.shared.applicationState != .active {
+      guard generation == id, !Task.isCancelled,
+        UIApplication.shared.applicationState != .background,
+        clock.now < deadline else { throw CancellationError() }
+      try await Task.sleep(for: .milliseconds(20))
+    }
+    guard generation == id, !Task.isCancelled else { throw CancellationError() }
+  }
+  func handleScenePhase(_ phase: ScenePhase) {
+    // SwiftUI can deliver the permission sheet's older inactive value after
+    // UIKit has already resumed. Do not suspend a newly started capture for it.
+    if phase == .background || (phase == .inactive && self.phase != .requesting
+      && UIApplication.shared.applicationState != .active) { suspend() }
   }
   func suspend() {
     guard phase != .idle, phase != .failed else { return }

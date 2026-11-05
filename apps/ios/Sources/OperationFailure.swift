@@ -1,5 +1,14 @@
 import Foundation
 
+/// Only the EasyWork provider-error envelope gets concise presentation copy.
+/// Keep the original diagnostic and immutable receipt for inspection/reconciliation.
+enum EasyWorkFailurePresentation {
+  static func text(_ original:String, enabled:Bool) -> String {
+    guard enabled, original.hasPrefix("Model provider call failed:") else { return original }
+    return L10n.tr("模型服务请求失败。本次任务未完成，原输入和执行记录已保留。")
+  }
+}
+
 /// A read can reconnect after preserving its completed or pending operation.
 protocol RecoverableConnectionReadFailure: Error {}
 

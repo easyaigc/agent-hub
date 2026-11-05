@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const resources = resolve('apps/ios/Resources');
@@ -10,10 +10,19 @@ const env = {
   DEVELOPER_DIR: process.env.DEVELOPER_DIR || '/Applications/Xcode.app/Contents/Developer',
 };
 for (const language of ['en', 'zh-Hans']) {
-  const file = join(resources, language + '.lproj', 'Localizable.strings');
-  tables[language] = JSON.parse(
-    execFileSync('plutil', ['-convert', 'json', '-o', '-', file], { encoding: 'utf8' }),
-  );
+  tables[language] = {};
+  for (const name of ['Localizable', 'IOSNative']) {
+    const file = join(resources, language + '.lproj', name + '.strings');
+    const entries = JSON.parse(
+      execFileSync('plutil', ['-convert', 'json', '-o', '-', file], { encoding: 'utf8' }),
+    );
+    for (const key of Object.keys(entries))
+      assert(
+        !Object.hasOwn(tables[language], key),
+        'iOS native copy overrides a shared key: ' + key,
+      );
+    Object.assign(tables[language], entries);
+  }
 }
 assert.deepEqual(Object.keys(tables.en).sort(), Object.keys(tables['zh-Hans']).sort());
 // These keys are generated data rather than literal L10n.tr call sites.
@@ -67,29 +76,33 @@ const project = await readFile('apps/ios/CodexManage.xcodeproj/project.pbxproj',
 assert.ok(project.includes('Localizable.strings'));
 await mkdir('.local/localization-checks', { recursive: true });
 const output = await mkdtemp(resolve('.local/localization-checks/run-'));
-for (const language of ['en', 'zh-Hans'])
-  await cp(join(resources, language + '.lproj'), join(output, language + '.lproj'), {
-    recursive: true,
-  });
-const executable = join(output, 'localization-smoke');
-execFileSync(
-  'xcrun',
-  [
-    'swiftc',
-    '-parse-as-library',
-    'apps/ios/Sources/Localization.swift',
-    'apps/ios/Sources/OperationFailure.swift',
-    'apps/ios/Sources/SharedFailureCopy.swift',
-    'apps/ios/Sources/ThreadReading.swift',
-    'apps/ios/Sources/NotificationModels.swift',
-    'apps/ios/Sources/BusinessNotificationModels.swift',
-    'scripts/localization-native-smoke.swift',
-    '-o',
-    executable,
-  ],
-  { env, stdio: 'inherit' },
-);
-console.log(execFileSync(executable, { env, encoding: 'utf8' }).trim());
-console.log(
-  `Verified ${Object.keys(tables.en).length} bilingual entries and five permission prompts.`,
-);
+try {
+  for (const language of ['en', 'zh-Hans'])
+    await cp(join(resources, language + '.lproj'), join(output, language + '.lproj'), {
+      recursive: true,
+    });
+  const executable = join(output, 'localization-smoke');
+  execFileSync(
+    'xcrun',
+    [
+      'swiftc',
+      '-parse-as-library',
+      'apps/ios/Sources/Localization.swift',
+      'apps/ios/Sources/OperationFailure.swift',
+      'apps/ios/Sources/SharedFailureCopy.swift',
+      'apps/ios/Sources/ThreadReading.swift',
+      'apps/ios/Sources/NotificationModels.swift',
+      'apps/ios/Sources/BusinessNotificationModels.swift',
+      'scripts/localization-native-smoke.swift',
+      '-o',
+      executable,
+    ],
+    { env, stdio: 'inherit' },
+  );
+  console.log(execFileSync(executable, { env, encoding: 'utf8' }).trim());
+  console.log(
+    `Verified ${Object.keys(tables.en).length} bilingual entries and five permission prompts.`,
+  );
+} finally {
+  await rm(output, { recursive: true, force: true });
+}

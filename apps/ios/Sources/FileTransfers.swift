@@ -149,7 +149,8 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
       error = nil
     } catch {
       if let index = pending.firstIndex(where: { $0.id == id }) {
-        pending[index].error = error.localizedDescription
+        pending[index].error = error is CancellationError || (error as? URLError)?.code == .cancelled
+          ? L10n.tr("连接等待已结束；文件已保留，请查询接收结果。") : error.localizedDescription
         do { try await persist() } catch { self.error = L10n.tr("无法保存传输状态，请检查手机存储空间。") }
       }
     }

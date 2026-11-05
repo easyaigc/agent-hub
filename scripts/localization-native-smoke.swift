@@ -16,6 +16,10 @@ struct LocalizationSmoke {
     precondition(AppLanguage.english.resolved(preferredLanguages: ["zh-CN"]) == "en")
     defaults.set("en", forKey: L10n.storageKey)
     precondition(L10n.tr("设置") == "Settings")
+    let providerOriginal = "Model provider call failed: private diagnostic"
+    precondition(EasyWorkFailurePresentation.text(providerOriginal, enabled: true) == "The model service request failed. This task did not complete. Your original input and execution record have been kept.")
+    precondition(EasyWorkFailurePresentation.text(providerOriginal, enabled: false) == providerOriginal)
+
     precondition(L10n.tr("允许一次") == "Allow once")
     precondition(TaskNoticeKind.approval.title == "Approval needed")
     precondition(BusinessNoticeKind.acceptance_required.title == "Task acceptance needed")
@@ -49,6 +53,7 @@ struct LocalizationSmoke {
     precondition(cancelled.userFacingDescription == cancelled.localizedDescription)
     defaults.set("zh-Hans", forKey: L10n.storageKey)
     precondition(L10n.tr("设置") == "设置")
+    precondition(EasyWorkFailurePresentation.text(providerOriginal, enabled: true) == "模型服务请求失败。本次任务未完成，原输入和执行记录已保留。")
     precondition(OperationFailure(tls).title == "暂时无法连接电脑")
     precondition(tls.userFacingDescription.contains("安全连接未能建立"))
     precondition(URLError(.serverCertificateUntrusted).userFacingDescription.contains("检查连接设置"))

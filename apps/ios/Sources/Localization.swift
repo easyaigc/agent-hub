@@ -90,7 +90,8 @@ enum L10n {
 
   static func tr(_ text: LocalizedText) -> String {
     let bundle = bundles[language] ?? Bundle.main
-    let format = bundle.localizedString(forKey: text.key, value: text.key, table: "Localizable")
+    let native = bundle.localizedString(forKey: text.key, value: text.key, table: "IOSNative")
+    let format = bundle.localizedString(forKey: text.key, value: native, table: "Localizable")
     return String(format: format, locale: locale, arguments: text.arguments)
   }
 }

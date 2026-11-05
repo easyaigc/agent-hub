@@ -252,7 +252,7 @@ struct ProjectGitDetailsView: View {
         if let operation = item.tree.operation { Label(operation,systemImage:"exclamationmark.triangle").foregroundStyle(.orange) }
       }
       if let changes = item.tree.changes {
-        Section(L10n.tr("工作区")) {
+        Section(L10n.tr("Git 工作区")) {
           LabeledContent(L10n.tr("未提交文件"),value:String(changes.changed));LabeledContent(L10n.tr("已暂存"),value:String(changes.staged))
           LabeledContent(L10n.tr("未暂存"),value:String(changes.unstaged));LabeledContent(L10n.tr("未跟踪"),value:String(changes.untracked))
           LabeledContent(L10n.tr("冲突文件"),value:String(changes.conflicts))

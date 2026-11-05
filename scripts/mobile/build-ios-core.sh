@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
-cd "$SRCROOT/../.."
+ios_core_script_directory=$(CDPATH= cd "$(dirname "$0")" && pwd)
+cd "$ios_core_script_directory/../.."
 # Xcode exports SDK_NAME, ARCHS, CONFIGURATION and framework signing settings.
 # Kotlin's official integration task selects and merges the matching targets.
-node scripts/mobile/gradle.mjs :mobile-core:embedAndSignAppleFrameworkForXcode
+"${NODE_BINARY:-node}" scripts/mobile/gradle.mjs :mobile-core:embedAndSignAppleFrameworkForXcode

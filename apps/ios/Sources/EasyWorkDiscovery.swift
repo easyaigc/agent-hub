@@ -298,7 +298,7 @@ extension EasyWorkPairing {
     }
     var probes: [Probe] = []
     for client in clients.sorted(by: { $0.id == store.client?.id && $1.id != store.client?.id }) {
-      guard let connection = client.agentConnection, connection.preference != .relayOnly,
+      guard client.migrationNeedsVerification != true, let connection = client.agentConnection, connection.preference != .relayOnly,
         let data = CredentialVault.token(connection.credentialRef).data(using: .utf8),
         let credential = try? JSONDecoder().decode(EasyWorkCredential.self, from: data),
         connection.target.account == credential.binding.target.account, connection.target.hostId == credential.binding.target.desktopDeviceId,

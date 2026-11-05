@@ -3,6 +3,8 @@ import CryptoKit
 import Foundation
 import MobileCore
 
+enum DesktopSuggestionSourceKind: Equatable, Sendable { case nativeTrace, desktopDisplay, runtime }
+
 // Native SHA/date parsing stays at this boundary; policy lives in MobileCore.
 private extension DesktopSuggestionScope {
   var sharedValue: SuggestionScope {
@@ -322,6 +324,7 @@ final class DesktopSuggestionReadAhead {
 /// provider completes after cancellation or navigation returns to the same chat.
 @MainActor
 final class DesktopSuggestionReader: ObservableObject {
+  @Published private(set) var sourceIsAbsent = false
   @Published private(set) var suggestion: DesktopSuggestion? {
     didSet {
       #if DEBUG
@@ -341,6 +344,7 @@ final class DesktopSuggestionReader: ObservableObject {
     if (response.source == "desktop-display" || response.source == "native-trace" || response.source == "runtime"), scope == expected, refreshingReadGeneration == generation { return }
     guard scope != expected || suggestion != value || value.isRefreshBound else { return }
     scope = expected
+    sourceIsAbsent = false
     suggestion = value
     suspend(keeping: expected)
     #if DEBUG
@@ -355,6 +359,7 @@ final class DesktopSuggestionReader: ObservableObject {
     suspendedExpiration?.cancel(); suspendedExpiration = nil
     generation = UUID()
     scope = nil
+    sourceIsAbsent = false
     suggestion = nil
   }
 
@@ -472,11 +477,15 @@ final class DesktopSuggestionReader: ObservableObject {
           guard value.isRefreshBound, value.isValid(at: Date()), let expiry = value.expiration else {
             suggestion = nil; return
           }
+          sourceIsAbsent = false
           suggestion = value
           suspendedExpiration = Task { [weak self] in
             await self?.expire(at: expiry, scope: expected, generation: current)
           }
-        } else { suggestion = nil }
+        } else {
+          sourceIsAbsent = expected.requiresRuntimeSource
+          suggestion = nil
+        }
       } catch {
         guard !Task.isCancelled, generation == current, scope == expected else { return }
         suggestion = nil

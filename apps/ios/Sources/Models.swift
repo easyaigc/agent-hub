@@ -12,6 +12,7 @@ struct Client: Identifiable, Codable, Equatable, Sendable {
   var readingScopeId: String? = nil
   var readingTarget: AgentRuntimeTarget? = nil
   var codexDirect: CodexDirectConnection? = nil
+  var migrationNeedsVerification: Bool? = nil
 }
 
 struct Project: Identifiable, Codable, Equatable {

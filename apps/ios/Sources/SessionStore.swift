@@ -26,6 +26,7 @@ final class SessionStore: ObservableObject {
     ["eventTaskActive":eventTask != nil && eventTask?.isCancelled==false,
      "eventRecoveryTaskActive":eventRecoveryTask != nil && eventRecoveryTask?.isCancelled==false,
      "replyRecoveryTaskActive":replyRecoveryTask != nil && replyRecoveryTask?.isCancelled==false,
+     "replyRecoveryFlightCount":replyRecoveryFlights.count,
      "eventsCapability":saved.workspaces[client?.id ?? ""]?.capabilities?.contains("events")==true,
      "applicationActive":UIApplication.shared.applicationState == .active,
      "runtimeState":runtime?.state ?? "none","historyLoading":historyLoading,

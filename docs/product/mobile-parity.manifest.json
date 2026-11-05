@@ -7455,7 +7455,7 @@
       "androidStages": ["A4"],
       "scenarios": ["S03", "S10", "S13"],
       "ui": ["UI03", "UI10"],
-      "revision": 6,
+      "revision": 7,
       "implementation": {
         "ios": "implemented",
         "android": "implemented"
@@ -7464,7 +7464,7 @@
         "ios": "passed",
         "android": "passed"
       },
-      "sourceNotes": "UM02修正ef447c5：本机三安卓各41边界/2真实Turn、本机iOS完整56及真实首条/原scope回复；Mac24当前15组56及真实首条/回复独立核实通过。2次POST只转发1次、唯一新增1Turn，授权scope/实际权限文件/重开消费与新草稿保持。原CE7失败和发现隔离限制保留，取消归档不计生命周期修复；[独立摘要](../acceptance/mobile-evidence/UM02-ios-independent.json)。A6暂停。 P1 native examiners resolve the exact target package for foreground activity; the independent acceptance identity cannot activate the original DEV app. New-phone and current-source gates remain in progress; no full feature acceptance claim. 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。",
+      "sourceNotes": "UM02修正ef447c5：本机三安卓各41边界/2真实Turn、本机iOS完整56及真实首条/原scope回复；Mac24当前15组56及真实首条/回复独立核实通过。2次POST只转发1次、唯一新增1Turn，授权scope/实际权限文件/重开消费与新草稿保持。原CE7失败和发现隔离限制保留，取消归档不计生命周期修复；[独立摘要](../acceptance/mobile-evidence/UM02-ios-independent.json)。A6暂停。 P1 native examiners resolve the exact target package for foreground activity; the independent acceptance identity cannot activate the original DEV app. New-phone and current-source gates remain in progress; no full feature acceptance claim. 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。 I7.71 iOS-only acceptance candidate: query original cold consumed reply; delay one authentic verified receipt in the test provider; block submissions and observe DEBUG flight completion. I1.14 Native55/V30 scoped native acceptance passed1/0/0: two genuine original receipt reads; consumed double retry query-only; late result preserves both next drafts. Nine tables exact, zero new model or mutation receipts. Full F61/global/Android/physical/VPN unchanged.",
       "sharedImplementation": {
         "status": "implemented",
         "scope": "Android使用KMP有序v2原输入及强否定证明规则；iOS原生回复策略与公共Schema保留，首条显式继续复用KMP判定；原授权scope持久化，平台账本和加密分别实现；双端使用同一Host指纹/证明向量核对。",
@@ -20142,6 +20142,16 @@
       "summary": "Approval fixture waits for the actual owner snapshot with a bounded deadline and deliberately delayed fragmented delivery. Original approval contents, routing, expiry and deduplication assertions remain. No production, iOS or Android UI behavior changes; no new device acceptance is claimed.",
       "files": {
         "scripts/desktop-ipc-smoke.mjs": "c2ccdc933cc23ad7f040d2d30a3909b6c7289e393ffcc7ac81dcf535e48917ee"
+      }
+    },
+    {
+      "id": "easywork-ios-original-consumed-late-receipt-driver-20261105",
+      "baseCommit": "db977684795ccde6bf119dff1af265f488d7dac5",
+      "features": ["F61"],
+      "summary": "Add native-only consumed original reply and delayed authenticated receipt acceptance driver with test send barrier and DEBUG flight-count lens. I1.14 actual Native55/V30 passed1/0/0 with independent source/package/runtime and nine-table audit. Two original provider reads, zero sends/models/mutation receipts;72 scoped scenes139Run769receipts. Full F61/global/Android/physical/VPN unchanged.",
+      "files": {
+        "apps/ios/Sources/SessionStore.swift": "6f56a0588d4b04ba283eac34e51517ad0e5a433afd104961d5e1ae5be6fdc44e",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "f4338499c391319fb829754decec00851a9f0f3d7e043df28db02a0c0590fd10"
       }
     }
   ]

@@ -117,6 +117,108 @@ private actor EasyWorkOriginalEventFaultTransport: AgentTransport {
   }
 }
 
+/// Delays one genuine, already verified receipt in this test process only.
+/// All send paths stay blocked while the UI-owned Store is under examination.
+private actor EasyWorkOriginalReceiptGate {
+  struct Witness: Sendable {
+    let originalQueries: Int
+    let held: Bool
+    let released: Bool
+    let delivered: Int
+    let receiptSHA256: String?
+    let blockedWrites: [String]
+  }
+  private let originalID: String
+  private var queries = 0
+  private var held = false
+  private var released = false
+  private var closed = false
+  private var delivered = 0
+  private var digest: String?
+  private var originalBytes: Data?
+  private var continuation: CheckedContinuation<Void, Never>?
+  private var blockedWrites: [String] = []
+  init(originalID: String) { self.originalID = originalID }
+  func deliver(_ bytes: Data, id: String) async throws -> Data {
+    guard !closed else { throw CancellationError() }
+    guard id == originalID else { return bytes }
+    queries += 1
+    guard queries <= 2 else { throw HostServiceError.invalidResponse }
+    if queries == 1 {
+      digest = HostService.hash(bytes); originalBytes = bytes; held = true
+      if !released { await withCheckedContinuation { continuation = $0 } }
+    }
+    guard !closed else { throw CancellationError() }
+    delivered += 1
+    return bytes
+  }
+  func release() { released = true; continuation?.resume(); continuation = nil }
+  func cancel() { closed = true; release() }
+  func block(_ operation: String) { blockedWrites.append(operation) }
+  func capturedBytes() -> Data? { originalBytes }
+  func witness() -> Witness {
+    Witness(originalQueries: queries, held: held, released: released, delivered: delivered,
+      receiptSHA256: digest, blockedWrites: blockedWrites)
+  }
+}
+
+private struct EasyWorkReceiptGateProvider: AgentClient {
+  let base: any AgentClient
+  let gate: EasyWorkOriginalReceiptGate
+  let originalID: String
+  let originalThread: String
+  let originalRoot: String
+  func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot {
+    try await base.workspace(client, projectCursor: projectCursor, threadCursor: threadCursor)
+  }
+  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
+    try await base.history(client, threadId: threadId, cursor: cursor)
+  }
+  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
+    let receipt = try await base.receipt(client, id: id)
+    if id == originalID {
+      guard receipt.hostId == client.id, receipt.clientMessageId == originalID,
+        receipt.threadId == originalThread, receipt.turnId == originalRoot,
+        receipt.state == "submitted", receipt.error == nil else { throw HostServiceError.wrongHost }
+    }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let bytes = try encoder.encode(receipt)
+    guard try await gate.deliver(bytes, id: id) == bytes else { throw HostServiceError.invalidResponse }
+    return receipt
+  }
+  func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {
+    try await base.events(client, epoch: epoch, after: after, threadId: threadId)
+  }
+  func models(_ client: Client) async throws -> ModelList { try await base.models(client) }
+  func permissionOptions(_ client: Client) -> [AgentPermissionOption] { base.permissionOptions(client) }
+  func normalizedCapabilities(_ capabilities: [String], connectionMode: String?) -> [String] {
+    base.normalizedCapabilities(capabilities, connectionMode: connectionMode)
+  }
+  func connectionTitle(_ client: Client) async -> String? { await base.connectionTitle(client) }
+  func close(_ client: Client) async { await base.close(client) }
+  func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt {
+    await gate.block("send"); throw HostServiceError.unavailable
+  }
+  func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt {
+    await gate.block("sendCapturedReply"); throw HostServiceError.unavailable
+  }
+  func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation {
+    await gate.block("createThread"); throw HostServiceError.unavailable
+  }
+  func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult {
+    await gate.block("stop"); throw HostServiceError.unavailable
+  }
+  func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult {
+    await gate.block("approve"); throw HostServiceError.unavailable
+  }
+  func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment {
+    await gate.block("upload"); throw HostServiceError.unavailable
+  }
+  func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+    await gate.block("download"); throw HostServiceError.unavailable
+  }
+}
+
 /// Executes inside the independently identified App through normal XCTest hosting.
 /// No second SessionStore or pairing. Model submissions and negative commands
 
@@ -1032,6 +1134,208 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     } catch {
       report["status"] = "failed-preserve-original-zero-model-operation-no-replay"
       report["failure"] = error.localizedDescription; try save(); throw error
+    }
+  }
+
+  @MainActor func testConsumedOriginalReplyAndDelayedReceiptPreserveNextDraftWithoutSending() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled,
+      let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Explicit original-reply examiner required") }
+    let config = try easyWorkObject(Data(raw.utf8))
+    guard config["caseId"] as? String == run, config["newModelInputsAuthorized"] as? Int == 0,
+      config["newRemoteCommandsAuthorized"] as? Int == 0,
+      let operation = config["originalOperationId"] as? String,
+      let sourceID = config["ownedThreadId"] as? String,
+      let rootID = config["ownedRootRunId"] as? String,
+      let otherID = config["otherOwnedThreadId"] as? String, otherID != sourceID,
+      let otherRoot = config["otherOwnedRootRunId"] as? String,
+      let fingerprint = config["originalFingerprint"] as? String,
+      let sourceDraft = config["nextSourceDraft"] as? String, sourceDraft == "F61_SOURCE_" + run,
+      let otherDraft = config["nextOtherDraft"] as? String, otherDraft == "F61_OTHER_" + run else {
+      throw HostServiceError.invalidResponse
+    }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
+      from: easyWorkJSON(try XCTUnwrap(config["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready {
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired, target.agentId == "easywork",
+      store.client?.agentConnection?.target == target else { throw HostServiceError.wrongHost }
+    if store.client?.online != true { await store.refresh(includeHistory: false, userInitiated: true) }
+    let client = try XCTUnwrap(store.client), connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self,
+      from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard client.online, connection.target == target,
+      try XCTUnwrap(config["allowedBindingIds"] as? [String]).contains(credential.binding.bindingId),
+      let captured = store.saved.replyRecovery?[operation],
+      captured.target == target, captured.fingerprint == fingerprint, captured.retryConsumed,
+      captured.original.hostId == client.id, captured.original.threadId == sourceID,
+      captured.original.clientMessageId == operation,
+      ReplyRecoveryPolicy.sameIntent(captured.original, record: captured) else { throw HostServiceError.invalidResponse }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func bytes<T: Encodable>(_ value: T) throws -> Data { try encoder.encode(value) }
+    let base = try AgentClients.resolve(client)
+    let source = try await base.history(client, threadId: sourceID, cursor: nil)
+    let other = try await base.history(client, threadId: otherID, cursor: nil)
+    let sourceThread = try XCTUnwrap(source.thread), otherThread = try XCTUnwrap(other.thread)
+    guard sourceThread.archived == true, otherThread.archived == true,
+      source.messages.contains(where: { $0.runId == rootID && $0.role == "assistant" }),
+      other.messages.contains(where: { $0.runId == otherRoot && $0.role == "assistant" }),
+      (store.hostedEasyWorkReadLoopState["replyRecoveryFlightCount"] as? Int) == 0 else {
+      throw HostServiceError.invalidResponse
+    }
+    let originalThread = store.conversation, originalThreadID = store.selectedThreadId
+    let originalProject = store.selectedProjectId, originalClient = store.saved.selectedClientId
+    let originalLastThread = store.saved.lastThreads[client.id]
+    let originalLastProject = store.saved.lastThreadProjects?[client.id]
+    let originalLastProjectsWasNil = store.saved.lastThreadProjects == nil
+    let originalNewProject = store.saved.newProjects[client.id]
+    let originalDrafts = store.drafts.values, originalOutbox = store.saved.outbox
+    let originalRecovery = try bytes(store.saved.replyRecovery)
+    let originalPreferences = try bytes(store.saved.generationPreferences)
+    let originalConnection = try bytes(connection)
+    let originalIdentity = try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity"))
+    let originalError = store.error
+    var report: [String: Any] = ["caseId": run, "newModelInputs": 0, "newRemoteCommands": 0,
+      "wholeFeaturePassed": false, "pureUIReaccepted": false,
+      "originalOperationId": operation, "threadId": sourceID, "rootRunId": rootID,
+      "status": "prepared-original-consumed-reply-read-only"]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("easywork-hosted-native", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    func save() throws {
+      try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+        .write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    let gate = EasyWorkOriginalReceiptGate(originalID: operation)
+    var sourceKey: String?, otherKey: String?, restored = false
+    func restoreLocalState() throws {
+      guard !restored else { return }
+      var changedByAnotherWriter = false
+      for key in [sourceKey, otherKey].compactMap({ $0 }) {
+        if let draft = store.drafts.values[key], draft.text != sourceDraft && draft.text != otherDraft,
+          !draft.text.isEmpty || !draft.attachments.isEmpty,
+          try bytes(Optional(draft)) != bytes(originalDrafts[key]) {
+          changedByAnotherWriter = true; continue
+        }
+        if let pending = store.saved.outbox?[key], pending.clientMessageId != operation,
+          try bytes(Optional(pending)) != bytes(originalOutbox?[key]) {
+          changedByAnotherWriter = true; continue
+        }
+        store.drafts.values[key] = originalDrafts[key]
+        store.saved.outbox?[key] = originalOutbox?[key]
+      }
+      if originalOutbox == nil, store.saved.outbox?.isEmpty == true { store.saved.outbox = nil }
+      if let originalThread { store.openThread(originalThread, loadAutomatically: false) }
+      store.saved.selectedClientId = originalClient
+      store.selectedThreadId = originalThreadID; store.selectedProjectId = originalProject
+      store.saved.lastThreads[client.id] = originalLastThread
+      store.saved.lastThreadProjects?[client.id] = originalLastProject
+      if originalLastProjectsWasNil, store.saved.lastThreadProjects?.isEmpty == true { store.saved.lastThreadProjects = nil }
+      store.saved.newProjects[client.id] = originalNewProject
+      store.error = originalError; store.persist(reconcileUnread: false)
+      guard !changedByAnotherWriter else { throw HostServiceError.invalidResponse }
+      restored = true
+    }
+    func wait(_ predicate: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(20)
+      while !predicate(), Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+      guard predicate() else { throw HostServiceError.invalidResponse }
+    }
+    AgentClients.register("easywork", client: EasyWorkReceiptGateProvider(base: base, gate: gate,
+      originalID: operation, originalThread: sourceID, originalRoot: rootID))
+    defer {
+      AgentClients.register("easywork", client: base)
+      try? restoreLocalState()
+      try? save()
+    }
+    do {
+      try save()
+      // These comparisons use copies only; they never manufacture retry authority in the Store.
+      var fenced = captured; fenced.phase = "not-written"
+      guard !ReplyRecoveryPolicy.mayRetry(captured.original, record: fenced) else { throw HostServiceError.invalidResponse }
+      fenced.retryConsumed = false
+      guard ReplyRecoveryPolicy.mayRetry(captured.original, record: fenced),
+        !ReplyRecoveryPolicy.mayRetry(captured.original, record: ReplyRecoveryPolicy.imported(captured)) else {
+        throw HostServiceError.invalidResponse
+      }
+      report["coldOriginalConsumedFenceAndImportedQueryOnlyVerified"] = true
+      store.openThread(sourceThread, loadAutomatically: false); sourceKey = store.targetKey
+      let firstKey = try XCTUnwrap(sourceKey)
+      guard originalOutbox?[firstKey] == nil,
+        originalDrafts[firstKey]?.text.isEmpty != false,
+        originalDrafts[firstKey]?.attachments.isEmpty != false else { throw HostServiceError.invalidResponse }
+      if store.saved.outbox == nil { store.saved.outbox = [:] }
+      store.saved.outbox?[firstKey] = captured.original
+      store.setText(sourceDraft, target: firstKey)
+      guard !store.canRetryPending else { throw HostServiceError.invalidResponse }
+      store.retryPending(); store.retryPending()
+      let holdDeadline = Date().addingTimeInterval(20)
+      while !(await gate.witness()).held, Date() < holdDeadline { try await Task.sleep(for: .milliseconds(50)) }
+      let held = await gate.witness()
+      guard held.held, held.originalQueries == 1, held.delivered == 0,
+        (store.hostedEasyWorkReadLoopState["replyRecoveryFlightCount"] as? Int) == 1 else {
+        throw HostServiceError.invalidResponse
+      }
+      report["doubleConsumedRetryOnlyQueriedOriginalOnce"] = true
+      report["actualVerifiedReceiptHeldSHA256"] = held.receiptSHA256
+      let receiptBytes = await gate.capturedBytes()
+      report["verifiedOriginalReceipt"] = try JSONSerialization.jsonObject(with: try XCTUnwrap(receiptBytes))
+      store.openThread(otherThread, loadAutomatically: false); otherKey = store.targetKey
+      let secondKey = try XCTUnwrap(otherKey)
+      guard secondKey != firstKey, originalOutbox?[secondKey] == nil,
+        originalDrafts[secondKey]?.text.isEmpty != false,
+        originalDrafts[secondKey]?.attachments.isEmpty != false else { throw HostServiceError.invalidResponse }
+      store.setText(otherDraft, target: secondKey)
+      await gate.release()
+      try await wait { (store.hostedEasyWorkReadLoopState["replyRecoveryFlightCount"] as? Int) == 0 }
+      guard store.targetKey == secondKey, store.draft.text == otherDraft,
+        store.drafts.values[firstKey]?.text == sourceDraft,
+        try bytes(store.saved.outbox?[firstKey]) == bytes(captured.original) else {
+        throw HostServiceError.invalidResponse
+      }
+      report["delayedOriginalReceiptDidNotAdoptIntoChangedThreadOrNextDraft"] = true
+      store.openThread(sourceThread, loadAutomatically: false)
+      guard store.targetKey == firstKey, !store.canRetryPending else { throw HostServiceError.invalidResponse }
+      store.reconcilePending()
+      try await wait {
+        (store.hostedEasyWorkReadLoopState["replyRecoveryFlightCount"] as? Int) == 0
+          && store.saved.outbox?[firstKey] == nil && !store.historyLoading
+      }
+      let final = await gate.witness()
+      guard final.originalQueries == 2, final.delivered == 2, final.blockedWrites.isEmpty,
+        store.drafts.values[firstKey]?.text == sourceDraft,
+        store.drafts.values[secondKey]?.text == otherDraft,
+        try bytes(store.saved.replyRecovery) == originalRecovery else { throw HostServiceError.invalidResponse }
+      report["freshOriginalQueryClearedOnlyOwnedWaitAndKeptBothNextDrafts"] = true
+      report["actualOriginalReceiptQueries"] = final.originalQueries
+      report["blockedMutationCalls"] = final.blockedWrites
+      await gate.cancel()
+      try restoreLocalState()
+      guard try bytes(store.drafts.values) == bytes(originalDrafts),
+        try bytes(store.saved.outbox) == bytes(originalOutbox),
+        try bytes(store.saved.replyRecovery) == originalRecovery,
+        try bytes(store.saved.generationPreferences) == originalPreferences,
+        try bytes(store.client?.agentConnection) == bytes(Optional(connection)),
+        try bytes(connection) == originalConnection,
+        try CredentialVault.existingToken("easywork-device-identity") == originalIdentity,
+        store.saved.selectedClientId == originalClient, store.selectedThreadId == originalThreadID else {
+        throw HostServiceError.invalidResponse
+      }
+      report["originalIdentityConnectionDraftsOutboxRecoveryPreferencesAndNavigationRestored"] = true
+      report["status"] = "passed-consumed-original-and-late-real-receipt-without-send"
+      try save()
+    } catch {
+      await gate.cancel()
+      try? await wait { (store.hostedEasyWorkReadLoopState["replyRecoveryFlightCount"] as? Int) == 0 }
+      report["status"] = "failed-original-reply-read-only-no-replay"
+      report["failure"] = error.localizedDescription
+      throw error
     }
   }
 

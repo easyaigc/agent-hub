@@ -14,6 +14,7 @@ final class SessionStore: ObservableObject {
   var devReplyBeforeTransportForAcceptance: ((PendingReply) throws -> Void)?
   private var hostedReplySendWorkCount = 0
   private var hostedReplyQueryWorkCount = 0
+  private var hostedEventWorkCount = 0
   var devMetadataCreateBeforeTransportForAcceptance: ((String) throws -> Void)?
   var devMetadataCreateAfterVerifiedForAcceptance: ((String, Conversation) throws -> Void)?
   struct HostedMigrationExportObservation {
@@ -31,6 +32,7 @@ final class SessionStore: ObservableObject {
      "replyRecoveryFlightCount":replyRecoveryFlights.count,
      "replySendWorkCount":hostedReplySendWorkCount,
      "replyQueryWorkCount":hostedReplyQueryWorkCount,
+     "eventWorkCount":hostedEventWorkCount,
      "eventsCapability":saved.workspaces[client?.id ?? ""]?.capabilities?.contains("events")==true,
      "applicationActive":UIApplication.shared.applicationState == .active,
      "runtimeState":runtime?.state ?? "none","historyLoading":historyLoading,
@@ -3087,7 +3089,13 @@ private var userRequestedWorkspaceGeneration: UUID?
         do { try await Task.sleep(for: .seconds(1)) } catch { return }
       }
     }
+    #if DEBUG
+    if Self.hostedEasyWorkAcceptanceEnabled { hostedEventWorkCount += 1 }
+    #endif
     eventTask = Task {
+      #if DEBUG
+      defer { if Self.hostedEasyWorkAcceptanceEnabled { hostedEventWorkCount -= 1 } }
+      #endif
       var epoch = ""
       var cursor = 0
       var activeThread: String?

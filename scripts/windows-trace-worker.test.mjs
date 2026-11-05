@@ -1665,6 +1665,7 @@ for (const mode of ['cold-second-timeout', 'cold-shared-budget'])
         'cold-shared-budget observation: ' +
           JSON.stringify({
             requests: result.requests,
+            error: result.answer.error,
             frames: result.requestFrames,
             incomplete: result.diagnosticIncomplete,
           }),

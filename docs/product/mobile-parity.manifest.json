@@ -20191,6 +20191,52 @@
         "apps/ios/Sources/SessionStore.swift": "68b0e481e2be79cf015546a9ea70c8a4a750df15364ac85cd2782b1073209472",
         "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "6ba7dd24ff9c88d15847e6d16f2530990f6d6eb5c24a243e8e0061eee7d91fbe"
       }
+    },
+    {
+      "id": "easywork-ios-late-authentic-event-driver-20261105",
+      "baseCommit": "c50f462386f4d655b88f232cc5629c4d99636bd1",
+      "features": ["F46"],
+      "summary": "Add Native62 authentic late event/new target driver using only original Native60/61 owned archived threads, no new models/threads/business commands. Real original and new Provider event batches held locally; normal navigation cancels old task, delivery still returns original authentic batch so production cancellation/target fence must reject it. DEBUG-only event task count proves old defer ended while new task held; new matching batch must then apply. Source resets only own cursor metadata before navigation and restores original state. Not built/accepted yet;76scenes140Run776receipts27failures unchanged. No Release/UI/Android change. I7.97 current Native62/V30 actual1/0/0 and parent canonical audit passed,77scenes140Run776receipts27Native failures preserved. Original source event and new destination event digests/archives verified, all nine tables exact. I7.98 F46 task scope closes with Native60/61 current paths and original I1.12 metadata matching reuse; no global feature promotion. F04/F07 GUI readiness AX failure separately preserved.",
+      "files": {
+        "apps/ios/Sources/SessionStore.swift": "50f54957c7da67927ff0ceda0f18610a99e77f4addacfeff604de807013cfd6d",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "f34b44887a616285d15dc05d8c9c0ce548e65648953850ffb8d4b58c5135e1eb"
+      }
+    },
+    {
+      "id": "easywork-ios-unsupported-generation-guard-driver-20261105",
+      "baseCommit": "8b33ddda12f742d3ec41aa5c58e9dc4ee1714410",
+      "features": ["F34", "F35", "F36"],
+      "summary": "Only Native63 test driver adds four valid-schema unsupported generation controls through actual Provider. Use original owned archived empty thread, queue mode fallback and fresh IDs, zero model/thread budget, four rejected canonical receipts budget. Current Native62 read-only settings requalification1/0/0 shows38models and no explicit fast capability; original completed GLM schema1 settings matched, nil values retained, no actual Fast/tool permission effect claimed.77scenes140Run776receipts27Native failures unchanged. No production/Release/UI/Android changes. PR153 actualmain eae10a60 verified; PR154 still pending. Initial Native compile optional supportedEfforts failure retained with full source; corrected to declared efforts/speeds or empty, no business/test assertion weakening. I7.104 current Native63/V30 actual1/0/0 passed four fresh invalid_generation_settings controls; selected GLM declares high/max so valid xhigh rejected, fast/ultrafast undeclared rejected.4 new failed canonical receipts, no Run/thread/admission; hashes/fingerprints and prior nine-table rows/40 bindings verified.78scenes140Run780receipts27Native failures preserved; no positive high effort/Fast effect promotion.",
+      "files": {
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "c9bd44ad0562f375b6e3eb58c3b6f1e82b8a1cdcf1b57b2e0a16b39f82e9fe65"
+      }
+    },
+    {
+      "id": "easywork-ios-ci154-trace-suite-isolation-20261105",
+      "baseCommit": "8b33ddda12f742d3ec41aa5c58e9dc4ee1714410",
+      "features": ["F69"],
+      "summary": "CI-only test scheduling and diagnostic correction for PR154 formal failure. Serialize both existing Windows trace file groups in root check like existing native-Windows check; retain all files and both invocations, raw clocks, original300ms phase/750ms frame limits and every two-frame/no-partial-publication assertion. Add only answer.error diagnostic. Old source8b33 failed workspace253/1/23 and passed iOS; primary raw log hash/timing retained. Native63 accepted generation-boundary batch will join the existing PR154, no duplicate candidate. Local affected groups and new-source formal CI remain required. No Windows production or Android changes, no global feature promotion. Local affected six-file group268/0/24 and three-file255/0/22 passed once each, both two requests/two frames using actual unchanged clocks/budgets;762 input hashes stable. macOS synthetic only, not native Windows. Missing smol-toml blocks local adapter build, repair locked isolated dependencies before delivery; fresh exact-source hosted CI still required. Root package scheduling command change is recorded in this description and private exact-source intent; manifest files retain only permitted product-source paths.",
+      "files": {
+        "scripts/windows-trace-worker.test.mjs": "54f3990c2ba8d2093fb5550880a4605a8f39b51ec893f7ec03d825687215c412"
+      }
+    },
+    {
+      "id": "easywork-ios-strict-permission-high-effort-driver-20261105",
+      "baseCommit": "c1bbd499933ceb7a43346702d8a9f5a14f18874b",
+      "features": ["F34", "F35"],
+      "summary": "Native driver development only, not built or executed. Current approved GLM-5.2 must declare high effort and existing exact-target sharing before metadata. One owned projectless thread and Root with explicit high/confirm_every_operation requests only pwd; exact own Root five-field pending identity rechecked before one production mobile SDK denial, never approve. Require actual owner settings, matching denial/clear/blocked-tool result and independent absence of terminal execution; one reserved stop only for independently known own Root on failure. No new sharing grant, no old input replay, no production/Android/UI changes. Prior PR154 exact c1bb source frozen/pushed; current independent local follow-on is not added to that candidate while authority credential is unavailable. 78scenes140Run780receipts27failure counts unchanged. Co-built Native64 app155.835s and native target123.075s both exit0, same152 source inputs; main independently verifies40 package files/five roles and1645 original DEV files. Not an execution pass; original PR154 c1bb finalCI and actual main merge remain unconfirmed due authority credential rejection. Native64 original execution0/1/0 failed because test expected Host-action source but actual fixed MCP uses tool.call/terminal_exec; own Root canonical high/strict and actual positive18072 SDK tokens verified, one original reserved stop confirmed, no denial submitted. Preserve28 failures/78passes141Run783receipts; all prior nine-table rows/40 bindings/critical files unchanged. Correct test role to actual single MCP source, add canonical-target and raw-stage witnesses; preserve full identity/command/strict/high assertions, no production or permission expansion, no original Root replay. Existing zero-model examiner gains exact own cancelled-permission fixture archive action using its original unused reserved ID; verify complete target, original body, cancelled Root receipt/latest identity and no active Root before metadata cleanup. No model or other thread archive. I7.112 own cancelled fixture zero-model archive actual1/0/0, canonical original ID and cold20messages22parts verified. I7.113 Native65 current actual1/0/0, one new high/strict Root with one actual medium-risk pwd denial before MCP dispatch, four canonical hashes/permission hashes/pending fingerprint matched,2 positive SDK calls37374tokens, completed fixed marker/no child/no stop.79scenes142Run788receipts28failures preserved. I7.114 F34 current task integration scope closes by current catalog/settings/negative controls/actual high plus matched immutable-settings proof; phone preferences/picker exempt, global feature verification unchanged. F35 default-inheritance owner policy and actual Fast/other device-auth branches remain open.",
+      "files": {
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "bed7521d20f9624ce9be5bdf946703f265752f3e32c150d878a74215f8072c80"
+      }
+    },
+    {
+      "id": "easywork-ios-host-package-fixture-dependency-20261105",
+      "baseCommit": "c1bbd499933ceb7a43346702d8a9f5a14f18874b",
+      "features": ["F69"],
+      "summary": "Delivery gate fixture repair only: full pnpm check failed after375s in check:skill77passed/1failed because synthetic source lacks already declared smol-toml runtime dependency which production canonical packager copies. Add that package to existing synthetic dependency fixture list; no production/parser/dependency-lock/threshold/assertion changes. Preserve original full-check failure, require affected packaging test then full new-source check. Native65 accepted152 input/actual model evidence unchanged;79scenes142Run788receipts28Native failures. No Android or phone UI feature changes.",
+      "files": {
+        "scripts/package-host-connect.test.mjs": "42ae11209bf52f26608dd2afa6bf1bf52c9d41a56572b0f32a9e707da3653aae"
+      }
     }
   ]
 }

@@ -219,6 +219,172 @@ private struct EasyWorkReceiptGateProvider: AgentClient {
   }
 }
 
+private actor EasyWorkLateEventGate {
+  struct Witness: Sendable {
+    let sourceHeld: Bool
+    let sourceDelivered: Bool
+    let destinationHeld: Bool
+    let destinationDelivered: Bool
+    let sourceBatchSummary: Data?
+    let destinationBatchSummary: Data?
+    let networkWrites: Int
+  }
+  private let clientID: String
+  private let sourceThreadID: String
+  private let destinationThreadID: String
+  private let expectedMarker: String
+  private var sourceBegun = false, destinationBegun = false
+  private var sourceHeld = false, destinationHeld = false
+  private var sourceDelivered = false, destinationDelivered = false
+  private var sourceReleased = false, destinationReleased = false, cancelled = false
+  private var sourceBatchSummary: Data?, destinationBatchSummary: Data?
+  private var sourceWaiter: CheckedContinuation<Void, Never>?
+  private var destinationWaiter: CheckedContinuation<Void, Never>?
+
+  init(clientID: String, sourceThreadID: String, destinationThreadID: String, expectedMarker: String) {
+    self.clientID = clientID; self.sourceThreadID = sourceThreadID
+    self.destinationThreadID = destinationThreadID; self.expectedMarker = expectedMarker
+  }
+
+  // Reservation happens before the real read. Subsequent polls and other threads pass through.
+  func begin(threadID: String) -> Bool {
+    guard !cancelled, !clientID.isEmpty, !sourceThreadID.isEmpty, !destinationThreadID.isEmpty,
+      sourceThreadID != destinationThreadID, !expectedMarker.isEmpty else { return false }
+    if threadID == sourceThreadID, !sourceBegun { sourceBegun = true; return true }
+    if threadID == destinationThreadID, !destinationBegun { destinationBegun = true; return true }
+    return false
+  }
+
+  func hold(_ batch: EventBatch, threadID: String, target: AgentRuntimeTarget, clientID: String) async throws {
+    let source = threadID == sourceThreadID
+    guard clientID == self.clientID, !self.clientID.isEmpty,
+      sourceThreadID != destinationThreadID, !expectedMarker.isEmpty,
+      source || threadID == destinationThreadID,
+      source ? (sourceBegun && sourceBatchSummary == nil) : (destinationBegun && destinationBatchSummary == nil),
+      batch.hostId == self.clientID, !batch.epoch.isEmpty, batch.cursor >= 0,
+      batch.ready == true, batch.reset, !batch.events.isEmpty else { throw HostServiceError.invalidResponse }
+    var summaries: [[String: Any]] = []
+    var markerFound = false
+    for event in batch.events {
+      let snapshot = event.snapshot
+      guard event.threadId == threadID, snapshot.threadId == threadID,
+        snapshot.hostId == batch.hostId, let readTarget = snapshot.readTarget,
+        readTarget.matchesCapturedPayload(target), let thread = snapshot.thread,
+        thread.id == threadID, thread.hostId == batch.hostId else { throw HostServiceError.invalidResponse }
+      if let epoch = snapshot.epoch, batch.epoch != target.runtimeId + ":" + epoch { throw HostServiceError.invalidResponse }
+      if let cursor = snapshot.cursor, cursor < 0 { throw HostServiceError.invalidResponse }
+      if !source && !snapshot.messages.isEmpty { throw HostServiceError.invalidResponse }
+      if snapshot.messages.contains(where: { $0.role == "assistant" && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == expectedMarker }) { markerFound = true }
+      let targetData = try JSONEncoder().encode(readTarget)
+      let targetObject = try JSONSerialization.jsonObject(with: targetData)
+      let messages: [[String: Any]] = snapshot.messages.map { message in
+        ["id": message.id, "role": message.role, "textSHA256": HostService.hash(Data(message.text.utf8)),
+         "threadId": snapshot.threadId]
+      }
+      summaries.append(["threadId": event.threadId, "readTarget": targetObject,
+        "messages": messages, "runtimeState": snapshot.runtime?.state as Any? ?? NSNull(),
+        "threadArchived": thread.archived as Any? ?? NSNull()])
+    }
+    guard !source || markerFound else { throw HostServiceError.invalidResponse }
+    let summary = try easyWorkJSON(["hostId": batch.hostId, "epoch": batch.epoch,
+      "cursor": batch.cursor, "reset": batch.reset, "ready": batch.ready == true,
+      "threadID": threadID, "events": summaries])
+    if source {
+      sourceBatchSummary = summary
+      if !sourceReleased {
+        sourceHeld = true
+        await withCheckedContinuation { sourceWaiter = $0 }
+        sourceHeld = false
+      }
+      if !cancelled { sourceDelivered = true }
+    } else {
+      destinationBatchSummary = summary
+      if !destinationReleased {
+        destinationHeld = true
+        await withCheckedContinuation { destinationWaiter = $0 }
+        destinationHeld = false
+      }
+      if !cancelled { destinationDelivered = true }
+    }
+    if cancelled { throw CancellationError() }
+  }
+
+  func releaseSource() {
+    sourceReleased = true
+    let waiter = sourceWaiter; sourceWaiter = nil; waiter?.resume()
+  }
+  func releaseDestination() {
+    destinationReleased = true
+    let waiter = destinationWaiter; destinationWaiter = nil; waiter?.resume()
+  }
+  // Test failure cleanup only. Deliberately no task cancellation handler/check in hold.
+  func cancelAll() {
+    cancelled = true; releaseSource(); releaseDestination()
+  }
+  func witness() -> Witness {
+    Witness(sourceHeld: sourceHeld, sourceDelivered: sourceDelivered,
+      destinationHeld: destinationHeld, destinationDelivered: destinationDelivered,
+      sourceBatchSummary: sourceBatchSummary, destinationBatchSummary: destinationBatchSummary, networkWrites: 0)
+  }
+}
+
+private struct EasyWorkLateEventProvider: AgentClient {
+  let base: any AgentClient
+  let gate: EasyWorkLateEventGate
+  let target: AgentRuntimeTarget
+  let clientID: String
+
+  private func validate(_ client: Client) throws {
+    guard client.id == clientID, let actual = client.agentConnection?.target,
+      actual.matchesCapturedPayload(target) else { throw HostServiceError.wrongHost }
+  }
+  func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt { throw HostServiceError.unavailable }
+  func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt { throw HostServiceError.unavailable }
+  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt { try await base.receipt(client, id: id) }
+  func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot { try await base.workspace(client, projectCursor: projectCursor, threadCursor: threadCursor) }
+  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await base.history(client, threadId: threadId, cursor: cursor) }
+  func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {
+    let intercept = await gate.begin(threadID: threadId)
+    if intercept { try validate(client) }
+    let batch = try await base.events(client, epoch: epoch, after: after, threadId: threadId)
+    if intercept { try await gate.hold(batch, threadID: threadId, target: target, clientID: client.id) }
+    return batch
+  }
+  func models(_ client: Client) async throws -> ModelList { try await base.models(client) }
+  func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data { try await base.projectGit(client, projectId: projectId, target: target, refresh: refresh) }
+  func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { try await base.projectGitFiles(client, projectId: projectId, target: target, snapshotId: snapshotId, worktreeId: worktreeId, cursor: cursor) }
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { try await base.usage(client, target: target) }
+  func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness { try await base.voiceReadiness(client) }
+  func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { try await base.nextTurnSuggestion(client, scope: scope) }
+  func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection { try await base.replyDeliveryStatus(client, reply: reply, target: target) }
+  func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { try await base.threadCreationStatus(client, projectId: projectId, operationId: operationId) }
+  func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation { try await base.workspaceManagementStatus(client, request: request) }
+  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await base.download(client, file: file) }
+  func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { try await base.cachedDownload(client, file: file) }
+  func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await base.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
+  func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { try await base.fileTransfers(client) }
+  func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt { try await base.fileTransfer(client, id: id) }
+  func notificationEvents(_ client: Client, deviceId: String, after: String) async throws -> TaskNotificationFeed { try await base.notificationEvents(client, deviceId: deviceId, after: after) }
+  func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await base.openStatus(client, threadId: threadId, operationId: operationId) }
+  func chatActionStatus(_ client: Client, threadId: String, operationId: String) async throws -> ChatActionReceipt { try await base.chatActionStatus(client, threadId: threadId, operationId: operationId) }
+  func searchHistory(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await base.searchHistory(client, threadId: threadId, cursor: cursor) }
+  func forkOptions(_ client: Client, threadId: String) async throws -> ThreadForkOptions { try await base.forkOptions(client, threadId: threadId) }
+  func forkStatus(_ client: Client, threadId: String, operationId: String) async throws -> ThreadForkOperation { try await base.forkStatus(client, threadId: threadId, operationId: operationId) }
+  func creation(_ client: Client, id: String) async throws -> DesktopCreationOperation { try await base.creation(client, id: id) }
+  func creationReceipt(_ client: Client, id: String) async throws -> DesktopCreationOperation { try await base.creationReceipt(client, id: id) }
+  func permissionOptions(_ client: Client) -> [AgentPermissionOption] { base.permissionOptions(client) }
+  func normalizedCapabilities(_ capabilities: [String], connectionMode: String?) -> [String] { base.normalizedCapabilities(capabilities, connectionMode: connectionMode) }
+  func connectionTitle(_ client: Client) async -> String? { await base.connectionTitle(client) }
+  func close(_ client: Client) async { await base.close(client) }
+
+  // Remaining protocol defaults reject business writes; required non-default writes follow.
+  func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation { throw HostServiceError.unavailable }
+  func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult { throw HostServiceError.unavailable }
+  func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult { throw HostServiceError.unavailable }
+  func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { throw HostServiceError.unavailable }
+}
+
+
 private actor EasyWorkLateMissingReceiptGate {
   struct Witness: Sendable {
     let originalQueryCalls: Int
@@ -1415,7 +1581,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
     guard config["caseId"] as? String == run,
       let action = config["caseAction"] as? String,
-      ["file-rejections", "archive-own-completed-plan", "read-own-completed-plan-archive", "archive-own-completed-control"].contains(action),
+      ["file-rejections", "archive-own-completed-plan", "read-own-completed-plan-archive", "archive-own-completed-control", "archive-own-cancelled-permission"].contains(action),
       config["newModelInputsAuthorized"] as? Int == 0,
       config["newThreadsAuthorized"] as? Int == 0,
       config["newBusinessCommandsAuthorized"] as? Int == (action == "read-own-completed-plan-archive" ? 0 : 1),
@@ -1504,6 +1670,33 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         report["originalFileCatalogUnchangedAndMissingTransferStillAbsent"] = true
         report["prepareOrCompleteCommandsSubmitted"] = 0
         report["actualFileUploadOrNewTransferClaimed"] = false
+      } else if action == "archive-own-cancelled-permission" {
+        guard UUID(uuidString: operation) != nil,
+          let thread = config["ownedCancelledThreadId"] as? String, UUID(uuidString: thread) != nil,
+          let root = config["ownedCancelledRootId"] as? String, UUID(uuidString: root) != nil,
+          let originalText = config["originalOwnedBody"] as? String,
+          HostService.hash(Data(originalText.utf8)) == config["originalOwnedBodySHA256"] as? String,
+          config["originalOwnRootAndReservedArchiveIndependentlyVerified"] as? Bool == true else { throw HostServiceError.invalidResponse }
+        let history = try await provider.history(client, threadId: thread, cursor: nil)
+        guard history.runtime?.state == "cancelled", history.runtime?.turnId == nil,
+          history.runtime?.approvals.isEmpty == true,
+          history.runtime?.receipts.contains(where: { $0.turnId == root && $0.state == "cancelled" }) == true,
+          history.messages.contains(where: { $0.role == "user" && $0.text == originalText }) else { throw HostServiceError.invalidResponse }
+        let sync = try easyWorkObject(await channel.synchronizedThread(thread))
+        let snapshot = try XCTUnwrap(sync["snapshot"] as? [String: Any])
+        let latest = try XCTUnwrap(snapshot["latestRun"] as? [String: Any])
+        guard latest["id"] as? String == root, latest["status"] as? String == "cancelled",
+          snapshot["activeRun"] == nil || snapshot["activeRun"] is NSNull else { throw HostServiceError.invalidResponse }
+        report["ownedCancelledThreadId"] = thread; report["ownedCancelledRootId"] = root
+        report["status"] = "one-original-reserved-cancelled-permission-fixture-archive"
+        report["businessCommandSubmissionAttempts"] = 1; try save()
+        let result = try easyWorkObject(await channel.request("thread/archive", ["threadId": thread, "archived": true], id: operation))
+        guard result["archived"] as? Bool == true else { throw HostServiceError.invalidResponse }
+        let after = try await provider.history(client, threadId: thread, cursor: nil)
+        guard after.thread?.archived == true, after.runtime?.state == "cancelled",
+          after.runtime?.turnId == nil else { throw HostServiceError.invalidResponse }
+        report["ownCancelledPermissionFixtureArchivedWithOriginalReservedOperation"] = true
+        report["otherThreadArchiveRequestsSubmitted"] = 0
       } else if action == "archive-own-completed-control" {
         guard UUID(uuidString: operation) != nil,
           let owner = config["fixtureOwnerId"] as? String, UUID(uuidString: owner) != nil,
@@ -2761,6 +2954,459 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["firstOperationId"] = firstID; report["secondOperationId"] = secondID; report["ownedKey"] = ownKey
       report["status"] = "failed-preserve-owned-original-operations-no-replay"
       report["error"] = error.localizedDescription; restoreNavigation(); try save(); throw error
+    }
+  }
+
+  @MainActor func testExplicitHighEffortAndStrictPermissionDenialOnOneOwnedRoot() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen strict permission case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["strictPermissionProbe"] as? Bool == true,
+      c["newModelInputsAuthorized"] as? Int == 1, c["newThreadsAuthorized"] as? Int == 1,
+      c["permissionDenialsAuthorized"] as? Int == 1, c["ownedRootStopsAuthorized"] as? Int == 1,
+      c["newSharingGrantsAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String {
+      let value = try XCTUnwrap(c[name] as? String); guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value
+    }
+    let model = try field("existingApprovedModelId"), body = try field("body"), marker = try field("finalMarker")
+    let create = try field("createOperationId"), send = try field("sendOperationId")
+    let deny = try field("denyOperationId"), stop = try field("stopOperationId"), archive = try field("archiveOperationId")
+    let ids = [create, send, deny, stop, archive]
+    guard Set(ids).count == 5, ids.allSatisfy({ UUID(uuidString: $0) != nil }),
+      HostService.hash(Data(body.utf8)) == c["bodySHA256"] as? String,
+      body.contains(marker), body.contains("terminal_exec"), body.contains("pwd"),
+      marker.hasPrefix("I7_STRICT_") else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, clients[0].agentConnection?.target == target,
+      target.agentId == "easywork" else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true,
+      (store.saved.aiSharingGrants ?? []).contains(where: { $0.scope.target == target && $0.scope.model == model }) else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protectedState() throws -> Data {
+      try encoder.encode(store.drafts.values) + encoder.encode(store.saved.outbox)
+        + encoder.encode(store.saved.replyRecovery) + encoder.encode(store.saved.detachedReplies)
+        + encoder.encode(store.saved.generationPreferences) + encoder.encode(store.saved.aiSharingGrants)
+    }
+    let protected = try protectedState(), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let selection = [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "modelSubmissionAttempts": 0,
+      "denialAttempts": 0, "stopAttempts": 0, "wholeFeaturePassed": false, "pureUIReaccepted": false,
+      "status": "preflight-no-metadata-or-model"]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    let provider = try AgentClients.resolve(client), channel = try await EasyWorkSessions.shared.session(client)
+    var ownThread: String?, ownRoot: String?, denialSubmitted = false, stopSubmitted = false
+    do {
+      try save()
+      let catalog = try await provider.models(client), selected = try XCTUnwrap(catalog.models.first(where: { $0.id == model }))
+      guard selected.supportedEfforts?.contains("high") == true,
+        provider.permissionOptions(client).contains(where: { $0.id == "confirm_every_operation" && !$0.highPrivilege }) else { throw HostServiceError.invalidResponse }
+      report["catalogSupportedHighAndExistingSharingCheckedBeforeMetadata"] = true; try save()
+      let thread = try await provider.createThread(client, projectId: nil, operationId: create)
+      guard thread.hostId == client.id, thread.projectId == nil, thread.archived != true else { throw HostServiceError.wrongHost }
+      ownThread = thread.id; report["threadId"] = thread.id; try save()
+      var pending = PendingReply(hostId: client.id, threadId: thread.id, clientMessageId: send,
+        text: body, attachmentIds: [], mode: "next-turn", expectedTurnId: nil, model: model, effort: "high")
+      pending.permissionMode = "confirm_every_operation"; pending.collaborationMode = "default"
+      report["pending"] = try JSONSerialization.jsonObject(with: encoder.encode(pending))
+      report["fingerprint"] = try ReplyRecoveryPolicy.fingerprint(pending, target: target)
+      report["modelSubmissionAttempts"] = 1; report["status"] = "one-own-root-about-to-submit"; try save()
+      let accepted = try await provider.sendCapturedReply(client, reply: pending, target: target)
+      guard accepted.clientMessageId == send, accepted.threadId == thread.id,
+        ["submitted", "completed"].contains(accepted.state), let root = accepted.turnId,
+        UUID(uuidString: root) != nil else { throw HostServiceError.invalidResponse }
+      ownRoot = root; report["rootRunId"] = root; report["status"] = "waiting-only-own-strict-pwd-confirmation"; try save()
+      var approval: Approval?, request: [String: Any]?
+      let until = Date().addingTimeInterval(240)
+      while Date() < until {
+        let history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        guard history.readTarget == target, history.threadId == thread.id else { throw HostServiceError.wrongHost }
+        let runtime = try XCTUnwrap(history.runtime)
+        if let candidate = runtime.approvals.first {
+          guard runtime.approvals.count == 1, runtime.turnId == root,
+            candidate.kind == "command", candidate.threadId == thread.id, candidate.turnId == root,
+            candidate.id.hasPrefix("approval."), candidate.decisions.contains("deny") else { throw HostServiceError.invalidResponse }
+          let sync = try easyWorkObject(await channel.synchronizedThread(thread.id))
+          let snapshot = try XCTUnwrap(sync["snapshot"] as? [String: Any])
+          let active = try XCTUnwrap(snapshot["activeRun"] as? [String: Any])
+          let rawRequest = try XCTUnwrap(snapshot["pendingPermissionConfirmation"] as? [String: Any])
+          report["stage"] = "validate-current-fixed-mcp-permission-witness"
+          report["pendingPermissionConfirmation"] = rawRequest
+          report["observedApprovalIdentity"] = candidate.id
+          report["observedRuntimeSettings"] = try JSONSerialization.jsonObject(with: encoder.encode(runtime.generationSettings))
+          try save()
+          let canonicalTarget = try easyWorkObject(Data(try XCTUnwrap(rawRequest["canonicalTarget"] as? String).utf8))
+          guard canonicalTarget["kind"] as? String == "mcp_tool_call",
+            canonicalTarget["permissionKey"] as? String == "tool.call",
+            (canonicalTarget["target"] as? [String: Any])?["id"] as? String == "terminal_exec",
+            (active["runId"] as? String ?? active["id"] as? String) == root,
+            rawRequest["threadId"] as? String == thread.id, rawRequest["runId"] as? String == root,
+            rawRequest["permissionKey"] as? String == "tool.call",
+            (rawRequest["target"] as? [String: Any])?["id"] as? String == "terminal_exec",
+            rawRequest["mode"] as? String == "confirm_every_operation",
+            let arguments = rawRequest["argsSummary"] as? [[String: Any]],
+            arguments.first(where: { $0["name"] as? String == "command" })?["value"] as? String == "pwd" else { throw HostServiceError.invalidResponse }
+          let identityFields = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
+          var exactIdentity: [String: String] = [:]
+          for name in identityFields { exactIdentity[name] = try XCTUnwrap(rawRequest[name] as? String) }
+          let encodedIdentity = try easyWorkObject(try XCTUnwrap(Data(base64URL: String(candidate.id.dropFirst(9)))))
+          guard try easyWorkJSON(encodedIdentity) == easyWorkJSON(exactIdentity),
+            runtime.generationSettings == GenerationOptions(model: model, effort: "high", permissionMode: "confirm_every_operation") else { throw HostServiceError.invalidResponse }
+          approval = candidate; request = rawRequest
+          report["pendingPermissionConfirmation"] = rawRequest
+          report["approvalIdentity"] = candidate.id
+          report["actualOwnerGenerationSettings"] = try JSONSerialization.jsonObject(with: encoder.encode(try XCTUnwrap(runtime.generationSettings)))
+          report["exactOwnRootStrictPermissionAndHighEffortObserved"] = true; try save(); break
+        }
+        if ["idle", "failed", "cancelled", "interrupted"].contains(runtime.state) { break }
+        try await Task.sleep(for: .milliseconds(250))
+      }
+      let candidate = try XCTUnwrap(approval), rawRequest = try XCTUnwrap(request)
+      let recheck = try await provider.history(client, threadId: thread.id, cursor: nil)
+      guard recheck.runtime?.turnId == root, recheck.runtime?.approvals == [candidate] else { throw HostServiceError.invalidResponse }
+      let repeatedSync = try easyWorkObject(await channel.synchronizedThread(thread.id))
+      guard let snapshot = repeatedSync["snapshot"] as? [String: Any],
+        let repeated = snapshot["pendingPermissionConfirmation"] as? [String: Any],
+        try easyWorkJSON(repeated) == easyWorkJSON(rawRequest) else { throw HostServiceError.invalidResponse }
+      denialSubmitted = true; report["denialAttempts"] = 1; report["denyOperationId"] = deny
+      report["status"] = "one-normal-mobile-sdk-denial-about-to-submit"; try save()
+      let denied = try easyWorkObject(await channel.request("approval/respond", ["threadId": thread.id,
+        "serverRequestId": candidate.id, "decision": "deny"], id: deny))
+      guard denied["denied"] as? Bool == true, denied["status"] as? String == "denied" else { throw HostServiceError.invalidResponse }
+      report["denialResponse"] = denied; try save()
+      var final: HistorySnapshot?
+      let finalDeadline = Date().addingTimeInterval(180)
+      while Date() < finalDeadline {
+        let history = try await provider.history(client, threadId: thread.id, cursor: nil)
+        guard history.readTarget == target, history.runtime?.approvals.isEmpty == true else { throw HostServiceError.invalidResponse }
+        if history.runtime?.turnId == nil {
+          final = history; break
+        }
+        try await Task.sleep(for: .milliseconds(250))
+      }
+      let history = try XCTUnwrap(final)
+      guard history.runtime?.state == "idle",
+        history.runtime?.generationSettings == GenerationOptions(model: model, effort: "high", permissionMode: "confirm_every_operation"),
+        history.messages.last(where: { $0.role == "assistant" && !$0.text.isEmpty })?.text.trimmingCharacters(in: .whitespacesAndNewlines) == marker else { throw HostServiceError.invalidResponse }
+      report["ownRootCompletedAfterOneDenialWithFixedFinalMarker"] = true
+      report["finalHistorySHA256"] = HostService.hash(try encoder.encode(history)); try save()
+      _ = try await channel.request("thread/archive", ["threadId": thread.id, "archived": true], id: archive)
+      let archived = try await provider.history(client, threadId: thread.id, cursor: nil)
+      guard archived.thread?.archived == true,
+        try protectedState() == protected, [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId] == selection,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      report["originalPhoneIntentPreferencesGrantsIdentityAndSelectionUnchanged"] = true
+      report["independentCanonicalDenialEventToolResultAndNoExecutionProofRequired"] = true
+      report["status"] = "observed-one-high-strict-root-pwd-denied-requires-independent-proof"; try save()
+    } catch {
+      report["failure"] = error.localizedDescription; report["status"] = "failed-preserve-original-operations-no-replay"
+      report["denialSubmitted"] = denialSubmitted; try save()
+      if let thread = ownThread, let root = ownRoot, !stopSubmitted,
+        let history = try? await provider.history(client, threadId: thread, cursor: nil), history.runtime?.turnId == root {
+        stopSubmitted = true; report["stopAttempts"] = 1; report["stopOperationId"] = stop; try save()
+        do {
+          let stopped = try easyWorkObject(await channel.request("turn/cancel", ["threadId": thread, "turnId": root], id: stop))
+          report["ownedStopResponse"] = stopped; try save()
+        } catch { report["ownedStopResultUnknownDoNotReplay"] = true; try save() }
+      }
+      throw error
+    }
+  }
+
+  @MainActor func testUnsupportedGenerationSettingsRejectedBeforeAnyRunOrAdmission() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen unsupported generation case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["unsupportedGenerationProbe"] as? Bool == true,
+      c["newModelInputsAuthorized"] as? Int == 0, c["newThreadsAuthorized"] as? Int == 0,
+      c["newRemoteCommandsAuthorized"] as? Int == 4,
+      let operations = c["operationIds"] as? [String: String],
+      Set(operations.keys) == Set(["model", "effort", "fast", "ultrafast"]),
+      Set(operations.values).count == 4, operations.values.allSatisfy({ UUID(uuidString: $0) != nil }) else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String {
+      let value = try XCTUnwrap(c[name] as? String); guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value
+    }
+    let threadID = try field("ownedArchivedThreadId"), modelID = try field("existingApprovedModelId")
+    let invalidModel = try field("invalidModelId"), body = try field("body")
+    guard invalidModel != modelID, HostService.hash(Data(body.utf8)) == c["bodySHA256"] as? String else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, clients[0].agentConnection?.target == target,
+      target.agentId == "easywork" else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true,
+      (store.saved.aiSharingGrants ?? []).contains(where: { $0.scope.target == target && $0.scope.model == modelID }) else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func protectedState() throws -> Data {
+      try encoder.encode(store.drafts.values) + encoder.encode(store.saved.outbox)
+        + encoder.encode(store.saved.replyRecovery) + encoder.encode(store.saved.detachedReplies)
+        + encoder.encode(store.saved.generationPreferences) + encoder.encode(store.saved.aiSharingGrants)
+    }
+    let protected = try protectedState(), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let selection = [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId]
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "threadId": threadID,
+      "newModelBudget": 0, "newThreadBudget": 0, "rejectionCommandBudget": 4,
+      "wholeFeaturePassed": false, "pureUIReaccepted": false, "status": "preflight-before-rejection-commands"]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    var captured: [[String: Any]] = [], rejected: [String] = []
+    do {
+      try save()
+      let provider = try AgentClients.resolve(client), catalog = try await provider.models(client)
+      let model = try XCTUnwrap(catalog.models.first(where: { $0.id == modelID }))
+      let efforts = model.supportedEfforts ?? []
+      let speeds = model.supportedSpeeds ?? []
+      let effortCandidates = ["max", "xhigh", "high", "medium", "low", "minimal", "none"]
+      let unsupportedEffort = try XCTUnwrap(effortCandidates.first(where: { !efforts.contains($0) }))
+      guard !catalog.models.contains(where: { $0.id == invalidModel }),
+        !catalog.models.contains(where: { $0.supportedSpeeds?.contains("fast") == true }),
+        model.supportedSpeeds?.contains("fast") != true,
+        model.supportedSpeeds?.contains("ultrafast") != true else { throw HostServiceError.invalidResponse }
+      let before = try await provider.history(client, threadId: threadID, cursor: nil)
+      guard before.readTarget == target, before.thread?.id == threadID,
+        before.thread?.archived == true, before.messages.isEmpty else { throw HostServiceError.invalidResponse }
+      report["actualModelCount"] = catalog.models.count
+      report["selectedModelCapabilities"] = ["id": model.id, "supportedEfforts": efforts,
+        "supportedSpeeds": speeds] as [String: Any]
+      report["chosenUnsupportedEffort"] = unsupportedEffort
+      report["allPreconditionsAndOwnedEmptyArchiveVerifiedBeforeCommands"] = true; try save()
+      for label in ["model", "effort", "fast", "ultrafast"] {
+        let operation = try XCTUnwrap(operations[label])
+        var pending = PendingReply(hostId: client.id, threadId: threadID, clientMessageId: operation,
+          text: body + " " + label, attachmentIds: [], mode: "queue", expectedTurnId: nil,
+          model: label == "model" ? invalidModel : modelID, effort: label == "effort" ? unsupportedEffort : nil)
+        pending.collaborationMode = "default"
+        if ["fast", "ultrafast"].contains(label) { pending.speed = label }
+        let data = try encoder.encode(pending)
+        captured.append(["label": label, "pending": try JSONSerialization.jsonObject(with: data),
+          "fingerprint": try ReplyRecoveryPolicy.fingerprint(pending, target: target)])
+        report["capturedControls"] = captured; report["attemptedControl"] = label; try save()
+        // All inputs use fresh IDs. Generation validation precedes the archived
+        // queue check, which is an additional no-admission fallback barrier.
+        do {
+          _ = try await provider.sendCapturedReply(client, reply: pending, target: target)
+          throw HostServiceError.message("Unsupported generation settings unexpectedly accepted")
+        } catch let refusal as EasyWorkRemoteRejection {
+          guard refusal.code == "invalid_generation_settings" else { throw refusal }
+        }
+        let receipt = try await provider.receipt(client, id: operation)
+        guard receipt.hostId == client.id, receipt.threadId == threadID,
+          receipt.clientMessageId == operation, receipt.state == "failed", receipt.turnId == nil else { throw HostServiceError.invalidResponse }
+        rejected.append(label); report["rejectedControls"] = rejected; try save()
+        guard try protectedState() == protected,
+          [store.saved.selectedClientId, store.selectedThreadId, store.selectedProjectId] == selection else { throw HostServiceError.invalidResponse }
+      }
+      let after = try await provider.history(client, threadId: threadID, cursor: nil)
+      guard after.thread?.archived == true, after.messages.isEmpty, rejected.count == 4,
+        try protectedState() == protected,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      report["originalPhoneIntentsDraftPreferencesGrantsIdentityAndSelectionUnchanged"] = true
+      report["ownedThreadStillArchivedAndEmpty"] = true
+      report["requestMode"] = "queue-validation-only-no-native-admission-claim"
+      report["status"] = "passed-four-unsupported-generation-controls-original-failed-receipts"; try save()
+    } catch {
+      report["status"] = "failed-preserve-rejection-prefix-no-replay"; report["error"] = error.localizedDescription
+      report["capturedControls"] = captured; report["rejectedControls"] = rejected; try save(); throw error
+    }
+  }
+
+  @MainActor func testLateOriginalEventBatchCannotReplaceNewThreadAndDraft() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard SessionStore.hostedEasyWorkAcceptanceEnabled, let run = env["EASYWORK_HOSTED_NATIVE_CASE"],
+      let raw = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"] else { throw XCTSkip("Frozen original event read case required") }
+    let c = try easyWorkObject(Data(raw.utf8))
+    guard c["caseId"] as? String == run, c["lateEventProbe"] as? Bool == true,
+      c["newRootInputsAuthorized"] as? Int == 0, c["newRemoteCommandsAuthorized"] as? Int == 0,
+      c["newThreadsAuthorized"] as? Int == 0 else { throw HostServiceError.invalidResponse }
+    func field(_ name: String) throws -> String {
+      let value = try XCTUnwrap(c[name] as? String); guard !value.isEmpty else { throw HostServiceError.invalidResponse }; return value
+    }
+    let sourceID = try field("sourceThreadId"), destinationID = try field("destinationThreadId")
+    let marker = try field("sourceFinalMarker"), nextDraft = try field("nextDraft"), currentError = try field("currentError")
+    guard sourceID != destinationID, marker.hasPrefix("F43_WAIT_"),
+      (c["ownedArchivedThreadIds"] as? [String]) == [sourceID, destinationID] else { throw HostServiceError.invalidResponse }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(c["target"])))
+    let ready = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil, Date() < ready { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore), clients = store.saved.clients.filter { !$0.isDemo }
+    guard !store.localRecoveryRequired, clients.count == 1, clients[0].agentConnection?.target == target,
+      target.agentId == "easywork", (store.hostedEasyWorkReadLoopState["replySendWorkCount"] as? Int) == 0,
+      (store.hostedEasyWorkReadLoopState["replyQueryWorkCount"] as? Int) == 0 else { throw HostServiceError.wrongHost }
+    let client = clients[0], connection = try XCTUnwrap(client.agentConnection)
+    let credentialText = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialText.utf8))
+    guard (c["allowedBindingIds"] as? [String])?.contains(credential.binding.bindingId) == true,
+      store.saved.workspaces[client.id]?.capabilities?.contains("events") == true else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    func bytes<T: Encodable>(_ value: T) throws -> Data { try encoder.encode(value) }
+    let base = try AgentClients.resolve(client), identity = try CredentialVault.existingToken("easywork-device-identity")
+    let oldThread = store.conversation, oldThreadID = store.selectedThreadId, oldProject = store.selectedProjectId
+    let oldClientID = store.saved.selectedClientId, oldMode = store.replyMode
+    let oldLastThread = store.saved.lastThreads[client.id], oldLastProject = store.saved.lastThreadProjects?[client.id]
+    let oldLastProjectsNil = store.saved.lastThreadProjects == nil, oldNewProject = store.saved.newProjects[client.id]
+    let oldDrafts = store.drafts.values, oldOutbox = store.saved.outbox, oldRecovery = store.saved.replyRecovery
+    let oldDetached = store.saved.detachedReplies, oldCursors = store.saved.agentEventCursors
+    let preferences = try bytes(store.saved.generationPreferences), grants = try bytes(store.saved.aiSharingGrants), oldError = store.error
+    let oldEventsActive = store.hostedEasyWorkReadLoopState["eventTaskActive"] as? Bool == true
+    let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("easywork-hosted-native")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let path = folder.appendingPathComponent(run + ".json")
+    guard !FileManager.default.fileExists(atPath: path.path) else { throw HostServiceError.invalidResponse }
+    var report: [String: Any] = ["caseId": run, "appPID": ProcessInfo.processInfo.processIdentifier,
+      "appBundleIdentifier": Bundle.main.bundleIdentifier!, "wholeFeaturePassed": false, "pureUIReaccepted": false,
+      "newRootBudget": 0, "newThreadBudget": 0, "newRemoteCommandBudget": 0,
+      "sourceThreadId": sourceID, "destinationThreadId": destinationID, "status": "prepared-original-event-batch-case"]
+    func save() throws { try easyWorkJSON(report).write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]) }
+    func wait(_ label: String, seconds: Double = 60, _ predicate: () -> Bool) async throws {
+      let end = Date().addingTimeInterval(seconds)
+      while !predicate(), Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+      guard predicate() else { report["failedWait"] = label; try save(); throw HostServiceError.invalidResponse }
+    }
+    var keys: [String] = [], gate: EasyWorkLateEventGate?
+    func restoreNavigationAndOwnMetadata() {
+      for key in keys {
+        store.drafts.values[key] = oldDrafts[key]
+        store.saved.agentEventCursors?[key] = oldCursors?[key]
+      }
+      if oldCursors == nil, store.saved.agentEventCursors?.isEmpty == true { store.saved.agentEventCursors = nil }
+      if let oldThread { store.openThread(oldThread, loadAutomatically: false) }
+      store.saved.selectedClientId = oldClientID; store.selectedThreadId = oldThreadID; store.selectedProjectId = oldProject
+      store.saved.lastThreads[client.id] = oldLastThread; store.saved.lastThreadProjects?[client.id] = oldLastProject
+      if oldLastProjectsNil, store.saved.lastThreadProjects?.isEmpty == true { store.saved.lastThreadProjects = nil }
+      store.saved.newProjects[client.id] = oldNewProject; store.replyMode = oldMode; store.error = oldError
+      store.persist(reconcileUnread: false)
+    }
+    do {
+      try save()
+      let source = try await base.history(client, threadId: sourceID, cursor: nil)
+      let destination = try await base.history(client, threadId: destinationID, cursor: nil)
+      let sourceThread = try XCTUnwrap(source.thread), destinationThread = try XCTUnwrap(destination.thread)
+      guard source.readTarget == target, destination.readTarget == target,
+        sourceThread.archived == true, destinationThread.archived == true,
+        source.messages.contains(where: { $0.role == "assistant" && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == marker }),
+        destination.messages.isEmpty else { throw HostServiceError.invalidResponse }
+      report["twoExistingOwnedColdThreadsVerifiedBeforeLocalChanges"] = true
+      store.suspendEvents()
+      try await wait("previous native event tasks normally end") {
+        (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) == 0
+      }
+      let sourceKey = SharedMobileRules.cacheKey(client, threadId: sourceID, projectId: nil, workspace: store.saved.workspaces[client.id])
+      let destinationKey = SharedMobileRules.cacheKey(client, threadId: destinationID, projectId: nil, workspace: store.saved.workspaces[client.id])
+      keys = [sourceKey, destinationKey]
+      // Reset only owned cursor metadata before navigation can start any read.
+      store.saved.agentEventCursors?.removeValue(forKey: sourceKey)
+      store.saved.agentEventCursors?.removeValue(forKey: destinationKey)
+      let probe = EasyWorkLateEventGate(clientID: client.id, sourceThreadID: sourceID,
+        destinationThreadID: destinationID, expectedMarker: marker)
+      gate = probe
+      AgentClients.register("easywork", client: EasyWorkLateEventProvider(base: base, gate: probe, target: target, clientID: client.id))
+      store.openThread(sourceThread, loadAutomatically: false); await store.loadHistory(threadId: sourceID)
+      guard store.targetKey == sourceKey, store.saved.outbox?[sourceKey] == nil, oldOutbox?[sourceKey] == nil,
+        store.draft.attachments.isEmpty else { throw HostServiceError.invalidResponse }
+      store.startEvents()
+      var witness = await probe.witness(); let sourceDeadline = Date().addingTimeInterval(60)
+      while !witness.sourceHeld, Date() < sourceDeadline {
+        try await Task.sleep(for: .milliseconds(50)); witness = await probe.witness()
+      }
+      guard witness.sourceHeld, let sourceData = witness.sourceBatchSummary,
+        (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) == 1 else { throw HostServiceError.invalidResponse }
+      report["sourceBatchSummary"] = try JSONSerialization.jsonObject(with: sourceData)
+      report["sourceBatchSummarySHA256"] = HostService.hash(sourceData)
+      report["authenticOriginalEventBatchHeldBeforeNavigation"] = true; try save()
+      // The normal navigation API cancels the old subscription. This test adapter
+      // still delivers its genuine already-read batch after cancellation.
+      store.openThread(destinationThread, loadAutomatically: false); await store.loadHistory(threadId: destinationID)
+      guard store.targetKey == destinationKey, destinationKey != sourceKey, store.saved.outbox?[destinationKey] == nil,
+        oldOutbox?[destinationKey] == nil, store.messages.isEmpty else { throw HostServiceError.invalidResponse }
+      store.setText(nextDraft, target: destinationKey); store.error = currentError
+      let currentMessages = try bytes(store.messages), currentRuntime = try bytes(store.runtime)
+      store.startEvents()
+      witness = await probe.witness(); let destinationDeadline = Date().addingTimeInterval(60)
+      while !witness.destinationHeld, Date() < destinationDeadline {
+        try await Task.sleep(for: .milliseconds(50)); witness = await probe.witness()
+      }
+      guard witness.sourceHeld, witness.destinationHeld,
+        let destinationData = witness.destinationBatchSummary,
+        (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) == 2 else { throw HostServiceError.invalidResponse }
+      report["destinationBatchSummary"] = try JSONSerialization.jsonObject(with: destinationData)
+      report["destinationBatchSummarySHA256"] = HostService.hash(destinationData)
+      report["twoActualEventTasksOverlapWithOldCancellationPending"] = true; try save()
+      await probe.releaseSource()
+      try await wait("old authentic event caller and defer fully end") {
+        (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) == 1
+      }
+      witness = await probe.witness()
+      guard witness.sourceDelivered, witness.destinationHeld, !witness.destinationDelivered,
+        store.selectedThreadId == destinationID, store.targetKey == destinationKey,
+        try bytes(store.messages) == currentMessages, try bytes(store.runtime) == currentRuntime,
+        store.drafts.values[destinationKey]?.text == nextDraft, store.error == currentError,
+        store.saved.agentEventCursors?[sourceKey] == nil,
+        store.saved.outbox?[destinationKey] == nil, !store.sendingKeys.contains(destinationKey) else { throw HostServiceError.invalidResponse }
+      report["lateOriginalEventAndDeferCannotReplaceNewThreadMessagesRuntimeDraftOrError"] = true; try save()
+      await probe.releaseDestination()
+      let expectedCursor = try easyWorkObject(destinationData)
+      try await wait("matching new event batch is actually applied by production store") {
+        store.saved.agentEventCursors?[destinationKey]?.epoch == expectedCursor["epoch"] as? String
+          && store.saved.agentEventCursors?[destinationKey]?.sequence == expectedCursor["cursor"] as? Int
+      }
+      guard (await probe.witness()).destinationDelivered, store.selectedThreadId == destinationID,
+        store.messages.isEmpty, store.drafts.values[destinationKey]?.text == nextDraft,
+        store.error == currentError else { throw HostServiceError.invalidResponse }
+      report["matchingNewTargetBatchNormallyAppliedWithDraftAndCurrentErrorIntact"] = true
+      store.suspendEvents()
+      try await wait("all owned event tasks end before adapter restoration") {
+        (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) == 0
+      }
+      AgentClients.register("easywork", client: base)
+      restoreNavigationAndOwnMetadata()
+      guard try bytes(store.drafts.values) == bytes(oldDrafts), try bytes(store.saved.outbox) == bytes(oldOutbox),
+        try bytes(store.saved.replyRecovery) == bytes(oldRecovery), try bytes(store.saved.detachedReplies) == bytes(oldDetached),
+        try bytes(store.saved.agentEventCursors) == bytes(oldCursors),
+        try bytes(store.saved.generationPreferences) == preferences, try bytes(store.saved.aiSharingGrants) == grants,
+        store.client?.agentConnection == connection,
+        try CredentialVault.existingToken("easywork-device-identity") == identity,
+        try CredentialVault.existingToken(connection.credentialRef) == credentialText else { throw HostServiceError.invalidResponse }
+      report["phoneStateAndOnlyOwnedCursorMetadataNormallyRestored"] = true
+      report["actualNetworkWrites"] = (await probe.witness()).networkWrites
+      report["status"] = "passed-authentic-late-old-event-rejected-new-target-batch-applied"; try save()
+      if oldEventsActive { store.startEvents() }
+    } catch {
+      store.suspendEvents()
+      if let gate {
+        let witness = await gate.witness()
+        if let data = witness.sourceBatchSummary { report["sourceBatchSummary"] = try? JSONSerialization.jsonObject(with: data) }
+        if let data = witness.destinationBatchSummary { report["destinationBatchSummary"] = try? JSONSerialization.jsonObject(with: data) }
+        await gate.cancelAll()
+      }
+      let deadline = Date().addingTimeInterval(45)
+      while (store.hostedEasyWorkReadLoopState["eventWorkCount"] as? Int) != 0, Date() < deadline {
+        try? await Task.sleep(for: .milliseconds(50))
+      }
+      AgentClients.register("easywork", client: base); restoreNavigationAndOwnMetadata()
+      report["status"] = "failed-original-event-read-no-writes-no-replay"; report["error"] = error.localizedDescription
+      try save(); if oldEventsActive { store.startEvents() }; throw error
     }
   }
 

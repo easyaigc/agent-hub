@@ -267,7 +267,7 @@ test(
         await write(name, bytes);
       }
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
-      for (const name of ['bonjour-service', 'qrcode']) {
+      for (const name of ['bonjour-service', 'qrcode', 'smol-toml']) {
         await write(
           'node_modules/' + name + '/package.json',
           JSON.stringify({ name, version: '1.0.0', main: 'index.js' }),

@@ -10,7 +10,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
-/** Actual production gate and host FileChannel locks; auxiliary, not Android microphone evidence. */
+/** Production gate and actual FileChannel locks with controlled close failures.
+ * Microphone, Host and full UI acceptance have separate scenarios. */
 class NativeVoiceRawGateTest {
     private fun fixture(createGate: ()->NativeVoiceRawGate = {
         NativeVoiceRawGate {require(it.isFile&&it.length()==0L&&!Files.isSymbolicLink(it.toPath()))}
@@ -133,5 +134,87 @@ class NativeVoiceRawGateTest {
             assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"new")}
             assertArrayEquals(byteArrayOf(),file.readBytes())
         }
+    }
+
+    @Test fun lastFileWriterKeepsTheSharedOriginalHandleAfterCloseFailure() {
+        val failure=IOException("shared lock release failed")
+        val secondary=IOException("shared channel close receipt lost")
+        val releases=AtomicInteger();val closes=AtomicInteger()
+        fixture({NativeVoiceRawGate(releaseLock={releases.incrementAndGet();throw failure},
+            closeChannel={closes.incrementAndGet();it.close();throw secondary},validate={require(it.length()==0L)})}) {file,gate->
+            val voice=gate.writer(file,"voice")
+            val transfer=gate.computerFileWriter(file,"transfer")
+            voice.close();voice.close();transfer.requireCurrent()
+            assertEquals(0,releases.get());assertEquals(0,closes.get())
+            assertThrows(IllegalStateException::class.java){voice.requireCurrent()}
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"still-writing")}
+            assertSame(failure,assertThrows(IOException::class.java){transfer.close()})
+            repeat(2) {
+                voice.close()
+                assertSame(failure,assertThrows(IOException::class.java){transfer.close()})
+                assertSame(failure,assertThrows(IOException::class.java){transfer.requireCurrent()})
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.writer(file,"new-voice")}
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.computerFileWriter(file,"new-transfer")}
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"new-freeze")}
+            }
+            assertEquals(1,releases.get());assertEquals(1,closes.get())
+            assertArrayEquals(arrayOf(secondary),failure.suppressed)
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
+    }
+
+    @Test fun lastVoiceWriterCannotConfirmAnUnknownChannelCloseByTryingAgain() {
+        val failure=IOException("voice channel close receipt lost")
+        val releases=AtomicInteger();val closes=AtomicInteger()
+        fixture({NativeVoiceRawGate(releaseLock={releases.incrementAndGet();it.release()},
+            closeChannel={closes.incrementAndGet();it.close();throw failure},validate={require(it.length()==0L)})}) {file,gate->
+            val writer=gate.writer(file,"voice")
+            assertSame(failure,assertThrows(IOException::class.java){writer.close()})
+            assertSame(failure,assertThrows(IOException::class.java){writer.close()})
+            assertSame(failure,assertThrows(IOException::class.java){writer.requireCurrent()})
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.writer(file,"another-voice")}
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.computerFileWriter(file,"another-transfer")}
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"migration")}
+            assertEquals(1,releases.get());assertEquals(1,closes.get())
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
+    }
+
+    @Test fun concurrentLastWriterClosesAndNewWriterCannotBypassTheOriginalFailure() {
+        val entered=CountDownLatch(1);val proceed=CountDownLatch(1);val competing=CountDownLatch(2)
+        val failure=IOException("last writer release is unknown")
+        val closes=AtomicInteger();val firstResult=AtomicReference<Throwable?>()
+        val secondResult=AtomicReference<Throwable?>();val newcomerResult=AtomicReference<Throwable?>()
+        fixture({NativeVoiceRawGate(closeChannel={
+            closes.incrementAndGet();it.close();entered.countDown()
+            check(proceed.await(5,TimeUnit.SECONDS));throw failure
+        },validate={require(it.length()==0L)})}) {file,gate->
+            val writer=gate.writer(file,"original")
+            val first=Thread {try{writer.close()}catch(error: Throwable){firstResult.set(error)}}
+            val second=Thread {competing.countDown();try{writer.close()}catch(error: Throwable){secondResult.set(error)}}
+            val newcomer=Thread {competing.countDown();try{gate.computerFileWriter(file,"new").use {it.requireCurrent()}}catch(error: Throwable){newcomerResult.set(error)}}
+            first.start()
+            try {
+                assertTrue(entered.await(5,TimeUnit.SECONDS));second.start();newcomer.start()
+                assertTrue(competing.await(5,TimeUnit.SECONDS))
+            }finally {proceed.countDown();first.join(5_000);second.join(5_000);newcomer.join(5_000)}
+            assertFalse(first.isAlive);assertFalse(second.isAlive);assertFalse(newcomer.isAlive)
+            assertSame(failure,firstResult.get());assertSame(failure,secondResult.get())
+            assertTrue(newcomerResult.get() is NativeVoiceRawGate.Busy);assertEquals(1,closes.get())
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"migration")}
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
+    }
+
+    @Test fun actualFileWriterHandleClosesOnlyAfterTheLastMixedWriterAndOldTokensStayRetired()=fixture {file,gate->
+        val transfer=gate.computerFileWriter(file,"transfer")
+        val voice=gate.writer(file,"voice")
+        transfer.close();voice.requireCurrent()
+        assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"still-writing")}
+        voice.close();ComputerFileFdOwners.requireReleased()
+        val later=gate.writer(file,"transfer")
+        transfer.close();voice.close();later.requireCurrent();later.close()
+        val owner=Any();gate.freeze(file,owner,"migration").use {it.requireCurrent(owner,"migration")}
+        ComputerFileFdOwners.requireReleased();assertArrayEquals(byteArrayOf(),file.readBytes())
     }
 }

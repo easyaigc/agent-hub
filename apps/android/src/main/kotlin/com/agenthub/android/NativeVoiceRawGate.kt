@@ -99,21 +99,38 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
     }
     private fun releaseFrozen(key: String,token: Any)=synchronized(monitor) {
         val state=states[key]
-        if(state?.frozen===token) {
+        if(state?.frozen===token)releaseState(key,state)
+    }
+    /** Called only under monitor, with the exact captured State still installed. */
+    private fun releaseState(key: String,state: State) {
+        state.releaseFailure?.let {throw it}
+        check(!state.releaseAttempted) {"Raw owner close is already in progress"}
+        state.releaseAttempted=true
+        try {state.handle.close()}catch(error: Throwable){state.releaseFailure=error;throw error}
+        // Keep the original owner and failure when close is unknown. Neither
+        // another logical writer nor a repeated close can confirm its release.
+        states.remove(key)
+    }
+    private fun requireWriter(file: File,key: String,state: State,record: String,token: Any)=synchronized(monitor) {
+        check(states[key]===state&&state.writers[record]===token)
+        state.releaseFailure?.let {throw it}
+        check(!state.releaseAttempted&&state.handle.lock.isValid)
+        validate(file);check(identity(file)==state.handle.fileKey)
+    }
+    private fun releaseWriter(key: String,state: State,record: String,token: Any)=synchronized(monitor) {
+        if(state.writers[record]===token) {
             state.releaseFailure?.let {throw it}
-            check(!state.releaseAttempted) {"Raw freeze close is already in progress"}
-            state.releaseAttempted=true
-            try {state.handle.close()}catch(error: Throwable){state.releaseFailure=error;throw error}
-            // A failed close retains its exact owner and original failure. A
-            // repeated close cannot turn an unknown release into success.
-            states.remove(key)
+            check(!state.releaseAttempted)
+            if(state.writers.size==1&&states[key]===state)releaseState(key,state)
+            state.writers.remove(record)
         }
     }
-    /** F59 branch only; normal voice/inbox writer() remains unchanged below.
+    /** F59 acquisition owns its strict raw/wrapper handles. Mixed writers keep
+     * the original shared handle until their last logical owner closes.
      * Publication/allocation failure also closes the exact newly acquired handle. */
     internal fun computerFileWriter(lockFile: File,record: String): Writer = synchronized(monitor) {
         val key=lockFile.canonicalPath;val previous=states[key]
-        if(previous?.frozen!=null||previous?.writers?.containsKey(record)==true)throw Busy()
+        if(previous?.releaseAttempted==true||previous?.frozen!=null||previous?.writers?.containsKey(record)==true)throw Busy()
         previous?.let {validate(lockFile);check(identity(lockFile)==it.handle.fileKey)}
         var opened: Handle?=null;var joined: State?=null;val token=Any()
         try {
@@ -121,15 +138,7 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
             joined=state
             if(previous==null)states[key]=state
             state.writers[record]=token
-            Writer({synchronized(monitor) {
-                check(states[key]===state&&state.writers[record]===token&&state.handle.lock.isValid)
-                validate(lockFile);check(identity(lockFile)==state.handle.fileKey)
-            }},{synchronized(monitor) {
-                if(state.writers[record]===token) {
-                    state.writers.remove(record)
-                    if(state.writers.isEmpty()&&states[key]===state){states.remove(key);state.handle.close()}
-                }
-            }})
+            Writer({requireWriter(lockFile,key,state,record,token)},{releaseWriter(key,state,record,token)})
         }catch(error: Throwable) {
             joined?.let {state->
                 if(state.writers[record]===token)state.writers.remove(record)
@@ -141,19 +150,11 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
     }
     fun writer(lockFile: File,record: String): Writer = synchronized(monitor) {
         val key=lockFile.canonicalPath;val previous=states[key]
-        if(previous?.frozen!=null||previous?.writers?.containsKey(record)==true)throw Busy()
+        if(previous?.releaseAttempted==true||previous?.frozen!=null||previous?.writers?.containsKey(record)==true)throw Busy()
         previous?.let {validate(lockFile);check(identity(lockFile)==it.handle.fileKey)}
         val state=previous?:State(open(lockFile,true)).also {states[key]=it}
         val token=Any();state.writers[record]=token
-        Writer({synchronized(monitor) {
-            check(states[key]===state&&state.writers[record]===token&&state.handle.lock.isValid)
-            validate(lockFile);check(identity(lockFile)==state.handle.fileKey)
-        }},{synchronized(monitor) {
-            if(state.writers[record]===token) {
-                state.writers.remove(record)
-                if(state.writers.isEmpty()&&states[key]===state){states.remove(key);state.handle.close()}
-            }
-        }})
+        Writer({requireWriter(lockFile,key,state,record,token)},{releaseWriter(key,state,record,token)})
     }
     fun freeze(lockFile: File,owner: Any,operation: String): Frozen = synchronized(monitor) {
         val key=lockFile.canonicalPath;if(states.containsKey(key))throw Busy()

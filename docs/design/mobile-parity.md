@@ -1792,3 +1792,5 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 本批整合 iOS 既有的阅读遮挡、附件预览关闭回调、大字体连接选择、原草稿附件导入代次与通知展示状态。EasyWork 建议仍只读取规范 runtime 来源；迁移后先重新配对核对身份，原操作不自动重放。Android 和共享 KMP 源码沿独立主线，本批不更改；纯手机界面沿用现有证据，不增加重复验收。编译、辅助边界检查及一次独立模拟器与真实Electron的零模型只读连接已通过，单独记录于原功能清单 I7.123；不扩展纯手机UI验收。
 
 2026-11-06 Android P7/F56/F59：冻结锁原关闭异常保持原 owner 与同一失败，重复关闭不再制造成功，新 writer/freeze 保持阻挡。受控关闭结果不确定、实际锁/并发与真实原生按[阶段114](../plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)记录。UI12迁移密码/忙碌/取消/原结果核对继续逐项验；iOS新增原录音只读保存及安装授权字段列为 Android 后续差异。
+
+2026-11-06 Android P7/F30/F56/F59/F64：本机 worker 完成与原句柄释放分别核对，最后 writer 关闭失败保留准确 owner、token 和原异常，阻止新 writer/freeze。非最后 writer 与原成功迟到 token 分别隔离。十项原生与真实系统、完整UI的边界见[阶段115](../plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。iOS迁移和Android录音/附件的原生命周期继续逐项验。

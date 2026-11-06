@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段115 最后 writer 关闭](stage115-p7-last-writer-close.md)补齐录音、附件和F59混合 writer 的原句柄与失败回执；十项独立API33与构建通过，包字节、输入和资源收尾已核对。
+
 - [阶段114 冻结锁关闭回执](stage114-p7-frozen-close.md)记录原失败保留、重复关闭及新 owner 门禁；两轮六项API33通过，第二轮独立核对安装包前后字节。
 
 - [阶段113 主线交接](stage113-mainline-handoff.md)汇总可交付范围、待验边界和后续短期 PR 流程。

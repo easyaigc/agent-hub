@@ -1852,3 +1852,5 @@ I7.112–114：自有失败fixture按原预留ID正常冷归档已独立核，Na
 I7.119–120。新Root默认权限快照复用原会话感知权限服务，显式输入及会话偏好优先。Native66与真实V31模型1/0/0通过，提交省略权限字段，手机与规范Root均显示confirm_high_risk。原工具调用、规范参数hash和实际pwd零退出独立相符。旧Root未知值与手机下一次发送偏好保留。当前80限定场景143Run791回执，28历史失败保留，七项任务范围闭合及F35整项待补状态继续。Android沿独立主线记录。
 
 2026-11-06 Android P7/F56/F59：冻结锁原关闭异常保持原 owner 与同一失败，重复关闭不再制造成功，新 writer/freeze 保持阻挡。受控关闭结果不确定、实际锁/并发与真实原生按[阶段114](../plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)记录。UI12迁移密码/忙碌/取消/原结果核对继续逐项验；iOS新增原录音只读保存及安装授权字段列为 Android 后续差异。
+
+2026-11-06 Android P7/F30/F56/F59/F64：本机 worker 完成与原句柄释放分别核对，最后 writer 关闭失败保留准确 owner、token 和原异常，阻止新 writer/freeze。非最后 writer 与原成功迟到 token 分别隔离。十项原生与真实系统、完整UI的边界见[阶段115](../plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。iOS迁移和Android录音/附件的原生命周期继续逐项验。

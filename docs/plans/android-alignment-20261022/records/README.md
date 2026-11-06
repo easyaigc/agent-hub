@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段116 最新计划重建](stage116-plan-refresh.md)：350个iOS历史节点与114个额外共享边界、75F及验收/优先级分档；仅文档，不新增产品运行通过。当前状态统一见[新进度总表](../../android-ios-alignment-20261107/progress.md)。
+
 - [阶段115 最后 writer 关闭](stage115-p7-last-writer-close.md)补齐录音、附件和F59混合 writer 的原句柄与失败回执；十项独立API33与构建通过，包字节、输入和资源收尾已核对。
 
 - [阶段114 冻结锁关闭回执](stage114-p7-frozen-close.md)记录原失败保留、重复关闭及新 owner 门禁；两轮六项API33通过，第二轮独立核对安装包前后字节。
@@ -17,7 +19,7 @@
 - [阶段71 P7未预建KEY导入](stage71-p7-pristine-controller.md)：普通Controller未预建root KEY的9条迁移1方法限定通过；PR119已合并，CI与公开同步成功。
 - [阶段70 P7同包首次/只读cold](stage70-p7-paired-readonly-cold.md)：普通已初始化空目标9条资料、原PID自然退出/不同PID恢复两方法有限通过；旧cold anchor失败单列，pristine/完整范围/UI/物理仍开放。
 
-当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
+当前总计划、优先级与完成状态维护在[新计划](../../android-ios-alignment-20261107/plan.md)和[新进度总表](../../android-ios-alignment-20261107/progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
 - [阶段69 P7非空资料实际Session](stage69-p7-nonempty-device-session.md)：已初始化空目标、8文本+1CAF的普通Session闭环1项Native限定通过；本阶段cold未验（后续见阶段70），新安装/完整24项/UI/物理待验；PR117已合并且CI通过。
 - [阶段68 Android实际Controller交接](stage68-p7-controller-strict-restore.md)：schema v3首次交接/独立冷读2项Native限定通过，Controller worker join未证明；非空资料完整迁移/完整范围/UI/物理待验。

@@ -1,6 +1,6 @@
 # Android 原生完整版本开发计划
 
-**当前入口（2026-10-25）：**[Android 开发计划与进度总表](android-alignment-20261022/progress.md)统一列出 P0–P10 的完成/未完成、优先级和待验项；[分阶段档案](android-alignment-20261022/records/README.md)保存过程与限定验收结果。下文 A0–A8 技术规划、调度、百分比和设备记录保留为原日期历史，不作为当前进度。Task Hub 业务任务/项目及新增项目管理暂缓，A6/P7 保持暂停。
+**当前入口（2026-11-07）：**[最新 iOS 对齐计划](android-ios-alignment-20261107/README.md)分别维护完整功能、逐提交账本、优先级、验收和[实时进度](android-ios-alignment-20261107/progress.md)；[分阶段档案](android-alignment-20261022/records/README.md)保存过程与限定结果。下文 A0–A8 以及旧 P0–P10 调度保留为原日期历史，不作为当前进度。Task Hub 业务任务/项目、原生项目 Git 管理和 iOS A6 暂缓；Android 完整迁移继续纳入新 N1。
 
 ## 历史计划与调度
 

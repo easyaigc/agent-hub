@@ -1537,3 +1537,5 @@ The Windows regular-service continuation candidate separates immutable profile-o
 ### iOS backlog integration (2026-11-05)
 
 iOS resolves suggestion source kinds through the Agent adapter while EasyWork keeps `thread/suggestion/read` and the runtime-version contract. The native reading DTO bridge remains in `EasyWorkReading.swift`; identity-only Swift consumers do not acquire reading or MobileCore dependencies. EasyWork migration restores inert original records, requires re-pairing before remote access, and preserves the destination installation identity and notification authorization. It does not replay imported commands. iOS-only copy lives in the disjoint `IOSNative.strings` table. Shared `Localizable.strings` wins existing keys; its missing-key fallback consults the iOS table without changing Android generated resources.
+
+2026-11-06 Android P7：迁移 Frozen 在原锁与 channel 关闭成功后释放登记。原关闭异常保留同一 owner、token 和首错，后续只观察原关闭结果并阻止新 writer/freeze；范围为进程内协调门，持久化恢复与认证迁移容器另验。见[阶段114](plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)。

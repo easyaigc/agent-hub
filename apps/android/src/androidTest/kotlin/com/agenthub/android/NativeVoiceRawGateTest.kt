@@ -3,6 +3,7 @@ package com.agenthub.android
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -11,9 +12,11 @@ import java.util.concurrent.atomic.AtomicReference
 
 /** Actual production gate and host FileChannel locks; auxiliary, not Android microphone evidence. */
 class NativeVoiceRawGateTest {
-    private fun fixture(block: (File,NativeVoiceRawGate)->Unit) {
+    private fun fixture(createGate: ()->NativeVoiceRawGate = {
+        NativeVoiceRawGate {require(it.isFile&&it.length()==0L&&!Files.isSymbolicLink(it.toPath()))}
+    },block: (File,NativeVoiceRawGate)->Unit) {
         val dir=Files.createTempDirectory("p7-raw-gate-").toFile();val file=File(dir,"coordination.lock")
-        val gate=NativeVoiceRawGate {require(it.isFile&&it.length()==0L&&!Files.isSymbolicLink(it.toPath()))}
+        val gate=createGate()
         try {block(file,gate)}finally {if(file.exists())check(file.delete());check(dir.list()!!.isEmpty());check(dir.delete())}
     }
     @Test fun activeProductionWritersExcludeFreezeUntilEveryWriterReallyCloses()=fixture {file,gate->
@@ -67,5 +70,68 @@ class NativeVoiceRawGateTest {
             assertTrue(progress.get()>before);assertFalse(finished.await(1,TimeUnit.MILLISECONDS))
         }finally{release.countDown();thread.join(5_000)}
         assertFalse(thread.isAlive);assertNull(failure.get());gate.freeze(file,Any(),"after-worker").close()
+    }
+
+    @Test fun failedFrozenReleaseRetainsFirstErrorAndBlocksEveryNewOwner() {
+        val releaseFailure=IOException("original lock release failed")
+        val closeFailure=IOException("original channel close failed")
+        val releases=AtomicInteger();val closes=AtomicInteger()
+        fixture({NativeVoiceRawGate(releaseLock={releases.incrementAndGet();throw releaseFailure},
+            closeChannel={closes.incrementAndGet();it.close();throw closeFailure},validate={require(it.length()==0L)})}) {file,gate->
+            val owner=Any();val frozen=gate.freeze(file,owner,"failed")
+            assertSame(releaseFailure,assertThrows(IOException::class.java){frozen.close()})
+            assertArrayEquals(arrayOf(closeFailure),releaseFailure.suppressed)
+            repeat(2) {
+                assertSame(releaseFailure,assertThrows(IOException::class.java){frozen.close()})
+                assertSame(releaseFailure,assertThrows(IOException::class.java){frozen.requireCurrent(owner,"failed")})
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"new")}
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.writer(file,"voice")}
+                assertThrows(NativeVoiceRawGate.Busy::class.java){gate.computerFileWriter(file,"file")}
+            }
+            assertEquals(1,releases.get());assertEquals(1,closes.get())
+            assertEquals(1,releaseFailure.suppressed.size)
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
+    }
+
+    @Test fun failedChannelCloseRemainsUnknownAfterTheActualLockWasReleased() {
+        val failure=IOException("channel close receipt lost")
+        val releases=AtomicInteger();val closes=AtomicInteger()
+        fixture({NativeVoiceRawGate(releaseLock={releases.incrementAndGet();it.release()},
+            closeChannel={closes.incrementAndGet();it.close();throw failure},validate={require(it.length()==0L)})}) {file,gate->
+            val owner=Any();val frozen=gate.freeze(file,owner,"failed-channel")
+            assertSame(failure,assertThrows(IOException::class.java){frozen.close()})
+            assertSame(failure,assertThrows(IOException::class.java){frozen.close()})
+            assertSame(failure,assertThrows(IOException::class.java){frozen.requireCurrent(owner,"failed-channel")})
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"new")}
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.writer(file,"voice")}
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.computerFileWriter(file,"file")}
+            assertEquals(1,releases.get());assertEquals(1,closes.get())
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
+    }
+
+    @Test fun concurrentFrozenCloseCallsObserveTheSameSingleAttempt() {
+        val entered=CountDownLatch(1);val proceed=CountDownLatch(1);val secondStarted=CountDownLatch(1)
+        val failure=IOException("original release is unknown")
+        val closes=AtomicInteger();val firstResult=AtomicReference<Throwable?>();val secondResult=AtomicReference<Throwable?>()
+        fixture({NativeVoiceRawGate(closeChannel={
+            closes.incrementAndGet();it.close();entered.countDown()
+            check(proceed.await(5,TimeUnit.SECONDS));throw failure
+        },validate={require(it.length()==0L)})}) {file,gate->
+            val owner=Any();val frozen=gate.freeze(file,owner,"concurrent-close")
+            val first=Thread {try{frozen.close()}catch(error: Throwable){firstResult.set(error)}}
+            val second=Thread {secondStarted.countDown();try{frozen.close()}catch(error: Throwable){secondResult.set(error)}}
+            first.start()
+            try {
+                assertTrue(entered.await(5,TimeUnit.SECONDS));second.start()
+                assertTrue(secondStarted.await(5,TimeUnit.SECONDS))
+            }finally {proceed.countDown();first.join(5_000);second.join(5_000)}
+            assertFalse(first.isAlive);assertFalse(second.isAlive)
+            assertSame(failure,firstResult.get());assertSame(failure,secondResult.get());assertEquals(1,closes.get())
+            assertSame(failure,assertThrows(IOException::class.java){frozen.close()})
+            assertThrows(NativeVoiceRawGate.Busy::class.java){gate.freeze(file,Any(),"new")}
+            assertArrayEquals(byteArrayOf(),file.readBytes())
+        }
     }
 }

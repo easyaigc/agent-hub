@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段114 冻结锁关闭回执](stage114-p7-frozen-close.md)记录原失败保留、重复关闭及新 owner 门禁；两轮六项API33通过，第二轮独立核对安装包前后字节。
+
 - [阶段113 主线交接](stage113-mainline-handoff.md)汇总可交付范围、待验边界和后续短期 PR 流程。
 
 - [阶段89 App目录与reader合同修复](stage89-producer-app-files-and-reader-contract.md)：四源采用/静态独审与34辅助向量通过，SDK/真实producer/14件/独立IMPORT待验；PR135收尾完成。

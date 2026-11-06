@@ -1,8 +1,8 @@
 # Android 开发计划与进度
 
-更新：2026-11-05。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
+更新：2026-11-06。这里只列范围、已完成部分、剩余项、优先级和交付。完整逐项口径见[功能/界面矩阵](parity.md)、[iOS逐提交对照](commits.md)及[24组迁移库存](parallel/p7-migration/system-scope-inventory.md)；过程与证据放[阶段档案](records/README.md)，环境依赖放[待验清单](pending-acceptance.md)。局部通过不关闭整项功能。
 
-P7 的代际清单在 `a50c606` 上通过 949 输入新包与独立 API33 的 24 项，含同一原件的实际部分退役。前一封包提交 `85d5bc0` 的完整回归和 iOS 构建另存。继续认证容器、导入激活和真实界面/手机，P8、P9 候选并行待验。
+P7 的代际清单在 `a50c606` 上通过 949 输入新包与独立 API33 的 24 项，含同一原件的实际部分退役。前一封包提交 `85d5bc0` 的完整回归和 iOS 构建另存。迁移冻结锁原关闭回执的修复及六项独立 API33 原生用例已通过，安装后包指纹已在另一新环境前后独立核对，六项再次通过。继续认证容器、导入激活和真实界面/手机。iOS 新增原录音只读保存和安装授权字段纳入对照，P8、P9 候选并行待验。
 
 ## 总计划
 
@@ -22,7 +22,7 @@ P7 的代际清单在 `a50c606` 上通过 949 输入新包与独立 API33 的 24
 
 ## 接下来按什么顺序做
 
-1. **P7当前优先**：F59 portable第一切片和6项共同规则已接入；current-generation与旧代family十五项Native已通过；Long 内层封包已接入，继续认证加密容器与目的端惰性发布。当前原生 24 项已按候选通过；硬链接 reader 拒绝、真实故障、交互和 UI 另验；旧UNKNOWN不重放。原回复strict source/outbox/消费/编辑退场仍开放，随后语音/未读/生命周期。
+1. **P7当前优先**：F59 portable第一切片和6项共同规则已接入；current-generation与旧代family十五项Native已通过；Long 内层封包已接入，原冻结锁释放失败保持原失败并阻止新 owner 已通过受控原生用例；继续认证加密容器与目的端惰性发布。当前原生 24 项已按候选通过；硬链接 reader 拒绝、真实故障、交互和 UI 另验；旧UNKNOWN不重放。原回复strict source/outbox/消费/编辑退场仍开放，随后语音/未读/生命周期。
 2. **完整迁移**：继续真实Main导入/导出、24组库存、失败补偿、自然故障与冷恢复。F59 Android生产和portable描述/校验已接入，认证容器、激活与 iOS 域未实现，有原件时整包迁移保守拒绝；iOS现有F59原件/journal也未进入迁移Payload，双端缺口单列，不能按完整迁移通过。
 3. **语音、未读、生命周期**：原件与失败恢复、阅读权威/原通知回执、Main/系统冷入口、真实停止/死亡/重开逐项验。
 4. **P9独立项**：新三包诊断先完成精确源码/SDK/API36准入，再采集SystemUI拒绝节点；本轮未找到原通知行，系统前置状态待准确准备；诊断不算通知点击通过。继续真实Host、偏好/声音/隐私与完整UI。
@@ -39,5 +39,6 @@ P7 的代际清单在 `a50c606` 上通过 949 输入新包与独立 API33 的 24
 ## 当前交付
 
 - [PR134](https://git.51easyai.com/BCAI/agent-hub-app/pulls/134)和[PR135](https://git.51easyai.com/BCAI/agent-hub-app/pulls/135)已合入主线、CI/公开同步核对，原分支已清理。
-- 阶段85–112按已核实的场景和实现边界整理入主线，见[主线交接档案](records/stage113-mainline-handoff.md)。[PR145](https://git.51easyai.com/BCAI/agent-hub-app/pulls/145)记录较早的候选，仍以阶段档案中的原始指纹为验收依据。
+- [PR155](https://git.51easyai.com/BCAI/agent-hub-app/pulls/155)已合入主线 `4f776777`，Linux workspace 与 iOS CI 通过，28个远端及30个本地分支已清理。阶段85–112按已核实的场景和实现边界整理入主线，见[主线交接档案](records/stage113-mainline-handoff.md)。[PR145](https://git.51easyai.com/BCAI/agent-hub-app/pulls/145)记录较早的候选，仍以阶段档案中的原始指纹为验收依据。
+- 本轮通过：[冻结锁关闭回执](records/stage114-p7-frozen-close.md)。
 - 最新阶段：[F59 十五项 Native](records/stage105-f59-family-native15.md)、[主线续接](records/stage106-mainline-eae10-continuation.md)、[打包夹具恢复](records/stage107-packager-fixture-after-main.md)、[F59 内层封包](records/stage108-f59-inner-framing.md)、[新包 23 项原生与回归](records/stage109-f59-inner-native23.md)、[代际清单](records/stage110-f59-typed-family-inventory.md)、[新包 24 项原生](records/stage112-f59-typed-native24.md)。历史结果见[档案索引](records/README.md)。

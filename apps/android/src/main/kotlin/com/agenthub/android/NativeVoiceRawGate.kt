@@ -11,12 +11,17 @@ import java.nio.file.StandardOpenOption.*
 import java.nio.file.attribute.PosixFilePermissions
 
 /** Production writer ownership, including an OS advisory lock across cooperating app processes. */
-internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotNull(Files.readAttributes(it.toPath(),BasicFileAttributes::class.java,NOFOLLOW_LINKS).fileKey())},private val validate: (File)->Unit) {
+internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotNull(Files.readAttributes(it.toPath(),BasicFileAttributes::class.java,NOFOLLOW_LINKS).fileKey())},
+    private val releaseLock: (FileLock)->Unit={it.release()},
+    private val closeChannel: (FileChannel)->Unit={it.close()},private val validate: (File)->Unit) {
     class Busy: IllegalStateException("录音仍在写入或收尾，请结束录音后再迁移。原录音未更改。")
-    private class Handle(val channel: FileChannel,val lock: FileLock,val fileKey: Any,private val strictClose: (()->Unit)?=null): Closeable {
-        override fun close(){strictClose?.let {it();return};try{lock.release()}finally{channel.close()}}
+    private class Handle(val lock: FileLock,val fileKey: Any,private val closeOwned: ()->Unit): Closeable {
+        override fun close()=closeOwned()
     }
-    private class State(val handle: Handle,val frozen: Any?=null,val writers: MutableMap<String,Any> = mutableMapOf())
+    private class State(val handle: Handle,val frozen: Any?=null,val writers: MutableMap<String,Any> = mutableMapOf()) {
+        var releaseAttempted=false
+        var releaseFailure: Throwable?=null
+    }
     private val monitor=Any()
     private val states=mutableMapOf<String,State>()
     private fun open(file: File,shared: Boolean): Handle {
@@ -24,7 +29,14 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
         try {
             validate(file);val key=identity(file)
             val lock=channel.tryLock(0,Long.MAX_VALUE,shared)?:throw Busy()
-            try {validate(file);check(identity(file)==key);return Handle(channel,lock,key)}
+            try {validate(file);check(identity(file)==key);return Handle(lock,key) {
+                var first: Throwable?=null
+                try {releaseLock(lock)}catch(error: Throwable){first=error}
+                try {closeChannel(channel)}catch(error: Throwable){
+                    if(first==null)first=error else if(first!==error)first.addSuppressed(error)
+                }
+                first?.let {throw it}
+            }}
             catch(error: Throwable){lock.release();throw error}
         }
         catch(error: Throwable){channel.close();if(error is java.nio.channels.OverlappingFileLockException)throw Busy();throw error}
@@ -62,7 +74,7 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
             // Borrowed read channel supports shared lock; only raw owns the descriptor.
             val lease=ComputerFileFdOwners.acquireResource({stream.value.channel.tryLock(0,Long.MAX_VALUE,true)?:throw Busy()},{it.release()}).also {locked=it}
             bound();check(identity(file)==key)
-            return Handle(stream.value.channel,lease.value,key,::closeOwned)
+            return Handle(lease.value,key,::closeOwned)
         }catch(error: Throwable) {
             try {closeOwned()}catch(close: Throwable){if(close!==error)error.addSuppressed(close)}
             throw error
@@ -80,12 +92,22 @@ internal class NativeVoiceRawGate(private val identity: (File)->Any={requireNotN
         override fun close()=gate.releaseFrozen(key,token)
     }
     private fun requireFrozen(key: String,token: Any)=synchronized(monitor) {
-        val state=checkNotNull(states[key]);check(state.frozen===token&&state.handle.lock.isValid)
+        val state=checkNotNull(states[key]);check(state.frozen===token)
+        state.releaseFailure?.let {throw it}
+        check(!state.releaseAttempted&&state.handle.lock.isValid)
         val file=File(key);validate(file);check(identity(file)==state.handle.fileKey)
     }
     private fun releaseFrozen(key: String,token: Any)=synchronized(monitor) {
         val state=states[key]
-        if(state?.frozen===token){states.remove(key);state.handle.close()}
+        if(state?.frozen===token) {
+            state.releaseFailure?.let {throw it}
+            check(!state.releaseAttempted) {"Raw freeze close is already in progress"}
+            state.releaseAttempted=true
+            try {state.handle.close()}catch(error: Throwable){state.releaseFailure=error;throw error}
+            // A failed close retains its exact owner and original failure. A
+            // repeated close cannot turn an unknown release into success.
+            states.remove(key)
+        }
     }
     /** F59 branch only; normal voice/inbox writer() remains unchanged below.
      * Publication/allocation failure also closes the exact newly acquired handle. */

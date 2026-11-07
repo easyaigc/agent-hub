@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-11-07",
-  "frozenMain": "dd1682fb4546360d6018f783480fd2a30a833533",
+  "frozenMain": "7f67c371bb4378a1d4f07ddc25b96b3d229eda71",
   "source": "docs/product/mobile-parity.manifest.json",
   "count": 75,
   "activeProductCount": 70,
@@ -4041,6 +4041,10 @@
       "scripts/mobile/ios-physical-native-preflight.test.py",
       "scripts/mobile/ios-source-fingerprint.py",
       "scripts/mobile/requirements-ios-physical-examiner.txt"
+    ],
+    "IosEasyWorkReceiptIdentity": [
+      "apps/ios/Sources/EasyWorkAgentClient.swift",
+      "scripts/easywork-unknown-queue-receipt.test.mjs"
     ]
   },
   "features": [
@@ -6332,7 +6336,8 @@
         "AndroidCompleteTextWrapPreconditions",
         "AndroidImportedEditorActiveWindowReadiness",
         "EasyWorkManagementConsumer",
-        "AndroidEasyWorkOriginalReceiptSafety"
+        "AndroidEasyWorkOriginalReceiptSafety",
+        "IosEasyWorkReceiptIdentity"
       ],
       "acceptanceId": "AC-F43",
       "releaseVerified": false
@@ -6445,7 +6450,8 @@
         "AndroidMigratedEasyWorkBusinessOwners",
         "AndroidSessionOwnedConnectionForm",
         "AndroidFormLifecycleOwningComposeClock",
-        "AndroidEasyWorkOriginalReceiptSafety"
+        "AndroidEasyWorkOriginalReceiptSafety",
+        "IosEasyWorkReceiptIdentity"
       ],
       "acceptanceId": "AC-F44",
       "releaseVerified": false
@@ -6644,7 +6650,8 @@
         "AndroidProvisionalVoiceControls",
         "AndroidInertInboxAndVoiceRecovery",
         "AndroidSystemOriginals",
-        "AndroidEasyWorkOriginalReceiptSafety"
+        "AndroidEasyWorkOriginalReceiptSafety",
+        "IosEasyWorkReceiptIdentity"
       ],
       "acceptanceId": "AC-F46",
       "releaseVerified": false
@@ -7667,7 +7674,8 @@
         "ReplyRecovery",
         "AndroidMainIntegration",
         "AndroidLegacyReplySafety",
-        "AndroidFileReceiptCapture"
+        "AndroidFileReceiptCapture",
+        "IosEasyWorkReceiptIdentity"
       ],
       "acceptanceId": "AC-F61",
       "releaseVerified": false
@@ -8342,5 +8350,13 @@
       "feature": "F56",
       "behavior": "更新隐私清单及工程资源配置；需对照具体清单用途，不当新业务功能。"
     }
-  ]
+  ],
+  "currentDelta": {
+    "id": "C1-RID",
+    "features": ["F43", "F44", "F46", "F61"],
+    "status": "implemented-on-draft-pr163; not merged; build/auxiliary checked; live original-owner native/DEV pending",
+    "implementationCommit": "867b0f2ba82c356aee1c264c88db8d378b1fe457",
+    "draftPr": 163,
+    "mergedToMain": false
+  }
 }

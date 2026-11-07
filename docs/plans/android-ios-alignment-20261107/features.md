@@ -4,6 +4,8 @@
 
 来源快照和全部 iOS/Android 关联路径见 [features.json](features.json)，原编号来自[产品 manifest](../../product/mobile-parity.manifest.json)；提交来源见[提交索引](commits/README.md)。每条均对应 `AC-Fxx` 验收行，共用门槛见[验收方案](acceptance.md)。未来新增子功能先保留所属 F 的稳定 ID；超出现有共同断言的新增功能需另行登记，不能挤入旧通过范围。
 
+2026-11-07用户补充：[每项双端/双Provider规则](three-way.md)与[75项四格范围](provider-matrix.md)贯穿全部功能；当前C1-RID原回执守卫的实现/辅助/原生编译和未完成在线验收分别见[进度](progress.md)。原表断言和历史通过不因此批量升级。
+
 ## 读表规则
 
 功能断言采用冻结主线原文；“交互补项”是必须验收的操作/状态；“界面补项”是对应页面的完整性要求。目录选择、已有项目导航及对话分支属于本轮范围，Task Hub 业务和项目 Git 处于暂停。F74 为 Host 依赖检查，不增加手机模型代理入口。

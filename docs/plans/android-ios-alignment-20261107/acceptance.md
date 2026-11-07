@@ -2,6 +2,10 @@
 
 更新：2026-11-07；冻结基线与实施顺序见[计划](plan.md)。本文规定未来验收，不新增本轮运行通过声明。每个功能对应 [AC-F01–AC-F75 验收矩阵](acceptance-matrix.md)，历史证据继续保留原范围。
 
+用户补充后，每条AC同时执行[双端/双Provider两方面门槛](three-way.md)，并按[75项四格范围](provider-matrix.md)登记iOS×Codex、Android×Codex、iOS×EasyWork、Android×EasyWork。EasyWork来源每功能拉取，不能只验iOS/Android相互相似；本地共通、专属能力、不适用及暂停分别说明，不虚构相同接口。
+
+当前C1-RID子场景要求：核对原操作回执的外层、result和queue/status可选完整target及wire host；wire host对应desktopDeviceId，不是归一化后的本地client key。错误account/设备/workspace/runtime、错误类型、矛盾host、捕获client目标不符均在归一化前拒绝；旧Host缺省/NSNull继续兼容。错误/缺失/未知只保留原查询，不发送、重新排队或自动重试原输入。辅助52项和签名编译不能关闭物理/真实DEV四格。
+
 ## 功能、交互、界面分别过门
 
 | 门槛 | 每条功能必须回答的问题                                                                                               | 通过证据                                                                       |

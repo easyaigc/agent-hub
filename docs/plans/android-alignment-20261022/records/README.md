@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段117 三方核心优先与原回执](stage117-three-way-core.md)：EasyWork准确master、75项四格/五条工作线、iOS原回执身份修复；R2辅助及签名构建通过，原DEV离线，手机在线未执行，当前功能保持待验。
+
 - [阶段116 最新计划重建](stage116-plan-refresh.md)：350个iOS历史节点与114个额外共享边界、75F及验收/优先级分档；仅文档，不新增产品运行通过。当前状态统一见[新进度总表](../../android-ios-alignment-20261107/progress.md)。
 
 - [阶段115 最后 writer 关闭](stage115-p7-last-writer-close.md)补齐录音、附件和F59混合 writer 的原句柄与失败回执；十项独立API33与构建通过，包字节、输入和资源收尾已核对。

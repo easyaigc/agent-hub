@@ -1,0 +1,3089 @@
+{
+  "scope": "75F 计划分类建议；非运行通过、非实现完成判定",
+  "baselines": {
+    "agentHub": "7f67c371bb4378a1d4f07ddc25b96b3d229eda71",
+    "easywork": "e393fcc72015dd613ca41d93469c6c3a8c64054a"
+  },
+  "constraints": [
+    "F65-F67/F75 暂缓，iOS A6 暂停；F74 Host only",
+    "目录登记、普通聊天、已有项目选择不暂停",
+    "本地公共项可有 Provider 数据依赖；不强制接口相同，未声明能力不判缺陷",
+    "所有四格运行验证均未执行；源码/计划不能代替原生或真机证据",
+    "模型/推理按请求设置；入口无速度参数，实际最高速度未核实"
+  ],
+  "finding": "旧计划如只将 N5 视为 EasyWork 范围，会遗漏其他工作包中依赖 EasyWork 数据或控制的功能；下列为需按具体能力拉取的候选，不表示每项均已声明或缺陷。",
+  "crossPackageEasyWorkCandidates": [
+    "F02",
+    "F04",
+    "F05",
+    "F12",
+    "F13",
+    "F15",
+    "F16",
+    "F17",
+    "F18",
+    "F26",
+    "F27",
+    "F28",
+    "F29",
+    "F31",
+    "F32",
+    "F34",
+    "F35",
+    "F36",
+    "F37",
+    "F38",
+    "F39",
+    "F40",
+    "F41",
+    "F42",
+    "F43",
+    "F44",
+    "F45",
+    "F46",
+    "F48",
+    "F52",
+    "F54",
+    "F58",
+    "F59",
+    "F61",
+    "F62",
+    "F63",
+    "F64",
+    "F69",
+    "F70",
+    "F73"
+  ],
+  "features": [
+    {
+      "id": "F01",
+      "name": "启动与示例",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "空启动、添加入口、示例开关、返回真实连接；示例与真实草稿并存",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F01",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F02",
+      "name": "客户端选择与运行数",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "runtime 状态/活跃 ID；history 可读不证明在线",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "runtime 状态/活跃 ID；history 可读不证明在线",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "runtime 状态/活跃 ID；history 可读不证明在线",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "runtime 状态/活跃 ID；history 可读不证明在线",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "切换/重启恢复、活跃ID去重；离线/仅历史显示未知",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F02",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F03",
+      "name": "Codex连接编辑",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "Codex专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "新增/改名/编辑/取消/删除；失败保留旧配置；旧查询返回不覆盖新表单",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F03",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F04",
+      "name": "凭据与完整目标",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "各 Provider 完整目标和凭据；EasyWork 含 account",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "各 Provider 完整目标和凭据；EasyWork 含 account",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "各 Provider 完整目标和凭据；EasyWork 含 account",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "各 Provider 完整目标和凭据；EasyWork 含 account",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "安全存储、设备凭据、旧账号键迁移冲突选择；路线切换保持原意图",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F04",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F05",
+      "name": "真实能力分层",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "实际 health/history/runtime/control 与能力声明",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "实际 health/history/runtime/control 与能力声明",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "实际 health/history/runtime/control 与能力声明",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "实际 health/history/runtime/control 与能力声明",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "仅历史/托管/共享/原桌面；不把历史可读当成可执行",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F05",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F06",
+      "name": "EasyWork配对发现",
+      "workPackage": "N5",
+      "classification": "能力门槛",
+      "providerApplicability": "EasyWork专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "扫码/连接码、桌面核验及旧码",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F06",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F07",
+      "name": "EasyWork设备授权",
+      "workPackage": "N5",
+      "classification": "能力门槛",
+      "providerApplicability": "EasyWork专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "密钥、绑定、授权刷新撤销与防重放",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F07",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F08",
+      "name": "直连与中继选择",
+      "workPackage": "N5",
+      "classification": "能力门槛",
+      "providerApplicability": "EasyWork专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "切换路径后原目标、操作 ID 与事件位点不变",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F08",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F09",
+      "name": "EasyWork安全会话",
+      "workPackage": "N5",
+      "classification": "能力门槛",
+      "providerApplicability": "EasyWork专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "加密会话、序列/重复/错序、关联请求、断线订阅恢复",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F09",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F10",
+      "name": "Provider扩展边界",
+      "workPackage": "N5",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "按能力开放；未知Provider明确拒绝，无任意shell/IPC",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F10",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F11",
+      "name": "侧栏与手势",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "点击/横滑/遮罩开关，搜索IME、代码横滚/选区与列表竖滚互不抢占",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F11",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F12",
+      "name": "工作区加载",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "project/list 与 thread/list；刷新只读",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "project/list 与 thread/list；刷新只读",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "project/list 与 thread/list；刷新只读",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "project/list 与 thread/list；刷新只读",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "刷新/分页、缓存与可点击位置；不触发桌面导航",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F12",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F13",
+      "name": "查找与定位",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "项目/会话搜索与历史能力；跨分页范围按实际实现",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "项目/会话搜索与历史能力；跨分页范围按实际实现",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "项目/会话搜索与历史能力；跨分页范围按实际实现",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "项目/会话搜索与历史能力；跨分页范围按实际实现",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "跨折叠项目聊天搜索；完整正文/工具/Diff/附件分页检索、片段高亮和返回定位",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F13",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F14",
+      "name": "最近与折叠",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "最近/每项目五条，独立展开收起和项目区折叠，按客户端持久化",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F14",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F15",
+      "name": "项目归属与无项目",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "project/list、thread/list 与原目标归属",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "project/list、thread/list 与原目标归属",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "project/list、thread/list 与原目标归属",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "project/list、thread/list 与原目标归属",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "同名/同目录、多个展示分组、移除目录、projectless保留准确目标",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F15",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F16",
+      "name": "登记已有目录",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "原 Provider 对登记已有目录的明确能力与规则；不等同业务项目 CRUD",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原 Provider 对登记已有目录的明确能力与规则；不等同业务项目 CRUD",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "原 Provider 对登记已有目录的明确能力与规则；不等同业务项目 CRUD",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原 Provider 对登记已有目录的明确能力与规则；不等同业务项目 CRUD",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "允许与拒绝两种模式；目录登记不等于业务项目管理",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F16",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F17",
+      "name": "历史与分页",
+      "workPackage": "N3",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "history/read 与分页",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "history/read 与分页",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "history/read 与分页",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "history/read 与分页",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "跨页顺序/原 ID、重访；不授予执行权限",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F17",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F18",
+      "name": "事件同步",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "events/subscribe、序列与恢复能力",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "events/subscribe、序列与恢复能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "events/subscribe、序列与恢复能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "events/subscribe、序列与恢复能力",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "断线、缺口、重复与目标切换",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F18",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F19",
+      "name": "正文与代码",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "六行气泡展开、Markdown/代码/表格/链接、代码复制和跨行选择",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F19",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F20",
+      "name": "工具与Diff",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "工具/Diff 展开；EasyWork 子代理树及完整内容",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F20",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F21",
+      "name": "计划展示",
+      "workPackage": "N6",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "正文/步骤/待确认独立卡片、ID与版本不混入工具组",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F21",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F22",
+      "name": "上下文压缩",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "开始/完成/失败/中断/失联待同步；不虚构百分比或执行接口",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F22",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F23",
+      "name": "最终答案复制分享",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "每run最终正文一组动作、过程无按钮、复制不混入工具输出",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F23",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F24",
+      "name": "窗口与回最新",
+      "workPackage": "N3",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "首屏20、展开60、边界工具组、触顶阈值与释放、回最新、保留锚点",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F24",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F25",
+      "name": "目标草稿持久化",
+      "workPackage": "N6",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "文本/附件/模式/设置、重启/切换、恢复前不空写、提交后新草稿独立",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F25",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F26",
+      "name": "项目内创建",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:create；项目列表和 projectId",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:create；项目列表和 projectId",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:create；项目列表和 projectId",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:create；项目列表和 projectId",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "已有项目和首聊、最近五项、真实 owner",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F26",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F27",
+      "name": "无项目创建",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:create:projectless",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:create:projectless",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:create:projectless",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:create:projectless",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "projectless 首条及附件；不得继承项目",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F27",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F28",
+      "name": "打开未加载owner",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "原 owner 具名打开/控制能力；Provider 不支持时明确提示",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原 owner 具名打开/控制能力；Provider 不支持时明确提示",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "原 owner 具名打开/控制能力；Provider 不支持时明确提示",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原 owner 具名打开/控制能力；Provider 不支持时明确提示",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "未加载 owner 在提交前确认",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F28",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F29",
+      "name": "混合与仅文件输入",
+      "workPackage": "N2",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "reply/turn:start；混合内容需要 attachments:upload",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "reply/turn:start；混合内容需要 attachments:upload",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "reply/turn:start；混合内容需要 attachments:upload",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "reply/turn:start；混合内容需要 attachments:upload",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "文字/文件组合与首条唯一",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F29",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F30",
+      "name": "系统附件选择",
+      "workPackage": "N2",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "最多五图、文件多选、导入/移除、只读离线准备；旧结果不串草稿",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F30",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F31",
+      "name": "上传与原输入",
+      "workPackage": "N2",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "attachments:upload、目标与回执",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "attachments:upload、目标与回执",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "attachments:upload、目标与回执",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "attachments:upload、目标与回执",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "摘要与全部附件确认、失败保留输入",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F31",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F32",
+      "name": "下载预览与分享",
+      "workPackage": "N2",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "attachments:download、thread-bound 或 message-link 对应能力；本地预览独立",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "attachments:download、thread-bound 或 message-link 对应能力；本地预览独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "attachments:download、thread-bound 或 message-link 对应能力；本地预览独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "attachments:download、thread-bound 或 message-link 对应能力；本地预览独立",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "目标/版本校验与真实下载、预览/分享",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F32",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F33",
+      "name": "设备听写",
+      "workPackage": "N2",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "实际可用本地服务、中英、波形、结束等最终结果、取消恢复正文",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F33",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F34",
+      "name": "模型与强度",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "generation-settings 与模型/强度目录",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "generation-settings 与模型/强度目录",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "generation-settings 与模型/强度目录",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "generation-settings 与模型/强度目录",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "目录/能力、草稿逐字段选择/清除、下一轮即时预览、电脑owner实际值独立",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F34",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F35",
+      "name": "权限与电脑默认",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "权限设置及实际 owner 值；不假设相同权限模型",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "权限设置及实际 owner 值；不假设相同权限模型",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "权限设置及实际 owner 值；不假设相同权限模型",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "权限设置及实际 owner 值；不假设相同权限模型",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "跟随默认、显式选项、高权限说明、固定提交与实际owner生效值",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F35",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F36",
+      "name": "速度目录与即时显示",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "generation-speed 与实际目录；未声明隐藏或不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "generation-speed 与实际目录；未声明隐藏或不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "generation-speed 与实际目录；未声明隐藏或不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "generation-speed 与实际目录；未声明隐藏或不支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "实际目录及下一轮即时预览，无声明不伪造",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F36",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F37",
+      "name": "原客户端队列",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "queue、queue:native；提升需 queue:execute",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "queue、queue:native；提升需 queue:execute",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "queue、queue:native；提升需 queue:execute",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "queue、queue:native；提升需 queue:execute",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "同原客户端队列、取消/提升竞争及原回执",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F37",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F38",
+      "name": "立即追加",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "steer 与当前 run 前置条件",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "steer 与当前 run 前置条件",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "steer 与当前 run 前置条件",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "steer 与当前 run 前置条件",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "过期 run 拒绝，不产生新任务",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F38",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F39",
+      "name": "停止恢复菜单",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "stop；恢复/重跑各按实际声明和语义",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "stop；恢复/重跑各按实际声明和语义",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "stop；恢复/重跑各按实际声明和语义",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "stop；恢复/重跑各按实际声明和语义",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "空/有草稿/运行/失败按钮，原任务菜单停止保留独立新草稿",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F39",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F40",
+      "name": "计划确认控制",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "plan-mode 与确认操作实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "plan-mode 与确认操作实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "plan-mode 与确认操作实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "plan-mode 与确认操作实际支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "计划开关顺序、批准完整计划/调整、ID版本核对、离线禁批",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F40",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F41",
+      "name": "工具审批",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "approvals 和 request/目标/run 身份",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "approvals 和 request/目标/run 身份",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "approvals 和 request/目标/run 身份",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "approvals 和 request/目标/run 身份",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "跨设备审批失效和错目标拒绝",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F41",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F42",
+      "name": "阻塞问题回答",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "serverRequest 问题回答实际支持与授权",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "serverRequest 问题回答实际支持与授权",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "serverRequest 问题回答实际支持与授权",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "serverRequest 问题回答实际支持与授权",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "问题类型、完整答案与过期请求拒绝",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F42",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F43",
+      "name": "稳定操作意图",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "写操作及 operation ID/回执能力",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "写操作及 operation ID/回执能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "写操作及 operation ID/回执能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "写操作及 operation ID/回执能力",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "同 ID 同意图查询；不同意图冲突",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F43",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F44",
+      "name": "未知结果核对",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "原操作状态查询能力；未知不重放",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原操作状态查询能力；未知不重放",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "原操作状态查询能力；未知不重放",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "原操作状态查询能力；未知不重放",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "未知结果只查原回执，不自动重复",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F44",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F45",
+      "name": "创建阶段恢复",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "创建与原操作查询能力；仅结束本地等待",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "创建与原操作查询能力；仅结束本地等待",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "创建与原操作查询能力；仅结束本地等待",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "创建与原操作查询能力；仅结束本地等待",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "原阶段/操作/附件可查，结束等待不取消远端、重启保留原意图",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F45",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F46",
+      "name": "迟到结果隔离",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "任何异步目标/版本隔离；写入另需相应能力",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "任何异步目标/版本隔离；写入另需相应能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "任何异步目标/版本隔离；写入另需相应能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "任何异步目标/版本隔离；写入另需相应能力",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "切换/编辑连接/新请求后旧成功/错误/事件/回执不覆盖新状态",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F46",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F47",
+      "name": "持久化与升级",
+      "workPackage": "N1",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "提交先持久成功，小状态/历史独立合并、后台/重启恢复、保存失败",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F47",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F48",
+      "name": "失败分类与队列同步",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "运行结果与队列同步各自实际回执",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "运行结果与队列同步各自实际回执",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "运行结果与队列同步各自实际回执",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "运行结果与队列同步各自实际回执",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "未提交/执行失败/未知分离、旧提示独立关闭、后续Turn不抹未知",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F48",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F49",
+      "name": "本机已读版本",
+      "workPackage": "N3",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "内容真实可见才确认本机已读",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F49",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/ThreadReading.swift",
+        "AgentHub apps/ios/Sources/MobileUnreadBadge.swift",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F50",
+      "name": "未读汇总和角标",
+      "workPackage": "N3",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "全真实电脑每目标最多一、角标关闭保留账本、迟到推送不复活旧未读",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F50",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/ThreadReading.swift",
+        "AgentHub apps/ios/Sources/MobileUnreadBadge.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F51",
+      "name": "通知偏好",
+      "workPackage": "N4",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "默认关闭、总/分类/电脑、预览/前台横幅/声音/角标、系统设置",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F51",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F52",
+      "name": "加密推送与送达",
+      "workPackage": "N4",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "notifications、设备注册与实际投递链路",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "notifications、设备注册与实际投递链路",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "notifications、设备注册与实际投递链路",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "notifications、设备注册与实际投递链路",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "供应商接受与设备到达分别记录",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F52",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F53",
+      "name": "铃声与渠道",
+      "workPackage": "N4",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "内置/系统/导入、分类覆盖/静音、本地转换/限额/删除回默认",
+      "sources": ["AgentHub docs/plans/android-ios-alignment-20261107/features.json#F53"],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F54",
+      "name": "隐私与冷通知路由",
+      "workPackage": "N4",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "notifications 与安全路由；本地隐私设置独立",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "notifications 与安全路由；本地隐私设置独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "notifications 与安全路由；本地隐私设置独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "notifications 与安全路由；本地隐私设置独立",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "标题摘要/展开内容、原目标刷新后路由、保留草稿，不审批/恢复/发送",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F54",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F55",
+      "name": "完整加密迁移",
+      "workPackage": "N1",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "密码/来源/格式/资料域、预览确认、发布/激活、回滚/冷恢复、原件保存",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F55",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F56",
+      "name": "语言外观和系统生命周期",
+      "workPackage": "N8",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "中英/系统、深浅/系统、隐私支持、旋转/键盘/后台/重启、AX/减少动画",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F56",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F57",
+      "name": "Codex发现与扫码",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "Codex专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "Bonjour/LAN/VPN、同Host去重、描述扫码/粘贴、陌生Host手动授权",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F57",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F58",
+      "name": "非阻塞问题回答",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "非阻塞问题与回答协议实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "非阻塞问题与回答协议实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "非阻塞问题与回答协议实际支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "非阻塞问题与回答协议实际支持",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "待答不暂停运行，草稿和过期状态隔离",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F58",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F59",
+      "name": "独立电脑文件互传",
+      "workPackage": "N2",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "file-transfers 与目标授权、实际限额",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "file-transfers 与目标授权、实际限额",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "file-transfers 与目标授权、实际限额",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "file-transfers 与目标授权、实际限额",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "独立入口、多文件、完整目标/能力/容量、摘要、原回执、复制路径和冷恢复",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F59",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F60",
+      "name": "Codex机器身份迁移",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "Codex专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "按该 Provider 实际声明、目标、原 owner 与对应操作的能力开放；未声明显示不支持",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "不适用",
+          "scope": "Provider 专属连接/身份协议；另一 Provider 按自身规则",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "账号变化不拒绝连接/命令、旧键保留、冲突草稿明确选；其他Provider规则不变",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F60",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F61",
+      "name": "权威投递检查",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "具体写操作的权威投递/状态查询",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "具体写操作的权威投递/状态查询",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "具体写操作的权威投递/状态查询",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "具体写操作的权威投递/状态查询",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "首条/回复未发与未知分离，明确操作继续，强否定证明与原指纹固定",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F61",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W2-controls.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F62",
+      "name": "对话分支",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:fork；同目录/工作树分别声明",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:fork；同目录/工作树分别声明",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:fork；同目录/工作树分别声明",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:fork；同目录/工作树分别声明",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "正确轮次/目标，源码与暂存区不变",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F62",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F63",
+      "name": "VPN与独立凭据",
+      "workPackage": "N6",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "目标认证及相应 VPN/连接能力；独立凭据",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "目标认证及相应 VPN/连接能力；独立凭据",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "目标认证及相应 VPN/连接能力；独立凭据",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "目标认证及相应 VPN/连接能力；独立凭据",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "明确点选、真实证书/完整Host校验、独立设备密钥；发现不自动接入",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F63",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F64",
+      "name": "电脑转写与AI许可",
+      "workPackage": "N2",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "voice-transcription、AI许可与原录音目标",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "voice-transcription、AI许可与原录音目标",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "voice-transcription、AI许可与原录音目标",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "voice-transcription、AI许可与原录音目标",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "明确许可、原录音→所选Host→原草稿；原操作查询、失败重试/本地回退、丢弃墓碑",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F64",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F65",
+      "name": "Task Hub身份与业务",
+      "workPackage": "暂停",
+      "classification": "暂缓",
+      "providerApplicability": "暂停",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "固定服务、人类设备会话、业务草稿/SSE/上传/回执隔离",
+      "sources": ["AgentHub docs/plans/android-ios-alignment-20261107/features.json#F65"],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F66",
+      "name": "任务与业务项目管理",
+      "workPackage": "暂停",
+      "classification": "暂缓",
+      "providerApplicability": "暂停",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "列表/看板/筛选/反馈/候选验收返修/交付和返回草稿",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F66",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F67",
+      "name": "业务通知",
+      "workPackage": "暂停",
+      "classification": "暂缓",
+      "providerApplicability": "暂停",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "独立业务域、权限/撤销/旧轮点击/实际到达",
+      "sources": ["AgentHub docs/plans/android-ios-alignment-20261107/features.json#F67"],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F68",
+      "name": "有界历史同步",
+      "workPackage": "N5",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "history/sync，分别按 Provider 实际增量/压缩协议",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "history/sync，分别按 Provider 实际增量/压缩协议",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "history/sync，分别按 Provider 实际增量/压缩协议",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "history/sync，分别按 Provider 实际增量/压缩协议",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "权威 head、版本与 UTF 长度/摘要；损坏只重读",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F68",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+        "W3-reading.md（源码对照，非运行证明）"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F69",
+      "name": "桌面建议",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "desktop:suggestions:read:v1 及实际来源；Codex 原 owner/Trace 规则独立",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "desktop:suggestions:read:v1 及实际来源；Codex 原 owner/Trace 规则独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "desktop:suggestions:read:v1 及实际来源；Codex 原 owner/Trace 规则独立",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "desktop:suggestions:read:v1 及实际来源；Codex 原 owner/Trace 规则独立",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "准确来源、失效清空、采用不发送",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F69",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F70",
+      "name": "聊天管理",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:manage/rename/archive 等具体操作能力",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:manage/rename/archive 等具体操作能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "threads:manage/rename/archive 等具体操作能力",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "threads:manage/rename/archive 等具体操作能力",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "归档与执行分离，真实拒绝不得报成功",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F70",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F71",
+      "name": "快捷附件与外部收件",
+      "workPackage": "N2",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "相册按需授权/横向多图、相机、显式粘贴、系统分享/打开；准备不上传；捕获原清空意图/文本版本，迟到结果不清新草稿",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F71",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F72",
+      "name": "Markdown原生阅读",
+      "workPackage": "N7",
+      "classification": "本地公共项",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "本地公共项",
+          "scope": "手机本地行为适用；涉及远端数据/资源时仍按对应能力和来源约束",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "标题列表引用代码表格、目录/块搜索、预览源码、原文件分享/版本阅读位置",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F72",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift"
+      ],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F73",
+      "name": "额度与用量",
+      "workPackage": "N7",
+      "classification": "能力门槛",
+      "providerApplicability": "两 Provider：本地共通或各按能力与协议",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "能力门槛",
+          "scope": "usage:read:v1 或相应 Provider 用量能力；原始单位保留",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "usage:read:v1 或相应 Provider 用量能力；原始单位保留",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "能力门槛",
+          "scope": "usage:read:v1 或相应 Provider 用量能力；原始单位保留",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "能力门槛",
+          "scope": "usage:read:v1 或相应 Provider 用量能力；原始单位保留",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "多单位/窗口、缺失与离线；不触发模型",
+      "sources": [
+        "AgentHub docs/plans/android-ios-alignment-20261107/features.json#F73",
+        "AgentHub apps/ios/Sources/RootView.swift",
+        "AgentHub apps/ios/Sources/Sheets.swift",
+        "AgentHub apps/ios/Sources/SessionStore.swift",
+        "AgentHub apps/ios/Sources/Models.swift",
+        "AgentHub apps/ios/Sources/AgentClient.swift",
+        "AgentHub apps/ios/Sources/HostService.swift",
+        "AgentHub apps/ios/Sources/EasyWorkPairing.swift",
+        "AgentHub apps/ios/Sources/EasyWorkDiscovery.swift",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "AgentHub apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "EasyWork@e393fcc packages/agent-protocol/src/v2.ts",
+        "EasyWork@e393fcc apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts"
+      ],
+      "oldN5IsolationRisk": true
+    },
+    {
+      "id": "F74",
+      "name": "Host模型代理依赖",
+      "workPackage": "依赖",
+      "classification": "Host依赖",
+      "providerApplicability": "Host专属",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "Host依赖",
+          "scope": "仅 Host 代理配置与上游；移动端不新增入口",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "Host依赖",
+          "scope": "仅 Host 代理配置与上游；移动端不新增入口",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "Host依赖",
+          "scope": "仅 Host 代理配置与上游；移动端不新增入口",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "Host依赖",
+          "scope": "仅 Host 代理配置与上游；移动端不新增入口",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "默认关闭、独立允许清单/Key/TLS/预算、固定上游、原字节/显式转换/Images约束",
+      "sources": ["AgentHub docs/plans/android-ios-alignment-20261107/features.json#F74"],
+      "oldN5IsolationRisk": false
+    },
+    {
+      "id": "F75",
+      "name": "项目Git状态",
+      "workPackage": "暂停",
+      "classification": "暂缓",
+      "providerApplicability": "暂停",
+      "cells": {
+        "iOS×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "iOS×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×Codex": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        },
+        "Android×EasyWork": {
+          "classification": "暂缓",
+          "scope": "业务范围暂停；不扩展至目录、普通聊天或已有项目选择",
+          "verification": "未执行；不代表通过"
+        }
+      },
+      "acceptanceFocus": "项目行两行摘要/轮播、当前对话更多菜单详情、单/多仓库/缓存隔离",
+      "sources": ["AgentHub docs/plans/android-ios-alignment-20261107/features.json#F75"],
+      "oldN5IsolationRisk": false
+    }
+  ],
+  "statusMeaning": "范围与能力分类，不是运行通过；验收结果在progress逐子场景登记。普通本地行为可按准确OS/输入指纹复用，不重复虚计四次实际测试。"
+}

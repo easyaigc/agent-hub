@@ -1,0 +1,94 @@
+{
+  "scope": {
+    "agentHub": "7f67c371bb4378a1d4f07ddc25b96b3d229eda71",
+    "easywork": "e393fcc72015dd613ca41d93469c6c3a8c64054a",
+    "source": "git show 指定提交；未切换工作树",
+    "history": "first-parent 2026-10-31至目标，限定 remote-access、agent-protocol、remote-access packages；列直接相关提交，非全仓审计。AgentHub 2026-11-04记录明确EasyWork生产端当时待master对账，未找到可验证的单一来源pin；不得将此日期视作精确pin。",
+    "validation": "只读源码；未测试、无部署或运行通过证明"
+  },
+  "capabilities": [
+    {
+      "feature": "连接与授权",
+      "easywork_paths": "packages/remote-access/src/device-authorization-contracts.ts; apps/desktop/src/main/remote-access/desktop-device-authorization.ts",
+      "contract": "EWDAP/1 /v2/remote-access；offer/claim/decision各UUID；完整target、P-256认证公钥、授权范围、有效期及撤销；旧局域网/host v1与配对仍保留",
+      "ios": "EasyWorkPairing.swift; EasyWorkDeviceAuthorization.swift",
+      "android": "EasyWorkPairing.kt; EasyWorkDeviceAuthorization.kt",
+      "priority": "P0：先核对目标、公钥、TLS pin和授权；连接恢复不等于授权有效"
+    },
+    {
+      "feature": "目标/能力",
+      "easywork_paths": "packages/agent-protocol/src/v2.ts; apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts; remote-runtime-bridge.ts",
+      "contract": "protocolVersion=2；target含account.authority/subject、desktopDeviceId、workspaceId、runtimeId；runtime/context报告state和按实际装配的capabilities；historyReadable与runtimeConnected独立",
+      "ios": "EasyWorkSession.swift; EasyWorkAgentClient.swift",
+      "android": "EasyWorkSession.kt; EasyWorkAgentClient.kt",
+      "priority": "P0：不据历史可读推断runtime在线；不硬编码能力"
+    },
+    {
+      "feature": "项目/历史/事件",
+      "easywork_paths": "remote-runtime-bridge.ts; remote-thread-reader.ts; desktop-remote-event-delivery.ts",
+      "contract": "project/list、thread/list(cursor,limit,status)、history(before,limit)、sync(known hash,branchRevision)；subscribe(afterSequence)按binding/thread重放；sync包含实际latestRun、队列回执及reset",
+      "ios": "EasyWorkAgentClient.swift; EasyWorkSession.swift; EasyWorkThreadSync.swift",
+      "android": "EasyWorkAgentClient.kt; EasyWorkSession.kt; EasyWorkThreadSync.kt",
+      "priority": "P0：目标切换、分支reset、分页及断线补齐分别验收"
+    },
+    {
+      "feature": "发送/回执",
+      "easywork_paths": "remote-runtime-bridge.ts; packages/remote-access/src/command-receipts.ts",
+      "contract": "turn/start(threadId,clientRequestId,parts,mode,settings)；账本以device+完整target+operationId键、对target/method/params计算hash；同ID不同输入冲突，未知不重放；command/status由外层服务处理",
+      "ios": "EasyWorkAgentClient.swift:514,746,759; EasyWorkSession.swift:459",
+      "android": "EasyWorkAgentClient.kt:180,199,229; EasyWorkSession.kt:192",
+      "priority": "P0：准确目标+一次输入+同ID状态核对；completed仅命令结果非模型完成"
+    },
+    {
+      "feature": "队列",
+      "easywork_paths": "remote-runtime-bridge.ts; native-prompt-queue.ts; remote-runtime-capabilities.ts",
+      "contract": "turn/start mode=queue；queue/list/status/cancel/execute；execute含messageId及可选expectedRunId；按device/thread核对；ready才声明queue、queue:execute、queue:native",
+      "ios": "EasyWorkAgentClient.swift:367,371",
+      "android": "EasyWorkAgentClient.kt:270,276",
+      "priority": "P1：旧文档未开放execute已过时；需验证桌面同队列、竞争和未知结果"
+    },
+    {
+      "feature": "审批/问题",
+      "easywork_paths": "packages/agent-protocol/src/v2.ts; remote-runtime-bridge.ts",
+      "contract": "approval/respond(threadId,serverRequestId,decision,remember?)；serverRequest/resolve question answer/abandon绑定thread、serverRequest、session、run；答案非空",
+      "ios": "EasyWorkAgentClient.swift:843",
+      "android": "EasyWorkAgentClient.kt:290",
+      "priority": "P1：核对原会话与Run，拒绝过期或跨目标；实际运行需单独证据"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "c7db7e4a088de063999a45c35dc9dae8984b4c45",
+      "date": "2026-11-06",
+      "paths": "remote-thread-reader.ts",
+      "effect": "阅读/固定状态相关reader变化；仅1行变更，具体运行效果待验证"
+    },
+    {
+      "sha": "759652e81c13f6614889fcbcfb66ca8822afee99",
+      "date": "2026-11-06",
+      "paths": "codex-host-task-client.ts; easywork-host-task-client.ts",
+      "effect": "Host主动执行任务默认权限变化；不可据此推断手机turn默认权限"
+    },
+    {
+      "sha": "2603b01c02fda63731063d6d90311881b4a45e72",
+      "date": "2026-11-05",
+      "paths": "packages/agent-protocol/test/protocol.test.ts",
+      "effect": "该限定路径仅测试变更；提交标题涉及更广连接/原输入边界"
+    },
+    {
+      "sha": "d18478c50bf569364dc19dc3c97695162ef18fad",
+      "date": "2026-11-05",
+      "paths": "remote-runtime-bridge.ts; native-prompt-queue.ts; v2.ts; command-receipts.ts; device-authorization-contracts.ts",
+      "effect": "原生队列、设备授权、阅读、管理、回执等整合；逐项以e393源码为准"
+    },
+    {
+      "sha": "fb0d50f4fdaf95628094ea69c5c9c2ad93b12474",
+      "date": "2026-11-04",
+      "paths": "easywork-host-task-client.ts; host-client-adapters.ts; desktop-remote-event-delivery.ts",
+      "effect": "内置连接和持久任务客户端/事件相关"
+    }
+  ],
+  "four_cells": ["iOS×Codex", "Android×Codex", "iOS×EasyWork", "Android×EasyWork"],
+  "first_feature": "已配对目标的项目/会话选择→历史读取→发送一次→同操作ID回执核对，独立验证真实桌面owner与模型；断网未知先查询不重发。",
+  "gaps": "本次未证实安全、重复或错目标漏洞；源码约束不等于排除运行问题。范围内未核实完整事件装配、手机UI和每项能力实际部署版本。"
+}

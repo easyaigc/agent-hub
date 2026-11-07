@@ -3391,6 +3391,7 @@ struct EasyWorkSubagentMessageView: View {
       } else { Text(L10n.tr("等待子 Agent 更新…")).font(.caption).foregroundStyle(.secondary) }
     }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
       .background(Palette.toolDetail, in: RoundedRectangle(cornerRadius: 12))
+      .accessibilityElement(children: .contain)
       .accessibilityIdentifier("subagent-\(message.id)")
   }
 }

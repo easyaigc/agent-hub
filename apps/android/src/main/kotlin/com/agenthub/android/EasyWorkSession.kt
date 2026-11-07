@@ -34,12 +34,14 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     private val subscribedThreads=ConcurrentHashMap.newKeySet<String>()
     private val syncReads=Mutex()
     private val threadSyncs=linkedMapOf<String,EasyWorkThreadSync>()
+    private val subagents=com.agenthub.core.SubagentProjection()
     private val received=mutableMapOf<String,Pair<Long,MutableSet<Long>>>()
     private var pump: Job?=null
     init { require(sameScope(target.scope(),connection.target)) { "连接运行时身份不匹配" };require(credential.grantRef==null||authorize!=null) { "设备授权不可降级为旧登录凭据" };require(credential.binding.json.optJSONObject("deviceAuthorization")==null||credential.grantRef!=null) { "设备授权凭据缺失，请重新配对" } }
     private fun disconnect() = synchronized(routeLock) {
         val previous=route;route=null;crypto=null;confirmed=false;pump?.cancel();pump=null;previous?.close()
         synchronized(threadSyncs) { threadSyncs.clear() }
+        synchronized(subagents) { subagents.clear() }
         eventChanges.signal()
     }
     private val retirement=ownerContext[NativeEasyWorkMigrationOwners]?.register({stop()},{tasks.coroutineContext[Job]!!.join()})
@@ -107,8 +109,13 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                             "response" -> pending[message.getString("requestId")]?.complete(message)
                             "event" -> {
                                 require(EasyWorkTarget.decode(message.getJSONObject("target"))==target)
-                                val thread=message.getJSONObject("payload").getString("threadId");val cursor=message.getLong("sequence")
+                                val payload=message.getJSONObject("payload")
+                                val thread=payload.getString("threadId");val cursor=message.getLong("sequence")
                                 require(cursor in 0..9007199254740991L);threadSequences.merge(thread,cursor,::maxOf)
+                                synchronized(routeLock) {
+                                    if(!closed&&epoch==pumpEpoch&&route===transport)
+                                        synchronized(subagents) { subagents.accept(payload.toString()) }
+                                }
                                 eventChanges.signal()
                             }
                             else -> error("电脑返回消息类型无效")
@@ -125,6 +132,8 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
             }
         }
     }
+    internal fun subagentActivities(snapshot: JSONObject,threadId: String): List<com.agenthub.core.SubagentActivity> =
+        synchronized(subagents) { subagents.project(snapshot.toString(),threadId) }
     suspend fun synchronizedThread(threadId: String): JSONObject = syncReads.withLock {
         currentCoroutineContext().ensureActive();check(!closed)
         connect()

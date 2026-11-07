@@ -662,6 +662,7 @@ import com.agenthub.core.*
             Text(productText("任务失败记录"),fontSize=12.sp,color=colors.onSurfaceVariant)
             SelectionContainer { Text(message.text,fontSize=12.sp,color=colors.onSurfaceVariant) }
         }
+        else if(message.kind=="subAgent") EasyWorkSubagentContent(message,targetKey,dark)
         else if(message.kind=="plan") ProposedPlanMessage(message,targetKey,session.panelNoticeBinding,session.runtime?.proposedPlan)
         else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(productText(if(message.kind=="plan") "执行计划" else "正在执行计划"),fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")

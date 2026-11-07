@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-07 C2-SUB：EasyWork iOS/Android 在同一认证会话消费子代理事件与权威快照，由共享规则核对原 thread、branch、root/child 并投影完整详情。事件只唤醒读取；不拼接重发片段、不新增运行或命令。共同时间线保留原角色和独立子行，原生折叠预览不改数据，既有传输安全上限保留。Codex 适配器有独立数据来源与详情上限。源码、组件、真实设备/桌面及待验边界见[阶段120](plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
+
 2026-11-04 F69 Windows Responses 通道：Windows Host 显式选择独立的回环转发采集，从原桌面预测请求绑定来源聊天／完成轮及 response ID，不依赖前台 UI、OCR 或额外生成。原 CLI TCP peer、IPC owner、读取前中后来源及当前结果版本分别核验；每聊天只保存最新状态，失败／取消／空值／新请求不回退旧正文。兼容领域接口增加 `responses-forwarder` 来源说明，不声称 renderer 可见或安全后确认。macOS 原 Trace／native-sample 安全判定及启动路径保持，详见[实现与验收边界](acceptance/windows-response-suggestions-20261104.md)。
 
 2026-11-05 Android F61：旧not-written不再单独授予原ID重试/恢复原文；Android依现有完整目标/信任/指纹及有效强未接受证明保守准入，未确认的failed回复须核对或显式结束等待。首次提交与KMP/iOS不改，普通journal持久消费、source/outbox与strict lineage仍待补强，不通过重写旧READY建立历史证明。功能/交互与真实验收分列于[阶段95](plans/android-alignment-20261022/records/stage95-legacy-reply-safety.md)。

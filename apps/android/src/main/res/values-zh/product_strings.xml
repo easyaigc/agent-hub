@@ -1677,6 +1677,8 @@
     <string name="product_363bc289d10f295d13947082" formatted="false">"未查到原批量归档记录，结果仍未确认；不会重新提交。"</string>
     <string name="product_0d0cbac2eee541136ec2dbba" formatted="false">"重命名"</string>
     <string name="product_e4f5d88c78b2ec57439559fd" formatted="false">"原任务已变化或结束，追加未提交。"</string>
+    <string name="product_70da69db33a7a7facf0266b9" formatted="false">"子 Agent"</string>
+    <string name="product_452229ce30ad1157b27ee766" formatted="false">"等待子 Agent 更新…"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

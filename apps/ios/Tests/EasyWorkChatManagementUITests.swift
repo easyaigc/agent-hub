@@ -3,6 +3,46 @@ import CryptoKit
 import UIKit
 import Vision
 
+#if targetEnvironment(simulator)
+/// Drives the actual history card in a fresh owned simulator. The app's DEBUG
+/// demo fixture supplies the long text; no device credentials or desktop writes.
+final class EasyWorkSubagentReadingUITests: XCTestCase {
+  @MainActor func testLongChildDetailExpandsAndCollapsesWithoutLosingContent() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-ui-testing", "-subagent-reading-fixture"]
+    app.launch()
+    defer { app.terminate() }
+    let history = app.scrollViews["message-list"]
+    let disclosure = app.buttons["subagent-expand-c2-fixture-child"]
+    XCTAssertTrue(history.waitForExistence(timeout: 30))
+    XCTAssertTrue(disclosure.waitForExistence(timeout: 20))
+    let full = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "C2_DETAIL_HEAD")).firstMatch
+    XCTAssertFalse(full.exists)
+    XCTAssertTrue(["展开", "Expand"].contains(disclosure.label))
+    func evidence(_ name: String) {
+      let image = XCTAttachment(screenshot: app.screenshot())
+      image.name = name; image.lifetime = .keepAlways; add(image)
+    }
+    evidence("subagent-collapsed")
+    disclosure.tap()
+    XCTAssertTrue(full.waitForExistence(timeout: 15))
+    let original = full.label
+    XCTAssertTrue(original.utf8.count > 65_536)
+    XCTAssertTrue(original.contains("C2_DETAIL_MIDDLE"))
+    XCTAssertTrue(original.hasSuffix("C2_DETAIL_TAIL"))
+    XCTAssertTrue(["收起", "Collapse"].contains(disclosure.label))
+    evidence("subagent-expanded")
+    for _ in 0..<80 where !disclosure.isHittable { history.swipeUp(velocity: .fast) }
+    XCTAssertTrue(disclosure.isHittable, "The original detail remains scrollable to the disclosure at its end")
+    evidence("subagent-detail-end")
+    disclosure.tap()
+    XCTAssertFalse(full.exists)
+    XCTAssertTrue(["展开", "Expand"].contains(disclosure.label))
+  }
+}
+#endif
+
 /// Minimal real UIAutomation bootstrap. Does not launch, tap or mutate the App.
 final class EasyWorkIndependentRunnerBootstrapUITests: XCTestCase {
   @MainActor func testReadOnlyExactAcceptanceAppState() throws {

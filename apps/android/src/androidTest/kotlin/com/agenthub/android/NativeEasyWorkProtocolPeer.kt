@@ -64,5 +64,11 @@ internal class NativeEasyWorkProtocolPeer(private val credential: EasyWorkCreden
         }
     }
     override suspend fun receive()=incoming.receive()
+    internal suspend fun emitThreadEvent(payload: JSONObject) {
+        check(started)
+        val event=JSONObject().put("protocolVersion",2).put("kind","event").put("target",credential.binding.target.json())
+            .put("sequence",payload.getLong("threadSeq")).put("payload",payload)
+        incoming.send(encrypt(JSONObject().put("kind","protocol").put("envelope",event)))
+    }
     override fun close() { incoming.close() }
 }

@@ -36,9 +36,8 @@ class SubagentProjection {
             "failed" -> live.status="failed"
             "cancelled" -> live.status="interrupted"
         }
-        // Host delivery coalesces item/delta frames. A received text_delta is
-        // therefore not a contiguous text stream. Events wake the normal history
-        // read; only the authenticated checkpoint/result supplies output bytes.
+        // Events wake the normal history read. Checkpoints/results own the text:
+        // appending a replayed delta here would duplicate that same output.
         while(runs.size>64)runs.remove(runs.keys.first())
     }
     private fun status(value: String): String = when(value) {
@@ -52,11 +51,20 @@ class SubagentProjection {
     private fun content(parts: JsonArray): String = parts.mapNotNull { raw ->
         val p=raw as? JsonObject ?: return@mapNotNull null
         when(p.text("type")) {
-            "text" -> p.text("text")
-            "tool-call" -> listOf(p.text("toolName"),p.obj("result").text("text")).filter { it.isNotEmpty() }.joinToString("\n")
-            else -> null
+            "text", "reasoning" -> p.text("text")
+            "tool-call" -> listOf(p.text("toolName"),p["args"]?.toString().orEmpty(),render(p["result"])).filter { it.isNotEmpty() }.joinToString("\n")
+            else -> p.toString()
         }
-    }.filter { it.isNotEmpty() }.joinToString("\n\n").takeLast(65536)
+    }.filter { it.isNotEmpty() }.joinToString("\n\n")
+    private fun render(value: JsonElement?): String = when(value) {
+        null, JsonNull -> ""
+        is JsonPrimitive -> value.content
+        is JsonObject -> {
+            val rest=value-"text"
+            listOf(value.text("text"),if(rest.isEmpty()) "" else JsonObject(rest).toString()).filter { it.isNotEmpty() }.joinToString("\n")
+        }
+        else -> value.toString()
+    }
     fun project(snapshotJson: String, threadId: String): List<SubagentActivity> {
         val snapshot=runCatching { Json.parseToJsonElement(snapshotJson).jsonObject }.getOrNull() ?: return emptyList()
         val thread=snapshot.obj("thread"); if(thread.text("id")!=threadId)return emptyList()
@@ -76,7 +84,7 @@ class SubagentProjection {
                 val parts=(result["content"] as? JsonArray) ?: run.obj("checkpoint").obj("subagentTranscript").array("content")
                 val body=content(parts); val error=run.obj("error").text("message")
                 val title=input.text("title").ifEmpty { run.text("subAgentId") }.ifEmpty { id }
-                activities[id]=SubagentActivity("subagent:$id",title,status(run.text("status")),listOf(input.text("task"),body,error).filter { it.isNotEmpty() }.joinToString("\n\n").takeLast(65536),rootId)
+                activities[id]=SubagentActivity("subagent:$id",title,status(run.text("status")),listOf(input.text("task"),body,error).filter { it.isNotEmpty() }.joinToString("\n\n"),rootId)
             }
         }
         for((id,live) in threads[threadId].orEmpty()) {

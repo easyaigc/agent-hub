@@ -1860,3 +1860,7 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 每项同时核对iOS/Android和Codex/EasyWork，四格适用范围与新优先级见[三方规则](../plans/android-ios-alignment-20261107/three-way.md)。C1-RID原回执身份守卫：52项当前Swift辅助及真机目标签名构建通过，首轮类型编译失败及R2修复保留于[阶段117](../plans/android-alignment-20261022/records/stage117-three-way-core.md)。随后Android当前源码经官方构建/runner通过18项组件测试；物理iPhone实际执行1项只读测试，因原保存Host拒绝连接而失败，未取得原回执。完整功能、在线/UI与真实DEV仍待验，0完整四格新通过，不重放操作；新结果、依赖指纹限制和收尾见[阶段118](../plans/android-alignment-20261022/records/stage118-three-way-native.md)。
 
 恢复原身份DEV后，物理iPhone通过官方XCTest完成原回执只读场景（1通过、0失败）：原回执的submitted状态及thread、turn、原操作ID匹配，缺失ID被拒；无新增模型输入、业务命令或重放，桌面三表前后相同。此结果限定于iOS原回执wire身份守卫；readiness不证明原owner控制，完整C1、其他场景及75F四格仍开放。此前失败保持不变，详见[阶段119](../plans/android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
+
+2026-11-07 C2-SUB / F18/F19/F20：Android 新官方包原生 adapter 4、Compose 7；iOS 真实原 child 只读 1、模拟器长正文实际 XCUI 1。JVM 125、iOS Native 9 属共享规则。原失败、候选指纹、源与 UI 差异、Android 真实 DEV/系统选择复制/Codex 上游长详情未验均见[阶段120](../plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)；未关闭整项四格。
+
+2026-11-07 C2-SUB / F18/F19/F20 / UI05。Android 实体机生产客户端同目标原子代理与父正文通过，原 grant 的一次刷新由签发端独立对账。iPhone 原 child 及双端原生展开交互分列。Android 实体系统复制与 Codex 实际移动显示待验。见[阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)。

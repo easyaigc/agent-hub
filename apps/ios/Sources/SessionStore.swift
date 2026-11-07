@@ -478,6 +478,14 @@ private var userRequestedWorkspaceGeneration: UUID?
       CodexHostRoutes.shared.register(saved.clients[index])
     }
     if let hostId = saved.selectedClientId { restoreSelection(hostId) }
+    #if DEBUG && targetEnvironment(simulator)
+    if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing")
+      && ProcessInfo.processInfo.arguments.contains("-subagent-reading-fixture"), client?.isDemo == true {
+      let section = String(repeating: "Original C2 text 100% %@ 🧭 stays intact.\n", count: 1000)
+      saved.history[targetKey] = [ChatMessage(id: "c2-fixture-child", role: "tool", text: "C2 original child",
+        kind: "subAgent", status: "completed", detail: "C2_DETAIL_HEAD\n" + section + "C2_DETAIL_MIDDLE\n" + section + "C2_DETAIL_TAIL")]
+    }
+    #endif
     #if DEBUG
     if testMode && ProcessInfo.processInfo.arguments.contains("-history-short-paging-fixture") {
       saved.history[targetKey] = (0..<72).map { index in

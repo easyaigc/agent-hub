@@ -142,6 +142,9 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
             approvals.put(JSONObject().put("id","question."+easyBase64(easyCanonical(question).toByteArray())).put("threadId",threadId).put("turnId",question.getString("runId")).put("kind","question").put("title","需要你的回答").put("detail","").put("questions",JSONArray(items)).put("decisions",JSONArray(listOf("answer","deny"))))
         }
         var messages=value.getJSONArray("messages").objects().flatMap { messageParts(client,threadId,it) }
+        if(cursor==null)messages=messages+c.subagentActivities(snapshot,threadId).map {
+            MobileMessage(it.id,"tool",it.title,it.status,"subAgent",it.detail,runId=it.rootRunId)
+        }
         if(cursor==null&&active==null)messages=messages.map { m->
             if(m.role!="assistant")m else {
                 val files=Regex("\\]\\(([^\\s\\)]+)\\)").findAll(m.text).mapNotNull { match->

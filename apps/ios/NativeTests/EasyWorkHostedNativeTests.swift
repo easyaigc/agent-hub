@@ -13175,12 +13175,20 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     let fingerprints = store.saved.replyRecovery?.mapValues(\.fingerprint)
     let provider = try AgentClients.resolve(client)
     var epoch = "", cursor = 0, batches = 0
+    let channel = try await EasyWorkSessions.shared.session(client)
+    let channelTarget = await channel.target
+    guard channelTarget.account == target.account, channelTarget.desktopDeviceId == target.hostId,
+      channelTarget.workspaceId == target.workspaceId, channelTarget.runtimeId == target.runtimeId else {
+      throw HostServiceError.wrongHost
+    }
     let deadline = Date().addingTimeInterval(55)
     repeat {
       let batch = try await provider.events(client, epoch: epoch, after: cursor, threadId: thread)
-      guard batch.hostId == client.id, batch.epoch == target.runtimeId,
+      let expectedEpoch = target.runtimeId + ":" + (await channel.epoch)
+      guard batch.hostId == client.id, batch.epoch == expectedEpoch, batch.reset == (epoch != expectedEpoch),
         batch.events.allSatisfy({ $0.threadId == thread }) else { throw HostServiceError.wrongHost }
-      epoch = batch.epoch; cursor = max(cursor, batch.cursor); batches += 1
+      cursor = epoch == batch.epoch ? max(cursor, batch.cursor) : batch.cursor
+      epoch = batch.epoch; batches += 1
       if cursor >= expectedCursor { break }
     } while Date() < deadline
     XCTAssertGreaterThanOrEqual(cursor, expectedCursor)

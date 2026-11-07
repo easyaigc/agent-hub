@@ -3,7 +3,7 @@ package com.agenthub.core
 class TimelineMessage(val id: String, val role: String, val text: String, val kind: String?,
     val status: String?, val runId: String?, val replyPhase: String?, val replyMessageId: String?) {
     internal val groupedTool: Boolean get() = role == "tool" &&
-        kind !in listOf("contextCompaction", "plan", "planImplementation", "error", "turnFailure")
+        kind !in listOf("contextCompaction", "plan", "planImplementation", "error", "turnFailure", "subAgent")
 }
 class TimelineRow(val kind: String, val id: String, val indices: List<Int>, val text: String?, val runId: String? = null)
 class TimelineProjection(val rows: List<TimelineRow>, val hasEarlierMessages: Boolean)

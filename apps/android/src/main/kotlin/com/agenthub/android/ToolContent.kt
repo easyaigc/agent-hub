@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agenthub.core.*
 
+// Match iOS grouping without changing the persisted/provider role.
 internal fun MobileMessage.timelineMessage() = TimelineMessage(id,role,text,kind,status,runId,replyPhase,replyMessageId)
 
 @Composable private fun currentToolText(): ToolPresentationText {

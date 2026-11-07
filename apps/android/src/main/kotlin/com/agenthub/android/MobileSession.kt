@@ -53,7 +53,7 @@ internal class NativeTimelineCache {
     fun project(target: String, messages: List<MobileMessage>, limit: Int, run: String?, running: Boolean, focus: String?): TimelineProjection {
         val next=Input(target,messages,limit,run,running,focus)
         if(input==next) value?.let { return it }
-        val values=messages.map { TimelineMessage(it.id,it.role,it.text,it.kind,it.status,it.runId,it.replyPhase,it.replyMessageId) }
+        val values=messages.map { it.timelineMessage() }
         val result=MessageProjection.focus(MessageProjection.project(values,limit,run,running),values,focus)
         input=next.copy(messages=messages.toList());value=result
         return result

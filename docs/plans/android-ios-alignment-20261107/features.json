@@ -8352,13 +8352,11 @@
     }
   ],
   "currentDelta": {
-    "id": "C1-RID",
-    "features": ["F43", "F44", "F46", "F61"],
-    "status": "implemented; physical iPhone original receipt read-only passed after original-identity DEV restoration; whole C1 and four-cell acceptance open",
-    "implementationCommit": "867b0f2ba82c356aee1c264c88db8d378b1fe457",
-    "readOnlyAcceptance": "passed: original submitted receipt matched thread/turn/operation ID; missing ID rejected; no replay",
+    "id": "C2-SUB",
+    "features": ["F18", "F19", "F20"],
+    "status": "implemented on scoped branch; Android 4 adapter + 7 Compose, iOS physical original child read and simulator long disclosure passed; actual Android DEV, system selection/copy and Codex upstream detail pending",
+    "implementationCommit": "7477350d6ad6f5f2cbcd7c817de9e51a58cafc2a",
     "wholeFeature": "open",
-    "draftPr": 163,
     "mergedToMain": false
   }
 }

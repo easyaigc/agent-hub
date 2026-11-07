@@ -118,10 +118,7 @@ enum SharedMobileRules {
     }
   }
   static func timelineMessage(_ message: ChatMessage) -> TimelineMessage {
-    // Preserve the stored/wire role. The existing shared timeline lacks the
-    // standalone child row marker; adapt grouping only for the iOS consumer.
-    // This avoids changing the Android timeline in its separate development line.
-    TimelineMessage(id: message.id, role: message.kind == "subAgent" ? "system" : message.role, text: message.text, kind: message.kind, status: message.status,
+    TimelineMessage(id: message.id, role: message.role, text: message.text, kind: message.kind, status: message.status,
       runId: message.runId, replyPhase: message.replyPhase, replyMessageId: message.replyMessageId)
   }
   static func toolSummary(_ messages: [ChatMessage], native: ToolPresentationText) -> String { ToolPresentation.shared.localizedSummary(messages: messages.map(timelineMessage), native: native) }

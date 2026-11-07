@@ -13,6 +13,6 @@
 
 机器可读索引：[features.json](features.json)、[commits.json](commits.json)。过程继续归入[阶段档案](../android-alignment-20261022/records/README.md)。旧10月计划及原验收结果保留为历史，不再作为当前唯一功能清单或调度入口。
 
-新顺序：核心连接/聊天/原回执 → 流式完整展示与控制/审批 → 附件/互传/语音 → 未读/生命周期/通知 → 完整迁移 → 剩余增强 → 冻结交付。每项都核对iOS/Android和Codex/EasyWork，见[三方规则](three-way.md)、[75项四格矩阵](provider-matrix.md)及[五条工作线](workstreams.md)。当前首项为iOS EasyWork原回执校验，未验收部分不关闭。
+新顺序：核心连接/聊天/原回执 → 流式完整展示与控制/审批 → 附件/互传/语音 → 未读/生命周期/通知 → 完整迁移 → 剩余增强 → 冻结交付。每项都核对iOS/Android和Codex/EasyWork，见[三方规则](three-way.md)、[75项四格矩阵](provider-matrix.md)及[五条工作线](workstreams.md)。当前按 C2-SUB 的子代理与长详情推进，未验收部分保留。
 
-三方规则、范围与优先级文档独立交付；C1-RID源代码仍在[草稿PR #163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163)，未合主线，未完成在线验收。本目录的实现进度指明草稿来源，不能据此断言主线已有该代码。
+C1-RID 已按原回执只读限定范围通过 [PR #163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163) 合入主线。当前 C2-SUB 子代理与长详情已实现、部分验收，代码保持独立分支；最新结果以[进度](progress.md)和[阶段120](../android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)为准。

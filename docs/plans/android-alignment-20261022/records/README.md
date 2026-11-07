@@ -1,5 +1,11 @@
 # Android 分阶段过程档案
 
+- [阶段122 EasyWork 同目标授权恢复与原生读取](stage122-c2-easywork-real-dev.md)记录签发隔离、原授权单次刷新及双端原生范围。
+
+- [阶段120 子代理展示与完整详情](stage120-c2-subagent-native-reading.md)：双端原生组件、iPhone 原 child 只读及 iOS 实际长详情展开/滚动/收起；Android 真实 DEV、系统选择/复制和 Codex 上游长详情单列，未合代码。
+
+- [阶段119 原回执限定验收及 DEV 恢复](stage119-c1-original-receipt-restored.md)：物理原只读 1/1；PR163 已合 main 21a302c2，合并分支已清理，完整 C1 开放。
+
 - [阶段118 三方原生回归与实际只读失败](stage118-three-way-native.md)：Android当前源码官方构建/runner 18项组件通过，iPhone实际只读1项原Host连接失败；计划PR164已合并/清理，代码PR163仍草稿，0完整四格新通过。
 
 - [阶段117 三方核心优先与原回执](stage117-three-way-core.md)：EasyWork准确master、75项四格/五条工作线、iOS原回执身份修复；R2辅助及签名构建通过，原DEV离线，手机在线未执行，当前功能保持待验。

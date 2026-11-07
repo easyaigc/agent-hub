@@ -8354,8 +8354,10 @@
   "currentDelta": {
     "id": "C1-RID",
     "features": ["F43", "F44", "F46", "F61"],
-    "status": "implemented-on-draft-pr163; not merged; build/auxiliary checked; live original-owner native/DEV pending",
+    "status": "implemented; physical iPhone original receipt read-only passed after original-identity DEV restoration; whole C1 and four-cell acceptance open",
     "implementationCommit": "867b0f2ba82c356aee1c264c88db8d378b1fe457",
+    "readOnlyAcceptance": "passed: original submitted receipt matched thread/turn/operation ID; missing ID rejected; no replay",
+    "wholeFeature": "open",
     "draftPr": 163,
     "mergedToMain": false
   }

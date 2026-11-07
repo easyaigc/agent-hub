@@ -1794,3 +1794,7 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 2026-11-06 Android P7/F56/F59：冻结锁原关闭异常保持原 owner 与同一失败，重复关闭不再制造成功，新 writer/freeze 保持阻挡。受控关闭结果不确定、实际锁/并发与真实原生按[阶段114](../plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)记录。UI12迁移密码/忙碌/取消/原结果核对继续逐项验；iOS新增原录音只读保存及安装授权字段列为 Android 后续差异。
 
 2026-11-06 Android P7/F30/F56/F59/F64：本机 worker 完成与原句柄释放分别核对，最后 writer 关闭失败保留准确 owner、token 和原异常，阻止新 writer/freeze。非最后 writer 与原成功迟到 token 分别隔离。十项原生与真实系统、完整UI的边界见[阶段115](../plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。iOS迁移和Android录音/附件的原生命周期继续逐项验。
+
+## C1-RID：原回执身份与恢复提示（2026-11-07）
+
+iOS EasyWork与Android既有规则对齐：原回执在归一化前核对可选传输target/account/desktop/workspace/runtime及wire host，wire host对应desktopDeviceId而非本机客户端列表key。矛盾或非法类型显示原身份错误，保留对应原操作/草稿/未知结果，不因失败发送或替换新等待；旧Host缺省/null字段按原兼容路径处理。UI10使用既有错误/等待界面，无新增入口；功能/交互/界面和双Provider的当前运行结果见[阶段117](../plans/android-alignment-20261022/records/stage117-three-way-core.md)，不以辅助检查或签名编译声明手机通过。

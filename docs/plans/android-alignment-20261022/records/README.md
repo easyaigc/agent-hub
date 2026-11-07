@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段118 三方原生回归与实际只读失败](stage118-three-way-native.md)：Android当前源码官方构建/runner 18项组件通过，iPhone实际只读1项原Host连接失败；计划PR164已合并/清理，代码PR163仍草稿，0完整四格新通过。
+
 - [阶段117 三方核心优先与原回执](stage117-three-way-core.md)：EasyWork准确master、75项四格/五条工作线、iOS原回执身份修复；R2辅助及签名构建通过，原DEV离线，手机在线未执行，当前功能保持待验。
 
 - [阶段116 最新计划重建](stage116-plan-refresh.md)：350个iOS历史节点与114个额外共享边界、75F及验收/优先级分档；仅文档，不新增产品运行通过。当前状态统一见[新进度总表](../../android-ios-alignment-20261107/progress.md)。
@@ -354,3 +356,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [阶段111 F59 代际清单新包准入](stage111-f59-typed-sdk-profile.md)：独立 949 输入与 24 项 Native 资格，实际签名包和运行结果另记。
 
 - [阶段112 F59 代际清单实际原生](stage112-f59-typed-native24.md)：949 新包、独立 API33 24 项及同原件真实部分退役；完整产品与设备验收另列。
+
+- [阶段119 C1原回执恢复只读验收](stage119-c1-original-receipt-restored.md)：恢复原身份DEV后物理iPhone原回执只读通过；完整C1及原owner控制仍待验。

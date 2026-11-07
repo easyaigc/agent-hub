@@ -1854,3 +1854,9 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 2026-11-06 Android P7/F56/F59：冻结锁原关闭异常保持原 owner 与同一失败，重复关闭不再制造成功，新 writer/freeze 保持阻挡。受控关闭结果不确定、实际锁/并发与真实原生按[阶段114](../plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)记录。UI12迁移密码/忙碌/取消/原结果核对继续逐项验；iOS新增原录音只读保存及安装授权字段列为 Android 后续差异。
 
 2026-11-06 Android P7/F30/F56/F59/F64：本机 worker 完成与原句柄释放分别核对，最后 writer 关闭失败保留准确 owner、token 和原异常，阻止新 writer/freeze。非最后 writer 与原成功迟到 token 分别隔离。十项原生与真实系统、完整UI的边界见[阶段115](../plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。iOS迁移和Android录音/附件的原生命周期继续逐项验。
+
+## 三方核心对齐与C1-RID（2026-11-07）
+
+每项同时核对iOS/Android和Codex/EasyWork，四格适用范围与新优先级见[三方规则](../plans/android-ios-alignment-20261107/three-way.md)。C1-RID原回执身份守卫：52项当前Swift辅助及真机目标签名构建通过，首轮类型编译失败及R2修复保留于[阶段117](../plans/android-alignment-20261022/records/stage117-three-way-core.md)。随后Android当前源码经官方构建/runner通过18项组件测试；物理iPhone实际执行1项只读测试，因原保存Host拒绝连接而失败，未取得原回执。完整功能、在线/UI与真实DEV仍待验，0完整四格新通过，不重放操作；新结果、依赖指纹限制和收尾见[阶段118](../plans/android-alignment-20261022/records/stage118-three-way-native.md)。
+
+恢复原身份DEV后，物理iPhone通过官方XCTest完成原回执只读场景（1通过、0失败）：原回执的submitted状态及thread、turn、原操作ID匹配，缺失ID被拒；无新增模型输入、业务命令或重放，桌面三表前后相同。此结果限定于iOS原回执wire身份守卫；readiness不证明原owner控制，完整C1、其他场景及75F四格仍开放。此前失败保持不变，详见[阶段119](../plans/android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。

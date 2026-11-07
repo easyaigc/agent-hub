@@ -17,7 +17,7 @@
 
 ## 当前新增待验
 
-ENV-10：C1-RID原回执在线验收当前缺准确运行实例。历史DEV进程已退出，原Embedded Host端口实测拒绝连接；原Relay严格TLS/SNI及health通过，但当前旧Electron/Relay存活不证明同一target/profile/原owner；原回执数据库匹配只作静态证据。当前候选签名构建和52项辅助已过，物理未安装/未执行。取得当前独立DEV参数后先核鉴权/目标/runtime/原回执，再执行零模型/零写入的手机只读核对；不重启身份不明的共享进程，不重放。此项未关闭，不领取该工作线下一核心功能；其他独立工作可继续。
+ENV-10：原身份DEV已安全恢复；物理iPhone经原保存路径的原回执只读核对1项通过，缺失ID被拒，未重放。该限定阻塞已解除；hostname DNS及原owner控制不由readiness证明，仍须各自验收。完整C1和四格保持开放；前轮连接失败及辅助检查保留于[阶段118](../android-alignment-20261022/records/stage118-three-way-native.md)，恢复结果见[阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
 
 ## 暂停项
 

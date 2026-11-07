@@ -2,6 +2,8 @@
 
 日期：2026-11-07。用户要求每个功能同时对齐iOS/Android及EasyWork等桌面来源，核心功能优先；多工作线并行，总控验收、合并和收尾。当前首功能未完成在线验收，保持活动，不宣称整项通过或直接进入下一核心功能。
 
+本档保留签名构建完成时的阶段快照。随后实际执行的iPhone只读失败、当前源码Android 18项组件结果，以及计划PR164主线交付/清理，另存[阶段118](stage118-three-way-native.md)；最新状态见[总表](../../android-ios-alignment-20261107/progress.md)。
+
 ## 实际来源和并行
 
 已只读拉取AgentHub `origin/main 7f67c371bb4378a1d4f07ddc25b96b3d229eda71`和EasyWork `origin/master e393fcc72015dd613ca41d93469c6c3a8c64054a`。EasyWork通过Git对象读取准确提交，未覆盖较旧工作树或另一独立WIP。当前契约和近期限定first-parent提交见[上游来源](../../android-ios-alignment-20261107/easywork-upstream.json)；首次缺少可核验单一旧pin，未宣称EasyWork全仓逐提交已审完。

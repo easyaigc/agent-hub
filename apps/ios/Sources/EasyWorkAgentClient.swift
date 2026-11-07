@@ -756,9 +756,23 @@ struct EasyWorkAgentClient: AgentClient {
   }
   func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
     let channel = try await session(client)
+    let originalTarget = channel.target
+    guard client.agentConnection?.target == readingTarget(originalTarget) else { throw HostServiceError.wrongHost }
+    // Domain hostId below is a local client key. Validate any wire identity
+    // before normalization can replace it with that key, including queue reads.
+    func verifyTarget(_ value: [String: Any]) throws {
+      if let raw = value["target"], !(raw is NSNull) {
+        guard let object = raw as? [String: Any],
+          let observed = try? JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(object)),
+          observed == originalTarget else { throw HostServiceError.wrongHost }
+      }
+      if let raw = value["hostId"], !(raw is NSNull),
+        raw as? String != originalTarget.desktopDeviceId { throw HostServiceError.wrongHost }
+    }
     let bytes = try await channel.request("command/status", ["commandId": id])
     guard !bytes.elementsEqual(Data("null".utf8)) else { throw HostServiceError.message(L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。")) }
     let value = try object(bytes)
+    try verifyTarget(value)
     for key in ["operationId", "clientMessageId"] {
       if let observed = value[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
     }
@@ -767,6 +781,7 @@ struct EasyWorkAgentClient: AgentClient {
     if let raw = response?["result"], !(raw is NSNull), !(raw is [String: Any]) { throw HostServiceError.invalidResponse }
     let result = response?["result"] as? [String: Any]
     if let result {
+      try verifyTarget(result)
       for key in ["operationId", "clientMessageId"] {
         if let observed = result[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
       }
@@ -776,6 +791,7 @@ struct EasyWorkAgentClient: AgentClient {
       let queued = try await channel.request("queue/status", ["threadId": thread, "messageId": id])
       if queued.elementsEqual(Data("null".utf8)) { return nil }
       let value = try object(queued)
+      try verifyTarget(value)
       guard value["clientMessageId"] as? String == id,
         value["threadId"] as? String == thread else { throw HostServiceError.wrongHost }
       return try EasyWorkReceiptNormalization.decode(value, clientMessageId: id,

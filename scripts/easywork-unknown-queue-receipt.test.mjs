@@ -29,11 +29,12 @@ test(
     skip: process.platform !== 'darwin',
   },
   async (t) => {
-    const [source, models, transport, session] = await Promise.all([
+    const [source, models, transport, session, notificationModels] = await Promise.all([
       readFile(join(repository, 'apps/ios/Sources/EasyWorkAgentClient.swift'), 'utf8'),
       readFile(join(repository, 'apps/ios/Sources/Models.swift'), 'utf8'),
       readFile(join(repository, 'apps/ios/Sources/EasyWorkTransport.swift'), 'utf8'),
       readFile(join(repository, 'apps/ios/Sources/EasyWorkSession.swift'), 'utf8'),
+      readFile(join(repository, 'apps/ios/Sources/NotificationModels.swift'), 'utf8'),
     ]);
     await mkdir(join(repository, '.local'), { recursive: true, mode: 0o700 });
     const directory = await mkdtemp(join(repository, '.local/easywork-unknown-queue-'));
@@ -43,13 +44,22 @@ test(
     const program = String.raw`import Foundation
 enum L10n { static func tr(_ text: String) -> String { text } }
 enum HostServiceError: Error { case invalidResponse, wrongHost, message(String) }
-struct Client { let id: String }
+${declaration(notificationModels, 'struct AgentAccount:')}
+${declaration(notificationModels, 'struct AgentRuntimeTarget:')}
+${declaration(transport, 'struct EasyWorkTarget:')}
+struct AgentConnection { let target: AgentRuntimeTarget }
+struct Client { let id: String; let agentConnection: AgentConnection? }
+func fixtureTarget() -> EasyWorkTarget {
+  EasyWorkTarget(account: AgentAccount(authority: "https://issuer.example", subject: "fixture-user"),
+    desktopDeviceId: "fixture-desktop", workspaceId: "fixture-workspace", runtimeId: "fixture-runtime")
+}
 ${declaration(models, 'struct DeliveryReceipt:')}
 ${declaration(transport, 'func easyWorkJSON(')}
 ${declaration(transport, 'func easyWorkObject(')}
 ${declaration(session, 'struct EasyWorkRemoteRejection:')}
 ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
 @MainActor final class ScriptedSession {
+  let target = fixtureTarget()
   let record: [String: Any]
   let queued: Any
   let rejection: String?
@@ -74,6 +84,7 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
   let gateway: ScriptedSession
   func session(_ client: Client) async throws -> ScriptedSession { gateway }
   ${declaration(source, 'private func object(_ value: Any)')}
+  ${declaration(source, 'private func readingTarget(_ target: EasyWorkTarget)')}
   ${declaration(source, 'func receipt(_ client: Client, id: String)')}
 }
 @main struct QueueReceiptFixture {
@@ -103,14 +114,49 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     case "denied": rejection = "device_not_authorized"
     default: break
     }
+    let identityCase = name.split(separator: ":").map(String.init)
+    let phase = identityCase.count == 2 ? identityCase[0] : ""
+    let field = identityCase.count == 2 ? identityCase[1] : ""
+    let capturedWireTarget = fixtureTarget()
+    var clientTarget = AgentRuntimeTarget(agentId: "easywork", hostId: capturedWireTarget.desktopDeviceId,
+      workspaceId: capturedWireTarget.workspaceId, runtimeId: capturedWireTarget.runtimeId, account: capturedWireTarget.account)
+    if phase == "owner" { clientTarget.runtimeId = "another-runtime" }
+    if ["outer", "result", "queue"].contains(phase) {
+      var target = fixtureTarget().dictionary
+      var identity: [String: Any] = ["target": target, "hostId": "fixture-desktop"]
+      switch field {
+      case "authority", "subject":
+        var account = target["account"] as! [String: Any]
+        account[field] = "another-identity"; target["account"] = account; identity["target"] = target
+      case "desktopDeviceId", "workspaceId", "runtimeId": target[field] = "another-target"; identity["target"] = target
+      case "target-type": identity["target"] = "not-a-target"
+      case "hostId": identity["hostId"] = "another-desktop"
+      case "host-type": identity["hostId"] = 17
+      case "local-host-alias": identity["hostId"] = "fixture-host"
+      case "legacy-null": identity["target"] = NSNull(); identity["hostId"] = NSNull()
+      default: break
+      }
+      if phase == "outer" { record.merge(identity) { _, new in new } }
+      if phase == "result" {
+        record["state"] = "completed"
+        var result: [String: Any] = ["threadId": "fixture-thread", "runId": "fixture-run"]
+        result.merge(identity) { _, new in new }; record["response"] = ["result": result]
+      }
+      if phase == "queue" {
+        var originalQueue = queued as! [String: Any]
+        originalQueue.merge(identity) { _, new in new }; queued = originalQueue
+      }
+    }
     let gateway = ScriptedSession(record: record, queued: queued, rejection: rejection)
     var result: DeliveryReceipt?, failure: Error?
-    do { result = try await ActualClientMethod(gateway: gateway).receipt(Client(id: "fixture-host"), id: "fixture-operation") }
+    do { result = try await ActualClientMethod(gateway: gateway).receipt(
+      Client(id: "fixture-host", agentConnection: AgentConnection(target: clientTarget)), id: "fixture-operation") }
     catch { failure = error }
     func require(_ condition: Bool, _ detail: String) throws {
       if !condition { throw NSError(domain: name + ": " + detail, code: 1) }
     }
-    if name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
+    let wrongIdentity = !phase.isEmpty && field != "valid" && field != "legacy-null"
+    if wrongIdentity || name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
       guard let failure, case HostServiceError.wrongHost = failure else { throw NSError(domain: name + ": wrong target was not rejected", code: 2) }
     } else if name == "malformed-result" {
       guard let failure, case HostServiceError.invalidResponse = failure else { throw NSError(domain: name + ": malformed value was adopted", code: 3) }
@@ -120,15 +166,18 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       if let failure { throw failure }
       guard let result else { throw HostServiceError.invalidResponse }
       try require(result.clientMessageId == "fixture-operation" && result.threadId == "fixture-thread" && result.hostId == "fixture-host", "original identity")
-      if name == "completed" { try require(result.state == "submitted" && result.turnId == "fixture-run", "completed original root") }
+      if name == "completed" || phase == "result" { try require(result.state == "submitted" && result.turnId == "fixture-run", "completed original root") }
       else {
         try require(result.state == (name == "queued-admission" ? "queued" : "uncertain") && result.turnId == nil, "original outcome never borrows a current root")
-        if ["queue", "submitting", "queued-admission"].contains(name) {
+        if ["queue", "submitting", "queued-admission"].contains(name) || phase == "outer" || phase == "queue" {
           try require(result.queueSource == "native" && result.queuePresent == true && result.canExecuteNow == false && result.text == "frozen queued input", "authoritative original queue fields")
         } else { try require(result.queueSource == nil && result.queuePresent == nil, "nonqueue unknown is not adopted") }
       }
     }
-    let expected = ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation"].contains(name) ? ["command/status"] : ["command/status", "queue/status"]
+    let expected = phase == "owner" ? [] :
+      (phase == "result" || phase == "outer" && wrongIdentity ||
+        ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation"].contains(name)
+        ? ["command/status"] : ["command/status", "queue/status"])
     try require(gateway.calls == expected, "only original status reads; no execute or resend")
     print("passed")
   }
@@ -152,7 +201,7 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       ],
       { env, timeout: 30000 },
     );
-    for (const name of [
+    const originalCases = [
       'queue',
       'queued-admission',
       'submitting',
@@ -170,7 +219,23 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       'malformed-result',
       'wrong-command',
       'wrong-result-operation',
-    ]) {
+    ];
+    const targetCases = ['outer', 'result', 'queue'].flatMap((phase) =>
+      [
+        'valid',
+        'legacy-null',
+        'authority',
+        'subject',
+        'desktopDeviceId',
+        'workspaceId',
+        'runtimeId',
+        'target-type',
+        'hostId',
+        'host-type',
+        'local-host-alias',
+      ].map((field) => `${phase}:${field}`),
+    );
+    for (const name of [...originalCases, ...targetCases, 'owner:runtimeId']) {
       await t.test(name, async () => {
         const result = await run(binary, [name], { env, timeout: 5000 });
         assert.equal(result.stdout.trim(), 'passed');

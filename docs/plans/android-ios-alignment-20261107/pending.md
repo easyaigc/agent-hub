@@ -25,7 +25,9 @@ ENV-10：原身份DEV已安全恢复；物理iPhone经原保存路径的原回�
 
 **C2-CODEX-01 原桌面长详情**。真实 Host 父卡片与刷新、iOS 模拟器生产卡片交互、Android 真机的稳定读取与实际显示通过。Android 实体安全调试权限已开放，待实体展开与界面刷新。iPhone 真机及有实时 owner 的子输出后续独立验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 
-**C2-SPEED-01 EasyWork真实速度闭环**。本轮Android目录/原轮次/显式设置和双端fast-only规则按[阶段128](../android-alignment-20261022/records/stage128-easywork-generation-speed.md)实现与分层验收。真实DEV原授权scope、当前模型目录/能力、唯一输入/回执与原模型生效仍待核对；物理Android固定包安装受限。双端fast-only菜单完整视觉原图/布局与API37组合未验，现有交互/AX不替代该范围。不得导出旧包Keystore凭据、自动新配对/刷新，或重放既有未知操作。其余本机验收继续。
+**C2-SPEED-01 EasyWork真实速度闭环**。本轮Android目录/原轮次/显式设置和双端fast-only规则按[阶段128](../android-alignment-20261022/records/stage128-easywork-generation-speed.md)实现与分层验收。真实DEV原授权scope、当前模型目录/能力、唯一输入/回执与原模型生效仍待核对；物理Android固定包安装受限。当前中文浅色竖屏fast-only/多档菜单及完整速度卡片原图已补验，详见[阶段130](../android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。Android菜单锚点待对齐，材质/滑块、API37、其余语言/主题/字体/横屏与完整AX组合继续待验，不把组件通过扩大为整页一致。不得导出旧包Keystore凭据、自动新配对/刷新，或重放既有未知操作。其余本机验收继续。
+
+**C2-CONTROL-01 原队列与控制真实闭环**。双端加密合成对端已取得[阶段129](../android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)的原生辅助结果；真实DEV的队列执行/取消、追加/停止、原Electron/模型和原回执、当前UI/刷新/短视口及iOS错误线程查询时机仍需逐项验证。结果未知只查原ID，不能把辅助对端或预置回执当真实入账。
 
 ## 暂停项
 

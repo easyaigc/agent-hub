@@ -15620,3 +15620,151 @@ private enum CanonicalVoiceTestEvidence {
     let result = try entries(capture.bundle); try capture.unchanged(); return result
   }
 }
+
+// Isolated acceptance-only peer: uses the published synthetic vector and never opens a socket.
+private actor C2EncryptedPeer: AgentTransport {
+  let binding: EasyWorkBinding
+  let inbound: SymmetricKey
+  let outbound: SymmetricKey
+  let confirmation: String
+  let session = UUID().uuidString
+  var sequence = 1
+  var frames: [Data] = []
+  var requests: [[String: Any]] = []
+  var mode = "normal"
+  var lostLedger: [String: Any]?
+  init(_ credential: EasyWorkCredential) throws {
+    binding = credential.binding
+    let privateKey = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: Data(base64URL: credential.privateKey)!)
+    let desktop = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: Data(base64URL: credential.binding.desktopPublicKey)!)
+    let secret = try privateKey.sharedSecretFromKeyAgreement(with: desktop)
+    let salt = Data("easyai-remote:\(binding.bindingId)".utf8)
+    inbound = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: salt, sharedInfo: Data("v1:mobile-to-desktop".utf8), outputByteCount: 32)
+    outbound = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: salt, sharedInfo: Data("v1:desktop-to-mobile".utf8), outputByteCount: 32)
+    let key = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: Data(binding.bindingId.utf8), sharedInfo: Data("easyai-remote:key-confirmation:v1".utf8), outputByteCount: 16)
+    confirmation = key.withUnsafeBytes { Data($0).base64URL }
+  }
+  func setMode(_ value: String) { mode = value }
+  func trace() -> [[String: Any]] { requests }
+  func header(_ e: [String: Any]) throws -> Data {
+    try easyWorkJSON([1,e["bindingId"]!,e["senderDeviceId"]!,e["senderSessionId"]!,e["recipientDeviceId"]!,e["sequence"]!,e["sentAt"]!])
+  }
+  func send(_ frame: Data) async throws {
+    let e = try easyWorkObject(frame)
+    guard e["bindingId"] as? String == binding.bindingId, e["senderDeviceId"] as? String == binding.mobileDeviceId,
+      e["recipientDeviceId"] as? String == binding.desktopDeviceId,
+      let n = Data(base64URL: e["nonce"] as? String ?? ""), let c = Data(base64URL: e["ciphertext"] as? String ?? ""), c.count >= 16 else { throw HostServiceError.wrongHost }
+    let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data:n), ciphertext:c.dropLast(16), tag:c.suffix(16))
+    let payload = try easyWorkObject(AES.GCM.open(box, using: inbound, authenticating: header(e)))
+    var answer: [String: Any]
+    if payload["kind"] as? String == "key-confirmation" {
+      guard payload["value"] as? String == confirmation else { throw HostServiceError.wrongHost }
+      answer = ["kind":"key-confirmation", "value":confirmation]
+    } else {
+      guard let req = payload["envelope"] as? [String: Any], let target = req["target"] as? [String:Any],
+        try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(target)) == binding.target,
+        let method = req["method"] as? String, let id = req["requestId"] as? String else { throw HostServiceError.wrongHost }
+      requests.append(req)
+      if method == "turn/start", mode == "drop-ack" {
+        guard lostLedger == nil, let params = req["params"] as? [String:Any], params["clientRequestId"] as? String == "lost-operation", params["threadId"] as? String == "lost-thread" else { throw HostServiceError.invalidResponse }
+        lostLedger = params; mode = "normal"; throw URLError(.networkConnectionLost)
+      }
+      var result: Any = [:]
+      switch method {
+      case "queue/execute": result = ["state":mode == "false" ? "uncertain" : "submitted"]
+      case "queue/cancel": result = ["cancelled":mode != "false"]
+      case "command/status":
+        let params = req["params"] as? [String:Any] ?? [:]
+        if params["commandId"] as? String == "lost-operation" {
+          guard let ledger = lostLedger, ledger["clientRequestId"] as? String == "lost-operation" else { throw HostServiceError.invalidResponse }
+          result = ["method":"turn/start","state":"uncertain","threadId":ledger["threadId"]!]
+        } else if mode == "missing" { result = NSNull() }
+        else if mode == "wrong-id" { result = ["operationId":"other"] }
+        else if mode == "wrong-target" { result = ["hostId":"other"] }
+        else { result = ["method":"turn/start","state":"uncertain","threadId":"thread-one"] }
+      case "queue/status":
+        let params = req["params"] as? [String:Any] ?? [:]
+        if params["messageId"] as? String == "lost-operation" {
+          guard let ledger = lostLedger, params["threadId"] as? String == ledger["threadId"] as? String, let parts = ledger["parts"] as? [[String:Any]], let data = parts.first?["data"] as? [String:Any], let body = data["text"] as? String else { throw HostServiceError.wrongHost }
+          result = ["clientMessageId":ledger["clientRequestId"]!,"threadId":ledger["threadId"]!,"state":"queued","text":body,"queueSource":"native","queuePresent":true]
+        } else if mode == "missing-queue" { result = NSNull() }
+        else { result = ["clientMessageId":mode == "wrong-queue-id" ? "other" : "operation-one", "threadId":"thread-one", "state":"queued", "queueSource":"native", "queuePresent":true] }
+      default: throw HostServiceError.invalidResponse
+      }
+      answer = ["kind":"protocol","envelope":["protocolVersion":2,"kind":"response","requestId":id,"target":binding.target.dictionary,"ok":true,"result":result]]
+    }
+    let date = ISO8601DateFormatter(); date.formatOptions = [.withInternetDateTime,.withFractionalSeconds]
+    var response: [String: Any] = ["version":1,"bindingId":binding.bindingId,"senderDeviceId":binding.desktopDeviceId,"senderSessionId":session,"recipientDeviceId":binding.mobileDeviceId,"sequence":sequence,"sentAt":date.string(from:Date())]; sequence += 1
+    let sealed = try AES.GCM.seal(easyWorkJSON(answer), using:outbound, authenticating:header(response))
+    response["nonce"] = sealed.nonce.withUnsafeBytes { Data($0).base64URL }; response["ciphertext"] = (sealed.ciphertext + sealed.tag).base64URL
+    frames.append(try easyWorkJSON(response))
+  }
+  func receive() async throws -> Data {
+    while frames.isEmpty { try Task.checkCancellation(); try await Task.sleep(for:.milliseconds(10)) }
+    return frames.removeFirst()
+  }
+  func close() async {}
+}
+
+extension EasyWorkHostedNativeTests {
+  @MainActor func testC2SyntheticEncryptedQueueAndReceipt() async throws {
+    let account = AgentAccount(authority:"https://acceptance.example",subject:"synthetic-user")
+    let target = EasyWorkTarget(account:account,desktopDeviceId:"desktop-vector",workspaceId:"workspace-vector",runtimeId:"runtime-vector")
+    let binding = EasyWorkBinding(bindingId:"binding-vector",account:account,desktopDeviceId:"desktop-vector",mobileDeviceId:"mobile-vector",desktopPublicKey:"3p7bfXt9wbTTW2HC7OQ1Nz-DQ8hbeGdNrfx-FG-IK08",mobilePublicKey:"hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo",target:target,status:"active",createdAt:"2026-10-14T00:00:00Z",confirmedAt:nil)
+    let credential = EasyWorkCredential(binding:binding,privateKey:"dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo",relayBinding:nil,accessToken:nil)
+    let peer = try C2EncryptedPeer(credential)
+    let confirmation = await peer.confirmation
+    XCTAssertEqual(confirmation, "9pgwgzi5wNuZOITDaif4nA")
+    let transportID = "c2-synthetic-" + UUID().uuidString
+    await AgentTransportRegistry.shared.register(transportID) { _ in peer }
+    let ref = "c2-synthetic-" + UUID().uuidString
+    try CredentialVault.set(String(decoding:JSONEncoder().encode(credential),as:UTF8.self),id:ref)
+    defer { try? CredentialVault.set("",id:ref) }
+    let domain = AgentRuntimeTarget(agentId:"easywork",hostId:target.desktopDeviceId,workspaceId:target.workspaceId,runtimeId:target.runtimeId,account:account)
+    let connection = AgentConnection(target:domain,candidates:[AgentConnectionCandidate(id:"synthetic",transportId:transportID,endpoint:"synthetic://isolated",peerFingerprint:nil)],preference:.automatic,credentialRef:ref)
+    let client = Client(id:ref,name:"Synthetic",endpoint:nil,isDemo:false,online:true,agentConnection:connection)
+    let provider = EasyWorkAgentClient()
+    let executed = try await provider.executeQueue(client,threadId:"thread-one",messageId:"message-one",expectedTurnId:"run-one")
+    XCTAssertTrue(executed.ok)
+    let cancelled = try await provider.cancelQueue(client,threadId:"thread-one",messageId:"message-one")
+    XCTAssertTrue(cancelled.ok)
+    await peer.setMode("false")
+    let notExecuted = try await provider.executeQueue(client,threadId:"thread-one",messageId:"message-one",expectedTurnId:"run-one")
+    let notCancelled = try await provider.cancelQueue(client,threadId:"thread-one",messageId:"message-one")
+    XCTAssertFalse(notExecuted.ok); XCTAssertFalse(notCancelled.ok)
+    await peer.setMode("normal")
+    let recovered = try await provider.receipt(client,id:"operation-one")
+    XCTAssertEqual(recovered.clientMessageId,"operation-one"); XCTAssertEqual(recovered.threadId,"thread-one")
+    await peer.setMode("missing-queue")
+    let missingQueue = try await provider.receipt(client,id:"operation-one")
+    XCTAssertEqual(missingQueue.state,"uncertain")
+    for mode in ["missing","wrong-id","wrong-target","wrong-queue-id"] {
+      await peer.setMode(mode)
+      do { _ = try await provider.receipt(client,id:"operation-one"); XCTFail("accepted \(mode)") } catch {}
+    }
+    let beforeLoss = await peer.trace().count
+    await peer.setMode("drop-ack")
+    let original = PendingReply(hostId:client.id,threadId:"lost-thread",clientMessageId:"lost-operation",text:"synthetic body",attachmentIds:[],mode:"queue",expectedTurnId:nil,model:nil,effort:nil)
+    do { _ = try await provider.send(client,reply:original); XCTFail("lost ACK must remain uncertain") } catch {}
+    let afterLoss = try await provider.receipt(client,id:"lost-operation")
+    XCTAssertEqual(afterLoss.clientMessageId,"lost-operation"); XCTAssertEqual(afterLoss.threadId,"lost-thread"); XCTAssertEqual(afterLoss.state,"queued"); XCTAssertEqual(afterLoss.text,"synthetic body")
+    let trace = await peer.trace()
+    for request in trace.dropFirst(beforeLoss) {
+      let method = request["method"] as? String; let params = try XCTUnwrap(request["params"] as? [String:Any])
+      if method == "command/status" { XCTAssertEqual(params["commandId"] as? String,"lost-operation") }
+      if method == "queue/status" { XCTAssertEqual(params["messageId"] as? String,"lost-operation"); XCTAssertEqual(params["threadId"] as? String,"lost-thread") }
+    }
+    let writes = trace.filter { ["queue/execute","queue/cancel","turn/start"].contains($0["method"] as? String ?? "") }
+    XCTAssertEqual(writes.count,5)
+    let starts = writes.filter { $0["method"] as? String == "turn/start" }
+    XCTAssertEqual(starts.count,1)
+    let submitted = try XCTUnwrap(starts.first?["params"] as? [String:Any])
+    XCTAssertEqual(submitted["clientRequestId"] as? String,"lost-operation")
+    XCTAssertEqual(submitted["threadId"] as? String,"lost-thread")
+    let parts = try XCTUnwrap(submitted["parts"] as? [[String:Any]])
+    XCTAssertEqual((parts.first?["data"] as? [String:Any])?["text"] as? String,"synthetic body")
+    let first = try XCTUnwrap(writes.first?["params"] as? [String:Any])
+    XCTAssertEqual(first["threadId"] as? String,"thread-one"); XCTAssertEqual(first["messageId"] as? String,"message-one"); XCTAssertEqual(first["expectedRunId"] as? String,"run-one")
+    await EasyWorkSessions.shared.remove(client.id)
+  }
+}

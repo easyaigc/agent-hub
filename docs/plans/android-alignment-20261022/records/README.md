@@ -1,5 +1,9 @@
 # Android 分阶段过程档案
 
+- [阶段130 速度菜单与完整卡片补验](stage130-c2-speed-menu-visual.md)记录双端当前中文竖屏原图、交互、包指纹和平台差异。
+
+- [阶段129 C2队列与原回执原生边界](stage129-c2-native-queue-receipt.md)记录双端加密对端、原ID恢复与不重放、明确范围及待验。
+
 - [阶段128 EasyWork速度与双端设置](stage128-easywork-generation-speed.md)记录目录/历史/发送修复、fast-only菜单和共享模型切换，以及分层验收与待验。
 
 - [阶段127 跨行选择复制与短视口验收](stage127-c2-multiline-selection-and-viewport.md)记录双端原生跨行精确复制、剪贴板恢复、已通过视口范围与API37待验。

@@ -1,5 +1,9 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-09 F36、UI07/UI08：补齐双端当前中文浅色竖屏的fast-only/三档菜单与完整速度卡片原图，实际交互、包指纹和图片由总控独立核对。没有可见DEBUG探针；Android未留AX树。只关闭信息/选择态可辨、入口和该卡片范围，材质/锚点、其他视口与真实DEV独立待验，见[阶段130](../plans/android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。
+
+2026-11-09 F37/F43、S06：新增iOS生产适配器与安全会话的独立加密队列回执原生回归，原请求先入账后丢ACK，恢复必须得到该原ID/线程的queued与正文，且turn/start仅一次；Android当前25项原生辅助组分别取证。未新增生产UI，真实DEV与界面保持独立门槛，见[阶段129](../plans/android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)。
+
 2026-11-09 F34/F36、S06、UI07/UI08：EasyWork速度需分别核对原目录元数据、历史实际记录/缺失、明确选择与跟随电脑、模型切换、next-turn/queue/plan/revision/steer的协议边界和真实模型生效。双端fast-only目录不得产生未声明standard。共享规则、加密合成对端、原生交互与真实DEV分别记账，见[阶段128](../plans/android-alignment-20261022/records/stage128-easywork-generation-speed.md)；实体安装、API37和原模型结果继续待验，不升级整项F34/F36状态。
 
 2026-11-08 F69：Windows Responses 退役和正式 Host 恢复见[专项记录](windows-response-suggestions-20261104.md#退役与恢复)。本机回环认证和 Windows 计划任务为正式恢复证据。iOS／Android 实体设备未复验，原桌面与 CLI 的冷启动及真实模型对话另行记录。

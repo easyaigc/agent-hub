@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段126 新域 DEV 与 Android 权限恢复](stage126-c2-new-domain-and-android-permissions.md)记录新域范围纠正、原目标核对及实体普通触摸权限复验。
+
 - [阶段125 Codex 原生模拟器验收与设备门槛](stage125-c2-ios-simulator-and-dns-authority.md)记录真实 Host、iOS 模拟器、Android 真机读取和显示及旧域 DNS 权威。
 
 - [阶段124 Codex 原生父卡片与 EasyWork 原域名](stage124-c2-native-parent-card-and-dns.md)记录同一真实 Host 的读取刷新、双端设备门槛及旧 DNS 权威诊断。

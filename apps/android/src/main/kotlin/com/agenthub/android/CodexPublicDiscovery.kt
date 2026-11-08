@@ -191,5 +191,5 @@ internal class CodexPublicDiscovery(private val storage: NativeSessionStorage?,
 /** Stable iOS route preference: VPN IP, private DNS, other LAN, then local hostname. */
 internal fun orderedDiscoveryEndpoints(endpoints: List<String>): List<String> = endpoints.distinct().withIndex().sortedWith(compareBy<IndexedValue<String>> {
     val host=runCatching { URI(it.value).host.orEmpty().removeSurrounding("[","]").lowercase() }.getOrDefault("")
-    when { PrivateConnectionRules.isVPNAddress(host)->0;host.endsWith(".ts.net")->1;host.endsWith(".local")->3;else->2 }
+    when { PrivateConnectionRules.isVPNAddress(host)->0;(host.endsWith(".ts.net") || host.endsWith(".mesh.51easyai.com"))->1;host.endsWith(".local")->3;else->2 }
 }.thenBy { it.index }).map { it.value }

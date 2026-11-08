@@ -48,7 +48,7 @@ object EasyWorkPairing {
         val normalizedHints=hints.associate { h->CodexEndpoints.local(h.getString("endpoint")) to h.getString("networkKind").also { require(it in listOf("lan","vpn","unknown")) } }
         return endpoints.map(CodexEndpoints::local).distinct().take(32).map { endpoint->
             val host=URI(endpoint).host
-            val kind=normalizedHints[endpoint]?:if(host.endsWith(".ts.net")||host.startsWith("100.")||host.contains("fd7a:115c:a1e0:")) "vpn" else "unknown"
+            val kind=normalizedHints[endpoint]?:if((host.endsWith(".ts.net") || host.endsWith(".mesh.51easyai.com"))||host.startsWith("100.")||host.contains("fd7a:115c:a1e0:")) "vpn" else "unknown"
             AgentCandidate("direct-"+easyHash(endpoint.toByteArray()),"lan-wss",endpoint,fingerprint.lowercase(),kind)
         }
     }

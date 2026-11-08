@@ -1,6 +1,6 @@
 # 待验与暂停
 
-更新：2026-11-07。以下项独立登记，只阻塞依赖它的验收。优先级见[计划](plan.md)，产品状态见[进度](progress.md)。旧[待验档案](../android-alignment-20261022/pending-acceptance.md)及[阶段记录](../android-alignment-20261022/records/README.md)保留每次失败、原意图和 UNKNOWN，不因新清单改写。
+更新：2026-11-08。以下项独立登记，只阻塞依赖它的验收。优先级见[计划](plan.md)，产品状态见[进度](progress.md)。旧[待验档案](../android-alignment-20261022/pending-acceptance.md)及[阶段记录](../android-alignment-20261022/records/README.md)保留每次失败、原意图和 UNKNOWN，不因新清单改写。
 
 | ID     | 待验范围                                           | 关闭条件 / 继续方式                                                                                                    |
 | ------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -19,11 +19,11 @@
 
 ENV-10：原身份DEV已安全恢复；物理iPhone经原保存路径的原回执只读核对1项通过，缺失ID被拒，未重放。该限定阻塞已解除；hostname DNS及原owner控制不由readiness证明，仍须各自验收。完整C1和四格保持开放；前轮连接失败及辅助检查保留于[阶段118](../android-alignment-20261022/records/stage118-three-way-native.md)，恢复结果见[阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
 
-**ENV-11 EasyWork 原 issuer DNS**。公网权威与当前普通 DNS 对旧主机名返回 NXDOMAIN，旧私有 MagicDNS 管理权威尚未核实。受控解析下原证书与健康接口通过，等待权威记录恢复后以手机普通 DNS 和标准 TLS 核对。原授权与原历史保持阶段122通过。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
+**ENV-11 EasyWork 新域 DEV 绑定**。用户确认全面切换到 `51easyai.com`，旧网络管理员登录已撤下。双端地址校验已接纳专用 mesh 电脑名。iOS 27 与 Android API 33 模拟器经新域两次读取同一真实 DEV，原保存的完整目标、桌面公钥和配对证书指纹匹配。Android 真机新域候选包仍被系统拒绝安装，手机实际路由、原 grant 刷新及原内容读取继续待验。阶段122原授权与原历史结果、旧 issuer 与未知操作均按原记录保留。详见[阶段126](../android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
-**C2-UI-01 系统选择与界面组合**。双端模拟器系统选词复制保留通过。Android 真机本轮可正常安装和启动独立 App；复制测试启动后未完成，复制与恢复结果未知，未重放。实体复制、跨行、短视口/横屏/大字及 API 37 分别待验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
+**C2-UI-01 系统选择与界面组合**。双端模拟器系统选词复制保留通过。Android 安装恢复后，用户开放安全调试权限，普通触摸与独立新用例 1/1 通过长按选词、系统 Copy、本次剪贴板基线恢复和读回核对。跨行、短视口/横屏/大字及 API 37 仍分别待验。阶段125复制与恢复结果保持未知。详见[阶段126](../android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
-**C2-CODEX-01 原桌面长详情**。真实 Host 父卡片与刷新、iOS 模拟器生产卡片交互、Android 真机的稳定读取与实际显示通过。Android 实体触摸事件被系统拒绝，待实体展开与界面刷新。iPhone 真机及有实时 owner 的子输出后续独立验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
+**C2-CODEX-01 原桌面长详情**。真实 Host 父卡片与刷新、iOS 模拟器生产卡片交互、Android 真机的稳定读取与实际显示通过。Android 实体安全调试权限已开放，待实体展开与界面刷新。iPhone 真机及有实时 owner 的子输出后续独立验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 
 ## 暂停项
 

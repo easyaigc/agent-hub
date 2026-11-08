@@ -295,7 +295,7 @@ struct VPNPeerSnapshot: Decodable, Sendable {
     func priority(_ endpoint: String) -> Int {
       let host = URL(string: endpoint)?.host?.trimmingCharacters(in: CharacterSet(charactersIn: "[]")) ?? ""
       if isVPNAddress(host) { return 0 }
-      if host.hasSuffix(".ts.net") { return 1 }
+      if (host.hasSuffix(".ts.net") || host.hasSuffix(".mesh.51easyai.com")) { return 1 }
       return host.hasSuffix(".local") ? 3 : 2
     }
     return unique.enumerated().sorted {

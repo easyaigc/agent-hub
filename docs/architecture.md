@@ -1547,3 +1547,5 @@ iOS resolves suggestion source kinds through the Agent adapter while EasyWork ke
 2026-11-06 Android P7：普通录音、inbox和F59共用的 Gate 在最后 writer 原句柄关闭成功后才释放登记；任务完成和关闭完成保持各自证明。Frozen 与 writer 使用同一一次性关闭状态，失败阻止新 record，保留首次打开的严格/普通端口。见[阶段115](plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。
 
 Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协作工具接收者记录分别识别明确的子线程。重复活动更新稳定的独立卡片，已有工具卡片继续负责其显式子线程。关联只供读取，保存内容刷新不赋予子 owner 控制。见[阶段123](plans/android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。
+
+2026-11-08 F03/F06/F57/F63。双端私有直连地址支持专用 `*.mesh.51easyai.com` 电脑名，候选归为 VPN 并沿用稳定顺序。地址仅提供路径，实际读取仍核对配对证书指纹、完整 Host/workspace/runtime 目标与桌面公钥。远程 issuer、已有 grant 与已提交操作保持各自原身份；新路径的原生及真实网络结果见[阶段126](plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。

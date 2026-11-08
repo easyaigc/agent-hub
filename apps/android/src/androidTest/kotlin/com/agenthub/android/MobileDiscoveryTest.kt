@@ -56,11 +56,14 @@ class MobileDiscoveryTest {
         assertEquals("codex",parsed.target.agentId); assertEquals(64,parsed.fingerprint.length)
         val vectors=JSONObject(InstrumentationRegistry.getInstrumentation().context.assets.open("state-v1.json").bufferedReader().readText()).getJSONArray("discovery")
         for(index in 0 until vectors.length()) { val case=vectors.getJSONObject(index); assertEquals(case.getString("name"),case.getBoolean("valid"),com.agenthub.core.CodexDiscoveryContract.validate(case.getString("json"))==null) }
-        for(endpoint in listOf("https://10.0.0.1", "https://172.16.0.1", "https://192.168.1.2", "https://100.64.0.1", "https://computer.local.", "https://computer.example.ts.net", "https://[::1]", "https://[fc00::1]", "https://[fe80::1]", "https://[::ffff:192.168.1.1]")) assertTrue(CodexEndpoints.local(endpoint).startsWith("https://"))
-        for(endpoint in listOf("https://8.8.8.8", "https://172.32.0.1", "https://100.128.0.1", "http://127.0.0.1", "https://public.example", "https://[2001:4860::1]", "https://me@computer.local", "https://computer.local/path", "https://computer.local?x=1", "https://computer.local:0")) {
+        for(endpoint in listOf("https://10.0.0.1", "https://172.16.0.1", "https://192.168.1.2", "https://100.64.0.1", "https://computer.local.", "https://computer.example.ts.net", "https://computer.mesh.51easyai.com", "https://[::1]", "https://[fc00::1]", "https://[fe80::1]", "https://[::ffff:192.168.1.1]")) assertTrue(CodexEndpoints.local(endpoint).startsWith("https://"))
+        for(endpoint in listOf("https://8.8.8.8", "https://172.32.0.1", "https://100.128.0.1", "http://127.0.0.1", "https://public.example", "https://mesh.51easyai.com", "https://computer.mesh.51easyai.com.evil.example", "https://computermesh.51easyai.com", "https://remote.51easyai.com", "https://[2001:4860::1]", "https://me@computer.local", "https://computer.local/path", "https://computer.local?x=1", "https://computer.local:0")) {
             try { CodexEndpoints.local(endpoint); fail(endpoint) } catch (_: IllegalArgumentException) {}
         }
         assertEquals("https://computer.local",CodexEndpoints.local("https://COMPUTER.local.:443/"))
+        assertEquals("https://computer.mesh.51easyai.com",CodexEndpoints.local("https://COMPUTER.mesh.51easyai.com.:443/"))
+        val mesh=EasyWorkPairing.directCandidates(listOf("https://COMPUTER.mesh.51easyai.com.:443/","https://computer.mesh.51easyai.com"),fingerprint="a".repeat(64))
+        assertEquals(1,mesh.size);assertEquals("vpn",mesh.single().networkKind);assertEquals("a".repeat(64),mesh.single().peerFingerprint)
         val json=JSONObject(String(android.util.Base64.decode(pairing.substringAfter("descriptor="),android.util.Base64.URL_SAFE)))
         for(change in listOf<(JSONObject)->Unit>({ it.put("version",2) },{ it.put("agentId","other") },{ it.put("token","too-short") },{ it.put("unknown",true) },{ it.getJSONObject("target").put("hostId","") },{ it.put("fingerprint","wrong") })) {
             val bad=JSONObject(json.toString()); change(bad)

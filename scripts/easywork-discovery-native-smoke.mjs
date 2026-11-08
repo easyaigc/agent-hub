@@ -156,7 +156,9 @@ try {
   const client = await readFile('apps/ios/Sources/AgentClient.swift', 'utf8');
   const shared = await readFile('apps/ios/Sources/NotificationModels.swift', 'utf8');
   const host = await readFile('apps/ios/Sources/HostService.swift', 'utf8');
+  const failures = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
   const declarations = [
+    block(failures, 'struct ConnectionAuthorizationIdentity<'),
     block(shared, 'struct AgentAccount:'),
     block(shared, 'struct AgentRuntimeTarget:'),
     block(client, 'struct AgentConnectionCandidate:'),
@@ -196,7 +198,7 @@ ${block(host, '  static func request(')}
   static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 }
 struct EasyWorkIdentity { var deviceId = "phone"; var publicKey = String(repeating: "m", count: 43); static func load() throws -> Self { Self() } }
-struct Client { var id: String; var name: String; var online: Bool; var agentConnection: AgentConnection? }
+struct Client { var id: String; var name: String; var online: Bool; var agentConnection: AgentConnection?; var migrationNeedsVerification: Bool? = nil }
 struct FixtureSaved { var clients: [Client] }
 @MainActor final class SessionStore {
   var saved: FixtureSaved; var persists = 0; var refreshes = 0
@@ -233,13 +235,15 @@ actor EasyWorkSessions { static let shared = EasyWorkSessions(); func updateCand
     let afterLegacy = try await fixture("/counts")
     precondition(afterLegacy["pairingClaims"] == 1 && afterLegacy["connectionRequests"] == 0)
     _ = try await fixture("/modern")
-    let accepted = ["https://100.64.0.0:4319", "https://100.127.255.255:4319", "https://[::ffff:100.100.1.2]:4319", "https://[::ffff:6440:1]:4319", "https://[0:0:0:0:0:ffff:100.64.0.1]:4319", "https://[fd7a:115c:a1e0::1]:4319", "https://Office.Example.ts.net.:4319/"]
+    let accepted = ["https://100.64.0.0:4319", "https://100.127.255.255:4319", "https://[::ffff:100.100.1.2]:4319", "https://[::ffff:6440:1]:4319", "https://[0:0:0:0:0:ffff:100.64.0.1]:4319", "https://[fd7a:115c:a1e0::1]:4319", "https://Office.Example.ts.net.:4319/", "https://Office.mesh.51easyai.com.:4319/"]
     for address in accepted { _ = try EasyWorkPairing.localEndpoint(address) }
-    for address in ["https://100.63.255.255:4319", "https://100.128.0.0:4319", "https://[::ffff:8.8.8.8]:4319", "https://8.8.8.8", "https://fake.ts.net.evil.example", "https://user@office.example.ts.net", "https://office.example.ts.net/path", "https://office.example.ts.net?x=1", "http://100.64.0.1"] {
+    for address in ["https://100.63.255.255:4319", "https://100.128.0.0:4319", "https://[::ffff:8.8.8.8]:4319", "https://8.8.8.8", "https://fake.ts.net.evil.example", "https://mesh.51easyai.com", "https://office.mesh.51easyai.com.evil.example", "https://officemesh.51easyai.com", "https://remote.51easyai.com", "https://user@office.example.ts.net", "https://office.example.ts.net/path", "https://office.example.ts.net?x=1", "http://100.64.0.1"] {
       do { _ = try EasyWorkPairing.localEndpoint(address); fatalError("accepted invalid endpoint: " + address) } catch {}
     }
     let normalized = try EasyWorkPairing.directCandidates(["https://Office.Example.ts.net.:443/", "https://office.example.ts.net"], fingerprint: pin)
     precondition(normalized.count == 1 && normalized[0].endpoint == "https://office.example.ts.net")
+    let mesh = try EasyWorkPairing.directCandidates(["https://Office.mesh.51easyai.com.:443/", "https://office.mesh.51easyai.com"], fingerprint: pin)
+    precondition(mesh.count == 1 && mesh[0].endpoint == "https://office.mesh.51easyai.com" && mesh[0].networkKind == .vpn && mesh[0].peerFingerprint == pin)
     let offer = try EasyWorkLANOffer.parse(uri)
     let host = try await EasyWorkPairing.readHost(endpoint: endpoint, fingerprint: pin, target: offer.target, publicKey: offer.publicKey)
     precondition(host.endpoints?.count == 4)

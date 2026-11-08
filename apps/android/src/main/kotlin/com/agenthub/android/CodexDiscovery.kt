@@ -75,7 +75,7 @@ data class CodexDescriptor(val name: String, val target: TargetScope, val finger
             val routes = raw.map { address ->
                 val endpoint = CodexEndpoints.local(address)
                 val host = URI(endpoint).host.lowercase()
-                CodexRoute(endpoint, kinds[endpoint] ?: if (host.endsWith(".ts.net") || host.startsWith("100.") || host.contains("fd7a:115c:a1e0:")) "vpn" else "unknown")
+                CodexRoute(endpoint, kinds[endpoint] ?: if ((host.endsWith(".ts.net") || host.endsWith(".mesh.51easyai.com")) || host.startsWith("100.") || host.contains("fd7a:115c:a1e0:")) "vpn" else "unknown")
             }.distinctBy { it.endpoint }
             val token = if (json.has("token")) json.get("token") as? String ?: throw HostReadError("客户端密钥无效") else null
             return CodexDescriptor(name, target, fingerprint, routes, token, json.optional("connectionMode"))
@@ -106,7 +106,7 @@ object CodexEndpoints {
         } else {
             val parts = host.split('.')
             val octets = parts.mapNotNull { it.toIntOrNull()?.takeIf { n -> n in 0..255 } }
-            parts.size == 4 && octets.size == 4 && private4(octets.map { it.toByte() }.toByteArray()) || host == "localhost" || host.endsWith(".local") || host.endsWith(".ts.net")
+            parts.size == 4 && octets.size == 4 && private4(octets.map { it.toByte() }.toByteArray()) || host == "localhost" || host.endsWith(".local") || (host.endsWith(".ts.net") || host.endsWith(".mesh.51easyai.com"))
         }
         require(private) { "请填写局域网或 VPN 电脑地址" }
         val authority = if (':' in canonical) "[$canonical]" else canonical

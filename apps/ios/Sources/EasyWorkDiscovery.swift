@@ -136,7 +136,7 @@ extension EasyWorkPairing {
     let mapped = isIPv6 && bytes.prefix(10).allSatisfy { $0 == 0 } && bytes[10] == 255 && bytes[11] == 255
     let mappedPrivate = mapped && (bytes[12] == 10 || bytes[12] == 127 || (bytes[12] == 100 && (64...127).contains(bytes[13])) || (bytes[12] == 172 && (16...31).contains(bytes[13])) || (bytes[12] == 192 && bytes[13] == 168) || (bytes[12] == 169 && bytes[13] == 254))
     let ipv6 = isIPv6 && (bytes.dropLast().allSatisfy { $0 == 0 } && bytes[15] == 1 || bytes[0] & 0xfe == 0xfc || bytes[0] == 0xfe && bytes[1] & 0xc0 == 0x80 || mappedPrivate)
-    guard url.scheme == "https", ipv4 || ipv6 || host == "localhost" || host.hasSuffix(".local") || host.hasSuffix(".ts.net") else { throw HostServiceError.message(L10n.tr("请填写局域网或 VPN 电脑地址")) }
+    guard url.scheme == "https", ipv4 || ipv6 || host == "localhost" || host.hasSuffix(".local") || (host.hasSuffix(".ts.net") || host.hasSuffix(".mesh.51easyai.com")) else { throw HostServiceError.message(L10n.tr("请填写局域网或 VPN 电脑地址")) }
     var normalized = URLComponents(url: url, resolvingAgainstBaseURL: false)!
     var canonicalHost = host
     if isIPv6 {
@@ -158,7 +158,7 @@ extension EasyWorkPairing {
       if result.contains(where: { $0.endpoint == normalized }) { continue }
       let hint = hints.first { (try? localEndpoint($0.endpoint).absoluteString) == normalized }
       let host = url.host ?? ""
-      let kind = hint?.networkKind ?? (host.hasSuffix(".ts.net") || host.hasPrefix("100.") || host.contains("fd7a:115c:a1e0:") ? .vpn : .unknown)
+      let kind = hint?.networkKind ?? ((host.hasSuffix(".ts.net") || host.hasSuffix(".mesh.51easyai.com")) || host.hasPrefix("100.") || host.contains("fd7a:115c:a1e0:") ? .vpn : .unknown)
       result.append(AgentConnectionCandidate(id: "direct-" + HostService.hash(Data(normalized.utf8)), transportId: "lan-wss", endpoint: normalized, peerFingerprint: fingerprint.lowercased(), networkKind: kind))
     }
     return Array(result.prefix(32))

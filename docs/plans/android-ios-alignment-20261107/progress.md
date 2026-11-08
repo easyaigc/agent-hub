@@ -11,8 +11,9 @@
 - **新域直连兼容已验收**。双端接纳专用 mesh 域并按 VPN 排序。iOS 27 与 Android API 33 模拟器通过同一真实 DEV 的配对证书、完整目标和桌面公钥核对，Android 真机新域候选安装仍受限。独立真机系统复制 1/1 通过，新域兼容已由 [PR167](https://git.51easyai.com/BCAI/agent-hub-app/pulls/167) 合 main `20f5c9ef`，见[阶段126](../android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 - **跨行系统复制限定通过**。Android API33 生产组件与 iOS27 生产 RootView 通过精确原文子串复制及本次剪贴板恢复，API37 与完整视口组合继续待验。本阶段 [PR168](https://git.51easyai.com/BCAI/agent-hub-app/pulls/168) 已合 main `11bee4d4`，见[阶段127](../android-alignment-20261022/records/stage127-c2-multiline-selection-and-viewport.md)。
 - **C2 速度限定修复与本地验收通过**：Android保留EasyWork速度目录和原轮次速度，允许显式速度；双端fast-only菜单与KMP模型切换不制造未声明standard。Android协议4/4、设置14/14、共享策略15/15、iOS模拟器两项原生交互、完整工作区检查与iOS构建通过。真实DEV/实体与API37另列；当前中文竖屏菜单/完整速度卡片已由[阶段130](../android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)补验，其余视觉差异保持；已由 [PR169](https://git.51easyai.com/BCAI/agent-hub-app/pulls/169) 合 main `32dd5d09` 并清理分支，见[阶段128](../android-alignment-20261022/records/stage128-easywork-generation-speed.md)。
-- **C2 队列/原回执原生边界通过**：Android两完整组25/25、iOS独立加密对端1方法通过，受控原输入入账后丢ACK仅查原ID，原正文/线程/queued回执和单次发送均核对。新增iOS持久回归；真实DEV、队列UI和错误线程查询时机仍待验，见[阶段129](../android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)。
-- **C2 速度界面限定补验通过**：双端当前中文/浅色/竖屏原图与交互已核对，Android三方法分次、iOS两项XCUI通过；菜单选项/选择态和速度卡片可辨。下一修正Android生成菜单锚点；材质/滑块、其他视口和完整AX仍待验，见[阶段130](../android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。
+- **C2 队列/原回执原生边界通过**：Android两完整组25/25、iOS独立加密对端1方法通过，受控原输入入账后丢ACK仅查原ID，原正文/线程/queued回执和单次发送均核对。新增iOS持久回归，已由 [PR170](https://git.51easyai.com/BCAI/agent-hub-app/pulls/170) 合 main `42ce42ce`；真实DEV、队列UI和错误线程查询时机仍待验，见[阶段129](../android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)。
+- **C2 速度界面限定补验通过**：双端当前中文/浅色/竖屏原图与交互已核对，Android三方法分次、iOS两项XCUI通过；菜单选项/选择态和速度卡片可辨。共同菜单锚点与当前值已由[阶段131](../android-alignment-20261022/records/stage131-c2-generation-menu-anchor.md)修正；材质/滑块、其他视口和完整AX仍待验，见[阶段130](../android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。
+- **C2 Android生成菜单对齐通过**：模型/强度/速度共同菜单锚定行尾Picker，当前值末端对齐且整行触控保持；最终源码完整14项与原图通过。iOS参考不改，双Provider同组件，真实DEV/其他视口与其余样式仍开放，见[阶段131](../android-alignment-20261022/records/stage131-c2-generation-menu-anchor.md)。
 - 迁移 N1 全部原范围和既有局部结果保留，仍无 24 组整体验收关闭；任务和项目业务、F75、iOS A6 继续暂停。
 
 ## 总进度

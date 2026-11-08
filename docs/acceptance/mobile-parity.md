@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-09 F34/F36、S06、UI07/UI08：Android菜单锚点与当前值末端对齐的最终源码完整14项回归通过，原目标/独立字段/旧回调守卫、菜单选择与原图分别核对。iOS匹配源仅复用参考，本轮无新iOS实现或真实DEV；首候选与最终候选指纹分开，见[阶段131](../plans/android-alignment-20261022/records/stage131-c2-generation-menu-anchor.md)。
+
 2026-11-09 F36、UI07/UI08：补齐双端当前中文浅色竖屏的fast-only/三档菜单与完整速度卡片原图，实际交互、包指纹和图片由总控独立核对。没有可见DEBUG探针；Android未留AX树。只关闭信息/选择态可辨、入口和该卡片范围，材质/锚点、其他视口与真实DEV独立待验，见[阶段130](../plans/android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。
 
 2026-11-09 F37/F43、S06：新增iOS生产适配器与安全会话的独立加密队列回执原生回归，原请求先入账后丢ACK，恢复必须得到该原ID/线程的queued与正文，且turn/start仅一次；Android当前25项原生辅助组分别取证。未新增生产UI，真实DEV与界面保持独立门槛，见[阶段129](../plans/android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)。

@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段131 生成菜单锚点与当前值](stage131-c2-generation-menu-anchor.md)记录Android共同菜单对齐、最终14项回归及原图和剩余范围。
+
 - [阶段130 速度菜单与完整卡片补验](stage130-c2-speed-menu-visual.md)记录双端当前中文竖屏原图、交互、包指纹和平台差异。
 
 - [阶段129 C2队列与原回执原生边界](stage129-c2-native-queue-receipt.md)记录双端加密对端、原ID恢复与不重放、明确范围及待验。

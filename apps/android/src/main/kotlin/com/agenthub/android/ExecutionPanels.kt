@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.semantics.*
@@ -581,14 +582,16 @@ private data class GenerationMenuChoice(val id: String,val title: String,val tag
         Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics { role=Role.Button }
             .clickable(enabled=enabled) { expanded=true }.padding(horizontal=16.dp,vertical=14.dp),verticalAlignment=Alignment.CenterVertically) {
             Text(label,fontSize=16.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(enabled) 1f else .5f))
-            Spacer(Modifier.weight(1f))
-            Text(value,Modifier.weight(1f,fill=false).padding(start=12.dp,end=6.dp),fontSize=16.sp,color=blue.copy(alpha=if(enabled) 1f else .5f),maxLines=1,overflow=TextOverflow.Ellipsis)
-            ProductIcon("picker",Modifier.size(16.dp),blue.copy(alpha=if(enabled) 1f else .5f))
-        }
-        DropdownMenu(expanded=expanded&&enabled,onDismissRequest={ expanded=false },containerColor=MaterialTheme.colorScheme.surface,tonalElevation=0.dp) {
-            choices.forEach { choice -> DropdownMenuItem(text={ Text(choice.title) },onClick={ expanded=false;choose(choice.id) },enabled=enabled,
-                leadingIcon={ if(selected==choice.id) ProductIcon("check",Modifier.size(18.dp),blue) else Spacer(Modifier.size(18.dp)) },
-                modifier=Modifier.testTag(choice.tag).semantics { this.selected=selected==choice.id;role=Role.RadioButton }) }
+            Text(value,Modifier.weight(1f).padding(start=12.dp,end=6.dp),fontSize=16.sp,color=blue.copy(alpha=if(enabled) 1f else .5f),textAlign=TextAlign.End,maxLines=1,overflow=TextOverflow.Ellipsis)
+            // Keep the full row tappable while anchoring its menu to the trailing picker.
+            Box {
+                ProductIcon("picker",Modifier.size(16.dp),blue.copy(alpha=if(enabled) 1f else .5f))
+                DropdownMenu(expanded=expanded&&enabled,onDismissRequest={ expanded=false },containerColor=MaterialTheme.colorScheme.surface,tonalElevation=0.dp) {
+                    choices.forEach { choice -> DropdownMenuItem(text={ Text(choice.title) },onClick={ expanded=false;choose(choice.id) },enabled=enabled,
+                        leadingIcon={ if(selected==choice.id) ProductIcon("check",Modifier.size(18.dp),blue) else Spacer(Modifier.size(18.dp)) },
+                        modifier=Modifier.testTag(choice.tag).semantics { this.selected=selected==choice.id;role=Role.RadioButton }) }
+                }
+            }
         }
     }
 }

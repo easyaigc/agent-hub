@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-11-09 F34/F36、UI07/UI08：Android模型/强度/速度的共用菜单贴近行尾Picker；当前值用剩余宽度末端对齐，保持长值单行省略、48dp整行触控、蓝色选中和禁用状态。iOS既有Picker作为参考不改，Codex/EasyWork使用同一组件且协议/目录不变。当前中文竖屏原图与剩余矩阵见[阶段131](../plans/android-alignment-20261022/records/stage131-c2-generation-menu-anchor.md)。
+
 2026-11-09 F36、UI07/UI08：双端当前中文竖屏核对仅快速菜单两项、多档菜单四项（含跟随）、当前选择和完整速度卡片。平台菜单材质/锚点及滑块形状不同，不能宣称像素一致；Android生成菜单应进一步贴近右侧当前值，其他分组另验。本轮仅补原图与原生交互，不改生产布局，见[阶段130](../plans/android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。
 
 2026-11-09 F37/F43：本轮只新增原生队列/回执边界测试，iOS/Android的页面、状态文案、token与触控布局不变。明确成功、拒绝和未知按原回执分别展示；实际界面验收未由合成对端通过，见[阶段129](../plans/android-alignment-20261022/records/stage129-c2-native-queue-receipt.md)。

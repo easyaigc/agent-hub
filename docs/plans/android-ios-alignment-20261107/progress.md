@@ -1,13 +1,13 @@
 # Android 对齐进度总表
 
-更新：2026-11-07。当前计划见[plan.md](plan.md)，逐项需求见[features.md](features.md)，验收要求见[acceptance.md](acceptance.md)。这里只报状态和下一步；操作过程与证据存[阶段档案](../android-alignment-20261022/records/README.md)。
+更新：2026-11-08。当前计划见[plan.md](plan.md)，逐项需求见[features.md](features.md)，验收要求见[acceptance.md](acceptance.md)。这里只报状态和下一步；操作过程与证据存[阶段档案](../android-alignment-20261022/records/README.md)。
 
 ## 当前结论
 
-- 本轮已重新拉取 AgentHub main `21a302c2046135635162ba3fc7fdc8f665051e91`、EasyWork master `23a73342dc9a8a403ca276b7ee47d968a6a9ec77`。75F、350 个 iOS 历史节点及 114 个额外共享边界保持；按[四格范围](provider-matrix.md)逐功能调度。三方计划 [PR #164](https://git.51easyai.com/BCAI/agent-hub-app/pulls/164) 已合并。
+- 本轮验收从 AgentHub main `5848412924f661711bbe43a39669e85950828d57` 与已核对的 EasyWork `fd9d0a23aa32772670fe7b7ff0589726eaf0aea3` 基线继续。交付前确认主线前移至 `e7b6eef1`，该变更属于 Windows Responses 转发退役；验收仍绑定实际候选。75F、350 个 iOS 历史节点及 114 个额外共享边界保持；按[四格范围](provider-matrix.md)逐功能调度。三方计划 [PR #164](https://git.51easyai.com/BCAI/agent-hub-app/pulls/164) 已合并。
 - **C1-RID 已限定交付**：[PR #163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163) 两项 CI 通过并合 main；原身份 DEV 恢复后 iPhone 原回执/缺失 ID 只读 1/1，通过后已清理合并分支。完整 C1、原 owner 控制和整组四格仍开放，见[阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
 - **C2-SUB 已实现、部分验收**：Android 接入 EasyWork 子代理、独立卡片及完整详情，共享投影去两处 65536 尾截断并保留原文本。iOS 保留独立行，修复卡片无障碍标识覆盖。JVM 125、Android 原生 4 + Compose 7、iOS Native 9、真实 iPhone 原 child 只读 1、iOS 模拟器长文交互 1 均通过。原编译/连接/界面失败保留，见[阶段120](../android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
-- **C2 EasyWork 读取范围已验收**。同目标 Android 真机正常刷新原 grant，原子代理及父正文两段与独立桌面摘要一致。iPhone 原 child 和双端原生卡片交互沿用已核对结果。实体系统复制、Codex 实际显示和原 issuer 普通 DNS 另列[待验](pending.md)。详见[阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)。
+- **C2 Codex 读取与显示限定通过**。iOS 按用户口径使用模拟器，实际组件显示、展开与再次读取通过；Android 实体安装恢复，真实读取和前台卡片显示通过。真机触摸、系统复制及 EasyWork 原域普通 DNS 另列[待验](pending.md)。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 - 迁移 N1 全部原范围和既有局部结果保留，仍无 24 组整体验收关闭；任务和项目业务、F75、iOS A6 继续暂停。
 
 ## 总进度
@@ -32,10 +32,10 @@
 
 完成阶段时替换总表对应行，并在这里保留最新交付摘要；历史摘要移入档案。不得把排队/提交成功写成验收完成。
 
-| 阶段 / 日期               | F / 子场景范围                               | 实现                         | 功能 / 交互 / 界面                                           | 本次通过 / 匹配复用 / 失败 / 未验                      | 提交 / PR / main SHA                                                           | 档案与下一步                                                                                             |
-| ------------------------- | -------------------------------------------- | ---------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| 历史计划重建 / 2026-11-07 | 75F与逐提交清单                              | 文档                         | 方案已列；产品未执行                                         | 文档结构/覆盖检查另存，产品通过数不增加                | 文档交付指向当前主分支历史                                                     | [本轮档案](../android-alignment-20261022/records/stage116-plan-refresh.md)；历史下一步已由C1核心链路替代 |
-| C1-RID / 2026-11-07       | F43/F44/F46/F61 EasyWork 原回执身份          | iOS 守卫已交付，Android 既有 | iPhone 实际原只读 1/1，无重放；无新增 UI                     | 52 辅助、18 Android 组件、限定真机通过，整项四格仍开放 | [PR163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163) / main 21a302c2 | [阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)                |
-| C2-SUB / 2026-11-07       | F18/F19/F20 / UI05 EasyWork 子代理与完整详情 | 双端原生阅读、共享有界投影   | 原 Android 真机子代理及父正文，iPhone 原 child，双端卡片交互 | 原授权单次回执对账；实体复制和 Codex 实际移动显示待验  | 本 PR 限定 EasyWork 读取                                                       | [阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)                        |
+| 阶段 / 日期               | F / 子场景范围                      | 实现                             | 功能 / 交互 / 界面                                                          | 本次通过 / 匹配复用 / 失败 / 未验                      | 提交 / PR / main SHA                                                                                     | 档案与下一步                                                                                             |
+| ------------------------- | ----------------------------------- | -------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 历史计划重建 / 2026-11-07 | 75F与逐提交清单                     | 文档                             | 方案已列；产品未执行                                                        | 文档结构/覆盖检查另存，产品通过数不增加                | 文档交付指向当前主分支历史                                                                               | [本轮档案](../android-alignment-20261022/records/stage116-plan-refresh.md)；历史下一步已由C1核心链路替代 |
+| C1-RID / 2026-11-07       | F43/F44/F46/F61 EasyWork 原回执身份 | iOS 守卫已交付，Android 既有     | iPhone 实际原只读 1/1，无重放；无新增 UI                                    | 52 辅助、18 Android 组件、限定真机通过，整项四格仍开放 | [PR163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163) / main 21a302c2                           | [阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)                |
+| C2-SUB / 2026-11-08       | F18/F19/F20 / UI05 子代理与完整详情 | 双端阅读、Codex 有界父卡片与状态 | EasyWork 双端读取；Codex 真实 Host、iOS 模拟器及 Android 真机显示和原生读取 | 实体手势/复制、iPhone 后续复验与普通 DNS 另列          | EasyWork [PR165](https://git.51easyai.com/BCAI/agent-hub-app/pulls/165) 已合；Codex 本 PR 限定读取与显示 | [阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)          |
 
 每次产品结果必须绑定准确源码/包/设备/Host/runtime/owner及原操作回执；证据详情放档案。若改变产品断言，同步维护产品manifest、设计与验收关联。用户回报包含本轮完成、剩余、下一步和链接；没有新结果不重复报旧状态。

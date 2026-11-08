@@ -276,6 +276,27 @@ export function combinedSubagentStatus(statuses: string[]): string {
   );
 }
 
+export const SUBAGENT_DETAIL_LIMIT = 200_000;
+const subagentDetailOmission = '\n\n[仅显示部分子代理详情，请在电脑查看原文]';
+
+export function subagentDetailPrefix(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const last = text.charCodeAt(limit - 1);
+  const next = text.charCodeAt(limit);
+  const splitsPair = last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff;
+  return text.slice(0, splitsPair ? limit - 1 : limit);
+}
+
+export function boundedSubagentDetail(
+  text: string,
+  limit = SUBAGENT_DETAIL_LIMIT,
+  omitted = false,
+): string {
+  if (!omitted && text.length <= limit) return text;
+  const notice = subagentDetailOmission.slice(0, limit);
+  return subagentDetailPrefix(text, limit - notice.length) + notice;
+}
+
 export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
   const item = object(value);
   const kind = string(item.type);
@@ -358,7 +379,10 @@ export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
           )
         : string(item.status) ||
           (kind === 'contextCompaction' && item.completed === false ? 'inProgress' : 'completed'),
-    detail: detail.slice(-detailLimit),
+    detail:
+      kind === 'collabAgentToolCall' || kind === 'subAgent'
+        ? boundedSubagentDetail(detail, detailLimit)
+        : detail.slice(-detailLimit),
     paths,
     ...(string(item.runId) ? { runId: string(item.runId) } : {}),
     ...(['commentary', 'final_answer'].includes(string(item.phase))

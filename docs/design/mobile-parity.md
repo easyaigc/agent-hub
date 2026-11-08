@@ -1802,3 +1802,7 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 iOS EasyWork与Android既有规则对齐：原回执在归一化前核对可选传输target/account/desktop/workspace/runtime及wire host，wire host对应desktopDeviceId而非本机客户端列表key。矛盾或非法类型显示原身份错误，保留对应原操作/草稿/未知结果，不因失败发送或替换新等待；旧Host缺省/null字段按原兼容路径处理。UI10使用既有错误/等待界面，无新增入口；功能/交互/界面和双Provider的当前运行结果见[阶段117](../plans/android-alignment-20261022/records/stage117-three-way-core.md)，不以辅助检查或签名编译声明手机通过。
 
 2026-11-07 UI05 C2-SUB：子代理与普通工具分组分离，保留真实根任务归属和原文。iOS/Android 卡片显示标题、状态、运行进度及等待说明；折叠仅限制末尾六行短预览，展开读取完整可选文本。Android 的点击目标、状态描述、短屏大字和目标切换按实际原生证据登记；iOS 系统选择、实际滚动与扩展界面用例分别验收。Codex 的上游详情上限另核，不以视觉展开掩盖源内容缺失。见[阶段120](../plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
+
+2026-11-07 UI05 C2 系统选择与长详情。iOS 27 和 Android API 33 在展开详情上实际长按、点击系统 Copy，逐字核对剪贴板。Android 工具栏通过真实原生 Popup Window 呈现。Codex 卡片保留原任务和可用前文，超出有界详情时显示在电脑查看原文的提示。实体机、跨行与其他视口组合单列。详见[阶段121](../android-alignment-20261022/records/stage121-c2-selection-and-codex-detail.md)。
+
+2026-11-07 UI05 C2。Codex 新活动条目以原 Agent 路径和稳定卡片 ID 展示。完成后发生的互动保留最近已知生命周期，已保存正文补齐后更新同一张卡片。实际移动端显示与实体复制按各自范围待验。见[阶段123](../android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。

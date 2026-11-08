@@ -134,6 +134,10 @@ try {
     ['./windows-desktop-recovery.mjs', 'scripts/windows-desktop-recovery.mjs'],
     ['./windows-desktop-worker.mjs', 'scripts/windows-desktop-worker.mjs'],
     ['./windows-host-environment.mjs', 'scripts/windows-host-environment.mjs'],
+    [
+      './windows-response-suggestions-config.mjs',
+      'scripts/windows-response-suggestions-config.mjs',
+    ],
     ['./windows-host-regular-layout.mjs', 'scripts/windows-host-regular-layout.mjs'],
     ['./windows-host-regular-installed.mjs', 'scripts/windows-host-regular-installed.mjs'],
     ['./windows-host-regular-runtime.mjs', 'scripts/windows-host-regular-runtime.mjs'],
@@ -150,6 +154,10 @@ try {
     [
       '../packages/codex-adapter/dist/desktop-platform.js',
       'packages/codex-adapter/dist/desktop-platform.js',
+    ],
+    [
+      '../packages/codex-adapter/dist/desktop-response-config.js',
+      'packages/codex-adapter/dist/desktop-response-config.js',
     ],
     [
       '../packages/codex-adapter/dist/windows-process.js',
@@ -181,6 +189,18 @@ try {
     ],
   ])
     await cp(new URL(from, import.meta.url), join(directory, to));
+  await cp(
+    new URL('../packages/codex-adapter/node_modules/smol-toml/', import.meta.url),
+    join(directory, 'packages/codex-adapter/node_modules/smol-toml'),
+    { recursive: true, dereference: true },
+  );
+  // Expose the real implementations used by the service without loading the runtime barrel.
+  await writeFile(
+    join(directory, 'packages/codex-adapter/dist/index.js'),
+    `export { assertPrivateFile, makePrivateDirectorySync, openPrivateFileSync, writePrivateFileSync } from './desktop-platform.js';
+export { inspectDesktopResponseConfigToml } from './desktop-response-config.js';
+`,
+  );
   // Exercise preload URL escaping as well as Windows drive-letter handling.
   const mock = join(directory, 'native fixture #%.mjs');
   const mockURL = pathToFileURL(mock).href;

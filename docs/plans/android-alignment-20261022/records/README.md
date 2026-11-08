@@ -1,6 +1,14 @@
 # Android 分阶段过程档案
 
+- [阶段125 Codex 原生模拟器验收与设备门槛](stage125-c2-ios-simulator-and-dns-authority.md)记录真实 Host、iOS 模拟器、Android 真机读取和显示及旧域 DNS 权威。
+
+- [阶段124 Codex 原生父卡片与 EasyWork 原域名](stage124-c2-native-parent-card-and-dns.md)记录同一真实 Host 的读取刷新、双端设备门槛及旧 DNS 权威诊断。
+
+- [阶段123 Codex 实时父卡片与系统复制复验](stage123-c2-codex-live-parent-and-copy.md)记录真实原父子关系、长详情刷新与 Android 隔离系统复制。
+
 - [阶段122 EasyWork 同目标授权恢复与原生读取](stage122-c2-easywork-real-dev.md)记录签发隔离、原授权单次刷新及双端原生范围。
+
+- [阶段121 C2 选择复制与 Codex 长详情](stage121-c2-selection-and-codex-detail.md)记录双端模拟器系统选词复制、Android 实体绑定预检、Codex 有界投影及真实 DEV 待验范围。
 
 - [阶段120 子代理展示与完整详情](stage120-c2-subagent-native-reading.md)：双端原生组件、iPhone 原 child 只读及 iOS 实际长详情展开/滚动/收起；Android 真实 DEV、系统选择/复制和 Codex 上游长详情单列，未合代码。
 

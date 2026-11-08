@@ -1865,4 +1865,10 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 
 2026-11-07 C2-SUB / F18/F19/F20：Android 新官方包原生 adapter 4、Compose 7；iOS 真实原 child 只读 1、模拟器长正文实际 XCUI 1。JVM 125、iOS Native 9 属共享规则。原失败、候选指纹、源与 UI 差异、Android 真实 DEV/系统选择复制/Codex 上游长详情未验均见[阶段120](../plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)；未关闭整项四格。
 
-2026-11-07 C2-SUB / F18/F19/F20 / UI05。Android 实体机生产客户端同目标原子代理与父正文通过，原 grant 的一次刷新由签发端独立对账。iPhone 原 child 及双端原生展开交互分列。Android 实体系统复制与 Codex 实际移动显示待验。见[阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)。
+2026-11-07 C2-SUB / F18/F19/F20 / UI05。iOS 27 与 Android API 33 模拟器展开长详情，实际系统长按选词、点击 Copy，并验证剪贴板。Codex Adapter 专项 6/6、合成 IPC 和大对话同步通过。真实 Android 同目标原历史与 Codex 原桌面长详情分别待验。保留首轮失败及各自包、数据来源和 UI 范围，详见[阶段121](../android-alignment-20261022/records/stage121-c2-selection-and-codex-detail.md)。
+
+2026-11-07 C2-SUB / F18/F19/F20 / UI05。Android 真机同目标单次授权刷新及原子代理与父正文摘要匹配，原 grant 回执由本机独立签发端确认；既有 iPhone 原 child 及双端原生展开交互按指纹复用，见[阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)。Codex 实际父卡片对两个明确子线程投影并自然刷新；Android 隔离模拟器原生 Copy 通过。实体安装拒绝和双端 Codex 实际页面待验，见[阶段123](../android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。
+
+2026-11-08 C2-SUB / F18/F19/F20 / UI05。真实 Codex Host 同父会话的卡片、事件及正文刷新，Android API 33 模拟器生产读取和 Compose 展开通过。Android 实体安装、iPhone XCTest 启动和独立 App 的 Wi-Fi 路径分别受阻，双端真机显示及实体复制继续待验。详见[阶段124](../android-alignment-20261022/records/stage124-c2-native-parent-card-and-dns.md)。
+
+2026-11-08 C2-SUB / F18/F19/F20 / UI05。iOS 27 按用户口径用模拟器实际验收卡片状态、展开和再次读取，Android API 33 真机通过生产读取及生产卡片状态和折叠显示。实体触摸、复制、iPhone 真机和普通 DNS 分别待验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。

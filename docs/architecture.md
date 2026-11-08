@@ -2,7 +2,7 @@
 
 2026-11-08 F69：退役 Windows 原生建议 Responses 回环转发，Host 不再把建议采集放进原 Codex 的模型网络路径。安装、升级和回退剔除旧设置，仅移除产品安装且有回执的 URL。Windows 手机端暂缺这项建议来源。[运行说明](runtime.md#windows-原生建议-responses-转发退役)
 
-2026-11-07 C2-SUB：EasyWork iOS/Android 在同一认证会话消费子代理事件与权威快照，由共享规则核对原 thread、branch、root/child 并投影完整详情。事件只唤醒读取；不拼接重发片段、不新增运行或命令。共同时间线保留原角色和独立子行，原生折叠预览不改数据，既有传输安全上限保留。Codex 适配器有独立数据来源与详情上限。源码、组件、真实设备/桌面及待验边界见[阶段120](plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
+2026-11-07 C2-SUB：EasyWork iOS/Android 在同一认证会话消费子代理事件与权威快照，由共享规则核对原 thread、branch、root/child 并投影完整详情。事件只唤醒读取；不拼接重发片段、不新增运行或命令。共同时间线保留原角色和独立子行，原生折叠预览不改数据，既有传输安全上限保留。Codex 适配器对已加载和已保存的可用子代理输出使用同一只读投影。按原序保留任务与正文，每卡限定 200000 UTF-16 单元和 32 个父项明确关联的子线程，超限时提供部分详情提示。见[阶段121](plans/android-alignment-20261022/records/stage121-c2-selection-and-codex-detail.md)。源码、组件、真实设备/桌面及待验边界见[阶段120](plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
 
 2026-11-04 F69 Windows Responses 通道：Windows Host 显式选择独立的回环转发采集，从原桌面预测请求绑定来源聊天／完成轮及 response ID，不依赖前台 UI、OCR 或额外生成。原 CLI TCP peer、IPC owner、读取前中后来源及当前结果版本分别核验；每聊天只保存最新状态，失败／取消／空值／新请求不回退旧正文。兼容领域接口增加 `responses-forwarder` 来源说明，不声称 renderer 可见或安全后确认。macOS 原 Trace／native-sample 安全判定及启动路径保持，详见[实现与验收边界](acceptance/windows-response-suggestions-20261104.md)。
 
@@ -1545,3 +1545,5 @@ iOS resolves suggestion source kinds through the Agent adapter while EasyWork ke
 2026-11-06 Android P7：迁移 Frozen 在原锁与 channel 关闭成功后释放登记。原关闭异常保留同一 owner、token 和首错，后续只观察原关闭结果并阻止新 writer/freeze；范围为进程内协调门，持久化恢复与认证迁移容器另验。见[阶段114](plans/android-alignment-20261022/records/stage114-p7-frozen-close.md)。
 
 2026-11-06 Android P7：普通录音、inbox和F59共用的 Gate 在最后 writer 原句柄关闭成功后才释放登记；任务完成和关闭完成保持各自证明。Frozen 与 writer 使用同一一次性关闭状态，失败阻止新 record，保留首次打开的严格/普通端口。见[阶段115](plans/android-alignment-20261022/records/stage115-p7-last-writer-close.md)。
+
+Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协作工具接收者记录分别识别明确的子线程。重复活动更新稳定的独立卡片，已有工具卡片继续负责其显式子线程。关联只供读取，保存内容刷新不赋予子 owner 控制。见[阶段123](plans/android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。

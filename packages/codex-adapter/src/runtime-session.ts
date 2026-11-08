@@ -1855,7 +1855,13 @@ export class RuntimeSession {
                     content: wire.input,
                   }
                 : wire;
-            const { paths, ...message } = renderItem({ ...item, runId: turn.turnId }, Infinity);
+            const projected =
+              item.type === 'subAgentActivity' ? runtime.projectSubagent(item, complete) : item;
+            if (!projected) return [];
+            const { paths, ...message } = renderItem(
+              { ...projected, runId: turn.turnId },
+              Infinity,
+            );
             if (message.kind === 'reasoning' && !message.text) return [];
             const cached = thread.messages.find((v) => v.id === message.id);
             return [
@@ -5753,6 +5759,7 @@ export class RuntimeSession {
           this.runtime instanceof DesktopRuntime
             ? this.runtime.projectSubagent(object(item), state)
             : object(item);
+        if (!wire) continue;
         if (wire.type === 'steeringUserMessage') {
           if (!string(wire.serverUserMessageId)) continue;
           await this.upsert(

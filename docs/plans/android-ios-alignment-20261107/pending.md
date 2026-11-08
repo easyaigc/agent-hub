@@ -19,9 +19,11 @@
 
 ENV-10：原身份DEV已安全恢复；物理iPhone经原保存路径的原回执只读核对1项通过，缺失ID被拒，未重放。该限定阻塞已解除；hostname DNS及原owner控制不由readiness证明，仍须各自验收。完整C1和四格保持开放；前轮连接失败及辅助检查保留于[阶段118](../android-alignment-20261022/records/stage118-three-way-native.md)，恢复结果见[阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
 
-**ENV-11**。Android 同目标授权与原历史经本机独立 DEV 签发链路通过。原 issuer 普通 DNS 仍为 NXDOMAIN，临时验收只借原 origin 的端到端 TLS，已回收 ADB 映射。常规接入恢复继续单列。详见[阶段122](../android-alignment-20261022/records/stage122-c2-easywork-real-dev.md)。
+**ENV-11 EasyWork 原 issuer DNS**。公网权威与当前普通 DNS 对旧主机名返回 NXDOMAIN，旧私有 MagicDNS 管理权威尚未核实。受控解析下原证书与健康接口通过，等待权威记录恢复后以手机普通 DNS 和标准 TLS 核对。原授权与原历史保持阶段122通过。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 
-C2-CODEX-01：Codex 独立子代理上游有 32 子线程、最近 24 项、单项 16000 和总尾部 200000 上限；共享独立卡片不解除这些边界。核对授权的父子关系与完整读取/分页或明确不完整的界面，不撤销传输安全上限。见[阶段120](../android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
+**C2-UI-01 系统选择与界面组合**。双端模拟器系统选词复制保留通过。Android 真机本轮可正常安装和启动独立 App；复制测试启动后未完成，复制与恢复结果未知，未重放。实体复制、跨行、短视口/横屏/大字及 API 37 分别待验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
+
+**C2-CODEX-01 原桌面长详情**。真实 Host 父卡片与刷新、iOS 模拟器生产卡片交互、Android 真机的稳定读取与实际显示通过。Android 实体触摸事件被系统拒绝，待实体展开与界面刷新。iPhone 真机及有实时 owner 的子输出后续独立验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 
 ## 暂停项
 

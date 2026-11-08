@@ -7,6 +7,35 @@ import Vision
 /// Drives the actual history card in a fresh owned simulator. The app's DEBUG
 /// demo fixture supplies the long text; no device credentials or desktop writes.
 final class EasyWorkSubagentReadingUITests: XCTestCase {
+  @MainActor func testNativeLongPressSelectAndCopyChildDetail() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-ui-testing", "-subagent-reading-fixture"]
+    app.launch()
+    defer { app.terminate() }
+    let disclosure = app.buttons["subagent-expand-c2-fixture-child"]
+    XCTAssertTrue(disclosure.waitForExistence(timeout: 30))
+    disclosure.tap()
+    let full = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "C2_DETAIL_HEAD")).firstMatch
+    XCTAssertTrue(full.waitForExistence(timeout: 15))
+    let original = full.label
+    XCTAssertTrue(original.utf8.count > 65_536)
+    // The element is much taller than the viewport. Press visible text near the
+    // top of its actual frame, rather than the offscreen element centre.
+    let visible = full.frame.intersection(app.frame)
+    XCTAssertGreaterThan(visible.height, 40)
+    let point = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX, dy: visible.minY + 30))
+    point.press(forDuration: 1.2)
+    let copy = app.menuItems.matching(NSPredicate(format: "label == 'Copy' OR label == '拷贝' OR label == '复制'")).firstMatch
+    XCTAssertTrue(copy.waitForExistence(timeout: 15), "Native selection menu must expose Copy")
+    let menu = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    menu.name = "c2-native-selection-menu"; menu.lifetime = .keepAlways; add(menu)
+    copy.tap()
+    // The separate XCTest runner has no paste permission on this OS. Verify
+    // the system pasteboard externally with simctl after the UI test exits.
+
+  }
+
   @MainActor func testLongChildDetailExpandsAndCollapsesWithoutLosingContent() {
     continueAfterFailure = false
     let app = XCUIApplication()

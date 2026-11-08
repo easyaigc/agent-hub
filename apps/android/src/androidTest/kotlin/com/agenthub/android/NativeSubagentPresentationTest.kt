@@ -22,7 +22,7 @@ import org.junit.*
 import org.junit.Assert.*
 import org.junit.runner.RunWith
 
-/** Real Compose display/disclosure with synthetic data, not a desktop or system-copy acceptance. */
+/** Native disclosure and selection on the production Compose card with synthetic data. */
 @RunWith(AndroidJUnit4::class)
 class NativeSubagentPresentationTest {
     @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
@@ -76,6 +76,52 @@ class NativeSubagentPresentationTest {
     private fun renderedBody(): String=ui.onNodeWithTag(bodyTag).fetchSemanticsNode().config[SemanticsProperties.Text].single().text
     private fun longBody()="HEAD 原始🙂 100% %@\n"+"0123456789".repeat(3500)+
         "\nMIDDLE 原始中段\n"+"abcdefghij".repeat(3500)+"\nTAIL 原始末尾🙂"
+
+    @Test fun expandedLongDetailSupportsNativeSelectionAndSystemClipboardCopy() {
+        org.junit.Assume.assumeTrue("Restoring an empty system clipboard requires API 28",android.os.Build.VERSION.SDK_INT>=28)
+        val original=longBody();ui.runOnIdle { message=message.copy(detail=original) };mount();toggle()
+        ui.onNodeWithTag("subagent-test-viewport").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f,-1_000_000f) }
+        val text=ui.onNodeWithTag(bodyTag);val layouts=mutableListOf<TextLayoutResult>()
+        text.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { assertTrue(it(layouts)) }
+        val clipboard=ui.activity.getSystemService(android.content.ClipboardManager::class.java)
+        val automation=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        ui.waitUntil(10_000) { ui.activity.hasWindowFocus() }
+        var previous: android.content.ClipData?=null
+        ui.runOnIdle { previous=clipboard.primaryClip }
+        if(androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("c2Physical")=="1") {
+            org.junit.Assume.assumeNotNull(previous)
+        }
+        val flags=automation.serviceInfo.flags
+        try {
+            ui.runOnIdle { clipboard.setPrimaryClip(android.content.ClipData.newPlainText("sentinel","C2 sentinel")) }
+            ui.runOnIdle { assertEquals("C2 sentinel",clipboard.primaryClip?.getItemAt(0)?.text?.toString()) }
+            automation.serviceInfo=automation.serviceInfo.apply { this.flags=flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS }
+            text.performTouchInput { longClick(layouts.single().getBoundingBox(2).center) }
+            val handles=ui.onAllNodes(SemanticsMatcher("Visible selection handle") { n -> n.config.any { it.key.name=="SelectionHandleInfo" && it.value.toString().contains("visible=true") } },useUnmergedTree=true)
+            ui.waitUntil(10_000) { handles.fetchSemanticsNodes().size==2 }
+            var action:android.view.accessibility.AccessibilityNodeInfo?=null
+            ui.waitUntil(10_000) {
+                val candidates=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
+                fun visit(n:android.view.accessibility.AccessibilityNodeInfo) {
+                    if(n.text?.toString() in listOf("Copy","复制") && n.viewIdResourceName.orEmpty().contains("floating_toolbar")) candidates+=n
+                    for(i in 0 until n.childCount)n.getChild(i)?.let(::visit)
+                }
+                automation.windows.mapNotNull { it.root }.filter { it.packageName?.toString()==ui.activity.packageName }.forEach(::visit)
+                action=candidates.singleOrNull();action!=null
+            }
+            val item=checkNotNull(action)
+            assertEquals(ui.activity.packageName,item.packageName?.toString())
+            val rect=android.graphics.Rect();item.getBoundsInScreen(rect);assertFalse(rect.isEmpty)
+            val now=android.os.SystemClock.uptimeMillis()
+            for((kind,time) in listOf(android.view.MotionEvent.ACTION_DOWN to now,android.view.MotionEvent.ACTION_UP to now+80)) {
+                val event=android.view.MotionEvent.obtain(now,time,kind,rect.exactCenterX(),rect.exactCenterY(),0).apply { source=android.view.InputDevice.SOURCE_TOUCHSCREEN }
+                try { assertTrue(automation.injectInputEvent(event,true)) } finally { event.recycle() }
+            }
+            ui.waitUntil(5_000) { var copied:String?=null;ui.runOnUiThread { copied=clipboard.primaryClip?.getItemAt(0)?.text?.toString() };copied=="HEAD" }
+            ui.runOnIdle { assertEquals("HEAD",clipboard.primaryClip?.getItemAt(0)?.text?.toString()) }
+            assertEquals(original,message.detail)
+        } finally { automation.serviceInfo=automation.serviceInfo.apply { this.flags=flags };ui.runOnIdle { previous?.let(clipboard::setPrimaryClip) ?: clipboard.clearPrimaryClip() } }
+    }
 
     @Test fun expandingLongDetailRendersOriginalHeadMiddleAndTailWithoutChangingSource() {
         val original=longBody();assertTrue(original.length>65536)

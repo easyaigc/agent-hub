@@ -8,7 +8,13 @@ import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { CodexHistoryReader } from './history-reader.js';
 import { DesktopInstallation } from './desktop-installation.js';
-import { subagentIds, subagentItem } from './subagents.js';
+import {
+  subagentActivityStatus,
+  subagentIds,
+  subagentItem,
+  subagentTranscript,
+  type SubagentTranscript,
+} from './subagents.js';
 import { DesktopFrameDecoder, desktopFrameLimits } from './desktop-framing.js';
 import { DesktopLiveWindow, type DesktopLiveObservation } from './desktop-live-window.js';
 import { configuredPermissionSettings, permissionSettings } from './generation-settings.js';
@@ -22,7 +28,6 @@ import {
   object,
   list,
   string,
-  renderItem,
   type WireObject,
   type RuntimeOptions,
 } from './runtime.js';
@@ -1022,17 +1027,23 @@ export class DesktopIpc {
   }
 }
 
+interface ParentSubagents {
+  reported: WireObject;
+  toolChildren: Set<string>;
+  activities: Map<string, { itemId: string; status: string | undefined }>;
+}
+
 export class DesktopRuntime {
   private subagentParents = new Map<string, Set<string>>();
   private parentChildren = new Map<string, Set<string>>();
   private subagentReads = new Set<string>();
   private subagentRetryAt = new Map<string, number>();
-  private subagentHistory = new Map<string, WireObject>();
+  private subagentHistory = new Map<string, SubagentTranscript>();
   private subagentHistoryTimer?: NodeJS.Timeout;
   private subagentHistoryReading = false;
   private subagentHistoryOffset = 0;
   private subagentsClosed = false;
-  private subagentReportedStates = new WeakMap<WireObject, WireObject>();
+  private parentSubagents = new WeakMap<WireObject, ParentSubagents>();
   readonly ipc: DesktopIpc;
   readonly reader: CodexHistoryReader;
   version = '';
@@ -1086,12 +1097,11 @@ export class DesktopRuntime {
     }
   }
   followSubagents(parentId: string, state: WireObject): void {
-    const ids = new Set(
-      desktopTurns(state)
-        .flatMap((turn) => list(turn.items).flatMap((item) => subagentIds(object(item))))
-        .filter((id) => id !== parentId)
-        .slice(-32),
-    );
+    const recent = desktopTurns(state)
+      .flatMap((turn) => list(turn.items).flatMap((item) => subagentIds(object(item))))
+      .filter((id) => id !== parentId)
+      .reverse();
+    const ids = new Set([...new Set(recent)].slice(0, 32).reverse());
     for (const old of this.parentChildren.get(parentId) ?? []) {
       if (ids.has(old)) continue;
       this.subagentParents.get(old)?.delete(parentId);
@@ -1135,28 +1145,63 @@ export class DesktopRuntime {
         });
     }
   }
-  projectSubagent(item: WireObject, parentState?: WireObject): WireObject {
-    const states = { ...object(item.agentsStates) };
-    if (item.type === 'collabAgentToolCall' && parentState) {
-      let latest = this.subagentReportedStates.get(parentState);
-      if (!latest) {
-        latest = {};
-        for (const turn of desktopTurns(parentState))
-          for (const value of list(turn.items)) {
-            const tool = object(value);
-            if (tool.type === 'collabAgentToolCall')
-              Object.assign(latest, object(tool.agentsStates));
-          }
-        this.subagentReportedStates.set(parentState, latest);
+  private subagentsForParent(state: WireObject): ParentSubagents {
+    const cached = this.parentSubagents.get(state);
+    if (cached) return cached;
+    const parent: ParentSubagents = {
+      reported: {},
+      toolChildren: new Set(),
+      activities: new Map(),
+    };
+    for (const turn of desktopTurns(state)) {
+      for (const value of list(turn.items)) {
+        const item = object(value);
+        if (item.type === 'collabAgentToolCall') {
+          Object.assign(parent.reported, object(item.agentsStates));
+          for (const id of subagentIds(item)) parent.toolChildren.add(id);
+        } else if (item.type === 'subAgentActivity') {
+          const [id] = subagentIds(item);
+          if (!id || id === state.id) continue;
+          const previous = parent.activities.get(id);
+          parent.activities.set(id, {
+            itemId: previous?.itemId ?? string(item.id),
+            status: subagentActivityStatus(item.kind) ?? previous?.status,
+          });
+        }
       }
-      for (const id of subagentIds(item)) if (latest[id]) states[id] = latest[id];
+    }
+    this.parentSubagents.set(state, parent);
+    return parent;
+  }
+  projectSubagent(item: WireObject, parentState?: WireObject): WireObject | undefined {
+    let tool = item;
+    if (item.type === 'subAgentActivity') {
+      const [id] = subagentIds(item);
+      if (!id || id === parentState?.id) return undefined;
+      const parent = parentState && this.subagentsForParent(parentState);
+      const activity = parent?.activities.get(id);
+      if (parent && (parent.toolChildren.has(id) || activity?.itemId !== item.id)) return undefined;
+      tool = {
+        ...item,
+        id: 'desktop-subagent-' + id,
+        type: 'collabAgentToolCall',
+        tool: string(item.agentPath),
+        receiverThreadIds: [id],
+        agentsStates: { [id]: { status: activity?.status ?? subagentActivityStatus(item.kind) } },
+      };
+    } else if (item.type === 'collabAgentToolCall' && parentState) {
+      const { reported } = this.subagentsForParent(parentState);
+      const states = { ...object(item.agentsStates) };
+      for (const id of subagentIds(item)) if (reported[id]) states[id] = reported[id];
+      tool = { ...item, agentsStates: states };
     }
     return subagentItem(
-      item.type === 'collabAgentToolCall' ? { ...item, agentsStates: states } : item,
+      tool,
       (id) => {
         const state = this.ipc.state(id);
-        return state ? { ...state, turns: desktopTurns(state) } : this.subagentHistory.get(id);
+        return state ? { ...state, turns: desktopTurns(state) } : undefined;
       },
+      (id) => this.subagentHistory.get(id),
     );
   }
   private async refreshSubagentHistory(): Promise<void> {
@@ -1185,30 +1230,9 @@ export class DesktopRuntime {
           });
           const child = object(result.thread);
           if (this.subagentsClosed || child.id !== id || !this.subagentParents.has(id)) return;
-          const output = list(child.turns)
-            .slice(-3)
-            .flatMap((turn) => list(object(turn).items))
-            .map(object)
-            .filter((item) =>
-              [
-                'agentMessage',
-                'commandExecution',
-                'fileChange',
-                'mcpToolCall',
-                'dynamicToolCall',
-              ].includes(string(item.type)),
-            )
-            .slice(-24)
-            .map((item) => renderItem(item, 16_000))
-            .map((message) => [message.text, message.detail].filter(Boolean).join('\n'))
-            .join('\n\n')
-            .slice(-16_384);
-          const value = {
-            id,
-            turns: [{ items: [{ type: 'agentMessage', text: output }] }],
-            agentHubSource: 'history',
-          };
-          if (JSON.stringify(this.subagentHistory.get(id)) === JSON.stringify(value)) return;
+          const value = subagentTranscript(child.turns);
+          const previous = this.subagentHistory.get(id);
+          if (previous?.text === value.text && previous.omitted === value.omitted) return;
           this.subagentHistory.set(id, value);
           while (this.subagentHistory.size > 128)
             this.subagentHistory.delete(this.subagentHistory.keys().next().value!);

@@ -1,19 +1,17 @@
 # 完整运行时连接与开发验收
 
-## Windows 原生建议 Responses 采集
+## Windows 原生建议 Responses 转发退役
 
-Windows `desktop-runtime` 可设置 `CODEX_DESKTOP_RESPONSES_CONFIG=<private-config.json>`，私有 JSON 为 `{ "version": 1, "port": 8797, "bindingId": "<uuid>" }`。端口先核对空闲，bindingId 独立生成；此入口与面向外部消费者的 `HOST_RESPONSES_PROXY_ENABLED` 无关，不开启 F74 模型 API。新通道的无效配置只关闭建议能力，不阻断 Host 其他功能。
+Windows 原生灰字采集的回环转发已退役。Host 启动时忽略旧 `CODEX_DESKTOP_RESPONSES_CONFIG`，安装和升级不再配置该转发，也不登记 `openai_base_url`。Windows 手机端暂不提供这条原生建议来源，普通 Codex 启动、模型请求和 Host 管理使用各自原有路径。面向外部消费者的 F74 模型代理是独立功能，仍默认关闭。
 
-先通过既有 Windows Host 服务保存该环境并启动，确认 `http://localhost:<port>/_agent_hub/<bindingId>/backend-api/health` 返回匹配的 ready／bindingId／port，再运行：
+已有安装使用原私有 Responses 配置查询或移除有归属回执的 URL：
 
 ```powershell
-node scripts/windows-response-suggestions-config.mjs install --config <private-config.json>
 node scripts/windows-response-suggestions-config.mjs status --config <private-config.json>
+node scripts/windows-response-suggestions-config.mjs disable --config <private-config.json>
 ```
 
-安装只管理官方 `openai_base_url`，保留原 App、快捷方式和 `CODEX_CLI_PATH`；不强退原桌面。原进程中已加载的聊天不保证热生效，新聊天／正常冷恢复分别确认。标准 ChatGPT 路由、当前支持范围及 Host 作为网络依赖的限制见[专项记录](acceptance/windows-response-suggestions-20261104.md)。前台只读确认仅用于验收，采集运行不使用截图或 UI 自动化。
-
-停用先运行同入口 `disable` 删除有回执的准确配置；已加载聊天仍可能保留旧地址，必须核实无在途请求及连接并安排正常会话恢复后，才能停监听。未知配置事务保留私有备份，不强行覆盖或重放。macOS 继续原有安装与采集流程，不设置此 Windows 选项。
+`disable` 只移除产品安装并有归属回执的准确首行，其他 provider 和用户自定义 URL 保持。曾通过 `--codex-home` 写入其他配置目录时，对同一目录指定该参数。若刚移除了旧 URL，先保存工作并正常重开桌面和 CLI，核对已加载聊天恢复和无在途连接，再继续 Host 升级或重启。旧版转发的实现与网络依赖见[历史记录](acceptance/windows-response-suggestions-20261104.md)。
 
 替换文件及备份位于 Codex 配置同卷的新建私有 staging，元数据可留在另一个盘；不修改 Codex home 本身的所有者或 ACL。失败事务默认阻止再次写入。可用 `inspect-no-change --config <private-config.json> --receipt <exact-receipt-id>` 只读核对当前配置仍等于原摘要且无遗留准备文件／备份；明确处理该事务时才用 `resolve-no-change` 记录独立恢复回执。它不删除原拒绝记录，也不代表原动作成功；权限拒绝仍按操作环境的授权规则处理。
 

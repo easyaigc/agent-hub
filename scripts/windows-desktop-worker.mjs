@@ -11,7 +11,10 @@ import {
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 import { refreshWindowsHostConfiguration } from './windows-desktop-recovery.mjs';
 import { safeWorkerFailure, superviseWorker } from './host-worker-supervisor.mjs';
-import { validateWindowsHostEnvironment } from './windows-host-environment.mjs';
+import {
+  validateWindowsHostEnvironment,
+  withoutRetiredWindowsResponses,
+} from './windows-host-environment.mjs';
 import { applyProtectedHostEnvironment } from './windows-host-regular-layout.mjs';
 
 if (process.platform !== 'win32') throw new Error('Native Windows required');
@@ -55,7 +58,11 @@ if (configuration.format === 'windows-host-startup-preflight-v1') {
         }),
       );
   }
-  for (const [key, value] of Object.entries(configuration.environment)) process.env[key] = value;
+  delete process.env.CODEX_DESKTOP_RESPONSES_CONFIG;
+  for (const [key, value] of Object.entries(
+    withoutRetiredWindowsResponses(configuration.environment),
+  ))
+    process.env[key] = value;
   applyProtectedHostEnvironment(protectedProgram);
   if (process.argv[3] === '--host-child') {
     // Monitoring records the crash; it never catches or suppresses it.

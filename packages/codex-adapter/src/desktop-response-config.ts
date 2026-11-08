@@ -13,17 +13,9 @@ export function inspectDesktopResponseConfigToml(bytes: Buffer, url: string) {
   } catch {
     throw new Error('Invalid Codex TOML configuration');
   }
-  if (value.model_provider !== undefined && value.model_provider !== 'openai')
-    throw new Error('Non-OpenAI provider is unsupported');
-  for (const profile of Object.values((value.profiles ?? {}) as Record<string, unknown>)) {
-    if (!profile || typeof profile !== 'object' || Array.isArray(profile))
-      throw new Error('Invalid Codex profile');
-    if ('openai_base_url' in profile || 'model_provider' in profile || 'base_url' in profile)
-      throw new Error('Profile provider override is unsupported');
-  }
-  const newline = body.includes('\r\n') ? '\r\n' : '\n';
-  const prefix = `openai_base_url = "${url}"${newline}`;
-  const own = value.openai_base_url === url && body.startsWith(prefix);
-  if (value.openai_base_url !== undefined && !own) throw new Error('Conflicting openai_base_url');
-  return { hasBom, body, newline, prefix, own };
+  const line = `openai_base_url = "${url}"`;
+  const prefix = line + (body.startsWith(line + '\r\n') ? '\r\n' : '\n');
+  const own = value.openai_base_url === url;
+  if (own && !body.startsWith(prefix)) throw new Error('Conflicting openai_base_url');
+  return { hasBom, body, prefix, own };
 }

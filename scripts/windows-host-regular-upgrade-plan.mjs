@@ -1,4 +1,5 @@
 import { win32 as path } from 'node:path';
+import { withoutRetiredWindowsResponses } from './windows-host-environment.mjs';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const sha256 = /^[a-f0-9]{64}$/;
@@ -50,7 +51,6 @@ export function planRegularUpgrade({
   configuration,
   launcherPath,
   launcherSha256,
-  responseConfigPath,
 }) {
   if (
     !uuid.test(operationId ?? '') ||
@@ -114,24 +114,7 @@ export function planRegularUpgrade({
     reject();
   const oldConfiguration = structuredClone(configuration);
   const newConfiguration = structuredClone(configuration);
-  if (responseConfigPath !== undefined) {
-    absolute(responseConfigPath);
-    const relative = path.relative(instance, responseConfigPath);
-    if (
-      !relative ||
-      relative.startsWith('..') ||
-      path.isAbsolute(relative) ||
-      same(responseConfigPath, configPath)
-    )
-      reject();
-    if (
-      environment.CODEX_DESKTOP_RESPONSES_CONFIG !== undefined &&
-      (typeof environment.CODEX_DESKTOP_RESPONSES_CONFIG !== 'string' ||
-        !same(absolute(environment.CODEX_DESKTOP_RESPONSES_CONFIG), responseConfigPath))
-    )
-      reject();
-    newConfiguration.environment.CODEX_DESKTOP_RESPONSES_CONFIG = responseConfigPath;
-  }
+  newConfiguration.environment = withoutRetiredWindowsResponses(newConfiguration.environment);
   const oldRoute = structuredClone(current);
   const newRoute = {
     ...oldRoute,

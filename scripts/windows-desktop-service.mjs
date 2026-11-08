@@ -16,6 +16,8 @@ import { withWindowsProcessCreation } from '../packages/codex-adapter/dist/windo
 import { inspectWindowsInstallation } from './windows-desktop-recovery.mjs';
 import { applyProtectedHostEnvironment } from './windows-host-regular-layout.mjs';
 import { routeRegularService } from './windows-host-regular-installed.mjs';
+import { withoutRetiredWindowsResponses } from './windows-host-environment.mjs';
+import { retireWindowsResponsesUrl } from './windows-response-suggestions-config.mjs';
 
 if (process.platform !== 'win32') throw new Error('Use this service on native Windows');
 const action = process.argv[2] ?? 'status';
@@ -99,7 +101,8 @@ if (['preflight', 'start', 'restart'].includes(action)) {
   if (existsSync(jobConfig)) {
     assertPrivateFile(jobConfig);
     previousConfiguration = JSON.parse(readFileSync(jobConfig, 'utf8'));
-    previous = previousConfiguration.environment;
+    await retireWindowsResponsesUrl(previousConfiguration.environment);
+    previous = withoutRetiredWindowsResponses(previousConfiguration.environment);
   }
   // Compatibility default cwd only; original desktop projects own their paths.
   const root = process.env.HOST_AGENT_ROOT ?? previous.HOST_AGENT_ROOT ?? process.cwd();
@@ -148,7 +151,6 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     'CODEX_DESKTOP_SUGGESTION_TRACE_ROOT',
     'CODEX_DESKTOP_TRACE_RETENTION',
     'CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG',
-    'CODEX_DESKTOP_RESPONSES_CONFIG',
   ]) {
     if (process.env[key] !== undefined) environment[key] = process.env[key];
   }

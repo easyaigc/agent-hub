@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-08 F69：Windows Responses 退役和正式 Host 恢复见[专项记录](windows-response-suggestions-20261104.md#退役与恢复)。本机回环认证和 Windows 计划任务为正式恢复证据。iOS／Android 实体设备未复验，原桌面与 CLI 的冷启动及真实模型对话另行记录。
+
 2026-11-04 F69 Windows Responses 采集按[专项记录](windows-response-suggestions-20261104.md)分别登记转发 fixture、Host 来源与版本隔离、配置恢复、真实原桌面及部署指纹。前台画面只是独立验收证据，不是生产读取依赖。macOS 回归不冒充其本轮真机通过；iOS／Android 采用、撤销和完整移动链路无新增通过，A6 保持暂停。
 
 2026-11-04 F69 本机部署候选：在正式 R11 对应的规范提交上叠加空日志候选计数修复和 macOS 私有诊断日志，保留正式 Host 已有诊断、恢复和原生 owner 规则。空文件每次复查，增长后从零读取，已跟踪截断仍拒绝；日志记录生命周期、固定原因、阶段、心跳和结果状态。iOS／Android 共用 Host 来源规则，UI／草稿语义保持，Android 建议 UI 与 A6 状态不变。源码、辅助检查、实际部署与建议来源验收分别记录。

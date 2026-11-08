@@ -23,6 +23,8 @@ import {
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 import { verifyRegularRuntime } from './windows-host-regular-runtime.mjs';
 import { planRegularUpgrade } from './windows-host-regular-upgrade-plan.mjs';
+import { withoutRetiredWindowsResponses } from './windows-host-environment.mjs';
+import { retireWindowsResponsesUrl } from './windows-response-suggestions-config.mjs';
 import { regularPowerShellEnvironment } from './windows-host-regular-recovery.mjs';
 
 const repository = fileURLToPath(new URL('..', import.meta.url));
@@ -238,10 +240,17 @@ function load(directory) {
     configuration: plan.oldConfiguration,
     launcherPath: plan.oldAction.launcher,
     launcherSha256: plan.oldAction.launcherSha256,
-    responseConfigPath: plan.newConfiguration.environment.CODEX_DESKTOP_RESPONSES_CONFIG,
   });
-  for (const key of Object.keys(checked))
-    if (json(checked[key]) !== json(plan[key])) fail('HOST_UPGRADE_PLAN_CHANGED');
+  // An already prepared legacy operation can be inspected or rolled back. Only
+  // its retired setting can differ from the reconstructed configuration.
+  const storedConfiguration = {
+    ...plan.newConfiguration,
+    environment: withoutRetiredWindowsResponses(plan.newConfiguration.environment),
+  };
+  for (const key of Object.keys(checked)) {
+    const stored = key === 'newConfiguration' ? storedConfiguration : plan[key];
+    if (json(checked[key]) !== json(stored)) fail('HOST_UPGRADE_PLAN_CHANGED');
+  }
   checkDigest(plan.oldAction.launcher, plan.oldAction.launcherSha256);
   return { directory, plan };
 }
@@ -303,13 +312,7 @@ export function inspectUpgradePreparation(abandon = false) {
   }
   return result;
 }
-export function prepareRegularUpgrade({
-  source,
-  runtimeSha256,
-  launcherPath,
-  launcherSha256,
-  responseConfigPath,
-}) {
+export function prepareRegularUpgrade({ source, runtimeSha256, launcherPath, launcherSha256 }) {
   if (process.platform !== 'win32') fail('HOST_UPGRADE_WINDOWS_ONLY');
   // Official read-only route checks profile owner/DACL/source namespace before use.
   const route = JSON.parse(ps('scripts/windows-host-regular-route.ps1', []));
@@ -334,7 +337,6 @@ export function prepareRegularUpgrade({
       fail('HOST_UPGRADE_LAUNCHER_CHANGE_UNSUPPORTED');
   }
   checkDigest(launcherPath, launcherSha256);
-  if (responseConfigPath) readPrivate(responseConfigPath);
   const operationId = randomUUID();
   const plan = planRegularUpgrade({
     operationId,
@@ -346,7 +348,6 @@ export function prepareRegularUpgrade({
     configuration,
     launcherPath,
     launcherSha256,
-    responseConfigPath,
   });
   plan.expectedConfigurationSha256 = hash(configurationBytes);
   plan.taskHelperSources = Object.fromEntries(
@@ -417,21 +418,6 @@ async function health(plan) {
         value.connectionMode !== 'desktop-runtime'
       )
         fail('HOST_UPGRADE_HEALTH_IDENTITY');
-      if (config.CODEX_DESKTOP_RESPONSES_CONFIG) {
-        const response = JSON.parse(readPrivate(config.CODEX_DESKTOP_RESPONSES_CONFIG));
-        const ready = await fetch(
-          `http://127.0.0.1:${response.port}/_agent_hub/${response.bindingId}/backend-api/health`,
-          { signal: AbortSignal.timeout(2000) },
-        );
-        const body = await ready.json();
-        if (
-          !ready.ok ||
-          !body.ready ||
-          body.bindingId !== response.bindingId ||
-          body.port !== response.port
-        )
-          fail('HOST_UPGRADE_CAPTURE_NOT_READY');
-      }
       return { hostId: value.hostId, connectionMode: value.connectionMode };
     } catch (error) {
       last = error.message;
@@ -447,9 +433,12 @@ export async function applyRegularUpgrade(operation) {
     existsSync(join(directory, 'stop-intent.json'))
   )
     fail('HOST_UPGRADE_REPLAY_REJECTED');
+  if (Object.hasOwn(plan.newConfiguration.environment, 'CODEX_DESKTOP_RESPONSES_CONFIG'))
+    fail('HOST_UPGRADE_RETIRED_RESPONSES_PLAN');
   checkDigest(pointer, plan.expectedCurrentSha256);
   checkDigest(plan.oldRoute.configuration, plan.expectedConfigurationSha256);
   verifyRegularRuntime(plan.newRoute.program, plan.newRoute.runtimeSha256);
+  await retireWindowsResponsesUrl(plan.oldConfiguration.environment);
   receipt(directory, 'stop-intent');
   try {
     stop(plan.oldAction);
@@ -501,6 +490,14 @@ export async function rollbackRegularUpgrade(operation) {
     fail('HOST_UPGRADE_ROLLBACK_CONFLICT');
   const status = task('status', directory);
   if (!['old', 'new'].includes(status.route)) fail('HOST_UPGRADE_ROLLBACK_TASK_CONFLICT');
+  const originalConfiguration = readPrivate(join(directory, 'original-configuration.json'));
+  if (hash(originalConfiguration) !== plan.expectedConfigurationSha256)
+    fail('HOST_UPGRADE_ROLLBACK_CONFIG_BACKUP_CHANGED');
+  const currentEnvironment =
+    currentConfig === newConfig
+      ? plan.newConfiguration.environment
+      : plan.oldConfiguration.environment;
+  await retireWindowsResponsesUrl(currentEnvironment);
   receipt(directory, 'rollback-intent');
   stop(status.route === 'new' ? plan.newAction : plan.oldAction);
   if (currentPointer === newPointer)
@@ -511,18 +508,28 @@ export async function rollbackRegularUpgrade(operation) {
       directory,
       name: 'rollback-pointer',
     });
-  if (currentConfig === newConfig)
+  const restoredConfiguration = {
+    ...plan.oldConfiguration,
+    environment: withoutRetiredWindowsResponses(plan.oldConfiguration.environment),
+  };
+  const restoredBytes = Object.hasOwn(
+    plan.oldConfiguration.environment,
+    'CODEX_DESKTOP_RESPONSES_CONFIG',
+  )
+    ? json(restoredConfiguration)
+    : originalConfiguration;
+  if (currentConfig !== hash(restoredBytes))
     replaceUpgradeFile({
       target: plan.oldRoute.configuration,
-      bytes: readPrivate(join(directory, 'original-configuration.json')),
-      expected: newConfig,
+      bytes: restoredBytes,
+      expected: currentConfig,
       directory,
       name: 'rollback-configuration',
     });
   if (status.route === 'new') task('restore', directory);
   receipt(directory, 'rollback-run-intent');
   task('start-old', directory);
-  const result = await health({ ...plan, newConfiguration: plan.oldConfiguration });
+  const result = await health({ ...plan, newConfiguration: restoredConfiguration });
   receipt(directory, 'rolled-back', result);
   return { ...release(directory, plan), status: 'rolled-back' };
 }
@@ -530,13 +537,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     const [action, ...args] = process.argv.slice(2);
     let result;
-    if (action === 'prepare' && args.length >= 4 && args.length <= 5) {
+    if (action === 'prepare' && args.length === 4) {
       result = prepareRegularUpgrade({
         source: resolve(args[0]),
         runtimeSha256: args[1],
         launcherPath: args[2],
         launcherSha256: args[3],
-        responseConfigPath: args[4],
       });
     } else if (action === 'inspect' && args.length === 0) result = inspectUpgradePreparation();
     else if (action === 'abandon-preparation' && args.length === 0)

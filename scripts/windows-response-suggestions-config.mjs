@@ -13,7 +13,6 @@ import {
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import http from 'node:http';
 import {
   makePrivateDirectorySync,
   writePrivateFileSync,
@@ -28,6 +27,18 @@ const helper = fileURLToPath(
 );
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const bom = Buffer.from([0xef, 0xbb, 0xbf]);
+
+export async function retireWindowsResponsesUrl(environment) {
+  const configPath = environment.CODEX_DESKTOP_RESPONSES_CONFIG;
+  if (configPath === undefined) return;
+  if (typeof configPath !== 'string' || !configPath)
+    throw Error('Invalid legacy Windows Responses configuration path');
+  const result = await responseSuggestionsConfig({ configPath, operation: 'disable' });
+  if (result.changed)
+    throw Error(
+      'Retired Windows Responses URL removed. Reopen Codex normally before retrying Host service changes.',
+    );
+}
 
 function validateConfig(value) {
   if (
@@ -45,61 +56,23 @@ function validateConfig(value) {
   return value;
 }
 
-function health(config) {
-  return new Promise((resolveResult) => {
-    const req = http.get(
-      {
-        host: 'localhost',
-        port: config.port,
-        path: `/_agent_hub/${config.bindingId}/backend-api/health`,
-        timeout: 1500,
-      },
-      (res) => {
-        let data = '';
-        res.setEncoding('utf8');
-        res.on('data', (x) => {
-          data += x;
-          if (data.length > 4096) req.destroy();
-        });
-        res.on('end', () => {
-          try {
-            const v = JSON.parse(data);
-            resolveResult(
-              res.statusCode === 200 &&
-                v.ready === true &&
-                v.bindingId === config.bindingId &&
-                v.port === config.port,
-            );
-          } catch {
-            resolveResult(false);
-          }
-        });
-      },
-    );
-    req.on('timeout', () => req.destroy());
-    req.on('error', () => resolveResult(false));
-  });
-}
-
 export async function responseSuggestionsConfig({
   configPath,
   codexHome = join(homedir(), '.codex'),
   operation,
   receiptId,
   testReplace,
-  testHealth,
 } = {}) {
-  if (
-    !['install', 'disable', 'status', 'inspect-no-change', 'resolve-no-change'].includes(operation)
-  )
-    throw Error('Use install, status, disable, inspect-no-change or resolve-no-change');
+  if (!['disable', 'status', 'inspect-no-change', 'resolve-no-change'].includes(operation))
+    throw Error('Windows Responses forwarding is retired; use status or disable for cleanup');
   const configFile = resolve(configPath),
     target = join(resolve(codexHome), 'config.toml');
+  if (!existsSync(target) && (operation === 'status' || operation === 'disable'))
+    return { enabled: false, owned: false, conflict: false, changed: false };
   assertPrivateFile(configFile);
   const config = validateConfig(JSON.parse(readFileSync(configFile, 'utf8')));
   const url = `http://localhost:${config.port}/_agent_hub/${config.bindingId}/backend-api`;
   if (
-    !existsSync(target) ||
     !lstatSync(target).isFile() ||
     lstatSync(target).isSymbolicLink() ||
     statSync(target).nlink !== 1 ||
@@ -188,7 +161,6 @@ export async function responseSuggestionsConfig({
           enabled: false,
           owned: false,
           conflict: true,
-          loopbackReady: await (testHealth ? testHealth(config) : health(config)),
         };
       throw error;
     }
@@ -209,26 +181,12 @@ export async function responseSuggestionsConfig({
           enabled: true,
           owned: false,
           conflict: true,
-          loopbackReady: await (testHealth ? testHealth(config) : health(config)),
         };
       throw Error('Matching URL has no ownership receipt');
     }
-    const ready = await (testHealth ? testHealth(config) : health(config));
-    if (operation === 'status')
-      return { enabled: parsed.own, owned: parsed.own, conflict: false, loopbackReady: ready };
-    if (operation === 'install' && !ready) throw Error('Loopback forwarder is not ready');
-    if ((operation === 'install' && parsed.own) || (operation === 'disable' && !parsed.own))
-      return {
-        enabled: parsed.own,
-        owned: parsed.own,
-        conflict: false,
-        loopbackReady: ready,
-        changed: false,
-      };
-    const updatedBody =
-      operation === 'install'
-        ? parsed.prefix + parsed.body
-        : parsed.body.slice(parsed.prefix.length);
+    if (operation === 'status') return { enabled: parsed.own, owned: parsed.own, conflict: false };
+    if (!parsed.own) return { enabled: false, owned: false, conflict: false, changed: false };
+    const updatedBody = parsed.body.slice(parsed.prefix.length);
     const updated = Buffer.concat([
         parsed.hasBom ? bom : Buffer.alloc(0),
         Buffer.from(updatedBody),
@@ -314,7 +272,7 @@ export async function responseSuggestionsConfig({
           bindingId: record.bindingId,
           beforeSha256: before,
           afterSha256: after,
-          applied: operation === 'install',
+          applied: false,
         }),
         { flag: 'wx', mode: 0o600 },
       );
@@ -326,10 +284,9 @@ export async function responseSuggestionsConfig({
       writePrivateFileSync(receipt, JSON.stringify(record), { mode: 0o600 });
       unlinkSync(backup);
       return {
-        enabled: operation === 'install',
-        owned: operation === 'install',
+        enabled: false,
+        owned: false,
         conflict: false,
-        loopbackReady: ready,
         changed: true,
       };
     } catch (error) {

@@ -11,6 +11,7 @@ const windowsHostEnvironmentKeys = new Set([
   'CODEX_DESKTOP_SUGGESTION_TRACE_ROOT',
   'CODEX_DESKTOP_TRACE_RETENTION',
   'CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG',
+  // Accept legacy persisted configuration so an old installation can recover.
   'CODEX_DESKTOP_RESPONSES_CONFIG',
   'HOST_AGENT_ROOT',
   'HOST_AGENT_NAME',
@@ -26,6 +27,12 @@ const windowsHostEnvironmentKeys = new Set([
   'HOST_NOTIFICATION_RELAY_URL',
   'HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE',
 ]);
+
+export function withoutRetiredWindowsResponses(environment) {
+  const result = { ...environment };
+  delete result.CODEX_DESKTOP_RESPONSES_CONFIG;
+  return result;
+}
 
 export function validateWindowsHostEnvironment(configuration) {
   if (configuration?.environment?.CODEX_RUNTIME_MODE !== 'desktop-runtime')

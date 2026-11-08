@@ -37,10 +37,10 @@ const args = () => ({
   },
 });
 
-test('preserves original target and changes only the response config key', () => {
-  const input = args(),
-    original = structuredClone(input);
-  input.responseConfigPath = `${anchor}\\instances\\${hostId}\\response.json`;
+test('preserves the original target and strips only the retired Responses setting', () => {
+  const input = args();
+  input.configuration.environment.CODEX_DESKTOP_RESPONSES_CONFIG = `${anchor}\\instances\\${hostId}\\response.json`;
+  const original = structuredClone(input);
   const result = planRegularUpgrade(input);
   assert.deepEqual(result.oldRoute, original.current);
   assert.equal(result.newRoute.hostId, hostId);
@@ -49,22 +49,14 @@ test('preserves original target and changes only the response config key', () =>
   assert.equal(result.newRoute.operationId, op);
   assert.equal(result.newRoute.program, `${anchor}\\programs\\${'b'.repeat(64)}`);
   assert.deepEqual(result.oldConfiguration, original.configuration);
-  assert.deepEqual(result.newConfiguration, {
-    environment: {
-      ...original.configuration.environment,
-      CODEX_DESKTOP_RESPONSES_CONFIG: input.responseConfigPath,
-    },
-  });
+  assert.deepEqual(result.newConfiguration, args().configuration);
   assert.equal(result.newAction.configuration, configPath);
   assert.equal(result.newAction.launcher, input.launcherPath);
   assert.equal(
     result.newAction.arguments,
     `"${result.newAction.node}" "${result.newAction.worker}" "${configPath}"`,
   );
-  assert.deepEqual(
-    { ...input, responseConfigPath: undefined },
-    { ...original, responseConfigPath: undefined },
-  );
+  assert.deepEqual(input, original);
 });
 
 test('rejects escapes, changed identity, untrusted launcher and invalid digests', () => {
@@ -75,8 +67,6 @@ test('rejects escapes, changed identity, untrusted launcher and invalid digests'
     (v) => (v.configuration.environment.HOST_AGENT_STATE_DIR = 'D:\\Other'),
     (v) => (v.configuration.environment.HOST_AGENT_PORT = '65536'),
     (v) => (v.launcherPath = 'D:\\untrusted\\host-launcher.exe'),
-    (v) => (v.responseConfigPath = `${anchor}\\instances\\${hostId}\\..\\other.json`),
-    (v) => (v.responseConfigPath = `${anchor}\\instances\\other\\response.json`),
     (v) => (v.expectedCurrentSha256 = 'bad'),
     (v) => (v.desiredRuntimeSha256 = v.current.runtimeSha256),
     (v) => (v.operationId = oldOp),
@@ -89,10 +79,7 @@ test('rejects escapes, changed identity, untrusted launcher and invalid digests'
   }
 });
 
-test('preserves an existing response setting and refuses to replace it', () => {
+test('leaves an installation without the retired setting unchanged', () => {
   const v = args();
-  v.configuration.environment.CODEX_DESKTOP_RESPONSES_CONFIG = `${anchor}\\instances\\${hostId}\\old.json`;
   assert.deepEqual(planRegularUpgrade(v).newConfiguration, v.configuration);
-  v.responseConfigPath = `${anchor}\\instances\\${hostId}\\new.json`;
-  assert.throws(() => planRegularUpgrade(v), /HOST_UPGRADE_PLAN_REJECTED/);
 });

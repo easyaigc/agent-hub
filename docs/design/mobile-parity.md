@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-11-08 F69：Windows Host 不再声明已退役的 Responses 建议来源。iOS／Android 沿用现有能力门控及空状态，当前建议失效后清除预览，用户已采用的本机草稿按原规则保留。
+
 2026-11-04 F69：新增 Windows Responses 数据来源，手机页面、token、文案、采用和撤销交互保持。Host 读取不依赖桌面前台或截图，不承诺桌面当下显示状态；空值、来源变化和失败仍清除当前预览，不写入草稿或自动发送。macOS 原路径不改，iOS／Android 无新增真机通过，见[专项记录](../acceptance/windows-response-suggestions-20261104.md)。
 
 2026-11-05 F61 Android：旧failed/attempted=false不再据此显示“未提交/重新发送”；提供原ID查询和显式结束本地等待，failed无结果纳入原目标Composer门槛。只有当前完整且有效的强未接受证明显示原消息重试/修改许可，界面按秒重验到期，动作仍现时重验；结束等待保留原操作/附件，不取消远端。iOS/KMP不改，完整交互/主题/方向/字号/AX与真实DEV未验，见[阶段95](../plans/android-alignment-20261022/records/stage95-legacy-reply-safety.md)。

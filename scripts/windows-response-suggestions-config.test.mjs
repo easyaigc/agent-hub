@@ -11,7 +11,6 @@ import {
   statSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
-import http from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -19,6 +18,29 @@ import {
   writePrivateFileSync,
 } from '../packages/codex-adapter/dist/index.js';
 import { responseSuggestionsConfig } from './windows-response-suggestions-config.mjs';
+
+const legacyBinding = '99a5bb6d-2166-4efe-b5d0-f0a6a4fa40c0';
+const legacyUrl = (port) => `http://localhost:${port}/_agent_hub/${legacyBinding}/backend-api`;
+function seedLegacyUrl(state, target, original, port = 19001, newline = '\r\n') {
+  const hasBom = original[0] === 0xef;
+  const offset = hasBom ? 3 : 0;
+  const contents = Buffer.concat([
+    original.subarray(0, offset),
+    Buffer.from(`openai_base_url = "${legacyUrl(port)}"${newline}`),
+    original.subarray(offset),
+  ]);
+  writeFileSync(target, contents);
+  const receipts = join(state, 'response-config-state');
+  makePrivateDirectorySync(receipts);
+  writePrivateFileSync(
+    join(receipts, 'ownership.json'),
+    JSON.stringify({ key: 'openai_base_url', bindingId: legacyBinding, applied: true }),
+  );
+}
+
+test('the retired install command fails before touching any configuration', async () => {
+  await assert.rejects(responseSuggestionsConfig({ operation: 'install' }), /retired/);
+});
 
 test(
   'Windows config ownership, preservation and conflicts',
@@ -45,26 +67,20 @@ test(
         '\ufeffmodel = "test"\r\nitems = [\r\n  "first",\r\n  "second",\r\n]\r\nnote = """first line\r\nsecond line"""\r\n[projects."D:\\\\work space"]\r\ntrust_level = "trusted"\r\n[features]\r\nfoo = true\r\n',
       );
       writeFileSync(target, original);
-      const run = (operation, ready = true) =>
+      const run = (operation) =>
         responseSuggestionsConfig({
           operation,
           configPath: privateConfig,
           codexHome: home,
-          testHealth: async () => ready,
         });
-      await assert.rejects(run('install', false));
+      await assert.rejects(run('install'), /retired/);
       assert.deepEqual(readFileSync(target), original);
-      assert.equal((await run('install')).changed, true);
-      assert.match(
-        readFileSync(target, 'utf8'),
-        /openai_base_url = "http:\/\/localhost:19001\/_agent_hub\/99a5bb6d-2166-4efe-b5d0-f0a6a4fa40c0\/backend-api"/,
-      );
-      assert.equal((await run('install')).changed, false);
+      seedLegacyUrl(state, target, original);
       assert.equal((await run('status')).owned, true);
       assert.equal((await run('disable')).changed, true);
       assert.deepEqual(readFileSync(target), original);
       assert.equal((await run('disable')).changed, false);
-      await run('install');
+      seedLegacyUrl(state, target, original);
       writeFileSync(target, Buffer.concat([readFileSync(target), Buffer.from('extra = true\r\n')]));
       await run('disable');
       assert.deepEqual(
@@ -72,17 +88,25 @@ test(
         Buffer.concat([original, Buffer.from('extra = true\r\n')]),
       );
       writeFileSync(target, 'openai_base_url = "https://example.com"\n');
-      await assert.rejects(run('install'), /Conflicting/);
+      assert.equal((await run('disable')).changed, false);
       assert.equal(readFileSync(target, 'utf8'), 'openai_base_url = "https://example.com"\n');
       writeFileSync(target, '"openai_base_url" = "https://example.com"\n');
-      await assert.rejects(run('install'), /Conflicting/);
+      assert.equal((await run('disable')).changed, false);
       assert.equal(readFileSync(target, 'utf8'), '"openai_base_url" = "https://example.com"\n');
       writeFileSync(target, '[profiles."quoted profile"]\n"model_provider" = "other"\n');
-      await assert.rejects(run('install'), /Profile provider override/);
+      assert.equal((await run('disable')).changed, false);
       assert.equal(
         readFileSync(target, 'utf8'),
         '[profiles."quoted profile"]\n"model_provider" = "other"\n',
       );
+      const moved = `model = "test"\nopenai_base_url = "${legacyUrl(19001)}"\n`;
+      writeFileSync(target, moved);
+      await assert.rejects(run('disable'), /Conflicting/);
+      assert.equal(readFileSync(target, 'utf8'), moved);
+      writeFileSync(target, `openai_base_url = "${legacyUrl(19001)}"\nmodel = "test"\n`);
+      const unowned = readFileSync(target);
+      await assert.rejects(run('disable'), /no ownership receipt/);
+      assert.deepEqual(readFileSync(target), unowned);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -108,12 +132,8 @@ test(
         flag: 'wx',
       });
       const original = Buffer.from('model = "test"\r\n');
-      writeFileSync(target, original);
-      const options = { configPath, codexHome: home, testHealth: async () => true };
-      assert.equal(
-        (await responseSuggestionsConfig({ ...options, operation: 'install' })).changed,
-        true,
-      );
+      seedLegacyUrl(state, target, original);
+      const options = { configPath, codexHome: home };
       assert.equal(
         (await responseSuggestionsConfig({ ...options, operation: 'disable' })).changed,
         true,
@@ -172,55 +192,6 @@ test(
 );
 
 test(
-  'health checks exact binding and port over loopback',
-  { skip: process.platform !== 'win32' },
-  async () => {
-    const root = mkdtempSync(join(tmpdir(), 'agent-hub-config-health-'));
-    const server = http.createServer((req, res) => {
-      if (req.url !== '/_agent_hub/99a5bb6d-2166-4efe-b5d0-f0a6a4fa40c0/backend-api/health') {
-        res.writeHead(404).end();
-        return;
-      }
-      res.setHeader('content-type', 'application/json');
-      res.end(
-        JSON.stringify({
-          ready: true,
-          bindingId: '99a5bb6d-2166-4efe-b5d0-f0a6a4fa40c0',
-          port: server.address().port,
-        }),
-      );
-    });
-    try {
-      await new Promise((resolve) => server.listen(0, 'localhost', resolve));
-      const state = join(root, 'private'),
-        home = join(root, 'home');
-      makePrivateDirectorySync(state);
-      makePrivateDirectorySync(home);
-      const configPath = join(state, 'config.json');
-      writePrivateFileSync(
-        configPath,
-        JSON.stringify({
-          version: 1,
-          port: server.address().port,
-          bindingId: '99a5bb6d-2166-4efe-b5d0-f0a6a4fa40c0',
-        }),
-        { flag: 'wx' },
-      );
-      writeFileSync(join(home, 'config.toml'), 'model = "test"\n');
-      const status = await responseSuggestionsConfig({
-        operation: 'status',
-        configPath,
-        codexHome: home,
-      });
-      assert.equal(status.loopbackReady, true);
-    } finally {
-      await new Promise((resolve) => server.close(resolve));
-      rmSync(root, { recursive: true, force: true });
-    }
-  },
-);
-
-test(
   'conflicting replacement preserves the displaced version and blocks replay',
   { skip: process.platform !== 'win32' },
   async () => {
@@ -241,13 +212,12 @@ test(
         }),
         { flag: 'wx' },
       );
-      writeFileSync(target, 'model = "test"\n');
+      seedLegacyUrl(state, target, Buffer.from('model = "test"\n'), 19002, '\n');
       const concurrent = 'model = "test"\nconcurrent = true\n';
       const options = {
-        operation: 'install',
+        operation: 'disable',
         configPath,
         codexHome: home,
-        testHealth: async () => true,
       };
       await assert.rejects(
         responseSuggestionsConfig({

@@ -1,8 +1,8 @@
 # Windows 原桌面接入
 
-## 原建议 Responses 采集
+## 原建议 Responses 转发退役
 
-原生建议新增 `CODEX_DESKTOP_RESPONSES_CONFIG` 通道，按仓库 [运行配置](../../../docs/runtime.md#windows-原生建议-responses-采集)启用。先完成统一构建和 Host 监听健康检查，再运行 `windows-response-suggestions-config.mjs install|status|disable` 管理官方单键配置；不恢复旧 `CODEX_CLI_PATH` 垫片、不修改原 App、不要求特殊启动器，不在读取时生成建议。原有 Mac 安装流程不变。
+安装和升级不再启用 `CODEX_DESKTOP_RESPONSES_CONFIG`，也不写 `openai_base_url`。已有安装按[运行说明](../../../docs/runtime.md#windows-原生建议-responses-转发退役)查询或移除有归属回执的 URL，再恢复正常 Host 服务。Windows 暂停此原生建议来源。
 
 原请求和结果按来源聊天、来源轮、response ID 绑定，前台画面确认只用于验收。此入口是本机采集，不开放 F74 模型代理。标准 ChatGPT 路由已知边界、原已加载聊天生效时机及 Host 离线仍影响转发的限制须如实说明，不能称为自动直连。真实 Host／原桌面及手机结果分别按[专项验收](../../../docs/acceptance/windows-response-suggestions-20261104.md)记录。
 

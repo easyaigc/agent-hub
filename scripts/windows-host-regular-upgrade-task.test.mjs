@@ -46,7 +46,14 @@ try {
  $xml=Upgrade-Xml $before $sd $new $false;$next=$service.NewTask(0);$next.XmlText=$xml
  $task=$root.RegisterTaskDefinition($name,$next,20,$sid,$null,3,$sd)
  if(-not (Upgrade-SameAction $task $new) -or $task.Enabled -or [string]$task.GetSecurityDescriptor(7) -cne $sd -or (Upgrade-Xml ([string]$task.Definition.XmlText) $sd $new $false) -cne $xml){throw 'FIXTURE_APPLY'}
- $task.Enabled=$true;[void]$task.Run($null);$clock=[Diagnostics.Stopwatch]::StartNew();while($clock.ElapsedMilliseconds -lt 10000 -and $task.GetInstances(0).Count -gt 0){Start-Sleep -Milliseconds 100};if($task.GetInstances(0).Count -ne 0 -or $task.LastTaskResult -ne 1){throw 'FIXTURE_RUN'};$task.Enabled=$false
+  $beforeRun=$task.LastRunTime;$task.Enabled=$true;[void]$task.Run($null)
+  $clock=[Diagnostics.Stopwatch]::StartNew();$finished=$false
+  do {
+   $task=$root.GetTask($name)
+   $finished=$task.LastRunTime -gt $beforeRun -and $task.GetInstances(0).Count -eq 0 -and $task.LastTaskResult -eq 1
+   if(-not $finished){Start-Sleep -Milliseconds 100}
+  } while(-not $finished -and $clock.ElapsedMilliseconds -lt 10000)
+  if(-not $finished){throw 'FIXTURE_RUN'};$task.Enabled=$false
  $oldXml=Upgrade-Xml $before $sd $old $false;$oldDef=$service.NewTask(0);$oldDef.XmlText=$oldXml
  $task=$root.RegisterTaskDefinition($name,$oldDef,20,$sid,$null,3,$sd)
  if(-not (Upgrade-SameAction $task $old) -or $task.Enabled -or [string]$task.GetSecurityDescriptor(7) -cne $sd -or (Upgrade-Xml ([string]$task.Definition.XmlText) $sd $old $false) -cne $oldXml){throw 'FIXTURE_RESTORE'}

@@ -77,7 +77,6 @@ export {
   DesktopSuggestionObserver,
   SuggestionObservationError,
 } from './desktop-suggestion-observer.js';
-export { DesktopResponseSuggestions } from './desktop-response-suggestions.js';
 export { inspectDesktopResponseConfigToml } from './desktop-response-config.js';
 export {
   DesktopDomBridge,

@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-08 F69：Windows 退役 Responses 转发和模型 URL 覆盖。iOS 与 Android 连接 Windows 时均不显示来自该转发的灰字，继续按现有能力和有效期处理建议。共同断言是 Host 离线不阻断原 Codex 模型连接，手机端不显示失效建议。Mac 原生来源保持独立。源码、正式 Host 恢复和真机证据分列于[退役记录](../acceptance/windows-response-suggestions-20261104.md#退役与恢复)。
+
 2026-11-04 F69 Windows Responses 采集：按人类最新要求取消生产前台确认门槛，Host 保存原生成的建议全文、来源聊天／轮和 response ID；不把网络候选表述为已验证桌面可见或安全后结果。共同断言为原 owner／最新完成轮校验、错误／取消／空值／新请求不回退旧正文、读取不生成、采用仅改本地草稿。iOS 复用兼容 native-version 接口，Android 状态不提升；macOS 原安全后采集独立保留。实现、辅助、DEV 和真机状态见[专项记录](../acceptance/windows-response-suggestions-20261104.md)，A6 保持暂停。
 
 2026-11-04 F69 本机部署候选：在正式 R11 对应的规范提交上叠加空日志候选计数修复和 macOS 私有诊断日志，保留正式 Host 已有诊断、恢复和原生 owner 规则。空文件每次复查，增长后从零读取，已跟踪截断仍拒绝；日志记录生命周期、固定原因、阶段、心跳和结果状态。iOS／Android 共用 Host 来源规则，UI／草稿语义保持，Android 建议 UI 与 A6 状态不变。源码、辅助检查、实际部署与建议来源验收分别记录。

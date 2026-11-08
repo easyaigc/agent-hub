@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-11-09 F34/F36、UI07/UI08：速度只展示当前模型声明的范围。仅快速的目录使用菜单，提供跟随电脑及快速；不会由开关关闭生成未声明标准档。标准/快速仍用开关，多档仍用菜单。双端模型切换仅在新目录支持时回退标准，否则清除不支持的草稿速度；独立权限不变。Android同步读取EasyWork速度元数据、原轮次记录并发送显式选择，iOS适配器既有行为保留。实现与限定验收见[阶段128](../plans/android-alignment-20261022/records/stage128-easywork-generation-speed.md)。
+
 2026-11-08 F69：Windows Host 不再声明已退役的 Responses 建议来源。iOS／Android 沿用现有能力门控及空状态，当前建议失效后清除预览，用户已采用的本机草稿按原规则保留。
 
 2026-11-04 F69：新增 Windows Responses 数据来源，手机页面、token、文案、采用和撤销交互保持。Host 读取不依赖桌面前台或截图，不承诺桌面当下显示状态；空值、来源变化和失败仍清除当前预览，不写入草稿或自动发送。macOS 原路径不改，iOS／Android 无新增真机通过，见[专项记录](../acceptance/windows-response-suggestions-20261104.md)。

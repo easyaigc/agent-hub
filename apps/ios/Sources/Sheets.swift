@@ -875,7 +875,7 @@ struct GenerationSettings: View {
                 }
                 if store.supportsGenerationSpeed {
                     Section(L10n.tr("速度")) {
-                        if store.availableSpeeds.contains("ultrafast") {
+                        if store.availableSpeeds.contains("ultrafast") || (store.availableSpeeds.contains("fast") && !store.availableSpeeds.contains("standard")) {
                             Picker(L10n.tr("速度模式"), selection: Binding(get: { store.selectedSpeed ?? "" }, set: { store.speed = $0 })) {
                                 Text(L10n.tr("跟随电脑")).tag("")
                                 ForEach(store.availableSpeeds, id: \.self) { Text(store.speedLabel($0)).tag($0) }

@@ -531,7 +531,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
         }
         if(session.supportsGenerationSpeed) GenerationSection(productText("速度")) {
             val speeds=session.selectedModel?.supportedSpeeds.orEmpty()
-            if("ultrafast" in speeds) {
+            if("ultrafast" in speeds || ("fast" in speeds && "standard" !in speeds)) {
                 GenerationMenu(productText("速度模式"),speedLabel(session.selectedSpeed),"speed-picker",target,session.selectedSpeed ?: "",session.canConfigureGeneration,
                     listOf(GenerationMenuChoice("",productText("跟随电脑"),"reset-speed-choice"))+speeds.map { GenerationMenuChoice(it,speedLabel(it),"speed-$it") }) { choice ->
                     session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && (choice.isEmpty() || choice in session.selectedModel?.supportedSpeeds.orEmpty())) current.copy(speed=choice.takeIf(String::isNotEmpty)) else null }

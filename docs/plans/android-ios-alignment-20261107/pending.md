@@ -25,6 +25,8 @@ ENV-10：原身份DEV已安全恢复；物理iPhone经原保存路径的原回�
 
 **C2-CODEX-01 原桌面长详情**。真实 Host 父卡片与刷新、iOS 模拟器生产卡片交互、Android 真机的稳定读取与实际显示通过。Android 实体安全调试权限已开放，待实体展开与界面刷新。iPhone 真机及有实时 owner 的子输出后续独立验。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
 
+**C2-SPEED-01 EasyWork真实速度闭环**。本轮Android目录/原轮次/显式设置和双端fast-only规则按[阶段128](../android-alignment-20261022/records/stage128-easywork-generation-speed.md)实现与分层验收。真实DEV原授权scope、当前模型目录/能力、唯一输入/回执与原模型生效仍待核对；物理Android固定包安装受限。双端fast-only菜单完整视觉原图/布局与API37组合未验，现有交互/AX不替代该范围。不得导出旧包Keystore凭据、自动新配对/刷新，或重放既有未知操作。其余本机验收继续。
+
 ## 暂停项
 
 - F65–F67：Task Hub 的业务项目、任务管理与业务通知；UI14–UI19。已有普通聊天项目选择/最近项目/分支继续开发。

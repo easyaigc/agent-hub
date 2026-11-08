@@ -115,7 +115,7 @@ object SessionPolicies {
     fun changeModel(priorEffort: String?, draftSpeed: String?, supportedEfforts: List<String>,
         defaultEffort: String?, supportedSpeeds: List<String>): GenerationChoice =
         GenerationChoice(if (priorEffort in supportedEfforts) priorEffort else defaultEffort,
-            if (draftSpeed != null && draftSpeed !in supportedSpeeds) "standard" else draftSpeed)
+            if (draftSpeed != null && draftSpeed !in supportedSpeeds) "standard".takeIf { it in supportedSpeeds } else draftSpeed)
 
     fun noticeIndices(receipts: List<ReceiptState>, dismissed: List<String>, pendingId: String?): List<Int> {
         val lastAccepted = receipts.indexOfLast { it.state in listOf("submitted", "completed", "interrupted") }

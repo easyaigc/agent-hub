@@ -55,6 +55,10 @@ class SessionPoliciesTest {
         }
         val changed = SessionPolicies.changeModel("xhigh", "fast", listOf("low"), "low", listOf("standard"))
         assertEquals("low", changed.effort); assertEquals("standard", changed.speed)
+        assertNull(SessionPolicies.changeModel(null, "fast", emptyList(), null, emptyList()).speed)
+        assertNull(SessionPolicies.changeModel(null, "ultrafast", emptyList(), null, listOf("fast")).speed)
+        assertEquals("fast", SessionPolicies.changeModel(null, "fast", emptyList(), null, listOf("fast")).speed)
+        assertNull(SessionPolicies.changeModel(null, null, emptyList(), null, listOf("fast")).speed)
     }
 
     @Test fun runIdentityFinalFragmentsAndToolWindows() {

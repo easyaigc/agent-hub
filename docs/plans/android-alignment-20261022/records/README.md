@@ -1,5 +1,7 @@
 # Android 分阶段过程档案
 
+- [阶段128 EasyWork速度与双端设置](stage128-easywork-generation-speed.md)记录目录/历史/发送修复、fast-only菜单和共享模型切换，以及分层验收与待验。
+
 - [阶段127 跨行选择复制与短视口验收](stage127-c2-multiline-selection-and-viewport.md)记录双端原生跨行精确复制、剪贴板恢复、已通过视口范围与API37待验。
 
 - [阶段126 新域 DEV 与 Android 权限恢复](stage126-c2-new-domain-and-android-permissions.md)记录新域范围纠正、原目标核对及实体普通触摸权限复验。

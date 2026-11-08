@@ -77,7 +77,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return value.toString()
     }
     override suspend fun models(client: MobileClient): List<CodexModel> {
-        val v=channel(client).request("model/list");return v.getJSONArray("models").objects().map { CodexModel(it.getString("id"),it.getString("name"),it.getBoolean("isDefault"),it.optional("defaultEffort"),it.optJSONArray("supportedEfforts")?.strings().orEmpty(),null,emptyList()) }
+        val v=channel(client).request("model/list");return v.getJSONArray("models").objects().map { CodexModel(it.getString("id"),it.getString("name"),it.getBoolean("isDefault"),it.optional("defaultEffort"),it.optJSONArray("supportedEfforts")?.strings().orEmpty(),it.optional("defaultSpeed"),it.optJSONArray("supportedSpeeds")?.strings().orEmpty()) }
     }
     private fun resource(client: MobileClient,thread: String,v: JSONObject): MobileFile? {
         val id=v.optional("resourceId")?:return null;val hash=v.optional("sha256")?:return null
@@ -159,7 +159,8 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         }
         val plan=snapshot.optJSONObject("currentPlan");val preferences=JSONObject(thread.optJSONObject("generationPreferences")?.toString()?:"{}")
         latest?.optJSONObject("settings")?.let { p->p.keys().forEach { preferences.put(it,p.get(it)) } }
-        val model=preferences.optJSONObject("modelRef");val settings=JSONObject().put("model",model?.let { it.getString("providerId")+"/"+it.getString("modelId") }).put("effort",preferences.optJSONObject("reasoning")?.optional("effort")).put("permissionMode",preferences.optional("permissionMode"))
+        val recordedSpeed=if(latest==null)preferences.optional("speed") else latest.optJSONObject("settings")?.optional("speed")
+        val model=preferences.optJSONObject("modelRef");val settings=JSONObject().put("model",model?.let { it.getString("providerId")+"/"+it.getString("modelId") }).put("effort",preferences.optJSONObject("reasoning")?.optional("effort")).put("permissionMode",preferences.optional("permissionMode")).put("speed",recordedSpeed)
         val receipts=snapshot.optJSONArray("queueReceipts")?.objects()?.map { q->
             encodeReceipt(easyWorkQueueReceipt(client.id,threadId,q))
         }?.toMutableList()?:mutableListOf()
@@ -185,7 +186,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return conversation(client,v.optJSONObject("response")?.optJSONObject("result")?.optJSONObject("thread")?:error("创建结果未确认，请核对桌面。原消息已保留"))
     }
     override suspend fun send(client: MobileClient,intent: ReplyIntent): DeliveryReceipt {
-        require(intent.hostId==client.id&&intent.mode in listOf("next-turn","queue","steer")&&intent.settings.speed==null)
+        require(intent.hostId==client.id&&intent.mode in listOf("next-turn","queue","steer")&&(intent.settings.speed==null||intent.settings.speed in listOf("standard","fast","ultrafast")))
         val c=channel(client);val parts=JSONArray();if(intent.text.isNotEmpty())parts.put(JSONObject().put("type","text").put("data",JSONObject().put("text",intent.text)))
         for(id in intent.attachmentIds) {
             val record=c.request("resource/read",JSONObject().put("resourceId",id)).getJSONObject("transfer");require(record.getString("threadId")==intent.threadId)

@@ -36,7 +36,7 @@ class MobileGenerationCallbackTest {
                     .put("receipts",JSONArray()).put("canControl",true).put("generationSettings",JSONObject().put("model","fixture-model").put("speed",runtimeSpeed ?: JSONObject.NULL))).toString())
         }
         val commands=object: CodexCommands by NativeCodexCommands({ "" }) {
-            override suspend fun models(client: MobileClient)=listOf("fixture-model","other-model").map { CodexModel(it,it,it=="fixture-model","low",listOf("low","high"),"standard",catalogueSpeeds) }
+            override suspend fun models(client: MobileClient)=listOf("fixture-model","other-model").map { CodexModel(it,it,it=="fixture-model","low",listOf("low","high"),"standard".takeIf { it in catalogueSpeeds },catalogueSpeeds) }
         }
         ui.runOnIdle { ui.activity.readNetworkMonitor.stop();session.resetAcceptance(reader,commands) }
         main { session.connect("synthetic generation callbacks","https://fixture.invalid","") }
@@ -61,6 +61,17 @@ class MobileGenerationCallbackTest {
         setup();val click=retained("speed-fast")
         ui.runOnIdle { session.configure(GenerationSettings("fixture-model","high","guardian-approvals","standard"));click() }
         assertEquals(GenerationSettings("fixture-model","high","guardian-approvals","fast"),session.generationSettings)
+    }
+    @Test fun fastOnlyCatalogueOffersDeclaredSpeedWithoutStandardFallback() {
+        setup(listOf("fast"))
+        ui.onNodeWithTag("speed-picker").performScrollTo().assertIsEnabled().performClick()
+        ui.onNodeWithTag("speed-standard").assertDoesNotExist()
+        ui.onNodeWithTag("speed-ultrafast").assertDoesNotExist()
+        ui.onNodeWithTag("speed-fast").performClick()
+        assertEquals("fast",session.generationSettings.speed)
+        ui.onNodeWithTag("model-picker").performScrollTo().performClick()
+        ui.onNodeWithTag("model-default").performClick()
+        assertNull(session.generationSettings.speed)
     }
     @Test fun retainedModelChoiceReconcilesCurrentFieldsInsteadOfOldSnapshot() {
         setup();val click=retained("model-other-model")
@@ -135,8 +146,9 @@ class MobileGenerationCallbackTest {
     @Test fun explicitModelDefaultUsesSharedDependentFieldNormalization() {
         setup();ui.runOnIdle { session.configure(GenerationSettings("fixture-model","high","full-access","fast")) }
         choose("model-default","model-picker")
-        assertEquals(GenerationSettings(permissionMode="full-access",speed="standard"),session.generationSettings)
-        assertNewConversationDefaults(GenerationSettings(permissionMode="full-access",speed="standard"))
+        // Following the desktop model does not declare a supported speed.
+        assertEquals(GenerationSettings(permissionMode="full-access"),session.generationSettings)
+        assertNewConversationDefaults(GenerationSettings(permissionMode="full-access"))
     }
     @Test fun fastToggleAndResetFollowEffectiveSpeedWithoutChangingOtherFields() {
         setup();ui.runOnIdle { session.configure(GenerationSettings("fixture-model","high","guardian-approvals","standard")) }

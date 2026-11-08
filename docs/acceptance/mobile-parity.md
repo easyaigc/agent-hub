@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-09 F34/F36、S06、UI07/UI08：EasyWork速度需分别核对原目录元数据、历史实际记录/缺失、明确选择与跟随电脑、模型切换、next-turn/queue/plan/revision/steer的协议边界和真实模型生效。双端fast-only目录不得产生未声明standard。共享规则、加密合成对端、原生交互与真实DEV分别记账，见[阶段128](../plans/android-alignment-20261022/records/stage128-easywork-generation-speed.md)；实体安装、API37和原模型结果继续待验，不升级整项F34/F36状态。
+
 2026-11-08 F69：Windows Responses 退役和正式 Host 恢复见[专项记录](windows-response-suggestions-20261104.md#退役与恢复)。本机回环认证和 Windows 计划任务为正式恢复证据。iOS／Android 实体设备未复验，原桌面与 CLI 的冷启动及真实模型对话另行记录。
 
 2026-11-04 F69 Windows Responses 采集按[专项记录](windows-response-suggestions-20261104.md)分别登记转发 fixture、Host 来源与版本隔离、配置恢复、真实原桌面及部署指纹。前台画面只是独立验收证据，不是生产读取依赖。macOS 回归不冒充其本轮真机通过；iOS／Android 采用、撤销和完整移动链路无新增通过，A6 保持暂停。

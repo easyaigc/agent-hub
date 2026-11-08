@@ -1,6 +1,6 @@
 # Android 对齐进度总表
 
-更新：2026-11-08。当前计划见[plan.md](plan.md)，逐项需求见[features.md](features.md)，验收要求见[acceptance.md](acceptance.md)。这里只报状态和下一步；操作过程与证据存[阶段档案](../android-alignment-20261022/records/README.md)。
+更新：2026-11-09。当前计划见[plan.md](plan.md)，逐项需求见[features.md](features.md)，验收要求见[acceptance.md](acceptance.md)。这里只报状态和下一步；操作过程与证据存[阶段档案](../android-alignment-20261022/records/README.md)。
 
 ## 当前结论
 
@@ -8,7 +8,8 @@
 - **C1-RID 已限定交付**：[PR #163](https://git.51easyai.com/BCAI/agent-hub-app/pulls/163) 两项 CI 通过并合 main；原身份 DEV 恢复后 iPhone 原回执/缺失 ID 只读 1/1，通过后已清理合并分支。完整 C1、原 owner 控制和整组四格仍开放，见[阶段119](../android-alignment-20261022/records/stage119-c1-original-receipt-restored.md)。
 - **C2-SUB 已实现、部分验收**：Android 接入 EasyWork 子代理、独立卡片及完整详情，共享投影去两处 65536 尾截断并保留原文本。iOS 保留独立行，修复卡片无障碍标识覆盖。JVM 125、Android 原生 4 + Compose 7、iOS Native 9、真实 iPhone 原 child 只读 1、iOS 模拟器长文交互 1 均通过。原编译/连接/界面失败保留，见[阶段120](../android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。
 - **C2 Codex 读取与显示限定通过**。iOS 按用户口径使用模拟器，实际组件显示、展开与再次读取通过；Android 实体安装恢复，真实读取和前台卡片显示通过。已通过 [PR #166](https://git.51easyai.com/BCAI/agent-hub-app/pulls/166) 合 main `9f0a9d79` 并清理开发分支。Android 普通触摸和独立系统选择复制已通过；实体卡片刷新及 EasyWork 新域 DEV 绑定见[待验](pending.md)。详见[阶段125](../android-alignment-20261022/records/stage125-c2-ios-simulator-and-dns-authority.md)。
-- **新域直连兼容已验收**。双端接纳专用 mesh 域并按 VPN 排序。iOS 27 与 Android API 33 模拟器通过同一真实 DEV 的配对证书、完整目标和桌面公钥核对，Android 真机新域候选安装仍受限。独立真机系统复制 1/1 通过，见[阶段126](../android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
+- **新域直连兼容已验收**。双端接纳专用 mesh 域并按 VPN 排序。iOS 27 与 Android API 33 模拟器通过同一真实 DEV 的配对证书、完整目标和桌面公钥核对，Android 真机新域候选安装仍受限。独立真机系统复制 1/1 通过，新域兼容已由 [PR167](https://git.51easyai.com/BCAI/agent-hub-app/pulls/167) 合 main `20f5c9ef`，见[阶段126](../android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
+- **跨行系统复制限定通过**。Android API33 生产组件与 iOS27 生产 RootView 通过精确原文子串复制及本次剪贴板恢复，API37 与完整视口组合继续待验。下一核心子项为 Android EasyWork 速度链路对齐，见[阶段127](../android-alignment-20261022/records/stage127-c2-multiline-selection-and-viewport.md)。
 - 迁移 N1 全部原范围和既有局部结果保留，仍无 24 组整体验收关闭；任务和项目业务、F75、iOS A6 继续暂停。
 
 ## 总进度

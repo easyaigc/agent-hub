@@ -1876,3 +1876,5 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 2026-11-08 C2 / F18/F19/F20 / UI05。用户确认全面使用 `51easyai.com`，旧网络管理员登录已撤下，改核对新域 DEV 路由、原目标身份和 issuer。Android 实体安全调试开放后，普通滑动成功，准确主线独立新用例 1/1 通过生产卡片长按、可见选区手柄、实际系统 Copy 及本次剪贴板恢复读回核对。真实模型卡片的界面刷新及跨行组合仍待验，阶段125原复制 UNKNOWN 保留。详见[阶段126](../plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
 2026-11-08 F03/F06/F57/F63。iOS 27 与 Android API 33 模拟器以专用 mesh 新域读取同一真实 DEV 两次，原保存的完整目标、公钥和配对证书指纹匹配，错误身份被拒绝。iOS 本机代理的精确新主机例外已补齐，初始失败保留。Android 真机新域候选安装及原 grant/内容读取另列，原 issuer 与未知操作继续按原身份查询。详见[阶段126](../plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
+
+2026-11-09 F18/F19/F20 / UI05。Android API33 与 iOS27 模拟器通过原生手柄拖动、系统 Copy 及精确原文子串核对，分别跨两个和三个原始换行，本次剪贴板基线恢复已读回。受限视口的已通过控件与 iOS 导航覆盖观察、API37 启动失败分别登记，不关闭整组真机/界面或 Provider 范围。详见[阶段127](../plans/android-alignment-20261022/records/stage127-c2-multiline-selection-and-viewport.md)。

@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-09 F05/F28：Windows desktop-runtime 正式启动在没有显式 driver 时创建私有、绑定原 Host 身份的独立桥接配置。历史读取仍不授予控制，显式发送先具名打开并核对准确原 owner。Store CLI 仅优先使用与当前桌面 bundle 摘要一致的官方暂存副本。见[恢复边界与验证](windows-cold-thread-recovery.md)。
+
 2026-11-08 F69：退役 Windows 原生建议 Responses 回环转发，Host 不再把建议采集放进原 Codex 的模型网络路径。安装、升级和回退剔除旧设置，仅移除产品安装且有回执的 URL。Windows 手机端暂缺这项建议来源。[运行说明](runtime.md#windows-原生建议-responses-转发退役)
 
 2026-11-07 C2-SUB：EasyWork iOS/Android 在同一认证会话消费子代理事件与权威快照，由共享规则核对原 thread、branch、root/child 并投影完整详情。事件只唤醒读取；不拼接重发片段、不新增运行或命令。共同时间线保留原角色和独立子行，原生折叠预览不改数据，既有传输安全上限保留。Codex 适配器对已加载和已保存的可用子代理输出使用同一只读投影。按原序保留任务与正文，每卡限定 200000 UTF-16 单元和 32 个父项明确关联的子线程，超限时提供部分详情提示。见[阶段121](plans/android-alignment-20261022/records/stage121-c2-selection-and-codex-detail.md)。源码、组件、真实设备/桌面及待验边界见[阶段120](plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。

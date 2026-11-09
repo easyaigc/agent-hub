@@ -996,12 +996,16 @@ export function discoverWindowsDesktopCli(
   ];
   const bin = localData && join(localData, 'OpenAI/Codex/bin');
   const candidates = [...adjacent, configured, bin && join(bin, 'codex.exe')];
+  const stagedPaths = new Set(bin ? [resolve(join(bin, 'codex.exe')).toLowerCase()] : []);
   if (bin && existsSync(bin)) {
     const entries = readdirSync(bin, { withFileTypes: true });
     if (entries.length > 128) throw windowsInstallationFailure('WINDOWS_CLI_DISCOVERY_LIMIT');
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name)))
-      if (entry.isDirectory() && /^[a-f0-9]{8,64}$/i.test(entry.name))
-        candidates.push(join(bin, entry.name, 'codex.exe'));
+      if (entry.isDirectory() && /^[a-f0-9]{8,64}$/i.test(entry.name)) {
+        const staged = join(bin, entry.name, 'codex.exe');
+        candidates.push(staged);
+        stagedPaths.add(resolve(staged).toLowerCase());
+      }
   }
   const seen = new Set();
   const trusted = [];
@@ -1022,6 +1026,19 @@ export function discoverWindowsDesktopCli(
   const bundled = trusted.filter((v) =>
     adjacent.some((p) => resolve(p).toLowerCase() === v.path.toLowerCase()),
   );
+  // Store resources can be readable but not executable outside the package.
+  // Only prefer staged bytes matching this owner's bundled payload exactly.
+  const stagedCopies = trusted.filter(
+    (value) =>
+      stagedPaths.has(value.path.toLowerCase()) &&
+      bundled.some((payload) => payload.sha256 === value.sha256),
+  );
+  if (stagedCopies.length) {
+    const selected =
+      configured &&
+      stagedCopies.find((value) => value.path.toLowerCase() === resolve(configured).toLowerCase());
+    return (selected || stagedCopies[0]!).path;
+  }
   const choices = bundled.length ? bundled : trusted;
   if (!choices.length) throw windowsInstallationFailure('WINDOWS_CLI_NOT_FOUND');
   const configuredChoice =

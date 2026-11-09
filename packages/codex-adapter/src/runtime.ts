@@ -20,6 +20,7 @@ export interface RuntimeOptions {
   desktopCreation?: DesktopCreationConfiguration;
   desktopController?: string;
   desktopPreparedBridge?: string;
+  autoConfigureDesktopBridge?: boolean;
   windowsDesktopConfig?: string;
 }
 export class CodexRejection extends Error {

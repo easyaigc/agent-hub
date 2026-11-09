@@ -89,6 +89,7 @@ try {
   };
   let failure;
   let validCli = true;
+  const cliHashes = new Map();
   const calls = [];
   process.env.SystemRoot = join(directory, 'system');
   process.env.LOCALAPPDATA = join(directory, 'user');
@@ -118,7 +119,10 @@ try {
         throw Object.assign(new Error('private CLI identity error'), {
           stderr: 'WINDOWS_CLI_REJECTED\n',
         });
-      return JSON.stringify({ sha256: args.includes(cli) ? 'b'.repeat(64) : 'c'.repeat(64) });
+      const path = args[args.indexOf('-Path') + 1];
+      return JSON.stringify({
+        sha256: cliHashes.get(path) ?? (args.includes(cli) ? 'b'.repeat(64) : 'c'.repeat(64)),
+      });
     }
     throw new Error('Unexpected OS call');
   };
@@ -293,6 +297,39 @@ try {
   );
   assert(!refreshWindowsHostConfiguration(hostPath).changed);
   const startedAtUnixMs = identity.startedAtUnixMs;
+  const bundledCli = join(directory, 'installed/resources/codex.exe');
+  writeFileSync(bundledCli, 'synthetic Store payload');
+  cliHashes.set(join(second, 'codex.exe'), 'd'.repeat(64));
+  try {
+    // A configured older staged payload must not beat the current bundle.
+    assert.equal(discoverWindowsDesktopCli(identity, cli), bundledCli);
+    cliHashes.set(cli, 'c'.repeat(64));
+    assert.equal(
+      discoverWindowsDesktopCli(identity, 'missing-cli'),
+      cli,
+      'Prefer a staged copy of the same bundled payload without launching the Store binary',
+    );
+    assert.equal(discoverWindowsDesktopCli(identity, cli), cli);
+    const otherCli = join(second, 'codex.exe');
+    cliHashes.set(otherCli, 'c'.repeat(64));
+    assert.equal(discoverWindowsDesktopCli(identity, otherCli), otherCli);
+    cliHashes.set(otherCli, 'd'.repeat(64));
+    assert.equal(
+      discoverWindowsDesktopCli(identity, otherCli),
+      cli,
+      'A configured staged copy with different bytes cannot override a matching copy',
+    );
+    const looseCli = join(directory, 'codex.exe');
+    writeFileSync(looseCli, 'synthetic loose payload');
+    assert.equal(
+      discoverWindowsDesktopCli(identity, looseCli),
+      cli,
+      'Even matching bytes outside the official staging paths do not gain preference',
+    );
+  } finally {
+    cliHashes.clear();
+    unlinkSync(bundledCli);
+  }
   for (const invalid of [undefined, 0, Date.now() + 60_000]) {
     identity.startedAtUnixMs = invalid;
     assert.throws(() => inspectWindowsPipe(), /Invalid Windows desktop identity/);

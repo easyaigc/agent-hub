@@ -46,6 +46,7 @@ import { codexClientType } from './history-reader.js';
 import { retainedDesktopHistory } from './desktop-history-identity.js';
 import { approvalRequest } from './approval-requests.js';
 import { DesktopPreparedBridge } from './desktop-prepared-bridge.js';
+import { defaultDesktopPreparedBridge } from './desktop-bridge-defaults.js';
 import { DesktopForkBroker, type ForkSource } from './desktop-forks.js';
 import { inspectForkWorktree } from './fork-worktree.js';
 import { homedir } from 'node:os';
@@ -580,9 +581,13 @@ export class RuntimeSession {
           ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
           : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
       );
-      this.desktopCreationDriver = options.desktopPreparedBridge
+      // Persist a first-start identity before publishing configuration bound to it.
+      // A crash before connect must not strand the default bridge on a new Host ID.
+      if (!restored && options.autoConfigureDesktopBridge) this.save();
+      const preparedBridge = defaultDesktopPreparedBridge(options, this.hostId);
+      this.desktopCreationDriver = preparedBridge
         ? new DesktopPreparedBridge(
-            options.desktopPreparedBridge,
+            preparedBridge,
             this.hostId,
             this.runtime,
             join(options.directory, 'desktop-prepared-bridge'),

@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-09 F05/F28：Windows 默认独立桥接和 Store 暂存 CLI 选择已实现。隔离 Host 的未加载会话打开、真实模型回复、独立进程桌面核对和 Host 重启已通过；Android/iOS 真机与正式部署未验收。见[本次限定验证](windows-cold-thread-recovery.md)。
+
 2026-11-08 F69：Windows Responses 转发已退役。回环监听缺失时，原桌面和 CLI 的模型请求都失败。当前本机桌面包对应的 CLI `0.167.0-alpha.3.2` 静态协议未发现只读已有灰字的接口。Windows 手机端暂停这条建议来源，恢复条件是原桌面和 CLI 在 Host 离线时仍正常使用，并能通过独立来源取得对应建议。[历史验证](acceptance/windows-response-suggestions-20261104.md)
 
 2026-11-04 F69 Host 接入：用户明确前台只读确认属于技术验证，生产采集不依赖 UI。Windows 新增显式启用的 Responses 转发通道，保存原生成正文、response ID 和准确来源聊天／轮；读取沿用原 owner／最新完成轮校验。macOS 原通道保持。实现、独立辅助检查和本次真实 Host 验收分列于[接入记录](acceptance/windows-response-suggestions-20261104.md)，不把此前 PoC 直接计为本实现通过，也不将网络候选声称为已验证安全后显示状态。

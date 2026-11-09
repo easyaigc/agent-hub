@@ -88,3 +88,6 @@ apps/ios/FilePreviewKit/.swiftpm/
 
 # Sanitized next-input generation display acceptance.
 !/docs/acceptance/next-turn-generation-display-20261104.md
+
+# Sanitized Host lifecycle and Trace performance acceptance.
+!/docs/acceptance/host-lifecycle-cpu-20261109.md

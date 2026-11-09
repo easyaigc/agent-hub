@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](acceptance/host-lifecycle-cpu-20261109.md)。
+
 2026-11-08 F69：Windows Responses 转发已退役。回环监听缺失时，原桌面和 CLI 的模型请求都失败。当前本机桌面包对应的 CLI `0.167.0-alpha.3.2` 静态协议未发现只读已有灰字的接口。Windows 手机端暂停这条建议来源，恢复条件是原桌面和 CLI 在 Host 离线时仍正常使用，并能通过独立来源取得对应建议。[历史验证](acceptance/windows-response-suggestions-20261104.md)
 
 2026-11-04 F69 Host 接入：用户明确前台只读确认属于技术验证，生产采集不依赖 UI。Windows 新增显式启用的 Responses 转发通道，保存原生成正文、response ID 和准确来源聊天／轮；读取沿用原 owner／最新完成轮校验。macOS 原通道保持。实现、独立辅助检查和本次真实 Host 验收分列于[接入记录](acceptance/windows-response-suggestions-20261104.md)，不把此前 PoC 直接计为本实现通过，也不将网络候选声称为已验证安全后显示状态。

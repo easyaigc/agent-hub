@@ -1,3 +1,4 @@
+import { retireMetadataProcess } from './metadata-process.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
@@ -81,6 +82,10 @@ export class MetadataConnection {
   private nextId = 0;
   private startupTimeout = 20_000;
   private readonly exited: Promise<number | null>;
+  private stopping = false;
+  private closed = false;
+  private retiring: Promise<void> | undefined;
+  private closing: Promise<number | null> | undefined;
   constructor(
     executable: MetadataExecutable,
     home: string,
@@ -103,33 +108,47 @@ export class MetadataConnection {
       });
     });
     this.child.stderr.resume();
-    this.exited = new Promise((done) => this.child.once('close', (code) => done(code)));
+    this.exited = new Promise((done) =>
+      this.child.once('close', (code) => {
+        this.closed = true;
+        done(code);
+      }),
+    );
     this.child.once('error', () => this.fail(new Error('官方元数据准备进程未能启动')));
     this.child.once('exit', () => this.fail(new Error('官方元数据准备连接已退出')));
-    this.child.stdin.on('error', () => this.fail(new Error('官方元数据准备传输已关闭')));
-    createInterface({ input: this.child.stdout }).on('line', (line) => {
-      try {
-        const response = object(JSON.parse(line));
-        const request = this.pending.get(Number(response.id));
-        if (!request) return;
-        clearTimeout(request.timer);
-        this.pending.delete(Number(response.id));
-        if (response.error)
-          request.reject(
-            new MetadataRejection(
-              '官方 API 拒绝元数据准备请求',
-              string(object(response.error).message).includes('already has an active writer')
-                ? 'active-writer'
-                : object(response.error).code === -32601
-                  ? 'unsupported-method'
-                  : undefined,
-            ),
-          );
-        else request.resolve(object(response.result));
-      } catch {
-        this.fail(new Error('官方元数据响应无效'));
-      }
-    });
+    const broken = () => {
+      this.fail(new Error('官方元数据准备传输已关闭'));
+      if (!this.stopping) this.abort();
+    };
+    this.child.stdin.on('error', broken);
+    this.child.stdout.on('error', broken);
+    this.child.stderr.on('error', broken);
+    this.child.stdout.once('end', broken);
+    createInterface({ input: this.child.stdout })
+      .on('error', broken)
+      .on('line', (line) => {
+        try {
+          const response = object(JSON.parse(line));
+          const request = this.pending.get(Number(response.id));
+          if (!request) return;
+          clearTimeout(request.timer);
+          this.pending.delete(Number(response.id));
+          if (response.error)
+            request.reject(
+              new MetadataRejection(
+                '官方 API 拒绝元数据准备请求',
+                string(object(response.error).message).includes('already has an active writer')
+                  ? 'active-writer'
+                  : object(response.error).code === -32601
+                    ? 'unsupported-method'
+                    : undefined,
+              ),
+            );
+          else request.resolve(object(response.result));
+        } catch {
+          broken();
+        }
+      });
   }
   get pid(): number | undefined {
     return this.child.pid;
@@ -161,12 +180,14 @@ export class MetadataConnection {
       ).has(method)
     )
       throw new Error('只允许对应的会话元数据操作');
+    if (!this.ready) return Promise.reject(new Error('官方元数据连接已关闭'));
     const id = ++this.nextId;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(
         () => {
           this.pending.delete(id);
           reject(new Error('空会话元数据准备结果待确认'));
+          this.abort();
         },
         method === 'initialize' ? this.startupTimeout : 20_000,
       );
@@ -180,20 +201,33 @@ export class MetadataConnection {
         return;
       }
       this.child.stdin.write(JSON.stringify({ id, method, params }) + '\n', (error) => {
-        if (error) this.fail(new Error('空会话元数据准备写入失败'));
+        if (error) {
+          this.fail(new Error('空会话元数据准备写入失败'));
+          this.abort();
+        }
       });
     });
   }
-  async close(): Promise<number | null> {
+  get ready(): boolean {
+    return !this.stopping && this.child.exitCode === null && this.child.signalCode === null;
+  }
+  close(): Promise<number | null> {
+    if (this.closing) return this.closing;
+    this.stopping = true;
+    this.fail(new Error('官方元数据连接已关闭'));
     this.child.stdin.end();
-    if (this.child.exitCode !== null) return this.child.exitCode;
+    this.closing = this.finishClose();
+    return this.closing;
+  }
+  private async finishClose(): Promise<number | null> {
     let timer: NodeJS.Timeout | undefined;
     try {
       return await Promise.race([
         this.exited,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
-            this.child.kill('SIGKILL');
+            this.abort();
+            // Forced retirement must never authorize original-desktop takeover.
             reject(new Error('未能确认准备进程正常退出，禁止桌面接管'));
           }, 12_000);
         }),
@@ -202,8 +236,18 @@ export class MetadataConnection {
       clearTimeout(timer);
     }
   }
+  /** Failure retirement is shared with the queue replacement/exit barrier. */
+  retire(): Promise<void> {
+    if (this.closed) return Promise.resolve();
+    this.abort();
+    return this.retiring!;
+  }
   abort(): void {
-    this.child.kill('SIGTERM');
+    this.stopping = true;
+    this.fail(new Error('官方元数据连接已关闭'));
+    this.retiring ??= retireMetadataProcess(this.child, this.exited);
+    // Keep the rejecting barrier available to callers; a fire-and-forget close is safe too.
+    void this.retiring.catch(() => {});
   }
 }
 

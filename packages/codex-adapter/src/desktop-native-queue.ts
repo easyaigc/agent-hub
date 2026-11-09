@@ -13,6 +13,8 @@ export class DesktopNativeQueue {
   private client: MetadataConnection | undefined;
   private connecting: Promise<MetadataConnection> | undefined;
   private closed = false;
+  private initializing: MetadataConnection | undefined;
+  private retiring = new Set<MetadataConnection>();
   available = false;
   constructor(
     private readonly executable: MetadataExecutable,
@@ -20,28 +22,48 @@ export class DesktopNativeQueue {
   ) {}
   private async connection(): Promise<MetadataConnection> {
     if (this.closed) throw new Error('原生队列连接已关闭');
-    if (this.client) return this.client;
+    if (this.client?.ready) return this.client;
     if (this.connecting) return this.connecting;
+    const work = this.open();
+    this.connecting = work;
+    try {
+      return await work;
+    } finally {
+      if (this.connecting === work) this.connecting = undefined;
+    }
+  }
+  private retire(client: MetadataConnection): Promise<void> {
+    if (this.client === client) this.client = undefined;
+    // Keep the actual connection after an unconfirmed deadline, so a later
+    // real close can unblock explicit recovery without losing the old owner.
+    this.retiring.add(client);
+    const closed = client.retire();
+    void closed.then(
+      () => this.retiring.delete(client),
+      () => {},
+    );
+    return closed;
+  }
+  private async open(): Promise<MetadataConnection> {
+    if (this.client) await this.retire(this.client);
+    await Promise.all([...this.retiring].map((client) => this.retire(client)));
+    if (this.closed) throw new Error('原生队列连接已关闭');
     const client = new MetadataConnection(this.executable, this.home, this.home, 'queue');
-    this.connecting = client
-      .initialize()
-      .then(() => {
-        if (this.closed) {
-          client.abort();
-          throw new Error('原生队列连接已关闭');
-        }
-        this.client = client;
-        return client;
-      })
-      .catch((error) => {
-        this.available = false;
-        client.abort();
-        throw error;
-      })
-      .finally(() => {
-        this.connecting = undefined;
-      });
-    return this.connecting;
+    this.initializing = client;
+    try {
+      await client.initialize();
+      if (this.closed || !client.ready) throw new Error('原生队列连接已关闭');
+      this.client = client;
+      return client;
+    } catch (error) {
+      this.available = false;
+      // Settle the closed initialization promptly; replacement still waits on
+      // the retained close barrier, even if retirement later fails.
+      void this.retire(client).catch(() => {});
+      throw error;
+    } finally {
+      if (this.initializing === client) this.initializing = undefined;
+    }
   }
   private item(value: unknown): NativeQueuedInput {
     const item = object(value);
@@ -75,8 +97,7 @@ export class DesktopNativeQueue {
       return result;
     } catch (error) {
       this.available = false;
-      if (this.client === client) this.client = undefined;
-      client.abort();
+      await this.retire(client);
       throw error;
     }
   }
@@ -113,8 +134,10 @@ export class DesktopNativeQueue {
   }
   close(): void {
     this.closed = true;
+    this.available = false;
     const client = this.client;
     this.client = undefined;
-    if (client) void client.close().catch(() => client.abort());
+    if (client) void this.retire(client).catch(() => {});
+    if (this.initializing) void this.retire(this.initializing).catch(() => {});
   }
 }

@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](acceptance/host-lifecycle-cpu-20261109.md)。
+
 2026-11-08 F69：退役 Windows 原生建议 Responses 回环转发，Host 不再把建议采集放进原 Codex 的模型网络路径。安装、升级和回退剔除旧设置，仅移除产品安装且有回执的 URL。Windows 手机端暂缺这项建议来源。[运行说明](runtime.md#windows-原生建议-responses-转发退役)
 
 2026-11-07 C2-SUB：EasyWork iOS/Android 在同一认证会话消费子代理事件与权威快照，由共享规则核对原 thread、branch、root/child 并投影完整详情。事件只唤醒读取；不拼接重发片段、不新增运行或命令。共同时间线保留原角色和独立子行，原生折叠预览不改数据，既有传输安全上限保留。Codex 适配器对已加载和已保存的可用子代理输出使用同一只读投影。按原序保留任务与正文，每卡限定 200000 UTF-16 单元和 32 个父项明确关联的子线程，超限时提供部分详情提示。见[阶段121](plans/android-alignment-20261022/records/stage121-c2-selection-and-codex-detail.md)。源码、组件、真实设备/桌面及待验边界见[阶段120](plans/android-alignment-20261022/records/stage120-c2-subagent-native-reading.md)。

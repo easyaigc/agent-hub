@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](../acceptance/host-lifecycle-cpu-20261109.md)。
+
 2026-11-08 F69：Windows 退役 Responses 转发和模型 URL 覆盖。iOS 与 Android 连接 Windows 时均不显示来自该转发的灰字，继续按现有能力和有效期处理建议。共同断言是 Host 离线不阻断原 Codex 模型连接，手机端不显示失效建议。Mac 原生来源保持独立。源码、正式 Host 恢复和真机证据分列于[退役记录](../acceptance/windows-response-suggestions-20261104.md#退役与恢复)。
 
 2026-11-04 F69 Windows Responses 采集：按人类最新要求取消生产前台确认门槛，Host 保存原生成的建议全文、来源聊天／轮和 response ID；不把网络候选表述为已验证桌面可见或安全后结果。共同断言为原 owner／最新完成轮校验、错误／取消／空值／新请求不回退旧正文、读取不生成、采用仅改本地草稿。iOS 复用兼容 native-version 接口，Android 状态不提升；macOS 原安全后采集独立保留。实现、辅助、DEV 和真机状态见[专项记录](../acceptance/windows-response-suggestions-20261104.md)，A6 保持暂停。

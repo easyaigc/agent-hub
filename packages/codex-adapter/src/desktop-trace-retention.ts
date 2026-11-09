@@ -673,6 +673,12 @@ export class DesktopTraceRetention {
     // Successful extraction can retire immediately after the writer is sealed.
     if ((!compacted || diagnostic) && now - proof.mtimeMs < day)
       return { state: 'diagnostic-retention', bytes: 0 };
+    // A sealed trace can still be open in the original process. Reject that
+    // cheap case before streaming every payload and rechecking its directories
+    // around each chunk, on every retention retry. This is only an early veto;
+    // the fresh pre-rename and post-rename occupancy/content checks remain below.
+    if (process.platform === 'darwin' && !(await closedMac(directory, this.signal)))
+      return { state: 'occupied', bytes: 0 };
     const snapshot = await inventory(directory, this.root, this.signal, originalDirectories);
     const files = snapshot.files,
       bytes = files.reduce((sum, f) => sum + f.size, 0);

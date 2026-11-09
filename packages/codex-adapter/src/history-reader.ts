@@ -1,4 +1,5 @@
 import { diagnosticEvent } from './diagnostic-events.js';
+import { retireMetadataProcess } from './metadata-process.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -113,6 +114,7 @@ export interface ReadWorkspace {
 export class CodexHistoryReader {
   private process: ChildProcessWithoutNullStreams | undefined;
   private processClosed: Promise<void> = Promise.resolve();
+  private retiring: Promise<void> | undefined;
   private nextId = 0;
   private initialized = false;
   private startupTimeout = 15000;
@@ -163,18 +165,14 @@ export class CodexHistoryReader {
     const child = this.process;
     if (!child) return;
     this.stop();
-    let timer: NodeJS.Timeout | undefined;
     try {
-      await Promise.race([
-        this.processClosed,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(readerFailure('shutdown')), 10_000);
-        }),
-      ]);
-      if (this.process === child) this.process = undefined;
-    } finally {
-      if (timer) clearTimeout(timer);
+      // A deadline failure blocks replacement until the original stdio close;
+      // a later confirmed close must still allow an explicit recovery.
+      await Promise.race([this.processClosed, this.retiring]);
+    } catch {
+      throw readerFailure('shutdown');
     }
+    if (this.process === child) this.process = undefined;
   }
 
   connect(): Promise<void> {
@@ -231,6 +229,7 @@ export class CodexHistoryReader {
     this.executable = executable;
     this.process = child;
     diagnosticEvent({ scope: 'history-reader', stage: 'spawned', pid: child.pid });
+    this.retiring = undefined;
     this.processClosed = new Promise((resolve) => child.once('close', resolve));
     // Stderr may contain machine-specific data; consume it without publishing it.
     child.stderr.resume();
@@ -238,7 +237,7 @@ export class CodexHistoryReader {
       if (this.process !== child) return;
       diagnosticEvent({ scope: 'history-reader', stage: 'transport-closed', pid: child.pid });
       this.fail(new Error('Reader transport closed'));
-      child.kill('SIGTERM');
+      this.stop();
     };
     // A live metadata process can close only its input. A write callback alone
     // does not consume the stream's subsequent error event (for example EPIPE).
@@ -359,7 +358,7 @@ export class CodexHistoryReader {
           // readiness true forever. Only read requests exist on this channel.
           if (this.process === child) {
             this.fail(error);
-            child.kill('SIGTERM');
+            this.stop();
           }
         },
         method === 'initialize' ? this.startupTimeout : 15000,
@@ -375,7 +374,7 @@ export class CodexHistoryReader {
           reject(failure);
           if (this.process === child) {
             this.fail(failure);
-            child.kill('SIGTERM');
+            this.stop();
           }
         }
       });
@@ -735,6 +734,9 @@ export class CodexHistoryReader {
 
   private stop(): void {
     this.fail(readerFailure('closed'));
-    this.process?.kill('SIGTERM');
+    if (this.process) {
+      this.retiring ??= retireMetadataProcess(this.process, this.processClosed);
+      void this.retiring.catch(() => {});
+    }
   }
 }

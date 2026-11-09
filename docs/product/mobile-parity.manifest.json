@@ -21125,6 +21125,22 @@
       "files": {
         "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "5c1406306001acdfa9c46594b817495783bd5da73e68e2754d104ed34b069c4c"
       }
+    },
+    {
+      "id": "host-lifecycle-cpu-20261109",
+      "baseCommit": "ce47d4a5f7a3b94a5b4b774b68ce6468ddf73d23",
+      "features": ["F03", "F69"],
+      "summary": "Host元数据子进程确认close后重连、初始化关闭与有界回收；macOS Trace占用早拒避免全payload重复hash，保留与失败结果指数退避至15分钟；iOS/Android共用Host，UI与未知输入边界保持，隔离证据不替代正式服务或真机验收。",
+      "files": {
+        "packages/codex-adapter/src/desktop-native-queue.ts": "7d7ba8cbd78f118922aef984fc45aff52342afdbf7d79e0907951b79bf8c4129",
+        "packages/codex-adapter/src/desktop-thread-preparer.ts": "a1cc6e1685b9a01d15ea5b47ee2194c06b8e51b954221207be2d478373f06621",
+        "packages/codex-adapter/src/desktop-trace-retention.ts": "248c2c8409cde238fbff096ce8277c34339fe880ea7496dee5ce5c1bdcb9c15c",
+        "packages/codex-adapter/src/history-reader.ts": "3909cc4416b90644ca832450387b1f87aba91fbccaa94a2f98a9cc02155df32a",
+        "packages/codex-adapter/src/metadata-process.ts": "04ac0ee9e69a706edfd7f237365376a9c410086047dfc6cad2de2c35f1d20627",
+        "packages/codex-adapter/src/desktop-trace-retention-worker.ts": "2782157d7a7bb1425afb9aa9c93975dc086ff4c58719471479fa24df25a9c073",
+        "packages/codex-adapter/src/desktop-chat-actions.ts": "f291e22bca33a24c34177b11e5426dbda78ae116128d71c84a6760f5827f16fa",
+        "scripts/desktop-update-recovery.test.mjs": "eac165f43ce917268c081328e13db339bc023f0e2436c02f7db7135196825159"
+      }
     }
   ]
 }

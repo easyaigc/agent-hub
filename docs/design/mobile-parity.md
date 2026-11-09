@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](../acceptance/host-lifecycle-cpu-20261109.md)。
+
 2026-11-09 F34/F36、UI07/UI08：Android模型/强度/速度的共用菜单贴近行尾Picker；当前值用剩余宽度末端对齐，保持长值单行省略、48dp整行触控、蓝色选中和禁用状态。iOS既有Picker作为参考不改，Codex/EasyWork使用同一组件且协议/目录不变。当前中文竖屏原图与剩余矩阵见[阶段131](../plans/android-alignment-20261022/records/stage131-c2-generation-menu-anchor.md)。
 
 2026-11-09 F36、UI07/UI08：双端当前中文竖屏核对仅快速菜单两项、多档菜单四项（含跟随）、当前选择和完整速度卡片。平台菜单材质/锚点及滑块形状不同，不能宣称像素一致；Android生成菜单应进一步贴近右侧当前值，其他分组另验。本轮仅补原图与原生交互，不改生产布局，见[阶段130](../plans/android-alignment-20261022/records/stage130-c2-speed-menu-visual.md)。

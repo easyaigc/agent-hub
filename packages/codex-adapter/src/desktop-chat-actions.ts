@@ -1,4 +1,5 @@
 import { withWindowsProcessCreation } from './windows-process.js';
+import { retireMetadataProcess } from './metadata-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { createHash, randomUUID } from 'node:crypto';
@@ -99,6 +100,8 @@ class SharedChatMetadata implements ChatMetadataConnection {
 /** Metadata-only process. No resume/start/turn/shell, no reader privilege expansion. */
 class ChatMetadata {
   private child: ChildProcessWithoutNullStreams;
+  private readonly exited: Promise<void>;
+  private retiring: Promise<void> | undefined;
   private next = 0;
   private startupTimeout = 15000;
   private pending = new Map<
@@ -114,33 +117,39 @@ class ChatMetadata {
         stdio: 'pipe',
       });
     });
+    this.exited = new Promise((resolve) => this.child.once('close', resolve));
     this.child.stderr.resume();
     this.child.on('error', () => this.fail());
     this.child.on('exit', () => this.fail());
-    this.child.stdin.on('error', () => this.fail());
-    createInterface({ input: this.child.stdout }).on('line', (line) => {
-      try {
-        const row = object(JSON.parse(line));
-        const task = this.pending.get(Number(row.id));
-        if (!task) return;
-        this.pending.delete(Number(row.id));
-        clearTimeout(task.timer);
-        if (row.error) {
-          const error = object(row.error);
-          task.reject(
-            new MetadataRejected(
-              [-32600, -32601, -32602].includes(Number(error.code)),
-              typeof error.message === 'string' &&
-                error.message.includes('already has an active writer')
-                ? '电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。'
-                : '原桌面 API 拒绝此操作',
-            ),
-          );
-        } else task.resolve(object(row.result));
-      } catch {
-        this.fail();
-      }
-    });
+    const broken = () => this.close();
+    this.child.stdin.on('error', broken);
+    this.child.stdout.on('error', broken);
+    this.child.stderr.on('error', broken);
+    createInterface({ input: this.child.stdout })
+      .on('error', broken)
+      .on('line', (line) => {
+        try {
+          const row = object(JSON.parse(line));
+          const task = this.pending.get(Number(row.id));
+          if (!task) return;
+          this.pending.delete(Number(row.id));
+          clearTimeout(task.timer);
+          if (row.error) {
+            const error = object(row.error);
+            task.reject(
+              new MetadataRejected(
+                [-32600, -32601, -32602].includes(Number(error.code)),
+                typeof error.message === 'string' &&
+                  error.message.includes('already has an active writer')
+                  ? '电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。'
+                  : '原桌面 API 拒绝此操作',
+              ),
+            );
+          } else task.resolve(object(row.result));
+        } catch {
+          this.close();
+        }
+      });
   }
   private fail() {
     for (const task of this.pending.values()) {
@@ -160,6 +169,7 @@ class ChatMetadata {
         () => {
           this.pending.delete(id);
           reject(new Error('聊天操作结果待确认'));
+          this.close();
         },
         method === 'initialize' ? this.startupTimeout : 15000,
       );
@@ -193,9 +203,9 @@ class ChatMetadata {
     );
   }
   close() {
-    this.child.stdin.end();
-    this.child.kill('SIGTERM');
     this.fail();
+    this.retiring ??= retireMetadataProcess(this.child, this.exited);
+    void this.retiring.catch(() => {});
   }
 }
 const fingerprint = (request: ChatActionRequest) =>

@@ -19,12 +19,16 @@ const originalTimeout = globalThis.setTimeout;
 const children = new Set();
 const calls = join(dir, 'calls');
 const handshake = join(dir, 'initialized-pid');
+const holdOpen = join(dir, 'hold-open');
 const old = join(dir, 'old.mjs');
 const replacement = join(dir, 'new.mjs');
 const source = `#!/usr/bin/env node
 import {createInterface} from 'node:readline';
 import {appendFileSync,existsSync,writeFileSync} from 'node:fs';
 process.on('SIGTERM',()=>process.exit(0));
+// This scenario must resist EOF as well as the intercepted termination signal.
+// Otherwise readline draining on stdin.end() is a legitimate confirmed exit.
+if(existsSync(${JSON.stringify(holdOpen)}))setInterval(()=>{},1000);
 createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);appendFileSync(${JSON.stringify(calls)},r.method+'\\n');if(r.method==='initialized')writeFileSync(${JSON.stringify(handshake)},String(process.pid));if(r.id!==undefined){if(r.method==='project/list' && existsSync(${JSON.stringify(join(dir, 'drop'))}))process.exit(4);if(r.method==='model/list' && existsSync(${JSON.stringify(join(dir, 'invalid'))}))process.stdout.write('not-json\\n');else process.stdout.write(JSON.stringify({id:r.id,result:r.method==='project/list'||r.method==='thread/list'?{data:[],nextCursor:null}:{}})+'\\n')}});
 `;
 let reader;
@@ -103,6 +107,7 @@ try {
   await reader.processClosed;
 
   // An uncooperative process must not be replaced before close is confirmed.
+  await writeFile(holdOpen, 'keep this exact fixture alive after stdin EOF');
   reader = new CodexHistoryReader('test-host', 'test', old);
   await reader.connect();
   const held = reader.process;
@@ -110,7 +115,7 @@ try {
   try {
     held.kill = () => true;
     globalThis.setTimeout = (fn, ms, ...args) =>
-      originalTimeout(fn, ms === 10000 ? 120 : ms, ...args);
+      originalTimeout(fn, ms === 10000 || ms === 5000 ? 120 : ms, ...args);
     await assert.rejects(
       reader.configureExecutable(replacement),
       (e) => e.code === 'CODEX_READER_EXIT_UNCONFIRMED',
@@ -123,6 +128,7 @@ try {
     globalThis.setTimeout = originalTimeout;
     held.kill('SIGKILL');
     await reader.processClosed;
+    await rm(holdOpen);
   }
   await reader.configureExecutable(replacement);
   await reader.connect();

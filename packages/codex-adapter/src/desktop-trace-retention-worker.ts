@@ -66,7 +66,17 @@ async function run(): Promise<void> {
     );
     let lastStatus = 0;
     let queue: string[] = [];
-    const seen = new Map<string, number>();
+    const seen = new Map<string, { after: number; state: string; repeats: number }>();
+    const retry = (name: string, state: string) => {
+      const previous = seen.get(name);
+      const repeats = previous?.state === state ? Math.min(previous.repeats + 1, 5) : 1;
+      // A retained or rejected bundle is not new work. In a large backlog a
+      // fixed minute retry can keep reparsing the entire tree indefinitely.
+      // This only delays reclamation; it never caches authority to read/delete.
+      const delay =
+        state === 'active-or-unsealed' ? 5000 : Math.min(900000, 60000 * 2 ** (repeats - 1));
+      seen.set(name, { state, repeats, after: Date.now() + delay });
+    };
     let nextScan = 0;
     let nextNativeCheck = 0;
     let known = new Set<string>();
@@ -104,23 +114,23 @@ async function run(): Promise<void> {
             .map((name) => ({ name, time: lstatSync(join(scope.traceRoot, name)).mtimeMs }))
             .sort((a, b) => b.time - a.time)
             .map((row) => row.name);
-          const due = names.filter((n) => seen.has(n) && now >= seen.get(n)!);
+          const due = names.filter((n) => seen.has(n) && now >= seen.get(n)!.after);
           queue = [...new Set([...fresh, ...queue.filter((n) => current.has(n)), ...due])];
           known = current;
           nextScan = now + 5000;
         }
         for (let count = 0; count < 4 && queue.length && !closed; count++) {
           const name = queue.shift()!;
-          seen.set(name, now + 60000);
           try {
             const result = await retention.process(name, Date.now());
             if (result.state === 'retired') {
+              seen.delete(name);
               totals.retired++;
               totals.releasedBytes += result.bytes;
             } else {
               totals.retained++;
               record(name, result.state);
-              if (result.state === 'active-or-unsealed') seen.set(name, now + 5000);
+              retry(name, result.state);
             }
           } catch (error) {
             totals.failed++;
@@ -129,6 +139,7 @@ async function run(): Promise<void> {
                 ? error.message
                 : 'TRACE_RETENTION_REJECTED';
             record(name, code);
+            retry(name, code);
           }
         }
         const status = {

@@ -33,6 +33,7 @@ data class MobileClient(val id: String, val name: String, val scope: TargetScope
 }
 data class PendingAgentLink(val presentation: String=UUID.randomUUID().toString(),val payload: String)
 data class DraftDestination(val key: String,val selection: Long)
+internal data class NewChatTarget(val client: MobileClient,val navigation: Long,val revision: Long)
 internal data class CreationWaitContext(val key: String,val record: SavedOperation,val client: MobileClient,val selection: Long,val navigation: Long,val revision: Long)
 data class ComposerActionContext(val key: String,val client: MobileClient,val threadId: String,val selection: Long,
     val navigation: Long,val connectionRevision: Long,val turnId: String?,val state: String,val action: String,val draftVersion: String?,
@@ -1306,6 +1307,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val historyCursor get() = historyPages[targetKey]?.nextCursor
     val sourceLabel get()=selectedClient.sourceLabel
     val selectedTitle get() = threads.firstOrNull { it.id == selectedThread }?.title ?: "新聊天"
+    val isNewChatDraft get() = (selectedThread.isEmpty() || selectedThread.startsWith("draft-")) && newProjects.containsKey(clientKey)
+    val draftProject get() = if(isNewChatDraft) projects.firstOrNull { it.id==newProjects[clientKey] && it.hostId==selectedClient.id } else null
+    val isProjectlessDraft get() = isNewChatDraft && newProjects[clientKey]==null
     var runtimeState: String
         get() = runs[targetKey] ?: historyPages[targetKey]?.state ?: "idle"
         set(value) { runs[targetKey] = value }
@@ -1512,7 +1516,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         return SessionAccess(local,local || selectedClient.online && fresh,
             if(local) null else if(fresh) workspace?.runtimeConnected else false,
             if(local) emptyList() else if(fresh) workspace?.capabilities.orEmpty() else emptyList(),
-            selectedThread.isNotEmpty(),newProjects[clientKey]!=null || threads.any { it.id==selectedThread && it.projectId!=null },
+            selectedThread.isNotEmpty(),projects.any { it.id==newProjects[clientKey] && it.hostId==selectedClient.id } || threads.any { it.id==selectedThread && it.projectId!=null },
             selectedThread.isEmpty() && newProjects.containsKey(clientKey) && newProjects[clientKey]==null,
             local || freshHistories[targetKey]==true && runtime?.canControl==true,false)
     }
@@ -1564,6 +1568,15 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val canCreateProjectless get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access) && access.online
     internal val offersProjectlessChoice get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access)
     val canCreateProject get()=localReady&&codexStorageConflictMessage == null && access.online&&"projects:create" in workspace?.capabilities.orEmpty()
+    internal val newChatUnavailableReason: String? get() = when {
+        canCreateThread -> null
+        codexStorageConflictMessage!=null -> codexStorageConflictMessage
+        loading -> "正在读取电脑上的项目…"
+        !access.online -> "电脑连接尚未确认，请连接后刷新。"
+        selectedClient.mode in listOf("history","history-only") -> "历史连接仅支持查看，不能新建对话。"
+        selectedClient.mode=="desktop-runtime" -> "电脑尚未启用新建对话，请更新 Host 后刷新。"
+        else -> "当前连接不支持新建对话。"
+    }
     val canConfigureGeneration get() = canCompose && SessionPolicies.configureGeneration(access,submission)
     val canSelectPlan get() = canCompose && SessionPolicies.selectPlan(access,submission)
     val canSelectReplyMode get() = canCompose && !submission.sending && !submission.replyPending && !submission.creationPending
@@ -1674,19 +1687,24 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     var scrollToLatestRevision by mutableLongStateOf(0)
         private set
-    fun newChat(projectId: String? = null) {
+    internal fun captureNewChatTarget() = NewChatTarget(selectedClient,clientNavigationRevision,revisions[selectedClient.id] ?: 0)
+    internal fun newChat(projectId: String? = null,target: NewChatTarget = captureNewChatTarget()): Boolean {
+        if(target.navigation!=clientNavigationRevision || target.revision!=(revisions[selectedClient.id] ?: 0) ||
+            target.client.id!=selectedClient.id || target.client.endpoint!=selectedClient.endpoint || !sameScope(target.client.scope,selectedClient.scope) ||
+            !canCreateThread || projectId==null && !canCreateProjectless ||
+            projectId!=null && projects.none { it.id==projectId && it.hostId==selectedClient.id }) return false
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         if(!selectedClient.isDemo) {
-            if(!canCreateThread || projectId==null && !canCreateProjectless || projectId!=null && projects.none { it.id==projectId }) return
             rememberRecentProject(projectId)
             selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); selectedThread=""; newProjects[clientKey]=projectId
-            error=null; synchronizeReadingPresentation(); inheritGeneration(); persistMetadata(); loadOperations(); loadModels(); return
+            error=null; synchronizeReadingPresentation(); inheritGeneration(); persistMetadata(); loadOperations(); loadModels(); return true
         }
-        if (!demo) return
         selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
+        newProjects[clientKey]=projectId
         selectedThread = "draft-${UUID.randomUUID()}"; histories[targetKey] = emptyList(); runtimeState = "idle"
         rememberRecentProject(projectId)
         synchronizeReadingPresentation();persistMetadata()
+        return true
     }
     fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
         val client = selectedClient

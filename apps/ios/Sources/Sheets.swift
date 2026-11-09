@@ -411,7 +411,7 @@ struct ProjectPickerView: View {
                     Section {
                         Button { store.newProjectlessConversation() } label: {
                             Label(L10n.tr("不选择项目"), systemImage: "square.and.pencil")
-                        }.foregroundStyle(Color.primary).accessibilityIdentifier("choose-projectless")
+                        }.disabled(store.client?.online != true).foregroundStyle(Color.primary).accessibilityIdentifier("choose-projectless")
                     }
                 }
                 if !store.recentProjects.isEmpty {
@@ -420,8 +420,8 @@ struct ProjectPickerView: View {
                             Button {
                                 store.newConversation(in: project)
                             } label: {
-                                Label(project.name, systemImage: "clock")
-                            }.foregroundStyle(Color.primary).accessibilityIdentifier(
+                                projectChoice(project, icon: "clock")
+                            }.disabled(!store.canCreateThread || store.client?.online != true).foregroundStyle(Color.primary).accessibilityIdentifier(
                                 "choose-recent-project-\(project.id)")
                         }
                     } header: {
@@ -433,13 +433,27 @@ struct ProjectPickerView: View {
                         Button {
                             store.newConversation(in: project)
                         } label: {
-                            Label(project.name, systemImage: "folder")
-                        }.foregroundStyle(Color.primary).accessibilityIdentifier(
+                            projectChoice(project, icon: "folder")
+                        }.disabled(!store.canCreateThread || store.client?.online != true).foregroundStyle(Color.primary).accessibilityIdentifier(
                             "choose-project-\(project.id)")
                     }
-                    if store.projects.isEmpty { Text(L10n.tr("先添加一个项目")).foregroundStyle(Palette.secondary) }
+                    if store.projects.isEmpty { Text(L10n.tr("尚无可选项目。可在电脑端添加项目或文件夹后刷新。")).foregroundStyle(Palette.secondary) }
                 } header: {
                     Text(store.client?.name ?? L10n.tr("未连接"))
+                }
+                Section {
+                    if store.client?.isDemo != true {
+                        Button(L10n.tr("刷新项目")) { Task { await store.refresh(includeHistory: false, userInitiated: true) } }
+                            .disabled(store.loading).accessibilityIdentifier("new-chat-refresh")
+                    }
+                    if store.canCreateProject {
+                        Button(L10n.tr("添加项目")) { store.sheet = .addProject }
+                    }
+                } footer: {
+                    Text(L10n.tr("选择对话所属的项目或文件夹，发送第一条消息后创建。"))
+                    if !store.canCreateThread || store.client?.online != true {
+                        Text(L10n.tr(store.client?.online != true ? "电脑连接尚未确认，请连接后刷新。" : "当前连接不支持新建对话。"))
+                    }
                 }
             }.navigationTitle(L10n.tr("选择项目")).navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -448,6 +462,16 @@ struct ProjectPickerView: View {
                     }
                 }
         }.presentationDetents([.medium, .large])
+    }
+    private func projectChoice(_ project: Project, icon: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(project.name)
+                ForEach(project.roots, id: \.self) { root in
+                    Text(root).font(.caption).foregroundStyle(Palette.secondary).lineLimit(2)
+                }
+            }
+        } icon: { Image(systemName: icon) }
     }
 }
 

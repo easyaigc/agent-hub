@@ -1859,7 +1859,7 @@ struct RootView: View {
         IconButton(symbol: "square.and.pencil", label: L10n.tr("新建对话"), id: "new-chat") {
           store.sheet = .projects
         }
-        .disabled(!store.canCreateThread || store.client?.online != true)
+        .disabled(store.client == nil)
         IconButton(symbol: "checklist", label: L10n.tr("项目与任务"), id: "task-hub-entry") { store.sheet = .taskHub }
         Menu {
           if store.client?.agentConnection?.target.agentId == "easywork" { ProjectGitMenuEntry(store: store) }
@@ -2416,7 +2416,7 @@ struct RootView: View {
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           .contentShape(Rectangle())
       }.padding(.horizontal, 9).padding(.vertical, 4)
-        .disabled(!store.canCreateThread || store.client?.online != true)
+        .disabled(store.client == nil)
         .accessibilityIdentifier("sidebar-new")
       Button {
         sidebarSearchFocused = false

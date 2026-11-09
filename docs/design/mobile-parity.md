@@ -1818,3 +1818,7 @@ iOS EasyWork与Android既有规则对齐：原回执在归一化前核对可选�
 2026-11-07 UI05 C2。Codex 新活动条目以原 Agent 路径和稳定卡片 ID 展示。完成后发生的互动保留最近已知生命周期，已保存正文补齐后更新同一张卡片。实际移动端显示与实体复制按各自范围待验。见[阶段123](../android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。
 
 2026-11-08 F03/F06/F57/F63。iOS/Android 的专用 `*.mesh.51easyai.com` 直连候选显示 VPN 来源，排序与既有 VPN 私有 DNS 同级。配对页继续展示准确电脑与目标，地址更新按原证书和绑定校验。域名解析成功、设备身份确认与授权成功分别验收，详见[阶段126](../plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
+
+### mobile-new-chat-destination-20261109
+
+Android new-chat picker closes its drawer, shows project roots and selected draft destination, disables unsupported choices and offers catalog refresh/paging. Selection validates Host, scope and navigation/connection revision. iOS shows the same folder roots and refresh/empty guidance. First send still owns exact-target staged creation. See docs/mobile-new-chat-destination.md for current validation and pending physical-device acceptance.

@@ -1812,3 +1812,13 @@
 "原任务已变化或结束，追加未提交。" = "The original task changed or ended. Guidance was not submitted.";
 "子 Agent" = "Sub-agent";
 "等待子 Agent 更新…" = "Waiting for sub-agent updates…";
+
+"选择对话所属的项目或文件夹，发送第一条消息后创建。" = "Choose the project or folder for this conversation. It is created when you send the first message.";
+
+"尚无可选项目。可在电脑端添加项目或文件夹后刷新。" = "No projects are available. Add a project or folder on your computer, then refresh.";
+
+"刷新项目" = "Refresh projects";
+
+"电脑连接尚未确认，请连接后刷新。" = "The computer connection is not confirmed. Connect, then refresh.";
+
+"当前连接不支持新建对话。" = "This connection does not support new conversations.";

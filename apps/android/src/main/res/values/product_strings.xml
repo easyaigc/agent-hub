@@ -1679,6 +1679,11 @@
     <string name="product_e4f5d88c78b2ec57439559fd" formatted="false">"The original task changed or ended. Guidance was not submitted."</string>
     <string name="product_70da69db33a7a7facf0266b9" formatted="false">"Sub-agent"</string>
     <string name="product_452229ce30ad1157b27ee766" formatted="false">"Waiting for sub-agent updates…"</string>
+    <string name="product_216eac880112f67b7bf99778" formatted="false">"Choose the project or folder for this conversation. It is created when you send the first message."</string>
+    <string name="product_635fc8a2ba26d2b9dcdae51f" formatted="false">"No projects are available. Add a project or folder on your computer, then refresh."</string>
+    <string name="product_db71582baf3438e9a81609de" formatted="false">"Refresh projects"</string>
+    <string name="product_7210ee6ee1ccca0922855535" formatted="false">"The computer connection is not confirmed. Connect, then refresh."</string>
+    <string name="product_c32ce2abf6937987ac4893de" formatted="false">"This connection does not support new conversations."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>
@@ -1994,4 +1999,10 @@
     <string name="product_205ad84c7a9fe72fb4fa9190" formatted="false">"Phone file persistence needs verification. Remaining files and temporary records will not be automatically removed; uploading will not continue."</string>
     <string name="product_ccd45cad07bfed37d72de44d" formatted="false">"Another local process is using file storage. Verify again later."</string>
     <string name="product_faefe9cb61daf0acf448b9fe" formatted="false">"Receipt unconfirmed · verify only the original transfer"</string>
+    <string name="product_3f5d8c63e3131f80af48c2b6" formatted="false">"Reading projects from your computer…"</string>
+    <string name="product_c82d9ee960de253b4ad7c4f9" formatted="false">"History connections are read-only and cannot create conversations."</string>
+    <string name="product_eeb6c8816b207b2a456bc65b" formatted="false">"Conversation creation is not enabled on this computer. Update the Host, then refresh."</string>
+    <string name="product_2e9235e3d808b66a6c2826b5" formatted="false">"This project is no longer available. Choose another destination."</string>
+    <string name="product_c24a3d11cadc1dad439c5475" formatted="false">"Choose a project or folder for this conversation first."</string>
+    <string name="product_69a1f63136392c5c45a9e744" formatted="false">"The conversation is created when you send the first message."</string>
 </resources>

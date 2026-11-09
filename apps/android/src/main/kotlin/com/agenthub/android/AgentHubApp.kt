@@ -93,6 +93,7 @@ import com.agenthub.core.*
             }
         }
         val openSheet: (String) -> Unit = { session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
+        val openNewChat: () -> Unit = { sidebar=false;openSheet("projects") }
         LaunchedEffect(effectiveSheet,session.pendingChatSearchToken) {
             if(effectiveSheet==null&&session.pendingChatSearchToken!=null) { withFrameNanos { };session.applyPendingChatSearch() }
         }
@@ -133,7 +134,7 @@ import com.agenthub.core.*
                     if(inbox?.receiving==true)Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=6.dp).testTag("external-attachment-receiving"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp);Text(productText("正在导入附件…"),fontSize=12.sp,color=colors.onSurfaceVariant)
                     }
-                    ChatHeader(session, openSidebar={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
+                    ChatHeader(session, openSidebar={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat=openNewChat, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
                     NativeChatNotificationOpenStatus(session.chatNotifications)
                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
                     else if (!session.hasClient) Onboarding { openSheet("add") }
@@ -147,7 +148,7 @@ import com.agenthub.core.*
                                 TextButton(onClick=session::retryPhoneReading,modifier=Modifier.testTag("phone-reading-retry")) { Text(productText("重试")) }
                             }
                         }
-                        if (session.selectedThread.isEmpty() && session.pendingCreationMessage==null) Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { Text(productText("开始一段新对话"),fontSize=22.sp,fontWeight=FontWeight.SemiBold); Text(productText("从侧栏选择项目或继续对话。"),Modifier.padding(top=10.dp),color=colors.onSurfaceVariant,fontSize=14.sp) }
+                        if ((session.selectedThread.isEmpty() || session.isNewChatDraft) && session.pendingCreationMessage==null && session.messages.isEmpty()) NewChatDestination(session,openNewChat,Modifier.weight(1f))
                         else ChatMessages(session,dark,Modifier.weight(1f),inlineToolApprovals)
                         val bottomScroll=rememberScrollState()
                         LaunchedEffect(session.targetKey) { bottomScroll.scrollTo(0) }
@@ -190,7 +191,7 @@ import com.agenthub.core.*
                 }.pointerInput(widthPx) {
                     detectHorizontalDragGestures(onDragStart={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
-                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },fileTransfers={session.openComputerFiles(computerFilesContext);openSheet("file-transfers")},active=sidebar&&effectiveSheet==null&&session.error==null)
+                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat=openNewChat,settings={ openSheet("settings") },addProject={ openSheet("add-project") },fileTransfers={session.openComputerFiles(computerFilesContext);openSheet("file-transfers")},active=sidebar&&effectiveSheet==null&&session.error==null)
                 }
                 if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration"){session.migrationController?.close();sheet=null;editing=null} else if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration")session.migrationController?.close();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
                 session.error?.let { failure ->
@@ -246,7 +247,7 @@ import com.agenthub.core.*
             else Box(Modifier.size(6.dp).clip(CircleShape).background(if(session.hasClient && session.selectedClient.online) Color(0xFF34C759) else colors.secondary))
             Column(Modifier.weight(1f,false),verticalArrangement=Arrangement.spacedBy(1.dp)) {
                 Text(if(session.hasClient) session.selectedClient.name else productText("添加电脑"),fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
-                val project=session.projects.firstOrNull { p -> session.threads.firstOrNull { it.id==session.selectedThread }?.belongs(p)==true }
+                val project=session.draftProject ?: session.projects.firstOrNull { p -> session.threads.firstOrNull { it.id==session.selectedThread }?.belongs(p)==true }
                 if(project!=null) Text(project.name,fontSize=10.sp,color=colors.onSurfaceVariant,maxLines=1,overflow=TextOverflow.Ellipsis)
             }
             ProductIcon("down",Modifier.size(12.dp),colors.onSurfaceVariant)
@@ -255,7 +256,7 @@ import com.agenthub.core.*
         Box {
             Row(Modifier.floatingProduct()) {
                 if(composerFocused) IconAction("keyboard",productText("收起键盘"),"composer-dismiss-keyboard",onClick=dismissKeyboard)
-                IconAction("new",productText("新聊天"),"new-chat",enabled=session.canCreateThread,onClick=newChat)
+                IconAction("new",productText("新聊天"),"new-chat",enabled=session.hasClient&&!session.restoring,onClick=newChat)
                 IconAction("more",productText("对话选项"),"chat-menu") { menu=true }
             }
             DropdownMenu(expanded=menu,onDismissRequest={ menu=false }) {

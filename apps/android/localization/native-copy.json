@@ -1575,6 +1575,36 @@
       "key": "接收结果待确认 · 仅核对原传输",
       "en": "Receipt unconfirmed · verify only the original transfer",
       "zhHans": "接收结果待确认 · 仅核对原传输"
+    },
+    {
+      "key": "正在读取电脑上的项目…",
+      "en": "Reading projects from your computer…",
+      "zhHans": "正在读取电脑上的项目…"
+    },
+    {
+      "key": "历史连接仅支持查看，不能新建对话。",
+      "en": "History connections are read-only and cannot create conversations.",
+      "zhHans": "历史连接仅支持查看，不能新建对话。"
+    },
+    {
+      "key": "电脑尚未启用新建对话，请更新 Host 后刷新。",
+      "en": "Conversation creation is not enabled on this computer. Update the Host, then refresh.",
+      "zhHans": "电脑尚未启用新建对话，请更新 Host 后刷新。"
+    },
+    {
+      "key": "项目已不可用，请重新选择。",
+      "en": "This project is no longer available. Choose another destination.",
+      "zhHans": "项目已不可用，请重新选择。"
+    },
+    {
+      "key": "请先选择对话所属的项目或文件夹。",
+      "en": "Choose a project or folder for this conversation first.",
+      "zhHans": "请先选择对话所属的项目或文件夹。"
+    },
+    {
+      "key": "发送第一条消息后创建对话。",
+      "en": "The conversation is created when you send the first message.",
+      "zhHans": "发送第一条消息后创建对话。"
     }
   ]
 }

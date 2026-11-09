@@ -101,7 +101,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "settings" -> SettingsPage(session,navigate,uri::openUri)
                 "clients" -> ClientsPage(session,navigate,edit,close)
                 "add" -> key(editing?.id) { ConnectionPage(session,editing,header=if(compactConnectionKeyboard)header else null) { navigate("clients") } }
-                "projects" -> ProjectsPage(session,close)
+                "projects" -> ProjectsPage(session,close,navigate)
                 "add-project" -> AddProjectPage(session,close)
                 "appearance" -> AppearancePage(session)
                 "language" -> LanguagePage(session)
@@ -350,17 +350,19 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
         decorationBox={ inner -> Box { if(value.isEmpty()) Text(placeholder,fontSize=17.sp,color=colors.onSurfaceVariant); inner() } })
     HorizontalDivider(Modifier.padding(start=16.dp),color=colors.onSurface.copy(alpha=.1f))
 }
-@Composable private fun ProjectsPage(session: MobileSession,close: () -> Unit) {
+@Composable private fun ProjectsPage(session: MobileSession,close: () -> Unit,navigate: (String)->Unit) {
     val client=session.selectedClient
     val recent=session.recentProjects
     val projects=session.projects.filter { it.hostId==client.id }
-    fun current()=session.selectedClient.id==client.id && sameScope(session.selectedClient.scope,client.scope)
+    val target=session.captureNewChatTarget()
     fun choose(project: MobileProject) {
-        if(current() && project.hostId==client.id && session.projects.any { it.id==project.id && it.hostId==client.id } && session.canCreateThread) { session.newChat(project.id);close() }
+        if(project.hostId==client.id && session.newChat(project.id,target))close()
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical=8.dp)) {
+        Text(productText("选择对话所属的项目或文件夹，发送第一条消息后创建。"),Modifier.padding(horizontal=24.dp,vertical=12.dp),fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        session.newChatUnavailableReason?.let { reason -> Text(productText(reason),Modifier.padding(horizontal=24.dp,vertical=12.dp).testTag("new-chat-unavailable"),fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
         if(session.offersProjectlessChoice) GroupCard {
-            TextButton(onClick={ if(current() && session.canCreateProjectless) { session.newChat();close() } },
+            TextButton(onClick={ if(session.newChat(target=target))close() },enabled=session.canCreateProjectless,
                 colors=ButtonDefaults.textButtonColors(contentColor=MaterialTheme.colorScheme.onSurface),
                 modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("projectless-new")) {
                 ProductIcon("new");Spacer(Modifier.width(10.dp));Text(productText("不选择项目"),Modifier.weight(1f),fontSize=17.sp,fontWeight=FontWeight.Normal)
@@ -369,20 +371,24 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
         if(recent.isNotEmpty()) {
             GroupTitle(productText("最近使用"))
             GroupCard { recent.forEach { project ->
-                ProjectChoiceRow(project,true) { choose(project) }
+                ProjectChoiceRow(project,true,session.canCreateThread) { choose(project) }
             } }
         }
         GroupTitle(if(session.hasClient)client.name else productText("未连接"))
         GroupCard {
-            projects.forEach { project -> ProjectChoiceRow(project,false) { choose(project) } }
-            if(projects.isEmpty()) Text(productText("先添加一个项目"),Modifier.padding(16.dp),fontSize=16.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            projects.forEach { project -> ProjectChoiceRow(project,false,session.canCreateThread) { choose(project) } }
+            if(projects.isEmpty()) Text(productText(if(session.loading) "正在读取电脑上的项目…" else "尚无可选项目。可在电脑端添加项目或文件夹后刷新。"),Modifier.padding(16.dp).testTag("new-chat-empty-projects"),fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if(!client.isDemo && !session.canCreateThread) Text(productText("从侧栏选择已有项目和对话。历史只读连接无法创建新对话。"),Modifier.padding(32.dp),fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        if(!client.isDemo) GroupCard {
+            TextButton(onClick={ session.refresh(userInitiated=true) },enabled=!session.loading,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("new-chat-refresh")) { Text(productText(if(session.loading) "正在读取电脑上的项目…" else "刷新项目")) }
+            if(session.workspace?.nextProjectCursor!=null) TextButton(onClick={ session.refresh(more=true,userInitiated=true) },enabled=!session.loading,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("new-chat-more-projects")) { Text(productText("更多项目")) }
+            if(session.canCreateProject) TextButton(onClick={ navigate("add-project") },modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("new-chat-add-project")) { Text(productText("添加项目")) }
+        }
     }
 }
-@Composable private fun ProjectChoiceRow(project: MobileProject,recent: Boolean,choose: ()->Unit) {
+@Composable private fun ProjectChoiceRow(project: MobileProject,recent: Boolean,enabled: Boolean,choose: ()->Unit) {
     val colors=MaterialTheme.colorScheme
-    TextButton(onClick=choose,
+    TextButton(onClick=choose,enabled=enabled,
         colors=ButtonDefaults.textButtonColors(contentColor=colors.onSurface),
         contentPadding=PaddingValues(horizontal=16.dp,vertical=10.dp),
         modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(if(recent)"choose-recent-project-${project.id}" else "choose-project-${project.id}")) {
@@ -394,7 +400,10 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
             drawLine(color,center,androidx.compose.ui.geometry.Offset(size.width*.7f,size.height*.6f),2.dp.toPx(),androidx.compose.ui.graphics.StrokeCap.Round)
         } else ProductIcon("folder",Modifier.size(20.dp),color)
         Spacer(Modifier.width(10.dp))
-        Text(project.name,Modifier.weight(1f),fontSize=17.sp,fontWeight=FontWeight.Normal)
+        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+            Text(project.name,fontSize=17.sp,fontWeight=FontWeight.Normal)
+            project.roots.forEach { root -> Text(root,fontSize=12.sp,maxLines=2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=LocalContentColor.current.copy(alpha=.7f)) }
+        }
     }
 }
 @Composable private fun AddProjectPage(session: MobileSession,close: ()->Unit) {

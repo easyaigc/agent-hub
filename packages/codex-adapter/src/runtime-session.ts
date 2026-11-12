@@ -46,6 +46,7 @@ import { codexClientType } from './history-reader.js';
 import { retainedDesktopHistory } from './desktop-history-identity.js';
 import { approvalRequest } from './approval-requests.js';
 import { DesktopPreparedBridge } from './desktop-prepared-bridge.js';
+import { defaultDesktopPreparedBridge } from './desktop-bridge-defaults.js';
 import { DesktopForkBroker, type ForkSource } from './desktop-forks.js';
 import { inspectForkWorktree } from './fork-worktree.js';
 import { homedir } from 'node:os';
@@ -358,6 +359,16 @@ interface Approval {
   interactionMode?: 'async';
   sourceItemId?: string;
 }
+interface DesktopOpenOperation {
+  hostId: string;
+  threadId: string;
+  clientOperationId: string;
+  phase: 'opening' | 'opened' | 'outcome-unknown';
+  error: string | null;
+}
+const openOperationId = /^[a-zA-Z0-9_-]{8,100}$/;
+const unknownOpenError = 'Codex 打开结果待确认，请刷新';
+
 interface State {
   workspaceManagement?: Record<string, WorkspaceManagementOperation>;
   hostId: string;
@@ -366,6 +377,7 @@ interface State {
   attachments: Attachment[];
   messageFileLinks?: { threadId: string; messageId: string; reference: string; path: string }[];
   receipts: Receipt[];
+  desktopOpenOperations?: DesktopOpenOperation[];
   creations: Record<string, string>;
   asyncQuestionActions?: Record<
     string,
@@ -406,16 +418,7 @@ export class RuntimeSession {
   private readonly desktopCreationDriver?: DesktopCreationBridge;
   private readonly desktopForks?: DesktopForkBroker;
   private workspaceManagement?: WorkspaceManagementBroker;
-  private openOperations = new Map<
-    string,
-    {
-      hostId: string;
-      threadId: string;
-      clientOperationId: string;
-      phase: string;
-      error: string | null;
-    }
-  >();
+  private readonly openOperations = new Map<string, DesktopOpenOperation>();
   private openingThreads = new Map<string, Promise<boolean>>();
   private state: State;
   private approvals = new Map<string, Approval>();
@@ -466,6 +469,7 @@ export class RuntimeSession {
   private desktopReceiptHistoryReads = new Map<string, Promise<void>>();
   private desktopReceiptHistoryRetryAfter = new Map<string, number>();
   private desktopHistoryReads = new Map<string, number>();
+  private desktopHistoryPageReads = new Map<string, number>();
   private desktopHistoryTips = new Map<string, string>();
   private historicalReceiptContexts = new Map<string, string>();
   private readReceiptRetryAt = new Map<string, number>();
@@ -529,6 +533,30 @@ export class RuntimeSession {
     }
     this.replyNamespace = replyTarget(this.readingTarget());
     this.persistence.acquireReplyWriter(this.replyNamespace, options.replyCheckpointFile);
+    if (options.mode === 'desktop-runtime' && Array.isArray(this.state.desktopOpenOperations)) {
+      for (const operation of this.state.desktopOpenOperations) {
+        if (
+          operation?.hostId !== this.hostId ||
+          typeof operation.threadId !== 'string' ||
+          !operation.threadId ||
+          typeof operation.clientOperationId !== 'string' ||
+          !openOperationId.test(operation.clientOperationId) ||
+          !['opening', 'opened', 'outcome-unknown'].includes(operation.phase)
+        )
+          continue;
+        // A process boundary cannot prove whether an earlier navigation was
+        // dispatched. Only a fresh owner observation may resolve it.
+        const phase = operation.phase === 'opened' ? 'opened' : 'outcome-unknown';
+        this.openOperations.set(operation.clientOperationId, {
+          hostId: operation.hostId,
+          threadId: operation.threadId,
+          clientOperationId: operation.clientOperationId,
+          phase,
+          error: phase === 'opened' ? null : unknownOpenError,
+        });
+      }
+      this.state.desktopOpenOperations = [...this.openOperations.values()];
+    }
     for (const receipt of this.state.receipts) {
       if (['submitting', 'submitted'].includes(receipt.state)) receipt.state = 'uncertain';
       if (receipt.fingerprintVersion === 2) {
@@ -580,9 +608,12 @@ export class RuntimeSession {
           ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
           : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
       );
-      this.desktopCreationDriver = options.desktopPreparedBridge
+      const preparedBridge = defaultDesktopPreparedBridge(options, this.hostId, () => {
+        if (!restored) this.save();
+      });
+      this.desktopCreationDriver = preparedBridge
         ? new DesktopPreparedBridge(
-            options.desktopPreparedBridge,
+            preparedBridge,
             this.hostId,
             this.runtime,
             join(options.directory, 'desktop-prepared-bridge'),
@@ -1460,6 +1491,9 @@ export class RuntimeSession {
     return this.history(threadId, true, cursor);
   }
   private desktopWindow(thread: Thread, before?: string) {
+    const latestRead = this.desktopHistoryReads.get(thread.id) ?? 0;
+    const historyRead = Math.max(latestRead, this.desktopHistoryPageReads.get(thread.id) ?? 0);
+    const now = Date.now();
     let end = thread.messages.length;
     if (before) {
       const anchor = this.desktopCursorAnchor(thread.id, before);
@@ -1490,19 +1524,20 @@ export class RuntimeSession {
         state:
           this.ready &&
           this.runtime instanceof DesktopRuntime &&
-          this.runtime.ipc.hasOwner(thread.id)
+          this.runtime.ipc.hasOwner(thread.id) &&
+          this.verifiedDesktopMessageIds.has(thread.id) &&
+          !this.desktopProjections.has(thread.id)
             ? 'live'
-            : Date.now() - (this.desktopHistoryReads.get(thread.id) ?? 0) < 10_000
-              ? this.runtime instanceof DesktopRuntime &&
+            : now - latestRead < 10_000 &&
+                this.runtime instanceof DesktopRuntime &&
                 this.runtime.ipc
                   .observation(thread.id)
                   ?.items.some((v) => v.turnId === this.desktopHistoryTips.get(thread.id))
-                ? 'live-window'
-                : 'history'
-              : 'unavailable',
-        ...(this.desktopHistoryReads.has(thread.id)
-          ? { checkedAt: new Date(this.desktopHistoryReads.get(thread.id)!).toISOString() }
-          : {}),
+              ? 'live-window'
+              : now - historyRead < 10_000
+                ? 'history'
+                : 'unavailable',
+        ...(historyRead ? { checkedAt: new Date(historyRead).toISOString() } : {}),
       },
     };
   }
@@ -1917,18 +1952,41 @@ export class RuntimeSession {
     )
       return this.open(threadId, cursor, undefined, windowed);
     const thread = this.thread(threadId);
-    const previousFirst =
-      cursor && windowed && this.runtime instanceof DesktopRuntime
-        ? thread.messages[0]?.id
-        : undefined;
+    let pageRead = false;
+    let lastPageMessageId: string | undefined;
     if (!cursor && this.runtime instanceof DesktopRuntime)
       this.runtime.ipc.refreshSnapshot(threadId, false);
-    const result = await this.open(threadId, cursor, undefined, windowed);
+    const result = await this.open(threadId, cursor, undefined, windowed, undefined, (lastId) => {
+      pageRead = true;
+      lastPageMessageId = lastId;
+    });
     if (!windowed || !(this.runtime instanceof DesktopRuntime)) return result;
-    const before = previousFirst
-      ? desktopHistoryCursor(this.hostId, threadId, previousFirst)
+    if (!cursor || !pageRead) return this.history(threadId, true);
+    if (!lastPageMessageId)
+      return {
+        ...this.history(threadId, true),
+        messages: [],
+        nextCursor: thread.historyCursor ?? null,
+        historyWindow: { version: 1 as const, kind: 'earlier' as const },
+      };
+    // Another reader may already have expanded the shared cache. The upstream
+    // page's own boundary remains valid; the cache's oldest item is not this
+    // caller's anchor and would turn a successful repeated read into an empty page.
+    const end = thread.messages.findIndex((message) => message.id === lastPageMessageId);
+    if (end < 0)
+      throw new RuntimeError(
+        409,
+        '历史分页已变化，请重新读取此对话',
+        'HOST_HISTORY_CURSOR_EXPIRED',
+      );
+    const nextMessage = thread.messages[end + 1];
+    const before = nextMessage
+      ? desktopHistoryCursor(this.hostId, threadId, nextMessage.id)
       : undefined;
-    return this.history(threadId, true, before);
+    return {
+      ...this.history(threadId, true, before),
+      historyWindow: { version: 1 as const, kind: 'earlier' as const },
+    };
   }
   async open(
     threadId: string,
@@ -1936,6 +1994,7 @@ export class RuntimeSession {
     target?: ReplyTarget,
     windowed = false,
     admitUnknown?: () => boolean,
+    onHistoryPage?: (lastMessageId: string | undefined) => void,
   ) {
     if (isDesktopHistoryCursor(cursor)) {
       if (target) this.assertReplyOpen(target);
@@ -1945,12 +2004,12 @@ export class RuntimeSession {
     if (pending) {
       await this.readWithReplyFence(target, () => pending);
       return cursor
-        ? this.openNow(threadId, cursor, target, windowed, admitUnknown)
+        ? this.openNow(threadId, cursor, target, windowed, admitUnknown, onHistoryPage)
         : this.history(threadId);
     }
     if (this.loaded.has(threadId))
-      return this.openNow(threadId, cursor, target, windowed, admitUnknown);
-    const request = this.openNow(threadId, cursor, target, windowed, admitUnknown);
+      return this.openNow(threadId, cursor, target, windowed, admitUnknown, onHistoryPage);
+    const request = this.openNow(threadId, cursor, target, windowed, admitUnknown, onHistoryPage);
     this.restoring.set(threadId, request);
     try {
       return await this.readWithReplyFence(target, () => request);
@@ -1999,6 +2058,7 @@ export class RuntimeSession {
     target?: ReplyTarget,
     windowed = false,
     admitUnknown?: () => boolean,
+    onHistoryPage?: (lastMessageId: string | undefined) => void,
   ) {
     if (target) this.assertReplyOpen(target);
     this.requireReady();
@@ -2077,7 +2137,10 @@ export class RuntimeSession {
             localImagePaths.set(id, paths),
           ),
         ).catch((error: unknown) => {
-          if (!cursor) this.desktopHistoryReads.delete(threadId);
+          if (!cursor) {
+            this.desktopHistoryReads.delete(threadId);
+            this.desktopHistoryPageReads.delete(threadId);
+          }
           throw error;
         });
         if (!cursor) {
@@ -2159,6 +2222,7 @@ export class RuntimeSession {
           }
           messages.push(message);
         }
+        onHistoryPage?.(messages.at(-1)?.id);
         const ids = new Set(messages.map((v) => v.id));
         const retained = cursor
           ? previous.filter((v) => !ids.has(v.id))
@@ -2192,7 +2256,20 @@ export class RuntimeSession {
           ]);
           thread.messages = previous.filter((v) => ids.has(v.id));
         }
-        thread.historyCursor = page.nextCursor;
+        // Re-reading a saved page must not move the shared upstream frontier
+        // backwards after another reader reached an older page or exhaustion.
+        const extendsPrefix =
+          thread.messages[0]?.id !== previous[0]?.id &&
+          messages.some((message) => message.id === thread.messages[0]?.id);
+        if (
+          page.historyMode !== 'paginated' ||
+          !previous.length ||
+          thread.historyCursor === undefined ||
+          (cursor !== undefined && cursor === thread.historyCursor) ||
+          extendsPrefix
+        )
+          thread.historyCursor = page.nextCursor;
+        this.desktopHistoryPageReads.set(threadId, Date.now());
         // A concurrently loaded history page must survive an in-flight live projection.
         const projection = this.desktopProjections.get(threadId);
         if (projection) projection.version++;
@@ -2825,49 +2902,85 @@ export class RuntimeSession {
     );
   }
   async activateDesktopThread(threadId: string, id: string) {
+    if (!openOperationId.test(id)) throw new RuntimeError(400, '操作 ID 无效');
+    const existing = () => {
+      const old = this.openOperations.get(id);
+      if (old && old.threadId !== threadId) throw new RuntimeError(409, '操作 ID 已用于其他对话');
+      return old;
+    };
+    const old = existing();
+    if (old) return old;
     const bridge = this.desktopCreationDriver;
     if (!bridge?.open) throw new RuntimeError(409, '当前连接未提供 Codex 打开入口');
-    if (!/^[a-zA-Z0-9_-]{8,100}$/.test(id)) throw new RuntimeError(400, '操作 ID 无效');
-    const old = this.openOperations.get(id);
-    if (old && old.threadId !== threadId) throw new RuntimeError(409, '操作 ID 已用于其他对话');
     if (!this.state.threads.some((thread) => thread.id === threadId)) {
       const prepared = await this.desktopCreation?.preparedThreadMetadata(threadId);
+      const racing = existing();
+      if (racing) return racing;
       if (prepared) {
         this.rememberDesktopThread(prepared);
-        this.save();
       }
     }
+    if (this.closed) throw new RuntimeError(503, 'Codex 运行时未连接');
     this.thread(threadId);
-    if (old && ['opening', 'opened'].includes(old.phase)) return old;
-    const operation = old ?? {
+    const operation: DesktopOpenOperation = {
       hostId: this.hostId,
       threadId,
       clientOperationId: id,
       phase: 'opening',
       error: null,
     };
-    operation.phase = 'opening';
-    operation.error = null;
-    this.openOperations.set(id, operation);
+    // The immutable target and ID must be durable before any navigation.
+    this.saveDesktopOpen(operation);
     const prior = this.openingThreads.get(threadId);
-    const work = prior ?? bridge.open(threadId, id);
+    const work = prior ?? Promise.resolve().then(() => !this.closed && bridge.open!(threadId, id));
     if (!prior) {
       this.openingThreads.set(threadId, work);
       void work.finally(() => this.openingThreads.delete(threadId)).catch(() => {});
     }
-    void work
-      .then(async (opened) => {
-        operation.phase = opened ? 'opened' : 'outcome-unknown';
-        if (opened) {
-          await this.open(threadId);
-          this.emit(threadId, 'desktop-opened');
-        }
-      })
-      .catch(() => {
-        operation.phase = 'outcome-unknown';
-        operation.error = 'Codex 打开结果待确认，请刷新';
-      });
+    void work.then(
+      (opened) => this.finishDesktopOpen(operation, opened),
+      () => this.finishDesktopOpen(operation, false),
+    );
     return operation;
+  }
+  private saveDesktopOpen(operation: DesktopOpenOperation): void {
+    const id = operation.clientOperationId;
+    const previous = this.openOperations.get(id);
+    this.openOperations.set(id, operation);
+    this.state.desktopOpenOperations = [...this.openOperations.values()];
+    try {
+      this.save();
+    } catch (error) {
+      if (previous) this.openOperations.set(id, previous);
+      else this.openOperations.delete(id);
+      this.state.desktopOpenOperations = [...this.openOperations.values()];
+      throw error;
+    }
+  }
+  private async finishDesktopOpen(operation: DesktopOpenOperation, opened: boolean) {
+    if (this.closed || this.openOperations.get(operation.clientOperationId) !== operation) return;
+    const unknown: DesktopOpenOperation = {
+      ...operation,
+      phase: 'outcome-unknown',
+      error: unknownOpenError,
+    };
+    try {
+      this.saveDesktopOpen(opened ? { ...operation, phase: 'opened', error: null } : unknown);
+    } catch {
+      // A successful navigation without a durable confirmation is uncertain.
+      // Keep the saved intent queryable; never invoke the bridge again.
+      this.openOperations.set(operation.clientOperationId, unknown);
+      this.state.desktopOpenOperations = [...this.openOperations.values()];
+      return;
+    }
+    if (opened) {
+      try {
+        await this.open(operation.threadId);
+        if (!this.closed) this.emit(operation.threadId, 'desktop-opened');
+      } catch (error) {
+        runtimeFailure('desktop-open-projection', error);
+      }
+    }
   }
   async desktopOpenStatus(threadId: string, id: string) {
     const operation = this.openOperations.get(id);
@@ -2886,15 +2999,12 @@ export class RuntimeSession {
         state?.id === threadId &&
         state.hostId === 'local' &&
         this.runtime.ipc.hasOwner(threadId) &&
-        operation.phase === 'outcome-unknown'
+        this.openOperations.get(id) === operation
       ) {
-        operation.phase = 'opened';
-        operation.error = null;
-        await this.open(threadId);
-        this.emit(threadId, 'desktop-opened');
+        await this.finishDesktopOpen(operation, true);
       }
     }
-    return operation;
+    return this.openOperations.get(id)!;
   }
   private async submitCreationInput(
     plan: import('./desktop-creation.js').DesktopCreationPlan,
@@ -3582,6 +3692,7 @@ export class RuntimeSession {
     item: unknown,
     directory?: string,
   ): Promise<void> {
+    const wire = object(item);
     const originalLinks = messageLinks(message.text);
     if (message.role === 'assistant' && message.kind === 'agentMessage')
       message.text = mobileVisualizationLinks(message.text);
@@ -3598,6 +3709,17 @@ export class RuntimeSession {
       ]),
     ];
     this.registerMessageReferences(thread, message, directory, links);
+    if (this.runtime instanceof DesktopRuntime) {
+      // A Markdown reference is not a native attachment. Register its original
+      // message provenance above, but do no filesystem work until it is opened.
+      // Only explicit upstream media/file fields are prepared for presentation.
+      paths = [
+        ...list(wire.content).map((entry) => string(object(entry).path)),
+        ...list(wire.changes).map((entry) => string(object(entry).path)),
+        string(wire.path),
+        string(wire.savedPath),
+      ].filter(Boolean);
+    }
     const attachments = message.attachments;
     const root =
       directory ??
@@ -3638,7 +3760,6 @@ export class RuntimeSession {
           throw new RuntimeError(error.status, error.message, error.code);
       }
     }
-    const wire = object(item);
     const media = [
       ...list(object(wire.result).content),
       ...list(wire.contentItems),

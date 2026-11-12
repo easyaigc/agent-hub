@@ -1174,6 +1174,7 @@ final class CodexManageUITests: XCTestCase {
       app = XCUIApplication(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest(); return
     }
     app = XCUIApplication()
+    if name.contains("testHistoryFileReferencesReadOnlyDEV") { return }
     if name.contains("testThermal") { return }
     if name.contains("testWindowsConversationSyncReadOnlyDEV") { return }
     if name.contains("testHistoryContinuousScrollPerformance") || name.contains("testHistoryContinuousScrollOriginalDesktopDEV") || name.contains("testHistoryRemotePrependOriginalDesktopDEV") || name.contains("testHistoryShortListPrependKeepsPosition") || name.contains("testHistoryInstalledAppReadOnlyDEV") { return }
@@ -5911,6 +5912,109 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertGreaterThanOrEqual(metrics["gestures"] ?? 0, 24)
     XCTAssertGreaterThan(metrics["movingFrames"] ?? 0, 400)
     XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+  }
+
+  /// Dedicated isolated-bundle acceptance. Markers and target remain in private configuration.
+  @MainActor func testHistoryFileReferencesReadOnlyDEV() throws {
+    struct Configuration: Decodable {
+      let bundleId: String
+      let connection: LiveFixture
+      let lastReply: String
+      let earlierText: String
+    }
+    guard let raw = ProcessInfo.processInfo.environment["HISTORY_FILE_REFERENCES_JSON"] else {
+      XCTFail("Missing private acceptance configuration"); return
+    }
+    let config = try JSONDecoder().decode(Configuration.self, from: Data(raw.utf8))
+    guard config.bundleId.range(of: #"^com\.easyai\.agenthub\.historyreferences\.[a-f0-9]{8}$"#, options: .regularExpression) != nil,
+      !config.lastReply.isEmpty, !config.earlierText.isEmpty, config.lastReply != config.earlierText,
+      config.connection.threadTitle?.isEmpty == false else {
+      XCTFail("Invalid isolated target or private history markers"); return
+    }
+    let networkMonitor = addUIInterruptionMonitor(withDescription: "Isolated history App network authorization") { alert in
+      guard alert.label.contains("Agent Hub"),
+        alert.label.contains("网络") || alert.label.contains("无线数据") ||
+          alert.label.localizedCaseInsensitiveContains("local network") ||
+          alert.label.localizedCaseInsensitiveContains("wireless data") else { return false }
+      let allow = alert.buttons.matching(NSPredicate(format: "label IN %@",
+        ["无线局域网", "无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow", "好", "OK"])).firstMatch
+      guard allow.exists else { return false }
+      allow.tap(); return true
+    }
+    defer { removeUIInterruptionMonitor(networkMonitor) }
+    XCUIDevice.shared.orientation = .portrait
+    app = XCUIApplication(bundleIdentifier: config.bundleId)
+    app.launchArguments = ["-history-scroll-probe"]
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_HOST"] = config.connection.hostId
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_THREAD"] = config.connection.threadId
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    // The connection is added through the normal pairing UI only inside the
+    // task-specific bundle when it is absent. The runner protects and removes
+    // raw XCTest artifacts, which can contain secure-field input.
+    prepareHistoryConnection(config.connection)
+    openHistoryTestConversation(config.connection)
+
+    func targetReady() -> Bool {
+      let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        self.liveHistoryCounts()?["target"] == 1 && (self.liveHistoryCounts()?["messages"] ?? 0) > 0
+      }, object: app)
+      return XCTWaiter.wait(for: [expectation], timeout: 45) == .completed
+    }
+    func containsMarker(_ marker: String) -> Bool {
+      let viewport = app.scrollViews["message-list"].frame
+      return app.staticTexts.allElementsBoundByIndex.contains {
+        $0.label.contains(marker) && $0.isHittable && $0.frame.intersects(viewport)
+      }
+    }
+    func findMarker(_ marker: String, older: Bool) -> Bool {
+      let timeline = app.scrollViews["message-list"]
+      guard timeline.waitForExistence(timeout: 30) else { return false }
+      let attempts = max(120, min(240, liveHistoryCounts()?["messages"] ?? 0))
+      for _ in 0..<attempts {
+        if containsMarker(marker) { return true }
+        let latest = app.buttons["跳转最新消息"]
+        let more = app.buttons["history-local-more"].exists ? app.buttons["history-local-more"] : app.buttons["history-more"]
+        if !older && latest.exists && latest.isHittable { latest.tap() }
+        else if older && more.exists && more.isHittable { more.tap() }
+        else if older { timeline.swipeDown() } else { timeline.swipeUp() }
+        Thread.sleep(forTimeInterval: 0.3)
+      }
+      return containsMarker(marker)
+    }
+    func checkLatest() {
+      XCTAssertTrue(targetReady(), "Exact target must have nonempty history")
+      XCTAssertTrue(findMarker(config.lastReply, older: false), "Original last reply must be visible")
+      XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+    }
+    checkLatest()
+    shot("history-file-references-latest")
+    XCTAssertTrue(findMarker(config.earlierText, older: true), "Earlier original history must be readable")
+    shot("history-file-references-earlier")
+    XCTAssertTrue(findMarker(config.lastReply, older: false), "Scrolling back must show the last reply")
+    app.buttons["chat-menu"].tap()
+    let refresh = app.buttons["刷新历史"]
+    XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+    checkLatest()
+    shot("history-file-references-refreshed")
+    XCTAssertTrue(findMarker(config.earlierText, older: true), "Earlier history must survive refresh")
+    XCUIDevice.shared.press(.home)
+    app.activate()
+    checkLatest()
+    shot("history-file-references-background-return")
+    app.terminate()
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    prepareHistoryConnection(config.connection, allowPairing: false)
+    openHistoryTestConversation(config.connection)
+    // A new explicit refresh requires a fresh read after process restart.
+    app.buttons["chat-menu"].tap()
+    XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+    checkLatest()
+    shot("history-file-references-restarted")
+    XCTAssertTrue(findMarker(config.earlierText, older: true), "Earlier history must remain readable after restart")
+    shot("history-file-references-restarted-earlier")
+    print("HISTORY_FILE_REFERENCES_READ_ONLY_PASSED")
   }
 
   @MainActor func testHistoryContinuousScrollOriginalDesktopDEV() throws {

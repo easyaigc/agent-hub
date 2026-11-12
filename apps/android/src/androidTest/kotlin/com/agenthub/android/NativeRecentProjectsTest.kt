@@ -126,7 +126,9 @@ class NativeRecentProjectsUiTest {
     }
 
     @Before fun prepare() {
+        ui.waitUntil(10_000) { !session.restoring }
         ui.runOnIdle {
+            ui.activity.readNetworkMonitor.stop()
             session.resetAcceptance();session.changeLanguage("zh-Hans");session.changeAppearance("light")
             session.setDemoMode(true)
         }

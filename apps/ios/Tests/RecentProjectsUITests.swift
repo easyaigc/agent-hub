@@ -97,4 +97,19 @@ final class RecentProjectsUITests: XCTestCase {
     XCTAssertTrue(api.frame.minY < mobile.frame.minY)
     screenshot("recent-projects-opened-thread")
   }
+
+  @MainActor func testOfflinePickerExplainsUnavailableProjectWithoutChangingDraft() {
+    app.launchArguments = ["-ui-testing", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    switchComputer("home")
+    let newChat = app.buttons["new-chat"]
+    XCTAssertTrue(newChat.waitForExistence(timeout: 10))
+    newChat.tap()
+    let project = app.buttons["choose-project-notes"]
+    XCTAssertTrue(project.waitForExistence(timeout: 5))
+    XCTAssertFalse(project.isEnabled)
+    XCTAssertTrue(app.staticTexts["new-chat-unavailable"].exists)
+    app.buttons["取消"].tap()
+    XCTAssertFalse(project.exists)
+  }
 }

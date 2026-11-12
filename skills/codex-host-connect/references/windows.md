@@ -66,7 +66,7 @@ node skills/codex-host-connect/scripts/probe-host.mjs --state-dir .local/desktop
 
 每次连接把验收记录标为未验收、匹配通过、过期或不可读取；缺失/过期不阻止已有聊天控制。旧验收结论保持原环境范围，不因应用版本变化修改桥接配置或补写通过；服务按实际身份和协议启动。只有真实连接可用时才声明回复等能力，原 owner 丢失或协议失败撤销受影响聊天的控制。
 
-正式创建／主动打开使用独立桥接：取得本机 `runtime.json` 的 Host ID，在同一私有状态目录写入 `prepared-bridge.json`，以 `CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG` 的绝对路径加载并重启本产品 Host。正常配置省略 validationOnly，用户明确的验证专用配置保留；不要求 verification，DACL、真实 owner 与协议检查保持有效。开发验收的六项创建和未加载打开证据仍绑定该电脑。可由主开发 Mac 的原生 App 直接连接这台 Windows Host 做联合验收，Windows 独立核对实际 owner、工具调用、输入及恢复日志；连接 macOS Host 的结果不能复用给 Windows。旧控制聊天兼容 driver 可按 [独立验证主动打开](acceptance.md#独立验证主动打开) 分阶段诊断；默认独立桥接配置两者。按 [完整功能清单](full-functions.md) 补验其他适用能力，再从普通正式手机 App 验证新建。没有完整真实证据时准确报告验收未完成和未验证项，不以报告缺失关闭已就绪的独立桥接，也不将未配置新建/主动打开扩散为所有聊天只读。
+正式创建／主动打开使用独立桥接：未配置其他 driver 的 Windows desktop-runtime 启动时，以本机已持久化的 Host ID 创建或加载同一私有状态目录的 `prepared-bridge.json`。显式配置时沿用 `CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG` 的绝对路径。正常配置省略 validationOnly，用户明确的验证专用配置保留；不要求 verification，DACL、真实 owner 与协议检查保持有效。开发验收的六项创建和未加载打开证据仍绑定该电脑。可由主开发 Mac 的原生 App 直接连接这台 Windows Host 做联合验收，Windows 独立核对实际 owner、工具调用、输入及恢复日志；连接 macOS Host 的结果不能复用给 Windows。旧控制聊天兼容 driver 可按 [独立验证主动打开](acceptance.md#独立验证主动打开) 分阶段诊断；默认独立桥接配置两者。按 [完整功能清单](full-functions.md) 补验其他适用能力，再从普通正式手机 App 验证新建。没有完整真实证据时准确报告验收未完成和未验证项，不以报告缺失关闭已就绪的独立桥接，也不将未配置新建/主动打开扩散为所有聊天只读。
 
 ## Trace 与下一轮建议
 

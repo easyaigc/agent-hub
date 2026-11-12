@@ -18,7 +18,7 @@ struct CodexManageApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            RootView()
+            AppStartupView()
                 .environment(\.locale, L10n.locale)
                 .onAppear { L10n.syncNotificationLanguage() }
                 .onChange(of: appLanguage) { _, _ in L10n.syncNotificationLanguage() }
@@ -26,6 +26,86 @@ struct CodexManageApp: App {
                     if phase == .active { L10n.syncNotificationLanguage() }
                 }
         }
+    }
+}
+
+// Render a lightweight first screen before constructing the chat hierarchy.
+// One retained task survives view task cancellation/reappearance without loading
+// twice, publishing empty state, or repeating recovery observers.
+@MainActor private final class AppStartupModel: ObservableObject {
+    struct Stores { let session: SessionStore; let taskHub: TaskHubStore }
+    @Published private(set) var stores: Stores?
+    private var restoration: Task<Stores, Never>?
+    private var pendingLinks: [URL] = []
+    private var intakeFailure: Error?
+
+    func receive(_ url: URL) {
+        guard url.isFileURL else {
+            if let stores { AgentConfigurationViews.open(url, store: stores.session) }
+            else { pendingLinks.append(url) }
+            return
+        }
+        // Stage file-open input immediately while its security scope is valid.
+        // It stays in the inbox until the user explicitly chooses a draft.
+        Task {
+            do {
+                _ = try await AttachmentInbox.stage(loaders: [{
+                    try await Task.detached(priority: .userInitiated) {
+                        try AttachmentFileIntake.payload(url, suggestedName: nil)
+                    }.value
+                }])
+                NotificationCenter.default.post(name: Notification.Name("AgentHubShowReceivedAttachments"), object: nil)
+            } catch {
+                if let stores { stores.session.presentError(error) }
+                else { intakeFailure = error }
+            }
+        }
+    }
+
+    func deliverPendingLinks() {
+        guard let stores else { return }
+        let links = pendingLinks
+        pendingLinks = []
+        for url in links { AgentConfigurationViews.open(url, store: stores.session) }
+        if let intakeFailure { stores.session.presentError(intakeFailure); self.intakeFailure = nil }
+    }
+
+    func start() async {
+        guard stores == nil else { return }
+        if restoration == nil {
+            restoration = Task {
+                let session = SessionStore(deferRestoration: true)
+                async let taskHub = TaskHubStore.restoredForStartup()
+                await session.restoreForStartup()
+                return await Stores(session: session, taskHub: taskHub)
+            }
+        }
+        stores = await restoration?.value
+        restoration = nil
+    }
+}
+
+private struct AppStartupView: View {
+    @StateObject private var startup = AppStartupModel()
+    @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
+
+    var body: some View {
+        Group {
+            if let stores = startup.stores {
+                RootView(store: stores.session, taskHub: stores.taskHub)
+                    .onAppear { startup.deliverPendingLinks() }
+            } else {
+                VStack(spacing: 20) {
+                    Text("Agent Hub").font(.title2.weight(.semibold))
+                    ProgressView(L10n.tr("正在恢复本地数据…"))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(uiColor: .systemBackground))
+                .accessibilityIdentifier("app-startup-loading")
+            }
+        }
+        .onOpenURL { startup.receive($0) }
+        .task { await startup.start() }
     }
 }
 

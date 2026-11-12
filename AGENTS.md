@@ -30,6 +30,12 @@
 - Prefer meaningful boundary or integration checks. Do not add tests that merely repeat static type declarations.
 - Update architecture, protocol or feasibility documents when their corresponding behavior changes. Preserve the distinction between proposed, implemented and verified capabilities.
 
+## iOS 对接 EasyWork 的唯一计划与状态
+
+- 按用户 2026-11-12 的明确要求，`docs/plans/ios-easywork-alignment-20261112/README.md` 是本任务唯一计划入口，`status.json` 是唯一可编辑进度事实源；`progress.md`、`checklist.md` 从其生成，不独立维护完成数。
+- 每次继续本任务先读取该计划及 `maintenance.md`，分别更新开发、验收、交付和执行状态，附准确源码/运行包/场景证据、阻塞和下一步。不得用“开放/进行中”混称未开发、未验或历史通过，也不将旧证据直接升级为当前通过。
+- 旧 EasyWork 计划、矩阵和阶段档案只保留历史事实与证据；新增结果回填唯一台账。更新后执行本目录 `render_status.py --write` 和 `--check`。全局F/UI/协议定义仍按原规范维护，Android独立进度和既有暂停范围不由本计划接管。
+
 ## 通用 Agent 管理与真实 DEV 验收
 
 - 按用户 2026-10-14 的明确要求，Codex 连接只校验机器运行目标（Agent、Host、workspace、runtime）、证书与设备密钥，不以 Codex 登录账号变化作为连接、缓存、草稿、阅读或命令拒绝条件。旧账号字段仅保留为历史元数据；其他 Agent 的账号协议、App 人类登录、设备会话与项目成员权限保持各自约束。已提交输入的原目标、正文、操作 ID 和指纹仍不可变，结果未知不能因身份策略变化而重放。
@@ -38,7 +44,7 @@
 - 新增 Agent 或传输方式通过注册适配器扩展；上游 wire、地址格式与认证差异留在适配层，业务规则不进入传输层。
 - 目标身份独立于连接路径；缓存、草稿、操作回执、事件与审批按完整目标隔离。跨通道重试复用稳定操作 ID，结果不确定时先核对，不重复执行。
 - 通用通信使用具名操作和严格输入契约，不开放任意 Electron IPC、shell 或方法名透传。Host 承担执行与权限，Relay 只处理身份、绑定、路由和密文。
-- 功能交付必须完成本地真实 DEV 验收：真实 Electron、原生手机 App、真实模型任务及桌面独立核对。编译、单元测试、fixture 分别记为辅助证据。
+- 功能交付必须完成对应场景的本地真实 DEV 验收。按用户 2026-11-12 最新要求，不涉及手机真实环境的断言，原生 iOS 模拟器验收通过即可收尾；涉及真实相机/麦克风、手机蜂窝或设备 VPN、实体 APNs 到达等断言才要求真机，混合场景拆子项。普通页面、协议、文件、进程重启和恢复不一概要求真机。涉及桌面/模型的断言仍需真实 Electron、对应真实模型任务及桌面独立核对；只读与独立文件场景不额外制造模型输入。编译、单元测试、fixture 分别记为辅助证据。准确环境分类和进度以唯一计划为准。
 - 验收按场景和实现/环境指纹保存结果，区分本次通过、复用通过、失败和未验收；保护凭据，保留既有未提交工作。设计文档分别注明拟实现、已实现和已验证。
 
 ## Host 与 SKILL 的唯一标准

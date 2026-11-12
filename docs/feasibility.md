@@ -1,5 +1,11 @@
 # 技术可行性与 PoC 验收
 
+2026-11-12 F05／F28／F43：Windows 默认独立桥接和 Store CLI 暂存副本选择已吸收到主库候选。[专项记录](windows-cold-thread-recovery-20261112.md) 分列上游结果、初版完整检查和隔离 Windows 原生验收；初版发现打开回执重启丢失，持久化修复随后通过真实 Windows 重启回执补验；iOS／Android 共用原 Host 能力，不修改移动端流程。
+
+2026-11-09 F17／F19／F32（UI05／UI12，S04／S11／S18）：Codex Host 将普通 Markdown 本地文件引用与上游结构化附件分开。显示、刷新和分页只登记原助手消息的准确引用，不查询文件元数据、不读取或计算摘要，也不按文件大小或扩展名猜测附件；用户点击后才具名解析并校验新鲜字节。显式原生图片／文件字段继续原处理，其他运行模式保持兼容；并发快照仍合并且保留子过程变化，首次／在途投影不误报 live 保持。此根治方案取代前一轮 8 MiB 防卡门槛。iOS／Android 共用 Host；iOS 沿用原文本链接入口，Android 原消息本地链接入口尚未补齐，正式推广保持兼容门禁；辅助及原 MacBook／物理 iPhone 结果分列于[专项记录](acceptance/history-large-link-20261109.md)，A6 保持暂停。
+
+2026-11-09 F17（UI05，S02／S11）追加：原 MacBook 隔离 DEV 发现共享缓存已被其他读者扩展后，旧上游游标的窗口会误返空页。Host 现以本次上游页的实际消息边界返回有界窗口；成功较早页更新历史可用时间，最新页的观察连续性与实时控制权限独立核对。iOS 验收增加可见正文断言与原生截图；Android 共用 Host 分页行为，原生双端和物理设备的实际通过分别记录，未借用 iPhone 结果。
+
 2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](acceptance/host-lifecycle-cpu-20261109.md)。
 
 2026-11-08 F69：Windows Responses 转发已退役。回环监听缺失时，原桌面和 CLI 的模型请求都失败。当前本机桌面包对应的 CLI `0.167.0-alpha.3.2` 静态协议未发现只读已有灰字的接口。Windows 手机端暂停这条建议来源，恢复条件是原桌面和 CLI 在 Host 离线时仍正常使用，并能通过独立来源取得对应建议。[历史验证](acceptance/windows-response-suggestions-20261104.md)

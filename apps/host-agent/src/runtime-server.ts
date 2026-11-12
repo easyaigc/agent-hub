@@ -131,6 +131,7 @@ export async function startRuntimeServer() {
     throw new Error('Non-loopback listeners require HOST_AGENT_TLS_CERT and HOST_AGENT_TLS_KEY');
   const session = new RuntimeSession({
     mode: mode as 'managed-runtime' | 'shared-runtime' | 'desktop-runtime',
+    autoConfigureDesktopBridge: process.platform === 'win32' && mode === 'desktop-runtime',
     ...(process.env.CODEX_DESKTOP_VERSION
       ? { desktopVersion: process.env.CODEX_DESKTOP_VERSION }
       : {}),

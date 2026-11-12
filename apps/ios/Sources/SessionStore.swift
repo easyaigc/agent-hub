@@ -306,7 +306,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   #endif
 
-  init() {
+  init(deferRestoration: Bool = false) {
     MobileReadingAuthority.install(SharedMobileRules.mergeDeviceReading)
     testMode = ProcessInfo.processInfo.arguments.contains("-ui-testing")
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
@@ -323,6 +323,11 @@ private var userRequestedWorkspaceGeneration: UUID?
       decodeState: { try AgentCache.decode($0) },
       encodePage: { page in try page.encrypted ? AgentCache.seal(page) : JSONEncoder().encode(page) },
       decodePage: { try AgentCache.open($0, as: SessionHistoryPage.self) })
+    if deferRestoration { return }
+    restoreLocalSession()
+  }
+
+  private func restoreLocalSession() {
     if !testMode || ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       do { saved = try loadLocalSession() }
       catch { localRecoveryRequired = true }
@@ -343,13 +348,56 @@ private var userRequestedWorkspaceGeneration: UUID?
     finishLocalRestoration()
   }
 
+  // Transfer an immutable value snapshot; the background reader never owns UI state.
+  private struct LocalRestoration: @unchecked Sendable {
+    var saved: SavedSession
+    var dirtyHistoryKeys: Set<String>
+  }
+
+  func restoreForStartup() async {
+    if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
+      restoreLocalSession()
+      return
+    }
+    let writer = persistenceWriter, url = persistenceURL
+    let applicationState = String(UIApplication.shared.applicationState.rawValue)
+    let protectedDataAvailable = String(UIApplication.shared.isProtectedDataAvailable)
+    do {
+      let restored = try await Task.detached(priority: .userInitiated) {
+        try Self.readLocalSession(writer: writer, url: url,
+          applicationState: applicationState, protectedDataAvailable: protectedDataAvailable)
+      }.value
+      saved = restored.saved
+      dirtyHistoryKeys = restored.dirtyHistoryKeys
+      finishLocalRestoration()
+    } catch { localRecoveryRequired = true }
+  }
+
   private func loadLocalSession() throws -> SavedSession {
-    guard var loaded = try persistenceWriter.loadInitialState() else { return SavedSession() }
+    let restored = try Self.readLocalSession(writer: persistenceWriter, url: persistenceURL,
+      applicationState: String(UIApplication.shared.applicationState.rawValue),
+      protectedDataAvailable: String(UIApplication.shared.isProtectedDataAvailable))
+    dirtyHistoryKeys = restored.dirtyHistoryKeys
+    return restored.saved
+  }
+
+  nonisolated private static func readLocalSession(writer persistenceWriter: SessionPersistenceWriter<SavedSession, SessionHistoryPage>,
+    url persistenceURL: URL, applicationState: String, protectedDataAvailable: String) throws -> LocalRestoration {
+    let started = ProcessInfo.processInfo.systemUptime
+    guard var loaded = try persistenceWriter.loadInitialState() else { return LocalRestoration(saved: SavedSession(), dirtyHistoryKeys: []) }
+    let stateLoaded = ProcessInfo.processInfo.systemUptime
+    var dirtyHistoryKeys = Set<String>()
+    // A missing page used to re-read and decode the entire legacy session for
+    // every cache miss. Read it at most once per restoration, including failure.
+    var legacyHistory: [String: [ChatMessage]]?
+    var attemptedLegacy = false
     var recoveredPageCount = 0
+    var cacheReader = AgentCache.ReadSession()
     if let namespace = loaded.historyCacheNamespace {
       for key in loaded.historyCacheKeys ?? [] {
         do {
-          let page = try persistenceWriter.loadHistory(namespace + ":" + key)
+          let page = try persistenceWriter.loadHistory(namespace + ":" + key,
+            using: { try cacheReader.open($0, as: SessionHistoryPage.self) })
           if page.targetKey == key {
             loaded.history[key] = page.messages
             if page.encrypted != loaded.historyCacheEncrypted { dirtyHistoryKeys.insert(key) }
@@ -358,13 +406,18 @@ private var userRequestedWorkspaceGeneration: UUID?
           let failure = error as NSError
           if failure.domain == NSCocoaErrorDomain && failure.code == NSFileReadNoPermissionError { throw error }
           // Keep the original cache index even when a replaceable page is unavailable.
-          if let data = try? Data(contentsOf: persistenceURL), let old = try? AgentCache.decode(data), let messages = old.history[key] {
+          if !attemptedLegacy {
+            attemptedLegacy = true
+            if let data = try? Data(contentsOf: persistenceURL) { legacyHistory = (try? cacheReader.open(data, as: SavedSession.self))?.history }
+          }
+          if let messages = legacyHistory?[key] {
             loaded.history[key] = messages; dirtyHistoryKeys.insert(key)
           }
         }
       }
       let recovered = try persistenceWriter.recoverUnindexedHistory(namespace: namespace,
-        indexed: loaded.historyCacheKeys ?? [], key: { $0.targetKey })
+        indexed: loaded.historyCacheKeys ?? [],
+        using: { try cacheReader.open($0, as: SessionHistoryPage.self) }, key: { $0.targetKey })
       for (key, page) in recovered {
         loaded.history[key] = page.messages
       }
@@ -380,8 +433,12 @@ private var userRequestedWorkspaceGeneration: UUID?
       return HostService.hash(bytes)
     }
     persistenceWriter.recordLoadReport([
-      "applicationState": String(UIApplication.shared.applicationState.rawValue),
-      "protectedDataAvailable": String(UIApplication.shared.isProtectedDataAvailable),
+      "applicationState": applicationState,
+      "protectedDataAvailable": protectedDataAvailable,
+      "readOnMainThread": String(Thread.isMainThread),
+      "stateReadWallMS": String((stateLoaded - started) * 1000),
+      "restoreReadWallMS": String((ProcessInfo.processInfo.systemUptime - started) * 1000),
+      "legacyFallbackLoads": attemptedLegacy ? "1" : "0",
       "clients": String(loaded.clients.count), "drafts": String(loaded.drafts.count),
       "workspaces": String(loaded.workspaces.count), "historyPagesLoaded": String(loaded.history.count),
       "historyPagesIndexed": String(loaded.historyCacheKeys?.count ?? loaded.history.count),
@@ -392,7 +449,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       "clientsSha256": digest(loaded.clients), "draftsSha256": digest(loaded.drafts),
       "submittedInputsSha256": digest(loaded.outbox),
     ])
-    return loaded
+    return LocalRestoration(saved: loaded, dirtyHistoryKeys: dirtyHistoryKeys)
   }
 
   @discardableResult func retryLocalRecovery() -> Bool {
@@ -2325,7 +2382,36 @@ private var userRequestedWorkspaceGeneration: UUID?
     Task { persist() }
   }
 
-  func newConversation(in project: Project) {
+  struct NewChatTarget: Equatable {
+    fileprivate let connection: UUID
+    fileprivate let navigation: UUID
+  }
+  var newChatTarget: NewChatTarget {
+    NewChatTarget(connection: clientGeneration, navigation: historyGeneration)
+  }
+  var hasMoreNewChatProjects: Bool {
+    saved.workspaces[client?.id ?? ""]?.nextProjectCursor != nil
+  }
+  var canChooseNewChatProject: Bool { canCreateThread && client?.online == true }
+  var newChatUnavailableReason: String? {
+    if canChooseNewChatProject { return nil }
+    if loading { return L10n.tr("正在读取电脑上的项目…") }
+    guard let host = client, host.online else {
+      return L10n.tr("电脑连接尚未确认，请连接后刷新。")
+    }
+    let mode = saved.workspaces[host.id]?.connectionMode
+    if mode == "history" || mode == "history-only" {
+      return L10n.tr("历史连接仅支持查看，不能新建对话。")
+    }
+    return L10n.tr("当前连接不支持新建对话。")
+  }
+  func refreshNewChatProjects(for target: NewChatTarget, loadMore: Bool = false) async {
+    guard target == newChatTarget, !loadMore || hasMoreNewChatProjects else { return }
+    await refresh(loadMore: loadMore, includeHistory: false, userInitiated: true)
+  }
+
+  func newConversation(in project: Project, target: NewChatTarget? = nil) {
+    guard target == nil || target == newChatTarget else { return }
     guard project.hostId == client?.id, projects.contains(where: { $0.id == project.id }),
       canCreateThread, client?.online == true else {
       return
@@ -2342,7 +2428,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     historyCursor = nil
     persist()
   }
-  func newProjectlessConversation() {
+  func newProjectlessConversation(target: NewChatTarget? = nil) {
+    guard target == nil || target == newChatTarget else { return }
     guard canCreateProjectless, let host = client, host.online else { return }
     historyGeneration = UUID()
     selectedThreadId = nil

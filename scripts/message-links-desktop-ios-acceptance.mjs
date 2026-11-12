@@ -90,6 +90,9 @@ const { startRuntimeServer } = await import(
 const { DesktopIpc, desktopTurns } = await import(
   pathToFileURL(join(frozen, 'packages/codex-adapter/dist/desktop-ipc.js'))
 );
+const { messageLinks, localMessagePath } = await import(
+  pathToFileURL(join(frozen, 'packages/codex-adapter/dist/message-links.js'))
+);
 const witness = new DesktopIpc(join(homedir(), '.codex/ipc/ipc.sock'));
 const executable =
   process.env.CODEX_EXECUTABLE ??
@@ -301,15 +304,32 @@ try {
   const answer = history.messages.findLast(
     (value) => value.role === 'assistant' && value.text.includes(contents),
   );
-  assert(answer && answer.attachments.length === 1);
+  assert(answer && answer.attachments.length === 0, 'Text references remain lazy');
   // Projectless desktop cwd may differ from this test's authorized file root.
   // Keep the original task intact; exercise the paths actually resolved by its owner.
-  report.unresolvedLabels = labels.filter(
-    (label) => !answer.text.includes(`[${label}](codex-attachment://`),
-  );
-  labels = labels.filter((label) => answer.text.includes(`[${label}](codex-attachment://`));
+  const links = messageLinks(answer.text);
+  const ownerDirectory = host.session.thread(report.threadId).desktopDirectory ?? directory;
+  const resolvesToFixture = (label) => {
+    const prefix = `[${label}](`;
+    const labelStart = answer.text.indexOf(prefix);
+    const link = links.find((entry) => entry.start === labelStart + prefix.length);
+    const local = link && localMessagePath(link.reference);
+    return labelStart >= 0 && local && resolve(ownerDirectory, local) === file;
+  };
+  report.unresolvedLabels = labels.filter((label) => !resolvesToFixture(label));
+  labels = labels.filter(resolvesToFixture);
   assert(labels.length >= 3 && labels.includes('文件网址'));
   report.resolvedLabels = labels;
+  // The native click, not fixture setup, must first register the file version.
+  const originalAttachment = () => {
+    const attachment = host.session.state.attachments.find(
+      (value) =>
+        value.threadId === report.threadId &&
+        value.desktopMessageLinks?.some((source) => source.messageId === answer.id),
+    );
+    assert(attachment, 'Native link opening must register its original message resource');
+    return attachment;
+  };
   token = (await readFile(join(state, 'access-token'), 'utf8')).trim();
   const connection = {
     endpoint: 'http://127.0.0.1:' + host.server.address().port,
@@ -349,7 +369,7 @@ try {
           await rename(file + '.new', file);
         } else await writeFile(file, marker, { mode: 0o600 });
         await assert.rejects(
-          host.session.download(report.threadId, answer.attachments[0].id),
+          host.session.download(report.threadId, originalAttachment().id),
           (error) => {
             report.staleVersionError = { status: error.status, message: error.message };
             return error.status === 409 && error.message === '文件已发生变化，请刷新对话';
@@ -357,7 +377,7 @@ try {
         );
         const current = await host.session.resolveAttachment(
           report.threadId,
-          answer.attachments[0].id,
+          originalAttachment().id,
         );
         (report.currentVersions ??= []).push({
           stage,
@@ -479,7 +499,7 @@ try {
     'data',
   ]).trim();
   const attachment = (
-    await host.session.resolveAttachment(report.threadId, answer.attachments[0].id)
+    await host.session.resolveAttachment(report.threadId, originalAttachment().id)
   ).attachment;
   const downloaded = await readFile(
     join(container, 'Library/Caches/Downloads', attachment.id, attachment.name),

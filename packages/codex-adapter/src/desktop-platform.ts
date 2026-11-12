@@ -996,12 +996,16 @@ export function discoverWindowsDesktopCli(
   ];
   const bin = localData && join(localData, 'OpenAI/Codex/bin');
   const candidates = [...adjacent, configured, bin && join(bin, 'codex.exe')];
+  const stagedPaths = new Set(bin ? [resolve(join(bin, 'codex.exe')).toLowerCase()] : []);
   if (bin && existsSync(bin)) {
     const entries = readdirSync(bin, { withFileTypes: true });
     if (entries.length > 128) throw windowsInstallationFailure('WINDOWS_CLI_DISCOVERY_LIMIT');
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name)))
-      if (entry.isDirectory() && /^[a-f0-9]{8,64}$/i.test(entry.name))
-        candidates.push(join(bin, entry.name, 'codex.exe'));
+      if (entry.isDirectory() && /^[a-f0-9]{8,64}$/i.test(entry.name)) {
+        const staged = join(bin, entry.name, 'codex.exe');
+        candidates.push(staged);
+        stagedPaths.add(resolve(staged).toLowerCase());
+      }
   }
   const seen = new Set();
   const trusted = [];
@@ -1024,13 +1028,23 @@ export function discoverWindowsDesktopCli(
   );
   const choices = bundled.length ? bundled : trusted;
   if (!choices.length) throw windowsInstallationFailure('WINDOWS_CLI_NOT_FOUND');
+  const configuredPath = configured ? resolve(configured).toLowerCase() : undefined;
   const configuredChoice =
-    configured &&
-    choices.find((value) => value.path.toLowerCase() === resolve(configured).toLowerCase());
-  if (configuredChoice) return configuredChoice.path;
-  if (new Set(choices.map((v) => v.sha256)).size !== 1)
+    configuredPath && choices.find((value) => value.path.toLowerCase() === configuredPath);
+  if (!configuredChoice && new Set(choices.map((v) => v.sha256)).size !== 1)
     throw windowsInstallationFailure('WINDOWS_CLI_AMBIGUOUS');
-  return choices[0]!.path;
+  const selected = configuredChoice || choices[0]!;
+  if (!bundled.length) return selected.path;
+  // The Store binary can be readable but not spawnable. Resolve the trusted
+  // payload first, then prefer only an official staged copy of those exact bytes.
+  const staged = trusted.filter(
+    (value) => stagedPaths.has(value.path.toLowerCase()) && value.sha256 === selected.sha256,
+  );
+  return (
+    staged.find((value) => value.path.toLowerCase() === configuredPath)?.path ??
+    staged[0]?.path ??
+    selected.path
+  );
 }
 
 export function inspectWindowsInstallation(configured?: string, identity = inspectWindowsPipe()) {

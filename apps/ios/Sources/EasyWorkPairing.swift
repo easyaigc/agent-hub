@@ -161,10 +161,22 @@ enum AgentCache {
     return key
   }
   static func seal<T: Encodable>(_ value: T) throws -> Data { let box = try AES.GCM.seal(JSONEncoder().encode(value), using: key(create: true), authenticating: prefix); guard let combined = box.combined else { throw HostServiceError.invalidResponse }; return prefix + combined }
+  // One short-lived reader per restoration avoids a Keychain IPC round trip for
+  // every encrypted history page. No key is cached globally or across restores.
+  struct ReadSession {
+    private var cachedKey: SymmetricKey?
+    mutating func open<T: Decodable>(_ data: Data, as type: T.Type) throws -> T {
+      if !data.starts(with: AgentCache.prefix) { return try JSONDecoder().decode(type, from: data) }
+      let readKey: SymmetricKey
+      if let cachedKey { readKey = cachedKey }
+      else { readKey = try AgentCache.key(create: false); cachedKey = readKey }
+      let box = try AES.GCM.SealedBox(combined: data.dropFirst(AgentCache.prefix.count))
+      return try JSONDecoder().decode(type, from: AES.GCM.open(box, using: readKey, authenticating: AgentCache.prefix))
+    }
+  }
   static func open<T: Decodable>(_ data: Data, as type: T.Type) throws -> T {
-    if !data.starts(with: prefix) { return try JSONDecoder().decode(type, from: data) }
-    let box = try AES.GCM.SealedBox(combined: data.dropFirst(prefix.count))
-    return try JSONDecoder().decode(type, from: AES.GCM.open(box, using: key(create: false), authenticating: prefix))
+    var reader = ReadSession()
+    return try reader.open(data, as: type)
   }
   static func encode(_ value: SavedSession) throws -> Data { try seal(value) }
   static func decode(_ data: Data) throws -> SavedSession {

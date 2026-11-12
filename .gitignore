@@ -22,6 +22,7 @@ packages/mobile-core/build/
 
 # Local acceptance reports and release/design captures. Keep reusable test source.
 /docs/acceptance/*
+!/docs/acceptance/history-large-link-20261109.md
 !/docs/acceptance/native-suggestions-diagnostics-20261104.md
 !/docs/acceptance/remote-access-checklist.md
 !/docs/acceptance/codex-update-resilience-20261030.md

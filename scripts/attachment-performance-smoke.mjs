@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile, rm, rename, stat, utimes, symlink } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  rm,
+  rename,
+  stat,
+  utimes,
+  symlink,
+  truncate,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { setTimeout } from 'node:timers/promises';
@@ -75,6 +85,10 @@ try {
   const beforeDedupe = scans;
   await Promise.all(Array.from({ length: 20 }, () => files.inspect(cold, [root])));
   assert.equal(scans, beforeDedupe + 1, 'concurrent cold references share the same scan');
+  await Promise.all([
+    files.inspect(cold, [root]),
+    assert.rejects(files.inspect(cold, [outside]), (error) => error.status === 403),
+  ]);
   // Change the real file between reading its bytes and final path/identity validation.
   const checked = files.checked.bind(files);
   let validations = 0;
@@ -100,7 +114,7 @@ try {
   const paths = [];
   let totalBytes = 0;
   for (let index = 0; index < count; index++) {
-    const size = (full ? (index < 80 ? 16 : 1.25) : 16) * 1024 * 1024;
+    const size = (full ? (index < 80 ? 4 : 1.25) : 1) * 1024 * 1024;
     const target = join(root, `file-${index}.bin`);
     await writeFile(target, Buffer.alloc(size, index % 251));
     paths.push(target);
@@ -187,6 +201,18 @@ try {
     actualScans++;
     return actualScan(...args);
   };
+  let inspections = 0,
+    checks = 0;
+  const actualInspect = session.attachmentFiles.inspect.bind(session.attachmentFiles);
+  const actualChecked = session.attachmentFiles.checked.bind(session.attachmentFiles);
+  session.attachmentFiles.inspect = (...args) => {
+    inspections++;
+    return actualInspect(...args);
+  };
+  session.attachmentFiles.checked = (...args) => {
+    checks++;
+    return actualChecked(...args);
+  };
   const observations = [];
   async function request(path, authorization = token, status = 200) {
     const start = performance.now();
@@ -215,12 +241,13 @@ try {
     await setTimeout(10);
   }
   const opened = await coldScan;
-  assert.equal(opened.flatMap((v) => v.messages.flatMap((m) => m.attachments)).length, count);
-  assert.equal(
-    actualScans,
-    count,
-    'all cold files hashed exactly once despite workspace snapshots',
-  );
+  assert.equal(opened.flatMap((v) => v.messages.flatMap((m) => m.attachments)).length, 0);
+  for (const openedThread of opened) {
+    for (const message of openedThread.messages) assert.match(message.text, /^\[file\]\(/);
+  }
+  assert.equal(actualScans, 0, 'desktop projection must not scan ordinary links');
+  assert.equal(inspections, 0, 'desktop projection must not inspect ordinary links');
+  assert.equal(checks, 0, 'desktop projection must not stat ordinary links');
   const coldMs = performance.now() - start;
   const coldCPU = process.cpuUsage(cpu);
   const scansAfterCold = actualScans;
@@ -232,7 +259,9 @@ try {
   await Promise.all([...session.desktopProjections.values()].map((job) => job.work));
   const firstThread = opened[0];
   const fileMessageId = firstThread.messages[0].id;
-  const attachment = firstThread.messages[0].attachments[0];
+  const attachment = (
+    await session.resolveMessageFile(firstThread.threadId, fileMessageId, paths[0])
+  ).attachment;
   const bytes = await request(
     `/v1/attachments?${new URLSearchParams({
       hostId: session.hostId,
@@ -300,10 +329,10 @@ try {
   session.projectDesktopMessages = project;
   assert.equal(
     actualScans,
-    scansAfterCold + 1,
-    'only the download re-hashes after warm projections',
+    scansAfterCold + 2,
+    'only explicit resolution and download scan the selected file',
   );
-  const warmHashes = actualScans - scansAfterCold - 1;
+  const warmHashes = actualScans - scansAfterCold - 2;
   const downloadRoute = (id) =>
     `/v1/attachments?${new URLSearchParams({
       hostId: session.hostId,
@@ -328,8 +357,10 @@ try {
     'a stale link resolves current bytes without reopening the conversation',
   );
   const changedHistory = await session.open(firstThread.threadId);
-  const changedAttachment = changedHistory.messages.find((m) => m.id === fileMessageId)
-    .attachments[0];
+  assert.deepEqual(changedHistory.messages.find((m) => m.id === fileMessageId).attachments, []);
+  const changedAttachment = (
+    await session.resolveMessageFile(firstThread.threadId, fileMessageId, paths[0])
+  ).attachment;
   assert.equal(changedAttachment.sha256, sha('HTTP_CHANGED'));
   assert.equal(
     Buffer.from(await request(downloadRoute(changedAttachment.id))).toString(),
@@ -339,8 +370,10 @@ try {
   await rename(paths[0] + '.replacement', paths[0]);
   await request(downloadRoute(changedAttachment.id), token, 409);
   const replacedHistory = await session.open(firstThread.threadId);
-  const replacedAttachment = replacedHistory.messages.find((m) => m.id === fileMessageId)
-    .attachments[0];
+  assert.deepEqual(replacedHistory.messages.find((m) => m.id === fileMessageId).attachments, []);
+  const replacedAttachment = (
+    await session.resolveMessageFile(firstThread.threadId, fileMessageId, paths[0])
+  ).attachment;
   assert.equal(replacedAttachment.sha256, sha('HTTP_REPLACED'));
   await rm(paths[0]);
   await request(resolveRoute(), token, 410);
@@ -350,18 +383,208 @@ try {
       .attachments.length,
     0,
   );
-  const beforeBusy = session.history(firstThread.threadId).messages;
+
+  // A real sparse disk image must remain a link, without entering scan at all.
+  const disk = join(root, 'disk.raw');
+  const onDemand = join(root, 'on-demand.bin');
+  await writeFile(disk, '');
+  // POSIX truncate creates holes; Windows must not allocate a near-terabyte file.
+  await truncate(disk, process.platform === 'win32' ? 32 * 1024 ** 2 : 926 * 1024 ** 3);
+  await writeFile(onDemand, '');
+  const onDemandSize = 8 * 1024 * 1024 + 1;
+  await truncate(onDemand, onDemandSize);
+  const config = join(root, 'config.toml');
+  const database = join(root, 'state.sqlite');
+  const small = join(root, 'small.md');
+  await writeFile(config, 'fixture config');
+  await writeFile(database, 'fixture database');
+  await writeFile(small, 'small report');
+  const specialId = 'sparse-projection';
+  const special = {
+    ...threads[0],
+    id: specialId,
+    hostId: session.hostId,
+    messages: [],
+  };
+  session.state.threads.push(special);
+  const sparseState = {
+    ...snapshots.get(threads[0].id),
+    id: specialId,
+    turns: [
+      {
+        turnId: 'sparse-turn',
+        status: 'completed',
+        items: [
+          { id: 'before', type: 'agentMessage', text: 'before large link' },
+          { id: 'disk-message', type: 'agentMessage', text: `[disk](${disk})` },
+          { id: 'demand-message', type: 'agentMessage', text: `[demand](${onDemand})` },
+          { id: 'small', type: 'agentMessage', text: `[small](${small})` },
+          { id: 'config', type: 'agentMessage', text: `[config](${config})` },
+          { id: 'database', type: 'agentMessage', text: `[database](${database})` },
+          {
+            id: 'command',
+            type: 'commandExecution',
+            status: 'completed',
+            command: 'fixture',
+            aggregatedOutput: `[fake](${small})`,
+          },
+          { id: 'after', type: 'agentMessage', text: 'after large link' },
+        ],
+      },
+    ],
+  };
+  snapshots.set(specialId, sparseState);
+  const discovered = session.history(specialId, true);
+  assert.equal(discovered.messages.length, 0);
+  assert.notEqual(discovered.synchronization.state, 'live', 'owner discovery alone is not live');
+  const emptyId = 'verified-empty';
+  session.state.threads.push({ ...special, id: emptyId, messages: [] });
+  const emptyState = { ...sparseState, id: emptyId, turns: [] };
+  snapshots.set(emptyId, emptyState);
+  assert.notEqual(session.history(emptyId, true).synchronization.state, 'live');
+  await session.desktopSnapshot(session.thread(emptyId), emptyState);
+  const verifiedEmpty = session.history(emptyId, true);
+  assert.equal(verifiedEmpty.messages.length, 0);
+  assert.equal(verifiedEmpty.synchronization.state, 'live', 'verified empty history can be live');
+  const scannedPaths = [];
+  session.attachmentFiles.scan = (...args) => {
+    scannedPaths.push(args[0]);
+    return actualScan(...args);
+  };
+  const beforeSpecial = { inspections, checks, scans: actualScans };
+  const originalProject = session.projectDesktopMessages.bind(session);
+  let releaseProjection;
+  const projectionGate = new Promise((resolve) => {
+    releaseProjection = resolve;
+  });
+  let projectionCalls = 0;
+  let childLabel = 'before child update';
+  const projectSubagent = session.runtime.projectSubagent.bind(session.runtime);
+  session.runtime.projectSubagent = (...args) => {
+    const projected = projectSubagent(...args);
+    return args[0].id === 'before' ? { ...projected, text: childLabel } : projected;
+  };
+  session.loaded.add(specialId);
+  session.runtime.subagentParents.set('fixture-child-update', new Set([specialId]));
+  session.projectDesktopMessages = async (...args) => {
+    projectionCalls++;
+    await projectionGate;
+    const result = await originalProject(...args);
+    if (projectionCalls === 1) {
+      childLabel = 'after child update';
+      // A real child-state publication reuses the parent's exact state object.
+      session.runtime.publishSubagentParents('fixture-child-update');
+    }
+    return result;
+  };
+  try {
+    const pending = session.desktopSnapshot(session.thread(specialId), sparseState);
+    assert.notEqual(
+      session.history(specialId, true).synchronization.state,
+      'live',
+      'pending is not live',
+    );
+    for (let index = 0; index < 10; index++)
+      assert.equal(session.desktopSnapshot(session.thread(specialId), sparseState), pending);
+    releaseProjection();
+    await pending;
+    assert.equal(projectionCalls, 2, 'bursts coalesce while derived child updates are retained');
+  } finally {
+    releaseProjection();
+    session.projectDesktopMessages = originalProject;
+    session.runtime.projectSubagent = projectSubagent;
+    session.runtime.subagentParents.delete('fixture-child-update');
+  }
+  const projected = session.history(specialId, true);
+  assert.equal(projected.messages[0].text, 'after child update');
+  assert.equal(projected.synchronization.state, 'live');
+  assert.deepEqual(
+    projected.messages.map((message) => message.id),
+    ['before', 'disk-message', 'demand-message', 'small', 'config', 'database', 'command', 'after'],
+  );
+  assert.equal(projected.messages[1].text, `[disk](${disk})`);
+  assert.equal(projected.messages[2].text, `[demand](${onDemand})`);
+  assert.equal(projected.messages[1].attachments.length, 0);
+  assert.equal(projected.messages[2].attachments.length, 0);
+  for (const [id, path] of [
+    ['small', small],
+    ['config', config],
+    ['database', database],
+  ]) {
+    const message = projected.messages.find((item) => item.id === id);
+    assert.equal(message.text, `[${id}](${path})`);
+    assert.deepEqual(message.attachments, []);
+  }
+  assert.deepEqual(projected.messages.find((item) => item.id === 'command').attachments, []);
+  assert.deepEqual(
+    { inspections, checks, scans: actualScans },
+    beforeSpecial,
+    'ordinary links and command output must cause zero inspection, stat, or scan',
+  );
+  assert(
+    !scannedPaths.includes(disk) && !scannedPaths.includes(onDemand),
+    'automatic projection must not scan ordinary files',
+  );
+  await assert.rejects(
+    session.resolveMessageFile(threads[1].id, 'demand-message', onDemand),
+    (error) => error.status === 403,
+  );
+  await assert.rejects(
+    session.resolveMessageFile(specialId, 'before', onDemand),
+    (error) => error.status === 403,
+  );
+  const resolved = await session.resolveMessageFile(specialId, 'demand-message', onDemand);
+  assert.equal(resolved.attachment.sizeBytes, onDemandSize);
+  assert.equal(resolved.attachment.sha256, sha(Buffer.alloc(onDemandSize)));
+  assert(scannedPaths.includes(onDemand), 'explicit resolution reads the selected file');
+  const downloaded = await session.download(specialId, resolved.attachment.id);
+  assert.equal(downloaded.data.length, onDemandSize);
+  assert.equal(sha(downloaded.data), resolved.attachment.sha256);
+  assert(!scannedPaths.includes(disk), 'the unrelated disk image must remain unread');
+  const media = join(root, 'user-media.bin');
+  await writeFile(media, '');
+  await truncate(media, onDemandSize);
+  const mediaState = {
+    ...sparseState,
+    turns: [
+      {
+        turnId: 'media-turn',
+        status: 'completed',
+        items: [
+          {
+            id: 'user-media',
+            type: 'userMessage',
+            content: [{ type: 'localImage', path: media }],
+          },
+        ],
+      },
+    ],
+  };
+  await session.desktopSnapshot(session.thread(specialId), mediaState);
+  const userMedia = session
+    .history(specialId)
+    .messages.find((message) => message.id === 'user-media');
+  assert.equal(userMedia.attachments.length, 1, 'non-link user media retains its attachment');
+  assert.equal(userMedia.attachments[0].sizeBytes, onDemandSize);
+  assert(scannedPaths.includes(media), 'non-link media keeps its existing inspection behavior');
+  const beforeBusy = session.history(specialId).messages;
   const inspect = session.attachmentFiles.inspect.bind(session.attachmentFiles);
   session.attachmentFiles.inspect = async () => {
     throw new AttachmentFileError(503, 'busy');
   };
-  await assert.rejects(session.open(firstThread.threadId), (error) => error.status === 503);
-  assert.equal(
-    session.history(firstThread.threadId).messages,
-    beforeBusy,
-    'overload must retain complete messages instead of publishing missing attachments',
-  );
-  session.attachmentFiles.inspect = inspect;
+  try {
+    await assert.rejects(
+      session.desktopSnapshot(session.thread(specialId), mediaState),
+      (error) => error.status === 503,
+    );
+    assert.equal(
+      session.history(specialId).messages,
+      beforeBusy,
+      'overload must retain complete messages instead of publishing missing attachments',
+    );
+  } finally {
+    session.attachmentFiles.inspect = inspect;
+  }
   await symlink(join(outside, 'secret'), paths[0]);
   await request(resolveRoute(), token, 403);
   await request(downloadRoute(replacedAttachment.id), token, 403);
@@ -392,7 +615,7 @@ try {
     ),
   );
   console.log(
-    'Attachment regression passed: bounded cold scan/HTTP, warm cache, concurrent dedupe, latest snapshot, immediate approvals, identity changes, deletion, symlink roots, limits, full downloads. Fixture evidence only.',
+    'Attachment regression passed: zero-read link projection/HTTP, warm cache, concurrent dedupe, latest snapshot, immediate approvals, identity changes, deletion, symlink roots, limits, full downloads. Fixture evidence only.',
   );
 } finally {
   service?.close();

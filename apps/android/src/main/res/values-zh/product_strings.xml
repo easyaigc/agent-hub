@@ -1679,6 +1679,15 @@
     <string name="product_e4f5d88c78b2ec57439559fd" formatted="false">"原任务已变化或结束，追加未提交。"</string>
     <string name="product_70da69db33a7a7facf0266b9" formatted="false">"子 Agent"</string>
     <string name="product_452229ce30ad1157b27ee766" formatted="false">"等待子 Agent 更新…"</string>
+    <string name="product_216eac880112f67b7bf99778" formatted="false">"选择对话所属的项目或文件夹，发送第一条消息后创建。"</string>
+    <string name="product_635fc8a2ba26d2b9dcdae51f" formatted="false">"尚无可选项目。可在电脑端添加项目或文件夹后刷新。"</string>
+    <string name="product_db71582baf3438e9a81609de" formatted="false">"刷新项目"</string>
+    <string name="product_790d72a957d894f644f6e609" formatted="false">"更多项目"</string>
+    <string name="product_3f5d8c63e3131f80af48c2b6" formatted="false">"正在读取电脑上的项目…"</string>
+    <string name="product_c82d9ee960de253b4ad7c4f9" formatted="false">"历史连接仅支持查看，不能新建对话。"</string>
+    <string name="product_7210ee6ee1ccca0922855535" formatted="false">"电脑连接尚未确认，请连接后刷新。"</string>
+    <string name="product_c32ce2abf6937987ac4893de" formatted="false">"当前连接不支持新建对话。"</string>
+    <string name="product_80065ddcf98a3b85ad136be7" formatted="false">"正在恢复本地数据…"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>
@@ -1994,4 +2003,8 @@
     <string name="product_205ad84c7a9fe72fb4fa9190" formatted="false">"手机文件保存状态待核对；剩余文件和临时记录不会自动清理，不会继续上传。"</string>
     <string name="product_ccd45cad07bfed37d72de44d" formatted="false">"文件存储正由另一个本机进程使用，请稍后核对。"</string>
     <string name="product_faefe9cb61daf0acf448b9fe" formatted="false">"接收结果待确认 · 仅核对原传输"</string>
+    <string name="product_eeb6c8816b207b2a456bc65b" formatted="false">"电脑尚未启用新建对话，请更新 Host 后刷新。"</string>
+    <string name="product_2e9235e3d808b66a6c2826b5" formatted="false">"项目已不可用，请重新选择。"</string>
+    <string name="product_c24a3d11cadc1dad439c5475" formatted="false">"请先选择对话所属的项目或文件夹。"</string>
+    <string name="product_69a1f63136392c5c45a9e744" formatted="false">"发送第一条消息后创建对话。"</string>
 </resources>

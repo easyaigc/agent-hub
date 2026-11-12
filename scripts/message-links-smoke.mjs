@@ -236,8 +236,11 @@ try {
       text: visualization(visualPath),
     });
     const visualMessage = visualThread.messages[0];
-    assert.equal(visualMessage.attachments.length, 1);
-    const attachment = visualMessage.attachments[0];
+    assert.deepEqual(visualMessage.attachments, []);
+    assert.equal(visualMessage.text, mobileVisualizationLinks(visualization(visualPath)));
+    const attachment = (
+      await desktop.resolveMessageFile(visualThread.id, 'visual-message', visualPath)
+    ).attachment;
     assert.equal(attachment.mediaType, 'text/html');
     assert.equal(attachment.sha256, createHash('sha256').update(visualBytes).digest('hex'));
     assert.equal(

@@ -20,7 +20,7 @@
 
 通过 `CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG=<absolute-local-config>` 加载；它优先于旧 controller 配置。该配置没有 threadId。CLI 固定为当前官方桌面附带的绝对路径，Codex Home 固定为同一原桌面用户的目录；不得用其他用户、其他电脑或隔离 probe 的 Home 接入正式运行时。只重启本产品 Host，不改变官方启动。
 
-macOS 服务自动发现原状态目录的 `prepared-bridge.json`；Windows 启动／重启时传入该配置路径，并保留既有服务环境。正常安装省略 `validationOnly` 或设为 false；旧 `verification` 字段与报告可保留为证据，缺失、过期、不可读取均不关闭独立桥接。升级核对遗留验证限制的用途，保留用户明确选择的 `validationOnly=true`，不删除身份、密钥、原目录配置、附件或操作日志。
+macOS 服务自动发现原状态目录的 `prepared-bridge.json`；Windows 普通 desktop-runtime 未配置其他 driver 时自动创建或加载该私有文件。显式配置的路径和既有服务环境优先保留。正常安装省略 `validationOnly` 或设为 false；旧 `verification` 字段与报告可保留为证据，缺失、过期、不可读取均不关闭独立桥接。升级核对遗留验证限制的用途，保留用户明确选择的 `validationOnly=true`，不删除身份、密钥、原目录配置、附件或操作日志。
 
 私有配置匹配本 Host 且真实 IPC 就绪后，声明正式 `desktop:creations`、`desktop:creations:projectless`、`desktop:open`。`desktopVersion` 可省略，旧值无需校正且不影响能力；升级保留身份、证明引用及其他配置，不改写旧验收结论。普通安装无需 Xcode、手机在场、控制聊天或测试报告；每次实际创建仍须确认准备进程退出，打开及首条输入仍须核对准确原 owner。配置和能力启用不能替代真实验收。
 

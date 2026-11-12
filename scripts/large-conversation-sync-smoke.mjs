@@ -147,7 +147,7 @@ const server = createServer((connected) => {
         // The upstream desktop can silently drop an over-limit snapshot while
         // continuing to publish patches. A follower cannot invent their base.
         if (message.params.conversationId === 'large') sendBody(initialLargeBody);
-        else if (message.params.conversationId !== 'fallback')
+        else if (!['fallback', 'paged-fallback'].includes(message.params.conversationId))
           send(snapshot(message.params.conversationId));
       } else assert.fail('Unexpected execution method: ' + message.method);
     }
@@ -456,21 +456,21 @@ try {
     'xhigh',
     'Exact-owner model settings remain available without the oversized full snapshot',
   );
-  const attachment = completed.messages.at(-1).attachments[0];
-  assert(attachment, 'New history links must be registered even without a live snapshot');
-  assert(completed.messages.at(-1).text.includes('codex-attachment://' + attachment.id));
+  const originalMessage = completed.messages.at(-1);
+  assert.deepEqual(originalMessage.attachments, []);
+  assert.equal(originalMessage.text, fallbackText);
+  const attachment = (await session.resolveMessageFile('fallback', originalMessage.id, file))
+    .attachment;
   assert.equal(
     (await session.download('fallback', attachment.id)).data.toString(),
     'latest-file-v1',
   );
   await writeFile(file, 'latest-file-v2');
   const changed = await session.refreshHistory('fallback', undefined, true);
-  assert.equal(
-    changed.messages.at(-1).attachments.length,
-    1,
-    'Never retain a stale inline version',
-  );
-  const next = changed.messages.at(-1).attachments[0];
+  assert.deepEqual(changed.messages.at(-1).attachments, []);
+  assert.equal(changed.messages.at(-1).text, fallbackText);
+  await assert.rejects(session.download('fallback', attachment.id), (e) => e.status === 409);
+  const next = (await session.resolveMessageFile('fallback', originalMessage.id, file)).attachment;
   assert.notEqual(next.id, attachment.id);
   assert.equal(next.resourceId, attachment.resourceId);
   assert.equal((await session.download('fallback', next.id)).data.toString(), 'latest-file-v2');
@@ -534,6 +534,111 @@ try {
   } finally {
     session.runtime.ipc.follow = originalFollow;
     session.runtime.ipc.refreshObservation = originalObservation;
+  }
+  // Two independent readers can retain the same opaque upstream cursor while
+  // one of them expands the shared cache all the way to the oldest page.
+  const pagedId = 'paged-fallback';
+  session.state.threads.push({
+    ...session.state.threads[0],
+    id: pagedId,
+    messages: [],
+    state: 'unknown',
+    turnId: null,
+  });
+  const savedHistoryReader = session.runtime.reader.history;
+  const pagedMessages = Array.from({ length: 300 }, (_, index) => ({
+    ...latest.messages.at(-1),
+    id: `paged-message-${index}`,
+    text: `Docker history marker ${index}`,
+    runId: 'paged-turn',
+  }));
+  const rawFirst = 'opaque:older-page:200',
+    rawSecond = 'opaque:older-page:100';
+  session.runtime.reader.history = async (id, cursor, ...rest) => {
+    if (id !== pagedId) return savedHistoryReader(id, cursor, ...rest);
+    const range =
+      cursor === undefined
+        ? [200, 300, rawFirst]
+        : cursor === rawFirst
+          ? [100, 200, rawSecond]
+          : cursor === rawSecond
+            ? [0, 100, null]
+            : null;
+    assert(range, `Unexpected upstream cursor: ${cursor}`);
+    return {
+      hostId: session.hostId,
+      threadId: id,
+      messages: pagedMessages.slice(range[0], range[1]),
+      nextCursor: range[2],
+      turns: [],
+      historyMode: 'paginated',
+    };
+  };
+  const realNow = Date.now;
+  let clockOffset = 0;
+  Date.now = () => realNow() + clockOffset;
+  try {
+    const tip = await session.refreshHistory(pagedId, undefined, true);
+    assert.deepEqual(
+      tip.messages.map((m) => m.id),
+      pagedMessages.slice(200).map((m) => m.id),
+    );
+    assert.equal(tip.nextCursor, rawFirst);
+    assert.equal(tip.synchronization.state, 'history');
+    assert.equal(tip.runtime.state, 'unknown');
+    assert.equal(tip.runtime.canControl, false);
+    // A separate reader expands the shared cache without consuming the first
+    // reader's saved cursor. Non-windowed reads expose the accumulated cache.
+    await session.refreshHistory(pagedId, rawFirst, false);
+    await session.refreshHistory(pagedId, rawSecond, false);
+    clockOffset = 11_000;
+    assert.equal(session.history(pagedId, true).synchronization.state, 'unavailable');
+    const earlier = await session.refreshHistory(pagedId, rawFirst, true);
+    assert.deepEqual(
+      earlier.messages.map((m) => m.id),
+      pagedMessages.slice(100, 200).map((m) => m.id),
+    );
+    assert.deepEqual(
+      earlier.messages.map((m) => m.text),
+      pagedMessages.slice(100, 200).map((m) => m.text),
+    );
+    assert.equal(earlier.historyWindow.kind, 'earlier');
+    assert.equal(earlier.synchronization.state, 'history');
+    assert(earlier.synchronization.checkedAt);
+    assert.notEqual(earlier.synchronization.checkedAt, tip.synchronization.checkedAt);
+    assert.equal(earlier.runtime.state, 'unknown');
+    assert.equal(earlier.runtime.canControl, false);
+    const previous = [...earlier.messages];
+    const visited = new Set();
+    let pageCursor = earlier.nextCursor;
+    while (pageCursor) {
+      assert(!visited.has(pageCursor), 'Pagination must not repeat a cursor');
+      visited.add(pageCursor);
+      assert(visited.size <= 4, 'Pagination must reach the oldest page');
+      const page = await session.refreshHistory(pagedId, pageCursor, true);
+      assert(page.messages.length <= 100);
+      assert(Buffer.byteLength(JSON.stringify(page.messages)) <= 2 * 1024 * 1024);
+      previous.unshift(...page.messages);
+      pageCursor = page.nextCursor;
+    }
+    assert.deepEqual(
+      previous.map((m) => m.id),
+      pagedMessages.slice(0, 200).map((m) => m.id),
+    );
+    assert.equal(new Set(previous.map((m) => m.id)).size, 200);
+    clockOffset = 22_000;
+    assert.equal(session.history(pagedId, true).synchronization.state, 'unavailable');
+    const freshTip = await session.refreshHistory(pagedId, undefined, true);
+    assert.deepEqual(
+      freshTip.messages.map((m) => m.id),
+      tip.messages.map((m) => m.id),
+    );
+    assert.equal(freshTip.synchronization.state, 'history');
+    assert.equal(freshTip.runtime.state, 'unknown');
+    assert.equal(freshTip.runtime.canControl, false);
+  } finally {
+    Date.now = realNow;
+    session.runtime.reader.history = savedHistoryReader;
   }
   const readHistory = session.runtime.reader.history;
   session.runtime.reader.history = async (...args) => {

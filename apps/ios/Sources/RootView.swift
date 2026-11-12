@@ -1480,8 +1480,8 @@ struct RootView: View {
   }
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @AppStorage(VoiceTranscriptionPreference.storageKey) private var voicePreference = VoiceTranscriptionPreference.desktop
-  @StateObject private var store = SessionStore()
-  @StateObject private var taskHub = TaskHubStore()
+  @StateObject private var store: SessionStore
+  @StateObject private var taskHub: TaskHubStore
   @StateObject private var voice = VoiceInputController()
   @StateObject private var sidebarMotion = SidebarDrawerCommands()
   @StateObject private var readingCovers = ChatReadingCovers()
@@ -1524,6 +1524,11 @@ struct RootView: View {
   @Environment(\.colorScheme) private var inheritedColorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  init(store: SessionStore, taskHub: TaskHubStore) {
+    _store = StateObject(wrappedValue: store)
+    _taskHub = StateObject(wrappedValue: taskHub)
+  }
 
   @ViewBuilder var body: some View {
     #if DEBUG
@@ -1671,7 +1676,7 @@ struct RootView: View {
       TaskNotificationController.shared.setActive(phase == .active)
       if phase != .active { EasyWorkKnownHosts.shared.stop(); CodexHostDiscovery.shared.stop(); VPNHostDiscovery.shared.stop() }
     }
-    .onChange(of: businessNotifications.pendingNavigation?.id) { _, eventId in
+    .onChange(of: businessNotifications.pendingNavigation?.id, initial: true) { _, eventId in
       if !hostedExaminerOwnsRefresh, eventId != nil { store.sheet = .taskHub }
     }
     .tint(.primary)
@@ -1859,7 +1864,7 @@ struct RootView: View {
         IconButton(symbol: "square.and.pencil", label: L10n.tr("新建对话"), id: "new-chat") {
           store.sheet = .projects
         }
-        .disabled(!store.canCreateThread || store.client?.online != true)
+        .disabled(store.client == nil)
         IconButton(symbol: "checklist", label: L10n.tr("项目与任务"), id: "task-hub-entry") { store.sheet = .taskHub }
         Menu {
           if store.client?.agentConnection?.target.agentId == "easywork" { ProjectGitMenuEntry(store: store) }
@@ -2416,7 +2421,7 @@ struct RootView: View {
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           .contentShape(Rectangle())
       }.padding(.horizontal, 9).padding(.vertical, 4)
-        .disabled(!store.canCreateThread || store.client?.online != true)
+        .disabled(store.client == nil)
         .accessibilityIdentifier("sidebar-new")
       Button {
         sidebarSearchFocused = false
@@ -4731,7 +4736,7 @@ private struct ApprovalSubmitButtonStyle: ButtonStyle {
   }
 }
 
-#Preview { RootView() }
+#Preview { RootView(store: SessionStore(), taskHub: TaskHubStore()) }
 
 
 /// Keep one visible label and one production action for each input route.

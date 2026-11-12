@@ -171,7 +171,18 @@ private struct TaskHubSaved: Codable {
   var canReadNotificationStatus: Bool { online && !needsLogin && actor?.kind == "human" && verifiedSessionGeneration == sessionGeneration }
   var pendingOperations: [TaskHubOperation] { operations.filter { $0.scope == scope && ["pending", "unknown"].contains($0.phase) } }
 
-  init() {
+  // Cache decryption/SQLite migration and Keychain reads happen before the UI
+  // receives this store. The snapshot has a single owner across the handoff.
+  private struct LocalRestoration: @unchecked Sendable {
+    let deviceId: String
+    let file: URL
+    let cache: TaskHubSQLitePersistence
+    let saved: TaskHubSaved
+    let failure: Error?
+    let session: TaskHubLogin?
+  }
+  nonisolated private static func readLocalState() -> LocalRestoration {
+    let deviceId: String
     let existingDevice = CredentialVault.token("task-hub-device-id-v1")
     if UUID(uuidString: existingDevice) != nil { deviceId = existingDevice }
     else {
@@ -179,21 +190,32 @@ private struct TaskHubSaved: Codable {
       if let _ = try? CredentialVault.set(nextDevice, id: "task-hub-device-id-v1") { deviceId = nextDevice }
       else { deviceId = "unavailable" }
     }
-    file = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("task-hub-v1.bin")
-    cache = TaskHubSQLitePersistence(databaseURL: file.deletingLastPathComponent().appendingPathComponent("task-hub-v1.sqlite"), legacyURL: file)
+    let file = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("task-hub-v1.bin")
+    let cache = TaskHubSQLitePersistence(databaseURL: file.deletingLastPathComponent().appendingPathComponent("task-hub-v1.sqlite"), legacyURL: file)
+    var saved = TaskHubSaved()
+    var failure: Error?
     do {
       if let data = try cache.load() { saved = try JSONDecoder().decode(TaskHubSaved.self, from: data) }
-    } catch {
-      cacheLoadFailure = error
-      self.error = error.localizedDescription
-    }
+    } catch { failure = error }
+    return LocalRestoration(deviceId: deviceId, file: file, cache: cache, saved: saved,
+      failure: failure, session: saved.binding.flatMap { session($0) })
+  }
+  static func restoredForStartup() async -> TaskHubStore {
+    let local = await Task.detached(priority: .userInitiated) { readLocalState() }.value
+    return TaskHubStore(local: local)
+  }
+  convenience init() { self.init(local: Self.readLocalState()) }
+  private init(local: LocalRestoration) {
+    deviceId = local.deviceId; file = local.file; cache = local.cache
+    saved = local.saved; cacheLoadFailure = local.failure
+    error = local.failure?.localizedDescription
     normalizeOperations()
     binding = saved.binding
-    if let binding, let session = Self.session(binding) { actor = session.actor; needsLogin = false; client = try? TaskHubClient(binding: binding, token: session.token, deviceId: deviceId) }
+    if let binding, let session = local.session { actor = session.actor; needsLogin = false; client = try? TaskHubClient(binding: binding, token: session.token, deviceId: deviceId) }
     restoreCache()
     if let binding, actor != nil { _ = try? TaskHubUploadCoordinator.shared.restore(binding: binding, scope: scope) }
   }
-  static private func session(_ binding: TaskHubBinding) -> TaskHubLogin? {
+  nonisolated static private func session(_ binding: TaskHubBinding) -> TaskHubLogin? {
     let value = CredentialVault.token("task-hub-session-" + HostService.hash(Data(binding.service.identity.utf8)))
     guard let session = try? JSONDecoder().decode(TaskHubLogin.self, from: Data(value.utf8)),
       session.actor.kind == "human", !session.token.isEmpty,

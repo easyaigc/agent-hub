@@ -127,20 +127,20 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
       }
     }
   }
-  func loadHistory(_ id: String) throws -> Page {
+  func loadHistory(_ id: String, using decoder: ((Data) throws -> Page)? = nil) throws -> Page {
     let url = pageURL(id)
-    let page = try decodePage(readData(url))
+    let page = try (decoder ?? decodePage)(readData(url))
     try migrateProtection(url)
     return page
   }
   /// Rebuild only this namespace's index from authenticated pages. Other epochs stay untouched.
-  func recoverUnindexedHistory(namespace: String, indexed: [String], key: (Page) -> String) throws -> [String: Page] {
+  func recoverUnindexedHistory(namespace: String, indexed: [String], using decoder: ((Data) throws -> Page)? = nil, key: (Page) -> String) throws -> [String: Page] {
     let known = Set(indexed.map { pageURL(namespace + ":" + $0).lastPathComponent })
     let files = try historyFiles()
     var recovered: [String: Page] = [:]
     for url in files where url.pathExtension == "json" && !known.contains(url.lastPathComponent) {
       do {
-        let page = try decodePage(readData(url))
+        let page = try (decoder ?? decodePage)(readData(url))
         let target = key(page)
         guard pageURL(namespace + ":" + target).lastPathComponent == url.lastPathComponent else { continue }
         try migrateProtection(url)

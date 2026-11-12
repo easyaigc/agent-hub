@@ -17,20 +17,6 @@ struct ExternalAttachmentIntake: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .onOpenURL { url in
-        guard url.isFileURL else { AgentConfigurationViews.open(url, store: store); return }
-        Task {
-          do {
-            _ = try await AttachmentInbox.stage(loaders: [{
-              try await Task.detached(priority: .userInitiated) {
-                AttachmentFilePayload(data: try AttachmentFileIntake.read(url), name: url.lastPathComponent,
-                  image: UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true)
-              }.value
-            }])
-            refresh()
-          } catch { store.presentError(error) }
-        }
-      }
       .task(id: phase == .active) { if phase == .active { refresh() } }
       .onReceive(NotificationCenter.default.publisher(for: Notification.Name("AgentHubShowReceivedAttachments"))) { _ in refresh() }
       .onChange(of: store.sheet) { _, sheet in if sheet == nil { presentIfPossible() } }

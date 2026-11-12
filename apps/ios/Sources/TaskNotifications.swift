@@ -569,6 +569,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     return before == MobileUnreadBadge.revision ? .noData : .newData
   }
   nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    Self.present(notification, completionHandler: completionHandler)
+  }
+  nonisolated static func present(_ notification: UNNotification, completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     let prefs = TaskNotificationShared.preferences
     let info = notification.request.content.userInfo
     if info["businessNotification"] != nil {
@@ -583,9 +586,10 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     else { event = try? TaskNotificationShared.decodeEnvelope(info) }
     if let event, prefs.enabled, !prefs.excludedHosts.contains(event.target.hostId) {
       Task { @MainActor in
-        try? await self.store?.waitForSidebarInteraction()
+        let controller = Self.shared
+        try? await controller.store?.waitForSidebarInteraction()
         _ = try? MobileUnreadBadge.receive(event)
-        self.updateBadge()
+        controller.updateBadge()
       }
     }
     if let event, !prefs.kinds.contains(event.kind) || prefs.excludedHosts.contains(event.target.hostId) { completionHandler([]); return }
@@ -598,6 +602,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     completionHandler(options)
   }
   nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    Self.receiveTap(response, completionHandler: completionHandler)
+  }
+  nonisolated static func receiveTap(_ response: UNNotificationResponse, completionHandler: @escaping () -> Void) {
     let info = response.notification.request.content.userInfo
     #if DEBUG
     let responseIdentifier = response.notification.request.identifier, responseAction = response.actionIdentifier
@@ -607,7 +614,7 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       if Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
         ProcessInfo.processInfo.arguments.contains("-ui-testing"),
         let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"], UUID(uuidString: run)?.uuidString.lowercased() == run {
-        self.easyWorkActualNotificationResponse = ["identifier": responseIdentifier, "action": responseAction,
+        Self.shared.easyWorkActualNotificationResponse = ["identifier": responseIdentifier, "action": responseAction,
           "actualPushTrigger": responseIsPush, "encryptedEnvelopePresent": responseHasEnvelope,
           "plaintextEventPresent": responseHasPlainEvent]
       }
@@ -620,13 +627,25 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     let event: TaskNotificationEvent?
     if response.notification.request.identifier.hasPrefix("local."), let value = info["event"], let data = try? JSONSerialization.data(withJSONObject: value) { event = try? JSONDecoder().decode(TaskNotificationEvent.self, from: data) }
     else { event = try? TaskNotificationShared.decodeEnvelope(info) }
-    if let event { Task { @MainActor in self.route(event) } }
+    if let event { Task { @MainActor in Self.shared.route(event) } }
     completionHandler()
   }
 }
 
 @MainActor
-final class TaskNotificationAppDelegate: NSObject, UIApplicationDelegate {
+final class TaskNotificationAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+  func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+    // Register before asynchronous cache restoration. The full controller stays
+    // lazy, but a notification that launches the App must retain its navigation.
+    UNUserNotificationCenter.current().delegate = self
+    return true
+  }
+  nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    TaskNotificationController.present(notification, completionHandler: completionHandler)
+  }
+  nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    TaskNotificationController.receiveTap(response, completionHandler: completionHandler)
+  }
   func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
     if !TaskHubUploadCoordinator.handleBackgroundEvents(identifier: identifier, completionHandler: completionHandler) { completionHandler() }
   }

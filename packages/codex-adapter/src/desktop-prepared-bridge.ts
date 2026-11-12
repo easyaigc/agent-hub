@@ -122,6 +122,7 @@ const loadedDigest = (() => {
     'generation-settings.js',
     'history-reader.js',
     'desktop-platform.js',
+    'desktop-bridge-defaults.js',
     'windows-process.js',
     'desktop-private-state-native.js',
     'desktop-private-state-native-worker.js',

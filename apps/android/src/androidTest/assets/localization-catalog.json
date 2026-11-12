@@ -1679,6 +1679,15 @@
     "原任务已变化或结束，追加未提交。": "The original task changed or ended. Guidance was not submitted.",
     "子 Agent": "Sub-agent",
     "等待子 Agent 更新…": "Waiting for sub-agent updates…",
+    "选择对话所属的项目或文件夹，发送第一条消息后创建。": "Choose the project or folder for this conversation. It is created when you send the first message.",
+    "尚无可选项目。可在电脑端添加项目或文件夹后刷新。": "No projects are available. Add a project or folder on your computer, then refresh.",
+    "刷新项目": "Refresh projects",
+    "更多项目": "More projects",
+    "正在读取电脑上的项目…": "Reading projects from your computer…",
+    "历史连接仅支持查看，不能新建对话。": "History connections are read-only and cannot create conversations.",
+    "电脑连接尚未确认，请连接后刷新。": "The computer connection is not confirmed. Connect, then refresh.",
+    "当前连接不支持新建对话。": "This connection does not support new conversations.",
+    "正在恢复本地数据…": "Restoring local data…",
     "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。": "Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery.",
     "开始一段新对话": "Start a new conversation",
     "从侧栏选择项目或继续对话。": "Choose a project or continue a conversation from the sidebar.",
@@ -1993,7 +2002,11 @@
     "电脑尚无原传输回执；请保留手机上的剩余内容并继续查询，不会重新上传。": "The computer has no original receipt yet. Keep the remaining content on this phone and continue querying. The upload will not be repeated.",
     "手机文件保存状态待核对；剩余文件和临时记录不会自动清理，不会继续上传。": "Phone file persistence needs verification. Remaining files and temporary records will not be automatically removed; uploading will not continue.",
     "文件存储正由另一个本机进程使用，请稍后核对。": "Another local process is using file storage. Verify again later.",
-    "接收结果待确认 · 仅核对原传输": "Receipt unconfirmed · verify only the original transfer"
+    "接收结果待确认 · 仅核对原传输": "Receipt unconfirmed · verify only the original transfer",
+    "电脑尚未启用新建对话，请更新 Host 后刷新。": "Conversation creation is not enabled on this computer. Update the Host, then refresh.",
+    "项目已不可用，请重新选择。": "This project is no longer available. Choose another destination.",
+    "请先选择对话所属的项目或文件夹。": "Choose a project or folder for this conversation first.",
+    "发送第一条消息后创建对话。": "The conversation is created when you send the first message."
   },
   "zh-Hans": {
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
@@ -3675,6 +3688,15 @@
     "原任务已变化或结束，追加未提交。": "原任务已变化或结束，追加未提交。",
     "子 Agent": "子 Agent",
     "等待子 Agent 更新…": "等待子 Agent 更新…",
+    "选择对话所属的项目或文件夹，发送第一条消息后创建。": "选择对话所属的项目或文件夹，发送第一条消息后创建。",
+    "尚无可选项目。可在电脑端添加项目或文件夹后刷新。": "尚无可选项目。可在电脑端添加项目或文件夹后刷新。",
+    "刷新项目": "刷新项目",
+    "更多项目": "更多项目",
+    "正在读取电脑上的项目…": "正在读取电脑上的项目…",
+    "历史连接仅支持查看，不能新建对话。": "历史连接仅支持查看，不能新建对话。",
+    "电脑连接尚未确认，请连接后刷新。": "电脑连接尚未确认，请连接后刷新。",
+    "当前连接不支持新建对话。": "当前连接不支持新建对话。",
+    "正在恢复本地数据…": "正在恢复本地数据…",
     "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。": "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。",
     "开始一段新对话": "开始一段新对话",
     "从侧栏选择项目或继续对话。": "从侧栏选择项目或继续对话。",
@@ -3989,6 +4011,10 @@
     "电脑尚无原传输回执；请保留手机上的剩余内容并继续查询，不会重新上传。": "电脑尚无原传输回执；请保留手机上的剩余内容并继续查询，不会重新上传。",
     "手机文件保存状态待核对；剩余文件和临时记录不会自动清理，不会继续上传。": "手机文件保存状态待核对；剩余文件和临时记录不会自动清理，不会继续上传。",
     "文件存储正由另一个本机进程使用，请稍后核对。": "文件存储正由另一个本机进程使用，请稍后核对。",
-    "接收结果待确认 · 仅核对原传输": "接收结果待确认 · 仅核对原传输"
+    "接收结果待确认 · 仅核对原传输": "接收结果待确认 · 仅核对原传输",
+    "电脑尚未启用新建对话，请更新 Host 后刷新。": "电脑尚未启用新建对话，请更新 Host 后刷新。",
+    "项目已不可用，请重新选择。": "项目已不可用，请重新选择。",
+    "请先选择对话所属的项目或文件夹。": "请先选择对话所属的项目或文件夹。",
+    "发送第一条消息后创建对话。": "发送第一条消息后创建对话。"
   }
 }

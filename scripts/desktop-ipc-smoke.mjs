@@ -2687,9 +2687,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     snapshot();
     await settle();
     const updated = await session.open('thread');
-    // A mobile reader hashes the body it actually receives, after local links
-    // have become attachment URLs. The desktop summary must keep that version
-    // across refreshes instead of reverting to the raw source Markdown hash.
+    // A mobile reader hashes the exact displayed reference body. Resolving a
+    // file later must not rewrite that body or revive its acknowledged unread state.
     const projectedReply = updated.messages.find((message) => message.id === 'text');
     const contentVersion = (message) => {
       const hash = createHash('sha256');
@@ -2698,12 +2697,13 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       return hash.digest('hex');
     };
     const projectedHead = session.projectReadState(updated, 'c'.repeat(64)).thread.readState.latest;
-    assert.match(projectedReply.text, /codex-attachment:\/\//);
+    assert.equal(projectedReply.text, messageText);
+    assert.deepEqual(projectedReply.attachments, [], 'References are not eager attachments');
     assert.equal(projectedHead.messageId, projectedReply.id);
     assert.equal(
       projectedHead.contentVersion,
       contentVersion(projectedReply),
-      'the mobile read head must match the projected attachment body',
+      'the mobile read head must match the displayed reference body',
     );
     const commandCountBeforeRead = commands.length;
     session.acknowledgeRead('thread', 'c'.repeat(64), projectedHead);
@@ -2722,11 +2722,24 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     assert.deepEqual(refreshedProjection.thread.readState.read, projectedHead);
     assert.equal(commands.length, commandCountBeforeRead, 'reading sends no desktop command');
     assert.equal(refreshedProjection.thread.readHeadSourceVersion, undefined);
-    const files = updated.messages.flatMap((v) => v.attachments);
+    await assert.rejects(
+      session.resolveMessageFile('thread', 'different-message', join(ownerDirectory, 'owned.txt')),
+      (error) => error.status === 403,
+    );
+    const resolved = await Promise.all(
+      [
+        join(ownerDirectory, 'owned.txt'),
+        join(deniedDirectory, 'denied.txt'),
+        join(ownerDirectory, 'escape.txt'),
+      ].map((reference) => session.resolveMessageFile('thread', projectedReply.id, reference)),
+    );
+    const files = [
+      ...new Map(resolved.map(({ attachment }) => [attachment.id, attachment])).values(),
+    ];
     assert.equal(
       files.length,
       2,
-      'explicit original assistant links register project-external resources too',
+      'explicitly opening original assistant links registers exact external resources too',
     );
     assert.equal(files[0].name, 'owned.txt');
     const outsideFile = files.find((file) => file.name === 'denied.txt');

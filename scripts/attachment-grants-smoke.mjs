@@ -61,13 +61,10 @@ try {
     return thread.messages.find((m) => m.id === id);
   }
   const message = await project('authorized', report, 'original-report');
-  assert.equal(
-    message.attachments.length,
-    1,
-    'a desktop assistant report outside project roots is a registered resource',
-  );
-  assert.match(message.text, /codex-attachment:\/\//);
-  const first = message.attachments[0];
+  assert.deepEqual(message.attachments, []);
+  assert.equal(message.text, `[report](${report})`);
+  const first = (await session.resolveMessageFile('authorized', 'original-report', report))
+    .attachment;
   assert.equal(
     first.desktopMessageLinks,
     undefined,
@@ -108,7 +105,7 @@ try {
   assert.equal(
     (await session.resolveMessageFile('authorized', 'original-report', report)).attachment.id,
     current.id,
-    'a cached raw link must resolve after the Host rewrites that message',
+    'the original link resolves the current version',
   );
   if (process.platform !== 'win32') {
     await chmod(report, 0o000);

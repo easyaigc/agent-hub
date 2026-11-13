@@ -986,7 +986,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private class WorkspaceReadOwner(val navigation: Long,val connectionRevision: Long,val managementRevision: Long)
     private val workspaceManagementRevisions=mutableStateMapOf<String,Long>()
     private val loadingTargets = mutableStateMapOf<String,WorkspaceReadOwner>()
-    private class HistoryReadOwner(val selection: Long,val connectionRevision: Long)
+    private class HistoryReadOwner(val selection: Long,val connectionRevision: Long,val more: Boolean)
     private val historyTargets = mutableStateMapOf<String,HistoryReadOwner>()
     private val expandedProjects = mutableStateMapOf<String, Set<String>>()
     private val sidebarStates = mutableStateMapOf<String, SidebarDisplayState>()
@@ -997,6 +997,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var historyJob: Job? = null
     private var workspaceJob: Job? = null
     private var foregroundJob: Job? = null
+    private var earlierReadLifecycle=0L
     fun enterForeground() {
         if(migrationPaused)return
         invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
@@ -1037,7 +1038,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;if(!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null){voice?.suspendRecording();questionVoice?.suspendRecording()};easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { earlierReadLifecycle++;easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;if(!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null){voice?.suspendRecording();questionVoice?.suspendRecording()};easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -1770,7 +1771,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
         if(!more)prepareSuggestionRead()
         val cursor = if (more) historyCursor ?: return null else null
-        val owner=HistoryReadOwner(selection,revision)
+        val owner=HistoryReadOwner(selection,revision,more)
         historyJob = tasks.launch {
             val successAtStart=connectionSuccesses[client.cacheKey(null)] ?: 0
             val snapshotAtStart=conversationSnapshotRevisions[key] ?: 0
@@ -1821,7 +1822,30 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         }
         return historyJob
     }
-    fun earlierMessages(): Job? { if (timeline.hasEarlierMessages) { visibleMessageLimit += ReadingPolicy.earlierMessageIncrement().toInt(); revealedEarlier = true; return null } else return loadHistory(more = true) }
+    fun earlierMessages(): Job? {
+        // Revealing already-loaded rows never needs to wait for a background latest read.
+        if (timeline.hasEarlierMessages) { visibleMessageLimit += ReadingPolicy.earlierMessageIncrement().toInt(); revealedEarlier = true; return null }
+        val pending=historyJob.takeIf { historyLoading } ?: return loadHistory(more=true)
+        val key=targetKey;val selection=selectionRevision;val client=selectedClient;val revision=revisions[client.id] ?: 0
+        val lifecycle=earlierReadLifecycle;val owner=historyTargets[key]
+        if(owner?.more==true)return pending
+        return tasks.launch {
+            var read=pending
+            while(true) {
+                read.join()
+                // A queued click belongs to the original navigation and connection only.
+                if(!foreground || earlierReadLifecycle!=lifecycle || targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision || !selectedClient.online)return@launch
+                if(timeline.hasEarlierMessages) { visibleMessageLimit += ReadingPolicy.earlierMessageIncrement().toInt(); revealedEarlier=true;return@launch }
+                if(!historyLoading) { loadHistory(more=true)?.join();return@launch }
+                // Another latest read may have started while the first was finishing.
+                // Join an existing earlier page without issuing the next page twice.
+                val next=historyJob ?: return@launch
+                val earlier=historyTargets[key]?.more==true
+                if(earlier) { next.join();return@launch }
+                read=next
+            }
+        }
+    }
     private fun version(key: String)=draftVersions[key] ?: UUID.randomUUID().toString().also { draftVersions[key]=it }
     private fun loadOperations() {
         val flow=execution ?: return; val client=selectedClient
@@ -2439,7 +2463,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     val batch=commands.events(client,thread,epoch,cursor)
                     if(!foreground || eventReadOwner!==stream || targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision) break
                     require(batch.hostId==client.id&&batch.snapshots.all { page -> page.hostId==client.id&&page.threadId==thread&&(!client.requiresReadTarget||page.scope!=null)&&sameScope(page.scope,client.scope) }) { "事件快照不属于当前电脑、对话和完整目标" }
-                    val decision=OperationPolicies.event(epoch,cursor,batch.epoch,batch.cursor,batch.reset,batch.ready!=false,batch.snapshots.size)
+                    val decision=OperationPolicies.event(epoch,cursor,batch.epoch,batch.cursor,batch.reset,batch.ready!=false,batch.snapshots.size,threadScoped=true)
                     if(batch.ready==false) { freshHistories[key]=false; freshWorkspaces[clientKey]=false }
                     batch.capabilities?.let { caps -> workspace?.let { old -> workspaces[clientKey]=old.copy(capabilities=SessionPolicies.codexCapabilities(caps,old.mode)) } }
                     if(decision.apply) {

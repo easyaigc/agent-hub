@@ -21256,6 +21256,21 @@
         "scripts/mobile/ios-startup-crypto.mjs": "081284b6ee32eb594986b0edca25f9ab89c3e5b0d446b0ce98388ef314060b6f",
         "scripts/mobile/ios-startup-scheduling.mjs": "b19cd45a148e2662edc861e1fbad93398af3e2b8af8083ece21c1895bbe58035"
       }
+    },
+    {
+      "id": "thread-filtered-event-controls-20261113",
+      "baseCommit": "af340ecc9db6132595796b7ca2ddeebb91fd3a47",
+      "features": ["F17", "F31"],
+      "summary": "Thread-filtered global cursor heartbeats preserve control freshness on both clients; Android earlier paging remains interactive during background reads and fences queued work to its original selection.",
+      "files": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt": "8219bbd740d90c357cf055de974472cbba7768ed12dc8ee6d60864d296bd3f67",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/FilteredEventPolicyTest.kt": "52e28b73e8c9ef567c8ef8177412ef3245d197707ca4f53c8a57cca4d72cedd4",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f05660b21968a5040a216d6844b24e893eca5b35b67759accfc61fd570e500fb",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "c24d954a62858cbaca1bcd759feaa462cc00076cb3b03e39daa7a60bbddb41f3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEarlierLoadingUiTest.kt": "90f28a58312efab9c7f60224df44ea0ab318edaeaf9d4f2a6f334398516f068f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "eea9bd92d2880e982d9e737bf75802f103dced8d47dfe08e90e6c06c090cdba6",
+        "apps/ios/Sources/SessionStore.swift": "ca56ff4c92c3cc345e0cc4489621ba45a957d10bf9d4c2f22e2ccacc73fef2b1"
+      }
     }
   ]
 }

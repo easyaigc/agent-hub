@@ -3480,7 +3480,7 @@ private var userRequestedWorkspaceGeneration: UUID?
             }
           }
           let decision = OperationPolicies.shared.event(previousEpoch: epoch, previousCursor: Int64(cursor),
-            epoch: batch.epoch, cursor: Int64(batch.cursor), reset: batch.reset, ready: batch.ready == true, snapshotCount: Int32(batch.events.count))
+            epoch: batch.epoch, cursor: Int64(batch.cursor), reset: batch.reset, ready: batch.ready == true, snapshotCount: Int32(batch.events.count), threadScoped: true)
           for event in batch.events {
             guard event.snapshot.hostId == host.id,
               event.snapshot.threadId == event.threadId, event.threadId == threadId

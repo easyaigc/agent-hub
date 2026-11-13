@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-13 F17／F31／UI05 补充：双端已接入共享快照排序规则，避免旧历史和旧事件覆盖新任务状态；较早前缀页保留当前运行时。共享 JVM 139 项通过，Android 应用及测试 Kotlin 编译通过；原生执行、真机视觉和 iOS 构建未验收，见[专项记录](../acceptance/thread-filtered-events-20261113.md#additional-active-task-investigation)。
+
 > iOS × EasyWork 当前开发、验收与交付状态唯一维护于 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md)。本文件继续定义全局F与共同断言；下方既有状态叙述保留为对应时点的历史证据，不另行维护该任务当前完成数。
 
 2026-11-13 F17／F31／UI05：双端按会话过滤的事件订阅允许全局游标随其他会话前进，空批次不再撤销当前历史新鲜度或触发重复重载；重置、epoch 变化、未就绪和独立有界补读继续保留。Android 较早消息入口仅在用户翻页时忙碌，本地展开不等待后台刷新，远端翻页等待原读取并核对导航及连接代次。实现与共享核心回归已完成，原生设备验证另计，见[专项记录](../acceptance/thread-filtered-events-20261113.md)。

@@ -21271,6 +21271,20 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "eea9bd92d2880e982d9e737bf75802f103dced8d47dfe08e90e6c06c090cdba6",
         "apps/ios/Sources/SessionStore.swift": "ca56ff4c92c3cc345e0cc4489621ba45a957d10bf9d4c2f22e2ccacc73fef2b1"
       }
+    },
+    {
+      "id": "running-conversation-snapshot-order-20261113",
+      "baseCommit": "c0ff0036fcd2177203cdf5255872d409b7e1db33",
+      "features": ["F17", "F31"],
+      "summary": "Both native clients fence concurrent latest-history and event publication against older checkpoints; current completion and readiness loss still apply, and Android earlier pages retain live runtime metadata.",
+      "files": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ConversationSnapshotFence.kt": "e34fa6b2392f9664f91ed3e19a851fb749b0922eeb968f3e8bdb78a83eb33c03",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ConversationSnapshotFenceTest.kt": "b460bdf1351ca38840fce29781bd284eed8d90859f9e21e2578606950c10464d",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f3f74e4fe9eb38b8537f108188409d6db2b61e30668fe03f0bf1b2635a610d9d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRunningSnapshotOrderTest.kt": "f7cdb39d3a0c309698fa485259b4ad18a0b71640f9343e27b7ca37c19b1ce476",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "9fbfc5391c0ae50041fd6ac625d1df49b40a3caf4ae37b1f88adf32283225a12",
+        "apps/ios/Sources/SessionStore.swift": "51acd69ed807f15f921886d0f67af223d9c8f004b1acdde3c8b076ea6c7fc297"
+      }
     }
   ]
 }

@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-13 F17／F31／UI05（S02／S11）补充：执行中另行排查发现旧成功回包覆盖新快照的竞态。恢复无条件接收时新增 8 项共享回归中 5 项失败，修复后 139 项全部通过；Android 应用与 instrumentation Kotlin 编译通过。新增 8 个原生排序／控件场景尚未执行，真实手机视觉和 iOS 构建未验收。运行中的只读采样显示状态稳定，不作为手机闪烁已复现的证明；详见[专项记录](thread-filtered-events-20261113.md#additional-active-task-investigation)。
+
 > iOS × EasyWork 当前验收结果、阻塞与剩余项唯一回填 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文件继续定义共同场景并保留既有原始记录；历史通过不得绕过计划中的指纹匹配而升级为当前通过。
 
 2026-11-13 F17／F31／UI05（S02／S11）：过滤后的空事件全局游标与 Android 翻页状态修复见[专项记录](thread-filtered-events-20261113.md)。共享核心 JVM 131 项通过，恢复旧重载条件时新增 6 项中 2 项失败；原生 UI／真实手机与 iOS 编译结果独立记录，不以共享核心通过替代。

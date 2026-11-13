@@ -35,8 +35,8 @@ class MobileFilteredEventsTest {
         .put("agentConnectionState",JSONObject().put("runtimeConnected",true))
         .put("capabilities",JSONArray(listOf("events","commands:target-bound:v1","reply","queue")))
         .put("projects",JSONArray()).put("threads",JSONArray().put(JSONObject().put("id","filtered-thread").put("hostId",scope.hostId).put("title","synthetic filtered events").put("state","running"))).toString())
-    private fun history()=HostReadCodec.history(JSONObject().put("hostId",scope.hostId).put("threadId","filtered-thread")
-        .put("readTarget",CodexCommandCodec.target(scope)).put("epoch","filtered-epoch").put("cursor",0)
+    private fun history(cursor: Long=0)=HostReadCodec.history(JSONObject().put("hostId",scope.hostId).put("threadId","filtered-thread")
+        .put("readTarget",CodexCommandCodec.target(scope)).put("epoch","filtered-epoch").put("cursor",cursor)
         .put("runtime",JSONObject().put("state","running").put("turnId","synthetic-turn").put("canControl",true)
             .put("plan",JSONArray()).put("approvals",JSONArray()).put("receipts",JSONArray()))
         .put("messages",JSONArray((0 until 120).map { JSONObject().put("id","filtered-$it").put("role","assistant").put("text","synthetic row $it").put("status","completed") })).toString())
@@ -86,7 +86,7 @@ class MobileFilteredEventsTest {
     @Test fun unreadyHeartbeatRevokesControlUntilValidatedSnapshot() {
         deliver(1,ready=false);assertFalse(session.isWritable);assertFalse(session.canStop)
         deliver(2);assertFalse("An empty heartbeat cannot grant control",session.isWritable)
-        deliver(3,snapshots=listOf(history()));assertTrue(session.isWritable);assertTrue(session.canStop)
+        deliver(3,snapshots=listOf(history(3)));assertTrue(session.isWritable);assertTrue(session.canStop)
         assertEquals("original draft",session.text)
     }
     @Test fun emptyResetStillInvalidatesAndRepairsHistory() {

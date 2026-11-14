@@ -21256,6 +21256,58 @@
         "scripts/mobile/ios-startup-crypto.mjs": "081284b6ee32eb594986b0edca25f9ab89c3e5b0d446b0ce98388ef314060b6f",
         "scripts/mobile/ios-startup-scheduling.mjs": "b19cd45a148e2662edc861e1fbad93398af3e2b8af8083ece21c1895bbe58035"
       }
+    },
+    {
+      "id": "thread-filtered-event-controls-20261113",
+      "baseCommit": "af340ecc9db6132595796b7ca2ddeebb91fd3a47",
+      "features": ["F17", "F31"],
+      "summary": "Thread-filtered global cursor heartbeats preserve control freshness on both clients; Android earlier paging remains interactive during background reads and fences queued work to its original selection.",
+      "files": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt": "8219bbd740d90c357cf055de974472cbba7768ed12dc8ee6d60864d296bd3f67",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/FilteredEventPolicyTest.kt": "52e28b73e8c9ef567c8ef8177412ef3245d197707ca4f53c8a57cca4d72cedd4",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f05660b21968a5040a216d6844b24e893eca5b35b67759accfc61fd570e500fb",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "c24d954a62858cbaca1bcd759feaa462cc00076cb3b03e39daa7a60bbddb41f3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEarlierLoadingUiTest.kt": "90f28a58312efab9c7f60224df44ea0ab318edaeaf9d4f2a6f334398516f068f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "eea9bd92d2880e982d9e737bf75802f103dced8d47dfe08e90e6c06c090cdba6",
+        "apps/ios/Sources/SessionStore.swift": "ca56ff4c92c3cc345e0cc4489621ba45a957d10bf9d4c2f22e2ccacc73fef2b1"
+      }
+    },
+    {
+      "id": "running-conversation-snapshot-order-20261113",
+      "baseCommit": "c0ff0036fcd2177203cdf5255872d409b7e1db33",
+      "features": ["F17", "F31"],
+      "summary": "Both native clients fence concurrent latest-history and event publication against older checkpoints; current completion and readiness loss still apply, and Android earlier pages retain live runtime metadata.",
+      "files": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ConversationSnapshotFence.kt": "e34fa6b2392f9664f91ed3e19a851fb749b0922eeb968f3e8bdb78a83eb33c03",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ConversationSnapshotFenceTest.kt": "b460bdf1351ca38840fce29781bd284eed8d90859f9e21e2578606950c10464d",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f3f74e4fe9eb38b8537f108188409d6db2b61e30668fe03f0bf1b2635a610d9d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRunningSnapshotOrderTest.kt": "f7cdb39d3a0c309698fa485259b4ad18a0b71640f9343e27b7ca37c19b1ce476",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "9fbfc5391c0ae50041fd6ac625d1df49b40a3caf4ae37b1f88adf32283225a12",
+        "apps/ios/Sources/SessionStore.swift": "51acd69ed807f15f921886d0f67af223d9c8f004b1acdde3c8b076ea6c7fc297"
+      }
+    },
+    {
+      "id": "historical-owner-ordinal-identity-20261114",
+      "baseCommit": "527b800f73a85356cf486b7008d9b80e11db3068",
+      "features": ["F17", "F31"],
+      "summary": "Qualify original-owner ordinal rows by their real Turn across all desktop history projections; reconcile legacy exact aliases without text deduplication. Android controlled real-history read-only validation and iOS/production limitations are recorded separately.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "a99d44daaf17c40c16d000fc473a666fd6d9cd2f118c22113cd9a8fcc3a9e3f0",
+        "packages/codex-adapter/src/desktop-history-identity.ts": "11f94db4a32bd971c8c246959481b412436db0b6ddb61aa3d41838c5698dff5b",
+        "scripts/desktop-history-identity-smoke.mjs": "8012c9ff643fcd8b4e876427ff3eb4a8f9996c60536659e7475791260998329b",
+        "scripts/desktop-known-owner-recovery.test.mjs": "6187cfd8631b9f0cbb4f0071fe90838eb582df35a9666f8416c76e8b47e35c9f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeColdThreadLiveTest.kt": "0874285042030f5ae10634da16a2a2689a12beeb11c7a0cde024d6bd2355ca37",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeHistoryTransitionLiveTest.kt": "b6abc4e3e273a8096ea2339cd8eafc99e862f015cfadaf24f38ab85bffee7cdb"
+      }
+    },
+    {
+      "id": "pr3-physical-running-read-followup-20261114",
+      "baseCommit": "527b800f73a85356cf486b7008d9b80e11db3068",
+      "features": ["F17", "F31"],
+      "summary": "Opt-in Android physical read-only observation of an existing original-desktop task: native stop/earlier controls across concurrent real history/events, local expansion, no command submission. Combined candidate passes 17 physical synthetic-provider regressions and two real read-only scenarios; iOS, remote networking and production remain unverified.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePr3RunningReadLiveTest.kt": "2eb687d617e248b37a6c9631f194d52a4d31e3b5c9732519f7d186000f49c720"
+      }
     }
   ]
 }

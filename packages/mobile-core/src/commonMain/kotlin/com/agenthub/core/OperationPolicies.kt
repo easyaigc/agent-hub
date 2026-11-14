@@ -25,13 +25,17 @@ object OperationPolicies {
     fun observeCreation(phase: String, currentOperation: String?, expectedOperation: String): Boolean =
         phase != "rejected" && currentOperation == expectedOperation
 
-    /** A changed epoch requires authoritative repair, not sequence comparison across epochs. */
-    fun event(previousEpoch: String, previousCursor: Long, epoch: String, cursor: Long, reset: Boolean, ready: Boolean, snapshotCount: Int = 1): EventDecision {
+    /**
+     * A changed epoch requires authoritative repair, not sequence comparison across epochs.
+     * Thread-filtered subscriptions still receive the Host's global cursor: an empty batch
+     * can advance because another thread changed, without invalidating this thread's history.
+     */
+    fun event(previousEpoch: String, previousCursor: Long, epoch: String, cursor: Long, reset: Boolean, ready: Boolean, snapshotCount: Int = 1, threadScoped: Boolean = false): EventDecision {
         if (cursor < 0) return EventDecision(false, false, previousEpoch, previousCursor)
         val changed = epoch != previousEpoch
         val apply = reset || changed || cursor > previousCursor
         return EventDecision(apply, ready && (reset || (changed && previousEpoch.isNotEmpty()) ||
-            (apply && cursor > previousCursor && snapshotCount == 0)),
+            (!threadScoped && apply && cursor > previousCursor && snapshotCount == 0)),
             if (apply) epoch else previousEpoch, if (apply) cursor else previousCursor)
     }
 }

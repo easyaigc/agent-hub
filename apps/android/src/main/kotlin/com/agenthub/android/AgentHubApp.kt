@@ -549,7 +549,7 @@ import com.agenthub.core.*
     var appliedSearchToken by remember(session.targetKey) { mutableStateOf<String?>(null) }
     var paging by remember(session.targetKey) { mutableStateOf(false) }
     fun loadEarlier() {
-        if(paging || session.historyLoading || !(session.timeline.hasEarlierMessages || session.historyCursor!=null)) return
+        if(paging || !(session.timeline.hasEarlierMessages || session.historyCursor!=null)) return
         val target=session.targetKey
         val boundary=session.timeline.rows.firstOrNull()
         val firstId=boundary?.indices?.firstOrNull()?.let { session.messages[it].id }
@@ -624,7 +624,7 @@ import com.agenthub.core.*
                 if(!change.pressed && single && startedAtTop && !list.canScrollBackward && delta.y>=with(density) { 60.dp.toPx() } && delta.y>kotlin.math.abs(delta.x)) earlierAction()
             }
         },state=list,contentPadding=PaddingValues(start=16.dp,end=16.dp,top=if(inlineToolApprovals)0.dp else 10.dp,bottom=if(inlineToolApprovals)0.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-            if(timeline.hasEarlierMessages || session.historyCursor != null || paging) item(key="history-more") { TextButton(onClick=::loadEarlier,enabled=!session.historyLoading && !paging,modifier=Modifier.fillMaxWidth().testTag(if(timeline.hasEarlierMessages) "history-local-more" else "history-more")) { if(paging) { CircularProgressIndicator(Modifier.size(12.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(6.dp)) }; Text(productText(if(paging) "正在加载更早消息…" else "显示更早消息"),fontSize=12.sp) } }
+            if(timeline.hasEarlierMessages || session.historyCursor != null || paging) item(key="history-more") { TextButton(onClick=::loadEarlier,enabled=!paging,modifier=Modifier.fillMaxWidth().testTag(if(timeline.hasEarlierMessages) "history-local-more" else "history-more")) { if(paging) { CircularProgressIndicator(Modifier.size(12.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(6.dp)) }; Text(productText(if(paging) "正在加载更早消息…" else "显示更早消息"),fontSize=12.sp) } }
             else if(session.revealedEarlier) item { Text(productText("已显示全部消息"),Modifier.fillMaxWidth().testTag("history-start"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
             items(timeline.rows,key={ session.targetKey+":"+it.kind+":"+it.id }) { row ->
                 val located=session.chatSearchJump?.takeIf { it.message.id==row.id&&row.kind=="message" }

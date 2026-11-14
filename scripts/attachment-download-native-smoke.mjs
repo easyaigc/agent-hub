@@ -15,6 +15,15 @@ const execute = promisify(execFile);
 await mkdir('.local/attachment-download-native', { recursive: true, mode: 0o700 });
 const directory = await mkdtemp(resolve('.local/attachment-download-native/run-'));
 const source = await readFile('apps/ios/Sources/HostService.swift', 'utf8');
+const discovery = await readFile('apps/ios/Sources/CodexDiscovery.swift', 'utf8');
+const progressTypes = source.slice(
+  source.indexOf('struct FileDownloadProgress:'),
+  source.indexOf('// Opt-in metadata'),
+);
+const operation = discovery.slice(
+  discovery.indexOf('final class FileDownloadOperation:'),
+  discovery.indexOf('final class CodexSystemTrust:'),
+);
 const models = await readFile('apps/ios/Sources/Models.swift', 'utf8');
 const methods = source.slice(
   source.indexOf('  static func baseURL('),
@@ -99,8 +108,11 @@ const server = createServer((req, res) => {
       return send(410, { error: 'file-removed' });
     const n = (version.get(scenario) ?? 0) + 1;
     version.set(scenario, n);
-    const content =
-      scenario === 'large' ? Buffer.alloc(24 * 1024 * 1024 + 1, 65) : `${scenario}-version-${n}`;
+    const content = ['large', 'cancel'].includes(scenario)
+      ? Buffer.alloc(24 * 1024 * 1024 + 1, 65)
+      : scenario === 'zero'
+        ? ''
+        : `${scenario}-version-${n}`;
     return send(200, {
       hostId: scenario === 'wrongHost' ? 'other-host' : nonce,
       threadId: 'thread',
@@ -130,12 +142,29 @@ const server = createServer((req, res) => {
   if (scenario === 'stable') return res.writeHead(200).end('stable-current-version');
   if (scenario === 'changing' || (scenario === 'race' && counts.get(key) === 1))
     return send(409, { error: 'changed-during-download' });
-  const content =
-    scenario === 'large'
-      ? Buffer.alloc(24 * 1024 * 1024 + 1, 65)
+  if (scenario === 'denied') return send(403, { error: 'denied' });
+  if (scenario === 'redirect') return res.writeHead(302, { Location: '/redirect-target' }).end();
+  const content = ['large', 'cancel'].includes(scenario)
+    ? Buffer.alloc(24 * 1024 * 1024 + 1, 65)
+    : scenario === 'zero'
+      ? ''
       : scenario === 'legacy' || scenario === 'legacyNil'
         ? 'original'
         : `${scenario}-version-${id.split('_').at(-1)}`;
+  if (['large', 'cancel'].includes(scenario)) {
+    res.writeHead(200, { 'Content-Length': content.length });
+    let offset = 0;
+    const timer = setInterval(() => {
+      if (res.destroyed || offset >= content.length) {
+        clearInterval(timer);
+        if (!res.destroyed) res.end();
+        return;
+      }
+      res.write(content.subarray(offset, offset + 1024 * 1024));
+      offset += 1024 * 1024;
+    }, 100);
+    return;
+  }
   res.writeHead(200).end(scenario === 'corrupt' ? 'invalid-bytes' : content);
 });
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
@@ -145,6 +174,11 @@ import CryptoKit
 import MobileCore
 enum L10n { static func tr(_ text: String) -> String { text } }
 ${errors}
+${progressTypes}
+${operation}
+final class CodexSystemTrust: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+  func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
+}
 ${targetTypes}
 ${sharedIdentity}
 struct Client { let id: String; let endpoint: String?; let readingTarget: AgentRuntimeTarget? }
@@ -160,6 +194,10 @@ ${attachment}
 enum CredentialVault { static func token(_ id: String) -> String { "synthetic-token" } }
 final class CodexHostRoutes {
   static let shared = CodexHostRoutes()
+  let session = URLSession(configuration: .ephemeral, delegate: CodexSystemTrust(), delegateQueue: nil)
+  func download(for request: URLRequest, totalBytes: Int64, progress: FileDownloadProgressHandler?) async throws -> (Data, URLResponse) {
+    try await FileDownloadOperation(totalBytes: totalBytes, progress: progress).run(session: session, request: request)
+  }
   func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) { try await URLSession.shared.data(for: request) }
 }
 struct HostService {
@@ -169,11 +207,16 @@ ${resolutions}
   static func boundaryDirectory(_ client: Client, file: RemoteAttachment) throws -> URL { try resourceDirectory(client, file: file) }
 ${downloads}
 }
+final class ProgressCapture: @unchecked Sendable {
+  let lock = NSLock()
+  var values: [FileDownloadProgress] = []
+  func add(_ value: FileDownloadProgress) { lock.lock(); defer { lock.unlock() }; values.append(value) }
+}
 @main struct Check {
   static func main() async throws {
     let target = AgentRuntimeTarget(agentId: "codex", hostId: "${nonce}", workspaceId: "workspace", runtimeId: "runtime")
     let client = Client(id: "${nonce}", endpoint: "http://127.0.0.1:${server.address().port}", readingTarget: target)
-    let scenarios = ["large", "cached", "removed", "race", "changing", "legacy", "wrongHost", "wrongThread", "wrongSource", "wrongRuntime", "corrupt"]
+    let scenarios = ["large", "cached", "removed", "race", "changing", "legacy", "wrongHost", "wrongThread", "wrongSource", "wrongRuntime", "corrupt", "zero", "denied", "redirect", "cancel"]
     var ownedScopes = Set<URL>()
     defer { for scope in ownedScopes { try? FileManager.default.removeItem(at: scope) } }
     func remember(_ client: Client, _ file: RemoteAttachment) throws {
@@ -186,8 +229,26 @@ ${downloads}
         precondition(file.sizeBytes == 24 * 1024 * 1024 + 1)
       }
       try remember(client, file)
+      if scenario == "cancel" {
+        let capture = ProgressCapture()
+        let task = Task { try await HostService.download(client, file: file, progress: { capture.add($0) }) }
+        try await Task.sleep(nanoseconds: 800_000_000)
+        task.cancel()
+        do { _ = try await task.value; fatalError("cancelled download succeeded") } catch {}
+        precondition(capture.values.contains { $0.phase == .downloading && $0.receivedBytes > 0 })
+        precondition(!capture.values.contains { $0.phase == .verifying })
+        print("cancelled during active byte transfer")
+        continue
+      }
       do {
-        let url = try await HostService.download(client, file: file)
+        let capture = ProgressCapture()
+        let url = try await HostService.download(client, file: file, progress: { capture.add($0) })
+        if scenario == "large" {
+          let events = capture.values.filter { $0.phase == .downloading && $0.receivedBytes > 0 && $0.receivedBytes < $0.totalBytes }
+          FileHandle.standardError.write(Data("events=\\(events.count) all=\\(capture.values.count)\\n".utf8))
+          precondition(events.count >= 2 && events.contains { $0.bytesPerSecond > 0 })
+          print("intermediate progress: " + events.map { "\\($0.receivedBytes)/\\($0.totalBytes) @ \\(Int($0.bytesPerSecond)) B/s" }.joined(separator: ", "))
+        }
         let body = try String(contentsOf: url, encoding: .utf8)
         switch scenario {
         case "large": precondition(body.utf8.count == 24 * 1024 * 1024 + 1)
@@ -198,6 +259,8 @@ ${downloads}
           precondition(refreshedBody == "cached-version-2")
           let originalBody = try String(contentsOf: url, encoding: .utf8)
           precondition(url != refreshed && originalBody == "cached-version-1", "An open old version must remain immutable")
+        case "zero":
+          precondition(body.isEmpty && capture.values.contains { $0.phase == .verifying && $0.receivedBytes == 0 })
         case "race": precondition(body == "race-version-2")
         case "removed":
           precondition(body == "removed-version-1")
@@ -206,6 +269,8 @@ ${downloads}
         case "legacy": precondition(body == "original")
         default: fatalError("Unexpected success: \\(scenario)")
         }
+      } catch HostServiceError.rejected(403, _) where scenario == "denied" {
+      } catch HostServiceError.rejected(302, _) where scenario == "redirect" {
       } catch HostServiceError.rejected(409, _) where scenario == "changing" {
       } catch HostServiceError.wrongHost where scenario.hasPrefix("wrong") {
       } catch HostServiceError.message(_) where scenario == "corrupt" {
@@ -226,7 +291,9 @@ ${downloads}
       let scoped = Client(id: value.hostId, endpoint: client.endpoint, readingTarget: value)
       let file = RemoteAttachment(id: "stable_${nonce}_original", hostId: scoped.id, threadId: index == 4 ? "other-thread" : "thread", name: "same-original-name.txt", mediaType: "text/plain", sizeBytes: 22, sha256: HostService.hash(Data("stable-current-version".utf8)))
       try remember(scoped, file)
-      let url = try await HostService.download(scoped, file: file)
+      let captured = ProgressCapture()
+      let url = try await HostService.download(scoped, file: file, progress: { captured.add($0) })
+      if index == 1 || index == 6 { precondition(captured.values.contains { $0.phase == .cached }) }
       let stableBytes = try Data(contentsOf: url)
       precondition(stableBytes == Data("stable-current-version".utf8))
       urls.append(url)
@@ -331,6 +398,7 @@ ${downloads}
     timeout: 60000,
     env: { ...process.env, SIMCTL_CHILD_DYLD_FRAMEWORK_PATH: framework },
   });
+  assert.equal(counts.get('redirect/v1/attachments'), 1);
   assert.equal(counts.get('cached/v1/attachments/resolve'), 2);
   assert.equal(counts.get('cached/v1/attachments'), 2);
   assert.equal(counts.get('removed/v1/attachments/resolve'), 2);
@@ -353,6 +421,7 @@ ${downloads}
     invalidNamesRejected: 5,
     simulator,
     productionSourceSha256: hash(source),
+    discoverySourceSha256: hash(discovery),
     native: result.stdout.trim(),
     counts: Object.fromEntries(counts),
   };

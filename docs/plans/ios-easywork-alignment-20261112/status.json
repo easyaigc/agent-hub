@@ -1720,7 +1720,7 @@
       "development": {
         "state": "pending-integration",
         "scope": "本清单父功能；已有实现不等于当前两仓完整目标已交付",
-        "basis": "DEV02 V3-delivery已补导航、可信来源、最终SQLite作用域事务及发布后故障归属；全部八项登记问题有复核，33项正式测试通过；待最终组合与真实桌面验收。",
+        "basis": "DEV02 V3-delivery已补导航、可信来源、最终SQLite作用域事务及发布后故障归属；全部八项登记问题有复核，33项正式测试通过；待最终组合与真实桌面验收。 2026-11-15新增文件下载实时进度主线集成候选，保留既有缓存/导出/归属边界；只读观察原传输，其他文档导航候选不随本次交付。",
         "evidenceRefs": [
           "LEDGER",
           "MAIN-IOS",
@@ -1729,13 +1729,14 @@
           "DEV01-V2-REVIEW-R8",
           "DEV02-V1-R9",
           "DEV02-REVIEW-V1-R9",
-          "DEV02-DELIVERY-REVIEW-R17"
+          "DEV02-DELIVERY-REVIEW-R17",
+          "FILE-DOWNLOAD-PROGRESS-MAIN-SOURCE-20261115"
         ]
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "按冻结源/目标包/通道/子断言判定；本轮已有代码、辅助及原生限定证据，父功能完整真实范围仍未关闭。",
-        "evidenceRefs": ["LEDGER"],
+        "scope": "按冻结源/目标包/通道/子断言判定；本轮已有代码、辅助及原生限定证据，父功能完整真实范围仍未关闭。 2026-11-15新增进度卡受控模拟器1/0/0及原生下载/完整仓库辅助通过，真实EasyWork/其他范围不补签。",
+        "evidenceRefs": ["LEDGER", "FILE-DOWNLOAD-PROGRESS-MAIN-CHECKS-20261115"],
         "currentEvidence": []
       },
       "delivery": {
@@ -1746,9 +1747,9 @@
         "state": "blocked",
         "ownerRole": "主协调接续；源开发/构建任务已结束，等待正常账号授权后开展真实对端验收"
       },
-      "nextAction": "与文件验收并行执行AC22：真实EasyWork原消息文档、中文/空格路径、嵌套资源、跨项目拒绝和取消/迟到；原资源逐项独立核对。",
+      "nextAction": "与文件验收并行执行AC22：真实EasyWork原消息文档、中文/空格路径、嵌套资源、跨项目拒绝和取消/迟到；原资源逐项独立核对。 本次进度卡构建、原生边界、模拟器及完整检查通过，待Gitea PR交付；其他父项范围和暂停保持。",
       "openItemIds": ["DEV01", "DEV02", "INT01"],
-      "updatedAt": "2026-11-12",
+      "updatedAt": "2026-11-15",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC21", "AC22"],
@@ -3579,7 +3580,7 @@
       "development": {
         "state": "pending-integration",
         "scope": "本清单父功能；已有实现不等于当前两仓完整目标已交付",
-        "basis": "DEV02 V3-delivery已补导航、可信来源、最终SQLite作用域事务及发布后故障归属；全部八项登记问题有复核，33项正式测试通过；待最终组合与真实桌面验收。",
+        "basis": "DEV02 V3-delivery已补导航、可信来源、最终SQLite作用域事务及发布后故障归属；全部八项登记问题有复核，33项正式测试通过；待最终组合与真实桌面验收。 2026-11-15新增文件下载实时进度主线集成候选，保留既有缓存/导出/归属边界；只读观察原传输，其他文档导航候选不随本次交付。",
         "evidenceRefs": [
           "LEDGER",
           "MAIN-IOS",
@@ -3589,13 +3590,14 @@
           "DEV02-BUILD-R7",
           "DEV02-V1-R9",
           "DEV02-REVIEW-V1-R9",
-          "DEV02-DELIVERY-REVIEW-R17"
+          "DEV02-DELIVERY-REVIEW-R17",
+          "FILE-DOWNLOAD-PROGRESS-MAIN-SOURCE-20261115"
         ]
       },
       "acceptance": {
         "state": "not-accepted-current-scope",
         "scope": "按冻结源/目标包/通道/子断言判定；本轮已有代码、辅助及原生限定证据，父功能完整真实范围仍未关闭。",
-        "evidenceRefs": ["LEDGER"],
+        "evidenceRefs": ["LEDGER", "FILE-DOWNLOAD-PROGRESS-MAIN-CHECKS-20261115"],
         "currentEvidence": []
       },
       "delivery": {
@@ -3606,9 +3608,9 @@
         "state": "blocked",
         "ownerRole": "主协调接续；源开发/构建任务已结束，等待正常账号授权后开展真实对端验收"
       },
-      "nextAction": "与文件验收并行执行AC22：真实EasyWork原消息文档、中文/空格路径、嵌套资源、跨项目拒绝和取消/迟到；原资源逐项独立核对。",
+      "nextAction": "与文件验收并行执行AC22：真实EasyWork原消息文档、中文/空格路径、嵌套资源、跨项目拒绝和取消/迟到；原资源逐项独立核对。 本次进度卡构建、原生边界、模拟器及完整检查通过，待Gitea PR交付；其他父项范围和暂停保持。",
       "openItemIds": ["DEV02", "INT01"],
-      "updatedAt": "2026-11-12",
+      "updatedAt": "2026-11-15",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC22"],
@@ -3757,8 +3759,8 @@
       }
     }
   ],
-  "revision": 28,
-  "updatedAt": "2026-11-12",
+  "revision": 30,
+  "updatedAt": "2026-11-15",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -4793,6 +4795,28 @@
       "path": ".local/ios-easywork-closeout-20261112/dev01/electron-final/evidence/inactive-resource-cleanup.json",
       "sha256": "c5c90b45a28f2c295da98a4b6a2091d55e01771230172fdad6435ddb16e46680",
       "scope": "12处已停用探针profile/构建缓存清理；当前App、监督器、broker/renderer、准确依赖和独占profile保留"
+    },
+    "FILE-DOWNLOAD-PROGRESS-MAIN-SOURCE-20261115": {
+      "kind": "source-change",
+      "sourceCommit": "f8bca2e0b8bb1c86168e957bf4a07fe3314283ea",
+      "sourceTree": "uncommitted-wip-sha256:65f6b53b92723b0c1f41cfae6e2a75706d26115e5ff0412aaaff983383b81222",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "Gitea-main integration source, Codex/EasyWork adapters and shared file card",
+      "mobileEnvironment": "not-required",
+      "path": ".local/file-download-progress-20261114/delivery/evidence/source-review.json",
+      "sha256": "e8dd4c58e03a1d8d5d50609fafcc1a1f5c8069b4ce9a2d217e7c3ea90552c8ca",
+      "scope": "仅本次消息文件卡下载阶段、实际字节、百分比和实时速度；保留main完整目标缓存/受验证导出/归属；文档内导航其他候选排除。原候选结果按原指纹保留，集成验收另登记。"
+    },
+    "FILE-DOWNLOAD-PROGRESS-MAIN-CHECKS-20261115": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "f8bca2e0b8bb1c86168e957bf4a07fe3314283ea",
+      "sourceTree": "uncommitted-wip-sha256:65f6b53b92723b0c1f41cfae6e2a75706d26115e5ff0412aaaff983383b81222",
+      "packageSha256": "c1075b8e3311dd18389cfc923cc3afb4f8b6e947f3c430d2c28bee3341e8b3bd",
+      "environment": "local actual iOS 26 simulator App with synthetic paced HTTP; production Swift/KMP native and workspace checks separate",
+      "mobileEnvironment": "simulator",
+      "path": ".local/file-download-progress-20261114/delivery/evidence/main-review.json",
+      "sha256": "14078476025f1b0c211e8059c2175537b105480afa1558dc1109d0817f3f15d6",
+      "scope": "仅消息文件进度卡：最终XCTest 1/0/0，旧403清除/百分比字节速度/单次预览开关/系统保存入口；本次pnpm build:ios、原生网络边界和完整pnpm check 748秒退出0。期间仅测试就绪等待更新，生产输入冻结，最终文件检查与GUI另验。Android仅生成语言目录，无真实手机/EasyWork桌面/文档导航通过，不关闭父功能。"
     }
   },
   "openItems": [
@@ -6159,6 +6183,26 @@
       "newCoordinationModelTurns": 0,
       "newProductAcceptancePasses": 0,
       "scope": "五个本地提交按功能移植到 Gitea main 基准 276bf420b8545b9c1389fac857586c469bc8eff9。主线合入新对话选择后，#175 同步到 e40f5d50ab7928c8af912f97fbc12178929be723，合并双端文案并重新生成 Android 目录。Windows 桥接与打开回执进入主线后，再同步至 9dadd47c9bc5c5460faf7f29055acac79a719cf1 并保留该记录。共享分页保留主线游标验证；冷启动恢复保留主线阅读规则与验收入口。当前状态以实际 PR 及目标部署回执核实，原有场景结果和暂停项沿用既有证据。"
+    },
+    {
+      "revision": 29,
+      "date": "2026-11-15",
+      "kind": "file-download-progress-main-candidate",
+      "scope": "仅导入文件下载实时进度候选及来源。原开发现场的其他未提交文档/台账不在本PR；保留主线F32/F72父状态及既有证据，未复用旧包作集成通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newWholeFeaturePasses": 0,
+      "evidenceRefs": ["FILE-DOWNLOAD-PROGRESS-MAIN-SOURCE-20261115"]
+    },
+    {
+      "revision": 30,
+      "date": "2026-11-15",
+      "kind": "file-download-progress-main-local-validation",
+      "scope": "本次消息文件卡限定辅助通过；完整check退出0与最终GUI1/0/0分别留证。共享Android文案已生成；其他文档导航/真实EasyWork/真机不补签，F32/F72父四维状态保留。交付仍须独立核对Gitea main及PR回执。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newWholeFeaturePasses": 0,
+      "evidenceRefs": ["FILE-DOWNLOAD-PROGRESS-MAIN-CHECKS-20261115"]
     }
   ],
   "maintenanceValidation": {
@@ -6695,6 +6739,22 @@
       "hostedTestBundleCompiled": true,
       "testExecution": "本条只登记编译，实际界面运行另录",
       "formalProductAcceptance": false
+    },
+    "fileDownloadProgressMain20261115": {
+      "state": "passed",
+      "fullWorkspaceCheck": true,
+      "iosBuild": true,
+      "nativeDownload": true,
+      "simulatorGUI": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      "execution": "scoped local validation complete",
+      "delivery": "reviewed candidate; actual Gitea PR merge must be verified independently",
+      "formalProductAcceptance": false,
+      "scope": "message file card progress; parent F32/F72 states unchanged",
+      "evidenceRefs": ["FILE-DOWNLOAD-PROGRESS-MAIN-CHECKS-20261115"]
     }
   },
   "candidateRevisions": [

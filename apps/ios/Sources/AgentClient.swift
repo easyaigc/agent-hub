@@ -198,7 +198,7 @@ protocol AgentClient: Sendable {
   func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL?
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
@@ -222,6 +222,7 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await download(client, file: file, progress: nil) }
   func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { throw HostServiceError.unavailable }
   func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data { throw HostServiceError.unavailable }
   func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { throw HostServiceError.unavailable }
@@ -436,7 +437,7 @@ struct CodexAgentClient: AgentClient {
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult { try await HostService.post(client, "v1/approvals", ["threadId": approval.threadId, "turnId": approval.turnId, "approvalId": approval.id, "decision": decision, "answers": answers]) }
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId]) }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await HostService.download(client, file: file) }
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL { try await HostService.download(client, file: file, progress: progress) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await HostService.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data {
     CodexHostRoutes.shared.register(client)

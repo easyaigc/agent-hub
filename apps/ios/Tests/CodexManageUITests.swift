@@ -1079,6 +1079,12 @@ final class CodexManageUITests: XCTestCase {
       app.launchChineseTest()
       return
     }
+    if name.contains("testFileDownloadProgressIsolated") {
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.fileprogress")
+      app.launchArguments = ["-ui-testing"]
+      app.launchChineseTest()
+      return
+    }
     if name.contains("testFileInteractionFeedbackDEV") {
       guard ProcessInfo.processInfo.environment["HOST_KEY_DEV_APP_BUNDLE_ID"] == "com.easyai.agenthub.fileinteraction" else {
         throw XCTSkip("Requires the independent file interaction acceptance App")
@@ -18057,5 +18063,60 @@ final class EasyWorkSimulatorNotificationPermissionUITests: XCTestCase {
     attachment.name = "easywork-simulator-system-allow-" + run
     attachment.lifetime = .keepAlways; add(attachment)
     #endif
+  }
+}
+
+
+extension CodexManageUITests {
+  @MainActor func testFileDownloadProgressIsolated() async throws {
+    let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:18814/")!)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false)
+    openDesktopTestConversation(fixture)
+    let download = app.buttons["download-progress.pdf"]
+    XCTAssertTrue(download.waitForExistence(timeout: 30), app.debugDescription)
+    download.tap()
+    let failure = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "HTTP 403")).firstMatch
+    XCTAssertTrue(failure.waitForExistence(timeout: 20), app.debugDescription)
+    download.tap()
+    let loading = app.descendants(matching: .any)["file-preparation-loading"].firstMatch
+    XCTAssertTrue(loading.waitForExistence(timeout: 10), app.debugDescription)
+    XCTAssertFalse(failure.exists, "A new download must clear the previous error")
+    print("FILE_PROGRESS_TREE", app.debugDescription)
+    let percent = app.staticTexts["file-download-percent"]
+    let bytes = app.staticTexts["file-download-bytes"]
+    let speed = app.staticTexts["file-download-speed"]
+    XCTAssertTrue(percent.waitForExistence(timeout: 15), app.debugDescription)
+    XCTAssertTrue(bytes.waitForExistence(timeout: 5)); XCTAssertTrue(speed.waitForExistence(timeout: 5))
+    let first = percent.label
+    let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", first), object: percent)
+    XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 10), .completed, app.debugDescription)
+    shot("file-progress-intermediate")
+    let preview = app.buttons["preview-progress.pdf"]
+    XCTAssertTrue(preview.waitForExistence(timeout: 45), app.debugDescription)
+    let previewReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: preview)
+    XCTAssertEqual(XCTWaiter.wait(for: [previewReady], timeout: 10), .completed, app.debugDescription)
+    // The card replaces its download indicator with preview controls after verification.
+    try await Task.sleep(nanoseconds: 1_000_000_000)
+    preview.tap()
+    let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["关闭", "Close", "Done", "完成"])).firstMatch
+    let quickLook = app.otherElements["QLPreviewControllerView"]
+    let action = app.buttons["QLOverlayDefaultActionButtonAccessibilityIdentifier"]
+    XCTAssertTrue(quickLook.waitForExistence(timeout: 45), app.debugDescription)
+    XCTAssertTrue(action.waitForExistence(timeout: 20), app.debugDescription)
+    XCTAssertTrue(close.waitForExistence(timeout: 10), app.debugDescription)
+    let closeReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: close)
+    XCTAssertEqual(XCTWaiter.wait(for: [closeReady], timeout: 10), .completed, app.debugDescription)
+    try await Task.sleep(nanoseconds: 1_000_000_000)
+    shot("file-progress-preview")
+    close.tap()
+    XCTAssertTrue(quickLook.waitForNonExistence(timeout: 15), app.debugDescription)
+    let share = app.buttons["share-resource-progress.pdf"]
+    let shareReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: share)
+    XCTAssertEqual(XCTWaiter.wait(for: [shareReady], timeout: 15), .completed, app.debugDescription)
+    share.tap()
+    let save = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@ OR label CONTAINS %@", "存储到", "保存到", "Save to Files")).firstMatch
+    XCTAssertTrue(save.waitForExistence(timeout: 30), app.debugDescription)
+    shot("file-progress-share")
   }
 }

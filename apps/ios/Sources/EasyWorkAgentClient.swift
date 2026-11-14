@@ -988,10 +988,15 @@ struct EasyWorkAgentClient: AgentClient {
       return data.count==file.sizeBytes && HostService.hash(data)==file.sha256 ? destination : nil
     }.value
   }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL {
+    try Task.checkCancellation()
+    progress?(FileDownloadProgress())
     let destination=try downloadDestination(client,file:file),root=destination.deletingLastPathComponent()
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-    if let cached=try await cachedDownload(client,file:file) { return cached }
+    if let cached=try await cachedDownload(client,file:file) {
+      progress?(FileDownloadProgress(phase: .cached, receivedBytes: Int64(file.sizeBytes), totalBytes: Int64(file.sizeBytes)))
+      return cached
+    }
     let channel = try await session(client)
     let context = try object(await channel.request("runtime/context", [:]))
     let confirmedTarget = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
@@ -1001,11 +1006,18 @@ struct EasyWorkAgentClient: AgentClient {
     let value = try object(await channel.request("resource/read", params))
     let record = try object(value["transfer"] ?? [:]); guard record["threadId"] as? String == file.threadId, let transferId = record["transferId"] as? String else { throw HostServiceError.wrongHost }
     var data = Data()
+    let total = Int64(file.sizeBytes)
+    progress?(FileDownloadProgress(phase: .downloading, totalBytes: total))
+    let meter = FileDownloadMeter(progress)
     while data.count < file.sizeBytes {
+      try Task.checkCancellation()
       let response = try object(await channel.request("resource/download", ["resourceId": file.id, "transferId": transferId, "offset": data.count, "length": 192 * 1024]))
       guard let chunk = Data(base64URL: response["dataBase64"] as? String ?? ""), !chunk.isEmpty, response["offset"] as? Int == data.count else { throw HostServiceError.invalidResponse }
       data.append(chunk)
+      meter.receive(Int64(data.count), total: total)
     }
+    try Task.checkCancellation()
+    progress?(FileDownloadProgress(phase: .verifying, receivedBytes: Int64(data.count), totalBytes: total))
     guard data.count == file.sizeBytes, HostService.hash(data) == file.sha256 else { throw HostServiceError.message(L10n.tr("文件完整性校验失败")) }
     try data.write(to: destination, options: [.atomic, .completeFileProtectionUnlessOpen])
     _ = try await channel.request("resource/download-complete", ["resourceId": file.id, "transferId": transferId], id: "download-complete-" + transferId)

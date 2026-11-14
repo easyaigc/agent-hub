@@ -1474,6 +1474,11 @@
     <string name="product_06f4872bfc568cc856db3d57" formatted="false">"Opening file…"</string>
     <string name="product_37a6c5e4db9606bd0ed150e1" formatted="false">"Downloading and opening file…"</string>
     <string name="product_1db01e54aa3c1faf65475b71" formatted="false">"Preparing file…"</string>
+    <string name="product_369ca5e19c59093f19e84280" formatted="false">"Downloading…"</string>
+    <string name="product_cd9cf787c82ee0c9b8cbed07" formatted="false">"Verifying file…"</string>
+    <string name="product_d3ea6d3591c32a1a2993e3f8" formatted="false">"Opening cached file…"</string>
+    <string name="product_fad86bf65f72c74728991c22" formatted="false">"Download progress"</string>
+    <string name="product_56f0864c0868a2e795465629" formatted="false">"Download speed"</string>
     <string name="product_d079d4c5598ccaf8d0a36552" formatted="false">"Unable to Open Link"</string>
     <string name="product_8e86f9b1d54f2c5125b0deb2" formatted="false">"Copy Link"</string>
     <string name="product_2fb49d3f22b3c3dbb741ca8c" formatted="false">"The computer has not provided this file. Refresh the conversation and try again."</string>

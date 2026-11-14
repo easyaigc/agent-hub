@@ -134,14 +134,21 @@ final class CodexHostRoutes: @unchecked Sendable {
       }
     }
   }
-  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) {
-    let session = lock.withLock { () -> URLSession in
+  private func session(for request: URLRequest) -> URLSession {
+    lock.withLock { () -> URLSession in
       guard let url = request.url, let origin = origin(url), let fingerprint = pins[origin] else { return systemSession }
       let key = origin + "|" + fingerprint
       if let session = sessions[key] { return session }
       let session = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: url.absoluteString, fingerprint: fingerprint), delegateQueue: nil)
       sessions[key] = session; return session
     }
+  }
+  func download(for request: URLRequest, totalBytes: Int64, progress: FileDownloadProgressHandler?) async throws -> (Data, URLResponse) {
+    try await FileDownloadOperation(totalBytes: totalBytes, progress: progress)
+      .run(session: session(for: request), request: request)
+  }
+  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) {
+    let session = session(for: request)
     if let maxBytes {
       let (bytes, response) = try await session.bytes(for: request)
       defer { bytes.task.cancel() }
@@ -153,6 +160,46 @@ final class CodexHostRoutes: @unchecked Sendable {
       return (data, response)
     }
     return try await session.data(for: request)
+  }
+}
+/// Observe the task itself: async download(for:) does not forward intermediate
+/// download delegate callbacks on all supported OS versions.
+final class FileDownloadOperation: @unchecked Sendable {
+  private let lock = NSLock()
+  private let meter: FileDownloadMeter
+  private let totalBytes: Int64
+  private var task: URLSessionDownloadTask?
+  private var observation: NSKeyValueObservation?
+  private var cancelled = false
+  init(totalBytes: Int64, progress: FileDownloadProgressHandler?) {
+    self.totalBytes = totalBytes; meter = FileDownloadMeter(progress)
+  }
+  func run(session: URLSession, request: URLRequest) async throws -> (Data, URLResponse) {
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        let task = session.downloadTask(with: request) { [self] url, response, error in
+          lock.withLock { observation = nil; self.task = nil }
+          do {
+            if let error { throw error }
+            guard let url, let response else { throw HostServiceError.invalidResponse }
+            // URLSession owns and removes this temporary file after this callback.
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            continuation.resume(returning: (data, response))
+          } catch { continuation.resume(throwing: error) }
+        }
+        let observation = task.observe(\.countOfBytesReceived, options: [.new]) { [self] task, _ in
+          guard (task.response as? HTTPURLResponse)?.statusCode == 200 else { return }
+          meter.receive(task.countOfBytesReceived, total: totalBytes)
+        }
+        lock.withLock {
+          self.task = task; self.observation = observation
+          if cancelled { task.cancel() }
+        }
+        task.resume()
+      }
+    } onCancel: {
+      self.lock.withLock { self.cancelled = true; self.task?.cancel() }
+    }
   }
 }
 final class CodexSystemTrust: NSObject, URLSessionTaskDelegate, @unchecked Sendable {

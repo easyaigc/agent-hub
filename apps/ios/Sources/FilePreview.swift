@@ -5,6 +5,54 @@ import CryptoKit
 import MobileCore
 import FilePreviewKit
 
+struct FileDownloadProgressView: View {
+  let progress: FileDownloadProgress
+  private func size(_ bytes: Int64) -> String {
+    ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+  }
+  private var title: String {
+    switch progress.phase {
+    case .preparing: return L10n.tr("正在准备文件…")
+    case .downloading: return L10n.tr("正在下载…")
+    case .verifying: return L10n.tr("正在校验文件…")
+    case .cached: return L10n.tr("正在打开缓存文件…")
+    }
+  }
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      HStack {
+        Text(title)
+        Spacer(minLength: 8)
+        if let fraction = progress.fraction {
+          Text(fraction, format: .percent.precision(.fractionLength(0)))
+            .monospacedDigit().accessibilityIdentifier("file-download-percent")
+        }
+      }
+      if progress.phase != .preparing {
+        ProgressView(value: progress.fraction).accessibilityLabel(L10n.tr("下载进度"))
+          .accessibilityIdentifier("file-download-progress")
+        ViewThatFits(in: .horizontal) {
+          HStack { counts; Spacer(minLength: 8); speed }
+          VStack(alignment: .leading, spacing: 3) { counts; speed }
+        }.font(.caption2).monospacedDigit()
+      }
+    }.font(.caption).foregroundStyle(Palette.secondary)
+      .accessibilityElement(children: .contain)
+  }
+  private var counts: some View {
+    Text(size(progress.receivedBytes) + " / " + size(progress.totalBytes))
+      .accessibilityIdentifier("file-download-bytes")
+  }
+  private var speed: some View {
+    TimelineView(.periodic(from: .now, by: 0.5)) { _ in
+      let value = size(Int64(progress.speed(at: ProcessInfo.processInfo.systemUptime))) + "/s"
+      Text(value)
+        .accessibilityLabel(L10n.tr("下载速度") + " " + value)
+        .accessibilityIdentifier("file-download-speed")
+    }
+  }
+}
+
 /// An immutable downloaded snapshot. Renderers receive no credentials or transport.
 struct FilePreviewItem: Identifiable {
   let url: URL

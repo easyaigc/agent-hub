@@ -3964,6 +3964,7 @@ struct RemoteFileView: View {
   @State private var image: UIImage?
   @State private var loading = false
   @State private var error: String?
+  @State private var downloadProgress = FileDownloadProgress()
   @State private var activeVersion:ResourceDisplayVersion?
   @State private var downloadOwner:UUID?
   @State private var mounted = false
@@ -4007,6 +4008,10 @@ struct RemoteFileView: View {
           }
         }
       }
+      if loading && localURL == nil {
+        FileDownloadProgressView(progress: downloadProgress)
+          .accessibilityIdentifier("file-preparation-loading")
+      }
       if loading && localURL != nil { Text(L10n.tr("文件已校验，可预览；正在等待电脑回执。")).font(.caption2).foregroundStyle(Palette.secondary) }
       if let error { Text(error).font(.caption2).foregroundStyle(.red) }
     }.padding(10).background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 12))
@@ -4024,6 +4029,7 @@ struct RemoteFileView: View {
         // A logical resource ID survives content changes. Clear the card's old
         // availability and fence late downloads by the full current version.
         activeVersion=displayVersion;downloadOwner=nil;loading=false
+        downloadProgress = FileDownloadProgress()
         localURL=nil;image=nil;error=nil
         if client.agentConnection?.target.agentId=="easywork" {
           let version=displayVersion,owner=UUID();downloadOwner=owner;loading=true
@@ -4061,6 +4067,8 @@ struct RemoteFileView: View {
     let context=readingContext
     guard activeVersion==version,displayVersion==version,(!loading || (preview && localURL != nil)) else { return }
     let owner=UUID();downloadOwner=owner;loading=true
+    downloadProgress = FileDownloadProgress()
+    error = nil
     // The current authenticated download can already have stored verified bytes
     // while its original completion receipt remains pending. Observe only that
     // exact target/thread/content cache; never replay a transfer to open it.
@@ -4083,7 +4091,13 @@ struct RemoteFileView: View {
     }
     defer { verifiedLocalObserver.cancel();if downloadOwner==owner { loading=false } }
     do {
-      let downloaded = try await AgentClients.resolve(client).download(client, file: file)
+      let downloaded = try await AgentClients.resolve(client).download(client, file: file, progress: { value in
+        Task { @MainActor in
+          guard mounted, loading, activeVersion == version, displayVersion == version,
+            downloadOwner == owner, value.sampledAt >= downloadProgress.sampledAt else { return }
+          downloadProgress = value
+        }
+      })
       guard !Task.isCancelled,activeVersion==version,displayVersion==version,downloadOwner==owner else { return }
       let resource=file
       let snapshot=try await Task.detached(priority:.userInitiated) { try VerifiedResourceExport(file:resource,url:downloaded).validatedSnapshot() }.value

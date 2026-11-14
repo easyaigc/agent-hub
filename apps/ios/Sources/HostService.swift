@@ -4,6 +4,40 @@ import MobileCore
 import Security
 import UniformTypeIdentifiers
 
+struct FileDownloadProgress: Sendable {
+  enum Phase: Sendable { case preparing, downloading, verifying, cached }
+  var phase: Phase = .preparing
+  var receivedBytes: Int64 = 0
+  var totalBytes: Int64 = 0
+  var bytesPerSecond: Double = 0
+  var sampledAt: TimeInterval = ProcessInfo.processInfo.systemUptime
+  var fraction: Double? {
+    totalBytes > 0 ? min(1, max(0, Double(receivedBytes) / Double(totalBytes))) : nil
+  }
+  func speed(at uptime: TimeInterval) -> Double {
+    phase == .downloading && uptime - sampledAt < 1.5 ? bytesPerSecond : 0
+  }
+}
+typealias FileDownloadProgressHandler = @Sendable (FileDownloadProgress) -> Void
+
+/// Samples actual received bytes, at most four UI updates per second.
+final class FileDownloadMeter: @unchecked Sendable {
+  private let lock = NSLock()
+  private let report: FileDownloadProgressHandler?
+  private var lastTime = ProcessInfo.processInfo.systemUptime
+  private var lastBytes: Int64 = 0
+  init(_ report: FileDownloadProgressHandler?) { self.report = report }
+  func receive(_ bytes: Int64, total: Int64) {
+    lock.lock(); defer { lock.unlock() }
+    let now = ProcessInfo.processInfo.systemUptime
+    let elapsed = now - lastTime
+    guard elapsed >= 0.25 || bytes == total else { return }
+    report?(FileDownloadProgress(phase: .downloading, receivedBytes: bytes, totalBytes: total,
+      bytesPerSecond: Double(max(0, bytes - lastBytes)) / max(0.001, elapsed), sampledAt: now))
+    lastTime = now; lastBytes = bytes
+  }
+}
+
 // Opt-in metadata for the independent physical acceptance app. Keep capture
 // traffic out of the timed interval; never record a URL, header, body or token.
 enum NativeReadAcceptanceTiming {
@@ -362,16 +396,17 @@ struct HostService {
     else { throw HostServiceError.wrongHost }
     return file
   }
-  static func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+  static func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL {
     try validateResource(client, file: file)
+    progress?(FileDownloadProgress())
     // Check the source before consulting the cache, so a prior preview cannot hide an update.
     for attempt in 0..<2 {
       try Task.checkCancellation()
       guard let current = try await currentAttachment(client, file: file) else {
         // Older Hosts retain their exact-version download behavior.
-        return try await downloadVersion(client, file: file)
+        return try await downloadVersion(client, file: file, progress: progress)
       }
-      do { return try await downloadVersion(client, file: current) }
+      do { return try await downloadVersion(client, file: current, progress: progress) }
       catch HostServiceError.rejected(409, _) where attempt == 0 {
         // A writer can replace the file between resolution and download. Resolve once more.
       }
@@ -431,21 +466,36 @@ struct HostService {
       .appendingPathComponent(hash(Data(scope.utf8)), isDirectory: true)
       .appendingPathComponent(hash(version), isDirectory: true)
   }
-  private static func downloadVersion(_ client: Client, file: RemoteAttachment) async throws -> URL {
+  private static func downloadVersion(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL {
     let directory = try resourceDirectory(client, file: file)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let destination = directory.appendingPathComponent(
       (file.name as NSString).lastPathComponent)
     if let cached = try? Data(contentsOf: destination), cached.count == file.sizeBytes,
       hash(cached) == file.sha256 {
+      try Task.checkCancellation()
+      progress?(FileDownloadProgress(phase: .cached, receivedBytes: Int64(cached.count), totalBytes: Int64(file.sizeBytes)))
       return destination
     }
     var query = ["threadId": file.threadId, "id": file.id]
     if let target = client.readingTarget {
       query["target"] = String(decoding: try JSONEncoder().encode(target), as: UTF8.self)
     }
-    let data = try await bytes(
-      request(try url(client, "v1/attachments", query), token: CredentialVault.token(client.id)))
+    let total = Int64(file.sizeBytes)
+    progress?(FileDownloadProgress(phase: .downloading, totalBytes: total))
+    let (data, response) = try await CodexHostRoutes.shared.download(
+      for: request(try url(client, "v1/attachments", query), token: CredentialVault.token(client.id)),
+      totalBytes: total, progress: progress)
+    guard let http = response as? HTTPURLResponse else { throw HostServiceError.invalidResponse }
+    guard http.statusCode == 200 else {
+      let error = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+      var detail = (error?["error"] as? String ?? L10n.tr("电脑请求失败（\(http.statusCode)）")) + "\nHTTP \(http.statusCode)"
+      if let code = error?["code"] as? String { detail += " · " + code }
+      if let id = error?["requestId"] as? String { detail += "\n" + L10n.tr("诊断编号") + "：" + id }
+      throw HostServiceError.rejected(http.statusCode, detail)
+    }
+    try Task.checkCancellation()
+    progress?(FileDownloadProgress(phase: .verifying, receivedBytes: Int64(data.count), totalBytes: total))
     guard data.count == file.sizeBytes, hash(data) == file.sha256 else {
       throw HostServiceError.message(L10n.tr("下载文件完整性校验失败"))
     }

@@ -21285,6 +21285,29 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilteredEventsTest.kt": "9fbfc5391c0ae50041fd6ac625d1df49b40a3caf4ae37b1f88adf32283225a12",
         "apps/ios/Sources/SessionStore.swift": "51acd69ed807f15f921886d0f67af223d9c8f004b1acdde3c8b076ea6c7fc297"
       }
+    },
+    {
+      "id": "historical-owner-ordinal-identity-20261114",
+      "baseCommit": "527b800f73a85356cf486b7008d9b80e11db3068",
+      "features": ["F17", "F31"],
+      "summary": "Qualify original-owner ordinal rows by their real Turn across all desktop history projections; reconcile legacy exact aliases without text deduplication. Android controlled real-history read-only validation and iOS/production limitations are recorded separately.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "a99d44daaf17c40c16d000fc473a666fd6d9cd2f118c22113cd9a8fcc3a9e3f0",
+        "packages/codex-adapter/src/desktop-history-identity.ts": "11f94db4a32bd971c8c246959481b412436db0b6ddb61aa3d41838c5698dff5b",
+        "scripts/desktop-history-identity-smoke.mjs": "8012c9ff643fcd8b4e876427ff3eb4a8f9996c60536659e7475791260998329b",
+        "scripts/desktop-known-owner-recovery.test.mjs": "6187cfd8631b9f0cbb4f0071fe90838eb582df35a9666f8416c76e8b47e35c9f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeColdThreadLiveTest.kt": "0874285042030f5ae10634da16a2a2689a12beeb11c7a0cde024d6bd2355ca37",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeHistoryTransitionLiveTest.kt": "b6abc4e3e273a8096ea2339cd8eafc99e862f015cfadaf24f38ab85bffee7cdb"
+      }
+    },
+    {
+      "id": "pr3-physical-running-read-followup-20261114",
+      "baseCommit": "527b800f73a85356cf486b7008d9b80e11db3068",
+      "features": ["F17", "F31"],
+      "summary": "Opt-in Android physical read-only observation of an existing original-desktop task: native stop/earlier controls across concurrent real history/events, local expansion, no command submission. Combined candidate passes 17 physical synthetic-provider regressions and two real read-only scenarios; iOS, remote networking and production remain unverified.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePr3RunningReadLiveTest.kt": "2eb687d617e248b37a6c9631f194d52a4d31e3b5c9732519f7d186000f49c720"
+      }
     }
   ]
 }

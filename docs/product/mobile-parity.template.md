@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-14 F17／F31／UI05：Codex Host 统一历史读取与原 owner 的轮次内序号标识，避免切换实时状态时重复旧消息或跨轮覆盖；相同正文的不同原消息继续保留。双端共用 Host，Android 实体手机只读切换及三次刷新通过，iOS、正式部署与新冷会话发送场景未新增验收，见[专项记录](../acceptance/history-owner-identity-20261114.md)。
+
 2026-11-13 F17／F31／UI05 补充：双端已接入共享快照排序规则，避免旧历史和旧事件覆盖新任务状态；较早前缀页保留当前运行时。共享 JVM 139 项通过，Android 应用及测试 Kotlin 编译通过；原生执行、真机视觉和 iOS 构建未验收，见[专项记录](../acceptance/thread-filtered-events-20261113.md#additional-active-task-investigation)。
 
 > iOS × EasyWork 当前开发、验收与交付状态唯一维护于 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md)。本文件继续定义全局F与共同断言；下方既有状态叙述保留为对应时点的历史证据，不另行维护该任务当前完成数。

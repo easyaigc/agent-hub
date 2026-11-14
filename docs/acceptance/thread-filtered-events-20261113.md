@@ -1,5 +1,39 @@
 # Thread-filtered event cursors and stable conversation controls
 
+## PR3 physical follow-up with the identity repair, 2026-11-14
+
+The public PR `easyaigc/agent-hub#3` was read directly: it remains open and unmerged, with head `527b800f73a85356cf486b7008d9b80e11db3068` on `codex/fix-empty-thread-event-reloads`. That is the local committed base; the Host identity repair is an uncommitted addition on the same branch, not a second branch requiring a merge. No remote PR, branch or production service was updated in this follow-up. Repository guidance now names Gitea as the development upstream; the historical GitHub PR is not silently migrated or pushed around that rule.
+
+The current candidate was rebuilt and tested on the USB-attached Redmi Note 8 Pro, Android 11/API 30, with the separate acceptance application and preserved default storage:
+
+| Original requirement / follow-up                                                      | This physical run                                                            | Result   |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------- |
+| Filtered empty batches, real readiness loss and reset recovery                        | `MobileFilteredEventsTest`, synthetic Host providers                         | 3 passed |
+| Concurrent response ordering, completion, legacy versions and current/stale readiness | `MobileRunningSnapshotOrderTest`, synthetic Host providers                   | 8 passed |
+| Earlier entry during latest refresh, queued paging, target/foreground changes         | `MobileEarlierLoadingUiTest`, synthetic Host providers                       | 6 passed |
+| Already-running original desktop task through real concurrent reads                   | `NativePr3RunningReadLiveTest`, real isolated Host and original owner        | 1 passed |
+| Real historical transcript followed by live events and three fresh reads              | `NativeHistoryTransitionLiveTest`, real primed Host and already-loaded owner | 1 passed |
+
+Total: 19 executed physical tests, no failures. The active-task observation lasted 42,978 ms and received 13 history reads plus 24 event batches (22 snapshots and two cursor-only batches). A continuous native state observer recorded zero invalidations of stop capability, write readiness or earlier-data availability. Native semantics asserted both controls remained enabled, and clicking the local earlier entry expanded the visible limit. Independent original-desktop reads before and after confirmed the same in-progress turn, identical user-input digests, and no new input. Before/after app-owned screenshots were inspected. This is evidence for the sampled controls and time interval, not a pixel-by-pixel proof against every rendering defect.
+
+The history-transition rerun preserved the four canonical rows and their text once through three refreshes, with zero new operations; an independent desktop witness confirmed the user count remained two. This rerun uses a primed already-loaded owner and does not replace the separately documented seeded Host-retention test or claim another cold-owner recovery. See [the identity repair record](history-owner-identity-20261114.md).
+
+The application APK SHA-256 is `64544110f71e086d15f4bf7dad586f94bfdf6e2460af0a4413f28347dfd6cd08`; the instrumentation APK is `535a69c9d7f5138c06acb3050710a508c3540491ea32bb00268cd61495715c15`. Private evidence contains exact source fingerprints, native logs, screenshots and desktop witnesses. The isolated Host was stopped and the USB forwarding and private phone fixtures removed. Formal configuration and Codex processes were preserved.
+
+Limits remain: USB does not establish cellular/Tailscale behavior; Windows does not establish iOS compilation or execution. Deliberately delayed responses and completion transitions are covered by synthetic-provider native tests, while the real running-task test is read-only. A later test-process-only CLI-path correction passed the previously failing Windows metadata-preparer HTTP fixture, both alone and in `pnpm check`; the complete check then stopped at a separate file-transfer symlink fixture with Windows `EPERM`. See [the follow-up record](history-owner-identity-20261114.md#windows-cli-path-follow-up-2026-11-14). This is not a full-suite pass or production release. Earlier sections below are historical evidence with their original limitations, superseded only within this follow-up's explicit scope.
+
+2026-11-14 follow-up: the separately observed duplicate historical rows are now traced to reader/owner ordinal identity mismatch and repaired at the Host projection boundary. The original observation below is preserved. Current regression and physical read-only evidence, including its exact limitations, are in [the identity repair record](history-owner-identity-20261114.md).
+
+## Physical Android follow-up, 2026-11-14
+
+Source `527b800f73a85356cf486b7008d9b80e11db3068` was built and tested on a USB-attached Redmi Note 8 Pro running Android 11 (API 30), using the separate acceptance application identity. All 139 shared-core JVM tests passed. Physical instrumentation passed `MobileFilteredEventsTest` (3), `MobileRunningSnapshotOrderTest` (8), `MobileEarlierLoadingUiTest` (6), and `NativeNewChatDestinationTest` (5): 22 tests, no failures. These four classes use synthetic Host read providers; they verify native state and controls rather than actual model execution.
+
+Two separate real-desktop scenarios also passed through an isolated Windows Host and USB port forwarding: the native project/folder picker created one original-desktop chat and received a real model reply; a dedicated older chat with no original owner before the test was opened and continued once from the native composer. Independent desktop followers confirmed one new input per scenario and completed replies. The old chat retained its two canonical prior rows unchanged and ended idle with control available. The cold-chat case is opt-in through `NativeColdThreadLiveTest` and requires a private fixture; it does not target an ordinary user work chat.
+
+The new-chat case used the same app APK as the 22-test regression run. Adding the cold-chat test changed only the instrumentation APK. Private logs, APK digests, independent desktop readbacks and native screenshots were retained locally. No production Host or Codex process was restarted or upgraded. The temporary Host was stopped and its USB forwarding removed afterward.
+
+This does not establish cellular/Tailscale behavior, iOS execution, or an absence of every visual defect. In particular, the cold-chat screenshot showed the prior message pair twice after the live transition, while the independent desktop had only one prior user input and the canonical history preserved two prior rows. That is a separate rendering observation; historical-row deduplication was not an assertion in this connection test and its cause remains unverified. The result must not be reported as full release acceptance.
+
 Scope: F17/F31, UI05, S02/S11. This repairs conversation synchronization and Android earlier-message controls. It does not repair a missing desktop runtime owner, replay inputs, or change Host permissions.
 
 ## Failure and repair

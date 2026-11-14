@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-11-14 F17／F31／UI05：历史切换实时连接后，同一原消息仅显示一次；不同轮次或不同原项即使正文相同仍分别显示。Host 在投影边界统一标识，双端沿用原排版、控件、文案和设计 token。Android 实体手机与 iOS 未验范围见[专项记录](../acceptance/history-owner-identity-20261114.md)。
+
 2026-11-13 F17／F31／UI05 补充：执行中的停止按钮、较早消息入口和任务完成展示以最新已接受的会话快照为准，晚到旧历史或旧事件不得使界面回退。正常更新的完成和失去控制状态仍立即生效，不以延时或保留假状态掩盖变化。两端同步采用共享排序规则；源码回归和原生视觉验收分别记录于[专项记录](../acceptance/thread-filtered-events-20261113.md#additional-active-task-investigation)。
 
 > iOS × EasyWork 当前实施与验收状态唯一维护于 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md)。本文件继续维护UI、状态、token及文案规范；历史结果不作为另一套当前进度。

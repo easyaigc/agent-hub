@@ -1,0 +1,315 @@
+{
+  "version": 2,
+  "date": "2026-11-15",
+  "features": ["F30", "F31", "F59"],
+  "status": "main-integration-controlled-acceptance-passed-not-deployed",
+  "head": "90b2016064f135672819f51c2871f3c7ed98a5e5",
+  "containsUncommittedWork": true,
+  "sourceFiles": {
+    "apps/android/src/androidTest/assets/localization-catalog.json": "3d5849bb1c02e8830f8c5a91b4a705133dbbc7cb9e5ea4135c5bd70738c351c5",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "a320b97a4f7ec85c6f708ecd3f91daf2a5c061dd429d58adf5416a06178a55bc",
+    "apps/android/src/main/res/values/product_strings.xml": "7c009c974263efcabe4e88b17d612b2eb566c565a65be0ba7356cfa42b1f64b8",
+    "apps/host-agent/src/direct-discovery.ts": "fc07438cbf2d4ee305b797a5a9d46c06744ef765a00f761b6e1a3ae2fffdc484",
+    "apps/host-agent/src/resumable-uploads.ts": "d99aa25b9859623443e576f36d101fa2a57f6833b708ab8671418f1c4261bddf",
+    "apps/host-agent/src/runtime-server.ts": "3e7366fe0d4f27943fed42fbef54450adb9d6f65ef2b0e667354f614e035cf30",
+    "apps/host-agent/src/upload-timeouts.ts": "3e7f0276e110676e2928ee429b09b3b36611ee903ed16429b9c9cec519256047",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "5eeb0620809faf3c4f8a06c6b6be3e60914b041fca844f7b2ea0aa02849df326",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "45e293fd09e71fafd088cbebb50299f637d69b311f68490cb5059aab57e248e0",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "9926871330a045b08c813ba43eefb0b216ad035ea48dd20c804839e3eda25cf9",
+    "apps/ios/Sources/AgentClient.swift": "e06af966980b9c60ca434a2d3611fc0e8b07a30b90b36aa607d9baecbd2a3835",
+    "apps/ios/Sources/CodexDiscovery.swift": "26ee488f45aeece331f88fd7004277993b843ee125d360e05fb45087fd013116",
+    "apps/ios/Sources/CodexManageApp.swift": "e5a6cf2a310527554560265e1e3f7b3289ab85776445e8bf1b0ece0111ea102b",
+    "apps/ios/Sources/EasyWorkAgentClient.swift": "f711966cfbc7dcfbb7d1e5bb69b84a5ca6f0a14e54021391864d5bd32884088c",
+    "apps/ios/Sources/EasyWorkSession.swift": "c5b164ad27feca6978ea2b055737e9bbbba68802cbc6b208aa892373a280b43a",
+    "apps/ios/Sources/FileTransfers.swift": "24373a6c61f9a1dbd45fda54c4ffd1650725281f9bb4fb30de41e3c62ad1ccdb",
+    "apps/ios/Sources/LocalAttachmentPreparation.swift": "e9c356481bef6da54860c55656eb48f93f1b393c6b0ba7ae0185d030a471c860",
+    "apps/ios/Sources/RootView.swift": "d6e2a727d15afd417540300c9ce8bc3e48dc148be64e75627cf47616a46aff58",
+    "apps/ios/Sources/SessionStore.swift": "bbaabb282c13b497f92eb2c9d91d1aa36e94a02f49553974f895bf66240e85e1",
+    "apps/ios/Sources/Uploads.swift": "43e630d26f61c0caca774856225e8bb7e2355cb66db2f8486f474ebeb51b1974",
+    "apps/ios/Tests/UploadResumeUITests.swift": "ccda83987c955d3efedf287e5be3569c27d946563ee0509570adaf0b9a2da785",
+    "package.json": "72b9f710412aea349e8ab504cc706f8b16311f3c576787342e93627180cf50df",
+    "packages/codex-adapter/src/desktop-creation.ts": "c60f825e9f7b7e66e709239ba2b0384f16d8f2222dd00644b193614116f961dd",
+    "packages/codex-adapter/src/runtime-session.ts": "0c631b08966fa5be7d5512c76812eaa169904ef725a07e41c7fe6862c9990e6a",
+    "packages/codex-adapter/src/upload-publication.ts": "06e4b8a83b1a4a317ea75aa542f4909f48a8d23eda1c90257425944ddbf77dc5",
+    "packages/protocol/src/index.ts": "307f83d0346698bf96923c7d9491e4cc6efba0ef81b578ebeb228b590c4e6391",
+    "packages/protocol/src/uploads.ts": "02835b43be4b30fb0b59e85f5d038314c69e40414fdbc8f7a7e21ba7c6072743",
+    "scripts/easywork-resumable-upload-native-smoke.mjs": "5c9b7b0ce156010fb5dc74d81a946ef4e0d06d49e4a9b18d0803ec07204d4410",
+    "scripts/resumable-upload-http.test.mjs": "1b2bcad059e5855b6513182bd246885ceff4838061623aaf137b97e1c3d3c192",
+    "scripts/resumable-upload-process.test.mjs": "9fc13da8134ade1f0fa62a49fed1144fea613706e690aa24c2f41d4bf4c4991e",
+    "scripts/resumable-uploads.test.mjs": "ac302c78ab4c6d5457deb615e8cbb2733ba8762dc532cfcc873b610b39d5c189",
+    "scripts/upload-resume-ios-acceptance.mjs": "9b11c0e8c0ac932b772c9d4e43ac3a4f33e5ffc33386bed83556994697df3558",
+    "scripts/upload-wire-cancellation-native-smoke.mjs": "ee6cee842822a19ebeee7fe8f323ab5d53a911f972d985424d3d946557c412bc"
+  },
+  "iosBuild": {
+    "command": "pnpm build:ios -jobs 2",
+    "passed": true,
+    "sourceStable": true,
+    "sourceFingerprint": "5d62fbb670987d2c784ce3dde6d75e15c793589e28502ba16059e9e01b8fd637",
+    "appPackageFingerprint": "df4f05f03304bfbd65ec9b8192e78427c9ae3fcca2f274fcfeb9a66630554866",
+    "sourceFileCount": 78,
+    "appFileCount": 47
+  },
+  "backend": {
+    "testsPassed": 14,
+    "testsFailed": 0,
+    "largeFileMiB": 64,
+    "hostProcessKillRecovery": {
+      "fileMiB": 16,
+      "resumeMiB": 8,
+      "pidChanged": true,
+      "uniqueFile": true,
+      "hashMatched": true,
+      "turnStartCount": 0
+    },
+    "attachmentAndCreationPublicationMiB": 16,
+    "boundary": "production runtime HTTP/storage; Codex CLI fixture; attachment/creation use production methods with fixture readiness and driver; no live Electron"
+  },
+  "native": {
+    "kind": "XCTest/XCUIAutomation on isolated iOS Simulator bundle",
+    "bundle": "com.easyai.agenthub.uploadresume.acceptance",
+    "boundary": "production iOS UploadCenter and views with loopback server using production ResumableUploads; routing/auth/completion callback fixture; no production phone data",
+    "scenarios": [
+      {
+        "scenario": "cancel",
+        "attemptId": "122e6fd7-3af0-41a9-8da9-661c4f1dc6d4",
+        "passed": true,
+        "testCounts": {
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "runtime": "26.0",
+        "simulatorDeleted": true,
+        "state": {
+          "committed": 4456448,
+          "phase": "cancelled",
+          "disconnects": 0,
+          "timeouts": 0,
+          "timeoutInjected": false,
+          "publications": 0,
+          "hashOK": false,
+          "restartOffset": 4456448,
+          "resumedAfterRestart": false,
+          "cancelDropped": true,
+          "cancelRequests": 2,
+          "cancelBusyInjected": 1,
+          "statusAfterRestart": 1,
+          "chunksAfterCancel": 0,
+          "cancelsAfterRestart": 0,
+          "publicationUncertain": false,
+          "recoveryCompleteBlocked": false,
+          "cancelConflict": 0,
+          "recoveryCompletes": 0,
+          "chunksAfterPublication": 0,
+          "firstOffset": 0,
+          "lastOffset": 4194304,
+          "requestCount": 17
+        },
+        "proofSHA256": "bc8ee045cd1fc47b3bbb5fdcb6726c581fc24ad5d5766526abb452399eb92bf4"
+      },
+      {
+        "scenario": "cancel",
+        "attemptId": "dbc8419c-df85-4803-b8b7-7928a817ad4a",
+        "passed": true,
+        "testCounts": {
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "runtime": "26.0",
+        "simulatorDeleted": true,
+        "state": {
+          "committed": 4194304,
+          "phase": "cancelled",
+          "disconnects": 0,
+          "timeouts": 0,
+          "timeoutInjected": false,
+          "publications": 0,
+          "hashOK": false,
+          "restartOffset": 4194304,
+          "resumedAfterRestart": false,
+          "cancelDropped": true,
+          "cancelRequests": 2,
+          "cancelBusyInjected": 1,
+          "statusAfterRestart": 1,
+          "chunksAfterCancel": 0,
+          "cancelsAfterRestart": 0,
+          "publicationUncertain": false,
+          "recoveryCompleteBlocked": false,
+          "cancelConflict": 0,
+          "recoveryCompletes": 0,
+          "chunksAfterPublication": 0,
+          "firstOffset": 0,
+          "lastOffset": 3932160,
+          "requestCount": 16
+        },
+        "proofSHA256": "0c7fa83c74eae71ebefac851a0a927868710fef2e001d19a92b04dbfd37105a9"
+      },
+      {
+        "scenario": "resume",
+        "attemptId": "43b6e6e1-faae-49a8-9686-a38fe7ebaa79",
+        "passed": true,
+        "testCounts": {
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "runtime": "26.0",
+        "simulatorDeleted": true,
+        "state": {
+          "committed": 67108864,
+          "phase": "completed",
+          "disconnects": 1,
+          "timeouts": 1,
+          "timeoutInjected": true,
+          "publications": 1,
+          "hashOK": true,
+          "restartOffset": 21102592,
+          "resumedAfterRestart": true,
+          "cancelDropped": false,
+          "cancelRequests": 0,
+          "cancelBusyInjected": 0,
+          "statusAfterRestart": 0,
+          "chunksAfterCancel": 0,
+          "cancelsAfterRestart": 0,
+          "publicationUncertain": false,
+          "recoveryCompleteBlocked": false,
+          "cancelConflict": 0,
+          "recoveryCompletes": 0,
+          "chunksAfterPublication": 0,
+          "firstOffset": 0,
+          "lastOffset": 66977792,
+          "requestCount": 338
+        },
+        "proofSHA256": "7dd126215bc5781270b26ab735f3c61ff64bf8e11fc3975ac6bfb7be0220115a"
+      },
+      {
+        "scenario": "verifying-cancel",
+        "attemptId": "4ac27eaa-eaec-4be7-bc55-62eb139c9591",
+        "passed": true,
+        "testCounts": {
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "runtime": "26.0",
+        "simulatorDeleted": true,
+        "state": {
+          "committed": 4194304,
+          "phase": "completed",
+          "disconnects": 0,
+          "timeouts": 0,
+          "timeoutInjected": false,
+          "publications": 1,
+          "hashOK": true,
+          "restartOffset": 4194304,
+          "resumedAfterRestart": false,
+          "cancelDropped": false,
+          "cancelRequests": 2,
+          "cancelBusyInjected": 0,
+          "statusAfterRestart": 2,
+          "chunksAfterCancel": 0,
+          "cancelsAfterRestart": 0,
+          "publicationUncertain": true,
+          "recoveryCompleteBlocked": true,
+          "cancelConflict": 2,
+          "recoveryCompletes": 1,
+          "chunksAfterPublication": 0,
+          "firstOffset": 0,
+          "lastOffset": 3932160,
+          "requestCount": 16
+        },
+        "proofSHA256": "d298e32c834191cd46190972cab279d3c27b472c3ea7ff389f6d24fd19b69ebb"
+      }
+    ],
+    "screenshotsReviewed": {
+      "rate": "1.2 MB/s",
+      "remainingSeconds": 53,
+      "committedMB": 4.2,
+      "totalMB": 67.1
+    },
+    "plan": "resume, cancel, verifying-cancel, and one predeclared additional cancel run; 4 passed, 0 failed, 0 skipped",
+    "harnessLoader": {
+      "sha256": "45a858c447b7f15fac2ec0db92b6b4ec2478a16cd771ca9e72ee90a57f00a21f",
+      "purpose": "Retain failed fixture/simulator state and require exactly one XCTest pass with zero skips; acceptance script only; no production code or assertion weakened."
+    }
+  },
+  "wireCancellation": {
+    "platform": "macOS Foundation/KVO/URLSession with production UploadWireOperation extracted verbatim",
+    "passed": 30,
+    "failed": 0,
+    "payloadMiB": 16,
+    "modes": {
+      "dataTask": 15,
+      "fromFile": 15
+    },
+    "bytesSentBeforeCancellation": "2-4 MiB",
+    "cancellationMilliseconds": "0-2",
+    "sourceSHA256": "43e630d26f61c0caca774856225e8bb7e2355cb66db2f8486f474ebeb51b1974",
+    "operationSHA256": "56ca3edf93f3dd0c936231c8ed8eb886198731170785307d3186e24274a2043e",
+    "scriptSHA256": "ee6cee842822a19ebeee7fe8f323ab5d53a911f972d985424d3d946557c412bc",
+    "logSHA256": "5ef1fa4c535b7acf8bf9021b76e93888ef4d60cbdcd6081490b65370c009316c"
+  },
+  "checks": {
+    "pnpmCheck": {
+      "passed": true,
+      "exitCode": 0,
+      "elapsedMs": 896018,
+      "node": "v24.19.0",
+      "testChildUmask": "022",
+      "logSHA256": "4db492e71f9b8083d2fe0c0b7fb2681ab0b971709e727ecacb0f47ef4462aaca",
+      "platformSkips": "Full repository chain retains its explicit platform-dependent skips; four dedicated upload XCTest runs have zero skips."
+    },
+    "typecheck": "passed",
+    "localization": "passed",
+    "mobileParity": "passed",
+    "nativeSourceFilesPinned": 78,
+    "productionTypeScriptFilesPinned": 134,
+    "compiledJavaScriptFilesPinned": 121,
+    "formatAfterEvidenceUpdate": "passed"
+  },
+  "notVerified": [
+    "physical cellular or device VPN",
+    "Tailscale MagicSock ReceiveIPv4 fault reproduction or vendor fix",
+    "live EasyWork upload interoperability",
+    "Android upload UI/orchestration",
+    "background upload guarantee",
+    "production deployment",
+    "new Windows physical acceptance"
+  ],
+  "resources": "Scenario payloads, loopback fixtures, native run directories and four task simulators released; xcodebuild clean succeeded. Delivery worktree and remaining rebuildable caches will be released after commit and remote verification. Minimal evidence retained privately.",
+  "mainIntegration": {
+    "baseCommit": "90b2016064f135672819f51c2871f3c7ed98a5e5",
+    "state": "validated-for-commit",
+    "scope": "upload-only patch extracted from preserved task baseline; newer main conversation/composer/project contracts preserved; EasyWork upload response scope retains current main device/direction/file invariants",
+    "fixes": [
+      "Preserve current main attachments-v2 namespace and strict EasyWork scope validation.",
+      "Cancel intent persisted before stopping URLSession; cancellation/KVO invalidation/reference release occur outside NSLock.",
+      "Bounded query-first recovery for upload_busy 409 cancellation races.",
+      "44pt minimum pause/resume/cancel hit targets with exact accessibility identifiers."
+    ]
+  },
+  "historicalDevelopmentSnapshot": {
+    "head": "fdfb23f415ac027c6f81573410ececef355e77a7",
+    "iosBuild": {
+      "command": "pnpm build:ios -jobs 2",
+      "passed": true,
+      "sourceFingerprint": "ba59fecfc4e7b57200a5593aef804a7859fe16a91580caca232b361173dbbe81",
+      "appPackageFingerprint": "52309911760b89f1cde34b1deb5e508f09925a18ebf34cb80e16fa329adfe263"
+    },
+    "checks": {
+      "typecheck": "passed",
+      "localization": "passed",
+      "mobileParity": "passed",
+      "pnpmCheck": "not-passed: original root invocation stopped on formatting; remaining snapshot commands executed separately",
+      "globalFormat": "not-green: unrelated plan status.json; own manifest independently reformatted and checked",
+      "globalLint": "not-green: three no-empty errors in unrelated dev-preview acceptance script"
+    },
+    "note": "Earlier combined development workspace and packages are historical only; current main integration proof is above."
+  },
+  "historicalFailedGuard": {
+    "attemptId": "2829a489-3305-43f3-84a4-08b693500fba",
+    "state": "failed; not counted as a pass",
+    "observation": "Cancellation test timed out while server remained uploading; no cancel observed. Old simulator had already been released, so no unique causal attribution. Current candidate hardens cancellation lock/KVO and busy races and enlarges hit targets; deterministic conflict/lost-response and native stress verified above."
+  }
+}

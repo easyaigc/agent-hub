@@ -1832,3 +1832,32 @@
 "当前连接不支持新建对话。" = "This connection does not support new conversations.";
 
 "正在恢复本地数据…" = "Restoring local data…";
+
+// Resumable upload progress
+"已暂停" = "Paused";
+"秒" = "s";
+"上传请求失败" = "Upload request failed";
+"正在核对上传进度…" = "Checking saved upload progress…";
+"此文件正在上传" = "This file is already uploading";
+"等待网络恢复" = "Waiting for connection";
+"上传完成" = "Upload complete";
+"上传已取消" = "Upload cancelled";
+"上传中断，进度已保留" = "Upload interrupted; progress saved";
+"正在上传…" = "Uploading…";
+"排队等待上传" = "Queued for upload";
+"正在等待传输进展…" = "Waiting for transfer progress…";
+"继续上传" = "Resume upload";
+"暂停" = "Pause";
+"取消上传" = "Cancel upload";
+"电脑上的上传暂存已过期，请重新上传" = "The saved upload has expired on the computer. Upload the file again.";
+"原上传进度已保留，请使用支持续传的电脑端继续" = "Your original upload progress is saved. Continue with a computer version that supports resuming.";
+"正在上传（不支持续传）" = "Uploading (resume unavailable)";
+"此电脑版本不支持断点续传，中断后需重新上传" = "This computer version cannot resume interrupted uploads. An interrupted file must be uploaded again.";
+"剩余约 %@ 秒" = "About %@ seconds remaining";
+"上传已取消，请移除此附件后重新选择" = "Upload cancelled. Remove this attachment and select it again.";
+"停止上传" = "Stop upload";
+"停止后保留消息，电脑暂存由电脑端管理" = "Stopping keeps your message. The computer manages its temporary file.";
+"文件已发送，正在等待电脑确认…" = "File sent; waiting for the computer to confirm…";
+"文件 %@/%@" = "File %@/%@";
+"总体进度" = "Overall progress";
+"正在确认取消结果…" = "Checking cancellation result…";

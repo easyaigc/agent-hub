@@ -412,7 +412,7 @@ actor EasyWorkRemoteSession {
             if error?["code"] as? String == "stale_read_position" { throw HostServiceError.rejected(409, message) }
             // An authenticated absence is the explicit query result that lets
             // the file UI offer uploading the same saved intent again.
-            if method == "resource/upload-status", error?["code"] as? String == "transfer_not_found" {
+            if method == "resource/upload-status", ["NOT_FOUND", "TRANSFER_NOT_FOUND", "RESOURCE_NOT_FOUND"].contains((error?["code"] as? String ?? "").uppercased().replacingOccurrences(of: "-", with: "_")) {
               throw HostServiceError.rejected(404, message)
             }
             throw EasyWorkRemoteRejection(code: error?["code"] as? String, message: message)

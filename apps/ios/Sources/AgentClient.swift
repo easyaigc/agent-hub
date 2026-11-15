@@ -198,6 +198,10 @@ protocol AgentClient: Sendable {
   func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment
+  func uploadFile(_ client: Client, threadId: String, file: LocalAttachment, source: URL) async throws -> RemoteAttachment
+  func uploadCreationFile(_ client: Client, id: String, file: LocalAttachment, source: URL) async throws
+  func uploadTransferFile(_ client: Client, file: ComputerFileManifest, source: URL) async throws -> ComputerFileReceipt
+  func uploadRequest(_ client: Client, manifest: UploadManifest, action: UploadAction, bytes: Data?, sent: (@Sendable (Int64) -> Void)?) async throws -> UploadReceipt
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL?
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment

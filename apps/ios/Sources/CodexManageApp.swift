@@ -18,7 +18,13 @@ struct CodexManageApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            AppStartupView()
+            Group {
+                #if DEBUG
+                if UploadAcceptanceView.enabled { UploadAcceptanceView() } else { AppStartupView() }
+                #else
+                AppStartupView()
+                #endif
+            }
                 .environment(\.locale, L10n.locale)
                 .onAppear { L10n.syncNotificationLanguage() }
                 .onChange(of: appLanguage) { _, _ in L10n.syncNotificationLanguage() }

@@ -1693,6 +1693,33 @@
     <string name="product_7210ee6ee1ccca0922855535" formatted="false">"The computer connection is not confirmed. Connect, then refresh."</string>
     <string name="product_c32ce2abf6937987ac4893de" formatted="false">"This connection does not support new conversations."</string>
     <string name="product_80065ddcf98a3b85ad136be7" formatted="false">"Restoring local data…"</string>
+    <string name="product_eb0c326b60ae897a19080c0b" formatted="false">"Paused"</string>
+    <string name="product_9dcdc2b289b9d23314e89a78" formatted="false">"s"</string>
+    <string name="product_ac89fc48d79ff8cca97a3da3" formatted="false">"Upload request failed"</string>
+    <string name="product_06a84a45359c15e924aa3398" formatted="false">"Checking saved upload progress…"</string>
+    <string name="product_e36d6a6ca2036cc05385d63c" formatted="false">"This file is already uploading"</string>
+    <string name="product_70ad90dbd7860f1ccba64bd1" formatted="false">"Waiting for connection"</string>
+    <string name="product_52c6b886b559ce0c392e8b00" formatted="false">"Upload complete"</string>
+    <string name="product_2e6b43128bf1f5d9cf6f3a46" formatted="false">"Upload cancelled"</string>
+    <string name="product_1e78c6bc9b4298bbe3e95c1f" formatted="false">"Upload interrupted; progress saved"</string>
+    <string name="product_6148b38691e3018e1d7bee7a" formatted="false">"Uploading…"</string>
+    <string name="product_3b69125e011514ce1e3b6f2c" formatted="false">"Queued for upload"</string>
+    <string name="product_cc25caa4c2c0dc812e4ac233" formatted="false">"Waiting for transfer progress…"</string>
+    <string name="product_a7b29de3bdda1c19fdf5e57b" formatted="false">"Resume upload"</string>
+    <string name="product_8d12fc0d4eb26021d93db693" formatted="false">"Pause"</string>
+    <string name="product_a2483633300e49498cee1b71" formatted="false">"Cancel upload"</string>
+    <string name="product_692a022a3ba9e80e9dbb7e68" formatted="false">"The saved upload has expired on the computer. Upload the file again."</string>
+    <string name="product_10375239dd211cb0db3dbfb9" formatted="false">"Your original upload progress is saved. Continue with a computer version that supports resuming."</string>
+    <string name="product_41a4d50936b2b13e8f2d2a00" formatted="false">"Uploading (resume unavailable)"</string>
+    <string name="product_eb2ebf1530f9d748948684f6" formatted="false">"This computer version cannot resume interrupted uploads. An interrupted file must be uploaded again."</string>
+    <string name="product_bef513295c706189ebbe47e8" formatted="false">"About %@ seconds remaining"</string>
+    <string name="product_d631feb823d780de1fbe91c5" formatted="false">"Upload cancelled. Remove this attachment and select it again."</string>
+    <string name="product_bb2609c561f9c01563658620" formatted="false">"Stop upload"</string>
+    <string name="product_cce921500abd0b60651dfa3d" formatted="false">"Stopping keeps your message. The computer manages its temporary file."</string>
+    <string name="product_6e7c257daffe59ed295e81e9" formatted="false">"File sent; waiting for the computer to confirm…"</string>
+    <string name="product_f32f978069698dbb5c01b985" formatted="false">"File %@/%@"</string>
+    <string name="product_4e98c3df87422bce5d085c6e" formatted="false">"Overall progress"</string>
+    <string name="product_87256a69dc368351f4fbd6f9" formatted="false">"Checking cancellation result…"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

@@ -440,7 +440,7 @@ struct EasyWorkAgentClient: AgentClient {
     guard result.clientOperationId == operationId else { throw HostServiceError.wrongHost }
     return result
   }
-  private func session(_ client: Client) async throws -> EasyWorkRemoteSession { try await EasyWorkSessions.shared.session(client) }
+  func session(_ client: Client) async throws -> EasyWorkRemoteSession { try await EasyWorkSessions.shared.session(client) }
   private func object(_ value: Any) throws -> [String: Any] { if let data = value as? Data { return try easyWorkObject(data) }; guard let result = value as? [String: Any] else { throw HostServiceError.invalidResponse }; return result }
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot {
     let channel = try await session(client)

@@ -1,5 +1,7 @@
 import type { CodexHistoryReader } from './history-reader.js';
 import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
+import type { UploadManifest } from '@codex-manage/protocol';
+import { publishUploadedFile } from './upload-publication.js';
 import { readCodexUsage } from './usage.js';
 import { diagnosticEvent } from './diagnostic-events.js';
 import { isDeepStrictEqual } from 'node:util';
@@ -3341,6 +3343,54 @@ export class RuntimeSession {
     )
       throw new RuntimeError(403, '文件超出电脑授权目录');
     return actual;
+  }
+  validateResumableUpload(manifest: UploadManifest) {
+    if (manifest.hostId !== this.hostId) throw new RuntimeError(403, '电脑身份不一致');
+    if (manifest.purpose === 'attachment') {
+      this.thread(manifest.threadId!);
+      this.requireReady();
+    } else if (manifest.purpose === 'creation-attachment') {
+      if (!this.desktopCreation) throw new RuntimeError(409, '当前连接不支持桌面创建附件');
+      this.desktopCreation.validateUpload(manifest);
+    }
+  }
+  async completeResumableUpload(manifest: UploadManifest, source: string) {
+    this.validateResumableUpload(manifest);
+    if (manifest.purpose === 'creation-attachment') {
+      return {
+        hostId: this.hostId,
+        clientOperationId: manifest.creationId,
+        ...(await this.desktopCreation!.uploadFromPath(manifest, source)),
+      };
+    }
+    if (manifest.purpose !== 'attachment') throw new RuntimeError(400, '无效聊天附件用途');
+    const path = join(this.attachmentDirectory, manifest.id + extname(manifest.name).slice(0, 12));
+    const existing = this.state.attachments.find((file) => file.id === manifest.id);
+    if (
+      existing &&
+      (existing.threadId !== manifest.threadId ||
+        existing.sha256 !== manifest.sha256 ||
+        existing.name !== manifest.name ||
+        existing.path !== path ||
+        existing.sizeBytes !== manifest.sizeBytes)
+    )
+      throw new RuntimeError(409, '原附件身份不一致');
+    await publishUploadedFile(source, path, manifest.sizeBytes, manifest.sha256);
+    const attachment = existing ?? {
+      id: manifest.id,
+      hostId: this.hostId,
+      threadId: manifest.threadId!,
+      name: manifest.name,
+      mediaType: manifest.mediaType,
+      sizeBytes: manifest.sizeBytes,
+      sha256: manifest.sha256,
+      path,
+    };
+    if (!existing) {
+      this.state.attachments.push(attachment);
+      this.save();
+    }
+    return this.cleanAttachment(attachment);
   }
   upload(threadId: string, name: string, mediaType: string, data: Buffer, expectedHash: string) {
     this.thread(threadId);

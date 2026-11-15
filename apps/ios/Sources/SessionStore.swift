@@ -2642,11 +2642,11 @@ private var userRequestedWorkspaceGeneration: UUID?
       do {
         let record = try JSONDecoder().decode(PreparedAttachmentRecord.self, from: Data(contentsOf: path))
         guard UUID(uuidString: record.file.fileName) != nil,
-          record.file.size > 0, record.file.size <= LocalAttachmentPreparation.maximumBytes else { continue }
+          record.file.size > 0 else { continue }
         let url = directory.appendingPathComponent(record.file.fileName)
         let valid = try await Task.detached(priority: .utility) {
-          let data = try LocalAttachmentPreparation.read(url)
-          return data.count == record.file.size && HostService.hash(data) == record.sha256
+          let (size, hash) = try UploadCenter.fileHash(url)
+          return size == record.file.size && hash == record.sha256
         }.value
         guard valid else { continue }
         if let existing = drafts.values[record.destination.key]?.attachments.first(where: { $0.id == record.file.id }) {
@@ -3755,7 +3755,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard requireAISharing(host, model: sharingModel) else { return }
     let sharingScope = aiSharingScope(host, model: sharingModel ?? runtime?.generationSettings?.model ?? selectedModel?.id)
     if selectedThreadId == nil && saved.workspaces[host.id]?.capabilities?.contains("threads:create:staged") == true {
-      startDesktopCreation(host)
+      Task { await startDesktopCreation(host) }
       return
     }
     let selectedProject = project
@@ -3857,10 +3857,12 @@ private var userRequestedWorkspaceGeneration: UUID?
           if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
           try validateAISharing(host, scope: sharingScope)
           transfers[key] = L10n.tr("上传附件 \(index + 1)/\(content.attachments.count) · \(file.name)")
+          let source = attachmentURL(file)
+          let batch = UploadBatch(id: sendFlight.uuidString, index: index, count: content.attachments.count, totalBytes: content.attachments.reduce(0) { $0 + $1.size })
           attachments.append(
-            try await AgentClients.resolve(host).upload(
-              host, threadId: threadId, file: file,
-              data: Data(contentsOf: attachmentURL(file))))
+            try await UploadBatch.$current.withValue(batch) {
+              try await AgentClients.resolve(host).uploadFile(host, threadId: threadId, file: file, source: source)
+            })
         }
         if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
         try validateAISharing(host, scope: sharingScope)
@@ -3958,13 +3960,23 @@ private var userRequestedWorkspaceGeneration: UUID?
       }
     }
   }
-  private func startDesktopCreation(_ host: Client) {
+  private func startDesktopCreation(_ host: Client) async {
     let key = targetKey
+    guard !sendingKeys.contains(key) else { return }
+    sendingKeys.insert(key)
+    var preparing = true
+    defer { if preparing { sendingKeys.remove(key); transfers.removeValue(forKey: key) } }
     let content = draft
+    transfers[key] = L10n.tr("正在准备文件…")
     do {
-      let manifest = try content.attachments.map { file in
-        HostService.creationManifest(file, data: try Data(contentsOf: attachmentURL(file)))
-      }
+      let files = content.attachments.map { ($0, attachmentURL($0)) }
+      let manifest = try await Task.detached { try files.map { file, url in
+        let (size, hash) = try UploadCenter.fileHash(url)
+        return DesktopCreationFile(id: file.id, name: file.name,
+          mediaType: UTType(filenameExtension: (file.name as NSString).pathExtension)?.preferredMIMEType ?? "application/octet-stream",
+          sizeBytes: size, sha256: hash)
+      } }.value
+      guard key == targetKey, draft.text == content.text, draft.attachments == content.attachments else { return }
       let pending = PendingDesktopCreation(hostId: host.id, clientOperationId: UUID().uuidString,
         projectId: project?.id, text: content.text, attachments: content.attachments, manifest: manifest, phase: "prepared",
         collaborationMode: supportsPlanMode ? selectedCollaborationMode : nil,
@@ -3975,6 +3987,10 @@ private var userRequestedWorkspaceGeneration: UUID?
       if saved.desktopCreations == nil { saved.desktopCreations = [:] }
       saved.desktopCreations?[key] = pending
       persist()
+      // Hand off without yielding; runDesktopCreation owns the sending gate next.
+      sendingKeys.remove(key)
+      transfers.removeValue(forKey: key)
+      preparing = false
       runDesktopCreation(host, key: key, pending: pending)
     } catch { self.presentError(error) }
   }
@@ -4008,11 +4024,15 @@ private var userRequestedWorkspaceGeneration: UUID?
           try validateAISharing(host, scope: sharingScope)
           updateCreation(key, pending) { $0.stage = "uploading" }
           transfers[key] = L10n.tr("上传首条附件 \(index + 1)/\(pending.attachments.count) · \(file.name)")
-          let bytes = try Data(contentsOf: attachmentURL(file))
-          guard pending.manifest.first(where: { $0.id == file.id })?.sha256 == HostService.hash(bytes) else {
+          let url = attachmentURL(file)
+          let (_, hash) = try await Task.detached { try UploadCenter.fileHash(url) }.value
+          guard pending.manifest.first(where: { $0.id == file.id })?.sha256 == hash else {
             throw HostServiceError.message(L10n.tr("首条附件已变化，原创建内容已保留。"))
           }
-          try await AgentClients.resolve(host).uploadCreation(host, id: pending.clientOperationId, file: file, data: bytes)
+          let batch = UploadBatch(id: pending.clientOperationId, index: index, count: pending.attachments.count, totalBytes: pending.attachments.reduce(0) { $0 + $1.size })
+          try await UploadBatch.$current.withValue(batch) {
+            try await AgentClients.resolve(host).uploadCreationFile(host, id: pending.clientOperationId, file: file, source: url)
+          }
         }
         // Persist uncertainty before submitting. Restarting the app never sends again automatically.
         guard isCurrentCreation(key, pending) else { return }

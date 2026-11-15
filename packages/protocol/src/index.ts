@@ -90,3 +90,4 @@ export * from './desktop-suggestion-observations.js';
 export * from './chat-actions.js';
 
 export * from './chat-management.js';
+export * from './uploads.js';

@@ -92,6 +92,14 @@ enum LocalAttachmentPreparation {
     case let .photo(value, title, identifier): raw = value; name = title; image = true; photoAssetId = identifier
     case let .data(value, title, isImage): raw = value; name = title; image = isImage
     case let .file(url, title):
+      let candidateName = title ?? url.lastPathComponent
+      let imageType = UTType(filenameExtension: (candidateName as NSString).pathExtension)?.conforms(to: .image) == true
+      let scoped = url.startAccessingSecurityScopedResource()
+      let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+      if scoped { url.stopAccessingSecurityScopedResource() }
+      if !imageType || size > maximumBytes {
+        return try prepareFile(url, name: candidateName, directory: directory, destination: destination, attachmentId: attachmentId)
+      }
       raw = try read(url); name = title ?? url.lastPathComponent
       image = UTType(filenameExtension: (name as NSString).pathExtension)?.conforms(to: .image) == true
     case let .image(value):
@@ -119,6 +127,37 @@ enum LocalAttachmentPreparation {
       catch { try? FileManager.default.removeItem(at: url); throw error }
       journal = path
     }
+    return PreparedLocalAttachment(file: file, url: url, journal: journal)
+  }
+  /// Files remain immutable byte snapshots; image decoding keeps its separate render budget.
+  private static func prepareFile(_ source: URL, name: String, directory: URL,
+    destination: AttachmentDraftDestination?, attachmentId: String?) throws -> PreparedLocalAttachment {
+    let scoped = source.startAccessingSecurityScopedResource()
+    defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+    guard try source.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else { throw AttachmentError.tooLarge }
+    let id = attachmentId ?? UUID().uuidString, filename = UUID().uuidString
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let url = directory.appendingPathComponent(filename)
+    var accepted = false
+    defer { if !accepted { try? FileManager.default.removeItem(at: url) } }
+    try FileManager.default.copyItem(at: source, to: url)
+    try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUnlessOpen], ofItemAtPath: url.path)
+    let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
+    var hash = SHA256(), count = 0
+    while let data = try handle.read(upToCount: 256 * 1024), !data.isEmpty {
+      try Task.checkCancellation(); count += data.count; hash.update(data: data)
+    }
+    guard count > 0 else { throw AttachmentError.tooLarge }
+    let file = LocalAttachment(id: id, name: (name as NSString).lastPathComponent, size: count, fileName: filename, isImage: false)
+    var journal: URL?
+    if let destination {
+      let journals = directory.appendingPathComponent("Prepared", isDirectory: true)
+      try FileManager.default.createDirectory(at: journals, withIntermediateDirectories: true)
+      let record = PreparedAttachmentRecord(destination: destination, file: file, sha256: hash.finalize().map { String(format: "%02x", $0) }.joined())
+      let path = journals.appendingPathComponent(id + ".json")
+      try JSONEncoder().encode(record).write(to: path, options: [.atomic, .completeFileProtectionUnlessOpen]); journal = path
+    }
+    accepted = true
     return PreparedLocalAttachment(file: file, url: url, journal: journal)
   }
 }

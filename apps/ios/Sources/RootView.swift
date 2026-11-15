@@ -4896,6 +4896,7 @@ private struct ComposerParentInputs:Equatable,Sendable {
 }
 
 private struct ComposerView: View,Equatable {
+  @ObservedObject private var uploads = UploadCenter.shared
   nonisolated static func == (lhs:Self,rhs:Self)->Bool { lhs.parentInputs==rhs.parentInputs }
 
   private struct HandledSuggestion: Hashable {
@@ -5118,6 +5119,7 @@ private struct ComposerView: View,Equatable {
       } else if store.client?.online == false {
         Text(L10n.tr("离线 · 草稿保留在此对话")).font(.caption2).foregroundStyle(Palette.secondary)
       }
+      if let client = store.client { UploadJobsView(client: client, threadId: store.selectedThreadId, creationId: store.pendingDesktopCreation?.clientOperationId) }
       if let transfer = store.transferStatus {
         HStack {
           ProgressView()
@@ -5230,6 +5232,12 @@ private struct ComposerView: View,Equatable {
       || store.pendingDesktopCreation != nil
       || store.showsReplyMode || !store.draft.attachments.isEmpty
       || !store.queuedReplies.isEmpty
+      || uploads.jobs.values.contains { job in
+        guard let client = store.client else { return false }
+        return UploadCenter.sameTarget(job.client, client) && !["completed", "cancelled"].contains(job.phase) &&
+          ((job.manifest.purpose == "attachment" && job.manifest.threadId == store.selectedThreadId) ||
+            (job.manifest.creationId != nil && job.manifest.creationId == store.pendingDesktopCreation?.clientOperationId))
+      }
   }
 
   private func composer(_ presentation: SuggestionPresentation) -> some View {

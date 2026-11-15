@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
+import type { UploadManifest } from '@codex-manage/protocol';
+import { publishUploadedFile } from './upload-publication.js';
 import {
   closeSync,
   existsSync,
@@ -402,7 +404,6 @@ export class DesktopCreationBroker {
         !/^[\w.+-]+\/[\w.+-]+$/.test(file.mediaType) ||
         !Number.isSafeInteger(file.sizeBytes) ||
         file.sizeBytes < 1 ||
-        file.sizeBytes > 20 * 1024 * 1024 ||
         typeof file.sha256 !== 'string' ||
         !/^[a-f0-9]{64}$/.test(file.sha256)
       )
@@ -464,6 +465,31 @@ export class DesktopCreationBroker {
   }
   private filePath(record: CreationRecord, file: CreationFile): string {
     return creationAttachmentPath(this.directory, record, file);
+  }
+  validateUpload(manifest: UploadManifest): CreationFile {
+    const record = this.record(manifest.creationId!);
+    const file = record.attachments.find((value) => value.id === manifest.attachmentId);
+    if (
+      !file ||
+      file.name !== manifest.name ||
+      file.mediaType !== manifest.mediaType ||
+      file.sizeBytes !== manifest.sizeBytes ||
+      file.sha256 !== manifest.sha256
+    )
+      throw new CreationError(409, '附件与原创建清单不一致');
+    if (record.phase !== 'prepared' && !record.uploaded.includes(file.id))
+      throw new CreationError(409, '已提交的创建内容不能改写');
+    return file;
+  }
+  async uploadFromPath(manifest: UploadManifest, source: string): Promise<CreationFile> {
+    const file = this.validateUpload(manifest);
+    const record = this.record(manifest.creationId!);
+    await publishUploadedFile(source, this.filePath(record, file), file.sizeBytes, file.sha256);
+    if (!record.uploaded.includes(file.id)) {
+      record.uploaded.push(file.id);
+      this.save();
+    }
+    return structuredClone(file);
   }
   upload(id: string, attachmentId: string, bytes: Buffer): CreationFile {
     const record = this.record(id);

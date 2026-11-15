@@ -36,6 +36,11 @@ import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
 import { VPNPeerDirectory } from './direct-endpoints.js';
 import { PrivateConnections } from './private-connections.js';
 import { FileTransfers } from './file-transfers.js';
+import { ResumableUploads } from './resumable-uploads.js';
+import { receivingDeadline } from './upload-timeouts.js';
+import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { UPLOAD_CAPABILITY, UPLOAD_CHUNK_BYTES } from '@codex-manage/protocol';
 import { VoiceTranscriptions } from './voice-transcriptions.js';
 import { DesktopDomSuggestions } from './desktop-dom-suggestions.js';
 import { sendReadJSON } from './read-json.js';
@@ -203,6 +208,47 @@ export async function startRuntimeServer() {
     session.hostId,
     directory,
     resolve(process.env.HOST_AGENT_TRANSFER_DIR ?? join(homedir(), 'Downloads', 'Agent Hub')),
+  );
+  const uploadTarget = session.readingTarget();
+  const uploadScope = createHash('sha256')
+    .update(
+      JSON.stringify([
+        uploadTarget.agentId,
+        uploadTarget.hostId,
+        uploadTarget.workspaceId,
+        uploadTarget.runtimeId,
+      ]),
+    )
+    .digest('hex');
+  const verifyUploadRuntime = () => {
+    if (machineRuntimeTargetKey(uploadTarget) !== machineRuntimeTargetKey(session.readingTarget()))
+      throw new RuntimeError(409, '上传运行目标已变化，请刷新连接');
+  };
+  const uploads = new ResumableUploads(
+    session.hostId,
+    join(directory, 'upload-scopes', uploadScope),
+    {
+      async validate(manifest) {
+        verifyUploadRuntime();
+        session.validateResumableUpload(manifest);
+      },
+      async complete(manifest, path) {
+        verifyUploadRuntime();
+        if (manifest.purpose === 'file-transfer') {
+          const {
+            version: _version,
+            purpose: _purpose,
+            threadId: _thread,
+            creationId: _creation,
+            attachmentId: _attachment,
+            ...file
+          } = manifest;
+          await fileTransfers.prepare(file);
+          return { ...(await fileTransfers.upload(manifest.id, createReadStream(path))) };
+        }
+        return { ...(await session.completeResumableUpload(manifest, path)) };
+      },
+    },
   );
   const desktopTranscription =
     mode === 'desktop-runtime'
@@ -401,6 +447,7 @@ export async function startRuntimeServer() {
       ...(chatActions ? ['threads:manage'] : []),
       'notifications',
       'files:upload',
+      UPLOAD_CAPABILITY,
       'commands:target-bound:v1',
       ...(projectGitAvailable ? [PROJECT_GIT_CAPABILITY, PROJECT_GIT_FILES_CAPABILITY] : []),
     ]),
@@ -408,6 +455,7 @@ export async function startRuntimeServer() {
   let fencedSuggestionPending = false;
   let suggestionDiagnosticRequest = 0;
   const handler = async (request: IncomingMessage, response: ServerResponse) => {
+    receivingDeadline(request, response);
     const requestStartedAt = performance.now();
     const requestId = randomUUID();
     response.setHeader('X-Agent-Hub-Diagnostic-Id', requestId);
@@ -551,6 +599,64 @@ export async function startRuntimeServer() {
           throw new RuntimeError(409, '运行目标已变化，请刷新连接');
       };
       verifyCommandTarget();
+      if (url.pathname === '/v1/uploads' || url.pathname.startsWith('/v1/uploads/')) {
+        const currentUploadTarget = session.readingTarget();
+        if (
+          currentUploadTarget.agentId !== uploadTarget.agentId ||
+          currentUploadTarget.hostId !== uploadTarget.hostId ||
+          currentUploadTarget.workspaceId !== uploadTarget.workspaceId ||
+          currentUploadTarget.runtimeId !== uploadTarget.runtimeId
+        )
+          throw new RuntimeError(409, '上传运行目标已变化，请刷新连接');
+        if (
+          !commandTarget ||
+          url.searchParams.get('hostId') !== session.hostId ||
+          [...url.searchParams.keys()].some(
+            (key) =>
+              !['hostId', 'target', 'id', 'offset'].includes(key) ||
+              url.searchParams.getAll(key).length !== 1,
+          )
+        )
+          throw new RuntimeError(400, '上传必须指定准确机器运行目标');
+        const id = url.searchParams.get('id') ?? '';
+        let result;
+        if (request.method === 'GET' && url.pathname === '/v1/uploads/capabilities') {
+          result = {
+            version: 1,
+            target: session.readingTarget(),
+            maxChunkBytes: UPLOAD_CHUNK_BYTES,
+          };
+        } else if (request.method === 'POST' && url.pathname === '/v1/uploads') {
+          let input: unknown;
+          try {
+            input = JSON.parse((await body(request, 8192)).toString('utf8'));
+          } catch {
+            throw new RuntimeError(400, '无效上传清单');
+          }
+          result = await uploads.prepare(input);
+        } else if (request.method === 'GET' && url.pathname === '/v1/uploads') {
+          result = await uploads.status(id);
+        } else if (request.method === 'POST' && url.pathname === '/v1/uploads/chunk') {
+          if (
+            request.headers['content-type'] !== 'application/octet-stream' ||
+            !/^(0|[1-9]\d*)$/.test(url.searchParams.get('offset') ?? '')
+          )
+            throw new RuntimeError(400, '无效上传分块');
+          result = await uploads.chunk(
+            id,
+            Number(url.searchParams.get('offset')),
+            text(request.headers['x-content-sha256']),
+            await body(request, UPLOAD_CHUNK_BYTES),
+          );
+        } else if (request.method === 'POST' && url.pathname === '/v1/uploads/complete') {
+          result = await uploads.complete(id);
+        } else if (request.method === 'POST' && url.pathname === '/v1/uploads/cancel') {
+          result = await uploads.cancel(id);
+        } else throw new RuntimeError(405, '上传操作不支持');
+        verifyCommandTarget();
+        json(response, 200, result);
+        return;
+      }
       if (request.method === 'GET' && url.pathname === '/v1/connection-routes') {
         if (url.searchParams.get('hostId') !== session.hostId || [...url.searchParams].length !== 1)
           throw new RuntimeError(400, '连接路径请求必须指定当前电脑');
@@ -1517,7 +1623,7 @@ export async function startRuntimeServer() {
   const server = tls
     ? httpsServer(tls, (req, res) => void handler(req, res))
     : httpServer((req, res) => void handler(req, res));
-  server.requestTimeout = 40_000;
+  server.requestTimeout = 120_000;
   server.headersTimeout = 10_000;
   try {
     await new Promise<void>((done, reject) => {

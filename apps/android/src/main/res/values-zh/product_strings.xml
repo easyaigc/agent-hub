@@ -1693,6 +1693,33 @@
     <string name="product_7210ee6ee1ccca0922855535" formatted="false">"电脑连接尚未确认，请连接后刷新。"</string>
     <string name="product_c32ce2abf6937987ac4893de" formatted="false">"当前连接不支持新建对话。"</string>
     <string name="product_80065ddcf98a3b85ad136be7" formatted="false">"正在恢复本地数据…"</string>
+    <string name="product_eb0c326b60ae897a19080c0b" formatted="false">"已暂停"</string>
+    <string name="product_9dcdc2b289b9d23314e89a78" formatted="false">"秒"</string>
+    <string name="product_ac89fc48d79ff8cca97a3da3" formatted="false">"上传请求失败"</string>
+    <string name="product_06a84a45359c15e924aa3398" formatted="false">"正在核对上传进度…"</string>
+    <string name="product_e36d6a6ca2036cc05385d63c" formatted="false">"此文件正在上传"</string>
+    <string name="product_70ad90dbd7860f1ccba64bd1" formatted="false">"等待网络恢复"</string>
+    <string name="product_52c6b886b559ce0c392e8b00" formatted="false">"上传完成"</string>
+    <string name="product_2e6b43128bf1f5d9cf6f3a46" formatted="false">"上传已取消"</string>
+    <string name="product_1e78c6bc9b4298bbe3e95c1f" formatted="false">"上传中断，进度已保留"</string>
+    <string name="product_6148b38691e3018e1d7bee7a" formatted="false">"正在上传…"</string>
+    <string name="product_3b69125e011514ce1e3b6f2c" formatted="false">"排队等待上传"</string>
+    <string name="product_cc25caa4c2c0dc812e4ac233" formatted="false">"正在等待传输进展…"</string>
+    <string name="product_a7b29de3bdda1c19fdf5e57b" formatted="false">"继续上传"</string>
+    <string name="product_8d12fc0d4eb26021d93db693" formatted="false">"暂停"</string>
+    <string name="product_a2483633300e49498cee1b71" formatted="false">"取消上传"</string>
+    <string name="product_692a022a3ba9e80e9dbb7e68" formatted="false">"电脑上的上传暂存已过期，请重新上传"</string>
+    <string name="product_10375239dd211cb0db3dbfb9" formatted="false">"原上传进度已保留，请使用支持续传的电脑端继续"</string>
+    <string name="product_41a4d50936b2b13e8f2d2a00" formatted="false">"正在上传（不支持续传）"</string>
+    <string name="product_eb2ebf1530f9d748948684f6" formatted="false">"此电脑版本不支持断点续传，中断后需重新上传"</string>
+    <string name="product_bef513295c706189ebbe47e8" formatted="false">"剩余约 %@ 秒"</string>
+    <string name="product_d631feb823d780de1fbe91c5" formatted="false">"上传已取消，请移除此附件后重新选择"</string>
+    <string name="product_bb2609c561f9c01563658620" formatted="false">"停止上传"</string>
+    <string name="product_cce921500abd0b60651dfa3d" formatted="false">"停止后保留消息，电脑暂存由电脑端管理"</string>
+    <string name="product_6e7c257daffe59ed295e81e9" formatted="false">"文件已发送，正在等待电脑确认…"</string>
+    <string name="product_f32f978069698dbb5c01b985" formatted="false">"文件 %@/%@"</string>
+    <string name="product_4e98c3df87422bce5d085c6e" formatted="false">"总体进度"</string>
+    <string name="product_87256a69dc368351f4fbd6f9" formatted="false">"正在确认取消结果…"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

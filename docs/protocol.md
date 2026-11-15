@@ -1,5 +1,13 @@
 # 应用协议与领域契约
 
+## 分块上传 v1（2026-11-15 源码候选）
+
+能力 `files:resumable-upload-v1` 只在完整 runtime Host 的实际上传实现上开放，bootstrap health 不宣称该能力。契约位于 `packages/protocol/src/uploads.ts`，独立于 Codex JSON-RPC。六个具名入口见文件互传文档；全部校验鉴权、准确 Host 和完整运行 target，拒绝重复或未知查询字段，旧上传回执保持原语义。
+
+清单固定 version、hostId、UUID id、文件名/类型/长度/SHA-256、purpose 及 threadId/creationId/attachmentId；未使用的归属字段显式 null。purpose 只允许 file-transfer、attachment、creation-attachment。回执包含 uploading/verifying/completed/cancelled、committedBytes、maxChunkBytes 和完成资源。分块使用二进制正文、offset、X-Content-SHA256，不接受任意文件路径、shell 或方法透传。
+
+确认位置只代表已持久化的连续字节，手机发送计数不能代替它。完整摘要失败不发布；complete 幂等，未知结果先查询。取消与完成竞争由原状态决定，已经交付的文件不能通过取消撤回。重启不更换目标、上传 ID 或清单，暂存文件长度不构成已确认进度。失效暂存保留 cancelled/expired 回执，不触发新的自动上传。EasyWork resource/upload 系列留在对应适配层，本协议不宣称实现 tus 或 Apple 原生续传草案。
+
 2026-11-04 F69：Windows 原桌面 Responses 采集沿用建议只读契约 `source=native-trace` 与 `validity=native-version`，可附 `provenance:{kind:"responses-forwarder",responseId,desktopDisplay:"unobserved"}`。这是原生成网络记录的来源标识，不能等同于当前桌面显示或原安全判定。来源仍绑定完整机器目标、原 owner 和准确最新完成轮，读取不生成；旧客户端可忽略新增可选字段。macOS 原安全后 native-sample 契约未修改，详见[专项记录](acceptance/windows-response-suggestions-20261104.md)。
 
 2026-11-03 F59／F19／F32：移除独立文件互传与聊天资源下载预览的 20 MiB 固定上限。新 Codex Host 的文件目录以 `maxFileBytes: null` 表示未配置大小上限，iOS 兼容旧 Host 的有限值；Host、电脑发送 CLI 与 iOS／Android 下载不再按 20 MiB 拒绝。仍验证准确目标、原消息授权、普通文件、不可变长度和 SHA-256，未知传输只查询原回执。大文件仍受可用存储、内存、网络及系统格式支持影响；Markdown／HTML 渲染预算不改变下载与分享能力。双端影响、辅助检查、物理设备与真实桌面证据分列于[专项记录](acceptance/file-size-limits-20261103.md)。

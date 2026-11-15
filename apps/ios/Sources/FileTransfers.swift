@@ -52,7 +52,7 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
 
   init(client: Client) {
     self.client = client
-    let target = client.agentConnection?.target ?? client.readingTarget
+    let target = client.agentConnection?.target ?? client.codexDirect?.target ?? client.readingTarget
     let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
     let identity = (try? encoder.encode(target)) ?? Data(client.id.utf8)
     let testing = ProcessInfo.processInfo.arguments.contains("-ui-testing")
@@ -102,10 +102,31 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
       error = nil
     } catch { self.error = error.localizedDescription }
   }
+  func reconcileUploads() async {
+    for job in UploadCenter.shared.jobs.values where UploadCenter.sameTarget(job.client, client) && job.manifest.purpose == "file-transfer" {
+      guard let receipt = job.receipt else { continue }
+      do {
+        if receipt.phase == "completed" {
+          let file = try receipt.value(ComputerFileReceipt.self)
+          try await apply(file)
+          if let old = catalog {
+            catalog = ComputerFileCatalog(hostId: old.hostId, destinationDirectory: old.destinationDirectory,
+              maxFileBytes: old.maxFileBytes, files: [file] + old.files.filter { $0.id != file.id })
+          }
+        }
+        else if receipt.phase == "cancelled", pending.contains(where: { $0.id == job.id }) {
+          let previous = pending; pending.removeAll { $0.id == job.id }
+          do { try await persist() } catch { pending = previous; throw error }
+          try? FileManager.default.removeItem(at: localURL(job.id))
+        }
+      } catch { self.error = error.localizedDescription }
+    }
+  }
   func importFiles(_ urls: [URL]) async {
     guard !busy, let catalog else { return }
     busy = true
     defer { busy = false; activity = nil }
+    var imported: [String] = []
     for url in urls {
       do {
         let hostId = client.id, limit = catalog.maxFileBytes, directory = directory
@@ -116,17 +137,25 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
           let metadata = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .contentTypeKey])
           guard metadata.isRegularFile == true, let size = metadata.fileSize, size > 0 else { throw HostServiceError.message(L10n.tr("请选择非空的普通文件。")) }
           if let limit, size > limit { throw HostServiceError.message(L10n.tr("电脑当前版本的文件大小上限为 \(ByteCountFormatter.string(fromByteCount: Int64(limit), countStyle: .file))，请更新电脑端。")) }
-          let data = try Data(contentsOf: url)
-          guard data.count == size else { throw HostServiceError.message(L10n.tr("文件在读取时发生变化，请重新选择。")) }
-          let file = ComputerFileManifest(hostId: hostId, id: UUID().uuidString.lowercased(), name: url.lastPathComponent, mediaType: metadata.contentType?.preferredMIMEType ?? "application/octet-stream", sizeBytes: data.count, sha256: HostService.hash(data))
+          let id = UUID().uuidString.lowercased()
           try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-          try data.write(to: directory.appendingPathComponent(file.id + ".data"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+          let snapshot = directory.appendingPathComponent(id + ".data")
+          try FileManager.default.copyItem(at: url, to: snapshot)
+          try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: snapshot.path)
+          let (count, hash) = try UploadCenter.fileHash(snapshot)
+          guard count == size else { try? FileManager.default.removeItem(at: snapshot); throw HostServiceError.message(L10n.tr("文件在读取时发生变化，请重新选择。")) }
+          let file = ComputerFileManifest(hostId: hostId, id: id, name: url.lastPathComponent, mediaType: metadata.contentType?.preferredMIMEType ?? "application/octet-stream", sizeBytes: count, sha256: hash)
           return file
         }.value
         pending.append(PendingComputerFile(file: file))
         try await persist()
-        await deliver(file.id)
+        imported.append(file.id)
       } catch { self.error = error.localizedDescription }
+    }
+    let batchId = UUID().uuidString
+    let totalBytes = pending.filter { imported.contains($0.id) }.reduce(0) { $0 + $1.file.sizeBytes }
+    for (index, id) in imported.enumerated() {
+      await UploadBatch.$current.withValue(UploadBatch(id: batchId, index: index, count: imported.count, totalBytes: totalBytes)) { await deliver(id) }
     }
   }
   private func deliver(_ id: String) async {
@@ -134,14 +163,14 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
     let file = pending[index].file
     do {
       let url = localURL(id)
-      let data = try await Task.detached { try Data(contentsOf: url) }.value
-      guard data.count == file.sizeBytes, HostService.hash(data) == file.sha256 else { throw HostServiceError.message(L10n.tr("手机保存的文件已变化，请保留原记录并重新选择文件。")) }
+      let (size, hash) = try await Task.detached { try UploadCenter.fileHash(url) }.value
+      guard size == file.sizeBytes, hash == file.sha256 else { throw HostServiceError.message(L10n.tr("手机保存的文件已变化，请保留原记录并重新选择文件。")) }
       pending[index].phase = "unknown"
       pending[index].error = nil
       try await persist() // Durable immutable intent before the first remote write.
       activity = L10n.tr("正在上传 \(file.name)…")
       var receipt = try await adapter.prepareFileTransfer(client, file: file)
-      if receipt.phase != "completed" { receipt = try await adapter.uploadFileTransfer(client, file: file, data: data) }
+      if receipt.phase != "completed" { receipt = try await adapter.uploadTransferFile(client, file: file, source: url) }
       try await apply(receipt)
       if let old = catalog {
         catalog = ComputerFileCatalog(hostId: old.hostId, destinationDirectory: old.destinationDirectory, maxFileBytes: old.maxFileBytes, files: [receipt] + old.files.filter { $0.id != id })
@@ -179,6 +208,7 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
 }
 
 struct FileTransfersView: View {
+  @ObservedObject private var uploads = UploadCenter.shared
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @StateObject private var model: FileTransferModel
   @Environment(\.dismiss) private var dismiss
@@ -196,6 +226,7 @@ struct FileTransfersView: View {
           Button { selecting = true } label: { Label(L10n.tr("选择文件上传"), systemImage: "arrow.up.doc") }
             .disabled(model.catalog == nil || model.busy).accessibilityIdentifier("choose-transfer-files")
         } footer: { Text(L10n.tr("手机 → 电脑 · 同名文件会保留独立副本。")) }
+        Section { UploadJobsView(client: model.client, independent: true) }
         if let activity = model.activity { Section { ProgressView(activity).accessibilityIdentifier("file-transfer-progress") } }
         else if model.busy { Section { ProgressView(L10n.tr("正在查询传输记录…")) } }
         if let error = model.error { Section { Text(error).foregroundStyle(.red) } }
@@ -228,11 +259,11 @@ struct FileTransfersView: View {
         }
       }.navigationTitle(L10n.tr("文件互传")).navigationBarTitleDisplayMode(.inline)
         .toolbar {
-          ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("完成")) { dismiss() }.disabled(model.busy) }
+          ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("完成")) { dismiss() } }
           ToolbarItem(placement: .primaryAction) { Button { Task { await model.refresh() } } label: { Image(systemName: "arrow.clockwise") }.disabled(model.busy).accessibilityLabel(L10n.tr("刷新传输记录")) }
         }
-    }.task { await model.refresh() }
-      .interactiveDismissDisabled(model.busy)
+    }.task { await model.refresh(); await model.reconcileUploads() }
+      .onChange(of: uploads.jobs.values.map { $0.id + ":" + $0.phase }.sorted()) { _, _ in Task { await model.reconcileUploads() } }
       .fileImporter(isPresented: $selecting, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
         selecting = false
         switch result {

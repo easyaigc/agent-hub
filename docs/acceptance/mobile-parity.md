@@ -1,5 +1,17 @@
 # 双端一致性验收场景与记录规范
 
+## 2026-11-15 F30/F31/F59 上传续传：主线集成受控验收，未部署
+
+Host 上传回归 14/14 通过：64 MiB、总传输超过 40 秒、并发 health/history、断流、响应丢失、错误目标/鉴权/偏移拒绝、未确认尾部截断、状态写入失败、过期回收和发布结果未知恢复。独占 Host OS 进程在 16 MiB 文件传至 8 MiB 时被终止，以不同 PID 和原上传 ID 恢复，最终唯一文件与 SHA-256 一致，`turn/start` 为 0。生产方法另验证 16 MiB 聊天附件及创建附件的重复完成、状态重载后幂等注册；CLI、ready 和创建 driver 为夹具，不构成真实 Electron/模型验收。入口为 `pnpm check:uploads`。集成保留当前主线的 attachments-v2 目录和 EasyWork 严格目标/文件校验。
+
+最终同一 iOS 包在独立 iOS 26.0 模拟器执行预定 4 轮 XCTest/XCUIAutomation，4 通过、0 失败、0 跳过：64 MiB 真实进度/有效速度/剩余时间、暂停/继续、断流、30 秒请求超时与 App 退出重启续传；取消先遇到 409 占用，随后实际取消但丢失回包，重启只查询且不再发分块或重复取消（两轮）；发布已发生但回执未知时取消冲突，冷启动核对原完成结果，保留唯一文件且不报告业务提交成功。截图复核为 4.2/67.1 MB、1.2 MB/s、剩余 53 秒。按钮至少 44 pt。另在 macOS 原生 URLSession/KVO 上，以生产 UploadWireOperation、16 MiB 载荷分别验证 dataTask/fromFile 共 30 轮取消，30/30 通过，无阻塞或重复完成。
+
+原生入口 `scripts/upload-resume-ios-acceptance.mjs` 使用生产 UploadCenter/视图和 ResumableUploads，HTTP 路由、鉴权和发布回调为回环夹具；完整 runtime 路由另由 HTTP 测试覆盖。任务专用加载器仅加强零跳过检查及失败现场保留，未改生产路径；指纹与各场景证明摘要见[结构化证据](mobile-evidence/upload-resume-20261115.json)。早期另一候选的一次取消失败保留为失败记录，不能以旧成功包代替本次证明。当前包增加锁外 URLSession/KVO 释放、有限占用恢复及原取消意图持久化，未将旧失败归因到唯一原因。
+
+`pnpm build:ios -jobs 2`、工作区类型检查、双语资源和 mobile-parity 检查通过。最终全仓 `pnpm check` 从头执行至末尾，退出 0、耗时 896,018 ms；其平台专属跳过保持原样，不冒充 Windows 等环境通过。134 个生产 TypeScript、121 个编译 JavaScript 和 78 个原生输入文件指纹匹配本次验收。原混合开发现场的格式/lint 失败仅为历史，未混入此主线集成。专属测试数据、服务、进程和模拟器已回收，最小证据保留；交付工作树和可重建缓存于提交及远程核验后回收。
+
+真实蜂窝/设备 VPN 上的 Tailscale `MagicSock ReceiveIPv4` 告警仍未复现，也未验证供应商修复。EasyWork 实际互操作、Android 上传 UI、后台传输保证及正式部署不在以上通过范围；父功能和 A6 暂停状态不因此改变。
+
 2026-11-15 F17／F31／UI05（S02／S11）PR3 交付续验：Android 36 ARM64 独占模拟器运行加强版冷会话原生测试通过，真实原 owner 初始未加载，历史读取不建立控制；原生 open/reply 各一次，两行原历史保留，最终四行，独立桌面核对两个完成轮与仅一次新增输入。六项 iOS 补验保持其原候选/包的限定证据；CI 修复另按真实 Actions 审定，不能将本地磁盘中断记为通过。见[续验记录](pr3-android-cold-ci-20261115.md)。
 
 2026-11-15 F32／F72（S04／S18）：新增文件下载实时进度专项；实际字节采样、速度归零、缓存、取消、校验及原生界面分项留证；主线集成保留已有完整目标缓存隔离、受验证导出与预览归属，构建／合成 HTTP 不替代真实 DEV。结果见[专项记录](file-download-progress-20261114.md)。Android、EasyWork 真实桌面及未执行范围分别标明，A6 继续暂停。

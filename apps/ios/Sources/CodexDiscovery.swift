@@ -134,7 +134,7 @@ final class CodexHostRoutes: @unchecked Sendable {
       }
     }
   }
-  private func session(for request: URLRequest) -> URLSession {
+  func session(for request: URLRequest) -> URLSession {
     lock.withLock { () -> URLSession in
       guard let url = request.url, let origin = origin(url), let fingerprint = pins[origin] else { return systemSession }
       let key = origin + "|" + fingerprint

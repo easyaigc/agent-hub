@@ -276,7 +276,7 @@ export async function startDirectDiscovery(options: {
     }
     void options.handler(request, response);
   });
-  server.requestTimeout = 40000;
+  server.requestTimeout = 120000;
   server.headersTimeout = 10000;
   let closed = false,
     refreshing = false;

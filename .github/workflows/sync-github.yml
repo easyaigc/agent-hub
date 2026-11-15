@@ -18,7 +18,7 @@ jobs:
   sync:
     if: github.server_url == 'https://git.51easyai.com'
     runs-on: agent-hub-linux
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:

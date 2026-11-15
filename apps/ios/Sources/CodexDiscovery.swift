@@ -177,8 +177,8 @@ final class FileDownloadOperation: @unchecked Sendable {
   func run(session: URLSession, request: URLRequest) async throws -> (Data, URLResponse) {
     try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { continuation in
-        let task = session.downloadTask(with: request) { [self] url, response, error in
-          lock.withLock { observation = nil; self.task = nil }
+        let task: URLSessionDownloadTask = session.downloadTask(with: request) { [self] url, response, error in
+          lock.withLock { self.observation = nil; self.task = nil }
           do {
             if let error { throw error }
             guard let url, let response else { throw HostServiceError.invalidResponse }
@@ -187,9 +187,9 @@ final class FileDownloadOperation: @unchecked Sendable {
             continuation.resume(returning: (data, response))
           } catch { continuation.resume(throwing: error) }
         }
-        let observation = task.observe(\.countOfBytesReceived, options: [.new]) { [self] task, _ in
-          guard (task.response as? HTTPURLResponse)?.statusCode == 200 else { return }
-          meter.receive(task.countOfBytesReceived, total: totalBytes)
+        let observation: NSKeyValueObservation = task.observe(\URLSessionDownloadTask.countOfBytesReceived, options: [.new]) { [self] observedTask, _ in
+          guard (observedTask.response as? HTTPURLResponse)?.statusCode == 200 else { return }
+          meter.receive(observedTask.countOfBytesReceived, total: totalBytes)
         }
         lock.withLock {
           self.task = task; self.observation = observation

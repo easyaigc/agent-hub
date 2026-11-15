@@ -73,6 +73,6 @@ for (const name of check === 'all' ? Object.keys(sources) : [check]) {
   execFileSync(
     executable,
     [name, join(root, 'packages/protocol/fixtures/mobile/desktop-suggestions-v1.json')],
-    { env, stdio: 'inherit' },
+    { env, stdio: 'inherit', timeout: 120_000 },
   );
 }

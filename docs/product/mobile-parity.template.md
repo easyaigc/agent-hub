@@ -289,3 +289,7 @@ F31/F32 Windows 启动诊断：HTTP错误诊断在原64项队列内预留容量�
 F59 Windows 文件接收：原生目录安全检查对重解析点等拒绝保持，转换为已有的409目录冲突契约并保留内部原因；不创建或跟随受拒目标，不放宽owner/DACL。双端既有错误处理和20 MiB/摘要/未知操作规则保持，未新增手机验收。
 
 F03 Windows 常规恢复整合：Windows交付记录正式Host免重启启用，Mac独立核对原证书钉扎的LAN/Tailscale鉴权和准确Host/desktop-runtime工作区。旧合成操作仍pending/历史未确认；当前运行包不在本次整合中替换，建议调研仍停止。此项不升级登录自启、回滚或双端手机验收，iOS/Android UI与wire不变。见[本次整合证据](../acceptance/windows-regular-host-recovery-20261103.md)。
+
+2026-11-15，PR3 公开 CI 后续修复：F32/F72 下载进度的 Swift KVO 显式属性/类型绑定保持原进度、字节和取消规则；F69 仅稳定原生回归的请求调度，生产建议读取未改。Android、Host、共享核心及协议保持原实现/验收范围，不新增双端功能结论。实际失败、辅助验证及后续交付见 `docs/acceptance/pr3-android-cold-ci-20261115.md`。
+
+2026-11-15，PR3 公开 CI 修复整合上传恢复主线 `50681c2`：保留其 F30/F31/F59 实现、说明和原验收指纹；补齐同类 KVO 编译绑定，重新登记组合源码。Android 冷会话因 Host/适配器变化独立复验，旧指纹保持历史分类。专项结果关联 PR178 与 `docs/acceptance/pr3-android-cold-ci-20261115.md`，不扩大为上传业务整体验收或真机通过。

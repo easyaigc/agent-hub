@@ -6,12 +6,27 @@ private final class ReadAheadProbe {
   var calls = 0
   var cancelled = 0
   var confirmedScope: DesktopSuggestionScope?
+  private var responses: [Int: (DesktopSuggestionScope, CheckedContinuation<DesktopSuggestionResponse, Error>)] = [:]
   func fetch(_ scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse {
+    try Task.checkCancellation()
     calls += 1
-    do { try await Task.sleep(for: .milliseconds(100)) }
-    catch { cancelled += 1; throw error }
-    return DesktopSuggestionResponse(schemaVersion: 1, target: scope.target, threadId: scope.threadId,
-      sourceTurnId: scope.sourceTurnId, readOnly: true, suggestion: nil)
+    let call = calls
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { responses[call] = (scope, $0) }
+    } onCancel: {
+      Task { @MainActor in
+        if let (_, response) = self.responses.removeValue(forKey: call) {
+          self.cancelled += 1
+          response.resume(throwing: CancellationError())
+        }
+      }
+    }
+  }
+
+  func finish(_ call: Int) {
+    let (scope, response) = responses.removeValue(forKey: call)!
+    response.resume(returning: DesktopSuggestionResponse(schemaVersion: 1, target: scope.target,
+      threadId: scope.threadId, sourceTurnId: scope.sourceTurnId, readOnly: true, suggestion: nil))
   }
 }
 
@@ -475,33 +490,48 @@ struct DesktopSuggestionReadAheadSmoke {
     try await backgroundCancellationDoesNotReleaseUpstream(a)
     let reader = DesktopSuggestionReadAhead(), probe = ReadAheadProbe()
     reader.prepare(a) { try await probe.fetch(a) }
-    try await Task.sleep(for: .milliseconds(20))
+    try await waitFor { probe.calls == 1 }
     precondition(probe.calls == 1, "Read must start while history is still loading")
     var fallbacks = 0
-    let confirmed = try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) }
+    let confirmedRead = Task { try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) } }
+    probe.finish(1)
+    let confirmed = try await confirmedRead.value
     precondition(confirmed.matches(a) && fallbacks == 0 && probe.calls == 1, "Fresh matching history consumes the single request")
 
+    // Keep the old request unresolved until navigation cancels it. A fixed
+    // sleep could let its 100 ms response complete first on a busy CI runner.
     reader.prepare(a) { try await probe.fetch(a) }
-    try await Task.sleep(for: .milliseconds(20))
-    let changed = try await reader.read(b) { fallbacks += 1; return try await probe.fetch(b) }
+    try await waitFor { probe.calls == 2 }
+    let changedRead = Task { try await reader.read(b) { fallbacks += 1; return try await probe.fetch(b) } }
+    try await waitFor { probe.calls == 3 && probe.cancelled == 1 }
+    probe.finish(3)
+    let changed = try await changedRead.value
     precondition(changed.matches(b) && fallbacks == 1 && probe.cancelled == 1, "New source/navigation cancels the candidate and reads its own source")
 
     reader.prepare(a) { throw URLError(.networkConnectionLost) }
-    let recovered = try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) }
+    let recoveredRead = Task { try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) } }
+    try await waitFor { probe.calls == 4 }
+    probe.finish(4)
+    let recovered = try await recoveredRead.value
     precondition(recovered.matches(a) && fallbacks == 2, "Failed optimization retains the ordinary read path")
 
     reader.prepare(a) { try await probe.fetch(a) }
-    let cancelled = Task { try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) } }
-    try await Task.sleep(for: .milliseconds(20))
+    var cancellationReadStarted = false
+    let cancelled = Task {
+      cancellationReadStarted = true
+      return try await reader.read(a) { fallbacks += 1; return try await probe.fetch(a) }
+    }
+    try await waitFor { cancellationReadStarted && probe.calls == 5 }
     cancelled.cancel()
     do { _ = try await cancelled.value; preconditionFailure("Cancelled caller must not receive a response") }
     catch is CancellationError {} catch { preconditionFailure("Unexpected cancellation error: \(error)") }
+    try await waitFor { probe.cancelled == 2 }
     precondition(probe.cancelled == 2 && fallbacks == 2, "Cancellation reaches the request and never triggers a fallback")
 
     reader.prepare(a) { try await probe.fetch(a) }
-    try await Task.sleep(for: .milliseconds(20))
+    try await waitFor { probe.calls == 6 }
     reader.cancel()
-    try await Task.sleep(for: .milliseconds(20))
+    try await waitFor { probe.cancelled == 3 }
     precondition(probe.cancelled == 3, "Leaving the navigation cancels outstanding work")
     let live = DesktopSuggestionReader()
     let text = "existing native suggestion"
@@ -513,13 +543,17 @@ struct DesktopSuggestionReadAheadSmoke {
     reader.prepare(a, onReady: { scope, result in
       if probe.confirmedScope == scope { live.seed(result, for: scope) }
     }) { response }
-    try await Task.sleep(for: .milliseconds(20))
+    try await waitFor { reader.completed(for: a) != nil }
     precondition(live.suggestion == nil, "A candidate response cannot display before fresh history confirms it")
     probe.confirmedScope = a
     live.seed(reader.completed(for: a)!, for: a)
     precondition(live.visibleSuggestion(for: a) == value, "A confirmed completed response publishes without waiting for a view task")
-    let resumed = Task { await live.read(a) { fallbacks += 1; return response } }
-    try await Task.sleep(for: .milliseconds(20))
+    var resumedReadStarted = false
+    let resumed = Task {
+      resumedReadStarted = true
+      await live.read(a) { fallbacks += 1; return response }
+    }
+    try await waitFor { resumedReadStarted }
     precondition(fallbacks == 2, "The later view task must reuse the confirmed value")
     resumed.cancel(); await resumed.value
     let obsoleteView = Task { await live.read(nil) { response } }

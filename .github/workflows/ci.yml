@@ -110,3 +110,9 @@ jobs:
           -scheme CodexManage -sdk iphonesimulator
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath .build/ios CODE_SIGNING_ALLOWED=NO build
+      - name: Check native Swift regression boundaries
+        if: github.server_url == 'https://git.51easyai.com'
+        run: |
+          node apps/ios/Tests/desktop-suggestions-smoke.mjs all
+          node scripts/attachment-download-native-smoke.mjs
+          node scripts/upload-wire-cancellation-native-smoke.mjs

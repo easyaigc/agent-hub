@@ -86,8 +86,8 @@ final class UploadWireOperation: @unchecked Sendable {
       try await withCheckedThrowingContinuation { continuation in
         let completion: @Sendable (Data?, URLResponse?, Error?) -> Void = { [self] data, response, error in
           let previous = lock.withLock { () -> (URLSessionDataTask?, NSKeyValueObservation?) in
-            let previous = (self.task, observation)
-            self.task = nil; observation = nil
+            let previous = (self.task, self.observation)
+            self.task = nil; self.observation = nil
             return previous
           }
           // KVO invalidation and URLSession cancellation can reenter callbacks.
@@ -99,8 +99,8 @@ final class UploadWireOperation: @unchecked Sendable {
           else { continuation.resume(throwing: HostServiceError.invalidResponse) }
         }
         let task: URLSessionDataTask = file.map { session.uploadTask(with: request, fromFile: $0, completionHandler: completion) } ?? session.dataTask(with: request, completionHandler: completion)
-        let observation = task.observe(\.countOfBytesSent, options: [.new]) { [self] task, _ in
-          let now = ProcessInfo.processInfo.systemUptime, count = task.countOfBytesSent
+        let observation: NSKeyValueObservation = task.observe(\URLSessionDataTask.countOfBytesSent, options: [.new]) { [self] observedTask, _ in
+          let now = ProcessInfo.processInfo.systemUptime, count = observedTask.countOfBytesSent
           let report = lock.withLock { () -> Bool in
             guard now - lastReport >= 0.25 || count == Int64(request.httpBody?.count ?? 0) else { return false }
             lastReport = now; return true

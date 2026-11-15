@@ -21356,6 +21356,17 @@
       }
     },
     {
+      "id": "pr3-public-swift-ci-followup-20261115",
+      "baseCommit": "90b2016064f135672819f51c2871f3c7ed98a5e5",
+      "features": ["F32", "F69", "F72"],
+      "summary": "GitHub公开快照581aae1的真实CI暴露两项Swift边界：下载操作完成闭包显式引用self.observation并补URLSessionDownloadTask/KVO根类型，消除旧编译器局部同名变量循环推导；建议预读回归使用受控响应和取消检查点替代20/100ms时窗，原目标匹配、单次fallback和取消计数断言保持。生产建议读取、Android/Host/共享核心和协议未改，Android既有状态及F69计划边界保持；本条不升级历史真机证据，当前原生辅助检查与后续CI按专项报告分列。 原生用例执行限时120秒；Gitea macOS构建后补跑同一边界套件，GitHub完整工作区检查保持。",
+      "files": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e014b73429eae42be2f3f7350b8e8bf7172fed359bffa75689d3bf05b37289a9",
+        "apps/ios/Tests/DesktopSuggestionReadAheadSmoke.swift": "f66e9361bc13a24436e434244c77cad3dbc52036afae9f0c33a0c254d21587b3",
+        "apps/ios/Tests/desktop-suggestions-smoke.mjs": "9b91760669e3244ac1659346708ad847c263f473f1c0b26cb041d39fc8322412"
+      }
+    },
+    {
       "id": "upload-resume-20261115",
       "baseCommit": "90b2016064f135672819f51c2871f3c7ed98a5e5",
       "features": ["F30", "F31", "F59"],
@@ -21393,6 +21404,18 @@
         "apps/android/src/main/res/values-zh/product_strings.xml": "a320b97a4f7ec85c6f708ecd3f91daf2a5c061dd429d58adf5416a06178a55bc",
         "apps/android/src/androidTest/assets/localization-catalog.json": "3d5849bb1c02e8830f8c5a91b4a705133dbbc7cb9e5ea4135c5bd70738c351c5",
         "scripts/upload-wire-cancellation-native-smoke.mjs": "ee6cee842822a19ebeee7fe8f323ab5d53a911f972d985424d3d946557c412bc"
+      }
+    },
+    {
+      "id": "pr3-upload-main-integration-20261115",
+      "baseCommit": "50681c24cbc6695dd2a12c6e879ac223363f723a",
+      "features": ["F30", "F31", "F32", "F59", "F69", "F72"],
+      "summary": "在并行上传恢复主线50681c2上整合PR3公开Swift CI修复，保留上传发布/取消/超时、新iOS上传界面与Android新增文案及原验收记录；CodexHostRoutes.session保持主线内部可见性，同时保留下载KVO显式self和根类型。建议预读生产逻辑不变，受控回归与原断言保持。此前90b2016上的CI/辅助结果按原指纹保留；本组合需重新CI，Android冷会话因Host/适配器源变化重新验收，不将旧指纹升级为当前通过。 同类上传观察器的属性与KVO根类型也显式绑定，原先锁内清状态、锁外失效/取消的顺序保持。",
+      "files": {
+        "apps/ios/Sources/CodexDiscovery.swift": "ddfc53325e39356cc0ea881633bfe42a82050b61bb9a0c59c1d2b88c1fa073ac",
+        "apps/ios/Tests/DesktopSuggestionReadAheadSmoke.swift": "f66e9361bc13a24436e434244c77cad3dbc52036afae9f0c33a0c254d21587b3",
+        "apps/ios/Tests/desktop-suggestions-smoke.mjs": "9b91760669e3244ac1659346708ad847c263f473f1c0b26cb041d39fc8322412",
+        "apps/ios/Sources/Uploads.swift": "162a954d1e81958af16d27e675a7a551194570c24d81342a88cb254ab6a221cd"
       }
     }
   ]

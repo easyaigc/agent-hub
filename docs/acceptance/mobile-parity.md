@@ -1930,3 +1930,7 @@ I7.119–120。新Root默认权限快照复用原会话感知权限服务，显�
 2026-11-08 F03/F06/F57/F63。iOS 27 与 Android API 33 模拟器以专用 mesh 新域读取同一真实 DEV 两次，原保存的完整目标、公钥和配对证书指纹匹配，错误身份被拒绝。iOS 本机代理的精确新主机例外已补齐，初始失败保留。Android 真机新域候选安装及原 grant/内容读取另列，原 issuer 与未知操作继续按原身份查询。详见[阶段126](../plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
 2026-11-09 F18/F19/F20 / UI05。Android API33 与 iOS27 模拟器通过原生手柄拖动、系统 Copy 及精确原文子串核对，分别跨两个和三个原始换行，本次剪贴板基线恢复已读回。受限视口的已通过控件与 iOS 导航覆盖观察、API37 启动失败分别登记，不关闭整组真机/界面或 Provider 范围。详见[阶段127](../plans/android-alignment-20261022/records/stage127-c2-multiline-selection-and-viewport.md)。
+
+2026-11-15，Gitea PR177 已合入 `90b2016`，公开快照 `581aae1` 源码树匹配。GitHub run `43672753811` 的工作区在建议预读取消断言失败，iOS 在下载 KVO 表达式循环推导失败；均保留失败，不由 Gitea Xcode27 的成功替代。后续候选显式绑定下载属性/类型，并用受控请求稳定测试，F32/F69/F72 当前辅助验证及真实 CI 按 `pr3-android-cold-ci-20261115.md` 分列；Android 冷会话原证据保留准确指纹，未增加真机、Windows 或新 UI 验收结论。
+
+2026-11-15，PR178 的 `de82874` 完整 CI 已通过，但主线在合并前推进至上传恢复 `50681c2`。本次保留双方代码、F30/F31/F59 新上传说明及原证据，仅处理台账追加冲突和同类 Swift KVO 编译绑定。旧 Android 冷会话指纹不直接升级，新的整合源与运行包另做原生复验；新候选 CI/原生结果按 PR178 和专项回执关联，上传整体验收继续由原专项记录。

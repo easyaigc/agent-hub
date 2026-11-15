@@ -83,12 +83,31 @@ let stableResolution = 0;
 let expectedBinaryTarget = target;
 const binaryTargets = [];
 let ownedSimulator;
+let simulator;
+let selectedRuntime;
+let selectedSDK;
+let phase = 'listener';
+let connections = 0;
+let healthRequests = 0;
+let healthReply = nonce;
+const phaseStarted = performance.now();
+const phases = [];
+const enterPhase = (name) => {
+  phase = name;
+  phases.push({ name, elapsedMs: Math.round(performance.now() - phaseStarted) });
+  console.log('Native download fixture phase: ' + name);
+};
 const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   const send = (code, value) =>
     res.writeHead(code, { 'Content-Type': 'application/json' }).end(JSON.stringify(value));
   assert.equal(req.headers.authorization, 'Bearer synthetic-token');
   assert([nonce, nonce + '-other'].includes(url.searchParams.get('hostId')));
+  if (url.pathname === '/fixture-health') {
+    healthRequests += 1;
+    res.setHeader('Cache-Control', 'no-store');
+    return send(200, { fixtureReady: healthReply });
+  }
   const id =
     url.searchParams.get('id') ??
     (url.pathname === '/v1/attachments/resolve-link' ? `large_${nonce}_original` : null);
@@ -182,9 +201,25 @@ const server = createServer((req, res) => {
   }
   res.writeHead(200).end(scenario === 'corrupt' ? 'invalid-bytes' : content);
 });
+server.on('connection', () => {
+  connections += 1;
+});
 await new Promise((done) => server.listen(0, '127.0.0.1', done));
+const healthURL = 'http://127.0.0.1:' + server.address().port + '/fixture-health?hostId=' + nonce;
+const checkHostHealth = async () => {
+  const response = await fetch(healthURL, {
+    headers: { Authorization: 'Bearer synthetic-token' },
+    signal: AbortSignal.timeout(5_000),
+  });
+  assert.equal(response.status, 200, 'Host must reach its own fixture listener');
+  assert.deepEqual(await response.json(), { fixtureReady: nonce });
+};
 try {
+  enterPhase('host-http-ready');
+  await checkHostHealth();
+  enterPhase('swift-source');
   const swift = `import Foundation
+import Darwin
 import CryptoKit
 import MobileCore
 enum L10n { static func tr(_ text: String) -> String { text } }
@@ -213,7 +248,7 @@ final class CodexHostRoutes {
   func download(for request: URLRequest, totalBytes: Int64, progress: FileDownloadProgressHandler?) async throws -> (Data, URLResponse) {
     try await FileDownloadOperation(totalBytes: totalBytes, progress: progress).run(session: session, request: request)
   }
-  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) { try await URLSession.shared.data(for: request) }
+  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) { try await session.data(for: request) }
 }
 struct HostService {
 ${methods}
@@ -228,7 +263,49 @@ final class ProgressCapture: @unchecked Sendable {
   func add(_ value: FileDownloadProgress) { lock.lock(); defer { lock.unlock() }; values.append(value) }
 }
 @main struct Check {
+  static func fixtureHealth() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = 2
+    configuration.timeoutIntervalForResource = 3
+    let session = URLSession(configuration: configuration)
+    defer { session.invalidateAndCancel() }
+    let deadline = ProcessInfo.processInfo.systemUptime + 90
+    var attempts = 0
+    var lastCode = 0
+    while ProcessInfo.processInfo.systemUptime < deadline {
+      attempts += 1
+      var request = URLRequest(url: URL(string: "http://127.0.0.1:${server.address().port}/fixture-health?hostId=${nonce}")!)
+      request.setValue("Bearer synthetic-token", forHTTPHeaderField: "Authorization")
+      do {
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+          throw NSError(domain: "FixtureReadiness", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fixture health status mismatch"])
+        }
+        let object = try JSONSerialization.jsonObject(with: data) as? [String: String]
+        guard object?["fixtureReady"] == "${nonce}" else {
+          throw NSError(domain: "FixtureReadiness", code: 2, userInfo: [NSLocalizedDescriptionKey: "Fixture health marker mismatch"])
+        }
+        print("fixture-health ready; attempts=\\(attempts)")
+        return
+      } catch {
+        let value = error as NSError
+        guard value.domain == NSURLErrorDomain, [-1001, -1003, -1004, -1005, -1009].contains(value.code) else { throw error }
+        lastCode = value.code
+        print("fixture-health transport pending; attempt=\\(attempts) code=\\(lastCode)")
+      }
+      try await Task.sleep(nanoseconds: 250_000_000)
+    }
+    throw NSError(domain: "FixtureReadiness", code: 3, userInfo: [NSLocalizedDescriptionKey: "Simulator fixture HTTP not ready after bounded probes; attempts=\\(attempts) lastCode=\\(lastCode)"])
+  }
   static func main() async throws {
+    if CommandLine.arguments.contains("--fixture-health") {
+      do { try await fixtureHealth() }
+      catch {
+        FileHandle.standardError.write(Data(((error as NSError).localizedDescription + "\\n").utf8))
+        Darwin.exit(1)
+      }
+      return
+    }
     let target = AgentRuntimeTarget(agentId: "codex", hostId: "${nonce}", workspaceId: "workspace", runtimeId: "runtime")
     let client = Client(id: "${nonce}", endpoint: "http://127.0.0.1:${server.address().port}", readingTarget: target)
     let scenarios = ["large", "cached", "removed", "race", "changing", "legacy", "wrongHost", "wrongThread", "wrongSource", "wrongRuntime", "corrupt", "zero", "denied", "redirect", "cancel"]
@@ -342,23 +419,27 @@ final class ProgressCapture: @unchecked Sendable {
     binary = join(directory, 'check');
   await writeFile(file, swift, { mode: 0o600 });
   // Execute the actual shared identity facade, not a fixture reimplementation.
+  enterPhase('simulator-select');
   const devices = JSON.parse(
     (await execute('xcrun', ['simctl', 'list', 'devices', 'available', '--json'])).stdout,
   ).devices;
   const selected = process.env.IOS_SIMULATOR_ID;
-  let simulator;
   if (selected) {
     const device = Object.values(devices)
       .flat()
       .find((value) => value.udid === selected);
     assert.equal(device?.state, 'Booted', 'Selected dedicated simulator must be booted');
     simulator = selected;
+    selectedRuntime = Object.entries(devices).find(([, values]) =>
+      values.some((value) => value.udid === selected),
+    )?.[0];
   } else {
     const runtime = Object.keys(devices)
       .filter((value) => value.includes('iOS'))
       .sort()
       .at(-1);
     assert(runtime, 'iOS simulator runtime is required for real shared identity boundary');
+    selectedRuntime = runtime;
     const template = devices[runtime].find((value) => value.deviceTypeIdentifier);
     assert(template, 'Available iOS device type is required');
     ownedSimulator = (
@@ -371,15 +452,27 @@ final class ProgressCapture: @unchecked Sendable {
       ])
     ).stdout.trim();
     simulator = ownedSimulator;
-    await execute('xcrun', ['simctl', 'boot', simulator]);
-    await execute('xcrun', ['simctl', 'bootstatus', simulator, '-b'], { timeout: 120000 });
+    // A fresh hosted simulator can spend minutes in LaunchServices migration.
+    // This is fixture preparation, separate from the unchanged business deadline.
+    const bootDeadline = performance.now() + 10 * 60_000;
+    const bootOptions = () => ({
+      timeout: Math.max(1, Math.ceil(bootDeadline - performance.now())),
+    });
+    enterPhase('simulator-boot');
+    await execute('xcrun', ['simctl', 'boot', simulator], bootOptions());
+    enterPhase('simulator-bootstatus');
+    const boot = await execute('xcrun', ['simctl', 'bootstatus', simulator, '-b'], bootOptions());
+    await writeFile(join(directory, 'bootstatus.log'), boot.stdout, { mode: 0o600 });
+    console.log(boot.stdout.trim().split('\n').slice(-8).join('\n'));
   }
   const sdk = (
     await execute('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-path'])
   ).stdout.trim();
+  selectedSDK = sdk;
   const framework = resolve(
     '.build/native/mobile-core/bin/' + (arm ? 'iosSimulatorArm64' : 'iosX64') + '/debugFramework',
   );
+  enterPhase('swift-compile');
   await execute(
     'xcrun',
     [
@@ -399,10 +492,36 @@ final class ProgressCapture: @unchecked Sendable {
     ],
     { timeout: 120000 },
   );
+  enterPhase('codesign');
   await execute('codesign', ['--force', '--sign', '-', binary]);
+  const spawnEnvironment = { ...process.env, SIMCTL_CHILD_DYLD_FRAMEWORK_PATH: framework };
+  const probe = () =>
+    execute('xcrun', ['simctl', 'spawn', simulator, binary, '--fixture-health'], {
+      timeout: 120_000,
+      env: spawnEnvironment,
+    });
+  enterPhase('simulator-http-ready');
+  const readiness = await probe();
+  console.log(readiness.stdout.trim());
+  enterPhase('reject-wrong-health-marker');
+  let markerError;
+  healthReply = nonce + '-mismatch';
+  try {
+    await probe();
+  } catch (error) {
+    markerError = error;
+  } finally {
+    healthReply = nonce;
+  }
+  assert(markerError, 'A wrong health marker must fail fixture readiness');
+  assert.equal(markerError.code, 1);
+  assert.match(markerError.stderr, /Fixture health marker mismatch/);
+  assert.equal(counts.size, 0, 'Health probes must not execute download scenarios');
+  const readinessCounts = { connections, healthRequests };
+  enterPhase('download-assertions');
   const result = await execute('xcrun', ['simctl', 'spawn', simulator, binary], {
     timeout: 60000,
-    env: { ...process.env, SIMCTL_CHILD_DYLD_FRAMEWORK_PATH: framework },
+    env: spawnEnvironment,
   });
   assert.equal(counts.get('redirect/v1/attachments'), 1);
   assert.equal(counts.get('cached/v1/attachments/resolve'), 2);
@@ -430,9 +549,66 @@ final class ProgressCapture: @unchecked Sendable {
     discoverySourceSha256: hash(discovery),
     native: result.stdout.trim(),
     counts: Object.fromEntries(counts),
+    fixtureReadiness: {
+      host: 'passed',
+      simulator: readiness.stdout.trim(),
+      wrongMarkerRejected: true,
+      beforeScenarios: readinessCounts,
+      phases,
+    },
   };
   await writeFile(join(directory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
   console.log(JSON.stringify(report));
+} catch (error) {
+  const diagnostic = {
+    phase,
+    simulator,
+    runtime: selectedRuntime,
+    sdk: selectedSDK,
+    connections,
+    healthRequests,
+    scenarioCounts: Object.fromEntries(counts),
+    phases,
+    proxyEnvironmentPresent: Object.fromEntries(
+      [
+        'HTTP_PROXY',
+        'HTTPS_PROXY',
+        'ALL_PROXY',
+        'NO_PROXY',
+        'http_proxy',
+        'https_proxy',
+        'all_proxy',
+        'no_proxy',
+      ].map((key) => [key, Boolean(process.env[key])]),
+    ),
+    commandStdoutTail: typeof error.stdout === 'string' ? error.stdout.slice(-2500) : undefined,
+  };
+  try {
+    await checkHostHealth();
+    diagnostic.hostListenerAfterFailure = 'passed';
+  } catch {
+    diagnostic.hostListenerAfterFailure = 'failed';
+  }
+  try {
+    const raw = (await execute('scutil', ['--proxy'], { timeout: 5_000 })).stdout;
+    diagnostic.hostProxyFlags = Object.fromEntries(
+      [
+        ...raw.matchAll(
+          /^\s*(HTTPEnable|HTTPSEnable|SOCKSEnable|ProxyAutoConfigEnable|ProxyAutoDiscoveryEnable)\s*:\s*([01])\s*$/gm,
+        ),
+      ].map((match) => [match[1], match[2] === '1']),
+    );
+    diagnostic.hostProxyMentionsLoopbackBypass = /127\.0\.0\.1|localhost/.test(raw);
+  } catch {
+    diagnostic.hostProxyFlags = 'unavailable';
+  }
+  await writeFile(
+    join(directory, 'failure-diagnostics.json'),
+    JSON.stringify(diagnostic, null, 2),
+    { mode: 0o600 },
+  );
+  console.error('Native fixture failure diagnostics: ' + JSON.stringify(diagnostic));
+  throw error;
 } finally {
   server.closeAllConnections();
   await new Promise((done) => server.close(done));

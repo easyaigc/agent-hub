@@ -332,6 +332,53 @@ async function fixture(t, body) {
   }
 }
 
+test('historical ordinal identities survive the original-owner transition once per turn and item', async (t) =>
+  fixture(t, async (f) => {
+    const id = randomUUID();
+    const original = state(id, 'old-turn', 'completed', 'same body');
+    original.turns[0].items[0].id = 'item-1';
+    original.turns[0].items[1].id = 'item-2';
+    original.turns[0].items.push({ id: 'item-3', type: 'agentMessage', text: 'same body' });
+    const second = structuredClone(original.turns[0]);
+    second.turnId = 'second-turn';
+    original.turns.push(second);
+    await f.seed(id, 'owner-A', original, false);
+    const historical = original.turns.flatMap((turn) =>
+      turn.items.map((item) => ({
+        id: `history-fallback:${turn.turnId}:${item.id}`,
+        runId: turn.turnId,
+        role: item.type === 'userMessage' ? 'user' : 'assistant',
+        kind: item.type,
+        text: item.text ?? item.content.map((v) => v.text).join('\n'),
+        files: [],
+        attachments: [],
+        detail: '',
+        status: 'completed',
+      })),
+    );
+    f.rows(id).messages = historical;
+    await f.session.open(id);
+    assert.deepEqual(
+      f.rows(id).messages.map((v) => v.id),
+      historical.map((v) => v.id),
+    );
+    assert.equal(f.rows(id).messages.length, 6, 'Two identical replies in each turn stay distinct');
+    const current = structuredClone(original);
+    current.turns[1].items[1].text = 'updated body';
+    f.snapshot(id, 'owner-A', current);
+    await f.wait(() => f.hasText(id, 'updated body'), 'New owner snapshot must publish');
+    assert.equal(f.rows(id).messages.length, 6, 'An update replaces its exact ordinal row');
+    assert.equal(f.rows(id).messages.filter((v) => v.text === 'same body').length, 3);
+    // Repair an already persisted raw/namespaced pair without clearing the cache.
+    f.rows(id).messages.unshift({ ...historical[0], id: 'item-1' });
+    f.snapshot(id, 'owner-A', current);
+    await f.wait(() => f.rows(id).messages.length === 6, 'Legacy alias must be retired');
+    assert.deepEqual(
+      f.rows(id).messages.map((v) => v.id),
+      historical.map((v) => v.id),
+    );
+  }));
+
 test('terminal reset requires the exact original input, tip and inactive runtime', async (t) =>
   fixture(t, async (f) => {
     const id = randomUUID();

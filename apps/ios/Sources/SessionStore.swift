@@ -245,6 +245,13 @@ private var userRequestedWorkspaceGeneration: UUID?
   private var historyGeneration = UUID() { didSet { suggestionReadAhead.cancel(); desktopSuggestionReader.clear(reason: "navigation-generation") } }
   private var pagedHistoryGeneration: UUID?
   private var historyWindowRevisions: [String: Int] = [:]
+  private var snapshotFence: (generation: UUID, key: String, value: ConversationSnapshotFence)?
+  private func currentSnapshotFence() -> ConversationSnapshotFence {
+    if let fence = snapshotFence, fence.generation == historyGeneration, fence.key == targetKey { return fence.value }
+    let fence = ConversationSnapshotFence()
+    snapshotFence = (historyGeneration, targetKey, fence)
+    return fence
+  }
   private var demoTasks: [String: Task<Void, Never>] = [:]
   private var creationObservers: [String: Task<Void, Never>] = [:]
   @Published private var forkOptionsBySource: [String: ThreadForkOptions] = [:]
@@ -3273,6 +3280,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     }
     let startedAt = ProcessInfo.processInfo.systemUptime
     loadingHistoryRequests[key, default: 0] += 1
+    let fence = currentSnapshotFence()
+    let snapshotReadRevision = fence.beginRead()
     defer {
       loadingHistoryRequests[key, default: 0] -= 1
       if loadingHistoryRequests[key] == 0 { loadingHistoryRequests.removeValue(forKey: key) }
@@ -3293,6 +3302,8 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard historyGeneration == generation, client?.id == host.id, selectedThreadId == id, !more || targetKey == key
       else { return false }
       guard result.hostId == host.id, result.threadId == id else { throw HostServiceError.wrongHost }
+      if !more, !fence.accepts(readRevision: snapshotReadRevision,
+        incomingEpoch: result.epoch ?? "", incomingCursor: Int64(result.cursor ?? -1)) { return false }
       recordConnectionSuccess(host)
       let windowed = result.historyWindow?.isWindowed == true
       let knownRevisionMatches = result.historyRevision.map { historyWindowRevisions[key] == $0 } ?? false
@@ -3315,7 +3326,8 @@ private var userRequestedWorkspaceGeneration: UUID?
       let preserveLegacyV9 = windowed && result.historyRevision == nil && historyWindowRevisions[key] == nil && result.synchronization != nil
         && pagedHistoryGeneration == generation
         && (saved.history[key] ?? []).contains { resultMessageIds.contains($0.id) }
-      if more && result.runtime == nil {
+      if more {
+        // Prefix paging cannot replace the current live runtime or overlapping rows.
         let existing = saved.history[key] ?? []
         var ids = Set(existing.map(\.id))
         let prefix = result.messages.filter { ids.insert($0.id).inserted }
@@ -3347,7 +3359,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       #endif
       // apply() already schedules a coalesced save, also flushed on background.
       // Only the manual earlier-page merge above bypasses that save.
-      if more && result.runtime == nil { persist() }
+      if more { persist() }
       return true
     } catch {
       guard !isReadCancellation(error), historyGeneration == generation,
@@ -3457,10 +3469,13 @@ private var userRequestedWorkspaceGeneration: UUID?
           }
           let currentHost = client ?? host
           let expectedReadingTarget = mobileReadingTarget(currentHost)
+          let readGeneration = historyGeneration
+          let fence = currentSnapshotFence()
+          var snapshotReadRevision = fence.beginRead()
           let batch = try await AgentClients.resolve(currentHost).events(readingClient(currentHost), epoch: epoch, after: cursor, threadId: threadId)
           try Task.checkCancellation()
           guard clientGeneration == generation, client?.id == host.id else { break }
-          guard selectedThreadId == threadId else {
+          guard selectedThreadId == threadId, historyGeneration == readGeneration else {
             epoch = ""
             cursor = 0
             continue
@@ -3468,11 +3483,12 @@ private var userRequestedWorkspaceGeneration: UUID?
           let route = await (try AgentClients.resolve(host)).connectionTitle(host)
           try await waitForSidebarInteraction()
           try Task.checkCancellation()
-          guard clientGeneration == generation, client?.id == host.id, selectedThreadId == threadId else { continue }
+          guard clientGeneration == generation, client?.id == host.id, selectedThreadId == threadId, historyGeneration == readGeneration else { continue }
           if connectionRoutes[host.id] != route { connectionRoutes[host.id] = route }
           guard batch.hostId == host.id else { throw HostServiceError.wrongHost }
           guard batch.cursor >= 0 else { throw HostServiceError.invalidResponse }
-          if let rawCapabilities = batch.capabilities {
+          if fence.accepts(readRevision: snapshotReadRevision, incomingEpoch: batch.epoch, incomingCursor: Int64(batch.cursor)),
+            let rawCapabilities = batch.capabilities {
             let capabilities = try AgentClients.resolve(host).normalizedCapabilities(
               rawCapabilities, connectionMode: saved.workspaces[host.id]?.connectionMode)
             if saved.workspaces[host.id]?.capabilities != capabilities {
@@ -3480,13 +3496,17 @@ private var userRequestedWorkspaceGeneration: UUID?
             }
           }
           let decision = OperationPolicies.shared.event(previousEpoch: epoch, previousCursor: Int64(cursor),
-            epoch: batch.epoch, cursor: Int64(batch.cursor), reset: batch.reset, ready: batch.ready == true, snapshotCount: Int32(batch.events.count))
+            epoch: batch.epoch, cursor: Int64(batch.cursor), reset: batch.reset, ready: batch.ready == true, snapshotCount: Int32(batch.events.count), threadScoped: true)
           for event in batch.events {
             guard event.snapshot.hostId == host.id,
               event.snapshot.threadId == event.threadId, event.threadId == threadId
             else { throw HostServiceError.wrongHost }
             if let received = event.snapshot.readTarget, received != expectedReadingTarget { throw HostServiceError.wrongHost }
-            if decision.apply { apply(event.snapshot) }
+            if decision.apply, fence.accepts(readRevision: snapshotReadRevision,
+              incomingEpoch: event.snapshot.epoch ?? "", incomingCursor: Int64(event.snapshot.cursor ?? -1)) {
+              apply(event.snapshot)
+              snapshotReadRevision = fence.beginRead()
+            }
           }
           epoch = decision.epoch
           cursor = Int(decision.cursor)
@@ -3617,6 +3637,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     }
     if snapshot.hostId == client?.id, snapshot.threadId == selectedThreadId {
       confirmSelectedHistory(runtimePresent: snapshot.runtime != nil)
+      if !historyPage, snapshot.historyWindow?.kind != "earlier" {
+        currentSnapshotFence().accepted(incomingEpoch: snapshot.epoch ?? "", incomingCursor: Int64(snapshot.cursor ?? -1))
+      }
     }
     if let summary = snapshot.thread, summary.hostId == snapshot.hostId,
       summary.id == snapshot.threadId,

@@ -43,7 +43,7 @@ import {
   type ProposedPlan,
 } from './desktop-ipc.js';
 import { codexClientType } from './history-reader.js';
-import { retainedDesktopHistory } from './desktop-history-identity.js';
+import { historyIdentity, retainedDesktopHistory } from './desktop-history-identity.js';
 import { approvalRequest } from './approval-requests.js';
 import { DesktopPreparedBridge } from './desktop-prepared-bridge.js';
 import { defaultDesktopPreparedBridge } from './desktop-bridge-defaults.js';
@@ -1897,6 +1897,7 @@ export class RuntimeSession {
               { ...projected, runId: turn.turnId },
               Infinity,
             );
+            message.id = historyIdentity(message.id, message.runId);
             if (message.kind === 'reasoning' && !message.text) return [];
             const cached = thread.messages.find((v) => v.id === message.id);
             return [
@@ -2252,7 +2253,7 @@ export class RuntimeSession {
         if (continuousLegacy) {
           const ids = new Set([
             ...(this.verifiedDesktopMessageIds.get(threadId) ?? []),
-            ...observation.items.map((v) => string(v.item.id)),
+            ...observation.items.map((v) => historyIdentity(string(v.item.id), v.turnId)),
           ]);
           thread.messages = previous.filter((v) => ids.has(v.id));
         }
@@ -3469,6 +3470,7 @@ export class RuntimeSession {
     indexes?: Map<string, number>,
   ): Promise<void> {
     const rendered = renderItem(item);
+    if (this.mode === 'desktop-runtime') rendered.id = historyIdentity(rendered.id, rendered.runId);
     const questions = desktopQuestions([item]);
     if (questions.length) {
       rendered.text = questions.map((question) => question.title).join('\n\n');
@@ -5522,6 +5524,7 @@ export class RuntimeSession {
     return reply
       ? {
           ...renderItem(reply),
+          id: historyIdentity(string(reply.id), string(finished?.turnId)),
           status: ['interrupted', 'failed'].includes(string(finished?.status))
             ? string(finished?.status)
             : 'completed',
@@ -5569,6 +5572,7 @@ export class RuntimeSession {
       )
         continue;
       const { paths: _paths, ...message } = renderItem({ ...item, runId: turnId });
+      message.id = historyIdentity(message.id, message.runId);
       if (!message.id || (message.kind === 'reasoning' && !message.text)) continue;
       const index = thread.messages.findIndex((v) => v.id === message.id);
       const previous = index >= 0 ? thread.messages[index] : undefined;
@@ -5866,7 +5870,11 @@ export class RuntimeSession {
     const initializationIds = new Set(
       turns
         .filter((turn) => turn.turnId === thread.desktopInitializationTurnId)
-        .flatMap((turn) => list(turn.items).map((item) => string(object(item).id))),
+        .flatMap((turn) =>
+          list(turn.items).map((item) =>
+            historyIdentity(string(object(item).id), string(turn.turnId)),
+          ),
+        ),
     );
     let projected = 0;
     for (const turn of turns) {

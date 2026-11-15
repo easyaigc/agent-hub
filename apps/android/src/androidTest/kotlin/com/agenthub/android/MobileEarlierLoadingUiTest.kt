@@ -29,7 +29,7 @@ class MobileEarlierLoadingUiTest {
         ui.runOnIdle { owned=OwnedControlAcceptance(ui.activity,"earlier-reading-copy") }
     }
     private val host="loading-ui-"+UUID.randomUUID().toString();private val thread="loading-thread-"+UUID.randomUUID().toString();private var rowCount=120
-    private val calls=AtomicInteger();private val gates=mutableListOf<CompletableDeferred<Unit>>()
+    private val calls=AtomicInteger();private val earlierCalls=AtomicInteger();private val gates=mutableListOf<CompletableDeferred<Unit>>()
     private var windowed=false;private var holdLatest: CompletableDeferred<Unit>?=null;private var holdEarlier: CompletableDeferred<Unit>?=null
     private fun gate()=CompletableDeferred<Unit>().also { gates.add(it) }
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
@@ -41,11 +41,11 @@ class MobileEarlierLoadingUiTest {
     }
     private fun setup(waitForHistory: Boolean=true) {
         val reader=object: HostReads {
-            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=HostReadCodec.workspace(JSONObject().put("hostId",host).put("name","synthetic native reading state").put("connectionMode","history-only").put("projects",JSONArray()).put("threads",JSONArray().put(JSONObject().put("id",thread).put("hostId",host).put("title","synthetic reading state").put("state","idle"))).toString())
-            override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory { calls.incrementAndGet();if(cursor==null)holdLatest?.await() else holdEarlier?.await();return page(client,threadId,cursor) }
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=HostReadCodec.workspace(JSONObject().put("hostId",host).put("name","synthetic native reading state").put("connectionMode","history-only").put("projects",JSONArray()).put("threads",JSONArray(listOf(thread,"$thread-second").map { JSONObject().put("id",it).put("hostId",host).put("title","synthetic reading state").put("state","idle") })).toString())
+            override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory { calls.incrementAndGet();if(cursor==null)holdLatest?.await() else { earlierCalls.incrementAndGet();holdEarlier?.await() };return page(client,threadId,cursor) }
         }
         ui.runOnIdle { session.resetAcceptance(reader);session.changeLanguage(language)
-            session.changeAppearance(androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("viewportTheme") ?: "light") };main { session.connect("synthetic earlier state","https://fixture.invalid","") };ui.runOnIdle { session.selectThread(session.threads.single());session.text="unchanged local draft" }
+            session.changeAppearance(androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("viewportTheme") ?: "light") };main { session.connect("synthetic earlier state","https://fixture.invalid","") };ui.runOnIdle { session.selectThread(session.threads.first { it.id==thread });session.text="unchanged local draft" }
         if(waitForHistory)ui.waitUntil(10_000) { !session.historyLoading&&session.messages.isNotEmpty() } else ui.waitUntil(10_000) { session.historyLoading&&calls.get()>0 }
     }
     @After fun stop() { gates.forEach { it.complete(Unit) };ui.runOnIdle { session.leaveForeground();owned.verifyDefault() } }
@@ -55,11 +55,32 @@ class MobileEarlierLoadingUiTest {
         ui.onNodeWithTag("history-local-more").assertDoesNotExist();ui.onNodeWithTag("history-more").assertDoesNotExist();ui.onNodeWithText(earlierLoadingLabel).assertDoesNotExist()
         assertEquals("unchanged local draft",session.text)
     }
-    @Test fun latestRefreshKeepsEarlierLabelWithoutEarlierSpinner() {
+    @Test fun latestRefreshKeepsEarlierControlInteractiveWithoutEarlierSpinner() {
         setup();val ids=session.messages.map { it.id };holdLatest=gate();main { session.loadHistory() };ui.waitUntil(5_000) { session.historyLoading }
-        ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("history-local-more"));ui.onNodeWithTag("history-local-more").assertTextEquals(earlierLabel).assertIsNotEnabled()
+        ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("history-local-more"));ui.onNodeWithTag("history-local-more").assertTextEquals(earlierLabel).assertIsEnabled()
         ui.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo) and hasAnyAncestor(hasTestTag("history-local-more")),useUnmergedTree=true).assertCountEquals(0)
+        ui.onNodeWithTag("history-local-more").performClick();ui.waitUntil(5_000) { session.visibleMessageLimit==80 }
+        assertTrue(session.historyLoading);assertEquals(2,calls.get());assertEquals(0,earlierCalls.get())
         assertEquals(ids,session.messages.map { it.id });assertEquals("unchanged local draft",session.text)
+    }
+    @Test fun earlierClickDuringLatestRefreshWaitsThenFetchesOneEarlierPage() {
+        windowed=true;setup();main { session.earlierMessages() };assertFalse(session.timeline.hasEarlierMessages)
+        holdLatest=gate();holdEarlier=gate();main { session.loadHistory() };ui.waitUntil(5_000) { session.historyLoading&&calls.get()==2 }
+        ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("history-more"));ui.onNodeWithTag("history-more").assertIsEnabled().performClick()
+        ui.onNodeWithTag("history-more").assertTextEquals(earlierLoadingLabel).assertIsNotEnabled()
+        assertEquals(0,earlierCalls.get());holdLatest!!.complete(Unit)
+        ui.waitUntil(10_000) { session.historyLoading&&earlierCalls.get()==1 }
+        ui.onNodeWithTag("history-more").assertIsNotEnabled();assertEquals(3,calls.get());assertEquals("unchanged local draft",session.text)
+        holdEarlier!!.complete(Unit);ui.waitUntil(10_000) { !session.historyLoading&&session.messages.size==120 }
+        assertEquals(1,earlierCalls.get());assertEquals(3,calls.get());assertEquals(120,session.messages.map { it.id }.distinct().size)
+    }
+    @Test fun queuedEarlierPageDoesNotFollowThreadSwitch() {
+        windowed=true;setup();main { session.earlierMessages() };holdLatest=gate();main { session.loadHistory() }
+        ui.waitUntil(5_000) { session.historyLoading&&calls.get()==2 }
+        var queued: Job?=null
+        ui.runOnIdle { queued=session.earlierMessages();session.selectThread(session.threads.first { it.id=="$thread-second" });session.text="second draft" }
+        holdLatest!!.complete(Unit);ui.waitUntil(10_000) { queued?.isCompleted==true&&!session.historyLoading }
+        assertEquals("$thread-second",session.selectedThread);assertEquals(0,earlierCalls.get());assertEquals("second draft",session.text)
     }
     @Test fun actualEarlierPageShowsBusyControlAndRetainsOriginalData() {
         windowed=true;setup();main { session.earlierMessages() };assertFalse(session.timeline.hasEarlierMessages);holdEarlier=gate()
@@ -67,5 +88,13 @@ class MobileEarlierLoadingUiTest {
         ui.onNodeWithTag("history-more").assertTextEquals(earlierLoadingLabel).assertIsNotEnabled()
         ui.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo) and hasAnyAncestor(hasTestTag("history-more")),useUnmergedTree=true).assertCountEquals(1)
         assertEquals(60,session.messages.size);assertEquals("unchanged local draft",session.text);holdEarlier!!.complete(Unit);ui.waitUntil(10_000) { !session.historyLoading&&session.messages.size==120 };assertEquals(2,calls.get());assertEquals(120,session.messages.map { it.id }.distinct().size)
+    }
+    @Test fun queuedEarlierPageDoesNotResumeAfterForegroundCycle() {
+        windowed=true;setup();main { session.earlierMessages() };holdLatest=gate();main { session.loadHistory() }
+        ui.waitUntil(5_000) { session.historyLoading&&calls.get()==2 }
+        var queued: Job?=null
+        ui.runOnIdle { queued=session.earlierMessages();session.leaveForeground();session.enterForeground() }
+        holdLatest!!.complete(Unit);ui.waitUntil(10_000) { queued?.isCompleted==true&&!session.historyLoading&&!session.loading }
+        assertEquals(thread,session.selectedThread);assertEquals(0,earlierCalls.get());assertEquals("unchanged local draft",session.text)
     }
 }

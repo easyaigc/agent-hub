@@ -208,7 +208,11 @@ struct ProjectGitDetailsView: View {
                       VStack(alignment:.leading,spacing:5) {
                         Text(tree.displayPath).font(.subheadline).lineLimit(2)
                         Text(tree.branch ?? (tree.unborn ? L10n.tr("尚无提交") : L10n.tr("分离 HEAD"))).font(.caption).foregroundStyle(.secondary)
-                        if let changes = tree.changes { Text(L10n.tr("未提交文件") + " \(changes.changed) · " + L10n.tr("未推送提交") + " " + (tree.publish.ahead.map(String.init) ?? "—")).font(.caption) }
+                        if let changes = tree.changes {
+                          let ahead = tree.publish.ahead.map { String($0) } ?? "—"
+                          let summary = "\(L10n.tr("未提交文件")) \(changes.changed) · \(L10n.tr("未推送提交")) \(ahead)"
+                          Text(summary).font(.caption)
+                        }
                         else { Text(projectGitReason(tree.reason)).font(.caption).foregroundStyle(.secondary) }
                       }
                     }.accessibilityIdentifier("git-worktree-\(tree.id)")

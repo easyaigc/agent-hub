@@ -18,6 +18,31 @@ const retained = (before, after) => retainedDesktopHistory(before, after, new Se
 assert.notEqual(historyIdentity('item-1', 'one'), historyIdentity('item-1', 'two'));
 assert.equal(historyIdentity('msg-stable', 'one'), 'msg-stable');
 assert.equal(historyIdentity('item-1'), 'item-1', 'No invented Turn identity');
+for (const kind of ['userMessage', 'agentMessage', 'commandExecution']) {
+  const bare = row('item-1', 'run', kind);
+  const qualified = { ...bare, id: historyIdentity(bare.id, bare.runId) };
+  assert.deepEqual(
+    retained([qualified], [bare]),
+    [],
+    'Exact ordinal aliases reconcile in both directions',
+  );
+  assert.deepEqual(retained([bare], [qualified]), []);
+  assert.deepEqual(
+    retained([bare, qualified], [qualified]),
+    [],
+    'Previously cached aliases repair without a reset',
+  );
+  assert.deepEqual(retained([bare], [{ ...qualified, text: 'updated exact item' }]), []);
+  assert.deepEqual(
+    retained([bare], [{ ...qualified, runId: 'other', id: historyIdentity('item-1', 'other') }]),
+    [bare],
+  );
+  assert.deepEqual(retained([bare], [{ ...qualified, id: historyIdentity('item-2', 'run') }]), [
+    bare,
+  ]);
+  const noTurn = { ...bare, runId: undefined };
+  assert.deepEqual(retained([noTurn], [qualified]), [noTurn]);
+}
 for (const provisional of ['item-1', historyIdentity('item-1', 'run')]) {
   assert.deepEqual(
     retained([row(provisional)], [row('msg-owner')]),

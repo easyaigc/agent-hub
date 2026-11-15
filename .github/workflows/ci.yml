@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      mobile_parity_base:
+        description: Optional existing comparison commit for a manual parity audit
+        required: false
+        type: string
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -32,7 +37,36 @@ jobs:
           cmdline-tools-version: '15859902'
           packages: 'platform-tools'
       - uses: pnpm/action-setup@v4
-      - run: pnpm install --frozen-lockfile
+      - name: Check workspace disk budget
+        run: |
+          node --input-type=module <<'JS'
+          import { statfsSync } from 'node:fs';
+          const fs = statfsSync('.');
+          const free = fs.bavail * fs.bsize;
+          console.log(`Workspace available space: ${(free / 2 ** 30).toFixed(2)} GiB`);
+          if (free < 4 * 2 ** 30) throw new Error('Workspace checks require at least 4 GiB available');
+          JS
+      - run: pnpm install --frozen-lockfile --fetch-timeout=300000 --network-concurrency=4
+        timeout-minutes: 20
+      - name: Verify installed Turbo platform binary
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import { createRequire } from 'node:module';
+          const require = createRequire(import.meta.url);
+          const packagePath = require.resolve('turbo/package.json');
+          const fromTurbo = createRequire(packagePath);
+          const platform = process.platform === 'win32' ? 'windows' : process.platform;
+          const arch = process.arch === 'x64' ? '64' : process.arch;
+          const suffix = process.platform === 'win32' ? '.exe' : '';
+          const binary = fromTurbo.resolve(`@turbo/${platform}-${arch}/bin/turbo${suffix}`);
+          const expected = require(packagePath).version;
+          assert.equal(execFileSync(binary, ['--version'], { encoding: 'utf8' }).trim(), expected);
+          console.log(`Verified installed Turbo ${expected} for ${platform}/${arch}`);
+          JS
+      - name: Select mobile parity comparison history
+        run: node scripts/ci/mobile-parity-base.mjs
       - name: Check legacy CI bootstrap boundaries
         run: node --test scripts/ci/legacy-bootstrap.test.mjs
       - name: Check Linux research metadata boundaries
@@ -61,6 +95,15 @@ jobs:
         with:
           cmdline-tools-version: '15859902'
           packages: 'platform-tools'
+      - name: Check iOS build disk budget
+        run: |
+          node --input-type=module <<'JS'
+          import { statfsSync } from 'node:fs';
+          const fs = statfsSync('.');
+          const free = fs.bavail * fs.bsize;
+          console.log(`iOS build available space: ${(free / 2 ** 30).toFixed(2)} GiB`);
+          if (free < 4 * 2 ** 30) throw new Error('iOS build requires at least 4 GiB available');
+          JS
       - name: Build iOS Simulator app
         run: >-
           xcodebuild -project apps/ios/CodexManage.xcodeproj

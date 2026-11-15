@@ -1,5 +1,7 @@
 # 完整运行时连接与开发验收
 
+2026-11-14：Codex desktop-runtime 在历史、实时、完整与有界消息投影中统一轮次限定的重建序号 ID，并以同一标识维护阅读头与缓存重合。该转换只处理有准确原轮次的序号，不按正文删除消息、不改原桌面记录。实现与本机验证见[历史切换记录](acceptance/history-owner-identity-20261114.md)。
+
 ## Windows 原生建议 Responses 转发退役
 
 Windows 原生灰字采集的回环转发已退役。Host 启动时忽略旧 `CODEX_DESKTOP_RESPONSES_CONFIG`，安装和升级不再配置该转发，也不登记 `openai_base_url`。Windows 手机端暂不提供这条原生建议来源，普通 Codex 启动、模型请求和 Host 管理使用各自原有路径。面向外部消费者的 F74 模型代理是独立功能，仍默认关闭。

@@ -1,5 +1,7 @@
 # Gitea Actions 运行指南
 
+依赖安装保持 `--frozen-lockfile`，下载超时设为 300 秒、并发为 4，安装步骤最多 20 分钟。工作区检查和 iOS 构建分别先记录目标卷可用空间，低于 4 GiB 时停止本阶段新增写入。构建前从已安装的 Turbo 包解析本平台二进制，直接执行并核对版本；缺失或不可执行时明确失败，避免 Turbo 启动器在构建步骤内调用 npm 静默补装。此设置用于处理慢速下载，不改变锁定版本、完整检查范围或原生构建要求。
+
 工作流保留在 `.github/workflows/ci.yml`，由 Gitea Actions 读取。当前工作区任务使用明确配置在 Linux 容器上的 `agent-hub-linux`，原生构建使用 `macos-latest`；旧工作流还使用 `ubuntu-latest`。这些名称都是任务匹配标签，Gitea 不会因为名称自动创建 GitHub 托管机器。仓库及组织均没有可用运行器时，任务保持 queued，尚未执行任何检查。
 
 ## 运行环境
@@ -36,6 +38,8 @@ Task Hub 围栏测试在所有平台直接核对真实围栏文件均拒绝启�
 Android SDK Platform 37 的实际包 ID 是 `platforms;android-37.0`，旧工作流的 `platforms;android-37` 会导致 SDK 安装失败。当前工作流使用正确 ID。对同一明确 SHA 白名单，可在独立 CI SDK 的 `bin/sdkmanager` 放置 `scripts/ci/legacy-sdkmanager.bash`，将该目录未经修改的官方启动脚本保存在相邻的 `sdkmanager.real`。兼容程序只把这个旧参数映射到真实官方包，记录映射，然后调用原工具并传递其退出码；不改 SDK 元数据、不跳过安装、构建或失败断言，不修改开发者原 SDK。固定命令行工具版本，升级后重新核对原工具摘要并安装该兼容程序。`legacy-bootstrap.test.mjs` 在 macOS 和 Linux 验证两种兼容处理的范围、参数和失败传播。
 
 ## 核对与恢复
+
+工作区 Job 在完整 `pnpm check` 前选择移动端一致性比较基准：PR 使用事件中的准确 base SHA，主线 push 使用 `before`，并通过环境文件传入后续全部检查。公开仓库保留独立快照历史，不要求它包含 Gitea manifest 中的历史提交。手动审计可指定 `mobile_parity_base`；省略时优先保留可读取的 manifest 全量基准，公开开发分支使用与 `origin/main` 的共同祖先，公开主线使用前一快照。明确指定但缺失的 PR、push 或手动基准直接失败，不降级为只检查最后一次提交；没有可比较历史时也须补齐基准。`mobile-parity-base.test.mjs` 用真实独立 Git 历史核对多提交 PR 范围、环境传递和失败边界。
 
 1. 通过 API 读取仓库及组织运行器，确认标签、在线状态和容量。queued 且没有 `runner_id`、没有开始时间表示尚未领取，不能视为测试失败或通过。
 2. 核对 PR 最终 head 和远端 `main` 的准确 SHA，分别读取对应 push、pull_request 运行及各 Job 的结论。PR 的分支检查不能代替合并后主线检查。

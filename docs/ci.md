@@ -54,3 +54,5 @@ Android SDK Platform 37 的实际包 ID 是 `platforms;android-37.0`，旧工作
 ## GitHub 公开主线同步
 
 Gitea `main` 推送后由独立工作流发布到 GitHub `main`，每小时补查，保留独立公开历史。部署密钥、来源指纹和核验方法见 [GitHub 同步指南](github-sync.md)。工作流与源码检查分别记录结果。
+
+公开 macOS 工作区中的下载原生回归先构建共享 iOS simulator framework，再创建 HTTP 和模拟器夹具。Kotlin/Native 冷链接包含工具链准备，独立预算为 20 分钟；Swift 编译仍限 120 秒、实际下载断言仍限 60 秒。原先 3 分钟的构建子进程期限曾在链接阶段触发 SIGTERM；这属于构建未完成，不是下载或完整回归通过。所有真实共享身份、完整目标、缓存版本、取消和错误拒绝断言保持，不用现成 framework 存在代替本次 Gradle 构建。

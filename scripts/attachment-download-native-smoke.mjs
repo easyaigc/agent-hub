@@ -12,6 +12,21 @@ if (process.platform !== 'darwin') {
   process.exit(0);
 }
 const execute = promisify(execFile);
+const arm = process.arch === 'arm64';
+// A cold Kotlin/Native link includes toolchain preparation. Keep its build budget
+// separate from the short Swift compilation and download assertions below.
+console.log('Preparing shared iOS simulator framework (20 minute build budget).');
+const frameworkBuild = await execute(
+  process.execPath,
+  [
+    'scripts/mobile/gradle.mjs',
+    ':mobile-core:linkDebugFramework' + (arm ? 'IosSimulatorArm64' : 'IosX64'),
+  ],
+  { timeout: 20 * 60_000, maxBuffer: 8 * 1024 * 1024 },
+);
+process.stdout.write(frameworkBuild.stdout);
+process.stderr.write(frameworkBuild.stderr);
+console.log('Shared iOS simulator framework ready; starting native download checks.');
 await mkdir('.local/attachment-download-native', { recursive: true, mode: 0o700 });
 const directory = await mkdtemp(resolve('.local/attachment-download-native/run-'));
 const source = await readFile('apps/ios/Sources/HostService.swift', 'utf8');
@@ -359,15 +374,6 @@ final class ProgressCapture: @unchecked Sendable {
     await execute('xcrun', ['simctl', 'boot', simulator]);
     await execute('xcrun', ['simctl', 'bootstatus', simulator, '-b'], { timeout: 120000 });
   }
-  const arm = process.arch === 'arm64';
-  await execute(
-    process.execPath,
-    [
-      'scripts/mobile/gradle.mjs',
-      ':mobile-core:linkDebugFramework' + (arm ? 'IosSimulatorArm64' : 'IosX64'),
-    ],
-    { timeout: 180000 },
-  );
   const sdk = (
     await execute('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-path'])
   ).stdout.trim();

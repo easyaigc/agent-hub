@@ -21417,6 +21417,15 @@
         "apps/ios/Tests/desktop-suggestions-smoke.mjs": "9b91760669e3244ac1659346708ad847c263f473f1c0b26cb041d39fc8322412",
         "apps/ios/Sources/Uploads.swift": "162a954d1e81958af16d27e675a7a551194570c24d81342a88cb254ab6a221cd"
       }
+    },
+    {
+      "id": "pr3-native-framework-build-budget-20261115",
+      "baseCommit": "83c8dc84083150e39801846d95baf5537d6b02e7",
+      "features": ["F32", "F72"],
+      "summary": "下载原生回归的Kotlin/Native iOS framework冷构建独立20分钟并先于HTTP/模拟器夹具，保留120秒Swift编译、60秒原生执行及全部原断言；不改变产品/双端UI或冻结1201源，匹配复用组合版本Android真实冷会话，完整候选与公开CI另按提交验证。",
+      "files": {
+        "scripts/attachment-download-native-smoke.mjs": "cdc558e1ec253538920aa0ccf65d7ab88ba27b8d012df49e283d459d65d6d4bc"
+      }
     }
   ]
 }

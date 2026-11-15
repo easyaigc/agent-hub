@@ -21597,6 +21597,16 @@
       "files": {
         "scripts/attachment-download-native-smoke.mjs": "e506f1f5725230b0c1d38943695fdf9fb144e4328dadfdd181a8fe35b94a7d8e"
       }
+    },
+    {
+      "id": "pr3-expired-worker-budget-ci-20261115",
+      "baseCommit": "d92a5d94711ec111c9c28f84fc6c10bba29709d2",
+      "features": ["F69"],
+      "summary": "PR3公开CI的Worker预算回归改为真实时钟证明的发送前过期：原1800ms总预算在1810ms和2400ms等待后均必须拒绝，记录实际生产时钟决策样本，断言零请求、零Native等待和完整退休；其余在途未知失败仍严格断言原请求数，750ms批次及300ms跨帧预算保持原测试。产品/双端源不改，不新增Windows实机或建议UI通过，1250冻结源码匹配复用Android冷会话。",
+      "files": {
+        "scripts/fixtures/windows-trace-batch.mjs": "bed352db3ee0565c22f436aff65c7af4d04299b177c4f057c7483d16ef85fd76",
+        "scripts/windows-trace-worker.test.mjs": "e8234622af9e6c82b09c4cbf7dbc87238066c0c44471e3251f75104b5c8ba1c1"
+      }
     }
   ]
 }

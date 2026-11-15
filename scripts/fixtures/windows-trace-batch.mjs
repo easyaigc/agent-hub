@@ -210,10 +210,6 @@ async function stdioChild() {
         setTimeout(() => send(value), 900);
         return;
       }
-      if (mode === 'budget') {
-        setTimeout(() => send(value), 180);
-        return;
-      }
       if (mode === 'cold-shared-budget') {
         // Publish the real cold prefix immediately. The next frame stays pending
         // until the original owner budget closes it; no timer races the prefix.
@@ -260,11 +256,13 @@ async function transportOwner() {
   const originalNow = Date.now;
   const originalWait = Atomics.wait;
   const sharedBudget = workerData.mode === 'cold-shared-budget';
+  const expiredBudget = ['budget', 'budget-overrun'].includes(workerData.mode);
+  const observeBudget = sharedBudget || expiredBudget;
   const nowDescriptor = Object.getOwnPropertyDescriptor(performance, 'now');
   const originalPerformanceNow = performance.now;
   const clockNow = () => Reflect.apply(originalPerformanceNow, performance, []);
   let observedNow;
-  if (sharedBudget)
+  if (observeBudget)
     // Observe the actual clock samples used by budget() and Atomics.wait's
     // timeout arithmetic. Return each raw value unchanged; never advance a clock.
     Object.defineProperty(performance, 'now', {
@@ -276,7 +274,7 @@ async function transportOwner() {
       },
     });
   const timing =
-    workerData.mode === 'batch-timeout' || sharedBudget
+    workerData.mode === 'batch-timeout' || observeBudget
       ? {
           timeOrigin: performance.timeOrigin,
           waits: [],
@@ -306,6 +304,12 @@ async function transportOwner() {
     };
   try {
     backend.budget(1800);
+    if (expiredBudget)
+      timing.phaseBudget = {
+        milliseconds: 1800,
+        startedAt: observedNow,
+        deadlineAt: observedNow + 1800,
+      };
     if (sharedBudget) {
       backend.budget(300);
       timing.phaseBudget = {
@@ -320,8 +324,19 @@ async function transportOwner() {
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 120);
       Date.now = () => originalNow() - 60_000;
     }
-    if (workerData.mode === 'budget')
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1680);
+    if (expiredBudget) {
+      // A consumed deadline must reject before dispatch. Leaving only 120ms
+      // cannot guarantee a frame reaches the child on a busy hosted runner.
+      const milliseconds = workerData.mode === 'budget-overrun' ? 2400 : 1810;
+      timing.preReadWait = { milliseconds, entered: clockNow() };
+      timing.preReadWait.status = Reflect.apply(originalWait, Atomics, [
+        new Int32Array(new SharedArrayBuffer(4)),
+        0,
+        0,
+        milliseconds,
+      ]);
+      timing.preReadWait.returned = clockNow();
+    }
     if (workerData.mode === 'closed') backend.close();
     const items = Array.from({ length: workerData.itemCount }, (_, index) =>
       index % 2 === 0 ? { path: root, maximum: 0 } : { path: root + '\\one.txt', maximum: 4 },
@@ -353,12 +368,13 @@ async function transportOwner() {
       passed = true;
     }
   } catch (failure) {
+    if (expiredBudget) timing.budgetDecisionAt = observedNow;
     if (timing) timing.readThrew = performance.now();
     error = failure.message;
   } finally {
     Atomics.wait = originalWait;
     Date.now = originalNow;
-    if (sharedBudget) {
+    if (observeBudget) {
       if (nowDescriptor) Object.defineProperty(performance, 'now', nowDescriptor);
       else delete performance.now;
     }

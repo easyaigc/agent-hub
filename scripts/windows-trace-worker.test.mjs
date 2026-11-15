@@ -906,6 +906,7 @@ for (const mode of [
   'second-failure',
   'batch-timeout',
   'budget',
+  'budget-overrun',
   'closed',
   'owner-close',
   'duplicate-late',
@@ -918,11 +919,15 @@ for (const mode of [
     assert(result.allRetired, 'The actual owner/native Worker and its child must retire');
     if (mode === 'owner-close') assert.equal(result.answer, undefined);
     else assert.equal(result.answer.passed, mode === 'normal' || mode === 'clock-forward');
-    assert.equal(
-      result.requests,
-      mode === 'closed' || mode === 'clock-backward' ? 0 : mode === 'stale-while-next' ? 2 : 1,
-      'Unknown failures are never replayed',
-    );
+    const expiredBudget = mode === 'budget' || mode === 'budget-overrun';
+    if (expiredBudget)
+      assert.equal(result.requests, 0, 'An expired whole-read budget must reject before any frame');
+    else
+      assert.equal(
+        result.requests,
+        mode === 'closed' || mode === 'clock-backward' ? 0 : mode === 'stale-while-next' ? 2 : 1,
+        'Unknown failures are never replayed',
+      );
     if (mode === 'duplicate-late' || mode === 'stale-while-next')
       assert.equal(result.answer.firstPassed, true);
     if (mode === 'batch-timeout') {
@@ -945,8 +950,17 @@ for (const mode of [
         '750ms is for the entire batch, not each item; ' + observation,
       );
     }
-    if (mode === 'budget')
-      assert(result.answer.elapsed < 2200, 'Batch consumes the existing whole-read deadline');
+    if (expiredBudget) {
+      const timing = result.answer.timing;
+      assert.equal(result.answer.error, 'Trace read budget exhausted');
+      assert.equal(timing.phaseBudget.milliseconds, 1800);
+      assert.equal(timing.phaseBudget.deadlineAt, timing.phaseBudget.startedAt + 1800);
+      assert.equal(timing.preReadWait.status, 'timed-out');
+      assert(timing.preReadWait.returned >= timing.phaseBudget.deadlineAt);
+      assert(timing.budgetDecisionAt >= timing.phaseBudget.deadlineAt);
+      assert(timing.readThrew >= timing.readEntered);
+      assert.equal(timing.waits.length, 0, 'An expired read must never enter a Native wait');
+    }
   });
 
 test(

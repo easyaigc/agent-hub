@@ -20,7 +20,7 @@ struct CodexManageApp: App {
         WindowGroup {
             Group {
                 #if DEBUG
-                if UploadAcceptanceView.enabled { UploadAcceptanceView() } else { AppStartupView() }
+                if EasyWorkDevPreviewAcceptanceView.enabled { EasyWorkDevPreviewAcceptanceView() } else if DevPreviewAcceptanceView.enabled { DevPreviewAcceptanceView() } else if UploadAcceptanceView.enabled { UploadAcceptanceView() } else { AppStartupView() }
                 #else
                 AppStartupView()
                 #endif

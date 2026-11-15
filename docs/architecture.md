@@ -1,5 +1,9 @@
 # 架构设计
 
+2026-11-15 F76 后续：macOS EasyWork 经 EWDAP 具名操作授权、已配对 LAN WSS 承载预览数据，和 Codex Host 共用 `packages/dev-preview`，账号/设备授权保持。当前源码候选及验证范围见[EasyWork 专项](acceptance/dev-service-preview-easywork-20261115.md)，Relay 预览尚未实现。
+
+2026-11-15 F76 拟议开发服务预览：原生 App 回环网关经已鉴权的独立预览流连接所选 Host，由 Host 访问固定本地 HTTP/HTTPS 服务；源目标、服务归属、会话及数据存储隔离，WebSocket/流式/Relay 按能力分别开放。现有网页打开、文件预览与模型代理均不代表已具备此能力；[方案](design/dev-service-preview.md)包含原生可行性门槛及外部浏览器边界。后续首期已实现 macOS Codex Host／iOS 源码候选，HTTP/WS/流式具名入口与原生回环网关已装配；[验收记录](acceptance/dev-service-preview-20261115.md)分别登记 Host、原生与框架实际结果，其他平台及通道不推定通过。
+
 2026-11-15 F30/F31/F59 上传恢复候选：窄上传会话负责字节接收，完成回调只发布文件或登记原附件，模型提交保留在原业务边界。Host 私有存储按机器运行目标隔离，持久化已确认前缀、版本化清单及完成回执；数据先 fsync，再原子保存确认位置，重启只截断未确认尾部。查询不接管原桌面执行，不将文件长度当成已确认进度。
 
 iOS 共用 `UploadCenter` 的受保护源快照、加密恢复记录及进度视图，兼容旧整文件 Host。文件型上传及普通文件导入避免把大文件整份读入内存，图片渲染预算保持独立。发送进度和接收确认分开，校验完成前不显示附件就绪；EasyWork 已有 wire 方法留在适配层。Android 新编排/UI 尚待迁移；源码实现、受控 HTTP、原生 UI、真实蜂窝与正式部署分别留证，当前未修改正式 Host/App 配置。

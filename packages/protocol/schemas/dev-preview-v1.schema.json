@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-hub.invalid/schemas/dev-preview-v1.json",
+  "title": "Dev preview create v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "target", "threadId", "url", "browserPort", "browserSecret"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-fA-F0-9-]{36}$" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"],
+      "properties": {
+        "agentId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "hostId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "workspaceId": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "runtimeId": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "threadId": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,256}$" },
+    "url": {
+      "type": "string",
+      "maxLength": 8192,
+      "pattern": "^http://(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|\\[::1\\]|\\[::\\]):[1-9][0-9]{3,4}([/?#]|$)"
+    },
+    "browserPort": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+    "browserSecret": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

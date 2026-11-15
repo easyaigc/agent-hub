@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-15",
+  "scope": "F76 local Host HTTP and WebSocket boundaries",
+  "runtime": "managed-runtime with task-specific Codex CLI JSON-RPC fixture; not Electron or a real model",
+  "node": "24.19.0",
+  "command": "node --test scripts/dev-previews.test.mjs",
+  "result": "passed: 3 tests",
+  "verified": [
+    "production Host control route and WebSocket tunnel with real listener identity",
+    "local page, binary POST, SSE first chunk before response end, native WebSocket upgrade and bidirectional frame",
+    "concurrent identical create, conflicting ID, forbidden management port, invalid URL and target",
+    "wrong Host, Origin, outer Origin, absolute request target, CONNECT and mismatched target denied",
+    "preview secret stripped from upstream Cookie; thread mismatch rejected on close",
+    "close, expiration and runtime target change revoke preview; closed create is not replayed",
+    "actual 0.0.0.0 and IPv6 ::1 upstream listeners forwarded through HTTPS WSS using task-specific self-signed certificate validated as a CA",
+    "localhost source URL reaches an actual IPv6-only ::1 listener through the TLS WSS tunnel",
+    "a production DevPreviews attach admission callback returning false rejects WSS with 403 even with valid Bearer"
+  ],
+  "limitations": [
+    "CLI fixture does not establish desktop Electron or real model behavior",
+    "Expiration uses a modified in-memory receipt to avoid a 30-minute wait",
+    "HTTPS WSS used production DevPreviews attached to a standalone HTTPS server; direct-discovery routing and phone pairing certificate trust were not independently exercised"
+  ],
+  "fullCheck": "Final Node 24 pnpm check failed at format:check on docs/plans/ios-easywork-alignment-20261112/status.json; later stages did not run.",
+  "sha256": {
+    "apps/host-agent/src/dev-previews.ts": "b705ffc43b4e8aabdbd6393dc58a0991f1585c689cbd268c5c929d63fd8e2bce",
+    "apps/host-agent/src/runtime-server.ts": "4c95364477e00ee368104cee52a5f4b2b6a13c199a65ba286d86f2e5591ac3ad",
+    "apps/host-agent/src/direct-discovery.ts": "128384b528f70d3e0d85e9cf25d8f3487d56acf7c6a6f42b51b3ff930405c93e",
+    "packages/protocol/src/dev-previews.ts": "9a7c1bb1854034acb092d92fab64a4606cd4d6d26afc00a6f3d26dbc44259490",
+    "scripts/dev-previews.test.mjs": "49cd0ae094cf66ded72620daaafe9083a84c7789c43b019fb1c9b03d13fb94f3",
+    "apps/host-agent/dist/dev-previews.js": "5aa39a1ad623a3e2e99bc2b56df5f67c3478b22a7e04a55b631f463e62e462fd",
+    "apps/host-agent/dist/runtime-server.js": "e155ecbaa97ff7ee7deca510a196ae8513b016ae6dc368553004c14e4b054e0f",
+    "scripts/package-host-connect.mjs": "97918233fc4da6cc910be5da7dea61c14865b7c4e9c5514d7b843f6e5a557a57",
+    "scripts/package-host-connect.test.mjs": "d9a2c1076034f7702bd9e75f191b33d068b746951d0b56d00b6044787d59acf1",
+    "apps/host-agent/dist/direct-discovery.js": "320dcb323ca9db8898aae3b27b85929a931ac662be9cdb244bce9731588dc685"
+  },
+  "packageCheck": "Node 24: scripts/package-host-connect.test.mjs passed 13 tests including ws archive contents using synthetic fixture; not a deployed bundle acceptance",
+  "eslint": "Passed on the seven requested Host, protocol, test and packaging files under Node 24",
+  "executionModel": "Agent creation requested Terra/medium; follow-up interface does not set or independently verify model, effort, or speed; actual follow-up settings unverified",
+  "isolation": "Test listeners use OS-assigned ports and task-specific temporary directories and credentials; browserPort 45678 is a virtual request Host only, not a bound listener. Concurrent native test was not independently run.",
+  "directDiscoveryChecks": "Node 24: direct-discovery-recovery.test.mjs and direct-bonjour.test.mjs passed 7 tests; this does not independently exercise direct-discovery WSS routing"
+}

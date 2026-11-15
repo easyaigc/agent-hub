@@ -101,7 +101,13 @@ const reviewedBinarySourceSha256 = new Map([
     'db476aba2e89eff735bbf4434d915b8ce22ec501d83ea4c6c307cc66db4d207a',
   ],
 ]);
-const runtimePackages = ['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'];
+const runtimePackages = [
+  'codex-adapter',
+  'protocol',
+  'service-runtime',
+  'notification-runtime',
+  'dev-preview',
+];
 const excluded = new Set([
   'node_modules',
   'dist',
@@ -449,7 +455,10 @@ export async function packageHostConnect({
         await readFile(join(repository, component, 'package.json'), 'utf8'),
       );
       for (const [name, version] of Object.entries(manifest.dependencies ?? {})) {
-        if (component === 'apps/host-agent' && ['bonjour-service', 'qrcode'].includes(name))
+        if (
+          ['apps/host-agent', 'packages/dev-preview'].includes(component) &&
+          ['bonjour-service', 'qrcode', 'ws'].includes(name)
+        )
           continue;
         if (component === 'packages/codex-adapter' && name === 'smol-toml') continue;
         if (
@@ -485,7 +494,7 @@ export async function packageHostConnect({
         }
       }
     }
-    // Copy the reviewed JS discovery dependencies and their declared dependency
+    // Copy reviewed discovery/preview dependencies and their declared dependency
     // closure. Resolve pnpm links locally; deployed files contain no host symlinks.
     const deployedVersions = new Map();
     const copyDependency = async (name, fromManifest) => {
@@ -539,7 +548,7 @@ export async function packageHostConnect({
       for (const dependency of Object.keys(manifest.dependencies ?? {}))
         await copyDependency(dependency, manifestPath);
     };
-    for (const name of ['bonjour-service', 'qrcode'])
+    for (const name of ['bonjour-service', 'qrcode', 'ws'])
       await copyDependency(name, join(repository, 'apps/host-agent/package.json'));
     await copyDependency('smol-toml', join(repository, 'packages/codex-adapter/package.json'));
     await cp(taskHubBundle, join(skill, 'assets/task-hub'), {

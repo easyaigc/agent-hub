@@ -1720,6 +1720,20 @@
     <string name="product_f32f978069698dbb5c01b985" formatted="false">"File %@/%@"</string>
     <string name="product_4e98c3df87422bce5d085c6e" formatted="false">"Overall progress"</string>
     <string name="product_87256a69dc368351f4fbd6f9" formatted="false">"Checking cancellation result…"</string>
+    <string name="product_e46aecd4009b52ca9482872e" formatted="false">"Use a local HTTP development URL with an explicit port."</string>
+    <string name="product_22c0767795ff2c0f3499d915" formatted="false">"Allow access to this development service. Web actions may change development data."</string>
+    <string name="product_70605d856c2c0c52c312d17e" formatted="false">"Reload"</string>
+    <string name="product_d681c6e2947ae79bbe8d4de3" formatted="false">"Forward"</string>
+    <string name="product_2d1d8c1e38956beaf0112de0" formatted="false">"Back"</string>
+    <string name="product_3d9e2e5d82def52885383e6a" formatted="false">"Preview on Phone"</string>
+    <string name="product_0bb0381c244c4047de66f6db" formatted="false">"Development Services"</string>
+    <string name="product_7c94048d465d5aedc5ac3ee9" formatted="false">"The development service disconnected. Check the result of your web action before reopening."</string>
+    <string name="product_29c844f9ac22fd41ca21c30e" formatted="false">"This connection does not support development previews. Check the Host version and connection."</string>
+    <string name="product_c09a6278b96b755772866b3e" formatted="false">"The computer target is unavailable. Reconnect to continue."</string>
+    <string name="product_de948cb2b193a1f89597586e" formatted="false">"Local Service URL"</string>
+    <string name="product_47a9db424c7f4ad6439ed740" formatted="false">"Connecting to development service…"</string>
+    <string name="product_a4076e5a80aaf5158acdc118" formatted="false">"Open this link separately or configure the service URL."</string>
+    <string name="product_e92331b3ad22ad8d2554ca77" formatted="false">"Development previews require a direct LAN or VPN connection. Switch the connection mode to continue."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

@@ -97,3 +97,12 @@ apps/ios/FilePreviewKit/.swiftpm/
 
 # Sanitized Host lifecycle and Trace performance acceptance.
 !/docs/acceptance/host-lifecycle-cpu-20261109.md
+
+!/docs/acceptance/dev-service-preview-20261115.md
+
+!/docs/acceptance/dev-service-preview-easywork-20261115.md
+
+!/docs/acceptance/mobile-evidence/dev-preview-easywork-20261115.png
+
+!/docs/acceptance/dev-service-preview-main-merge-20261115.md
+!/docs/acceptance/mobile-evidence/dev-preview-merged-20261115.png

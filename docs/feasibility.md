@@ -1,5 +1,9 @@
 # 技术可行性与 PoC 验收
 
+2026-11-15 F76 EasyWork 后续实现复用同一 HTTP/WS 代理与 iOS 回环网关，通过真实 Electron 与独立原生模拟器验证前不把辅助测试算作页面/API/HMR通过；结果见[专项](acceptance/dev-service-preview-easywork-20261115.md)。
+
+2026-11-15 F76 开发服务预览首次完成[设计](design/dev-service-preview.md)与官方资料核验，同日后续进入首期实现和分层验收。待 PoC 证明原生回环网关的 HTTP/WS/SSE、Cookie 隔离、平台网络策略、关闭清理，再实施 Host/手机能力。端口不同不等于 Cookie 隔离；自定义 scheme、路径代理或现有聊天连接不能独立证明任意 DEV 网页可用。后续首期 Host 生产路由 HTTP/API/WS/流式辅助边界已通过；原生构建、真实 Vite 与物理网络结果以[首期记录](acceptance/dev-service-preview-20261115.md)为准。
+
 2026-11-15 F30/F31/F59 上传恢复：原整文件请求的期限不能直接用作大文件总期限。当前源码采用有界分块接收、持久 offset、整文件校验和幂等发布；iOS 保留不可变副本及加密恢复日志，冷启动先查原结果。Host 14 项回归和独立原生模拟器 3 个场景已验证 64 MiB 断线/超时、App 重启、独占 Host OS 进程终止重启，以及取消/发布未知结果恢复；速度按电脑确认分块的有效耗时计算。完整范围与指纹见[验收记录](acceptance/mobile-parity.md)。此结果不证明真实蜂窝/VPN 的 Tailscale ReceiveIPv4 故障已修复，不新增 EasyWork 实际互操作、Android、后台上传或正式部署通过。
 
 2026-11-12 F05／F28／F43：Windows 默认独立桥接和 Store CLI 暂存副本选择已吸收到主库候选。[专项记录](windows-cold-thread-recovery-20261112.md) 分列上游结果、初版完整检查和隔离 Windows 原生验收；初版发现打开回执重启丢失，持久化修复随后通过真实 Windows 重启回执补验；iOS／Android 共用原 Host 能力，不修改移动端流程。

@@ -1298,7 +1298,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       sourceClientId: 'desktop-main',
       params: { hostId: 'local', conversationId: 'thread', hasUnreadTurn: true },
     });
-    await settle();
+    await waitForFixture(
+      () => session.history('thread').thread.hasUnreadTurn === true,
+      'Original owner unread broadcast was not applied',
+    );
     assert.equal(session.history('thread').thread.hasUnreadTurn, true);
     assert.equal((await session.workspace()).threads[0].hasUnreadTurn, true);
     const unreadBatch = await session.poll(0, '', new AbortController().signal, 'thread');
@@ -1312,7 +1315,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       sourceClientId: 'desktop-main',
       params: { hostId: 'local', conversationId: 'thread', hasUnreadTurn: false },
     });
-    await settle();
+    await waitForFixture(
+      () => session.history('thread').thread.hasUnreadTurn === false,
+      'Original owner read broadcast was not applied',
+    );
     assert.equal(session.history('thread').thread.hasUnreadTurn, false);
     assert(session.capabilities.includes('queue') && session.capabilities.includes('steer'));
     // Mobile acknowledgements never write the desktop flag or send a desktop command.

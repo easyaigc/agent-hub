@@ -1720,6 +1720,20 @@
     <string name="product_f32f978069698dbb5c01b985" formatted="false">"文件 %@/%@"</string>
     <string name="product_4e98c3df87422bce5d085c6e" formatted="false">"总体进度"</string>
     <string name="product_87256a69dc368351f4fbd6f9" formatted="false">"正在确认取消结果…"</string>
+    <string name="product_e46aecd4009b52ca9482872e" formatted="false">"仅支持带明确端口的本地 HTTP DEV 地址。"</string>
+    <string name="product_22c0767795ff2c0f3499d915" formatted="false">"允许手机交互访问此电脑上的指定开发服务；网页操作可能修改开发数据。"</string>
+    <string name="product_70605d856c2c0c52c312d17e" formatted="false">"重新加载网页"</string>
+    <string name="product_d681c6e2947ae79bbe8d4de3" formatted="false">"前进"</string>
+    <string name="product_2d1d8c1e38956beaf0112de0" formatted="false">"后退"</string>
+    <string name="product_3d9e2e5d82def52885383e6a" formatted="false">"在手机预览"</string>
+    <string name="product_0bb0381c244c4047de66f6db" formatted="false">"开发服务"</string>
+    <string name="product_7c94048d465d5aedc5ac3ee9" formatted="false">"开发服务连接中断，请核对网页操作结果后重新打开。"</string>
+    <string name="product_29c844f9ac22fd41ca21c30e" formatted="false">"当前电脑连接尚不支持开发服务预览，请检查连接方式。"</string>
+    <string name="product_c09a6278b96b755772866b3e" formatted="false">"未取得电脑运行目标，请重新连接。"</string>
+    <string name="product_de948cb2b193a1f89597586e" formatted="false">"本地服务地址"</string>
+    <string name="product_47a9db424c7f4ad6439ed740" formatted="false">"正在连接开发服务…"</string>
+    <string name="product_a4076e5a80aaf5158acdc118" formatted="false">"此链接需要单独打开或配置服务地址。"</string>
+    <string name="product_e92331b3ad22ad8d2554ca77" formatted="false">"开发服务预览需要局域网或 VPN 直连，请切换连接方式。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

@@ -1861,3 +1861,31 @@
 "文件 %@/%@" = "File %@/%@";
 "总体进度" = "Overall progress";
 "正在确认取消结果…" = "Checking cancellation result…";
+
+"仅支持带明确端口的本地 HTTP DEV 地址。" = "Use a local HTTP development URL with an explicit port.";
+
+"允许手机交互访问此电脑上的指定开发服务；网页操作可能修改开发数据。" = "Allow access to this development service. Web actions may change development data.";
+
+"重新加载网页" = "Reload";
+
+"前进" = "Forward";
+
+"后退" = "Back";
+
+"在手机预览" = "Preview on Phone";
+
+"开发服务" = "Development Services";
+
+"开发服务连接中断，请核对网页操作结果后重新打开。" = "The development service disconnected. Check the result of your web action before reopening.";
+
+"当前电脑连接尚不支持开发服务预览，请检查连接方式。" = "This connection does not support development previews. Check the Host version and connection.";
+
+"未取得电脑运行目标，请重新连接。" = "The computer target is unavailable. Reconnect to continue.";
+
+"本地服务地址" = "Local Service URL";
+
+"正在连接开发服务…" = "Connecting to development service…";
+
+"此链接需要单独打开或配置服务地址。" = "Open this link separately or configure the service URL.";
+
+"开发服务预览需要局域网或 VPN 直连，请切换连接方式。" = "Development previews require a direct LAN or VPN connection. Switch the connection mode to continue.";

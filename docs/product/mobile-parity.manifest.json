@@ -4090,6 +4090,28 @@
     "ResumableUploads": [
       "apps/host-agent/src/resumable-uploads.ts",
       "packages/protocol/src/uploads.ts"
+    ],
+    "DevPreviewServices": [
+      "apps/host-agent/src/dev-previews.ts",
+      "apps/host-agent/src/runtime-server.ts",
+      "apps/host-agent/src/direct-discovery.ts",
+      "packages/protocol/src/dev-previews.ts",
+      "packages/protocol/schemas/dev-preview-v1.schema.json",
+      "apps/ios/Sources/DevServicePreview.swift",
+      "apps/ios/Sources/MessageLinks.swift",
+      "apps/ios/Sources/CodexManageApp.swift",
+      "scripts/dev-previews.test.mjs",
+      "scripts/dev-preview-ios-acceptance.mjs",
+      "apps/ios/Tests/DevPreviewUITests.swift",
+      "packages/dev-preview/src/index.ts",
+      "apps/ios/Sources/EasyWorkDevPreview.swift",
+      "apps/ios/Sources/EasyWorkSession.swift",
+      "scripts/sync-easywork-dev-preview.mjs",
+      "apps/ios/Resources/en.lproj/IOSNative.strings",
+      "apps/ios/Resources/zh-Hans.lproj/IOSNative.strings",
+      "apps/android/src/main/res/values/product_strings.xml",
+      "apps/android/src/main/res/values-zh/product_strings.xml",
+      "apps/android/src/androidTest/assets/localization-catalog.json"
     ]
   },
   "groups": [
@@ -8408,6 +8430,35 @@
           "apps/host-agent/src/runtime-server.ts",
           "packages/protocol/src/project-git.ts",
           "packages/protocol/schemas/project-git-v1.schema.json"
+        ]
+      }
+    },
+    {
+      "id": "F76",
+      "group": "消息与展示",
+      "assertion": "开发服务预览：本地网页链接及手动登记绑定原Agent/Host/workspace/runtime和项目/聊天，经短期授权的Host转发在手机内打开；支持范围分别声明HTTP、WebSocket/HMR、流式及连接通道，服务归属变化失效、Cookie/缓存隔离、在途请求不自动重放，关闭释放预览资源但不停止DEV进程；外部浏览器与公网分享不由App内通过推定",
+      "sourceAliases": ["DevPreviewServices", "Agent", "Preview"],
+      "androidStages": ["A0"],
+      "scenarios": ["S05", "S11", "S18"],
+      "ui": ["UI05", "UI12"],
+      "revision": 4,
+      "implementation": {
+        "ios": "in-progress",
+        "android": "planned"
+      },
+      "verification": {
+        "ios": "not-verified",
+        "android": "not-verified"
+      },
+      "sourceNotes": "2026-11-15首期已交付；后续仅提取F76净变更接入最新main，保留主线上传/阅读/消息恢复。共享engine、macOS Codex Host与EasyWork直连、原生iOS源已装配；整合候选真实Electron+iOS模拟器page/API/HMR/关闭回归通过，源/包与限定子项见docs/acceptance/dev-service-preview-main-merge-20261115.md。Android仅同步共享文案，UI未实现；整体F76、Windows、HTTPS上游、Relay预览及外部浏览器等仍待实施/验收，正式安装未更新。F76不纳入原F01–F75分母，A6/F75暂停保持。",
+      "sharedImplementation": {
+        "status": "implemented",
+        "scope": "macOS Codex Host与EasyWork共用engine的具名预览会话及HTTP/WS/流式转发，严格领域输入；EasyWork适配保留账号和设备授权，其他平台待实施",
+        "sources": [
+          "packages/dev-preview/src/index.ts",
+          "apps/host-agent/src/dev-previews.ts",
+          "packages/protocol/src/dev-previews.ts",
+          "packages/protocol/schemas/dev-preview-v1.schema.json"
         ]
       }
     }
@@ -21425,6 +21476,117 @@
       "summary": "下载原生回归的Kotlin/Native iOS framework冷构建独立20分钟并先于HTTP/模拟器夹具，保留120秒Swift编译、60秒原生执行及全部原断言；不改变产品/双端UI或冻结1201源，匹配复用组合版本Android真实冷会话，完整候选与公开CI另按提交验证。",
       "files": {
         "scripts/attachment-download-native-smoke.mjs": "cdc558e1ec253538920aa0ccf65d7ab88ba27b8d012df49e283d459d65d6d4bc"
+      }
+    },
+    {
+      "id": "dev-service-preview-20261115",
+      "baseCommit": "fdfb23f415ac027c6f81573410ececef355e77a7",
+      "features": ["F76"],
+      "summary": "F76首期Codex Host/iOS服务预览独立交付；从原组合WIP仅提取预览范围，隔离分支检查与历史候选验收分别记证。",
+      "files": {
+        "apps/host-agent/src/dev-previews.ts": "b705ffc43b4e8aabdbd6393dc58a0991f1585c689cbd268c5c929d63fd8e2bce",
+        "apps/host-agent/src/runtime-server.ts": "c9bd5db0ff0b2b0ac6c4eef9f36fe553989bcdf54585285c01d2c2bca196b8f9",
+        "apps/host-agent/src/direct-discovery.ts": "ea2a271f71bafc2767b77826ddff94b32137e88d5b699642d5d1e3d434448326",
+        "apps/ios/Sources/DevServicePreview.swift": "2fba157852a36b78619206ebd641fd8141aafc7cd465f863005f1beaf7a8ead3",
+        "apps/ios/Sources/MessageLinks.swift": "fa725ea5b6d517904e951014e8852f2f20e6814fd405f31501f76a4e69177855",
+        "apps/ios/Sources/RootView.swift": "67d0024e4600e88a5d3917953f8a30a36eb14e297a8099933167fd87d3d88dcf",
+        "apps/ios/Sources/CodexManageApp.swift": "017eb9afa7fd13d25d42d8d8e4d40349ab0633727e9826403883258a2afde043",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "0e507990646fba3a488310c038924894218fd4240e611da1b1d663c32517b1bf",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c727fedebd77d7455f7154c8954174a29fd38ab19e5d9f7b54ef61416576a64f",
+        "packages/protocol/src/dev-previews.ts": "9a7c1bb1854034acb092d92fab64a4606cd4d6d26afc00a6f3d26dbc44259490",
+        "packages/protocol/src/index.ts": "b32a7505c5790de5cfff405c86bd7babb5e6fc57bd74d5f7d03d4d2ff55873c1",
+        "packages/protocol/schemas/dev-preview-v1.schema.json": "516f1a61455dfe659a12356053238a82c0172e84686142d3d0782a4b030b0f0d",
+        "scripts/package-host-connect.mjs": "97918233fc4da6cc910be5da7dea61c14865b7c4e9c5514d7b843f6e5a557a57",
+        "scripts/package-host-connect.test.mjs": "d9a2c1076034f7702bd9e75f191b33d068b746951d0b56d00b6044787d59acf1",
+        "scripts/dev-previews.test.mjs": "49cd0ae094cf66ded72620daaafe9083a84c7789c43b019fb1c9b03d13fb94f3",
+        "scripts/dev-preview-ios-acceptance.mjs": "1610fe66fc4c67e9f57312a234b4ec5c3eb1a2789f2283fd10fe2be855bb8d2e",
+        "apps/ios/Tests/DevPreviewUITests.swift": "95a8e8b13aaec5635428111236ac0f38c5529623f2f75df2a0d2a108c71f865f",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "22d6738a21879f5fec3358d0b915da69fe7d20435a66f679cc9c7abde2541f35",
+        "apps/host-agent/package.json": "d1ec45316846255d3c6735eeca86f8f2c7416f703c738cb4cb6044b86af03a8e",
+        "apps/ios/Sources/CodexDiscovery.swift": "eac14be7ea57a2fdf2bd7c854c7128bdbed9df96e2a27dff232a20de90cf3246"
+      }
+    },
+    {
+      "id": "dev-service-preview-easywork-20261115",
+      "baseCommit": "2d05a918b245595d01870d7ec8a0d8b23634d22b",
+      "features": ["F76"],
+      "summary": "F76复用统一engine接入EasyWork直连；完整账号与设备scope、短期数据票据和原生回环网页保持隔离，辅助检查与真实验收分别记录。",
+      "files": {
+        "apps/host-agent/package.json": "e734fa5012f84fb269bfcce95a4c6318f5f3ba029417cdf4999ebedf900d3177",
+        "apps/host-agent/src/dev-previews.ts": "f9f2f7bbeeae70db7ee5a762ef764b8dcad7dedefcfdf6b8ff4abc1deca2cb0f",
+        "apps/host-agent/src/runtime-server.ts": "7d0343ffea95295a8968ef047537140fa4b659b5002fe5d01f51ad3338b360e0",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "7aa72daa9e2ee604aacad95815d68d9ee4bc49a7fa5504fb46a0ef0922a1183b",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "0c14c6e81d7886160bc298fcbaa34ac6c567b13531abf5f19ed55416f10d72df",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "12d2badaf6fd6334eb83d546f4105517c2e1d69d172683ef5054c2bdc30d79a6",
+        "apps/ios/Sources/CodexManageApp.swift": "fb1173437f52e02c33319c6e5ff28ba8766cf818f0056670b221316916bc5ab7",
+        "apps/ios/Sources/DevServicePreview.swift": "a9d9fa7f92c616f414718b9a80a92094f465c58fd4abba2dc036399a19cc2dc7",
+        "apps/ios/Sources/EasyWorkDevPreview.swift": "bdfef59a1d2baf2df9bece30c6f275558367a223bb757210f81945ab1e86cf02",
+        "apps/ios/Sources/EasyWorkSession.swift": "9f395f520684c82618b792d8c07cdb2e63a8b6d870639afb85ee9338c5d840ea",
+        "apps/ios/Sources/MessageLinks.swift": "9fb0e8853b288f149018e028fdcb6f884d5d613197bc22f17077a449581e176a",
+        "apps/ios/Tests/DevPreviewUITests.swift": "b23c8b070fc1a1765718c73bc892fb3dde64365c291a4121106be545b9a1f773",
+        "packages/dev-preview/package.json": "c23529fa75aa9c92bd4c7ce15bf4a9952feff974f1101c653aa3e630b7189066",
+        "packages/dev-preview/src/index.ts": "4c23e95b8711655f43053b702093914d71f073cc0b22eefa4b84c3c8f71681da",
+        "packages/dev-preview/tsconfig.json": "75635e8822ed3b8fc37abd7d41a609ff559c57168ee37764bb9d33fc38224a2b",
+        "scripts/dev-preview-ios-acceptance.mjs": "c252c101d7b75f3d74776a0b840b6154a82a8eb506bc3c00c7954a1a28b3dfb7",
+        "scripts/package-host-connect.mjs": "f3c73eabc91bc5d72128afffda5fd1834552ee78eeab7c7a63d51a69d503f255",
+        "scripts/package-host-connect.test.mjs": "753ae350e6419022957ec53029c56005c894c20826bac61fd592788359c8f9f2",
+        "scripts/sync-easywork-dev-preview.mjs": "78723d631bfd4ef9672291ba86492ec0fab0ad91ae602a7035a2da19dec7d555"
+      }
+    },
+    {
+      "id": "dev-service-preview-main-integration-20261115",
+      "baseCommit": "8de45bc9e2f8304a42463ac5eaa4fd4d35344e83",
+      "features": ["F76"],
+      "summary": "仅提取F76两个交付提交接入最新主线；保留上传/阅读/消息和运行时超时修复，整合后的源及真实DEV结果另行留证。",
+      "files": {
+        "apps/android/src/androidTest/assets/localization-catalog.json": "cb01e41394af06f4b02d8d29af8cd1552b0eddf33935cb6b04e4906943562ae3",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "119b5e624097b0b5339a560b672ede4750275e2654cfe7d589d0a358d163f5ea",
+        "apps/android/src/main/res/values/product_strings.xml": "fbf1a576315c74a3e4e00c69260059ae2789d31cbc02fa65dd79a99d6e207372",
+        "apps/host-agent/package.json": "e734fa5012f84fb269bfcce95a4c6318f5f3ba029417cdf4999ebedf900d3177",
+        "apps/host-agent/src/dev-previews.ts": "f9f2f7bbeeae70db7ee5a762ef764b8dcad7dedefcfdf6b8ff4abc1deca2cb0f",
+        "apps/host-agent/src/direct-discovery.ts": "8b48eeeb0cbc0dd1482c3565dcb550c3c11a572bd57499a276c82895e0c5f178",
+        "apps/host-agent/src/runtime-server.ts": "ce643bc96e9ecf9b020a8e5725a352515027b47c463634b7785e790dd037e9e9",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "100803a83bd5601034f1fd3d10cd8681fc72df5d880fd83830d710cfa7be5649",
+        "apps/ios/Resources/en.lproj/IOSNative.strings": "93a9a624e7f41ebdea5b747d72f993a54d8987b6192974a36d64c65509f39c54",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "c7d5f6839cf2b55a237a49946c592588b65dbfd1f1cd166d7197099dcf6ef03d",
+        "apps/ios/Resources/zh-Hans.lproj/IOSNative.strings": "d1c9ec9d53eb8b4b8319b4aa593b12e669eaeed9c0b45136d5465edb19f7c759",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "ea411a78e3cd1d43a54a424067317ee54ae916cd961476de4da3c2545b4f3b6e",
+        "apps/ios/Sources/CodexManageApp.swift": "0a39f99a60601fdebc3b16a0cc65e9cb2acd406b12c67dfe173a923d1af787d4",
+        "apps/ios/Sources/DevServicePreview.swift": "65234af35d45db75e8fb1c15c02b6ef97cc4d51b41a60579b70403ced2eae40e",
+        "apps/ios/Sources/EasyWorkDevPreview.swift": "bdfef59a1d2baf2df9bece30c6f275558367a223bb757210f81945ab1e86cf02",
+        "apps/ios/Sources/EasyWorkSession.swift": "b93a9a08b8b2f994fce0873ff448538d76c4af54c3a02a0d7e9f00dadebd5fe0",
+        "apps/ios/Sources/MessageLinks.swift": "2f8a9502bc80fb1937f37f75267a4b20da13dd818828a81ddc692fc5d0c2d10b",
+        "apps/ios/Sources/RootView.swift": "8bdb214472fc3a8355325077096fb732e29c53ad208dc64d378733848c6f45f2",
+        "apps/ios/Tests/DevPreviewUITests.swift": "b23c8b070fc1a1765718c73bc892fb3dde64365c291a4121106be545b9a1f773",
+        "packages/dev-preview/package.json": "c23529fa75aa9c92bd4c7ce15bf4a9952feff974f1101c653aa3e630b7189066",
+        "packages/dev-preview/src/index.ts": "4c23e95b8711655f43053b702093914d71f073cc0b22eefa4b84c3c8f71681da",
+        "packages/dev-preview/tsconfig.json": "75635e8822ed3b8fc37abd7d41a609ff559c57168ee37764bb9d33fc38224a2b",
+        "packages/protocol/schemas/dev-preview-v1.schema.json": "516f1a61455dfe659a12356053238a82c0172e84686142d3d0782a4b030b0f0d",
+        "packages/protocol/src/dev-previews.ts": "9a7c1bb1854034acb092d92fab64a4606cd4d6d26afc00a6f3d26dbc44259490",
+        "packages/protocol/src/index.ts": "a41afd1f24a7d540fc6d5a97540abd3e47ebc8aca88079d7214e4466aedcbc7f",
+        "scripts/dev-preview-ios-acceptance.mjs": "4fd09c7287c84de72479fc82ef3297ea7a56556840de051ad4aad82e4113186a",
+        "scripts/dev-previews.test.mjs": "49cd0ae094cf66ded72620daaafe9083a84c7789c43b019fb1c9b03d13fb94f3",
+        "scripts/package-host-connect.mjs": "666a68d4b0927e9f65e853717cbf37c9770410b6c28070a276371e2102301799",
+        "scripts/package-host-connect.test.mjs": "1ab2857fe46428e4dfbeb9bb4c681d75af8085524106958937ed49ef5b1017f1",
+        "scripts/sync-easywork-dev-preview.mjs": "78723d631bfd4ef9672291ba86492ec0fab0ad91ae602a7035a2da19dec7d555"
+      }
+    },
+    {
+      "id": "dev-service-preview-platform-checks-20261115",
+      "baseCommit": "c953d1e4c18d0054f4997726a3f189ce63e13a2b",
+      "features": ["F76"],
+      "summary": "区分macOS原生监听归属与跨平台共享引擎测试；其他平台真实Host必须不声明能力、拒绝创建且不请求上游。生产代码与原生验收输入不变。",
+      "files": {
+        "scripts/dev-previews.test.mjs": "a8a053f3f665ea6bb75a4281b72ec33c52b29897871fc99848aab46b67f88180"
+      }
+    },
+    {
+      "id": "desktop-ipc-unread-fixture-wait-20261115",
+      "baseCommit": "123f13d8213306e51058107cdefab4b968f61731",
+      "features": ["F49", "F50", "F76"],
+      "summary": "仅修复原有IPC夹具两处35ms定时等待：等待原owner快照实际更新已读值，复用有界5秒helper，保留原断言；生产读取/未读规则、双端UI与验收状态不变。",
+      "files": {
+        "scripts/desktop-ipc-smoke.mjs": "e94b87611e2c715e3cf5d77c5944c506704f08b0460c1f08ae1f092fccf8bec1"
       }
     }
   ]

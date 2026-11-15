@@ -388,3 +388,23 @@ UM04 客户端迁移补充：`codex-host-discovery-v1.schema.json` 新增具名 
 仅整合 iOS 与 EasyWork 的协议、数据、权限及执行差异。原清单保留75项范围、51项对接/16项纯手机免重验/8项排除及14条补充；68个限定场景通过与21项Native失败均按原指纹保留，整项通过数不据此扩大。详见 [原清单](acceptance/codex-easywork-feature-matrix.md)。
 
 本批包含完整目标的 usage/read、project/git/status/files、原回执与队列恢复及问题元数据；旧桌面未准入项仅读，未知输入不重发。isSecret只控制输入遮罩，回答仍按正常工具结果和会话留存。本批优先保留主线现有读取目标、建议接口、启动、附件和迁移行为；Android源码及纯手机端重复验收不开展。合并后的检查与真实DEV结果另回填，不将旧指纹通过当作新主线全量通过。
+
+## F76 开发服务预览 v1（源码候选）
+
+仅 macOS 具备监听进程校验时，Host 发布 `preview:http:v1`、`preview:websocket:v1`、`preview:streaming:v1`。原 TLS/设备密钥与机器身份规则保持；此能力不表示 Relay 或外部浏览器可用。
+
+- `POST /v1/dev-previews`：JSON 必须为 `id,target,threadId,url,browserPort,browserSecret`，机器 target 恰含 Agent/Host/workspace/runtime。输入见 `packages/protocol/schemas/dev-preview-v1.schema.json`，运行解析器另外校验实际端口和规范 URL。仅明确本地 HTTP/1024–65535；拒绝凭据、任意域名及管理端口，校验聊天和当前用户监听进程。同 ID 同意图返回同回执，不同意图 409。返回 `id,target,threadId,expiresAt`，有效期 30 分钟。
+- `DELETE /v1/dev-previews`：JSON 恰为 `id,target,threadId`，校验原设备授权和准确目标，幂等撤销；返回 `id,closed`。Host 重启旧会话失效，不自动恢复网页请求。会话查询/持久服务列表尚未实现。
+- `GET /v1/dev-previews/connect?hostId=…&id=…&target=…` 的 WebSocket upgrade：仅原生客户端 Bearer 鉴权，无浏览器 Origin。二进制帧承载手机回环浏览器的 HTTP 字节，由 Host HTTP 解析器检查方法、Host、Origin、短期 Cookie 与目标，然后才转发到固定服务；不开放通用 TCP、CONNECT 或任意地址。内层 WebSocket 仅对同一服务升级，携带框架原子协议。
+
+浏览器 authority 必须为本次 `127.0.0.1:browserPort`；短期 `__agent_hub_preview` Cookie 从转发请求中删除，长期 Host 密钥不进入浏览器或 DEV 服务。HTTP 转发维护 Host/Origin/Referer 及同服务 Location 映射，Cookie 使用独立非持久浏览存储，不降低 Secure/SameSite/CSP。数据流采用有界缓冲与背压，最多 8 会话、24 连接/会话、32 MiB 请求体及 128 MiB HTTP 响应；上游空闲 30 秒关闭，活动 WebSocket 至会话到期或撤销。
+
+固定服务仍可能有业务副作用；创建 operation ID 不赋予 POST/网页操作幂等性，断线不自动重放。正文保留源码 URL，fragment 仅在手机使用。[首期验收与边界](acceptance/dev-service-preview-20261115.md)、[设计](design/dev-service-preview.md)区分运行结果和未支持场景。
+
+### EasyWork EWDAP 适配（F76 后续源码候选）
+
+EasyWork 复用 `packages/dev-preview` 的 HTTP 解析、监听归属、短期会话和撤销实现。现有加密 EWDAP 通道新增严格具名 `dev/preview/create`（`id,threadId,url,browserPort,browserSecret`）和 `dev/preview/close`（`id,threadId`），仍校验完整 account/desktopDevice/workspace/runtime 和设备绑定；设备 grant 需要 `runtime:control`。创建回执附带独立 256-bit 短期 `token` 和 `bindingId`，token 只留原生层，不能用于 `/channel` 或其他 EWDAP 命令。
+
+数据走已配对 LAN HTTPS listener 的 `/v1/dev-previews/connect` WSS；Bearer 为上述短期 ticket，固定 TLS 指纹、原设备绑定和 grant 再核对后进入同一 HTTP 代理。机器 query target 不代替外层账号授权。设备撤销、目标变化、服务关闭及 Host 生命周期结束会关闭连接，旧 ticket 不恢复。`preview:lan:v1` 与 HTTP/WS/streaming 仅在 macOS LAN listener 启用时声明；iOS 必须选择已连接的 LAN/VPN candidate，Relay-only 不能创建预览。HTTPS 上游与 Windows 支持仍待实施。
+
+统一源码在 Agent Hub；`scripts/sync-easywork-dev-preview.mjs --target <EasyWork checkout>` 只分发构建后的 engine/protocol 文件，产物清单分别记录准确输入/输出 SHA-256，保留 EasyWork 原服务配置与密钥。基准提交与未提交源码摘要分别记录，不用基准 SHA 冒充已集成源码。

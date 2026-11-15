@@ -183,9 +183,13 @@ test(
         await mkdir(join(repository, directory), { recursive: true });
       const components = [
         'apps/host-agent',
-        ...['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'].map(
-          (name) => 'packages/' + name,
-        ),
+        ...[
+          'codex-adapter',
+          'protocol',
+          'service-runtime',
+          'notification-runtime',
+          'dev-preview',
+        ].map((name) => 'packages/' + name),
       ];
       const emitted = 'export const synthetic = true;\n';
       for (const component of components) {
@@ -267,7 +271,7 @@ test(
         await write(name, bytes);
       }
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
-      for (const name of ['bonjour-service', 'qrcode']) {
+      for (const name of ['bonjour-service', 'qrcode', 'ws']) {
         await write(
           'node_modules/' + name + '/package.json',
           JSON.stringify({ name, version: '1.0.0', main: 'index.js' }),
@@ -314,6 +318,14 @@ test(
           }),
           contents,
         );
+      assert.equal(
+        execFileSync(
+          '/usr/bin/unzip',
+          ['-p', valid.archive, 'codex-host-connect/assets/codex-manage/node_modules/ws/index.js'],
+          { encoding: 'utf8' },
+        ),
+        'module.exports = {};\n',
+      );
       for (const [name, bytes] of soundBytes)
         assert.deepEqual(
           execFileSync('/usr/bin/unzip', [

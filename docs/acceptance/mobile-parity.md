@@ -1,5 +1,9 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-15 F76 EasyWork 后续：独立记录真实 Electron、原生模拟器、同源 API、真实 Vite HMR、设备/账号/短期授权及关闭边界；Codex 或 fixture 结果不能代替 EasyWork 端到端。详见[专项记录](dev-service-preview-easywork-20261115.md)，F76 不进入既有 F01–F75 分母。
+
+2026-11-15 F76（S05／S11／S18，待实施）：[PV01–PV09](../design/dev-service-preview.md)定义回环/通配监听、SPA/API、Cookie、HMR/流式、重连无自动重放、权限/端口归属、兼容失败和资源回收断言。iOS／Android、macOS／Windows及LAN/VPN/中继逐组合记录；一般场景可原生模拟器，蜂窝/设备VPN/实际媒体采集另需物理设备。模拟器须独立证明流量经过网关与Host。后续已获授权进入首期开发，生产 Host 边界与原生页面/API/HMR的实际结果见[专项记录](dev-service-preview-20261115.md)；既有F01–F75对齐台账和A6/F75暂停不变。
+
 ## 2026-11-15 F30/F31/F59 上传续传：主线集成受控验收，未部署
 
 Host 上传回归 14/14 通过：64 MiB、总传输超过 40 秒、并发 health/history、断流、响应丢失、错误目标/鉴权/偏移拒绝、未确认尾部截断、状态写入失败、过期回收和发布结果未知恢复。独占 Host OS 进程在 16 MiB 文件传至 8 MiB 时被终止，以不同 PID 和原上传 ID 恢复，最终唯一文件与 SHA-256 一致，`turn/start` 为 0。生产方法另验证 16 MiB 聊天附件及创建附件的重复完成、状态重载后幂等注册；CLI、ready 和创建 driver 为夹具，不构成真实 Electron/模型验收。入口为 `pnpm check:uploads`。集成保留当前主线的 attachments-v2 目录和 EasyWork 严格目标/文件校验。

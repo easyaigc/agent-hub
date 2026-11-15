@@ -1499,6 +1499,7 @@ struct RootView: View {
   @State private var readySearchJump: UUID?
   @State private var renameChatTarget: ChatRenameContext?
   @State private var deleteChatTarget: Conversation?
+  @State private var devServiceSource: DevServiceSource?
   @State private var endChatActionTarget: ChatActionReceipt?
   @State private var showsReplyRecords = false
   @State private var earlierHistoryRequest: UUID?
@@ -1681,8 +1682,13 @@ struct RootView: View {
     }
     .tint(.primary)
     .environmentObject(voice)
-    .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented))
-    .onChange(of: store.readingContextKey, initial: true) { _, context in readingCovers.activate(context) }
+    .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented || devServiceSource != nil))
+    .sheet(item: $devServiceSource) { source in
+      DevServiceEntry(client: source.client, threadId: source.threadId)
+    }
+    .onChange(of: store.readingContextKey, initial: true) { _, context in
+      readingCovers.activate(context); devServiceSource = nil
+    }
     .fullScreenCover(item: Binding(get: { readingCovers.imagePreview }, set: { item in
       if item == nil { readingCovers.dismissImage() }
     }), onDismiss: { readingCovers.imageDidDismiss() }) { ResourceImagePreview(item: $0) }
@@ -1868,6 +1874,13 @@ struct RootView: View {
         IconButton(symbol: "checklist", label: L10n.tr("项目与任务"), id: "task-hub-entry") { store.sheet = .taskHub }
         Menu {
           if store.client?.agentConnection?.target.agentId == "easywork" { ProjectGitMenuEntry(store: store) }
+          if store.supportsDevPreview, let client = store.client, let conversation = store.conversation {
+            Button(L10n.tr("开发服务"), systemImage: "network") {
+              var captured = client; captured.readingTarget = store.mobileReadingTarget(client)
+              devServiceSource = DevServiceSource(client: captured, threadId: conversation.id)
+            }
+              .accessibilityIdentifier("dev-services-entry")
+          }
           if let conversation = store.conversation {
             Section {
               Text(store.chatLifecycleStatus(conversation)).accessibilityIdentifier("chat-lifecycle-status")
@@ -2044,7 +2057,7 @@ struct RootView: View {
                   switch item {
                   case .message(let message):
                     if store.chatSearchJump?.targetKey == store.targetKey, store.chatSearchJump?.message.id == message.id {
-                      LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query, client: store.client, threadId: store.selectedThreadId)
+                      LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query, client: store.devPreviewClient, threadId: store.selectedThreadId)
                     } else if message.kind == "turnFailure" {
                       VStack(alignment: .leading, spacing: 4) {
                         Label(L10n.tr("任务失败记录"), systemImage: "exclamationmark.circle")
@@ -2056,7 +2069,7 @@ struct RootView: View {
                     } else if message.kind == "plan" {
                       ProposedPlanMessageView(message: message,native:store.client?.agentConnection?.target.agentId=="easywork")
                     } else {
-                      MessageView(message: message, client: store.client, threadId: store.selectedThreadId).equatable()
+                      MessageView(message: message, client: store.devPreviewClient, threadId: store.selectedThreadId).equatable()
                     }
                   case .tools(let id, let messages):
                     ToolCallGroupView(id: id, messages: messages, client: store.client,

@@ -56,6 +56,9 @@ importers:
       '@codex-manage/codex-adapter':
         specifier: workspace:*
         version: link:../../packages/codex-adapter
+      '@codex-manage/dev-preview':
+        specifier: workspace:*
+        version: link:../../packages/dev-preview
       '@codex-manage/notification-runtime':
         specifier: workspace:*
         version: link:../../packages/notification-runtime
@@ -71,6 +74,9 @@ importers:
       qrcode:
         specifier: 1.5.4
         version: 1.5.4
+      ws:
+        specifier: 8.18.3
+        version: 8.18.3
     devDependencies:
       '@codex-manage/tsconfig':
         specifier: workspace:*
@@ -81,6 +87,9 @@ importers:
       '@types/qrcode':
         specifier: 1.5.6
         version: 1.5.6
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
       tsx:
         specifier: 'catalog:'
         version: 4.23.15
@@ -133,6 +142,28 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/dev-preview:
+    dependencies:
+      '@codex-manage/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      ws:
+        specifier: 8.18.3
+        version: 8.18.3
+    devDependencies:
+      '@codex-manage/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -475,6 +506,9 @@ packages:
 
   '@types/qrcode@1.5.6':
     resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@typescript-eslint/eslint-plugin@8.71.1':
     resolution: {integrity: sha512-nNlBf6HuotqMgZvSkWD5hNdemiBIxQ2NmrlgfcUIeZRs+BbakjscCQRq/Hb74EFVnFiSWWdL12JruqwBy3ERDw==}
@@ -946,6 +980,18 @@ packages:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
     engines: {node: '>=8'}
 
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   y18n@4.0.3:
     resolution: {integrity: sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ==}
 
@@ -1142,6 +1188,10 @@ snapshots:
       undici-types: 7.24.6
 
   '@types/qrcode@1.5.6':
+    dependencies:
+      '@types/node': 24.19.1
+
+  '@types/ws@8.18.1':
     dependencies:
       '@types/node': 24.19.1
 
@@ -1645,6 +1695,8 @@ snapshots:
       ansi-styles: 4.3.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
+
+  ws@8.18.3: {}
 
   y18n@4.0.3: {}
 

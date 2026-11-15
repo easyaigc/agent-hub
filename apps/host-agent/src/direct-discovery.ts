@@ -53,6 +53,7 @@ export async function startDirectDiscovery(options: {
   token: string;
   target: () => Target;
   handler: (request: IncomingMessage, response: ServerResponse) => Promise<void>;
+  upgrade?: (server: Server, admit: (request: IncomingMessage) => boolean) => void;
   peers?: () => Promise<VPNDiscoveryPeer[]>;
   claim?: (input: unknown) => unknown;
   registry?: DirectEndpointRegistry;
@@ -278,6 +279,7 @@ export async function startDirectDiscovery(options: {
   });
   server.requestTimeout = 120000;
   server.headersTimeout = 10000;
+  options.upgrade?.(server, (request) => isLocalLanAddress(request.socket.remoteAddress ?? ''));
   let closed = false,
     refreshing = false;
   let timer: ReturnType<typeof setInterval> | undefined;

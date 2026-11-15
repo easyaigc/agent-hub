@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "scenario": "F76 merged EasyWork and Agent Hub dev preview",
+  "date": "2026-11-15",
+  "result": "passed",
+  "scope": {
+    "desktop": "Real isolated EasyWork Electron DEV, production EWDAP and embedded LAN TLS listener",
+    "mobile": "Native iOS simulator XCTest",
+    "identity": "Authorized existing platform session with local-development remote credential; no claim of production platform authorization",
+    "transport": "Paired LAN TLS; preview HTTP bytes via dedicated WebSocket",
+    "modelInput": "none",
+    "relay": "not exercised",
+    "environment": "Node 24, JDK 17, Kotlin Native 2.4.21, Xcode simulator"
+  },
+  "easywork": {
+    "mergedHead": "46c33a3df56641bc089cc624fd141dd66dae97fd",
+    "sourceAndOutputSHA256": {
+      "apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts": "fc19231668144c2a7f2a622ff2dbca55ae2bab23cfce3dc056b250fe93a1dd15",
+      "apps/desktop/src/main/remote-access/desktop-remote-event-delivery.ts": "9463b8b06de0656067f4b6cd18679916cc68dc5f2318198b151153b2cc71245c",
+      "apps/desktop/src/main/remote-access/embedded-lan-host.ts": "166d610269bb63a9a0bcecf98e6f6830e0ef32ff8b1888cd079bd15fb48a3a9e",
+      "apps/desktop/src/main/remote-access/remote-runtime-bridge.ts": "8828dd37064206a2e82e8500d115da7eb8aef2513e16ca1b60b9549d22a2561c",
+      "apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts": "22c9afacb68d33692bde7bda36af70f67fd99505e5fffa4096a6f9f738a6e1f2",
+      "apps/desktop/src/main/remote-access/remote-runtime-options.ts": "ec5595f098a92f797ab2b4369f056954dafadb2cc27c6299b689a3bc9ce98d4d",
+      "apps/desktop/src/main/remote-access/remote-dev-previews.ts": "4e7ba676f27950ad6f9366a44a3dc968d455639f4a6ef0d06dbc619e6d41f2a6",
+      "apps/desktop/src/main/acceptance/dev-service-preview-real.ts": "ea515b23e7cb5ee0f20c416772517095782454f1f4c0f5c538e90be1aaf4f7fd",
+      "apps/desktop/src/main/index.ts": "daacf93633dfcb862a831d43680907afbffac9f0b5572370e4ee05b8b2d06c43",
+      "packages/agent-protocol/src/v2.ts": "97a2f5f13b52b8ae190eb925fd3d461cb5166f0138d8f607e46cc166e325fe7f",
+      "packages/agent-hub-dev-preview/runtime/index.js": "a9ed0e1f206a873e761176caa5f229372d2d03c1dea4b477b28f9dd1c9aca9fa",
+      "packages/codex-notification-protocol/runtime/dev-previews.js": "e0de823b1d865349743dc7ff150cff65a57e428bf44da21d71860de10641c7c9",
+      "scripts/f76-easywork-preview-acceptance.ts": "23b0c37d099b91f95594628be33ef791ab5190dcbdc008bc5d405b50848f1c09",
+      "bun.lock": "47e1ace5df86e599f975f2111a059862d898fbe7b16ce1bc916e4309f80dfd6e",
+      "out/main/index.js": "36dde07643b466d5dccbf74dbcaa256ee7af26fc2ae6f596779629c9f2ce5c14",
+      "Electron 42.7.1 executable": "1c36c72d548c3bb28f937440e0c9688b1d6be39d7446718a1a826c1429753846"
+    },
+    "sourceAndOutputStableDuringRun": true
+  },
+  "agentHub": {
+    "baseHead": "83c8dc84083150e39801846d95baf5537d6b02e7",
+    "candidate": "F76 changes integrated onto current main, uncommitted at test time",
+    "relevantNativeInputSHA256": {
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "100803a83bd5601034f1fd3d10cd8681fc72df5d880fd83830d710cfa7be5649",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "c7d5f6839cf2b55a237a49946c592588b65dbfd1f1cd166d7197099dcf6ef03d",
+      "apps/ios/Resources/en.lproj/IOSNative.strings": "93a9a624e7f41ebdea5b747d72f993a54d8987b6192974a36d64c65509f39c54",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "ea411a78e3cd1d43a54a424067317ee54ae916cd961476de4da3c2545b4f3b6e",
+      "apps/ios/Resources/zh-Hans.lproj/IOSNative.strings": "d1c9ec9d53eb8b4b8319b4aa593b12e669eaeed9c0b45136d5465edb19f7c759",
+      "apps/ios/Sources/CodexManageApp.swift": "0a39f99a60601fdebc3b16a0cc65e9cb2acd406b12c67dfe173a923d1af787d4",
+      "apps/ios/Sources/DevServicePreview.swift": "65234af35d45db75e8fb1c15c02b6ef97cc4d51b41a60579b70403ced2eae40e",
+      "apps/ios/Sources/EasyWorkDevPreview.swift": "bdfef59a1d2baf2df9bece30c6f275558367a223bb757210f81945ab1e86cf02",
+      "apps/ios/Sources/EasyWorkSession.swift": "b93a9a08b8b2f994fce0873ff448538d76c4af54c3a02a0d7e9f00dadebd5fe0",
+      "apps/ios/Sources/MessageLinks.swift": "2f8a9502bc80fb1937f37f75267a4b20da13dd818828a81ddc692fc5d0c2d10b",
+      "apps/ios/Sources/RootView.swift": "8bdb214472fc3a8355325077096fb732e29c53ad208dc64d378733848c6f45f2",
+      "apps/ios/Tests/DevPreviewUITests.swift": "b23c8b070fc1a1765718c73bc892fb3dde64365c291a4121106be545b9a1f773",
+      "scripts/dev-preview-ios-acceptance.mjs": "4fd09c7287c84de72479fc82ef3297ea7a56556840de051ad4aad82e4113186a"
+    },
+    "nativeInputStableDuringRun": true,
+    "aggregateSourceFingerprintBefore": "e99aeb2c030814967ae5122f409b7e257ed1da81c2f28ca379d23972515c34d8",
+    "aggregateSourceFingerprintAfter": "e99aeb2c030814967ae5122f409b7e257ed1da81c2f28ca379d23972515c34d8",
+    "productBinarySHA256": "e11b01a85d4b2dc2fa41022b94c8b0599e63ec1d1608f393b4880670c54b799b",
+    "postSignAcceptanceBinarySHA256": "edecc4ed7bb0e334a3f352280140198311111b264b4fc7f4c53d61e33e68c1c1",
+    "postSignAcceptanceBundleTreeSHA256": "fc9c811e5d1947cd6dce40d9ed64015a9a0d315a0051ffe0071b9e20e77764ef"
+  },
+  "xctest": {
+    "result": "Passed",
+    "tests": 1,
+    "failures": 0,
+    "device": "iPhone 17 Pro, iOS Simulator 26.0 (23A343), arm64",
+    "buildExitCode": 0,
+    "compileExitCode": 0,
+    "testExitCode": 0,
+    "simulatorDeleted": true,
+    "screenshot": "dev-preview-merged-20261115.png",
+    "screenshotSHA256": "926f9054c402227d1fc5c0fc1ab0d113fe46d039ac8fac7ddc6d3fefd779f808"
+  },
+  "observed": {
+    "httpHTMLRequests": 1,
+    "apiRequests": 1,
+    "viteWebSocketUpgrades": 1,
+    "htmlRequestsBeforeHMR": 1,
+    "previewCookieLeakedToUpstream": false,
+    "HMR": "page updated A to B without reload",
+    "RPCMethods": {
+      "runtime/context": 1,
+      "dev/preview/create": 1,
+      "dev/preview/close": 1
+    },
+    "previewClosed": true
+  },
+  "notVerified": [
+    "Relay transport",
+    "Physical iPhone, cellular or VPN",
+    "Production platform authorization via local-development remote credential",
+    "Windows or other computers"
+  ],
+  "executionModel": "Terra medium requested; tool does not expose actual model or speed settings"
+}

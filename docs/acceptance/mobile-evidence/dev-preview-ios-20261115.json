@@ -1,0 +1,81 @@
+{
+  "startedAt": "2026-11-15T03:26:33.321Z",
+  "execution": "complete product build; production Host and real Vite are externally supplied",
+  "modelSettings": "entry point does not expose actual model or speed settings",
+  "services": {
+    "host": "thin HTTP routing; production DevPreviews/control/attach and production devListenerIdentity; fixed test thread scope; no RuntimeSession or Electron",
+    "vite": "6.3.5 from existing local installation",
+    "vitePort": 5173
+  },
+  "freeBytesBefore": 18148040704,
+  "fingerprintBefore": "435f5e09b6c5fd17abcb44e6b4d707b3dae565cc98bc36d8f7350b3f8ee31225",
+  "derivedData": "task-owned isolated build cache, reused after failed build",
+  "buildExitCode": 0,
+  "productBinarySHA256": "b0409fd46c3de664e0ceee809ded627176b67fc836bd65924006a39c46f7bdb9",
+  "acceptanceBinarySHA256": "f0062d197893a8c1a4baf85f8bced62d20e047f39695a697d7741dd69853e835",
+  "acceptanceBundleTreeSHA256": "667287105fbcd968ac2e357421fe446bd0f0122ba324315512d2c26fa5723387",
+  "compileExitCode": 0,
+  "testExitCode": 0,
+  "fingerprintAfter": "435f5e09b6c5fd17abcb44e6b4d707b3dae565cc98bc36d8f7350b3f8ee31225",
+  "fingerprintStable": true,
+  "stats": {
+    "html": 1,
+    "api": 1,
+    "viteUpgrades": 1,
+    "cookiesLeaked": false,
+    "originRejected": true,
+    "originNoUpstream": true,
+    "htmlBeforeHMR": 1,
+    "revoked": true,
+    "revokedNoUpstream": true,
+    "afterClose": {
+      "http": 6,
+      "upgrades": 1,
+      "denied": 2
+    },
+    "host": {
+      "http": 6,
+      "upgrades": 1,
+      "denied": 2
+    }
+  },
+  "testPassed": true,
+  "xcresultSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceName": "Dedicated iOS Simulator",
+          "modelName": "iPhone 17 Pro",
+          "osBuildNumber": "23A343",
+          "osVersion": "26.0",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "Transient Testing · Built with macOS 27.0",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1794713291.741,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1794713263.771,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - Transient Testing",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "simulatorDeleted": true,
+  "screenshotSHA256": "2a24aaab8c3c679948c4f497dfe4798011238a94cc4df71c80318ac7b63ba1f6"
+}

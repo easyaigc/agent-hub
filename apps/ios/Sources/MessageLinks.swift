@@ -35,6 +35,7 @@ struct MessageLinkOpening: ViewModifier {
   let attachments: [RemoteAttachment]
   @State private var preview: FilePreviewItem?
   @State private var webURL: BrowserLink?
+  @State private var devURL: BrowserLink?
   @State private var error: String?
   @State private var selectedURL: URL?
   @State private var selectedAnchor: UUID?
@@ -49,6 +50,9 @@ struct MessageLinkOpening: ViewModifier {
     .environment(\.openURL, OpenURLAction { url in open(url); return .handled })
     .filePreview($preview)
     .sheet(item: $webURL) { link in MessageWebPreview(url: link.url) }
+    .sheet(item: $devURL) { link in
+      if let client, let threadId { DevServiceEntry(client: client, threadId: threadId, initialURL: link.url.absoluteString) }
+    }
     .alert(L10n.tr("无法打开链接"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
       if let selectedURL {
         Button(L10n.tr("复制链接")) { UIPasteboard.general.string = selectedURL.absoluteString }
@@ -70,7 +74,7 @@ struct MessageLinkOpening: ViewModifier {
 
   private func reset() {
     download?.cancel(); download = nil; loading = false
-    preview = nil; webURL = nil; error = nil; selectedURL = nil; selectedAnchor = nil
+    preview = nil; webURL = nil; devURL = nil; error = nil; selectedURL = nil; selectedAnchor = nil
   }
 
   private func open(_ url: URL, anchor: UUID? = nil) {
@@ -124,7 +128,11 @@ struct MessageLinkOpening: ViewModifier {
         }
       }
     case .computerWeb:
-      error = L10n.tr("此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。")
+      guard let client, threadId != nil, ["codex", "easywork"].contains(client.readingTarget?.agentId ?? "") else {
+        error = L10n.tr("当前电脑连接尚不支持开发服务预览，请检查连接方式。")
+        return
+      }
+      devURL = BrowserLink(url: url)
     case .unsupported:
       error = L10n.tr("手机暂不支持此类链接，可复制后在对应应用中打开。")
     }

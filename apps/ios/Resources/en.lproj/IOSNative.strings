@@ -42,7 +42,6 @@
 "待确认" = "Awaiting confirmation";
 "已批准" = "Approved";
 "受阻" = "Blocked";
-"已暂停" = "Paused";
 "已跳过" = "Skipped";
 "状态待同步" = "Awaiting status sync";
 "已保存" = "Saved";
@@ -51,8 +50,6 @@
 "复制代码" = "Copy code";
 "模型服务请求失败。本次任务未完成，原输入和执行记录已保留。" = "The model service request failed. This task did not complete. Your original input and execution record have been kept.";
 "原附件内容已改变，未提交" = "The original attachment has changed. Nothing was submitted.";
-"子 Agent" = "Subagent";
-"等待子 Agent 更新…" = "Waiting for subagent updates…";
 "任务运行设置" = "Task execution settings";
 "以下选择用于下次发送，不改变已运行任务的设置。" = "These choices apply to your next message and do not change the settings of an existing run.";
 "已取消" = "Cancelled";

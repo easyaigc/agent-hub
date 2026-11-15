@@ -1,0 +1,26 @@
+{
+  "name": "@codex-manage/dev-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@codex-manage/protocol": "workspace:*",
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "@codex-manage/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/ws": "8.18.1",
+    "typescript": "catalog:"
+  }
+}

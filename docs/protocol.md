@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+2026-11-15 F76 草案入口：[开发服务预览](design/dev-service-preview.md)提出服务解析/登记查询、短期会话创建/查询/关闭及独立 HTTP/WebSocket 数据通道，按完整目标和稳定操作 ID 校验控制意图。会话 operation ID 不授予网页业务请求自动重试。后续首期已形成公共严格解析器、创建 Schema、Host 创建/关闭与 WSS 传输入口；实际可调用契约见[运行时协议](protocol-runtime.md#f76-开发服务预览-v1源码候选)。仅支持的平台声明 HTTP/WS/流式能力，Relay、服务列表/持久查询与外部浏览器仍待实现。
+
 ## 分块上传 v1（2026-11-15 源码候选）
 
 能力 `files:resumable-upload-v1` 只在完整 runtime Host 的实际上传实现上开放，bootstrap health 不宣称该能力。契约位于 `packages/protocol/src/uploads.ts`，独立于 Codex JSON-RPC。六个具名入口见文件互传文档；全部校验鉴权、准确 Host 和完整运行 target，拒绝重复或未知查询字段，旧上传回执保持原语义。

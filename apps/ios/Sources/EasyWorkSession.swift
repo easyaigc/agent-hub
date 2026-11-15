@@ -217,6 +217,13 @@ actor EasyWorkRemoteSession {
     guard credential.binding.deviceAuthorization == nil || credential.grantRef != nil else { throw HostServiceError.message("设备授权凭据缺失，请重新配对") }
     self.connection = connection; self.credential = credential; self.target = target
   }
+  func devPreviewCandidate() async throws -> AgentConnectionCandidate {
+    try await connect()
+    guard let candidate = activeCandidateInfo, candidate.transportId == "lan-wss", candidate.peerFingerprint?.count == 64 else {
+      throw HostServiceError.message(L10n.tr("开发服务预览需要局域网或 VPN 直连，请切换连接方式。"))
+    }
+    return candidate
+  }
   func updateCandidates(_ candidates: [AgentConnectionCandidate]) {
     connection.candidates = candidates
     if let current = activeCandidateInfo, let replacement = candidates.first(where: { $0.endpoint == current.endpoint && $0.transportId == current.transportId }) {

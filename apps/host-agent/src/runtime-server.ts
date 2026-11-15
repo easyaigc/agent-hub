@@ -45,6 +45,8 @@ import { VoiceTranscriptions } from './voice-transcriptions.js';
 import { DesktopDomSuggestions } from './desktop-dom-suggestions.js';
 import { sendReadJSON } from './read-json.js';
 import { ProjectGitService } from './project-git.js';
+import { DevPreviews, DevPreviewError } from './dev-previews.js';
+import { DEV_PREVIEW_CAPABILITIES } from '@codex-manage/protocol';
 import {
   PROJECT_GIT_CAPABILITY,
   PROJECT_GIT_FILES_CAPABILITY,
@@ -405,6 +407,34 @@ export async function startRuntimeServer() {
   let direct: Awaited<ReturnType<typeof startDirectDiscovery>> | undefined;
   const vpnDirectory = new VPNPeerDirectory();
   const privateConnections = new PrivateConnections(directory);
+  const previewAuthorize = (request: IncomingMessage): string => {
+    const value = request.headers.authorization ?? '';
+    const supplied = Buffer.from(value.replace(/^Bearer /, ''));
+    const expected = Buffer.from(token);
+    if (
+      request.headers.origin ||
+      !value.startsWith('Bearer ') ||
+      !(
+        (supplied.length === expected.length && timingSafeEqual(supplied, expected)) ||
+        privateConnections.accepts(supplied, session.readingTarget())
+      )
+    )
+      throw new RuntimeError(401, '客户端密钥无效或已撤销');
+    return value;
+  };
+  const devPreviews = new DevPreviews({
+    target: () => usageTarget(session.readingTarget()),
+    authorize: previewAuthorize,
+    scope: async (threadId) => {
+      await session.open(threadId);
+    },
+    deniedPorts: () => [
+      Number(
+        (server.address() as { port: number } | null)?.port ?? process.env.HOST_AGENT_PORT ?? 8788,
+      ),
+      ...(direct ? [Number((direct.server.address() as { port: number }).port)] : []),
+    ],
+  });
   const projectGitAvailable = await ProjectGitService.supported();
   let gitBaselines: Record<string, string> = {};
   if (process.env.HOST_AGENT_GIT_BASELINES_FILE) {
@@ -448,6 +478,7 @@ export async function startRuntimeServer() {
       'notifications',
       'files:upload',
       UPLOAD_CAPABILITY,
+      ...(process.platform === 'darwin' ? DEV_PREVIEW_CAPABILITIES : []),
       'commands:target-bound:v1',
       ...(projectGitAvailable ? [PROJECT_GIT_CAPABILITY, PROJECT_GIT_FILES_CAPABILITY] : []),
     ]),
@@ -487,6 +518,7 @@ export async function startRuntimeServer() {
         throw new RuntimeError(400, '无效请求地址', 'INVALID_REQUEST_TARGET');
       }
       const url = requestURL;
+      if (await devPreviews.control(request, response, url)) return;
       if (url.pathname === '/v1/project-git' || url.pathname === '/v1/project-git/files') {
         if (request.method !== 'GET') {
           response.setHeader('Allow', 'GET');
@@ -1564,6 +1596,7 @@ export async function startRuntimeServer() {
     } catch (error) {
       const status =
         error instanceof RuntimeError ||
+        error instanceof DevPreviewError ||
         error instanceof CreationError ||
         error instanceof SuggestionObservationError ||
         error instanceof NotificationRecoveryError
@@ -1610,6 +1643,7 @@ export async function startRuntimeServer() {
         json(response, status, {
           error:
             error instanceof RuntimeError ||
+            error instanceof DevPreviewError ||
             error instanceof CreationError ||
             error instanceof SuggestionObservationError
               ? error.message
@@ -1624,6 +1658,7 @@ export async function startRuntimeServer() {
     ? httpsServer(tls, (req, res) => void handler(req, res))
     : httpServer((req, res) => void handler(req, res));
   server.requestTimeout = 120_000;
+  devPreviews.attach(server);
   server.headersTimeout = 10_000;
   try {
     await new Promise<void>((done, reject) => {
@@ -1633,6 +1668,7 @@ export async function startRuntimeServer() {
   } catch (error) {
     clearInterval(notificationTimer);
     projectGit.close();
+    devPreviews.close();
     unsubscribeNotifications();
     suggestionObserver.close();
     notifications.close();
@@ -1666,6 +1702,7 @@ export async function startRuntimeServer() {
             token,
             target: () => session.readingTarget(),
             handler,
+            upgrade: (server, admit) => devPreviews.attach(server, admit),
             peers: () => vpnDirectory.peers(),
             claim: (input) => privateConnections.claim(input, session.readingTarget()),
           }),
@@ -1712,6 +1749,7 @@ export async function startRuntimeServer() {
     clearInterval(voiceExpiryTimer);
     for (const dispose of [
       () => projectGit.close(),
+      () => devPreviews.close(),
       unsubscribeNotifications,
       () => notifications.close(),
       () => directRecovery?.close(),

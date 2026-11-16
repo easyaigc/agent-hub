@@ -1,5 +1,7 @@
 # 运行时 HTTP 协议 v1
 
+2026-11-16：原桌面状态流按共同快照／patch结构兼容版本演进，状态流版本不改变具名执行方法版本。跨版本增量先取得准确 owner 的完整基线；结构无法确认时，连接操作保留原 ID 并返回明确错误，手机结束本次等待但不取消远端、不重发输入。详见[状态流验收](acceptance/desktop-stream-compatibility-20261116.md)。
+
 2026-10-26：`runtime.generationSettings` 的模型／强度可来自准确原 owner 的小体积具名只读参数查询，独立于完整消息快照是否可用；该查询核对原 owner 与当前 IPC 连接，拒绝迟到、错源和过期响应，不授予 `canControl` 或执行权限。未知值保持 null；手机不得将目录推荐默认值或未发送草稿当作该对话实际参数。见参数同步专项验收。
 
 2026-10-26：`runtime.approvals[]` 增加可选 `decisionLabels: Record<string,string>` 展示文案，动作仍来自 `decisions[]`，手机通过原 `/v1/approvals` 仅提交具名 decision。新版手机以 `X-Agent-Hub-Approvals: mcp-v1` 声明支持；旧客户端读取新类型时仅显示拒绝与更新提示，避免将未知动作误标为停止任务。历史与事件读取均执行此兼容投影，不改变 Host 内部原请求。Host 将 MCP 的 accept／decline／cancel、原请求允许的 session／always 与额外权限的 turn／session 响应映射到原运行时，不向手机开放任意 wire、权限对象或方法名。

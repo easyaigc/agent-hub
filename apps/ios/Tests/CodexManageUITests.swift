@@ -8248,7 +8248,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["AUTOMATIC_CONNECTION_REPLY"].waitForExistence(timeout: 15))
     counters = try await readLifecycleCounters()
     XCTAssertEqual(counters["desktopOpens"] as? Int, 1, "The next Send must query the saved connection ID")
-    XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 2)
+    XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 1)
     XCTAssertEqual(counters["replies"] as? Int, 1)
     XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "输入消息，长按语音输入")
     XCTAssertTrue(history.exists)
@@ -8262,6 +8262,84 @@ final class CodexManageUITests: XCTestCase {
     connectLive(try JSONDecoder().decode(LiveFixture.self, from: data), supportsCreation: false)
     XCTAssertTrue(app.staticTexts["READ_LIFECYCLE_HISTORY"].waitForExistence(timeout: 15))
     composer.tap(); typeComposerText("wait-for-late-original-owner")
+    sendLiveComposer()
+    XCTAssertTrue(app.staticTexts["AUTOMATIC_CONNECTION_REPLY"].waitForExistence(timeout: 20))
+    XCTAssertFalse(app.alerts.firstMatch.exists, "A late owner must finish the same Send without an extra connection step")
+    let counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpens"] as? Int, 1)
+    XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 2)
+    XCTAssertEqual(counters["replies"] as? Int, 1)
+    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "输入消息，长按语音输入")
+    shot("late-desktop-owner-single-send")
+  }
+
+  @MainActor func testV13HistoryFailedConnectionRecovery() async throws {
+    let (data, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8802/reset?desktop=1")!)
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    try await readLifecycleState("disable-models")
+    connectLive(try JSONDecoder().decode(LiveFixture.self, from: data), supportsCreation: false)
+    let history = app.staticTexts["READ_LIFECYCLE_HISTORY"]
+    XCTAssertTrue(history.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    XCTAssertFalse(app.staticTexts["readonly-note"].exists)
+    XCTAssertFalse(app.staticTexts["发送时自动连接 Codex。"].exists)
+    composer.tap(); composer.typeText("history-draft-preserved")
+    XCTAssertTrue(app.buttons["composer-dismiss-keyboard"].waitForExistence(timeout: 10))
+    app.buttons["composer-dismiss-keyboard"].tap()
+    XCTAssertEqual(composer.value as? String, "history-draft-preserved")
+    XCTAssertTrue(composer.isHittable); XCTAssertTrue(app.buttons["send-message"].isHittable)
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    try await waitForReadLifecycleCounter("historyReads", atLeast: 2)
+    var counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpens"] as? Int, 0)
+    XCTAssertTrue(history.exists)
+    XCTAssertTrue(app.buttons["send-message"].isEnabled)
+    XCTAssertFalse(app.buttons["connect-desktop-thread"].exists)
+    sendLiveComposer()
+    XCTAssertTrue(app.alerts["无法完成操作"].waitForExistence(timeout: 10))
+    app.alerts.buttons["好"].tap()
+    counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 0)
+    XCTAssertTrue(history.exists)
+    XCTAssertEqual(composer.value as? String, "history-draft-preserved")
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    try await waitForReadLifecycleCounter("historyReads", atLeast: 3)
+    counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpens"] as? Int, 1, "Refreshing must not retry an uncertain desktop opening")
+    XCTAssertEqual(counters["replies"] as? Int, 0, "A failed connection must not submit the input")
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-restore-testing"]
+    app.launchChineseTest()
+    XCTAssertTrue(history.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, "history-draft-preserved")
+    counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpens"] as? Int, 1, "Restoring the draft must not navigate the desktop")
+    try await readLifecycleState("open-success")
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: app.buttons["send-message"])
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
+    sendLiveComposer()
+    XCTAssertTrue(app.staticTexts["AUTOMATIC_CONNECTION_REPLY"].waitForExistence(timeout: 15))
+    counters = try await readLifecycleCounters()
+    XCTAssertEqual(counters["desktopOpens"] as? Int, 1, "The next Send must query the saved connection ID")
+    XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 1)
+    XCTAssertEqual(counters["replies"] as? Int, 1)
+    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "输入消息，长按语音输入")
+    XCTAssertTrue(history.exists)
+    shot("history-readable-and-send-connects-once")
+  }
+
+  @MainActor func testV13HistoryLateOwnerRecovery() async throws {
+    let (data, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8802/reset?desktop=1&late=1")!)
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    try await readLifecycleState("disable-models")
+    connectLive(try JSONDecoder().decode(LiveFixture.self, from: data), supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["READ_LIFECYCLE_HISTORY"].waitForExistence(timeout: 15))
+    composer.tap(); composer.typeText("wait-for-late-original-owner")
+    XCTAssertTrue(app.buttons["composer-dismiss-keyboard"].waitForExistence(timeout: 10))
+    app.buttons["composer-dismiss-keyboard"].tap()
+    XCTAssertEqual(composer.value as? String, "wait-for-late-original-owner")
+    XCTAssertTrue(composer.isHittable); XCTAssertTrue(app.buttons["send-message"].isHittable)
     sendLiveComposer()
     XCTAssertTrue(app.staticTexts["AUTOMATIC_CONNECTION_REPLY"].waitForExistence(timeout: 20))
     XCTAssertFalse(app.alerts.firstMatch.exists, "A late owner must finish the same Send without an extra connection step")
@@ -13574,6 +13652,117 @@ final class CodexManageUITests: XCTestCase {
     if !readOnly.isHittable { app.swipeUp() }
     readOnly.tap(); app.buttons["generation-done"].tap()
     XCTAssertTrue(settings.label.contains("极高"))
+  }
+  @MainActor private func desktopStreamXhighPosition(_ fixture: LiveFixture) async throws -> CGFloat {
+    var components = try XCTUnwrap(URLComponents(string: fixture.endpoint + "/v1/models"))
+    components.queryItems = [URLQueryItem(name: "hostId", value: fixture.hostId)]
+    if !fixture.threadId.isEmpty { components.queryItems?.append(URLQueryItem(name: "threadId", value: fixture.threadId)) }
+    var request = URLRequest(url: try XCTUnwrap(components.url))
+    request.setValue("Bearer " + fixture.token, forHTTPHeaderField: "Authorization")
+    let (data, response) = try await URLSession.shared.data(for: request)
+    guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
+    let models = try XCTUnwrap((JSONSerialization.jsonObject(with: data) as? [String: Any])?["models"] as? [[String: Any]])
+    let model = try XCTUnwrap(models.first { $0["id"] as? String == "gpt-6.1-sol" })
+    let efforts = try XCTUnwrap(model["supportedEfforts"] as? [String])
+    let index = try XCTUnwrap(efforts.firstIndex(of: "xhigh"))
+    guard efforts.count > 1 else { throw URLError(.cannotParseResponse) }
+    print("V13_EFFORT_CATALOG", efforts, index)
+    return CGFloat(index) / CGFloat(efforts.count - 1)
+  }
+  @MainActor func testDesktopStreamCompatibilityCreationAndReply() async throws {
+    let fixture = try await desktopFixture()
+    connectLive(fixture)
+    chooseDesktopProject(nil)
+    let first = "V13_CREATE_" + fixture.nonce
+    composer.tap()
+    typeComposerText("独立状态流验收：仅原样回复 \(first)，不要使用工具。")
+    sendLiveComposer()
+    waitForDesktopAnswer(first)
+    let settings = app.buttons["generation-settings"]
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: settings)
+    guard XCTWaiter.wait(for: [ready], timeout: 30) == .completed,
+      settings.label.contains("GPT-6.1-Sol") else {
+      XCTFail("Expected GPT-6.1-Sol settings before input: " + settings.label)
+      throw URLError(.cannotParseResponse)
+    }
+    settings.tap()
+    let slider = app.sliders["effort-slider"]
+    guard slider.waitForExistence(timeout: 15) else {
+      XCTFail("Effort slider unavailable; no input sent")
+      throw URLError(.cannotParseResponse)
+    }
+    slider.adjust(toNormalizedSliderPosition: try await desktopStreamXhighPosition(fixture))
+    let picker = app.descendants(matching: .any)["effort-picker"].firstMatch
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", "极高", "极高"), object: picker)
+    guard XCTWaiter.wait(for: [selected], timeout: 15) == .completed else {
+      XCTFail("Draft effort is not confirmed as xhigh; no input sent: " + picker.debugDescription)
+      throw URLError(.cannotParseResponse)
+    }
+    app.buttons["generation-done"].tap()
+    focusLiveComposer()
+    let second = "V13_FOLLOW_" + fixture.nonce
+    typeComposerText("独立状态流验收：不要使用工具。请以 \(second) 开头，详细说明软件工程中的状态同步和恢复，输出约三千字。")
+    sendLiveComposer()
+    let running = app.buttons["stop-turn"]
+    XCTAssertTrue(running.waitForExistence(timeout: 60), app.debugDescription)
+    let partial = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", second)).firstMatch
+    XCTAssertTrue(partial.waitForExistence(timeout: 120), app.debugDescription)
+    XCTAssertTrue(running.exists, "The partial assistant response must appear while the turn is still running")
+    shot("v13-followup-running")
+    let completed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: running)
+    XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 8), .timedOut)
+    XCTAssertTrue(running.exists)
+    let finalIdle = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: running)
+    XCTAssertEqual(XCTWaiter.wait(for: [finalIdle], timeout: 240), .completed)
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", second)).firstMatch.waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["查询状态"].exists)
+    XCTAssertTrue((app.buttons["client-switch"].value as? String ?? "").contains("Codex · 实时连接"))
+    shot("v13-followup-completed")
+  }
+  @MainActor func testDesktopStreamCompatibilityExistingFollowup() async throws {
+    let fixture = try await desktopFixture()
+    connectLive(fixture, supportsCreation: false)
+    openDesktopTestConversation(fixture)
+    let settings = app.buttons["generation-settings"]
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: settings)
+    guard XCTWaiter.wait(for: [ready], timeout: 30) == .completed,
+      settings.label.contains("GPT-6.1-Sol") else {
+      XCTFail("Expected GPT-6.1-Sol settings before input: " + settings.label)
+      throw URLError(.cannotParseResponse)
+    }
+    settings.tap()
+    let slider = app.sliders["effort-slider"]
+    guard slider.waitForExistence(timeout: 15) else {
+      XCTFail("Effort slider unavailable; no input sent")
+      throw URLError(.cannotParseResponse)
+    }
+    slider.adjust(toNormalizedSliderPosition: try await desktopStreamXhighPosition(fixture))
+    let picker = app.descendants(matching: .any)["effort-picker"].firstMatch
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", "极高", "极高"), object: picker)
+    guard XCTWaiter.wait(for: [selected], timeout: 15) == .completed else {
+      XCTFail("Draft effort is not confirmed as xhigh; no input sent: " + picker.debugDescription)
+      throw URLError(.cannotParseResponse)
+    }
+    app.buttons["generation-done"].tap()
+    focusLiveComposer()
+    let marker = "V13_FOLLOW_" + fixture.nonce
+    typeComposerText("独立状态流验收：不要使用工具。请以 \(marker) 开头，详细说明软件工程中的状态同步和恢复，输出约三千字。")
+    sendLiveComposer()
+    let running = app.buttons["stop-turn"]
+    XCTAssertTrue(running.waitForExistence(timeout: 60), app.debugDescription)
+    let partial = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", marker)).firstMatch
+    XCTAssertTrue(partial.waitForExistence(timeout: 120), app.debugDescription)
+    XCTAssertTrue(running.exists, "Partial text must appear while the turn is still running")
+    shot("v13-existing-followup-running")
+    let completed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: running)
+    XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 8), .timedOut)
+    XCTAssertTrue(running.exists)
+    let idle = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: running)
+    XCTAssertEqual(XCTWaiter.wait(for: [idle], timeout: 240), .completed)
+    XCTAssertTrue(partial.waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["查询状态"].exists)
+    XCTAssertTrue((app.buttons["client-switch"].value as? String ?? "").contains("Codex · 实时连接"))
+    shot("v13-existing-followup-completed")
   }
   @MainActor func testOriginalDesktopProjectCreation() async throws {
     let fixture = try await desktopFixture()

@@ -1,5 +1,9 @@
 # 架构设计
 
+全局版本演进遵循 [版本演进与兼容规范](design/compatibility.md)：升级默认兼容既有契约与旧端，按共同结构和语义适配可识别的新版本；设计冲突或兼容确实难以合理实现时才采用有记录、可迁移和可回退的例外。具体专项的实现与验收记录不替代此长期原则。
+
+2026-11-16 F18/F26/F28/F29（UI05／UI07，S03／S05／S11）状态流兼容候选：桌面 IPC 以准确 owner、完整目标、快照结构及连续修订为契约，支持 v11、v13 及结构相同的新增状态流，不因流版本数字变化撤销控制。保留未知增量字段；跨流版本的 patches 必须先重新取得完整基线，执行命令仍使用各自已实现的方法版本。真实结构不兼容时结束前台连接检查并返回具体错误，原创建／连接操作、消息和附件保持，结果未知不重放。iOS 结束有错误的本次连接等待，后续发送先查同一操作；Android 共用 Host 兼容修复，原生等待呈现另验。源码、辅助、真实桌面／原生及正式部署分列于[专项记录](acceptance/desktop-stream-compatibility-20261116.md)。
+
 2026-11-15 F76 后续：macOS EasyWork 经 EWDAP 具名操作授权、已配对 LAN WSS 承载预览数据，和 Codex Host 共用 `packages/dev-preview`，账号/设备授权保持。当前源码候选及验证范围见[EasyWork 专项](acceptance/dev-service-preview-easywork-20261115.md)，Relay 预览尚未实现。
 
 2026-11-15 F76 拟议开发服务预览：原生 App 回环网关经已鉴权的独立预览流连接所选 Host，由 Host 访问固定本地 HTTP/HTTPS 服务；源目标、服务归属、会话及数据存储隔离，WebSocket/流式/Relay 按能力分别开放。现有网页打开、文件预览与模型代理均不代表已具备此能力；[方案](design/dev-service-preview.md)包含原生可行性门槛及外部浏览器边界。后续首期已实现 macOS Codex Host／iOS 源码候选，HTTP/WS/流式具名入口与原生回环网关已装配；[验收记录](acceptance/dev-service-preview-20261115.md)分别登记 Host、原生与框架实际结果，其他平台及通道不推定通过。
@@ -487,7 +491,7 @@ iOS 在网络路径变化后轮换 Codex 读取连接，取消旧历史／事件
 
 目标设计记录连接模式、实际协议和能力；Codex 应用版本仅作可选验收元数据，不要求安装版本兼容矩阵。当前 Adapter 手写映射以 0.160.1 的生成 Schema 和真实调用为基线，Swift DTO 也为手写；尚未实现自动生成和多版本协商。操作拒绝明确返回错误，不通过启动桌面第二实例绕过版本或接入限制。
 
-desktop-runtime 的内部协议适配集中在 `packages/codex-adapter/src/desktop-ipc.ts`，采用构建 26.930.61225、26.1002.52244 已核对的版本 11 协议。Codex 应用版本仅作验收元数据，不进行构建清单比较、版本兼容性提示或配置版本匹配；读取版本失败不阻止 Host 启动。Host 通过专用只读 reader 读取项目/存储历史，通过已有桌面 owner 获取运行状态、canonical transcript、工具输出、计划与待审批请求；不会让 reader 恢复或执行线程。每次控制固定 owner、Host/Thread 与 Turn/审批 ID，原桌面保留权限和执行职责。实际 stream 协议不兼容、owner 丢失、事件缺口时撤销会话控制并补同步；iOS 用 runtime.canControl 区分当前可控会话与尚未在桌面打开的只读历史。独立桥接配置只匹配本机身份，`desktopVersion` 可省略且旧值不限制能力，验收摘要只记录结果，不作为能力开关；旧控制聊天兼容实现保留原证明规则，Windows 基础回复继续按真实 owner 开放。基础 IPC 没有创建/打开命令，独立桥接通过空会话准备和官方会话 URI 接管准确 ID。排队由 Host 保存并按 FIFO 提交，追加指令通过同一 owner 的 steer 进入当前任务；模型、推理、权限与速度通过领域输入传递给原 owner，支持范围由模型目录和专项验收确认；内部 IPC 不作为公开稳定接口。
+desktop-runtime 的内部协议适配集中在 `packages/codex-adapter/src/desktop-ipc.ts`，以已核对的 v11／v13 共同状态契约兼容新增字段，按实际结构验证，不按应用构建标签或流版本数字设准入门槛。Codex 应用版本仅作验收元数据，不进行构建清单比较、版本兼容性提示或配置版本匹配；读取版本失败不阻止 Host 启动。Host 通过专用只读 reader 读取项目/存储历史，通过已有桌面 owner 获取运行状态、canonical transcript、工具输出、计划与待审批请求；不会让 reader 恢复或执行线程。每次控制固定 owner、Host/Thread 与 Turn/审批 ID，原桌面保留权限和执行职责。实际 stream 协议不兼容、owner 丢失、事件缺口时撤销会话控制并补同步；iOS 用 runtime.canControl 区分当前可控会话与尚未在桌面打开的只读历史。独立桥接配置只匹配本机身份，`desktopVersion` 可省略且旧值不限制能力，验收摘要只记录结果，不作为能力开关；旧控制聊天兼容实现保留原证明规则，Windows 基础回复继续按真实 owner 开放。基础 IPC 没有创建/打开命令，独立桥接通过空会话准备和官方会话 URI 接管准确 ID。排队由 Host 保存并按 FIFO 提交，追加指令通过同一 owner 的 steer 进入当前任务；模型、推理、权限与速度通过领域输入传递给原 owner，支持范围由模型目录和专项验收确认；内部 IPC 不作为公开稳定接口。
 
 桌面发送缓存与执行服务的规范化历史需要分别验证。当前构建的 renderer 直接读取文字输入的 `text_elements` 数组；Desktop Adapter 在 start/steer 的 wire 边界为缺失字段补 `[]`，保留显式标记和原生图片，不依赖执行服务事后补默认值。验收同时检查原 owner 的 `turn.params.input`，仅收到模型回复不足以证明原桌面页面能渲染。已受影响的加载缓存只能通过官方会话生命周期接口重新加载，不直接修改正式历史或桌面缓存。
 

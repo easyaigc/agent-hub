@@ -770,7 +770,7 @@ test(
 );
 
 test(
-  'freshly discovered owner still must pass state id, state host and stream version validation',
+  'freshly discovered owner still must pass state id, state host and stream envelope validation',
   { concurrency: false },
   async (t) =>
     fixture(t, async (f) => {
@@ -782,7 +782,7 @@ test(
         supplied = true;
         f.snapshot(id, 'owner-B', { ...f.registry.get(id).state, id: randomUUID() });
         f.snapshot(id, 'owner-B', { ...f.registry.get(id).state, hostId: 'remote' });
-        f.snapshot(id, 'owner-B', f.registry.get(id).state, { version: 12 });
+        f.snapshot(id, 'owner-B', f.registry.get(id).state, { version: 0 });
       });
       f.snapshot(id, 'owner-B', f.registry.get(id).state);
       await f.wait(

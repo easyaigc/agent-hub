@@ -40,6 +40,7 @@ import {
 import {
   DesktopRuntime,
   DesktopCommandNotSubmitted,
+  DesktopStreamCompatibilityError,
   desktopTurns,
   desktopProposedPlan,
   type ProposedPlan,
@@ -554,7 +555,14 @@ export class RuntimeSession {
           threadId: operation.threadId,
           clientOperationId: operation.clientOperationId,
           phase,
-          error: phase === 'opened' ? null : unknownOpenError,
+          error:
+            phase === 'opened'
+              ? null
+              : operation.phase === 'outcome-unknown' &&
+                  typeof operation.error === 'string' &&
+                  operation.error.trim()
+                ? operation.error
+                : unknownOpenError,
         });
       }
       this.state.desktopOpenOperations = [...this.openOperations.values()];
@@ -2942,7 +2950,7 @@ export class RuntimeSession {
     }
     void work.then(
       (opened) => this.finishDesktopOpen(operation, opened),
-      () => this.finishDesktopOpen(operation, false),
+      (error) => this.finishDesktopOpen(operation, false, error),
     );
     return operation;
   }
@@ -2960,12 +2968,17 @@ export class RuntimeSession {
       throw error;
     }
   }
-  private async finishDesktopOpen(operation: DesktopOpenOperation, opened: boolean) {
+  private async finishDesktopOpen(
+    operation: DesktopOpenOperation,
+    opened: boolean,
+    failure?: unknown,
+  ) {
     if (this.closed || this.openOperations.get(operation.clientOperationId) !== operation) return;
     const unknown: DesktopOpenOperation = {
       ...operation,
       phase: 'outcome-unknown',
-      error: unknownOpenError,
+      error:
+        failure instanceof DesktopStreamCompatibilityError ? failure.message : unknownOpenError,
     };
     try {
       this.saveDesktopOpen(opened ? { ...operation, phase: 'opened', error: null } : unknown);

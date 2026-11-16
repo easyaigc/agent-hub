@@ -46,7 +46,11 @@ try {
   assert.equal(inspectDesktopArchive(path).version, '26.928.20755');
   await writeFile(path, archive(profile, undefined, null));
   assert.equal(inspectDesktopArchive(path).version, '');
-  await writeFile(path, archive(profile.replace(':11', ':12')));
+  for (const stream of [12, 13, 14]) {
+    await writeFile(path, archive(profile.replace(':11', ':' + stream)));
+    assert.match(inspectDesktopArchive(path).asarSha256, /^[a-f0-9]{64}$/);
+  }
+  await writeFile(path, archive(profile.replace(':11', ':0')));
   assert.throws(() => inspectDesktopArchive(path), /profile not recognized/);
   await writeFile(
     path,

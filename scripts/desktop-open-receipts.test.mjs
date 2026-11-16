@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { test } from 'node:test';
 import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
+import { DesktopStreamCompatibilityError } from '../packages/codex-adapter/dist/desktop-ipc.js';
 
 const threadId = 'original-desktop-thread';
 const operationId = 'explicit-desktop-open-receipt';
@@ -98,6 +99,7 @@ test('an in-flight open at shutdown stays queryable without replay or a late wri
   try {
     const receipt = await restarted.desktopOpenStatus(threadId, operationId);
     assert.equal(receipt.phase, 'outcome-unknown');
+    assert.equal(receipt.error, 'Codex 打开结果待确认，请刷新');
     assert.deepEqual(await restarted.activateDesktopThread(threadId, operationId), receipt);
     assert.equal(navigations, 1);
   } finally {
@@ -137,3 +139,44 @@ test('a write failure never dispatches an unsaved open or acknowledges an unsave
     session.close();
   }
 });
+
+for (const [name, failure, expected] of [
+  [
+    'stream compatibility',
+    new DesktopStreamCompatibilityError(),
+    new DesktopStreamCompatibilityError().message,
+  ],
+  ['ordinary navigation', new Error('internal navigation detail'), 'Codex 打开结果待确认，请刷新'],
+]) {
+  test(`${name} failure stays durable and never replays navigation after restart`, async (t) => {
+    const { open, disk } = fixture(t);
+    let navigations = 0;
+    const first = open(async () => {
+      navigations++;
+      throw failure;
+    });
+    try {
+      remember(first);
+      await first.activateDesktopThread(threadId, operationId);
+      await setImmediate();
+      const receipt = await first.desktopOpenStatus(threadId, operationId);
+      assert.equal(receipt.phase, 'outcome-unknown');
+      assert.equal(receipt.error, expected);
+      assert.deepEqual(disk().desktopOpenOperations, [receipt]);
+    } finally {
+      first.close();
+    }
+    const restarted = open(async () =>
+      assert.fail('A failed original open must not navigate again'),
+    );
+    try {
+      const receipt = await restarted.desktopOpenStatus(threadId, operationId);
+      assert.equal(receipt.phase, 'outcome-unknown');
+      assert.equal(receipt.error, expected);
+      assert.deepEqual(await restarted.activateDesktopThread(threadId, operationId), receipt);
+      assert.equal(navigations, 1);
+    } finally {
+      restarted.close();
+    }
+  });
+}

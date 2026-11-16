@@ -451,7 +451,7 @@ async function socketIntegration() {
         change: {
           type: 'snapshot',
           revision: ++revision,
-          conversationState: { id: thread, hostId: 'local', text },
+          conversationState: { id: thread, hostId: 'local', turns: [], text },
         },
       },
     };

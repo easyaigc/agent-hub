@@ -949,16 +949,16 @@ try {
   write({
     type: 'broadcast',
     method: 'thread-stream-state-changed',
-    version: 12,
+    version: 13,
     sourceClientId: 'owner',
     params: {
       hostId: 'local',
       conversationId: 'thread',
-      change: { type: 'snapshot', revision: 20, conversationState: state() },
+      change: { type: 'snapshot', revision, conversationState: state() },
     },
   });
   await settle();
-  assert.equal(client.hasOwner('thread'), false);
+  assert.equal(client.hasOwner('thread'), true, 'Compatible new streams retain the exact owner');
   source = 'owner';
   snapshot();
   await settle();

@@ -33,8 +33,9 @@ import {
 } from './runtime.js';
 
 // Experimental desktop coordination protocol, isolated from the public app-server RPC.
-// This profile was inspected and verified against this desktop build, not promised by OpenAI.
-export const desktopProfile = { version: '26.1002.52244', streamVersion: 11 };
+// The version records the latest inspected stream, not an application/version allowlist.
+// Additive stream revisions use the same identity, snapshot and Immer patch contract.
+export const desktopProfile = { streamVersion: 13 };
 export { desktopBuilds } from './desktop-platform.js';
 const versions: Record<string, number> = {
   'thread-owner-discovery': 1,
@@ -55,6 +56,40 @@ class DesktopRequestTimeout extends Error {
   constructor() {
     super('Desktop request outcome uncertain');
   }
+}
+
+/** A received stream is unusable; waiting longer cannot repair its data contract. */
+export class DesktopStreamCompatibilityError extends CodexRejection {
+  constructor() {
+    super('桌面实时状态数据暂无法读取；原操作、消息和附件已保留，请稍后重试连接');
+  }
+}
+
+function streamVersion(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+function streamState(value: WireObject): boolean {
+  // Keep unknown additive fields untouched: patches address the original wire tree.
+  // Validate the common history contract rather than equating a new version with
+  // an incompatible schema. Ownership and exact target checks are separate.
+  const history = object(value.turnHistory);
+  if (history.kind === 'canonical') {
+    const canonical = object(history.history);
+    if (
+      !canonical.entitiesByKey ||
+      typeof canonical.entitiesByKey !== 'object' ||
+      Array.isArray(canonical.entitiesByKey) ||
+      !Array.isArray(canonical.islands) ||
+      canonical.islands.some((island) => !Array.isArray(object(island).entries))
+    )
+      return false;
+  } else if (!Array.isArray(value.turns)) return false;
+  return (
+    (value.requests === undefined || Array.isArray(value.requests)) &&
+    (value.threadRuntimeStatus === undefined ||
+      typeof object(value.threadRuntimeStatus).type === 'string')
+  );
 }
 
 /** No execution request has been written. Never used for response timeouts. */
@@ -244,6 +279,8 @@ export class DesktopIpc {
   >();
   private owners = new Map<string, string>();
   private states = new Map<string, { revision: number; state: WireObject }>();
+  private streamVersions = new Map<string, number>();
+  private streamErrors = new Map<string, DesktopStreamCompatibilityError>();
   // One owner can publish both a retired cached stream and its replacement.
   // Revisions are comparable within a stream, not across those two histories.
   private retiredStreams = new Map<string, Map<string, number>>();
@@ -355,6 +392,8 @@ export class DesktopIpc {
       this.pending.clear();
       this.owners.clear();
       this.states.clear();
+      this.streamVersions.clear();
+      this.streamErrors.clear();
       this.retiredStreams.clear();
       this.terminalResets.clear();
       this.snapshotReads.clear();
@@ -483,6 +522,8 @@ export class DesktopIpc {
           if (owner === params.clientId) {
             this.owners.delete(id);
             this.states.delete(id);
+            this.streamVersions.delete(id);
+            this.streamErrors.delete(id);
             this.retiredStreams.delete(id);
             this.terminalResets.delete(id);
             this.liveWindows.delete(id);
@@ -495,7 +536,7 @@ export class DesktopIpc {
         change = object(params.change);
       if (this.owners.get(id) !== message.sourceClientId) {
         if (
-          message.version === desktopProfile.streamVersion &&
+          streamVersion(message.version) &&
           /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(id)
         )
           // A different source is only a discovery hint. The original desktop
@@ -503,16 +544,39 @@ export class DesktopIpc {
           this.onDiscovered(id);
         return;
       }
-      if (message.version !== desktopProfile.streamVersion) {
-        this.invalidate(id);
+      if (!streamVersion(message.version)) {
+        this.incompatibleStream(id);
         return;
       }
       const revision = change.revision;
-      if (typeof revision !== 'number' || !Number.isSafeInteger(revision)) {
-        this.invalidate(id);
+      if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 0) {
+        this.incompatibleStream(id);
         return;
       }
       const old = this.states.get(id);
+      if (
+        change.type === 'patches' &&
+        this.streamVersions.has(id) &&
+        this.streamVersions.get(id) !== message.version
+      ) {
+        // A new wire revision needs its own full baseline. Never apply its
+        // patches to a snapshot from another contract, or infer an execution ACK.
+        this.invalidate(id);
+        this.liveWindows.delete(id);
+        this.observedOwners.delete(id);
+        this.streamVersions.set(id, message.version);
+        this.following(id, true);
+        return;
+      }
+      if (change.type === 'patches' && !Array.isArray(change.patches)) {
+        this.incompatibleStream(id);
+        return;
+      }
+      if (change.type !== 'snapshot' && change.type !== 'patches') {
+        this.incompatibleStream(id);
+        return;
+      }
+      this.streamVersions.set(id, message.version);
       let terminalReset: ReturnType<typeof terminalDesktopReset>;
       if (change.type === 'patches' && !old) {
         const window = this.liveWindows.get(id) ?? new DesktopLiveWindow();
@@ -529,8 +593,8 @@ export class DesktopIpc {
       }
       if (change.type === 'snapshot') {
         const state = object(change.conversationState);
-        if (state.id !== id || state.hostId !== 'local') {
-          this.invalidate(id);
+        if (state.id !== id || state.hostId !== 'local' || !streamState(state)) {
+          this.incompatibleStream(id);
           return;
         }
         const head = desktopStreamHead(state);
@@ -592,8 +656,8 @@ export class DesktopIpc {
         this.following(id);
         return;
       }
-      if (state.id !== id || state.hostId !== 'local') {
-        this.invalidate(id);
+      if (state.id !== id || state.hostId !== 'local' || !streamState(state)) {
+        this.incompatibleStream(id);
         return;
       }
       const resets = this.terminalResets.get(id);
@@ -619,6 +683,8 @@ export class DesktopIpc {
         this.retiredStreams.set(id, streams);
       }
       this.states.set(id, { revision, state });
+      this.streamVersions.set(id, message.version);
+      this.streamErrors.delete(id);
       // A newer owner stream supersedes a prior small settings read.
       this.currentModels.delete(id);
       const existingWindow = this.liveWindows.get(id);
@@ -642,6 +708,17 @@ export class DesktopIpc {
   private invalidate(id: string): void {
     this.states.delete(id);
     this.onUnavailable(id);
+  }
+  private incompatibleStream(id: string): void {
+    this.invalidate(id);
+    this.liveWindows.delete(id);
+    this.observedOwners.delete(id);
+    this.streamErrors.set(id, new DesktopStreamCompatibilityError());
+    while (this.streamErrors.size > 2048)
+      this.streamErrors.delete(this.streamErrors.keys().next().value!);
+    // Release a foreground open/send preflight immediately with a precise error,
+    // while retaining its original operation ID and all unsubmitted input.
+    for (const done of this.waiters.get(id) ?? []) done();
   }
   private deferSnapshot(id: string, milliseconds: number): void {
     this.snapshotRetryAt.set(id, Date.now() + milliseconds);
@@ -926,6 +1003,7 @@ export class DesktopIpc {
       this.observedOwners.delete(id);
     }
     this.owners.set(id, ownerId);
+    this.streamErrors.delete(id);
     let received = false;
     const skippedBefore = this.skippedFrames;
     this.snapshotReads.set(id, skippedBefore);
@@ -956,6 +1034,8 @@ export class DesktopIpc {
     } finally {
       this.snapshotReads.delete(id);
     }
+    const streamError = this.streamErrors.get(id);
+    if (streamError) throw streamError;
     if (!received) {
       this.invalidate(id);
       this.deferSnapshot(id, 30_000);

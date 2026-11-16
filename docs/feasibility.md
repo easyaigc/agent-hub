@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-16 F18/F26/F28/F29（UI05／UI07，S03／S05／S11）状态流兼容候选：桌面 IPC 以准确 owner、完整目标、快照结构及连续修订为契约，支持 v11、v13 及结构相同的新增状态流，不因流版本数字变化撤销控制。保留未知增量字段；跨流版本的 patches 必须先重新取得完整基线，执行命令仍使用各自已实现的方法版本。真实结构不兼容时结束前台连接检查并返回具体错误，原创建／连接操作、消息和附件保持，结果未知不重放。iOS 结束有错误的本次连接等待，后续发送先查同一操作；Android 共用 Host 兼容修复，原生等待呈现另验。源码、辅助、真实桌面／原生及正式部署分列于[专项记录](acceptance/desktop-stream-compatibility-20261116.md)。
+
 2026-11-15 F76 EasyWork 后续实现复用同一 HTTP/WS 代理与 iOS 回环网关，通过真实 Electron 与独立原生模拟器验证前不把辅助测试算作页面/API/HMR通过；结果见[专项](acceptance/dev-service-preview-easywork-20261115.md)。
 
 2026-11-15 F76 开发服务预览首次完成[设计](design/dev-service-preview.md)与官方资料核验，同日后续进入首期实现和分层验收。待 PoC 证明原生回环网关的 HTTP/WS/SSE、Cookie 隔离、平台网络策略、关闭清理，再实施 Host/手机能力。端口不同不等于 Cookie 隔离；自定义 scheme、路径代理或现有聊天连接不能独立证明任意 DEV 网页可用。后续首期 Host 生产路由 HTTP/API/WS/流式辅助边界已通过；原生构建、真实 Vite 与物理网络结果以[首期记录](acceptance/dev-service-preview-20261115.md)为准。

@@ -23,6 +23,13 @@
 - Keep health responses accurate: this bootstrap only advertises `health`. Add capabilities only with their actual implementations.
 - Never commit credentials, real conversation exports, user attachments, or machine-local absolute paths. Documentation examples should use placeholders.
 
+## 版本演进与兼容
+
+- 每次升级默认向后兼容，保持已部署旧端、旧协议、已有数据和已授权流程可用；共同结构与语义仍成立时容忍可识别的新版本及新增可选字段，不能只因版本号变化使已有功能突然失效。能力按实际契约独立协商，不要求所有端同步升级，不因新能力缺失关闭无关旧功能。
+- 兼容差异留在适配层；命令输入、身份、证书、权限与完整目标校验继续严格执行。保留原配置、草稿、附件、不可变操作及回执，未知结果先核对，不因升级或恢复自动重放输入。真实错误有界结束等待并保留恢复入口。
+- 仅在设计或语义确实冲突，或兼容存在经分析难以合理承担的复杂度、维护成本或正确性问题时采用不兼容变更；记录影响、兼容替代方案及不采用原因，提供迁移、数据保护和回退安排，切换前说明，不能静默破坏已有能力。
+- 按影响范围回归旧／新组合、升级与重启恢复、核心既有功能和输入去重；源码、辅助检查、真实验收及部署分别留证。完整定义见 [全局设计规范：版本演进与兼容](docs/design/compatibility.md)，不以规则写入冒充所有版本已验收。
+
 ## Checks
 
 - Run `pnpm check` for relevant TypeScript, workspace or tooling changes.

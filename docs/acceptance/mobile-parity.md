@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-16 F18/F26/F28/F29（S03／S05／S11，UI05／UI07）：同一真实桌面中分别核对新建首条唯一输入、已有会话跟进、手机运行中／中间正文／完成切换和原 owner 回执。v11／v13／兼容新增字段、跨版本基线、错目标／损坏结构、未知结果与原附件保留由辅助边界检查覆盖；模拟器、真实桌面、实际模型和正式部署单列，不提升 Android／Windows 或其他 Host。当前源码及实际结果见[专项记录](desktop-stream-compatibility-20261116.md)。
+
 2026-11-15 F76 EasyWork 后续：独立记录真实 Electron、原生模拟器、同源 API、真实 Vite HMR、设备/账号/短期授权及关闭边界；Codex 或 fixture 结果不能代替 EasyWork 端到端。详见[专项记录](dev-service-preview-easywork-20261115.md)，F76 不进入既有 F01–F75 分母。
 
 2026-11-15 F76（S05／S11／S18，待实施）：[PV01–PV09](../design/dev-service-preview.md)定义回环/通配监听、SPA/API、Cookie、HMR/流式、重连无自动重放、权限/端口归属、兼容失败和资源回收断言。iOS／Android、macOS／Windows及LAN/VPN/中继逐组合记录；一般场景可原生模拟器，蜂窝/设备VPN/实际媒体采集另需物理设备。模拟器须独立证明流量经过网关与Host。后续已获授权进入首期开发，生产 Host 边界与原生页面/API/HMR的实际结果见[专项记录](dev-service-preview-20261115.md)；既有F01–F75对齐台账和A6/F75暂停不变。

@@ -131,11 +131,9 @@ const server = createServer(async (request, response) => {
         return json(response, 200, counters);
       case 'open-success':
         openingSucceeds = true;
-        if (openOperation) {
-          ownerConnected = true;
-          openOperation.phase = 'opened';
-          openOperation.error = null;
-        }
+        // Confirm the original opening only when its own receipt is queried.
+        // A separate live-owner event would bypass the recovery path under test.
+        statusFailurePending = false;
         break;
       default:
         return json(response, 400, { error: 'Unknown fixture state' });
@@ -162,7 +160,7 @@ const server = createServer(async (request, response) => {
       threadId,
       clientOperationId: input.clientOperationId,
       phase: openingSucceeds ? 'opened' : 'outcome-unknown',
-      error: openingSucceeds ? null : 'Fixture desktop opening unavailable',
+      error: openingSucceeds || lateOwner ? null : 'Fixture desktop opening unavailable',
     };
     return json(response, 200, openOperation);
   }
@@ -199,6 +197,8 @@ const server = createServer(async (request, response) => {
       nextProjectCursor: null,
       nextThreadCursor: null,
     });
+  if (url.pathname === '/v1/usage' && !url.searchParams.has('hostId'))
+    return json(response, 404, { error: 'Unsupported fixture route' });
   assert.equal(url.searchParams.get('hostId'), hostId);
   if (desktopOpenFixture && url.pathname === '/v1/desktop/open-status') {
     assert.equal(url.searchParams.get('threadId'), threadId);
@@ -207,6 +207,11 @@ const server = createServer(async (request, response) => {
     if (statusFailurePending) {
       statusFailurePending = false;
       return json(response, 503, { error: 'Fixture desktop status temporarily unavailable' });
+    }
+    if (openingSucceeds && !lateOwner) {
+      ownerConnected = true;
+      openOperation.phase = 'opened';
+      openOperation.error = null;
     }
     if (lateOwner && counters.desktopOpenQueries >= 2) {
       ownerConnected = true;

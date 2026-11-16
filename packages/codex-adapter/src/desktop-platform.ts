@@ -950,8 +950,11 @@ export function inspectDesktopArchive(path: string): { version: string; asarSha2
       const value = read(entry);
       transport ||=
         value.includes('codex-ipc') && value.includes('win32') && value.includes('ipc.sock');
+      // Stream revisions are additive; the live adapter validates their actual
+      // snapshot/patch shape. Execution method versions remain independently fixed.
+      const stream = /"thread-stream-state-changed":([1-9]\d*)/.exec(value);
       profile ||=
-        /"thread-stream-state-changed":11/.test(value) &&
+        Boolean(stream && Number.isSafeInteger(Number(stream[1]))) &&
         /"thread-follower-start-turn":2/.test(value) &&
         /"thread-follower-interrupt-turn":4/.test(value);
       // Keep validating later selected entries even after finding the profile.

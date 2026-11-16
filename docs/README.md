@@ -1,5 +1,7 @@
 # 文档索引
 
+持续适用的升级原则见 [全局设计规范：版本演进与兼容](design/compatibility.md)：默认保留已有功能，独立协商新能力；不兼容例外须说明影响并提供迁移、回退与回归安排。
+
 iOS 对接 EasyWork 的唯一计划入口为 [对齐总览](plans/ios-easywork-alignment-20261112/README.md)，当前状态见 [自动生成进度表](plans/ios-easywork-alignment-20261112/progress.md)。后续开发、验收、交付和阻塞统一更新该计划的 `status.json`，旧计划与矩阵仅保留历史证据；不在其他文档独立维护本任务完成数。规则见 [维护约定](plans/ios-easywork-alignment-20261112/maintenance.md)。
 
 额度与余额的新需求见[实施计划](plans/agent-usage-20261028.md)、[类型与约束](design/agent-usage-contract.md)及[手机 UI](design/agent-usage.md)：F73 已按确认的修订 6 落地协议、Codex／EasyWork 适配及双端原生入口；真实与辅助结果见[验收记录](acceptance/agent-usage-20261028.md)。

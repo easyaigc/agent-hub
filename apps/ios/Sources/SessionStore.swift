@@ -3230,6 +3230,11 @@ private var userRequestedWorkspaceGeneration: UUID?
       if operation.phase == "opened" {
         throw HostServiceError.message(L10n.tr("\(clientTypeName(for: host)) 尚未连接此对话，消息和附件仍保留在草稿中。"))
       }
+      if operation.phase == "outcome-unknown", let reason = operation.error, !reason.isEmpty {
+        // End only this wait after a reported failure. The same open ID and
+        // untouched draft survive; a later Send queries it before any input.
+        throw HostServiceError.message(reason)
+      }
       // An unknown open result can precede a late renderer owner. Continue
       // querying this same operation within the monotonic wait deadline;
       // never repeat navigation or submit before the owner is confirmed.

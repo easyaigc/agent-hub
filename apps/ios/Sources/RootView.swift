@@ -5336,7 +5336,7 @@ private struct ComposerView: View,Equatable {
             .padding(.horizontal, 6).padding(.vertical, 8)
             .frame(maxWidth: .infinity, minHeight: presentation.showsGhost ? 62 : 44)
             .accessibilityIdentifier("composer-input").accessibilityLabel(L10n.tr("发送给当前客户端的消息"))
-            .accessibilityHint(L10n.tr("长按语音输入"))
+            .accessibilityHint(composerFocused ? "" : L10n.tr("长按语音输入"))
             .accessibilityAction(named: L10n.tr("语音输入")) { startVoiceInput() }
             .onKeyPress(.tab, phases: .down) { press in
               guard press.modifiers.isEmpty, composerFocused, presentation.showsGhost,
@@ -5346,7 +5346,7 @@ private struct ComposerView: View,Equatable {
         }.contentShape(Rectangle())
           .highPriorityGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
             startVoiceInput()
-          })
+          }, including: composerFocused ? .subviews : .all)
           .padding(.horizontal, presentation.showsGhost ? 8 : 0)
         if !presentation.showsGhost { voiceInputButton; composerActionButton }
       }
@@ -5372,7 +5372,7 @@ private struct ComposerView: View,Equatable {
   }
 
   @ViewBuilder private func composerTextField(showsGhost: Bool) -> some View {
-    let prompt = showsGhost ? "" : L10n.tr("输入消息，长按语音输入")
+    let prompt = showsGhost ? "" : (composerFocused ? L10n.tr("发送消息") : L10n.tr("输入消息，长按语音输入"))
     let text = Binding(get: { store.draft.text }, set: { store.setText($0) })
     if #available(iOS 18.0, *) {
       SuggestionSelectableTextField(prompt: prompt, text: text, focused: $composerFocused, insertionRequest: insertionRequest)

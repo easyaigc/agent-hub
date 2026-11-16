@@ -18309,3 +18309,119 @@ extension CodexManageUITests {
     shot("file-progress-share")
   }
 }
+
+import XCTest
+
+/// Synthetic capture with the real controller, navigation, draft store and scene lifecycle.
+/// These tests do not claim microphone or upstream ASR coverage.
+@MainActor
+final class ComposerFocusLongPressUITests: XCTestCase {
+  private var app: XCUIApplication!
+  private var composer: XCUIElement {
+    app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch
+  }
+
+  override func setUpWithError() throws {
+    continueAfterFailure = false
+    app = XCUIApplication()
+    addUIInterruptionMonitor(withDescription: "Independent voice test network permission") { alert in
+      guard ["本地网络", "无线数据", "Local Network", "Wireless Data"].contains(where: { alert.label.contains($0) }) else { return false }
+      let allow = alert.buttons.matching(NSPredicate(format: "label IN %@",
+        ["无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow"])).firstMatch
+      guard allow.exists else { return false }
+      allow.tap()
+      return true
+    }
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture"]
+    app.launchEnvironment["VOICE_TRANSCRIPTION_FIXTURE_DELAY_MS"] = "20000"
+    app.launchChineseTest()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+  }
+
+  override func tearDownWithError() throws { app.terminate() }
+
+  private func wait(_ predicate: String, on element: XCUIElement, timeout: TimeInterval = 10) {
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: predicate), object: element)], timeout: timeout), .completed)
+  }
+
+
+  private func openSidebar() {
+    app.buttons["open-sidebar"].tap()
+    XCTAssertTrue(app.buttons["close-sidebar"].waitForExistence(timeout: 10))
+  }
+  private func closeSidebar() {
+    app.buttons["close-sidebar"].tap()
+    XCTAssertTrue(app.buttons["close-sidebar"].waitForNonExistence(timeout: 10))
+  }
+  private func screenshot(_ suffix: String) {
+    let attachment = XCTAttachment(screenshot: app.screenshot())
+    attachment.name = name + "-" + suffix; attachment.lifetime = .keepAlways
+    add(attachment)
+  }
+
+  func testComposerUnfocusedEmptyLongPressStartsVoice() {
+    XCTAssertFalse(app.keyboards.firstMatch.exists)
+    composer.press(forDuration: 0.7)
+    wait("exists == true AND isEnabled == true", on: app.buttons["stop-dictation"])
+    screenshot("unfocused-empty-recording")
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+  }
+
+  func testComposerUnfocusedDraftLongPressCancelPreservesDraft() {
+    composer.tap(); composer.typeText("long-press-draft")
+    openSidebar(); closeSidebar()
+    XCTAssertFalse(app.keyboards.firstMatch.exists)
+    composer.press(forDuration: 0.7)
+    wait("exists == true AND isEnabled == true", on: app.buttons["stop-dictation"])
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertEqual(composer.value as? String, "long-press-draft")
+    screenshot("unfocused-draft-cancelled")
+  }
+
+  private func focusedPaste(_ initial: String) {
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture", "-composer-performance-fixture"]
+    app.launchChineseTest()
+    XCTAssertTrue(composer.waitForExistence(timeout: 20))
+    app.buttons["typing-copy-chinese"].tap()
+    composer.tap()
+    if !initial.isEmpty { composer.typeText(initial) }
+    XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+    composer.press(forDuration: 0.7)
+    let paste = app.menuItems["粘贴"].firstMatch
+    XCTAssertTrue(paste.waitForExistence(timeout: 5), "Focused long press should show the native edit menu")
+    XCTAssertFalse(app.buttons["stop-dictation"].exists)
+    screenshot(initial.isEmpty ? "focused-empty-menu" : "focused-draft-menu")
+    paste.tap()
+    let pasted = XCTNSPredicateExpectation(predicate: NSPredicate { [self] _, _ in
+      let value = composer.value as? String ?? ""
+      return (initial.isEmpty || value.contains(initial)) && value.contains("请优化输入框，保留中文、换行和标点。")
+    }, object: nil)
+    let pasteResult = XCTWaiter.wait(for: [pasted], timeout: 10)
+    let valueEvidence = XCTAttachment(string: String(describing: composer.value))
+    valueEvidence.name = initial.isEmpty ? "focused-empty-pasted-value" : "focused-draft-pasted-value"
+    valueEvidence.lifetime = .keepAlways
+    add(valueEvidence)
+    screenshot(initial.isEmpty ? "focused-empty-after-paste" : "focused-draft-after-paste")
+    XCTAssertEqual(pasteResult, .completed)
+    XCTAssertFalse(app.buttons["stop-dictation"].exists)
+  }
+
+  func testComposerFocusedEmptyLongPressPastes() { focusedPaste("") }
+  func testComposerFocusedDraftLongPressPastes() { focusedPaste("edit-draft") }
+
+  func testComposerShortTapTypingAndExplicitMicrophone() {
+    composer.tap(); composer.typeText("short-tap-draft")
+    XCTAssertEqual(composer.value as? String, "short-tap-draft")
+    XCTAssertFalse(app.buttons["stop-dictation"].exists)
+    app.buttons["voice-input"].tap()
+    wait("exists == true AND isEnabled == true", on: app.buttons["stop-dictation"])
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertEqual(composer.value as? String, "short-tap-draft")
+  }
+
+}

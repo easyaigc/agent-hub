@@ -28,7 +28,149 @@ def table(headers, rows):
     )
 
 
+def scenario_assertions(scenarios):
+    return {(scenario["id"], assertion["id"]): assertion
+            for scenario in scenarios for assertion in scenario.get("assertionResults", [])}
+
+
+def validate_execution_focus(focus, features, item_ids, scenarios):
+    integration = {f["id"]: f for f in features if f["plannedScope"] == "integration"}
+    open_ids = {fid for fid, feature in integration.items() if feature["execution"]["state"] != "closed"}
+    phases = focus["phases"]
+    require([p["id"] for p in phases] == ["core", "extensions", "hardening", "hold"], "Invalid execution focus order")
+    allocated = []
+    for phase in phases:
+        for group in phase["groups"]:
+            require(bool(group["title"].strip()) and bool(group["items"]), f"{phase['id']}: missing focus group")
+            require(set(group["reuse"]) <= integration.keys(), f"{group['title']}: unknown evidence reuse feature")
+            for fid, action in group["items"].items():
+                require(fid in integration and bool(action.strip()), f"{fid}: invalid focus assignment")
+                if fid in open_ids:
+                    require((integration[fid]["execution"]["state"] == "paused") == (phase["id"] == "hold"),
+                            f"{fid}: paused feature must be assigned separately")
+                allocated.append(fid)
+    require(len(allocated) == len(set(allocated)), "A feature belongs to more than one execution phase")
+    require(open_ids <= set(allocated), "Execution focus must assign all open integration features")
+    require(all(set(d["items"]) <= item_ids for d in focus["desktop"]), "Unknown desktop focus item")
+    assertions = scenario_assertions(scenarios)
+    for result in focus.get("latestCoreRun", []):
+        require((result["scenario"], result["assertion"]) in assertions,
+                f"{result['title']}: unknown core run assertion")
+
+
+def validate_functional_deliverables(data):
+    workflow = data.get("deliveryWorkflow")
+    if not workflow:
+        return
+    features = {feature["id"] for feature in data["features"] if feature["plannedScope"] == "integration"}
+    items = data["functionalDeliverables"]
+    require(len({item["id"] for item in items}) == len(items), "Duplicate concrete function ID")
+    require({fid for item in items for fid in item["featureIds"]} == features,
+            "Concrete functions must cover the complete integration scope")
+    merged = data["mergedPullRequests"]
+    for item in items:
+        require(item["state"] in workflow["stateDefinitions"], f"{item['id']}: invalid delivery state")
+        require(item["phase"] in {"core", "extensions", "hardening", "hold", "completed"},
+                f"{item['id']}: invalid phase")
+        require(bool(item["behavior"].strip()) and bool(item["acceptanceCriteria"].strip())
+                and bool(item["nextAction"].strip()), f"{item['id']}: missing concrete behavior")
+        require(set(item["evidenceRefs"]) <= data["evidenceRegistry"].keys(),
+                f"{item['id']}: unknown original evidence")
+        require(set(item["pullRequests"]) <= merged.keys(), f"{item['id']}: unknown pull request")
+        if item["state"] == "merged":
+            require(item["acceptanceBasis"] == "merged-pr" and bool(item["pullRequests"]),
+                    f"{item['id']}: merged function requires an actual merged pull request")
+            for ref in item["pullRequests"]:
+                pr = merged[ref]
+                require(pr["state"] == "merged" and bool(pr["mergedAt"])
+                        and re.fullmatch(r"[a-f0-9]{40}", pr["mergeCommit"])
+                        and bool(pr["checkedMainCommit"]), f"{ref}: incomplete merge record")
+
+
+def render_functional_deliverables(data):
+    if "deliveryWorkflow" not in data:
+        return []
+    workflow = data["deliveryWorkflow"]
+    merged = data["mergedPullRequests"]
+    lines = ["## 具体功能开发与交付", "", workflow["rule"], "", workflow["acceptanceRule"], ""]
+    for phase, title in [("core", "第一阶段具体功能"), ("extensions", "第二阶段具体功能"),
+                         ("hardening", "后续工程断言"), ("hold", "暂停范围"),
+                         ("completed", "已关闭范围的交付跟进")]:
+        rows = []
+        for item in data["functionalDeliverables"]:
+            if item["phase"] != phase:
+                continue
+            prs = "、".join(f"[{merged[ref]['repository'].split('/')[-1]} #{merged[ref]['number']}]({merged[ref]['url']})"
+                           for ref in item["pullRequests"])
+            basis = prs or "、".join(item["evidenceRefs"]) or "待执行"
+            rows.append((item["id"], item["behavior"], workflow["stateDefinitions"][item["state"]],
+                         item["acceptanceCriteria"], basis))
+        if rows:
+            lines += ["### " + title, "", table(["唯一功能 ID", "用户操作", "当前状态", "完成条件与下一步", "原交付依据"], rows), ""]
+    return lines
+
+
+def render_execution_focus(data, banner):
+    focus = data["executionFocus"]
+    definition = data["stateDefinitions"]
+    features = {f["id"]: f for f in data["features"] if f["plannedScope"] == "integration"}
+    open_ids = {fid for fid, feature in features.items() if feature["execution"]["state"] != "closed"}
+    development = Counter(f["development"]["state"] for fid, f in features.items() if fid in open_ids)
+    breakdown = "、".join(f"{definition['development'][state]} {count} 项" for state, count in development.most_common())
+
+    def open_count(phase):
+        return sum(fid in open_ids for group in phase["groups"] for fid in group["items"])
+
+    lines = [
+        "# 核心使用验收与剩余对接盘点", "", banner, focus["summary"], "",
+        table(["执行顺序", "未闭合父项"], [(p["title"], open_count(p)) for p in focus["phases"]]), "",
+        f"对接 {len(features)} 项，已按登记范围关闭 {len(features) - len(open_ids)} 项，尚有 {len(open_ids)} 项。",
+        "开放项的开发状态包括" + breakdown + "。交付与完整证据见 [75 项逐项清单](checklist.md)。", "",
+        "## 第一阶段如何开始", "", focus["firstRun"], "", focus["exitRule"], "",
+        "手机共用的最近列表、正文、键盘、滚动与回最新、草稿和文件选择随普通流程一并观察。影响核心操作的问题优先修复，结果按原共用范围登记。", "",
+    ]
+    lines += render_functional_deliverables(data)
+    if focus.get("latestCoreRun"):
+        assertions = scenario_assertions(data["acceptanceScenarios"])
+        rows = []
+        for result in focus["latestCoreRun"]:
+            assertion = assertions[result["scenario"], result["assertion"]]
+            rows.append((result["title"], definition["scenario"][assertion["state"]],
+                         assertion["scope"], result["scenario"]))
+        lines += ["## 最近一次核心操作验收", "", table(["用户操作", "结果", "已核对范围", "原场景"], rows), ""]
+    lines += ["## 延后执行的断言", "", focus["deferred"], ""]
+    for phase in focus["phases"]:
+        lines += ["## " + phase["title"], ""]
+        for group in phase["groups"]:
+            lines += ["### " + group["title"], ""]
+            if group["flow"]:
+                lines += [group["flow"], ""]
+            reuse = [
+                f"{fid} {features[fid]['name']}" for fid in group["reuse"]
+                if features[fid]["execution"]["state"] == "closed"
+            ]
+            if reuse:
+                lines += ["已有登记范围通过可供核对复用：" + "、".join(reuse) + "。", ""]
+            rows = [
+                (fid + " " + features[fid]["name"],
+                 definition["development"][features[fid]["development"]["state"]],
+                 definition["acceptance"][features[fid]["acceptance"]["state"]],
+                 "/".join(features[fid]["acceptancePlan"]["scenarioIds"]), action)
+                for fid, action in group["items"].items() if fid in open_ids
+            ]
+            if rows:
+                lines += [table(["功能", "开发", "验收", "原场景", "后续验收动作"], rows), ""]
+            else:
+                lines += ["本组已无开放父项。", ""]
+    lines += ["## EasyWork 桌面端如何补齐", "",
+        table(["范围", "原事项", "已知情况与下一步"],
+              [(d["scope"], "/".join(d["items"]), d["note"]) for d in focus["desktop"]]), "",
+        "用户可见的第一阶段断言通过后，剩余正式验收和交付条件仍由原 F、AC 和事项记录维护。", ""]
+    return "\n".join(lines)
+
+
 def validate(data):
+    validate_functional_deliverables(data)
     require(data["schemaVersion"] == 2, "Unsupported ledger schema")
     features = data["features"]
     require(len(features) == 75, "Expected 75 existing F IDs; a scope change needs an explicit schema review")
@@ -44,6 +186,8 @@ def validate(data):
             for field in ("sourceCommit", "packageSha256", "environment", "scope", "path", "sha256"):
                 require(bool(evidence.get(field)), f"{owner}: evidence missing {field}")
             require(evidence.get("mobileEnvironment") in {"simulator", "physical", "not-required"}, f"{owner}: missing actual mobile environment")
+            if data["acceptancePolicy"].get("mobileEnvironment") == "simulator":
+                require(evidence["mobileEnvironment"] in {"simulator", "not-required"}, f"{owner}: current scope requires simulator evidence")
     packages = {p["id"] for p in data["workPackages"]}
     scenarios = {s["id"] for s in data["acceptanceScenarios"]}
     require(len(packages) == len(data["workPackages"]) == 16, "Work package IDs inconsistent")
@@ -102,6 +246,9 @@ def validate(data):
         policy = scenario["environmentPolicy"]
         require(policy["mode"] in {"no-mobile", "simulator-sufficient", "split", "inherits"}, f"{scenario['id']}: invalid environment policy")
         require(bool(policy["simulatorScope"]), f"{scenario['id']}: missing environment scope")
+        if data["acceptancePolicy"].get("mobileEnvironment") == "simulator":
+            require(not policy["physicalAssertions"], f"{scenario['id']}: current scope has a physical gate")
+            require(policy["mode"] != "split", f"{scenario['id']}: current scope requires simulator assertions")
         require(set(policy["hardwareEvidence"]) <= registry.keys(), f"{scenario['id']}: unknown hardware evidence")
         for assertion in scenario.get("assertionResults", []):
             require(assertion["state"] in definitions["scenario"], f"{scenario['id']}: invalid assertion state")
@@ -122,6 +269,8 @@ def validate(data):
                 require(task["observedModel"] == batch["requestedModel"] and task["observedEffort"] == batch["requestedEffort"], f"{task['id']}: requested/observed model mismatch")
     for blocker in data.get("executionBlockers", []):
         require(set(blocker["evidenceRefs"]) <= registry.keys(), f"{blocker['id']}: unknown blocker evidence")
+    if "executionFocus" in data:
+        validate_execution_focus(data["executionFocus"], features, item_ids, data["acceptanceScenarios"])
     require({s["id"] for s in data["acceptanceScenarios"]} == set(re.findall(r"^\|\s*(AC\d{2})\s*\|", (ROOT / "acceptance.md").read_text(), re.M)), "Scenario definitions and ledger differ")
 
 
@@ -143,6 +292,8 @@ def render(data):
     progress = ["# 当前唯一进度总表", "", banner,
         "本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。", "",
         f"当前共 {len(features)} 个父功能：{len(active)} 个对接、{sum(f['plannedScope']=='phone-only' for f in features)} 个手机共用、{sum(f['plannedScope']=='excluded' for f in features)} 个范围外。对接范围有 {open_count} 个开放父项、{matched + unmatched} 个历史限定通过未复用（待匹配 {matched}，本次匹配未成立 {unmatched}）、{closed} 个按当前范围关闭。开放数不等于未开发数。", ""]
+    if "executionFocus" in data:
+        progress += ["当前执行顺序和剩余验收动作见 [核心使用验收与剩余对接盘点](core-acceptance.md)。", ""]
     if data.get("currentSourcePins"):
         progress += ["## 当前源码与运行边界", "",
             "commit 是已有提交；tree 是隔离候选的内容快照，不表示已合主线或已部署。逐功能对齐和验收范围仍按下方事项及功能清单判断。", "",
@@ -153,8 +304,8 @@ def render(data):
     for dimension, rows in counts:
         progress += ["## " + title[dimension], "", table(["状态", "项数"], rows), ""]
     progress += ["## 验收环境规则", "", data["acceptancePolicy"]["rule"], "",
-        table(["场景", "环境口径", "模拟器/非手机范围", "实体子断言"], [
-            (s["id"], {"no-mobile": "无需手机", "simulator-sufficient": "模拟器足够", "split": "拆子项", "inherits": "继承受影响范围"}[s["environmentPolicy"]["mode"]], s["environmentPolicy"]["simulatorScope"], "；".join(s["environmentPolicy"]["physicalAssertions"]) or "无独立实体门槛") for s in data["acceptanceScenarios"]]), ""]
+        table(["场景", "环境口径", "模拟器/非手机范围", "本轮模拟器替代断言"], [
+            (s["id"], {"no-mobile": "无需手机", "simulator-sufficient": "模拟器足够", "split": "拆子项", "inherits": "继承受影响范围"}[s["environmentPolicy"]["mode"]], s["environmentPolicy"]["simulatorScope"], "；".join(s["environmentPolicy"].get("simulatorReplacementAssertions", [])) or "沿用原生模拟器范围") for s in data["acceptanceScenarios"]]), ""]
     for batch in data.get("executionBatches", []):
         progress += ["## Host 执行批次 " + batch["id"], "", "阶段：" + batch["phase"] + "；状态：" + batch["state"] + "。协调任务与产品验收分别记录，任务启动不计作功能通过。", "",
             f"协调模型轮次 {batch['coordinationModelTurns']}；产品验收业务模型轮次 {batch['productAcceptanceModelTurns']}。", "",
@@ -205,11 +356,31 @@ def render(data):
         "## 开发判断依据与证据索引", "",
         table(["ID", "开发判断依据", "证据"], [(f["id"], f["development"]["basis"], "/".join(dict.fromkeys(f["development"]["evidenceRefs"] + f["acceptance"]["evidenceRefs"]))) for f in features]), "",
         "证据ID在 status.json 的 evidenceRegistry 中解析为准确提交、路径和范围。历史日志不会被状态投影覆盖。", ""]
-    checklist += ["## 52项对接功能的验收执行动作", "",
-        "按优先序和前置依赖执行；已实现先验，明确缺口先补再验。模拟器适用规则不降低真实桌面/模型/原资源要求，实体子项单列。下表仍从唯一台账生成。", "",
-        table(["F / 顺序", "AC", "开发门槛", "模拟器可执行断言", "实体子项"], [
-            (f["id"] + " / " + f["acceptancePlan"]["priority"] + " / " + str(f["acceptancePlan"]["sequence"]), "/".join(f["acceptancePlan"]["scenarioIds"]), f["acceptancePlan"]["developmentGate"], f["acceptancePlan"]["nativeSimulatorAssertions"], "；".join(x["scenario"] + "：" + x["assertion"] for x in f["acceptancePlan"]["physicalAssertions"]) or "无独立实体要求") for f in sorted(active, key=lambda f: (f["acceptancePlan"]["sequence"], f["id"]))]), ""]
-    return {"progress.md": "\n".join(progress), "checklist.md": "\n".join(checklist)}
+    checklist += ["## 52项对接功能的完整验收范围", "",
+        "执行顺序见 [核心使用验收与剩余对接盘点](core-acceptance.md)。下表保留完整验收范围，本轮全部 iOS 验收使用模拟器。真实桌面、模型和原资源按对应断言验证。", "",
+        table(["F / 顺序", "AC", "开发门槛", "模拟器可执行断言", "本轮模拟器替代断言"], [
+            (f["id"] + " / " + f["acceptancePlan"]["priority"] + " / " + str(f["acceptancePlan"]["sequence"]), "/".join(f["acceptancePlan"]["scenarioIds"]), f["acceptancePlan"]["developmentGate"], f["acceptancePlan"]["nativeSimulatorAssertions"], "；".join(x["scenario"] + "：" + x["assertion"] for x in f["acceptancePlan"].get("simulatorReplacementAssertions", [])) or "沿用原生模拟器范围") for f in sorted(active, key=lambda f: (f["acceptancePlan"]["sequence"], f["id"]))]), ""]
+    views = {"progress.md": "\n".join(progress), "checklist.md": "\n".join(checklist)}
+    if "executionFocus" in data:
+        views["core-acceptance.md"] = render_execution_focus(data, banner)
+    return views
+
+
+def format_view(content, path):
+    # pnpm exec may prepare missing dependencies and prepend install logs to
+    # stdout. Generated views must contain only Markdown, with no installs or
+    # environment-specific paths caused by formatting a cold workspace.
+    repository = ROOT.parents[2]
+    formatter = repository / "node_modules" / "prettier" / "bin" / "prettier.cjs"
+    require(formatter.is_file(), "Workspace Prettier is missing; prepare the existing locked dependencies before rendering")
+    formatted = subprocess.run(
+        ["node", str(formatter), "--stdin-filepath", str(path)],
+        input=content, text=True, capture_output=True, cwd=repository,
+        timeout=60, check=False,
+    )
+    require(formatted.returncode == 0, "Prettier failed: " + formatted.stderr[-1000:])
+    require(formatted.stdout.startswith(content.splitlines()[0] + "\n"), "Prettier returned unexpected output before the generated heading")
+    return formatted.stdout
 
 
 def main():
@@ -222,13 +393,7 @@ def main():
     validate(data)
     for name, content in render(data).items():
         path = ROOT / name
-        formatted = subprocess.run(
-            ["pnpm", "exec", "prettier", "--stdin-filepath", str(path)],
-            input=content, text=True, capture_output=True, cwd=ROOT.parents[2],
-            timeout=60, check=False,
-        )
-        require(formatted.returncode == 0, "Prettier failed: " + formatted.stderr[-1000:])
-        content = formatted.stdout
+        content = format_view(content, path)
         if args.write:
             path.write_text(content)
         else:

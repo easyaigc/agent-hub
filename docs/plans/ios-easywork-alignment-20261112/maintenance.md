@@ -4,7 +4,9 @@
 
 ## 权威范围与文件职责
 
-**当前任务状态只有一个可编辑事实源：[status.json](status.json)。** [progress.md](progress.md) 与 [checklist.md](checklist.md) 都从它生成，不能独立修改数字或状态；[README.md](README.md) 只作入口。[development.md](development.md) 与 [acceptance.md](acceptance.md) 维护目标设计、工作拆分和验收断言，不自行宣布完成。
+**当前任务状态只有一个可编辑事实源：[status.json](status.json)。** [核心使用验收](core-acceptance.md)、[进度总表](progress.md) 与 [功能清单](checklist.md) 都从它生成。[README.md](README.md) 只作入口。[development.md](development.md) 与 [acceptance.md](acceptance.md) 维护目标设计、工作拆分和验收断言。
+
+`executionFocus` 记录当前执行优先级。每个开放对接父项分配到一个阶段，父项的普通操作和工程断言可以分期。阶段变更不改原有通过、失败与正式交付状态。
 
 本规则只管 iOS × EasyWork 的对齐状态。全局 F/UI 定义、公共协议、产品断言、设计规格仍在原规范文件维护；Android 独立开发进度、Codex其他专项、Task Hub及暂停范围不被本计划接管。
 
@@ -17,6 +19,18 @@
 - 本目录 [首次盘点快照](audit-20261112.md) 及 status.json 中带 initial/historical 的冻结字段。
 
 部分旧资料目前只存在于缓存主线 Git 对象，不为添加提示覆盖当前工作树。后续合入时保留原内容，并加上指向本计划的状态迁移说明。旧事实、失败、未知操作及验收限制不可删除；新的真实事实与当前台账冲突时，先核证据并校正台账，不能以“唯一来源”为由否认真实变化。
+
+## 具体功能与合并记录
+
+按用户 2026-11-18 的要求，后续交付以 `status.json.functionalDeliverables` 中的具体用户动作跟进。每项有稳定 ID、所属 F、完成条件、当前状态、原证据、对应提交和 PR、负责人及下一步。当前状态只在此处更新，`core-acceptance.md` 自动展示这些内容。
+
+- 开始工作先核对应提交、PR 及实际主分支。已核实合并且功能范围匹配时，直接复用该交付的原验收，将对应具体功能记为已合主线。
+- 原验收已通过、修复仅保存在本地候选时，优先完成差异审查和提交合并。新增缺陷、功能变化或新增场景才补受影响的验收。
+- 一项具体功能依次完成开发、验收、提交与 PR 合并，随即回收无依赖阶段资源。后续工作继续更新原 ID。
+- 父 F 和 AC 保留全范围索引。具体功能的通过与合并范围如实关联父项，历史工程断言继续按原范围排期。
+- 私有报告只保留原始记录和必要文件指纹。功能当前状态、剩余动作和交付关系统一收敛到本台账。
+
+主仓合并目标为 Gitea `BCAI/agent-hub-app/main`，EasyWork 桌面按实际仓库使用 `BCAI/comfy-desktop/master`。
 
 ## 四个状态维度
 
@@ -46,7 +60,7 @@
 2. **先更新唯一台账。** 修改对应 `features[].development/acceptance/delivery/execution`、具体 `openItems`、`workPackages`、`acceptanceScenarios`；每条更新 `updatedAt`、负责人/角色、下一步与证据引用。只改变被证据支持的范围，不整组补签。
 3. **登记证据。** `evidenceRegistry`记录种类、准确源、路径、范围。当前真实通过使用 `kind=real-dev`；匹配复用使用 `kind=exact-match-review`，必须记录原证据、当前依赖/指纹比较及复用理由。`sourceCommit`、`packageSha256`、`environment`、`scope`、`path`、`sha256`均必填；引用ID放在对应 `currentEvidence`。辅助检查只记录辅助，不能用来关闭真实功能。
 4. **登记状态变化。** `revision`递增，`changeLog`追加实际日期、变化功能/子项、旧→新状态、依据、失败/阻塞和下一步；新增输入/模型与操作ID保持原口径，不将资料迁移计作运行。
-5. **生成与检查。** 运行下面命令，生成总表和75项清单，再执行校验。不要手改两份投影；initial/historical字段只保留首轮快照，不作为新汇总来源。
+5. **生成与检查。** 运行下面命令，生成核心验收、总表和75项清单，再执行校验。initial/historical 字段保留首轮快照。
 6. **同步规范与交付。** 如果功能/协议/UI发生变化，按AGENTS维护原产品manifest、设计和验收规范；这些文档的当前进度只链接本计划。PR/交付说明引用本计划及本次证据，不能另起一份当前完成清单。
 
 在仓库根目录运行：
@@ -74,8 +88,8 @@ python3 docs/plans/ios-easywork-alignment-20261112/render_status.py --check
 
 用户已授权使用 Host 分多个专用对话，以 `gpt-6.1-sol / xhigh` 并行补齐缺口、验收收尾并继续后续计划。每个任务登记实际操作回执、对话与配置核对引用；协调模型轮和产品验收业务轮分别计数，不能用请求参数代替实际模型配置核对。共享主台账仅由协调会话写入，其他会话输出带来源/摘要的证据和状态增量。
 
-不涉及手机真实环境的适用断言，原生 iOS 模拟器可作为正式验收环境。模拟器完成的原生页面、协议、文件、持久化、进程重启及恢复断言可以关闭，不附加等待真机。混合场景按 `acceptanceScenarios[].environmentPolicy` 拆分：手机相机、真实声学采集、手机蜂窝/设备 VPN、实体通知到达等断言另验；其缺失只阻塞对应子项。真实 Electron、模型/原始资源和独立核对要求按场景保留。
+用户最新明确要求本轮全部 iOS 验收使用模拟器。`acceptanceScenarios[].environmentPolicy` 保存当前模拟器断言及具体替代动作，既有实体断言移到 `historicalPhysicalAssertions`。本轮退出门槛采用当前模拟器范围，实际设备特有能力的历史覆盖边界保留。需要桌面执行的场景连接独立真实 Electron，模型、原始资源和独立核对按对应断言验证。
 
-当前通过证据须明确 `mobileEnvironment`（`simulator`、`physical` 或 `not-required`）和实际断言。`kind=auxiliary-check` 不能关闭功能或场景。含实体子项的场景不能仅凭模拟器证据整组关闭，可在 `assertionResults` 保留已通过子项。设备权限/构建/连接错误属于环境阻塞，不能写成产品通过或产品功能失败。
+当前通过证据须明确 `mobileEnvironment`（本轮为 `simulator` 或无手机要求的 `not-required`）和实际断言。历史证据可继续记录 `physical`。`kind=auxiliary-check` 不能关闭功能或场景。场景按当前登记断言逐项关闭，范围变化本身计零次新增通过。设备权限、构建、连接错误登记为环境阻塞。
 
 每轮结束先保存来源摘要、补丁/提交、运行包、原始结果及 SHA-256，回填台账并验证，再清理自有资源。未合并或未验收候选、未知操作及其附件/回执、原始失败证据均保留。分支删除须证明变更已经集成且没有独有提交；本轮未创建分支就记录不适用，不删除其他任务分支。具体顺序见 [执行规则](execution.md)。

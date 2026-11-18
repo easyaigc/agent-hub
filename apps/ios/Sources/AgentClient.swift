@@ -162,6 +162,7 @@ enum AgentDomainCodec {
 
 /// Product operations. Providers own wire, authentication and target mapping.
 protocol AgentClient: Sendable {
+  var requiresConfirmedDesktopOpenReceipt: Bool { get }
   func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data
   func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data
@@ -226,6 +227,8 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  // Preserve the existing controlled-runtime fallback for adapters that support it.
+  var requiresConfirmedDesktopOpenReceipt: Bool { false }
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await download(client, file: file, progress: nil) }
   func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { throw HostServiceError.unavailable }
   func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data { throw HostServiceError.unavailable }

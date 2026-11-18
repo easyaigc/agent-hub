@@ -1,4 +1,6 @@
 // App-owned interface text. Interpolated values are never translated.
+"在电脑上打开" = "在电脑上打开";
+"未找到打开记录" = "未找到打开记录";
 "\n请查询原回执；不会再次提交。" = "\n请查询原回执；不会再次提交。";
 " · 推荐" = " · 推荐";
 " · 第 %@ 轮" = " · 第 %@ 轮";

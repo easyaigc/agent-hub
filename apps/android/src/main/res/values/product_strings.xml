@@ -1,5 +1,7 @@
 <!-- Generated from shared iOS catalogs and Android native-copy.json; do not edit. -->
 <resources>
+    <string name="product_bf9e8fe0238abbbc9b5cc18e" formatted="false">"Open on computer"</string>
+    <string name="product_c948e8a91726d0d205ae9d8c" formatted="false">"Open operation not found"</string>
     <string name="product_603b7475591558bd45ecf3f4" formatted="false">"\nQuery the original receipt. The request will not be submitted again."</string>
     <string name="product_37e1ec8919726b514f99eb15" formatted="false">" · Recommended"</string>
     <string name="product_bf0b984f1f19965eb00886cf" formatted="false">" · Round %@"</string>

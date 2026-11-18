@@ -1,5 +1,7 @@
 <!-- Generated from shared iOS catalogs and Android native-copy.json; do not edit. -->
 <resources>
+    <string name="product_bf9e8fe0238abbbc9b5cc18e" formatted="false">"在电脑上打开"</string>
+    <string name="product_c948e8a91726d0d205ae9d8c" formatted="false">"未找到打开记录"</string>
     <string name="product_603b7475591558bd45ecf3f4" formatted="false">"\n请查询原回执；不会再次提交。"</string>
     <string name="product_37e1ec8919726b514f99eb15" formatted="false">" · 推荐"</string>
     <string name="product_bf0b984f1f19965eb00886cf" formatted="false">" · 第 %@ 轮"</string>

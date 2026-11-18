@@ -3,7 +3,7 @@ import { retireMetadataProcess } from './metadata-process.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 import { dirname, isAbsolute, normalize, sep } from 'node:path';
 import type { ClientType, WorkspaceSidebar } from '@codex-manage/protocol';
 import { renderItem, type RenderItem } from './runtime.js';
@@ -245,7 +245,7 @@ export class CodexHistoryReader {
     child.stdout.on('error', transportClosed);
     child.stdout.once('end', transportClosed);
     child.stderr.on('error', transportClosed);
-    const lines = createInterface({ input: child.stdout });
+    const lines = createJsonLineReader({ input: child.stdout });
     lines.on('error', transportClosed);
     lines.on('line', (line) => {
       try {

@@ -1,6 +1,6 @@
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 
 /** Official metadata-only auth provider. Fixed methods; no login, refresh, Turn or tool execution. */
 export async function readDesktopBackendAuth(executable: string, codexHome: string) {
@@ -29,7 +29,7 @@ export async function readDesktopBackendAuth(executable: string, codexHome: stri
     fail();
     child.kill();
   }, startupTimeout);
-  const lines = createInterface({ input: child.stdout });
+  const lines = createJsonLineReader({ input: child.stdout });
   lines.on('line', (line) => {
     bytes += Buffer.byteLength(line);
     if (bytes > 2_000_000) {

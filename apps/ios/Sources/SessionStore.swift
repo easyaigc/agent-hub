@@ -125,6 +125,7 @@ final class SessionStore: ObservableObject {
   @Published var chatSearchJump: ChatSearchJump?
   @Published private(set) var chatActionBusy: [String: String] = [:]
   @Published private var chatActionQueryErrors: [String: String] = [:]
+  @Published private var openingDesktopTargets: Set<String> = []
   private var errorRevision: UInt64 = 0
   @Published private var operationFailure: OperationFailure? { didSet { errorRevision &+= 1 } }
   var error: String? {
@@ -3189,6 +3190,38 @@ private var userRequestedWorkspaceGeneration: UUID?
       client?.endpoint == host.endpoint, client?.agentConnection == host.agentConnection else { throw CancellationError() }
   }
 
+  var supportsDesktopOpen: Bool {
+    guard let host = client, !host.isDemo, host.online, conversation?.archived != true,
+      selectedThreadId != nil else { return false }
+    return saved.workspaces[host.id]?.capabilities?.contains("desktop:open") == true
+  }
+
+  var desktopOpenBusy: Bool {
+    guard let host = client, let threadId = selectedThreadId else { return false }
+    return openingDesktopTargets.contains(cacheKey(host, threadId: threadId))
+  }
+
+  func openCurrentChatOnDesktop() {
+    guard supportsDesktopOpen, let host = client, let threadId = selectedThreadId else { return }
+    let key = cacheKey(host, threadId: threadId)
+    guard openingDesktopTargets.insert(key).inserted else { return }
+    let generation = historyGeneration
+    let progress = L10n.tr("正在连接 \(clientTypeName(for: host))…")
+    Task {
+      defer {
+        openingDesktopTargets.remove(key)
+        if transfers[key] == progress { transfers[key] = nil }
+      }
+      do {
+        try await connectForReply(host, threadId: threadId, key: key, generation: generation)
+      } catch is CancellationError { return }
+      catch {
+        guard historyGeneration == generation, client?.id == host.id, selectedThreadId == threadId else { return }
+        self.error = error.localizedDescription
+      }
+    }
+  }
+
   private func connectForReply(_ host: Client, threadId: String, key: String, generation: UUID) async throws {
     try requireReplyTarget(host, threadId: threadId, generation: generation)
     let adapter = try AgentClients.resolve(host)
@@ -3219,7 +3252,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       try requireReplyTarget(host, threadId: threadId, generation: generation)
       guard operation.hostId == host.id, operation.threadId == threadId,
         operation.clientOperationId == operationId else { throw HostServiceError.wrongHost }
-      if ["opened", "outcome-unknown"].contains(operation.phase),
+      if (operation.phase == "opened" || (operation.phase == "outcome-unknown" && !adapter.requiresConfirmedDesktopOpenReceipt)),
         try await verifyReplyRuntime(host, threadId: threadId, generation: generation) {
         if drafts.values[key]?.desktopOpenOperationId == operationId {
           drafts.values[key]?.desktopOpenOperationId = nil

@@ -1,7 +1,7 @@
 import { withWindowsProcessCreation } from './windows-process.js';
 import { retireMetadataProcess } from './metadata-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
@@ -125,7 +125,7 @@ class ChatMetadata {
     this.child.stdin.on('error', broken);
     this.child.stdout.on('error', broken);
     this.child.stderr.on('error', broken);
-    createInterface({ input: this.child.stdout })
+    createJsonLineReader({ input: this.child.stdout })
       .on('error', broken)
       .on('line', (line) => {
         try {

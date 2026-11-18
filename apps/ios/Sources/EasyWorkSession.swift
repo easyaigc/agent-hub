@@ -187,6 +187,7 @@ actor EasyWorkRemoteSession {
   private var connecting = false
   private var closed = false
   private static let readMethods: Set<String> = [
+    "thread/open-status",
     "usage/read", "runtime/context", "runtime/summary", "project/list", "thread/list", "thread/search",
     "thread/read", "thread/history", "thread/sync", "thread/subscribe", "thread/unsubscribe",
     "thread/suggestion/read",

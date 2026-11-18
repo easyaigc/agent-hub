@@ -1,6 +1,6 @@
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 import type { DesktopCreationConfiguration } from './desktop-creation-driver.js';
 import { localMessagePath, messageLinks } from './message-links.js';
 
@@ -82,7 +82,7 @@ export class CodexRuntime {
       child.stdin.on('error', () => {
         if (generation === this.generation) this.fail();
       });
-      createInterface({ input: child.stdout }).on('line', (line) => {
+      createJsonLineReader({ input: child.stdout }).on('line', (line) => {
         if (generation !== this.generation) return;
         this.receive(line);
       });

@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+F28 的 EasyWork v2 适配新增具名 thread/open 与只读 thread/open-status，参数仅 threadId 和 clientOperationId，完整目标来自加密信封。原操作按目标、设备、方法和不可变参数持久保存。打开使用原桌面窗口通道，原窗口确认后返回 opened，等待超时返回 outcome-unknown。状态查询先校验原操作，继而只读核窗口状态；原操作 ID 再次提交复用原回执。desktop:open 随已装配的原窗口通道就绪声明。iOS 映射到通用 DesktopOpenOperation；打开回执的确认策略由 Agent 适配器声明，公共状态机不按客户端名称分支，保留既有 Host 行为和旧端独立能力协商。
+
 2026-11-15 F76 草案入口：[开发服务预览](design/dev-service-preview.md)提出服务解析/登记查询、短期会话创建/查询/关闭及独立 HTTP/WebSocket 数据通道，按完整目标和稳定操作 ID 校验控制意图。会话 operation ID 不授予网页业务请求自动重试。后续首期已形成公共严格解析器、创建 Schema、Host 创建/关闭与 WSS 传输入口；实际可调用契约见[运行时协议](protocol-runtime.md#f76-开发服务预览-v1源码候选)。仅支持的平台声明 HTTP/WS/流式能力，Relay、服务列表/持久查询与外部浏览器仍待实现。
 
 ## 分块上传 v1（2026-11-15 源码候选）

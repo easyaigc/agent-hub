@@ -1,7 +1,7 @@
 import { retireMetadataProcess } from './metadata-process.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 import { isAbsolute } from 'node:path';
 import { realpathSync } from 'node:fs';
 import { BeforeDesktopSubmit } from './desktop-creation.js';
@@ -124,7 +124,7 @@ export class MetadataConnection {
     this.child.stdout.on('error', broken);
     this.child.stderr.on('error', broken);
     this.child.stdout.once('end', broken);
-    createInterface({ input: this.child.stdout })
+    createJsonLineReader({ input: this.child.stdout })
       .on('error', broken)
       .on('line', (line) => {
         try {

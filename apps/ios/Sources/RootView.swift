@@ -1882,6 +1882,12 @@ struct RootView: View {
               .accessibilityIdentifier("dev-services-entry")
           }
           if let conversation = store.conversation {
+            if store.supportsDesktopOpen {
+              Button(L10n.tr("在电脑上打开"), systemImage: "desktopcomputer") {
+                composerFocused = false
+                store.openCurrentChatOnDesktop()
+              }.disabled(store.desktopOpenBusy).accessibilityIdentifier("chat-open-on-desktop")
+            }
             Section {
               Text(store.chatLifecycleStatus(conversation)).accessibilityIdentifier("chat-lifecycle-status")
             }

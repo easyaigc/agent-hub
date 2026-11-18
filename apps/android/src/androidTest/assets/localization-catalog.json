@@ -1,5 +1,7 @@
 {
   "en": {
+    "在电脑上打开": "Open on computer",
+    "未找到打开记录": "Open operation not found",
     "\n请查询原回执；不会再次提交。": "\nQuery the original receipt. The request will not be submitted again.",
     " · 推荐": " · Recommended",
     " · 第 %@ 轮": " · Round %@",
@@ -2055,6 +2057,8 @@
     "发送第一条消息后创建对话。": "The conversation is created when you send the first message."
   },
   "zh-Hans": {
+    "在电脑上打开": "在电脑上打开",
+    "未找到打开记录": "未找到打开记录",
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
     " · 推荐": " · 推荐",
     " · 第 %@ 轮": " · 第 %@ 轮",

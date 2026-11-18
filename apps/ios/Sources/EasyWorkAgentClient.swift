@@ -229,6 +229,7 @@ enum EasyWorkHistoricalAttachment {
 }
 
 struct EasyWorkAgentClient: AgentClient {
+  var requiresConfirmedDesktopOpenReceipt: Bool { true }
   func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data {
     guard target.agentId == "easywork", client.agentConnection?.target == target else { throw HostServiceError.wrongHost }
     let channel = try await session(client)
@@ -441,6 +442,32 @@ struct EasyWorkAgentClient: AgentClient {
     return result
   }
   func session(_ client: Client) async throws -> EasyWorkRemoteSession { try await EasyWorkSessions.shared.session(client) }
+
+  func openThread(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation {
+    let channel = try await session(client)
+    let data = try await channel.request("thread/open",
+      ["threadId": threadId, "clientOperationId": operationId], id: operationId)
+    return try desktopOpenResult(data, client: client, threadId: threadId, operationId: operationId)
+  }
+
+  func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation {
+    let channel = try await session(client)
+    do {
+      let data = try await channel.request("thread/open-status", ["threadId": threadId, "clientOperationId": operationId])
+      return try desktopOpenResult(data, client: client, threadId: threadId, operationId: operationId)
+    } catch let rejection as EasyWorkRemoteRejection where rejection.code == "desktop_open_not_found" {
+      throw HostServiceError.rejected(404, L10n.tr("未找到打开记录"))
+    }
+  }
+
+  private func desktopOpenResult(_ data: Data, client: Client, threadId: String, operationId: String) throws -> DesktopOpenOperation {
+    let result = try JSONDecoder().decode(DesktopOpenOperation.self, from: data)
+    guard let hostId = client.agentConnection?.target.hostId, result.hostId == hostId,
+      result.threadId == threadId, result.clientOperationId == operationId,
+      ["opened", "outcome-unknown", "rejected"].contains(result.phase) else { throw HostServiceError.wrongHost }
+    return DesktopOpenOperation(hostId: client.id, threadId: threadId, clientOperationId: operationId,
+      phase: result.phase, error: result.error)
+  }
   private func object(_ value: Any) throws -> [String: Any] { if let data = value as? Data { return try easyWorkObject(data) }; guard let result = value as? [String: Any] else { throw HostServiceError.invalidResponse }; return result }
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot {
     let channel = try await session(client)

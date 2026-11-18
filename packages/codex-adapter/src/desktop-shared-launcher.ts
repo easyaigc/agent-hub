@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { createJsonLineReader } from './json-lines.js';
 import { createHash } from 'node:crypto';
 import { mkdirSync, lstatSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
@@ -213,7 +213,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   connection.socket.addEventListener('close', finish);
   connection.socket.addEventListener('error', finish);
   process.stdout.on('error', finish);
-  createInterface({ input: process.stdin, crlfDelay: Infinity })
+  createJsonLineReader({ input: process.stdin })
     .on('line', (line) => {
       if (!line.trim() || ending) return;
       const length = Buffer.byteLength(line);

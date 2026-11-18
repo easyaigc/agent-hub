@@ -5,6 +5,38 @@ import UniformTypeIdentifiers
 import Darwin
 import CoreFoundation
 
+/// Optional direct routes are trusted only inside an authenticated, matching context.
+/// Invalid or absent optional metadata leaves the existing connection usable.
+enum EasyWorkAuthenticatedConnectionCandidates {
+  static func read(_ context: [String: Any], target: EasyWorkTarget) throws -> [AgentConnectionCandidate]? {
+    guard let raw = context["connectionCandidates"] else { return nil }
+    let actual = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+    guard actual == target else { throw HostServiceError.wrongHost }
+    guard let routes = raw as? [[String: Any]], routes.count <= 32 else { throw HostServiceError.invalidResponse }
+    var candidates: [AgentConnectionCandidate] = []
+    for route in routes {
+      guard let transport = route["transportId"] as? String else { throw HostServiceError.invalidResponse }
+      // Future transport registrations do not invalidate independently usable LAN metadata.
+      guard transport == "lan-wss" else { continue }
+      guard let endpoint = route["endpoint"] as? String, endpoint.utf8.count <= 2048,
+        let pin = route["peerFingerprint"] as? String,
+        pin.range(of: "^[a-fA-F0-9]{64}$", options: .regularExpression) != nil else { throw HostServiceError.invalidResponse }
+      for candidate in try EasyWorkPairing.directCandidates([endpoint], fingerprint: pin) {
+        if let previous = candidates.first(where: { $0.endpoint == candidate.endpoint }) {
+          guard previous.peerFingerprint == candidate.peerFingerprint else { throw HostServiceError.invalidResponse }
+        } else { candidates.append(candidate) }
+      }
+    }
+    return candidates
+  }
+
+  static func merging(_ candidates: [AgentConnectionCandidate], into existing: [AgentConnectionCandidate]) -> [AgentConnectionCandidate] {
+    let endpoints = Set(candidates.map(\.endpoint))
+    let direct = candidates + existing.filter { $0.transportId == "lan-wss" && !endpoints.contains($0.endpoint) }
+    return Array(direct.prefix(32)) + existing.filter { $0.transportId != "lan-wss" }
+  }
+}
+
 #if DEBUG
 /// Withholds one already verified synthetic fork result in the independent
 /// acceptance App. The wire request, canonical receipt and destination remain
@@ -409,6 +441,10 @@ struct EasyWorkAgentClient: AgentClient {
     return try await workspace(client, projectCursor: nil, threadCursor: nil)
   }
   func connectionTitle(_ client: Client) async -> String? { try? await session(client).activeTransportTitle() }
+  func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata {
+    guard let channel = try? await session(client) else { return AgentConnectionMetadata(title: nil) }
+    return await channel.connectionMetadata()
+  }
   func close(_ client: Client) async { await EasyWorkSessions.shared.remove(client.id) }
   private func forkValue(_ value: [String: Any], client: Client, threadId: String) throws -> [String: Any] {
     guard let hostId = client.agentConnection?.target.hostId, value["hostId"] as? String == hostId,
@@ -474,6 +510,9 @@ struct EasyWorkAgentClient: AgentClient {
     let context = try object(await channel.request("runtime/context", [:]))
     let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
     guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+    if let candidates = try? EasyWorkAuthenticatedConnectionCandidates.read(context, target: confirmed) {
+      await channel.rememberAuthenticatedCandidates(candidates)
+    }
     let capabilities = context["capabilities"] as? [String] ?? []
     try await EasyWorkReadingCapabilities.shared.remember(channel, capabilities: capabilities)
     let projects = try object(await channel.request("project/list", [:]))["projects"] as? [[String: Any]] ?? []

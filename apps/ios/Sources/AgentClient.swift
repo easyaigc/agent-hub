@@ -23,6 +23,23 @@ struct AgentConnection: Codable, Equatable, Sendable {
   }
 }
 
+/// Adapter-owned connection observations, separate from workspace domain data.
+/// A late observation cannot change another identity, preference or concurrent edit.
+struct AgentConnectionMetadata: Sendable {
+  var title: String?
+  var updatedConnection: AgentConnection? = nil
+
+  func connectionUpdate(captured: AgentConnection?, current: AgentConnection?) -> AgentConnection? {
+    guard let captured, current == captured, let updatedConnection,
+      updatedConnection.target == captured.target,
+      updatedConnection.preference == captured.preference,
+      updatedConnection.credentialRef == captured.credentialRef,
+      updatedConnection.candidates.count <= 96,
+      updatedConnection != captured else { return nil }
+    return updatedConnection
+  }
+}
+
 enum AgentJSONValue: Codable, Equatable, Sendable {
   case null, bool(Bool), number(Decimal), string(String), array([AgentJSONValue]), object([String: AgentJSONValue])
   init(from decoder: Decoder) throws {
@@ -178,6 +195,7 @@ protocol AgentClient: Sendable {
   #endif
   func normalizedCapabilities(_ capabilities: [String], connectionMode: String?) -> [String]
   func connectionTitle(_ client: Client) async -> String?
+  func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata
   func close(_ client: Client) async
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot
@@ -227,6 +245,9 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata {
+    AgentConnectionMetadata(title: await connectionTitle(client))
+  }
   // Preserve the existing controlled-runtime fallback for adapters that support it.
   var requiresConfirmedDesktopOpenReceipt: Bool { false }
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await download(client, file: file, progress: nil) }

@@ -4538,7 +4538,7 @@
       ],
       "scenarios": ["S11", "S14"],
       "ui": ["UI03"],
-      "revision": 30,
+      "revision": 31,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4548,7 +4548,7 @@
         "android": "not-verified"
       },
       "androidStages": ["A2", "A5"],
-      "sourceNotes": "2026-10-21 两项iPhone故障返修：归档且最新历史读取成功、无执行owner和待确认输入时显示归档提示，停止误报实时重试；真实历史失败、活动任务及未知提交继续保留错误。iOS按完整机器目标复用阅读键，纯游标持久化不重复全量未读扫描。Host每条不可变录音读取当前代理并释放独立Agent，失败只保存有界阶段与错误码，不重放。iPhone15及iPhone16独立DEV101均完成真实原桌面内容读取、原故障归档对话跨刷新无误重试、真实Host转写及原草稿回填且不发送；使用已知WAV，不代替本轮麦克风声学采音。部署后曾记录等待响应ECONNRESET，旧故障准确外因及代理快照过期未证实，旧未知回执和原录音保留。Android共用Host修复，原生归档提示对齐、Android/Windows本次验证未执行，A6保持暂停。 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. 2026-10-29 PAR48 actual native: voice7=3pass4knownfail, exact owned pre-assert Window/layout/AX captured; local close and two successful synthetic late-return methods pass. API37 Chinese-light/English-dark exclusive native preference2pass with actual save/form reopen. Four voice failures, per-menu pixels/API26/TalkBack/cold-process/physical/realDEV/full iOS remain pending; empty-default protection only, no full feature verification. Source50：测试诊断与同Popup四态像素证据增量；实际范围和失败见 fiftieth-stage-owned-ax-native.json、fiftieth-stage-p8-menu-pixels-native.json。完整功能验收不关闭。 Source63: Android queued reading writes are revoked on Session reset; actual Store and owner diagnostics plus API34 popup helper are integrated source-only. New SDK/Native/complete interaction acceptance pending; iOS product unchanged and old failures remain. Source64: Android discovery/HTTP/connection-form ownership now joins actual IO and native stop terminals before migration; reading fixture unknown-worker retention and cleanup outcomes are corrected. Source composed only; fresh SDK/Native/complete UI remain pending; iOS product unchanged. Source65: inert private-claim graph and exact fixture coordinator exit integrated; API26 composite diagnostic default-off/non-eligible, P9 53-method inventory corrected. Composed SDK/three APK verified; all new Native/UI/DEV pending. F49/F50 guards only; F52 remote delivery pending; iOS unchanged. Source66: migration fixture uses prepared restore with unchanged original metadata/vault; graph accepts only optional false read-target guard strengthened to true, never weakening or non-Boolean, with all other fields strict.16 graph assertions added to fresh native full migration case. Source65 actual failure preserved; composed SDK and API33 six warm methods plus16 first-case graph vectors passed,540 actual calls/18 tars and strict original B/old failing fixture protection independently reviewed. Cold/UI/realDEV pending; iOS unchanged. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。"
+      "sourceNotes": "2026-10-21 两项iPhone故障返修：归档且最新历史读取成功、无执行owner和待确认输入时显示归档提示，停止误报实时重试；真实历史失败、活动任务及未知提交继续保留错误。iOS按完整机器目标复用阅读键，纯游标持久化不重复全量未读扫描。Host每条不可变录音读取当前代理并释放独立Agent，失败只保存有界阶段与错误码，不重放。iPhone15及iPhone16独立DEV101均完成真实原桌面内容读取、原故障归档对话跨刷新无误重试、真实Host转写及原草稿回填且不发送；使用已知WAV，不代替本轮麦克风声学采音。部署后曾记录等待响应ECONNRESET，旧故障准确外因及代理快照过期未证实，旧未知回执和原录音保留。Android共用Host修复，原生归档提示对齐、Android/Windows本次验证未执行，A6保持暂停。 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. 2026-10-29 PAR48 actual native: voice7=3pass4knownfail, exact owned pre-assert Window/layout/AX captured; local close and two successful synthetic late-return methods pass. API37 Chinese-light/English-dark exclusive native preference2pass with actual save/form reopen. Four voice failures, per-menu pixels/API26/TalkBack/cold-process/physical/realDEV/full iOS remain pending; empty-default protection only, no full feature verification. Source50：测试诊断与同Popup四态像素证据增量；实际范围和失败见 fiftieth-stage-owned-ax-native.json、fiftieth-stage-p8-menu-pixels-native.json。完整功能验收不关闭。 Source63: Android queued reading writes are revoked on Session reset; actual Store and owner diagnostics plus API34 popup helper are integrated source-only. New SDK/Native/complete interaction acceptance pending; iOS product unchanged and old failures remain. Source64: Android discovery/HTTP/connection-form ownership now joins actual IO and native stop terminals before migration; reading fixture unknown-worker retention and cleanup outcomes are corrected. Source composed only; fresh SDK/Native/complete UI remain pending; iOS product unchanged. Source65: inert private-claim graph and exact fixture coordinator exit integrated; API26 composite diagnostic default-off/non-eligible, P9 53-method inventory corrected. Composed SDK/three APK verified; all new Native/UI/DEV pending. F49/F50 guards only; F52 remote delivery pending; iOS unchanged. Source66: migration fixture uses prepared restore with unchanged original metadata/vault; graph accepts only optional false read-target guard strengthened to true, never weakening or non-Boolean, with all other fields strict.16 graph assertions added to fresh native full migration case. Source65 actual failure preserved; composed SDK and API33 six warm methods plus16 first-case graph vectors passed,540 actual calls/18 tars and strict original B/old failing fixture protection independently reviewed. Cold/UI/realDEV pending; iOS unchanged. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。 2026-11-19 iOS交付原217已验认证直连候选获取与保存：可选地址/固定证书只从完整目标匹配的加密上下文读取，保留中继/旧地址/偏好；主线完整结果、代次及管理修订核对后才采用且不覆盖并发编辑。原R244-R249证据按唯一计划保留，主线新组合不冒称新GUI通过；Android既有实现及独立验收边界保持。"
     },
     {
       "id": "F09",
@@ -4581,7 +4581,7 @@
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 23,
+      "revision": 24,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4591,7 +4591,7 @@
         "android": "not-verified"
       },
       "androidStages": ["A2", "A5"],
-      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open."
+      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open. 2026-11-19 iOS对齐既有EasyWork桌面JSON安全整数边界，保持旧信封兼容；原同会话订阅恢复和原操作去重模拟器/真实桌面通过按准确源码复用，未新增业务输入。Android保持其既有安全整数实现和独立验收边界。状态见iOS×EasyWork唯一计划，授权恢复其余子项不补签。"
     },
     {
       "id": "F10",
@@ -21681,6 +21681,30 @@
         "apps/ios/Sources/RootView.swift": "30e76e6c7a7dc086f65adf7497cdd7e55acffc65147a3cfdab5641af66d5ccf2",
         "apps/ios/Sources/SessionStore.swift": "edb64e9e467e6f61ce3af9deca6445ec78a127707ef4db274e1440309116007b",
         "apps/ios/Sources/AgentClient.swift": "02d5cfd59df331607c91cd08d1f81e0c7e93bb967434c14b3e90bab3f8211977"
+      }
+    },
+    {
+      "id": "easywork-wire-integer-alignment-20261119",
+      "baseCommit": "8e9438fe5a2e62b87d1ea321f2e2b8c680598129",
+      "features": ["F09"],
+      "summary": "交付原已验F09严格JSON安全整数候选：信封版本/序号与事件游标在AAD和恢复前统一校验，保留合法legacy信封、原目标/操作ID和草稿。Android规则未改；原真实验收与主线对应范围由唯一计划关联。",
+      "files": {
+        "apps/ios/Sources/EasyWorkTransport.swift": "40624d446c5faa5583819ea816b38246fbf208df69292b13687b07709bb3642e",
+        "apps/ios/Sources/EasyWorkSession.swift": "cf864233a8678e8196e8d361da96ac0cfb31c29bb19a53ce977173d3fcb0ba4c",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "9bb775c1cdd4f3bc6fbada5689cf254cf993627db35a0364d12d5d4c55d290aa"
+      }
+    },
+    {
+      "id": "easywork-authenticated-route-adoption-20261119",
+      "baseCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+      "features": ["F08"],
+      "summary": "移植原已验认证上下文地址获取/持久保存，保持旧端无可选字段可读、完整目标/证书校验及通道偏好；通用层只采纳仍对应原连接的观察，主线完整结果/管理修订验证后再写入。旧R244-R249与本次辅助/交付事实只在唯一计划关联。",
+      "files": {
+        "apps/ios/Sources/AgentClient.swift": "ee02500b451ead66225fbdda27dde7c26211ee931f07a7706d80636568ead187",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "3dcde7a2aa6649ba2afe7d81a535efd88ac7453ddd6df7db2821bb0dfc0a6dff",
+        "apps/ios/Sources/EasyWorkSession.swift": "acb90b02d06cf37c87fb522e8747a2c7484a50f73c0f3e3975c9c12047b4b308",
+        "apps/ios/Sources/SessionStore.swift": "92f1f21976d3f053b3697cf7f9585daccc4be60f247a55776ecd4109c5ffe95d",
+        "scripts/easywork-authenticated-candidates.test.mjs": "eeba1d1f35f41bd1939fb3d92518769acf01405204fcc83636188f63f18c9761"
       }
     }
   ]

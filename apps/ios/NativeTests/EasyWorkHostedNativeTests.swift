@@ -19,6 +19,53 @@ import Security
 #error("Build this driver with the independent EasyWork acceptance bundle or the default local compiler target")
 #endif
 
+final class EasyWorkEncryptedEnvelopeWireTests: XCTestCase {
+  func testSealedHeaderAcceptsLegacyAndSafeIntegersButRejectsBooleanVersion() throws {
+    let mobile = Curve25519.KeyAgreement.PrivateKey()
+    let desktop = Curve25519.KeyAgreement.PrivateKey()
+    let account = AgentAccount(authority: "https://acceptance.example", subject: "envelope-test")
+    let target = EasyWorkTarget(account: account, desktopDeviceId: "desktop", workspaceId: "workspace", runtimeId: "runtime")
+    let binding = EasyWorkBinding(bindingId: "binding", account: account, desktopDeviceId: "desktop",
+      mobileDeviceId: "mobile", desktopPublicKey: desktop.publicKey.rawRepresentation.base64URL,
+      mobilePublicKey: mobile.publicKey.rawRepresentation.base64URL, target: target,
+      status: "active", createdAt: "2026-11-16T00:00:00Z")
+    let credential = EasyWorkCredential(binding: binding, privateKey: mobile.rawRepresentation.base64URL)
+    let channel = try EasyWorkEnvelopeCrypto(credential: credential, binding: binding)
+    let payload = ["kind": "key-confirmation", "value": channel.confirmation]
+
+    func seal(sequence: Int, sessionId: String?) throws -> [String: Any] {
+      var frame: [String: Any] = [
+        "version": 1, "bindingId": binding.bindingId, "senderDeviceId": binding.desktopDeviceId,
+        "recipientDeviceId": binding.mobileDeviceId, "sequence": sequence, "sentAt": binding.createdAt,
+      ]
+      if let sessionId { frame["senderSessionId"] = sessionId }
+      let sealed = try AES.GCM.seal(easyWorkJSON(payload), using: channel.inbound, authenticating: channel.header(frame))
+      frame["nonce"] = sealed.nonce.withUnsafeBytes { Data($0).base64URL }
+      frame["ciphertext"] = (sealed.ciphertext + sealed.tag).base64URL
+      return frame
+    }
+
+    let legacy = try seal(sequence: 1, sessionId: nil)
+    XCTAssertEqual(try channel.open(easyWorkJSON(legacy)).1, "legacy:1")
+    let modern = try seal(sequence: 9_007_199_254_740_991, sessionId: "desktop-session")
+    XCTAssertEqual(try channel.open(easyWorkJSON(modern)).1, "desktop-session:9007199254740991")
+    var booleanVersion = legacy
+    booleanVersion["version"] = true // The original ciphertext still authenticates the canonical version 1.
+    XCTAssertThrowsError(try channel.open(easyWorkJSON(booleanVersion)))
+    let unsafe = try seal(sequence: 9_007_199_254_740_992, sessionId: "desktop-session")
+    XCTAssertThrowsError(try channel.open(easyWorkJSON(unsafe)))
+  }
+
+  func testEventCursorUsesDesktopSafeNonnegativeNumbers() throws {
+    let numbers = try easyWorkObject(Data(#"{"zero":0,"cursor":5,"boolean":true,"negative":-1,"fraction":1.5,"unsafe":9007199254740992}"#.utf8))
+    XCTAssertEqual(EasyWorkEnvelopeCrypto.wireInteger(numbers["zero"]), 0)
+    XCTAssertEqual(EasyWorkEnvelopeCrypto.wireInteger(numbers["cursor"]), 5)
+    for field in ["boolean", "negative", "fraction", "unsafe"] {
+      XCTAssertNil(EasyWorkEnvelopeCrypto.wireInteger(numbers[field]), field)
+    }
+  }
+}
+
 // Integration-only acceptance driver. Historical phone-only and physical-device
 // UI probes remain in their original fingerprinted evidence and are not rerun here.
 /// Test-process adapter: changes delivery of four genuine authenticated frames,

@@ -1,5 +1,9 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-19 F08：iOS交付原已验认证直连候选的取得和保存；正常偏好控件、旧通道和草稿保持。移植保留主线并发/快照/管理修订保护，Android独立验收边界不补签。原真实证据与当前源码/检查/交付统一见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+
+2026-11-19 F09：iOS交付原已验EasyWork信封与订阅游标的安全整数修复，旧信封兼容、同会话恢复和原操作去重按原范围复用。Android既有实现及验收边界保持，双方状态统一关联[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+
 2026-11-18 F28 增加普通聊天菜单的在电脑上打开入口。EasyWork 通过 thread/open 与 thread/open-status 对接同一具名打开及原回执语义。Android 对应增强待实现。开发、验收和 PR 状态统一见 [iOS × EasyWork 唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-16 F64（UI06／UI21，S04／S18）：iOS 主输入区未聚焦时长按 0.5 秒启动语音；已聚焦时停用父层语音长按识别，交由系统处理粘贴、选择与光标操作。短按仍编辑，麦克风按钮及无障碍语音动作继续显式启动语音，原草稿与转写回填规则保持。Android 本次不改，其同等长按与编辑手势规则待对齐，不新增 Android 通过；实现、构建和原生手势验证分列于[专项记录](../acceptance/composer-focus-longpress-20261116.md)。本次为共用输入区交互修复，不变更 EasyWork 对齐父项状态及 A6 暂停范围。

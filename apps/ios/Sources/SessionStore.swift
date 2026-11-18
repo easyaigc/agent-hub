@@ -3044,12 +3044,12 @@ private var userRequestedWorkspaceGeneration: UUID?
       try await waitForSidebarInteraction()
       try Task.checkCancellation()
       guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
+      var connectionMetadata: AgentConnectionMetadata?
       if host.agentConnection != nil {
-        let route = await (try AgentClients.resolve(host)).connectionTitle(host)
+        connectionMetadata = await (try AgentClients.resolve(host)).connectionMetadata(host)
         try await waitForSidebarInteraction()
         try Task.checkCancellation()
         guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
-        connectionRoutes[host.id] = route
       }
       guard result.hostId == host.id, result.projects.allSatisfy({ $0.hostId == host.id }),
         result.threads.allSatisfy({ $0.hostId == host.id })
@@ -3059,6 +3059,13 @@ private var userRequestedWorkspaceGeneration: UUID?
         throw HostServiceError.wrongHost
       }
       guard managementRevisions[host.id] == managementRevision else { return }
+      if let metadata = connectionMetadata {
+        connectionRoutes[host.id] = metadata.title
+        if let index = saved.clients.firstIndex(where: { $0.id == host.id }),
+          let update = metadata.connectionUpdate(captured: host.agentConnection, current: saved.clients[index].agentConnection) {
+          saved.clients[index].agentConnection = update
+        }
+      }
       if previous?.readTarget == result.readTarget {
         result.threads = result.threads.map { incoming in
           mergeReadingSummary(incoming, prior: previous?.threads.first { $0.id == incoming.id })

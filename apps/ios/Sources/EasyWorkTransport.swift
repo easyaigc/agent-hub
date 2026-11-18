@@ -1,3 +1,4 @@
+import CoreFoundation
 import CryptoKit
 import Foundation
 import Network
@@ -364,9 +365,24 @@ struct EasyWorkEnvelopeCrypto {
     envelope["ciphertext"] = (sealed.ciphertext + sealed.tag).base64URL
     return try easyWorkJSON(envelope)
   }
+  static func wireInteger(_ value: Any?) -> Int? {
+    // Match the desktop's safe JSON integers before using a value in AAD or a replay cursor.
+    guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+    let integer = number.doubleValue
+    guard integer >= 0, integer <= 9_007_199_254_740_991, integer.rounded(.down) == integer else { return nil }
+    return Int(integer)
+  }
   func open(_ data: Data) throws -> ([String: Any], String) {
     let envelope = try easyWorkObject(data)
-    guard envelope["version"] as? Int == 1, envelope["bindingId"] as? String == binding.bindingId, envelope["senderDeviceId"] as? String == binding.desktopDeviceId, envelope["recipientDeviceId"] as? String == binding.mobileDeviceId, let sequence = envelope["sequence"] as? Int, sequence > 0, let time = envelope["sentAt"] as? String, !time.isEmpty, let nonce = Data(base64URL: envelope["nonce"] as? String ?? ""), let bytes = Data(base64URL: envelope["ciphertext"] as? String ?? ""), bytes.count >= 16 else { throw HostServiceError.wrongHost }
+    guard Self.wireInteger(envelope["version"]) == 1,
+      envelope["bindingId"] as? String == binding.bindingId,
+      envelope["senderDeviceId"] as? String == binding.desktopDeviceId,
+      envelope["recipientDeviceId"] as? String == binding.mobileDeviceId,
+      let sequence = Self.wireInteger(envelope["sequence"]), sequence > 0,
+      let time = envelope["sentAt"] as? String, !time.isEmpty,
+      let nonce = Data(base64URL: envelope["nonce"] as? String ?? ""),
+      let bytes = Data(base64URL: envelope["ciphertext"] as? String ?? ""), bytes.count >= 16
+    else { throw HostServiceError.wrongHost }
     let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: nonce), ciphertext: bytes.dropLast(16), tag: bytes.suffix(16))
     let plain = try AES.GCM.open(box, using: inbound, authenticating: header(envelope))
     return (try easyWorkObject(plain), "\(envelope["senderSessionId"] as? String ?? "legacy"):\(sequence)")

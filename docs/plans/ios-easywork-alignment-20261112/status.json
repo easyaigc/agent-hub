@@ -1071,7 +1071,10 @@
           "F09-ACTUAL-SAME-ACTOR-CHECKPOINT-FIVE-ORIGINAL-DEDUP-R250",
           "F09-WIRE-INTEGER-OLD-REPRO-CANDIDATE-ALIGNED-TO-D8-R251",
           "F09-SAFE-WIRE-NUMBERS-NATIVE-COMPATIBILITY-REGRESSION-R252",
-          "F09-96C4-FULL-CHECK-AND-EXACT-LOCAL-SAVE-R253"
+          "F09-96C4-FULL-CHECK-AND-EXACT-LOCAL-SAVE-R253",
+          "F09-MAIN-CANDIDATE-DEPENDENCY-AND-EXACT-PATCH-REVIEW-R270",
+          "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
+          "F09-PR191-ACTUAL-MAIN-MERGE-R271"
         ]
       },
       "acceptance": {
@@ -1142,16 +1145,17 @@
         "currentGrantScopedPass": "独立身份原授予冷读、真实 DPoP 和绑定负向、轮换以及仅该授予撤销通过。"
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "iOS 候选 5aa9cec 与实际 96c4 的 206 项原生输入等价，包构建自 2172742 基准和同一未提交候选树。桌面组合为 D8 N17，正式主线交付待集成。"
+        "state": "integrated-not-deployed",
+        "note": "F09原已验安全整数修复已合Gitea PR191/main d5ca4c74，原会话/订阅/回执基础已在主线；新包仅构建未安装，原已验R250/R252分别复用，不宣称新主线组合实际切换通过。217认证地址更新另随F08交付，授权恢复剩余断言继续原范围。",
+        "evidenceRefs": ["F09-PR191-ACTUAL-MAIN-MERGE-R271"]
       },
       "execution": {
         "state": "planned",
-        "ownerRole": "Main semantic/API/immutable operations and future gate review; separate Native/GUI preparation, followup actual model/effort/speed unavailable"
+        "ownerRole": "当前主会话维护已合范围；F07授权恢复/其余场景单列"
       },
-      "nextAction": "继续错工作区拒绝、轮换后再冷启和受控 408/429/5xx 及原刷新意图未知的恢复。错误完整目标需要独占通道，保护原配对。",
+      "nextAction": "既有地址恢复/去重对应源码已合PR191，按原验收范围复用，不重复执行。地址变化随F08原候选交付；授权生命周期其余断言按F07/AC04原清单。",
       "openItemIds": ["REV25"],
-      "updatedAt": "2026-11-16T11:52:48.752977+00:00",
+      "updatedAt": "2026-11-18T18:22:20.580382+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC04", "AC05"],
@@ -2140,14 +2144,15 @@
         "note": "历史状态保留；本次未执行业务验收，后续按实际源码/运行包/场景匹配证据。"
       },
       "development": {
-        "state": "pending-integration",
-        "scope": "iOS具名thread/open及open-status、桌面完整目标/设备/原操作不可变回执、原renderer打开和只读查询已补齐；打开时保留原提示队列。",
+        "state": "partial",
+        "scope": "首次普通opened路径及原操作去重已实现并真实通过；新源码审查确认未知后读到opened的持久确认和uncertain错误只读恢复仍缺。iOS已合PR189，桌面未合。",
         "basis": "最终两端具名打开候选与适配器确认策略；普通真实opened通过，最终iOS源码限定等价复用、原生构建/相关检查通过。",
         "evidenceRefs": [
           "LEDGER",
           "MAIN-IOS",
           "PHASE1-C22-FREEZE-TREE-CORRECTION-D8-OPEN-AND-PAGING-REVIEW-R259"
-        ]
+        ],
+        "currentEvidence": ["F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270"]
       },
       "acceptance": {
         "state": "historical-partial",
@@ -2160,15 +2165,16 @@
       },
       "delivery": {
         "state": "candidate-not-integrated",
-        "note": "iOS和桌面F28候选真实验收通过；桌面正式交付门禁运行中，尚未把候选当成已合主线。"
+        "note": "iOS侧PR189已合Gitea main5cad53fe；桌面1b3596基准上的具名打开候选仍未提交/未合master，整体两端交付未完成。最终iOS包1321未安装/未正式发布。",
+        "evidenceRefs": ["F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269"]
       },
       "execution": {
         "state": "blocked",
         "ownerRole": "当前主会话负责具体租约恢复确认；Terra交付执行方待正式恢复"
       },
-      "nextAction": "先提交合并可独立能力协商的iOS侧；桌面等待已核3项残留租约具体恢复确认，再受控捕获第15批未处理错误并完成其正式PR。普通GUI不重复。",
+      "nextAction": "保留原首次opened通过，不重测；等待已核3项残留租约具体恢复确认，先恢复原第15批错误完整日志，再补原open-status确认持久化及相关边界检查，完成桌面PR。",
       "openItemIds": ["VER01"],
-      "updatedAt": "2026-11-18T17:13:42.624850+00:00",
+      "updatedAt": "2026-11-18T18:14:33.916364+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC10"],
@@ -5265,8 +5271,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 268,
-  "updatedAt": "2026-11-18T17:13:42.624850+00:00",
+  "revision": 271,
+  "updatedAt": "2026-11-18T18:22:20.580382+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -12431,6 +12437,77 @@
       "scope": "远端确认实际删除13项任务临时文件，最小私有路由/transfer helper已移除，回执和最小证据/正式绑定保留，无未决业务写。0字节文稿因共享TextEdit保留；GUI未决交接主会话。原会话idle可控且未归档，当前Host只声明archive:unloaded，本机正式工具未登记此Host，未确认适用归档能力，未强行操作。",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remote/macbook-closeout-and-archive-preflight.json",
       "sha256": "06a39517a4b769d7af1884954822f4000c6b4509ca19fe1fe9f19f9a4daf56f9"
+    },
+    "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "3ca92dad96de8d70d032d042a3c2d2b281bb4142",
+      "sourceTree": "fdff0458667f175ced39bb6522ae18c251556f45",
+      "packageSha256": "1321f5945ffcd012e1dec18047a70de5ccaa18dfc65077dab47ab240d3e649c6",
+      "environment": "Gitea BCAI/agent-hub-app/main真实PR合并；最终iOS文件内容与已构建1321包输入逐hash一致",
+      "mobileEnvironment": "not-required",
+      "scope": "PR189已实际合main5cad53fe，API与ls-remote一致；首31b及并入Host JSONL后的3ca head保留。仅iOS源码组件交付，正式部署未声明，桌面候选尚未提交/合入。原普通GUI证据与最终策略等价复用不升级为新GUI运行。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-ios-code-merged-proof.json",
+      "sha256": "a6b4d95d5fbb0674f5cbe2888e090adae2af4c30d0cc188113a7f1ba0a99314b"
+    },
+    "MACBOOK-READONLY-SESSION-STATE-UNKNOWN-R269": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "ea899ba100cf313645a3d29f3ba822b931d90d29",
+      "packageSha256": "not-applicable-system-metadata-only",
+      "environment": "MacBook128同一专用会话一次只读CoreGraphics状态检查",
+      "mobileEnvironment": "not-required",
+      "scope": "login-done=true；screenLocked/on-console均unknown。不能据此确认或排除锁屏或解释先前GUI失败，不提出未经证实的解锁要求。未操作GUI、系统设置或新增业务。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remote/macbook-readonly-system-session-diagnostic.json",
+      "sha256": "64f05486948a632ec30cb002d2c83c547120a8d5e52562377bc38b58f230909d"
+    },
+    "F09-MAIN-CANDIDATE-DEPENDENCY-AND-EXACT-PATCH-REVIEW-R270": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "8e9438fe5a2e62b87d1ea321f2e2b8c680598129",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "本机源码与原验收证据只读审查；请求Terra medium的F09审查实际模型/档位/速度未独立核实；F28语义由主会话审查。",
+      "mobileEnvironment": "not-required",
+      "scope": "原已验5aa的两个生产文件与原生测试补丁等价；主线恢复基础已有，217认证地址获取另属未合范围。R250旧包实际切换与R252新包原Relay分别保留，不拼为当前组合实际切换。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f09-scoped-reuse-review.json",
+      "sha256": "92679ee9468a81a936ebee619cb6d9b9705c56cfdf9ad9db2b5f497611a0a4b3"
+    },
+    "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "本机源码与原验收证据只读审查；请求Terra medium的F09审查实际模型/档位/速度未独立核实；F28语义由主会话审查。",
+      "mobileEnvironment": "not-required",
+      "scope": "源码确认open-status读到opened未保存，已保存uncertain错误也不重新只读核对；仅静态缺口，不撤销原首次opened真实通过，不冒称复现或已修。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-open-status-durability-source-review.json",
+      "sha256": "fa5a16399b7f7f590d896c2aad4f4b14f9f54082ef443f96aef30796f86cb831"
+    },
+    "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "0b8d065349e60ce4f13c94178fe6a0926e0a7688",
+      "packageSha256": "not-packaged-build-only",
+      "environment": "Node24.22.3/pnpm11.19/JDK17/Xcode27；构建与源码审查、Gitea main实际交付；请求Terra medium，实际模型/档位/速度未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "当前主线最小移植最终3原生文件与原已验5aa补丁相同；parity、agent-contract、模拟器编译和两原方法Swift/CryptoKit辅助通过。macOS framework XCTest失败保留；实际com.codexmanage.ios仅编译未安装，不冒称独立bundle或新GUI通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f09-normalized-check-review.json",
+      "sha256": "644c777bb206bdb938502d7602e66d76ace867eaa2926b2770c1bb4f67a0eeb0",
+      "originalEvidence": [
+        "F09-ACTUAL-SAME-ACTOR-CHECKPOINT-FIVE-ORIGINAL-DEDUP-R250",
+        "F09-NEW96C4-ACTUAL-ORIGINAL-ENCRYPTED-RELAY-CURSOR-R252"
+      ],
+      "mainMergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797"
+    },
+    "F09-PR191-ACTUAL-MAIN-MERGE-R271": {
+      "kind": "exact-match-review",
+      "sourceCommit": "0b8d065349e60ce4f13c94178fe6a0926e0a7688",
+      "packageSha256": "not-packaged-build-only",
+      "environment": "Node24.22.3/pnpm11.19/JDK17/Xcode27；构建与源码审查、Gitea main实际交付；请求Terra medium，实际模型/档位/速度未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "准确原已验安全整数修复及主线原恢复基础已合PR191/main d5ca4c74；原R250旧包切换与R252新包Relay证据分别保留，当前新组合未新增运行。Gitea merge空响应后只读确认merged及远端SHA，未重放。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f09-source-delivery-receipt.json",
+      "sha256": "0fb10cd590ea5ee20695280e027622bcb6b520c2143dfc4989603af7cc893509",
+      "originalEvidence": [
+        "F09-ACTUAL-SAME-ACTOR-CHECKPOINT-FIVE-ORIGINAL-DEDUP-R250",
+        "F09-NEW96C4-ACTUAL-ORIGINAL-ENCRYPTED-RELAY-CURSOR-R252"
+      ],
+      "mainMergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797"
     }
   },
   "openItems": [
@@ -12991,7 +13068,8 @@
         "F45-NARROW-OLD-DURABILITY-DEPENDENCIES-AND-CHAT-INDEPENDENT-EASYWORK-STARTUP-R238",
         "F45-FINAL-NATIVE3-AND36-OWNED-TEST-BACKUP-FILES-RETIRED-R238",
         "F45-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R238",
-        "F45-C21-EXACT4-DOCS-LOCAL-SAVE-NATIVE206-EQUIVALENCE-R238"
+        "F45-C21-EXACT4-DOCS-LOCAL-SAVE-NATIVE206-EQUIVALENCE-R238",
+        "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270"
       ],
       "ios": "F26/F27/F46登记模拟器范围已关闭；F45实际一空metadata及原pending/next稿加密checkpoint后计划App中断，恢复/GUI链路继续。",
       "desktop": "Same D8 N17; original35runs/33controls/699full commands exact. Only98CC own empty B5 archive confirmed+cold ZIP verified =>700commands; no new model/input/metadata/message/provider/control/upload. All original row values preserved except exact B5 archive fields.",
@@ -13059,7 +13137,15 @@
         "finalColdCaseId": "f757e32e-e38d-41e2-b6b5-685d9cfc87a2",
         "finalColdOfficial": "1passed/0failed",
         "ownRollbackReleasedAfterFinalCold": true
-      }
+      },
+      "developmentGaps": [
+        {
+          "featureId": "F28",
+          "scope": "原操作未知后的opened确认持久化与uncertain错误只读恢复",
+          "evidenceRef": "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270",
+          "state": "pending-fix-after-delivery-lease-recovery"
+        }
+      ]
     },
     {
       "id": "HOLD01",
@@ -19833,6 +19919,45 @@
         "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
         "MACBOOK-SECOND-TARGET-RESOURCE-CLOSEOUT-ARCHIVE-PREFLIGHT-R268"
       ]
+    },
+    {
+      "revision": 269,
+      "date": "2026-11-19",
+      "kind": "actual-ios-source-pr189-main-delivery",
+      "scope": "iOS F28代码经PR189实际合main5cad53fe，首31b、冲突语义合并3ca及最终原生源/包对应保留。Host JSONL新main记录与F28记录均保留，无原生源重验。桌面未提交/合并，3项租约恢复确认仍待答；GUI只读系统诊断不足确认锁屏，保持未验边界。结束原生编译输出已回收，iOS交付环境仅供本次最终状态文档收尾。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269",
+        "MACBOOK-READONLY-SESSION-STATE-UNKNOWN-R269"
+      ]
+    },
+    {
+      "revision": 270,
+      "date": "2026-11-19",
+      "kind": "scoped-f09-integration-and-f28-source-gap-review",
+      "scope": "F09准确原补丁移植到当前主线独立工作树，已验恢复与原操作证据分别保留；新增F28 open-status确认未持久化及uncertain错误只读恢复源码缺口，未在受锁桌面源码中改写。PR190文档及iOS临时工作树已交付清理；MacBook收尾结果仍沿R268，不重配对/隔离。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F09-MAIN-CANDIDATE-DEPENDENCY-AND-EXACT-PATCH-REVIEW-R270",
+        "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270"
+      ]
+    },
+    {
+      "revision": 271,
+      "date": "2026-11-19",
+      "kind": "f09-scoped-original-candidate-actual-main-delivery",
+      "scope": "F09准确原安全整数修复已实际合PR191，commit0b8d0653/main d5ca4c74；完整目标、原操作/订阅基础沿已有主线。最终构建/辅助通过，仅编译未安装；原framework失败保留。按对应原验收将具体功能记merged，不把新主线包写成新GUI通过；F09父项其余边界不补签。F28静态缺口及三锁等待保留。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
+        "F09-PR191-ACTUAL-MAIN-MERGE-R271"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -21263,14 +21388,17 @@
       "reason": "已退出92664留下3项会话/目标/工作区租约。正式工具无恢复入口；自动审批拒绝手动解除，未绕过。原第15批未处理错误尚待完整输出定位，未当通过。",
       "evidenceRefs": ["F28-FORMAL-DELIVERY-DEAD-LEASE-REVIEW-REFUSED-R267"],
       "owner": "当前主会话；需具体恢复确认后由Terra原交付执行方接续",
-      "nextAction": "等待仅解除已核三项租约的明确确认；保持原操作/计时和14批缓存，确认后再核owner/指纹并受控恢复失败批完整stdout/stderr。独立iOS完整检查继续。"
+      "nextAction": "iOS代码已独立合PR189；仍等待仅解除桌面已核3项租约的明确回复。确认前不处理这些锁；恢复后只补原失败批并完整存日志，继续原桌面交付。"
     },
     {
       "id": "SECOND-TARGET-REMOTE-DESKTOP-GUI-WITNESS",
       "state": "blocked",
       "scope": "第二真实目标额外桌面正文/composer可视见证及搜索浮层恢复；本机已过原生往返和草稿冷恢复不重跑",
-      "reason": "实际原生工具elementHasNoFrame且截图与live AX不一致；正式应用/账号/绑定/旧原chat未改，GUI未完成不冒称通过。独立canonical84消息/11Run及零新增已实际核对。",
-      "evidenceRefs": ["PHASE1-SECOND-TARGET-DESKTOP-CANONICAL-WITNESS-GUI-BLOCKED-R267"],
+      "reason": "实际原生工具elementHasNoFrame且截图与live AX不一致；正式应用/账号/绑定/旧原chat未改，GUI未完成不冒称通过。独立canonical84消息/11Run及零新增已实际核对。 R269一次只读系统检查仅login-done=true，screenLocked/on-console为unknown，根因仍未确认，不归因用户或盲目要求解锁。",
+      "evidenceRefs": [
+        "PHASE1-SECOND-TARGET-DESKTOP-CANONICAL-WITNESS-GUI-BLOCKED-R267",
+        "MACBOOK-READONLY-SESSION-STATE-UNKNOWN-R269"
+      ],
       "owner": "当前主协调会话接续GUI证据缺口，MacBook专用会话仅收尾必要私有helper",
       "nextAction": "保留该GUI未验/恢复未证事实；在可靠正常UI入口可用时只补这一视觉范围，不重做源侧隔离或重新配对，不为工具故障重启正式应用。"
     }
@@ -22755,10 +22883,26 @@
       }
     },
     {
-      "component": "F28 iOS最终策略候选（原GUI证据限定复用，未安装）",
-      "baseCommit": "34f86eb9a92ce76e7b6a6a54341f5e0f0eb8d3a1",
-      "verification": "包1321f594/独立bundle核实；最终原生构建、parity、契约、53回执通过。原0e3f真实GUI opened分支不变，按两注册适配器策略等价复用；源码待提交。",
-      "evidenceRefs": ["F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268"]
+      "component": "F28 iOS源码已合PR189；最终1321包限定匹配原GUI",
+      "baseCommit": "3ca92dad96de8d70d032d042a3c2d2b281bb4142",
+      "verification": "PR189已合main5cad53fe；实际构建基准34f，5个最终原生源与3ca交付提交逐hash一致。1321包未安装，普通opened按R266/268限定复用，正式部署未声明。",
+      "evidenceRefs": [
+        "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269",
+        "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268"
+      ],
+      "candidateTree": "fdff0458667f175ced39bb6522ae18c251556f45",
+      "buildBaseCommit": "34f86eb9a92ce76e7b6a6a54341f5e0f0eb8d3a1",
+      "mainMergeCommit": "5cad53fe17008f9fb2cafda7bcc1b236c24273ed"
+    },
+    {
+      "component": "F09已验安全整数修复主线交付",
+      "baseCommit": "0b8d065349e60ce4f13c94178fe6a0926e0a7688",
+      "mainMergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+      "verification": "准确原生产/测试补丁集成，模拟器编译/辅助检查通过。当前新组合未安装或新增GUI验收；原恢复及去重证据分别保留。",
+      "evidenceRefs": [
+        "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
+        "F09-PR191-ACTUAL-MAIN-MERGE-R271"
+      ]
     }
   ],
   "sourcePinHistory": [
@@ -26648,8 +26792,8 @@
     }
   ],
   "executionFocus": {
-    "summary": "用户指出的三个核心前置/开发缺口已有实际结果：普通长历史、第二目标原生往返与草稿冷恢复、F28实际打开已过。最终iOS候选补验通过，准备独立提交；桌面提交仍待具体租约恢复确认及原失败批诊断。23行原交付复核仅再匹配Markdown原阅读，其他原通过与候选边界保持。",
-    "firstRun": "完成iOS F28源码PR；桌面租约确认待回期间只继续不依赖它的交付/证据收尾。恢复后沿原正式记录定位第15批错误，合并桌面F28。后续优先审查并合入已通过的候选差异，不重测原普通流程。",
+    "summary": "F09原已验安全整数修复已合PR191/main d5ca4c74，原同会话恢复/去重证据分别复用。F28 iOS已合PR189；桌面首次opened已过，未知回执持久恢复仍缺且三项租约具体恢复确认待答。配对/长历史/隔离不重测。",
+    "firstRun": "完成本次状态文档交付并清理F09无依赖环境，接着交付F08已验认证地址获取候选；桌面仍等待具体租约恢复确认，恢复后先查原失败批，再补F28持久恢复及桌面PR。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "异常协议帧、DPoP 轮换和拒绝细节、故障码矩阵、极限文件和复杂断点、性能及投递压力单独排在常用功能之后。同一父项的普通用户动作可先验收，相关保护条件继续执行；若缺陷阻断常用流程，随该流程修复。",
     "desktop": [
@@ -26684,7 +26828,7 @@
               "F05": "能读历史时可正常阅读。桌面离线或不支持控制时，入口和提示准确，恢复在线后可用。",
               "F06": "第二真实MacBook目标的普通连接、A/B往返和各自草稿冷恢复已通过，关联已合PR142/桌面59，不重复验收。",
               "F07": "设备授权/legacy确认原代码已随PR142/桌面59合入，按用户约定复用；本次真实目标automatic连接，不冒称新增人工确认。授权恢复/拒绝单独跟进。",
-              "F09": "已配对用户断线一次后继续看原会话，状态能回到在线，显示仍是同一条对话。"
+              "F09": "对应原验收的安全整数修复已合PR191，沿原既有地址同会话恢复/去重证据复用；新主线组合未新增运行。地址变化另随F08，授权恢复单列。"
             }
           },
           {
@@ -26698,7 +26842,7 @@
               "F17": "普通长历史上一页已完成，PR142 I2.4/桌面59原交付直接复用；本次26轮真实聊天的模拟器向上读取和桌面末轮核对已留证，不再重复验收。",
               "F18": "普通流式回复与双端最终一致已通过，权威快照恢复及子运行补证按原场景排期。",
               "F20": "当前普通工具展开阅读已通过；补实际 Diff 的用户可见内容。",
-              "F28": "两端具名打开已补并真实验收通过：手机一次操作，原窗口同chat，唯一opened回执，无新输入。当前完成两仓PR合并及清理。"
+              "F28": "首次普通主动打开已真实通过，iOS已合PR189；桌面提交及未知后确认回执持久化待补。原流程不重验。"
             }
           },
           {
@@ -26992,16 +27136,29 @@
       "phase": "core",
       "behavior": "同会话断线后恢复订阅和原操作",
       "acceptanceCriteria": "复用 R250/R252 的恢复及去重通过范围，剩余授权恢复关联 F07",
-      "state": "passed-awaiting-merge",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F09-ACTUAL-SAME-ACTOR-CHECKPOINT-FIVE-ORIGINAL-DEDUP-R250",
-        "F09-NEW96C4-ACTUAL-ORIGINAL-ENCRYPTED-RELAY-CURSOR-R252"
+        "F09-NEW96C4-ACTUAL-ORIGINAL-ENCRYPTED-RELAY-CURSOR-R252",
+        "F09-MAIN-CANDIDATE-DEPENDENCY-AND-EXACT-PATCH-REVIEW-R270",
+        "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
+        "F09-PR191-ACTUAL-MAIN-MERGE-R271"
       ],
-      "pullRequests": [],
-      "nextAction": "核对应提交和合并范围，复用原验收；仅完成交付或受影响补验",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00"
+      "pullRequests": ["BCAI/agent-hub-app#191"],
+      "nextAction": "既有地址恢复/去重对应源码已合PR191，按原验收范围复用，不重复执行。地址变化随F08原候选交付；授权生命周期其余断言按F07/AC04原清单。",
+      "updatedAt": "2026-11-18T18:22:20.580382+00:00",
+      "sourceDeliveries": {
+        "ios": {
+          "state": "merged",
+          "pullRequest": "BCAI/agent-hub-app#191",
+          "headCommit": "0b8d065349e60ce4f13c94178fe6a0926e0a7688",
+          "mergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+          "formalDeployment": "not-performed",
+          "currentMergedPackageGui": "not-run; original R250/R252 kept separately"
+        }
+      }
     },
     {
       "id": "F12-refresh-workspace",
@@ -27165,12 +27322,34 @@
       "acceptanceBasis": "real-dev",
       "evidenceRefs": [
         "PHASE1-EASYWORK-NAMED-ORIGINAL-DESKTOP-OPEN-R266",
-        "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268"
+        "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268",
+        "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269",
+        "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270"
       ],
-      "pullRequests": [],
-      "nextAction": "先提交合并可独立能力协商的iOS侧；桌面等待已核3项残留租约具体恢复确认，再受控捕获第15批未处理错误并完成其正式PR。普通GUI不重复。",
-      "updatedAt": "2026-11-18T17:13:42.624850+00:00",
-      "deliveryBlocker": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION"
+      "pullRequests": ["BCAI/agent-hub-app#189"],
+      "nextAction": "保留原首次opened通过，不重测；等待已核3项残留租约具体恢复确认，先恢复原第15批错误完整日志，再补原open-status确认持久化及相关边界检查，完成桌面PR。",
+      "updatedAt": "2026-11-18T18:14:33.916364+00:00",
+      "deliveryBlocker": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION",
+      "sourceDeliveries": {
+        "ios": {
+          "state": "merged",
+          "pullRequest": "BCAI/agent-hub-app#189",
+          "headCommit": "3ca92dad96de8d70d032d042a3c2d2b281bb4142",
+          "mergeCommit": "5cad53fe17008f9fb2cafda7bcc1b236c24273ed",
+          "packageSha256": "1321f5945ffcd012e1dec18047a70de5ccaa18dfc65077dab47ab240d3e649c6",
+          "formalDeployment": "not-performed"
+        },
+        "desktop": {
+          "state": "blocked-not-committed",
+          "repository": "BCAI/comfy-desktop",
+          "branch": "codex/easywork-desktop-open-20261118",
+          "baseCommit": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6",
+          "blockerId": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION"
+        }
+      },
+      "unclosedAssertions": [
+        "原open-status后来确认opened后需持久保存，并在进程重启/界面离开后保持；原uncertain错误需允许只读核对，不能重开导航。"
+      ]
     },
     {
       "id": "F37-native-queue",
@@ -28410,6 +28589,31 @@
       "checkedMainCommit": "34f86eb9a92ce76e7b6a6a54341f5e0f0eb8d3a1",
       "checkedAt": "2026-11-18T17:13:42.624850+00:00",
       "basis": "此前已核Gitea元数据缓存，本次Git祖先及实际合并树验收文档复核"
+    },
+    "BCAI/agent-hub-app#189": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 189,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/189",
+      "baseBranch": "main",
+      "state": "merged",
+      "mergeCommit": "5cad53fe17008f9fb2cafda7bcc1b236c24273ed",
+      "headCommit": "3ca92dad96de8d70d032d042a3c2d2b281bb4142",
+      "checkedMainCommit": "5cad53fe17008f9fb2cafda7bcc1b236c24273ed",
+      "checkedAt": "2026-11-18T17:42:13.158324+00:00",
+      "evidenceRef": "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269"
+    },
+    "BCAI/agent-hub-app#191": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 191,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/191",
+      "baseBranch": "main",
+      "state": "merged",
+      "mergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+      "headCommit": "0b8d065349e60ce4f13c94178fe6a0926e0a7688",
+      "checkedMainCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+      "checkedAt": "2026-11-18T18:22:20.580382+00:00",
+      "evidenceRef": "F09-PR191-ACTUAL-MAIN-MERGE-R271",
+      "mergedAt": "2026-11-19T02:20:36+08:00"
     }
   },
   "deliveryWorkflow": {
@@ -28427,9 +28631,9 @@
       "paused": "按原要求暂停",
       "blocked": "有明确外部阻塞"
     },
-    "lastReconciledAt": "2026-11-18T14:53:16.859236+00:00",
+    "lastReconciledAt": "2026-11-18T18:22:20.580382+00:00",
     "sourceHeads": {
-      "BCAI/agent-hub-app/main": "74c6e2ff336c6cda008146fcbea9af11ba18c9f1",
+      "BCAI/agent-hub-app/main": "d5ca4c7427af831343c5c3178c41e135e74a9797",
       "BCAI/comfy-desktop/master": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6"
     }
   },
@@ -28440,13 +28644,13 @@
       "projectId": "01a04624-04e6-7061-85ab-e31626ae90a1",
       "threadId": "01a1ef21-0b25-73c2-8ffd-074282479703",
       "operationId": "126875bc-1c9e-454e-97de-0e57ba077a51",
-      "state": "resources-closed-archive-precondition-unconfirmed",
+      "state": "resources-closed-gui-unresolved-archive-precondition-unconfirmed",
       "owner": "MacBook 128 专用准备会话",
       "deliverables": ["F02-switch-two-paired", "F06-pair-code", "F07-authorize-device"],
       "observedModel": "gpt-6.1-sol",
       "speedParameter": "omitted",
       "observedSpeed": "standard",
-      "updatedAt": "2026-11-18T17:13:42.624850+00:00",
+      "updatedAt": "2026-11-18T17:42:13.158324+00:00",
       "nextAction": "GUI未决/共享TextEdit空文稿由本主会话接续；原专用会话未归档，当前只核到unloaded归档能力。正常卸载owner或适用正式归档入口可用后，只归档准确原thread并独立核确认，不重启共享服务。",
       "targetAgentId": "easywork",
       "targetHostId": "device-86377c62-39dd-4495-8183-a76dce3007e0",
@@ -28468,7 +28672,14 @@
       "requestedEffort": "xhigh",
       "effortObservationLimit": "保留R264的xhigh历史声明；提交回执请求xhigh，但最新运行时history为null，当前实际档位未独立核实。",
       "historicalR264EffortClaim": "xhigh",
-      "observedEffort": null
+      "observedEffort": null,
+      "latestReadinessDiagnostic": {
+        "evidenceRef": "MACBOOK-READONLY-SESSION-STATE-UNKNOWN-R269",
+        "operationId": "7ba9dfd8-62db-4474-b9e9-4486b2e16b42",
+        "screenLocked": "unknown",
+        "onConsole": "unknown",
+        "loginDone": true
+      }
     }
   ]
 }

@@ -231,6 +231,14 @@ actor EasyWorkRemoteSession {
       activeCandidate = replacement.id; activeCandidateInfo = replacement
     }
   }
+  func rememberAuthenticatedCandidates(_ candidates: [AgentConnectionCandidate]) {
+    guard candidates.count <= 32, candidates.allSatisfy({ $0.transportId == "lan-wss" }) else { return }
+    // Preserve Relay and old direct pins for recovery while bounding address growth.
+    updateCandidates(EasyWorkAuthenticatedConnectionCandidates.merging(candidates, into: connection.candidates))
+  }
+  func connectionMetadata() -> AgentConnectionMetadata {
+    AgentConnectionMetadata(title: activeTransportTitle(), updatedConnection: connection)
+  }
   func close() async { closed = true; await disconnect() }
   private func disconnect() async {
     diagnostic("disconnect")
@@ -345,7 +353,9 @@ actor EasyWorkRemoteSession {
           else if message["kind"] as? String == "event" {
             let eventTarget = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(message["target"] ?? [:]))
             guard eventTarget == target else { throw HostServiceError.wrongHost }
-            guard let payload = message["payload"] as? [String: Any], let threadId = payload["threadId"] as? String, let cursor = message["sequence"] as? Int, cursor >= 0 else { throw HostServiceError.invalidResponse }
+            guard let payload = message["payload"] as? [String: Any], let threadId = payload["threadId"] as? String,
+              let cursor = EasyWorkEnvelopeCrypto.wireInteger(message["sequence"])
+            else { throw HostServiceError.invalidResponse }
             threadSequences[threadId] = max(threadSequences[threadId] ?? 0, cursor)
             await eventSignal.signal()
             subagents.accept(eventJson: String(decoding: try easyWorkJSON(payload), as: UTF8.self))

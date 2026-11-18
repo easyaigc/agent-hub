@@ -2397,7 +2397,14 @@
           "REV16-OLD-FOUR-REGRESSIONS-AND-NARROW-SOURCE-REPAIR-R139",
           "REV16-VALIDATED-LOCAL-SAVE-SHARED-CONTRACT-R140"
         ],
-        "currentEvidence": ["F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287"]
+        "currentEvidence": [
+          "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
+          "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290"
+        ],
+        "auxiliaryEvidence": [
+          "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+          "F31-MAIN-BUILD-STAGE-UNUSED-RESOURCES-RELEASED-R291"
+        ]
       },
       "acceptance": {
         "state": "historical-partial",
@@ -2424,12 +2431,12 @@
         "note": "a668手机与d6c5桌面隔离候选已冻结并构建；未合入基准主线或部署最新950目标。 R287: 原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。"
       },
       "execution": {
-        "state": "planned",
-        "ownerRole": "Root owns affected new-main upload interoperability; old-package image executor completed/cleaned"
+        "state": "blocked",
+        "ownerRole": "Root awaits specific target approval; original executor only resource closeout"
       },
-      "nextAction": "普通图片发送/双端打开在原96c4/D8限定通过；保留原始PNG与规范化编码字节差异，实际传输原件一致。主线新UploadCenter的真实EasyWork互通另验，不再重发旧图或重复旧TXT。",
+      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
       "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16"],
-      "updatedAt": "2026-11-18T22:02:17.421150+00:00",
+      "updatedAt": "2026-11-18T22:46:36.231743+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC09", "AC21"],
@@ -5324,8 +5331,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 289,
-  "updatedAt": "2026-11-18T22:14:27.577998+00:00",
+  "revision": 291,
+  "updatedAt": "2026-11-18T22:49:38.294946+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13024,6 +13031,46 @@
       "scope": "C22/main wholecanRunAgain/runAgain/normal confirmationmenu and MobileRules file exact; plain new-text turn bypasses new attachment UploadCenter. Source review itself notGUI pass, actualnative/Desktop separately linked.",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f39-explicit-rerun-menu-guard-and-mapping-main-review.json",
       "sha256": "226c4a547199eb5a122a3856d100322a9305249e81e002871dd0fee166d4ec79"
+    },
+    "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290": {
+      "kind": "source-review",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "Root read-only main/source/current N17 state; fresh simulator preparation delegated Terra medium, actual test not started; original package preserved",
+      "mobileEnvironment": "not-required",
+      "scope": "R289四台账已通过PR200实际合main1989并由root独立逐字节核对。新主线上传互通进入准备：源默认Simulator Keychain组固定，选择全新专用模拟器而不只换bundle、不复制旧身份或缓存。真实N17当前LAN=false/既有2bindings/实际端口已只读核；先核正常发现/配对路径，未就绪不大构建，不动原模拟器。0新用户输入、0新增验收通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-main-upload-native-isolation-preflight.json",
+      "sha256": "25d28493230a26c238bbd376353166e277855cf9dbb10d3d71a152f0ca4d846d"
+    },
+    "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "New iOS26 simulator720 / compiled SDK27 / exact main1989; native connection explicitly not executed, no identity/credential copies",
+      "mobileEnvironment": "not-required",
+      "scope": "准确main1989在全新720模拟器完成编译/安装，冻结ZIP8771、exe7abf及三正确派生扩展ID，root只读核包；JDK注册与全局bundle覆盖的首次环境失败均已恢复，日志保留。正常发现地址证书/完整EasyWork目标与已配对DEV一致，但自动审批先后拒绝构建点击驱动/执行连接测试，认为与授权目标不一致；补只读证明后仍拒绝。0新绑定/0新业务输入，未绕过。已向用户请求仅该具体EasyWork目标的新模拟器绑定确认，待回复；不重复登录确认。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f31-main-upload/root-independent-package-and-bundle-isolation-review.json",
+      "sha256": "b2c38f937171aa3b3c9c72dc75c35f1e626871e62bcc8dd08a746ace958a0e9b"
+    },
+    "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "New iOS26 simulator720 / compiled SDK27 / exact main1989; native connection explicitly not executed, no identity/credential copies",
+      "mobileEnvironment": "not-required",
+      "scope": "自动审批将本机Codex协调Host身份25d82f80与EasyWork应用运行目标device-7b897eea混淆，补齐地址、证书a572及完整target只读证明后，仍以“目标与授权不一致”拒绝实际连接。工具拒绝不得绕过，当前新binding=0/业务输入=0。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-main-pairing-target-authorization-and-product-identity-review.json",
+      "sha256": "2abb7fcd3f39175eccbaebc963de879e3e65653ad3e0027d9117a4b2687837e1"
+    },
+    "F31-MAIN-BUILD-STAGE-UNUSED-RESOURCES-RELEASED-R291": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Ended owned build stage only; no GUI business assertion",
+      "mobileEnvironment": "not-required",
+      "scope": "已结束主App构建阶段的独占derived约1.1GiB、工作树.build约103MiB/.gradle约2.5MiB及clean QA工作树/无独有提交分支已核后回收；仅该工作树idle Gradle44604精确退出。root独立核路径、Git登记/分支消失及ZIP/driver保留。卷实测35,555,270,656→36,813,725,696字节，复核36,782,080,000；不是目录块数当独占物理回收量。driver约144MiB、已装新Sim/ZIP36MiB和临时LAN保留给待批准连接/当前主线上传/F12，满足完成或放弃条件再释放。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f31-main-upload/root-stage-cleanup-review.json",
+      "sha256": "ccb11558500f6dde3ee7a7451b47035479a007d5669594d112954efb91ac4ef7"
     }
   },
   "openItems": [
@@ -20790,6 +20837,30 @@
         "F39-RERUN-ROOT-NATIVE-CANONICAL-DESKTOP-SOURCE-REVIEW-R289",
         "F39-RERUN-MENU-GUARD-MAPPING-BOUNDED-MAIN-MATCH-R289"
       ]
+    },
+    {
+      "revision": 290,
+      "date": "2026-11-19",
+      "kind": "r289-main-verified-new-upload-fresh-simulator-preparation",
+      "scope": "R289四台账已通过PR200实际合main1989并由root独立逐字节核对。新主线上传互通进入准备：源默认Simulator Keychain组固定，选择全新专用模拟器而不只换bundle、不复制旧身份或缓存。真实N17当前LAN=false/既有2bindings/实际端口已只读核；先核正常发现/配对路径，未就绪不大构建，不动原模拟器。0新用户输入、0新增验收通过。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290"]
+    },
+    {
+      "revision": 291,
+      "date": "2026-11-19",
+      "kind": "main-upload-new-native-package-ready-specific-target-approval-blocked",
+      "scope": "准确main1989在全新720模拟器完成编译/安装，冻结ZIP8771、exe7abf及三正确派生扩展ID，root只读核包；JDK注册与全局bundle覆盖的首次环境失败均已恢复，日志保留。正常发现地址证书/完整EasyWork目标与已配对DEV一致，但自动审批先后拒绝构建点击驱动/执行连接测试，认为与授权目标不一致；补只读证明后仍拒绝。0新绑定/0新业务输入，未绕过。已向用户请求仅该具体EasyWork目标的新模拟器绑定确认，待回复；不重复登录确认。 已结束主App构建阶段的独占derived约1.1GiB、工作树.build约103MiB/.gradle约2.5MiB及clean QA工作树/无独有提交分支已核后回收；仅该工作树idle Gradle44604精确退出。root独立核路径、Git登记/分支消失及ZIP/driver保留。卷实测35,555,270,656→36,813,725,696字节，复核36,782,080,000；不是目录块数当独占物理回收量。driver约144MiB、已装新Sim/ZIP36MiB和临时LAN保留给待批准连接/当前主线上传/F12，满足完成或放弃条件再释放。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
+        "F31-MAIN-BUILD-STAGE-UNUSED-RESOURCES-RELEASED-R291"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -22233,6 +22304,18 @@
       ],
       "owner": "当前主协调会话接续GUI证据缺口，MacBook专用会话仅收尾必要私有helper",
       "nextAction": "保留该GUI未验/恢复未证事实；在可靠正常UI入口可用时只补这一视觉范围，不重做源侧隔离或重新配对，不为工具故障重启正式应用。"
+    },
+    {
+      "id": "F31-NEW-MAIN-SIM-EASYWORK-TARGET-APPROVAL",
+      "state": "blocked",
+      "scope": "New main UploadCenter live EasyWork interoperability setup; prior old96c4 acceptance remains",
+      "reason": "自动审批将本机Codex协调Host身份25d82f80与EasyWork应用运行目标device-7b897eea混淆，补齐地址、证书a572及完整target只读证明后，仍以“目标与授权不一致”拒绝实际连接。工具拒绝不得绕过，当前新binding=0/业务输入=0。",
+      "evidenceRefs": [
+        "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
+      ],
+      "owner": "Root specific-target approval and resource closeout",
+      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。"
     }
   ],
   "auxiliaryValidation": {
@@ -23767,6 +23850,18 @@
         "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
         "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
         "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
+      ]
+    },
+    {
+      "component": "F31新主线独立模拟器包（仅编译/安装，连接审批阻塞）",
+      "baseCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "candidateTree": "badff2a8abf50837d2231688132a126a4483c0eb",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "executableSha256": "7abf2539fdb5e4f7ff2ec442b2727b0bf29972a4bce4ff6d6c8ab5ab2a288cba",
+      "verification": "Fresh simulator only; compiled SDK27/runtime26 and installed. No new binding/input; old E022/96c4 untouched, no current upload pass.",
+      "evidenceRefs": [
+        "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
       ]
     }
   ],
@@ -27657,8 +27752,8 @@
     }
   ],
   "executionFocus": {
-    "summary": "R289：普通重新运行已完成双端见证并对账既有主线，普通图片也在原组合限定通过。第一阶段未全完：主线新上传管线的真实EasyWork互通、原排队项执行、离线/恢复可见流程、目录刷新及后续问题候选等继续按具体ID。F28租约确认和额外远端GUI仍独立保留。",
-    "firstRun": "先冻结主线新UploadCenter及真实D8目标，核独立验收App/持久化兼容和可恢复安装路径，只补受影响的上传互通；不在旧包重发TXT/图片，不重复已过配对/搜索/长历史/控制/草稿。",
+    "summary": "R291：R289已合PR200；新主线包在全新模拟器已构建安装，但新设备连接遭自动审批目标身份拒绝，现等待具体目标确认。旧包普通TXT/PNG与其他核心通过保留；第一阶段未全完。F28租约解除确认与第二目标额外GUI仍分别保留。",
+    "firstRun": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "异常协议帧、DPoP 轮换和拒绝细节、故障码矩阵、极限文件和复杂断点、性能及投递压力单独排在常用功能之后。同一父项的普通用户动作可先验收，相关保护条件继续执行；若缺陷阻断常用流程，随该流程修复。",
     "desktop": [
@@ -28596,11 +28691,14 @@
       "evidenceRefs": [
         "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
         "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
-        "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287"
+        "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
+        "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290",
+        "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
       ],
       "pullRequests": [],
-      "nextAction": "原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。",
-      "updatedAt": "2026-11-18T21:48:48.002249+00:00",
+      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
+      "updatedAt": "2026-11-18T22:46:36.231743+00:00",
       "mergedScopeReview": {
         "evidenceRef": "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
         "retainedBoundary": "原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。",
@@ -28620,11 +28718,14 @@
         "PHASE1-ORDINARY-NORMALIZED-IMAGE-SINGLE-SEND-AND-DUAL-OPEN-R288",
         "F31-IMAGE-ROOT-CANONICAL-SINGLE-RUN-NATIVE-AND-FILES-REVIEW-R288",
         "F31-IMAGE-ROOT-INDEPENDENT-PIXELS-UNCHANGED-R288",
-        "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288"
+        "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288",
+        "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290",
+        "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
       ],
       "pullRequests": [],
-      "nextAction": "普通图片发送/双端打开在原96c4/D8限定通过；保留原始PNG与规范化编码字节差异，实际传输原件一致。主线新UploadCenter的真实EasyWork互通另验，不再重发旧图或重复旧TXT。",
-      "updatedAt": "2026-11-18T22:02:17.421150+00:00"
+      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
+      "updatedAt": "2026-11-18T22:46:36.231743+00:00"
     },
     {
       "id": "F31-upload-failure",

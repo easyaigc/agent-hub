@@ -2,6 +2,45 @@ import XCTest
 @testable import FilePreviewKit
 
 final class PreviewDocumentTests: XCTestCase {
+  func testSpacedChineseDestinationsRemainClickableAcrossInlineContainers() throws {
+    let source = """
+    # [标题](<资料 目录/子 文档.md>)
+
+    **[加粗链接](<../孙 文档.md#深层目标>)**
+
+    - [列表链接](<100%25/验证 (记录)%23原文.md>)
+
+    [IPv6](https://[2001:db8::1]/report)
+
+    [百分号](<100% 完成.md>)
+
+    | 文件 | 说明 |
+    | --- | --- |
+    | [表格链接](<资料 目录/子 文档.md>) | 完整 |
+    """
+    let document = try PreviewDocument.parse(Data(source.utf8))
+    XCTAssertEqual(document.source, source)
+    let expected = ["标题", "加粗链接", "列表链接"]
+    for label in expected {
+      let block = try XCTUnwrap(document.blocks.first { $0.text == label })
+      XCTAssertEqual(String(block.attributed.characters).trimmingCharacters(in: .whitespacesAndNewlines), label)
+      XCTAssertEqual(block.attributed.runs.compactMap(\.link).count, 1)
+    }
+    let strong = try XCTUnwrap(document.blocks.first { $0.text == "加粗链接" })
+    let link = try XCTUnwrap(strong.attributed.runs.compactMap(\.link).first)
+    XCTAssertEqual(link.absoluteString.removingPercentEncoding, "../孙 文档.md#深层目标")
+    let list = try XCTUnwrap(document.blocks.first { $0.text == "列表链接" })
+    XCTAssertEqual(list.attributed.runs.compactMap(\.link).first?.absoluteString.removingPercentEncoding,
+      "100%/验证 (记录)#原文.md")
+    let table = try XCTUnwrap(document.blocks.first { if case .table = $0.kind { return true }; return false })
+    XCTAssertEqual(String(table.attributedRows[1][0].characters), "表格链接")
+    XCTAssertEqual(table.attributedRows[1][0].runs.compactMap(\.link).count, 1)
+    let ipv6 = try XCTUnwrap(document.blocks.first { $0.text == "IPv6" })
+    XCTAssertEqual(ipv6.attributed.runs.compactMap(\.link).first?.absoluteString, "https://[2001:db8::1]/report")
+    let percent = try XCTUnwrap(document.blocks.first { $0.text == "百分号" })
+    XCTAssertEqual(percent.attributed.runs.compactMap(\.link).first?.absoluteString.removingPercentEncoding, "100% 完成.md")
+  }
+
   func testGFMTableEscapedPipesListsAndDuplicateChineseHeadings() throws {
     let text = "# 工具清单\n\n# 工具清单\n\n| 工具 | 说明 |\n| --- | --- |\n| `browser` | a\\|b |\n\n- [x] 已完成\n- [ ] 待处理\n\n<script>alert(1)</script>\n"
     let value = try PreviewDocument.parse(Data(text.utf8))

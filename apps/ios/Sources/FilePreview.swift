@@ -59,9 +59,13 @@ struct FilePreviewItem: Identifiable {
   let name: String
   let mediaType: String
   let scopeKey: String
+  let file: RemoteAttachment
+  let client: Client
+  var initialAnchor: String? = nil
   var id: String { scopeKey + "\n" + url.absoluteString }
 
   init(url: URL, file: RemoteAttachment, client: Client) {
+    self.file = file; self.client = client
     self.url = url; name = file.name; mediaType = file.mediaType
     let target = client.readingTarget ?? client.agentConnection?.target
     let machine = target.map { SharedMobileRules.machineReadingKey($0, threadId: file.threadId) }
@@ -147,6 +151,9 @@ private struct DocumentFilePreview: View {
   @State private var systemURL: URL?
   @State private var linkError: String?
   @State private var webURL: PreviewWebLink?
+  @State private var linkedFile: FilePreviewItem?
+  @State private var pendingLink: URL?
+  @State private var selectedLink: URL?
   @FocusState private var searchFocused: Bool
 
   private var positionKey: String { item.scopeKey + ":" + (document?.digest ?? "") }
@@ -212,8 +219,37 @@ private struct DocumentFilePreview: View {
       }
       .sheet(item: $share) { FileShareSheet(url: $0.url) }
       .sheet(item: $webURL) { MessageWebPreview(url: $0.url) }
+      .filePreview($linkedFile)
+      .overlay(alignment: .bottom) {
+        if pendingLink != nil {
+          HStack {
+            ProgressView(); Text(L10n.tr("正在准备文件…"))
+            Button(L10n.tr("取消")) { pendingLink = nil }
+          }.padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .padding().accessibilityIdentifier("file-preview-link-loading")
+        }
+      }
+      .task(id: pendingLink) {
+        guard let url = pendingLink, let document else { return }
+        defer { if !Task.isCancelled { pendingLink = nil } }
+        do {
+          let service = try AgentClients.resolve(item.client)
+          let file = try await service.resolveDocumentFile(item.client, file: item.file, reference: url.absoluteString, sourceSha256: document.digest)
+          try Task.checkCancellation()
+          let local = try await service.download(item.client, file: file)
+          try Task.checkCancellation()
+          var next = FilePreviewItem(url: local, file: file, client: item.client)
+          next.initialAnchor = url.fragment?.removingPercentEncoding
+          linkedFile = next
+        } catch {
+          if !Task.isCancelled { linkError = error.localizedDescription }
+        }
+      }
       .quickLookPreview($systemURL)
       .alert(L10n.tr("无法打开链接"), isPresented: Binding(get: { linkError != nil }, set: { if !$0 { linkError = nil } })) {
+        if let selectedLink {
+          Button(L10n.tr("复制链接")) { UIPasteboard.general.string = selectedLink.absoluteString }
+        }
         Button(L10n.tr("好"), role: .cancel) { linkError = nil }
       } message: { Text(linkError ?? "") }
       .environment(\.openURL, OpenURLAction { url in openLink(url); return .handled })
@@ -229,6 +265,9 @@ private struct DocumentFilePreview: View {
           try Task.checkCancellation()
           document = value
           position = FilePreviewPositions.shared.get(item.scopeKey + ":" + value.digest)
+          if let anchor = item.initialAnchor {
+            jump = value.headings.first(where: { $0.anchor == anchor })?.id
+          }
         } catch {
           guard !Task.isCancelled else { return }
           switch error {
@@ -310,6 +349,8 @@ private struct DocumentFilePreview: View {
   }
 
   private func openLink(_ url: URL) {
+    guard pendingLink == nil else { return }
+    selectedLink = url
     let kind = FilePreviewRules.shared.linkKind(reference: url.absoluteString)
     if kind == "anchor" {
       let anchor = String(url.absoluteString.dropFirst()).removingPercentEncoding ?? ""
@@ -319,6 +360,8 @@ private struct DocumentFilePreview: View {
       webURL = PreviewWebLink(url: url)
     } else if kind == "external" {
       UIApplication.shared.open(url)
+    } else if case .computerFile = MessageLinkDestination.resolve(url) {
+      pendingLink = url
     } else {
       linkError = L10n.tr("此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。")
     }

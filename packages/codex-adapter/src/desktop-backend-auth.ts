@@ -3,7 +3,11 @@ import { spawn } from 'node:child_process';
 import { createJsonLineReader } from './json-lines.js';
 
 /** Official metadata-only auth provider. Fixed methods; no login, refresh, Turn or tool execution. */
-export async function readDesktopBackendAuth(executable: string, codexHome: string) {
+export async function readDesktopBackendAuth(
+  executable: string,
+  codexHome: string,
+  scope: 'authorization' | 'identity' = 'authorization',
+) {
   let startupTimeout = 15000;
   const child = withWindowsProcessCreation(15000, (remaining) => {
     startupTimeout = remaining;
@@ -88,9 +92,11 @@ export async function readDesktopBackendAuth(executable: string, codexHome: stri
     });
     child.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
     const auth = await call('getAuthStatus', { includeToken: true, refreshToken: false });
-    const account = await call('account/read', { refreshToken: false });
-    const config = await call('config/read', { includeLayers: false });
-    const requirements = await call('configRequirements/read', {});
+    // Receipt access needs fresh identity, not network workspace routing. Actual
+    // upstream submission still uses the complete authorization/policy read.
+    const account = scope === 'identity' ? {} : await call('account/read', { refreshToken: false });
+    const config = scope === 'identity' ? {} : await call('config/read', { includeLayers: false });
+    const requirements = scope === 'identity' ? {} : await call('configRequirements/read', {});
     result = { auth, account, config, requirements };
   } finally {
     clearTimeout(timer);

@@ -396,6 +396,31 @@ struct HostService {
     else { throw HostServiceError.wrongHost }
     return file
   }
+  static func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment {
+    struct Resolution: Decodable {
+      let hostId: String; let threadId: String; let sourceAttachmentId: String; let reference: String
+      let readTarget: AgentRuntimeTarget; let attachment: RemoteAttachment
+    }
+    let result: Resolution
+    do {
+      result = try await load(request(
+        try url(client, "v1/attachments/resolve-document-link", ["threadId": file.threadId,
+          "sourceAttachmentId": file.id, "reference": reference, "sourceSha256": sourceSha256]), token: CredentialVault.token(client.id)))
+    } catch HostServiceError.rejected(404, _) {
+      throw HostServiceError.message(L10n.tr("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"))
+    }
+    let current = result.attachment
+    guard result.hostId == client.id, result.threadId == file.threadId,
+      result.sourceAttachmentId == file.id, result.reference == reference,
+      client.readingTarget == nil || result.readTarget == client.readingTarget,
+      current.hostId == client.id, current.threadId == file.threadId,
+      !current.id.isEmpty, current.id != ".", current.id != "..",
+      (current.id as NSString).lastPathComponent == current.id,
+      !current.name.isEmpty, (current.name as NSString).lastPathComponent == current.name,
+      current.sizeBytes >= 0, current.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil
+    else { throw HostServiceError.wrongHost }
+    return current
+  }
   static func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL {
     try validateResource(client, file: file)
     progress?(FileDownloadProgress())

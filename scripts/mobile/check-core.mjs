@@ -90,6 +90,14 @@ const suites = [];
 for (const [runtime, file] of [
   [
     'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.UsageRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.UsageRulesTest.xml',
+  ],
+  [
+    'jvm',
     '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.MessageLinkRulesTest.xml',
   ],
   [
@@ -259,29 +267,31 @@ for (const [runtime, file] of [
   const head = xml.match(/<testsuite\s[^>]+>/)?.[0];
   assert(head, 'Missing actual test suite');
   const number = (key) => Number(head.match(new RegExp(key + '="(\\d+)"'))?.[1]);
-  const expectedTests = file.includes('GenerationPreferenceRulesTest')
-    ? 1
-    : file.includes('WorkspaceArchiveRulesTest')
-      ? 5
-      : file.includes('TaskHubRulesTest') ||
-          file.includes('ThreadForkRulesTest') ||
-          file.includes('PrivateConnectionRulesTest')
-        ? 4
-        : file.includes('WorkspaceSidebarRulesTest')
-          ? 3
-          : file.includes('V9SessionRulesTest')
-            ? 4
-            : file.includes('ChatSearchRulesTest') || file.includes('ChatManagementRulesTest')
-              ? 5
-              : file.includes('SessionPoliciesTest')
-                ? 14
-                : file.includes('RuntimeIdentityTest')
-                  ? 4
-                  : file.includes('ThreadSyncTest')
-                    ? 7
-                    : file.includes('ReplyRecoveryTest')
-                      ? 8
-                      : 3;
+  const expectedTests = file.includes('UsageRulesTest')
+    ? 6
+    : file.includes('GenerationPreferenceRulesTest')
+      ? 1
+      : file.includes('WorkspaceArchiveRulesTest')
+        ? 5
+        : file.includes('TaskHubRulesTest') ||
+            file.includes('ThreadForkRulesTest') ||
+            file.includes('PrivateConnectionRulesTest')
+          ? 4
+          : file.includes('WorkspaceSidebarRulesTest')
+            ? 3
+            : file.includes('V9SessionRulesTest')
+              ? 4
+              : file.includes('ChatSearchRulesTest') || file.includes('ChatManagementRulesTest')
+                ? 5
+                : file.includes('SessionPoliciesTest')
+                  ? 15
+                  : file.includes('RuntimeIdentityTest')
+                    ? 4
+                    : file.includes('ThreadSyncTest')
+                      ? 7
+                      : file.includes('ReplyRecoveryTest')
+                        ? 8
+                        : 3;
   assert.equal(number('tests'), expectedTests);
   for (const key of ['failures', 'errors', 'skipped']) assert.equal(number(key), 0);
   suites.push({

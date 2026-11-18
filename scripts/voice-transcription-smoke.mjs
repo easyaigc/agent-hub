@@ -98,6 +98,18 @@ createInterface({input:process.stdin}).on('line', line => {
     const first = await adapter.readiness();
     assert.equal(first.available, true);
     assert.equal(first.principal, sha(Buffer.from(JSON.stringify(['account-one', 'user-one']))));
+    const beforeIdentity = (await readFile(join(directory, 'calls.jsonl'), 'utf8'))
+      .trim()
+      .split('\n').length;
+    assert.equal(await adapter.identity(), first.principal);
+    assert.deepEqual(
+      (await readFile(join(directory, 'calls.jsonl'), 'utf8'))
+        .trim()
+        .split('\n')
+        .slice(beforeIdentity)
+        .map((line) => JSON.parse(line).method),
+      ['initialize', 'getAuthStatus'],
+    );
     claims.sub = 'user-two';
     config.token =
       'header.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.signature';
@@ -441,6 +453,137 @@ test('a delayed transcribing status read cannot overwrite a durable completed re
     upstream.resolve(text);
     await Promise.allSettled([...runs.tasks, ...(pendingStatus ? [pendingStatus] : [])]);
     readObserver?.mock.restore();
+    runs.restore();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('fresh identity reads avoid routing I/O and reject account changes without caching tokens', async () => {
+  const adapter = new DesktopTranscription();
+  const calls = [];
+  let subject = 'one';
+  adapter.authRead = async (scope) => {
+    calls.push(scope);
+    return {
+      auth: {
+        authMethod: 'chatgpt',
+        authToken:
+          'header.' +
+          Buffer.from(
+            JSON.stringify({
+              sub: subject,
+              exp: Date.now() / 1000 + 3600,
+              'https://api.openai.com/auth': { chatgpt_account_id: 'account' },
+            }),
+          ).toString('base64url') +
+          '.signature',
+      },
+    };
+  };
+  try {
+    const original = await adapter.identity();
+    subject = 'two';
+    assert.notEqual(await adapter.identity(), original);
+    subject = '';
+    await expectStatus(adapter.identity(), 401);
+    assert.deepEqual(calls, ['identity', 'identity', 'identity']);
+    adapter.close();
+    await expectStatus(adapter.identity(), 503);
+    assert.equal(calls.length, 3);
+  } finally {
+    adapter.close();
+  }
+});
+
+test('status observes completion during identity I/O and long waits wake on durable completion without replay', async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'voice-wait-')));
+  const upstream = Promise.withResolvers();
+  let currentPrincipal = principal,
+    identityHook = async () => {},
+    reads = 0,
+    calls = 0;
+  const transcriber = {
+    readiness: async () => ({ available: true, reason: null, principal }),
+    identity: async () => {
+      reads++;
+      await identityHook();
+      return currentPrincipal;
+    },
+    transcribe: async () => {
+      calls++;
+      return upstream.promise;
+    },
+  };
+  const broker = new VoiceTranscriptions('voice-test-host', directory, transcriber);
+  const runs = observeRuns(broker);
+  try {
+    const input = manifest();
+    await broker.prepare(input);
+    await broker.upload(input.operationId, wave);
+    assert.equal(
+      (await broker.status(input.operationId, 5)).phase,
+      'transcribing',
+      'Bounded wait must time out without submitting again',
+    );
+    await expectStatus(broker.status(input.operationId, 20_001), 400);
+    const entered = Promise.withResolvers();
+    identityHook = async () => {
+      identityHook = async () => {};
+      entered.resolve();
+    };
+    const waiting = broker.status(input.operationId, 20_000);
+    await entered.promise;
+    upstream.resolve('completed once');
+    const result = await waiting;
+    assert.equal(result.phase, 'completed');
+    assert.equal(result.text, 'completed once');
+    assert.equal(calls, 1);
+    currentPrincipal = '2'.repeat(64);
+    await expectStatus(broker.status(input.operationId, 20_000), 403);
+    assert(reads >= 4);
+  } finally {
+    upstream.resolve('completed once');
+    await Promise.allSettled(runs.tasks);
+    runs.restore();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('an account change during a waiting receipt cannot disclose its eventual text', async () => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'voice-wait-identity-')));
+  const upstream = Promise.withResolvers(),
+    entered = Promise.withResolvers();
+  let currentPrincipal = principal,
+    observe = false,
+    calls = 0;
+  const transcriber = {
+    readiness: async () => ({ available: true, reason: null, principal }),
+    identity: async () => {
+      if (observe) entered.resolve();
+      return currentPrincipal;
+    },
+    transcribe: async () => {
+      calls++;
+      return upstream.promise;
+    },
+  };
+  const broker = new VoiceTranscriptions('voice-test-host', directory, transcriber),
+    runs = observeRuns(broker);
+  try {
+    const input = manifest();
+    await broker.prepare(input);
+    await broker.upload(input.operationId, wave);
+    observe = true;
+    const waiting = broker.status(input.operationId, 20_000);
+    const rejected = expectStatus(waiting, 403);
+    await entered.promise;
+    currentPrincipal = '2'.repeat(64);
+    upstream.resolve('private original text');
+    await rejected;
+    assert.equal(calls, 1);
+  } finally {
+    upstream.resolve('private original text');
+    await Promise.allSettled(runs.tasks);
     runs.restore();
     await rm(directory, { recursive: true, force: true });
   }

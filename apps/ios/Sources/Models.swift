@@ -397,6 +397,21 @@ struct WorkspaceSnapshot: Codable {
   var sidebar: WorkspaceSidebar? = nil
 }
 
+struct SubagentHistorySnapshot: Decodable {
+  struct Child: Decodable, Identifiable { let id: String; let title: String; let status: String }
+  let version: Int
+  let hostId: String
+  let readTarget: AgentRuntimeTarget
+  let parentThreadId: String
+  let messageId: String
+  let children: [Child]
+  let childId: String
+  let threadId: String
+  let source: String
+  let messages: [ChatMessage]
+  let nextCursor: String?
+}
+
 struct HistorySnapshot: Codable {
   var readTarget: AgentRuntimeTarget? = nil
   let hostId: String
@@ -512,6 +527,10 @@ struct DeliveryReceipt: Identifiable, Codable, Equatable {
   var queueSyncError: String? = nil
   var noticeContext: String? = nil
   var laterTurnId: String? = nil
+  var submissionState: String? = nil
+  var isUnsubmittedFailure: Bool {
+    state == "failed" && turnId?.isEmpty != false && submissionState == "not-submitted"
+  }
   var failureTitle: String {
     turnId?.isEmpty == false ? L10n.tr("任务执行失败") : L10n.tr("消息提交失败")
   }
@@ -578,6 +597,8 @@ struct ReplyRecoveryRecord: Codable {
   var inspection: ReplyDeliveryInspection? = nil
   var retryConsumed = false
   var sharingScope: AISharingScope? = nil
+  var resentAs: String? = nil
+  var resendDisabled: Bool? = nil
 }
 struct ReplyDeliveryInspection: Codable {
   struct Evidence: Codable {
@@ -664,6 +685,7 @@ enum ReplyRecoveryPolicy {
     var restored = record
     restored.phase = "uncertain"
     restored.inspection = nil
+    restored.resendDisabled = true
     return restored
   }
 }

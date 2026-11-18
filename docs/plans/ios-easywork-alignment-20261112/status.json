@@ -939,7 +939,9 @@
           "F08-ORDINARY-RELAY-UI-INDEPENDENT-COLD-FIVE-LAN-AND-REV25-SCOPED-PASS-R245",
           "F08-FINAL-WIRED759S-3244-SOURCE-CHECK-AND-STAGE-CLEANUP-R246",
           "F08-C22-EXACT13-LOCAL-SAVE-NATIVE206-04CEB-EQUIVALENCE-R246",
-          "F08-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R249"
+          "F08-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R249",
+          "F08-FINAL-MAIN-FULL-CHECK-AND-SIMULATOR-BUILD-R275",
+          "F08-PR193-ACTUAL-MAIN-MERGE-R275"
         ]
       },
       "acceptance": {
@@ -1003,8 +1005,9 @@
         }
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "本地 iOS 2172742 与真实 04ceb 包的 206 项原生输入等价。包实际构建自 4b60632 与工作树 5033448。桌面验收使用 D8 6138a7a，正式集成部署待交付。"
+        "state": "integrated-not-deployed",
+        "note": "原已验认证地址获取/保存对应源码已合PR193/main7d4cb547；原三偏好/冷恢复通过范围保留。新bundle实际编译通过但未安装，正式部署未执行，新组合不新增GUI通过。",
+        "evidenceRefs": ["F08-PR193-ACTUAL-MAIN-MERGE-R275"]
       },
       "execution": {
         "state": "closed",
@@ -1012,7 +1015,7 @@
       },
       "nextAction": "F08 阶段完成。继续 F09 同一会话的真实订阅检查点、加密会话重建和原操作去重。",
       "openItemIds": ["REV25"],
-      "updatedAt": "2026-11-16T10:09:50.052677+00:00",
+      "updatedAt": "2026-11-18T18:56:34.439508+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC05"],
@@ -1370,7 +1373,10 @@
           "AC06-REAL-CATALOG-CURSOR-HISTORY-CANONICAL-REVIEW-R147",
           "AC06-REAL-FULLTEXT-SEARCH-LOCATE-AND-SIDEBAR-UI-R147"
         ],
-        "currentEvidence": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"]
+        "currentEvidence": [
+          "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+          "F13-ORDINARY-SEARCH-ALREADY-MERGED-EXACT-SCOPE-R274"
+        ]
       },
       "delivery": {
         "state": "target-assembly-unverified",
@@ -1382,7 +1388,7 @@
       },
       "nextAction": "核当前数据接口和源版本，补历史/事件/搜索或子代理未覆盖断言。",
       "openItemIds": [],
-      "updatedAt": "2026-11-16T15:12:11.911563+00:00",
+      "updatedAt": "2026-11-18T18:40:10.629949+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC06"],
@@ -1466,28 +1472,45 @@
         "note": "历史状态保留；本次未执行业务验收，后续按实际源码/运行包/场景匹配证据。"
       },
       "development": {
-        "state": "code-present-unconfirmed",
-        "scope": "本清单父功能；已有实现不等于当前两仓完整目标已交付",
-        "basis": "已实现（源码；能力由Desktop声明）",
-        "evidenceRefs": ["LEDGER", "MAIN-IOS"]
+        "state": "implemented-scoped",
+        "scope": "普通身份/聊天/独立草稿及同名项目完整目录显示登记范围",
+        "basis": "基础身份逻辑已合PR142/桌面59；新iOS目录显示修复已合PR197",
+        "evidenceRefs": ["LEDGER", "MAIN-IOS"],
+        "currentEvidence": [
+          "F15-SAME-NAME-LONG-PATH-VISIBLE-DISTINCTION-GAP-R278",
+          "F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281",
+          "F15-COMPLETE-PATH-WRAP-REPAIR-INPUT-R281",
+          "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+          "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282"
+        ]
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R147：当前目录15项／14项目归属、短历史或全文UI按各自关联子项通过；不升级长历史、nil／同名、stream reset、child或压缩完整范围。 R257：当前源包打开原无项目聊天，桌面核对同一ID、原消息及真实新输入。",
+        "scope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R147：当前目录15项／14项目归属、短历史或全文UI按各自关联子项通过；不升级长历史、nil／同名、stream reset、child或压缩完整范围。 R257：当前源包打开原无项目聊天，桌面核对同一ID、原消息及真实新输入。 R277：同名不同目录A/B与原无项目聊天往返及独立草稿通过；B唯一真实新输入和原Run完成，桌面规范归属独立核对；测试草稿已清空。 R282：新增同名项目完整目录换行显示实际通过，root看图及官方结果复核；原96c4/原B2草稿恢复，第一版不充分证据保留。",
         "evidenceRefs": ["LEDGER", "AC06-REAL-CATALOG-CURSOR-HISTORY-CANONICAL-REVIEW-R147"],
-        "currentEvidence": ["PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257"]
+        "currentEvidence": [
+          "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
+          "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277",
+          "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277",
+          "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277",
+          "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277",
+          "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+          "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+          "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+          "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
+        ]
       },
       "delivery": {
-        "state": "target-assembly-unverified",
-        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。"
+        "state": "integrated-not-deployed",
+        "note": "新目录显示已合main0a7/PR197；视觉为C22+同一完整组件，当前主线组合编译通过未安装；原验收包恢复。"
       },
       "execution": {
         "state": "planned",
-        "ownerRole": "iOS与EasyWork对接实施/验收负责人（执行时登记具体负责人）"
+        "ownerRole": "当前主会话负责后续父项工程边界；本轮视觉及源交付完成"
       },
-      "nextAction": "核当前数据接口和源版本，补历史/事件/搜索或子代理未覆盖断言。",
+      "nextAction": "普通同名/无项目聊天、独立草稿与可见目录已完成并合主线，不重复；在途工作区刷新不覆盖选择保留后续工程范围。",
       "openItemIds": [],
-      "updatedAt": "2026-11-16T14:29:10.398599+00:00",
+      "updatedAt": "2026-11-18T20:42:26.560926+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC06", "AC09"],
@@ -1715,30 +1738,38 @@
         "state": "implemented-scoped",
         "scope": "已登记工具/子Run投影及REV17按内容分类的结构化工具软换行候选；完整功能仍按剩余场景",
         "basis": "已按11月7–9日缓存主线后续提交更新，旧in-progress不再作为未开发依据；登记范围见对应C2档案。",
-        "evidenceRefs": ["LEDGER", "MAIN-IOS", "C2-SUB"]
+        "evidenceRefs": ["LEDGER", "MAIN-IOS", "C2-SUB"],
+        "currentEvidence": [
+          "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276",
+          "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277",
+          "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
+          "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280"
+        ]
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R149：1父2子真实模型完成/独立输出与GUI冷读通过；长工具和事件/分页等剩余，不关闭父功能。 R152：当前新普通包结构化长工具全文/纵向阅读/可见末端/展开折叠/准确搜索子范围通过；复制/模拟器clipboard恢复、Codex真实共用UI回归及其余子项未升级。 R259：当前包正常查看现有真实文档解析详情并折叠通过，Diff 继续原场景。",
+        "scope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R149：1父2子真实模型完成/独立输出与GUI冷读通过；长工具和事件/分页等剩余，不关闭父功能。 R152：当前新普通包结构化长工具全文/纵向阅读/可见末端/展开折叠/准确搜索子范围通过；复制/模拟器clipboard恢复、Codex真实共用UI回归及其余子项未升级。 R259：当前包正常查看现有真实文档解析详情并折叠通过，Diff 继续原场景。 R276：单输入真实文件Diff成功工具项、原Run/实际文件及原B2草稿恢复通过，完整AX文件路径与三条可视增删核对；长路径尾名横向截图未补，不扩全父项。",
         "evidenceRefs": ["LEDGER", "C2-SUB"],
         "currentEvidence": [
           "AC07-ACTUAL-ONE-PARENT-TWO-CHILD-PROVIDER-AND-GUI-R149",
           "AC07-ACTUAL-LONG-TOOL-CONTENT-AND-READABILITY-GAP-R150",
           "REV17-REAL-WRAPPED-TOOL-FULL-CONTENT-VISIBLE-END-SEARCH-R152",
-          "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"
+          "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+          "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276",
+          "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276"
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "代码已本地C5 28053f8保存（R152文档快照），1951非docs与实际buildtree856f和普通包5145eb精确；未推送/合主线。"
+        "state": "integrated-not-deployed",
+        "note": "原JSON换行已合Gitea PR196/main7ce9，iOS115组合编译/Node24 parity通过；未安装最新主线App，不把旧96c4 GUI升级新组合。"
       },
       "execution": {
         "state": "planned",
-        "ownerRole": "iOS与EasyWork对接实施/验收负责人（执行时登记具体负责人）"
+        "ownerRole": "当前主会话接续其余原范围；普通工具换行交付职责完成，资源由交付方收尾"
       },
-      "nextAction": "REV17登记换行缺口已关闭；后续F20/AC07完整子Run/分页/流异常/实际推理及真实Codex共用UI/复制等剩余继续，INT01负责主线交付。",
+      "nextAction": "普通工具换行已合PR196、真实Diff已通过并对账；不重复原输入。复制/长子正文及子代理新入口等未验范围继续原计划。",
       "openItemIds": ["REV17"],
-      "updatedAt": "2026-11-16T15:12:11.911563+00:00",
+      "updatedAt": "2026-11-18T20:24:56.739860+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC07"],
@@ -3035,11 +3066,14 @@
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "Current actual native/Desktop bounded assertions inR156 passed; whole feature remains open for explicit remaining UI/target/recovery assertions. Plan v1/v2/current approval real output, settingsinheritance/cold passed; offlinecache approval andplan toggle actualinteraction unverified. R262：同一真实旧聊天里的计划 v1 和 v2 可展开阅读，版本、标题、步骤及状态正确，桌面核对原计划正文。",
+        "scope": "Current actual native/Desktop bounded assertions inR156 passed; whole feature remains open for explicit remaining UI/target/recovery assertions. Plan v1/v2/current approval real output, settingsinheritance/cold passed; offlinecache approval andplan toggle actualinteraction unverified. R262：同一真实旧聊天里的计划 v1 和 v2 可展开阅读，版本、标题、步骤及状态正确，桌面核对原计划正文。 R279：现有真实v2计划普通展开→收起及原稿恢复通过，0输入。",
         "evidenceRefs": ["LEDGER"],
         "currentEvidence": [
           "PLAN-REAL-V1-V2-STALE-IMPLEMENTATION-COLD-R156",
-          "PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262"
+          "PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262",
+          "F40-PLAN-VERSION-READ-ALREADY-MERGED-EXACT-SCOPE-R273",
+          "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279",
+          "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279"
         ]
       },
       "delivery": {
@@ -3050,9 +3084,9 @@
         "state": "planned",
         "ownerRole": "主会话复核/后续异步问题适配诊断；Terra测试执行完成本子职责"
       },
-      "nextAction": "历史计划版本与正文已从普通界面核对。用新的自有普通计划验证手机发起、调整或批准作用于桌面的正确版本，另需核折叠状态。",
+      "nextAction": "普通两版阅读、当前版批准/调整及收起均有对应已合主线范围，直接复用；只保留离线审批、原生勾选及其余原工程边界，不重复生成模型计划。",
       "openItemIds": [],
-      "updatedAt": "2026-11-17T14:38:26.743421+00:00",
+      "updatedAt": "2026-11-18T20:20:25.406883+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC17"],
@@ -5271,8 +5305,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 271,
-  "updatedAt": "2026-11-18T18:22:20.580382+00:00",
+  "revision": 282,
+  "updatedAt": "2026-11-18T20:42:26.560926+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -12508,6 +12542,289 @@
         "F09-NEW96C4-ACTUAL-ORIGINAL-ENCRYPTED-RELAY-CURSOR-R252"
       ],
       "mainMergeCommit": "d5ca4c7427af831343c5c3178c41e135e74a9797"
+    },
+    "F08-ALREADY-ACCEPTED-CANDIDATE-MAIN-INTEGRATION-REVIEW-R272": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "2292f4b859dcf90f987648d218e4055fc9c2502f",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "当前主会话按原217局部语义集成；Terra只读范围审查的实际档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "原R244-R249九报告SHA核对一致；移植认证地址获取/保存的局部源码，保留当前主线快照、F28、F09保护，写入延后到完整结果/管理修订核验后。未新增运行或将旧包升为新包通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f08-main-integration-semantic-review.json",
+      "sha256": "0839d00ae6f888cbb8029413fd3fb82bcef6711b6b0d7e3bcca2b2b87e7f97e5",
+      "supportingReview": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f08-main-delivery-scope-review.json",
+      "supportingReviewSha256": "5aa4aab4537de36b4830e297ee4df5a1a7e69824708ed1138543656ceef1802a"
+    },
+    "F40-PLAN-VERSION-READ-ALREADY-MERGED-EXACT-SCOPE-R273": {
+      "kind": "exact-match-review",
+      "sourceCommit": "2292f4b859dcf90f987648d218e4055fc9c2502f",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "当前主线/桌面Git对象与原R262模拟器/D8记录只读核对；本次无新安装、GUI或模型。请求Terra medium，实际设置未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "普通两版计划的桌面原消息/分页/sync→iOS消息映射/结构解析/模型/展示完整必要链已合；PR142/桌面59及早期currentPlan来源可追溯，无候选必需补丁。复用R262原组合通过，不升级新组合实测，不覆盖折叠/批准/调整或整个F40。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f40-plan-read-main-exact-review.json",
+      "sha256": "1fa426270cddac97bf0ebfc84cf51407de533020b9e2cb6ee5ecd922a5dccb19",
+      "originalEvidence": ["PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262"]
+    },
+    "F13-ORDINARY-SEARCH-ALREADY-MERGED-EXACT-SCOPE-R274": {
+      "kind": "exact-match-review",
+      "sourceCommit": "2292f4b859dcf90f987648d218e4055fc9c2502f",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "主线代码/PR祖先关系及R259原报告只读核验；原模拟器/D8通过保留，本次无新组合运行；请求Terra medium，实际档位速度未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "普通项目查询、旧正文定位、清空/无结果的UI/共享匹配/适配/桌面历史完整必要链已合，无候选必需补丁。root补核PR142及桌面59确为各自main祖先，原R259 SHA一致；早页/极限数据/完整同名矩阵不扩展。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f13-search-root-pr-provenance-review.json",
+      "sha256": "bdc024d2b79276ff9644833f54683ff321698075b3119919d46899cf38817f7a",
+      "originalEvidence": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"]
+    },
+    "F08-FINAL-MAIN-FULL-CHECK-AND-SIMULATOR-BUILD-R275": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7b3e89defb37f89b0340aa11da03842d30c7e984",
+      "packageSha256": "not-packaged-build-only",
+      "environment": "Node24.22.3/pnpm11.19/JDK17/Xcode27；当前源完整检查、模拟器编译和Gitea main实际交付。请求Terra medium，实际模型/推理/速度未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "准确主线局部移植完整pnpm check851秒及显式独立bundle模拟器编译132秒通过，源6文件指纹保持。初始manifest路径/缺dist失败保留并正常修复；仅编译无安装或新GUI。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f08-checks/report.json",
+      "sha256": "4c5ffaae40da9dd1c9cc3045e3084407094229cfd426cd636aafe84da1823884",
+      "mainMergeCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb"
+    },
+    "F08-PR193-ACTUAL-MAIN-MERGE-R275": {
+      "kind": "exact-match-review",
+      "sourceCommit": "7b3e89defb37f89b0340aa11da03842d30c7e984",
+      "packageSha256": "not-packaged-build-only",
+      "environment": "Node24.22.3/pnpm11.19/JDK17/Xcode27；当前源完整检查、模拟器编译和Gitea main实际交付。请求Terra medium，实际模型/推理/速度未独立核实。",
+      "mobileEnvironment": "not-required",
+      "scope": "原已验认证地址获取/保存与主线保护局部集成已实际合PR193/main7d4cb547，root核6源blob与通过输入一致；原R244-R249按各自旧包/场景保留，不升级新组合实测。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f08-source-delivery-receipt.json",
+      "sha256": "047424c83940196475b57dddc4379a62f293d5d3e38bb502b997441396cd59bd",
+      "mainMergeCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb"
+    },
+    "F20-REAL-DIFF-PREPARATION-RUNNER-GUARD-AND-ORIGINAL-RECEIPTS-R275": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS模拟器/原App/D8 N17；准备阶段，唯一方法枚举与原操作只读核对。请求Terra medium，实际设置未核实。",
+      "mobileEnvironment": "simulator",
+      "scope": "新Diff场景尚未通过；测试runner误重复登记两个空项目，两原create已completed，输入0的观察保留；已定位现有项目控件，继续原唯一消息预算，不重建/重放。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f20-diff/coordinator-preparation-review.json",
+      "sha256": "3d097c0b411f1852daaf319a894bdc055ef57f8ca31a62f2dd91552b5738f380"
+    },
+    "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26原生模拟器/96c4 App与真实独立D8 N17；GUI/模型与源审查/准备分别记录。执行方请求Terra medium，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "simulator",
+      "scope": "原C22/96c4模拟器连接真实D8 N17，唯一输入/原Run完成，成功toolCall对应Diff实际展开，三条增删可视；同卡完整AX路径、桌面实际文件SHA一致。长路径尾名未单独截图，不冒称截图可见；同Run失败工具及harness失败保留，B2/原稿恢复通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f20-diff/report.json",
+      "sha256": "3cf9989b0be82804133b64a88db57b157a8839853c518bb4bb87b0a6a14c3bb4"
+    },
+    "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276": {
+      "kind": "exact-match-review",
+      "sourceCommit": "cad5bd5f4792bf9d804fea19b2d32b055866e173",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26原生模拟器/96c4 App与真实独立D8 N17；GUI/模型与源审查/准备分别记录。执行方请求Terra medium，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "root独立核唯一user_triggered原Run/原输入、成功/失败原tool记录、expected文件SHA及三项官方xcresult各1过0败；成功截图与AX hash一致，误建空项目经正式窄生命周期API一次清元数据，0受影响线程，原真实项目/文件保留。对应main/C22原始Diff映射/文本原语一致，JSON换行差异不影响原始补丁；不宣称最新组合GUI重跑。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f20-diff/root-independent-result-and-cleanup-review.json",
+      "sha256": "66d408f877338bafca1e584bd6bcd9fdbf21fdbcca8e41f52d6800ff1b498c5b",
+      "sourceReviewPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f20-diff/raw-diff-main-source-scope-review.json",
+      "sourceReviewSha256": "dd7e0ed6a0330c6c727c5c621e4b82aba0b98ded47bb1f662b5b06b73dfacb4d"
+    },
+    "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "cad5bd5f4792bf9d804fea19b2d32b055866e173",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "原iOS26原生模拟器/96c4 App与真实独立D8 N17；GUI/模型与源审查/准备分别记录。执行方请求Terra medium，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "原已验28053的23行结构化详情换行局部移植；整个ToolCallView与已验C22逐字节相同。当前独立主线检查/编译正在执行，不新增JSON工具或模型重验。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-wrap-integration-input.json",
+      "sha256": "c9830135335478705ac80be28f50722acef5eabdfbf38e46506e9a767cb92ef8",
+      "supersededForCurrentCombinedSourceBy": "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277"
+    },
+    "F15-SAME-NAME-TWO-DIRECTORY-NATIVE-SETUP-R276": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26原生模拟器/96c4 App与真实独立D8 N17；GUI/模型与源审查/准备分别记录。执行方请求Terra medium，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "同一原已配对EasyWork内准备两个同名、不同真实目录的现有项目；A复用刚完成F20聊天，B由正式native createProject API准备，准备时0chat/0模型输入。原生往返正在执行，未判通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/setup-native-result.json",
+      "sha256": "f6909664a383c7996649b7a9a77152725cfa5704a103a99aef600efac713a36c"
+    },
+    "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；当前主线源对比与新组合编译分列。Terra medium为请求值，实际模型/速度无独立遥测。",
+      "mobileEnvironment": "simulator",
+      "scope": "同名不同实际目录A/B按项目UUID选择，B唯一输入和原Run完成；A/B聊天、各自草稿往返准确，返回原无项目B2完整原稿。7项原生用例组成1个功能范围；桌面原实例规范状态独立核归属/计数/文件，不冒充桌面GUI正文见证。原报告暂留草稿状态由后续清理证据取代。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/report.json",
+      "sha256": "2f7dc770156765ee40264047f5ee00dcb77f0534ba93d063d2d3c032bf68b06f"
+    },
+    "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277": {
+      "kind": "exact-match-review",
+      "sourceCommit": "566159d6f316f7ad12d2ba177ca156c91d198043",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；当前主线源对比与新组合编译分列。Terra medium为请求值，实际模型/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "主会话独立核7验收+1清理官方xcresult均1过0败，源码/枚举/原记录/附件指纹一致；原B操作completed且1user_triggered/1正文/1回复，A原Run/文件不变。5个完整导航/新建选择/草稿键/项目选择声明与C22相同，限既有聊天/在进程内往返，不扩到最新组合GUI、在途刷新或全创建执行器。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/root-independent-evidence-and-source-review.json",
+      "sha256": "4d3e14ddf04159cd6d7f20994fa7a4966fc3ad783d04a577ec62164a2e01fc91"
+    },
+    "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；当前主线源对比与新组合编译分列。Terra medium为请求值，实际模型/速度无独立遥测。",
+      "mobileEnvironment": "simulator",
+      "scope": "正常编辑器识别两个完整自有测试标记后清空，A/B重访均空，原B2草稿前后全文一致并恢复；1项官方原生清理通过，0新增业务输入。8个自有derived目录均按阶段回收。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/owned-draft-cleanup-report.json",
+      "sha256": "4438f737802919143a31901bf4cac696bd120c8c2601a51493d711a4c6379b15"
+    },
+    "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277": {
+      "kind": "exact-match-review",
+      "sourceCommit": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；当前主线源对比与新组合编译分列。Terra medium为请求值，实际模型/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "真实D8到桌面master：项目仓库/项目服务和host-client-adapters整文件相同，保留项目ID/路径映射。thread-reader差异仅问题计数/等待投影，不改变项目身份；不扩异步问题通过范围。结合主仓PR142/桌面PR59现有合并，普通项目往返不另需候选修复。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/desktop-project-source-comparison.json",
+      "sha256": "d3c7fd81e50e25e54a53be794d2f74d5e136755da6a92256397f9f3bcb7a585c"
+    },
+    "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277": {
+      "kind": "exact-match-review",
+      "sourceCommit": "566159d6f316f7ad12d2ba177ca156c91d198043",
+      "packageSha256": "not-applicable-source-review",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；当前主线源对比与新组合编译分列。Terra medium为请求值，实际模型/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "纠正组合源整个组件相同的过宽表述：完整非空组件提取显示仅新增受subAgent kind保护的历史入口。保留该主线入口；普通工具JSON/原始Diff路径相同，子代理新增交互和最新组合GUI不在复用范围。R276旧cad基准组件一致的历史事实保留，不沿用为更新后的整个组件一致。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-wrap-release115-bounded-source-correction.json",
+      "sha256": "3042dfcfed5091a3e7e30ce407be70a206dfb5884c75e4f31b1bea34789f5eaa"
+    },
+    "F15-SAME-NAME-LONG-PATH-VISIBLE-DISTINCTION-GAP-R278": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器截图与主会话视觉复核；非新增模型或GUI重跑",
+      "mobileEnvironment": "simulator",
+      "scope": "同名两项目完整AX目录及UUID归属已过；真实截图路径均在同一长前缀后尾省略，用户无法直观看出末级目录。核心显示缺口不被原逻辑通过掩盖，已在隔离C22候选改为单行中间省略，编译/视觉补验待完成。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-readability-visual-review.json",
+      "sha256": "4fb388f7dfed9e5286a161a6ebc0cec8bca06383e7b6c05b07f7fb0e48cab3de"
+    },
+    "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；Terra medium请求值，实际模型/速度无独立遥测",
+      "mobileEnvironment": "simulator",
+      "scope": "现有真实v2 completed计划普通展开/收起，状态与正文可见性转换通过，原B2全文草稿恢复；0输入/0计划批准或更改。两次选择器前置失败保留，第三次官方1过0败。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f40-collapse/report.json",
+      "sha256": "ad7904bfe5bfa1f9766c671c8c891cdca2c6346eec7ee9fd7723a12109c36c0b"
+    },
+    "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279": {
+      "kind": "exact-match-review",
+      "sourceCommit": "1563d86ede9887573b6d1043db7a54031cd62ae0",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器96c4/真实D8 N17；Terra medium请求值，实际模型/速度无独立遥测",
+      "mobileEnvironment": "not-required",
+      "scope": "主会话复核源码/xctestrun/官方xcresult和实际展开/收起原图；原chat现有3Run且本阶段0新增Run/消息。ProposedPlanMessageView完整非空组件与C22相同，原R273消息/计划只读必要链已合142/59；限本次折叠，非新组合GUI或完整F40。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f40-collapse/root-independent-result-and-source-review.json",
+      "sha256": "179ed77183a63fb515f90b1080bca5d3d8e4eba673bba7e8dd30139933350456",
+      "sourceReviewPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f40-collapse/root-plan-component-source-review.json",
+      "sourceReviewSha256": "43999ccf3d4984be9d216f08329005f7ddc13eed165615d93ddcc1f1aec67d61"
+    },
+    "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280": {
+      "kind": "exact-match-review",
+      "sourceCommit": "7ce9e6c17f653d215b76af1b6d0284b3c4f725d5",
+      "packageSha256": "not-applicable-source-delivery",
+      "environment": "Gitea实际main/Git源与原组合构建；Terra medium为请求值，独立实际模型/速度未核实",
+      "mobileEnvironment": "not-required",
+      "scope": "主会话独立fetch并核实际main7ce9、headc803及原Root00ab；PR196普通合并，main未设置required contexts/保护，iOS CI成功，workspace合并时进行中不计通过。普通工具JSON/原始Diff原证据限范围复用，保留子代理新增入口并排除其交互。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-wrap-root-actual-main-review.json",
+      "sha256": "a9445fa15661ce83880e2274cb4fbada57eda59a640dead608c91b036f153853",
+      "receiptPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-wrap-source-delivery-receipt.json",
+      "receiptSha256": "6833080ff5ef30021bffb07149076971c8e4f5e09b9f3f2183c032f1e77fda11"
+    },
+    "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7ce9e6c17f653d215b76af1b6d0284b3c4f725d5",
+      "packageSha256": "not-installed-build-executable-b4e278560e52bc0dc6af865003545f9d52a6256332640a6b5ac89880863134de",
+      "environment": "Gitea实际main/Git源与原组合构建；Terra medium为请求值，独立实际模型/速度未核实",
+      "mobileEnvironment": "not-required",
+      "scope": "iOS115+本工具换行组合原生编译成功，实际独立bundle/exeb4e278指纹保存，未安装；Node24.22.3/pnpm11.19完整parity/格式/diff通过。随后只合packager库存与文档，native输入未变；原Node22警告/沙箱编译失败保留，不新增模型或GUI。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-wrap-release115-final-review.json",
+      "sha256": "f14588b2c26093ee8723621c345900dd3247ab941658a068ecfdb5043630cc52"
+    },
+    "F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "3cb1b75857f8ad8a43bcf2e56304f21d45e8f7163e1b39f0f9c60d75a3b2bff2",
+      "environment": "原iOS26模拟器/同bundle窄UI候选；真实D8原目标，0模型输入。Terra medium请求值，实际档位/速度未独立核实",
+      "mobileEnvironment": "simulator",
+      "scope": "第一版中间省略候选：原生1/0与完整AX/UUID通过，实际截图仍隐藏末级目录开头，完整可见目标失败，不记功能通过。原96c4包已实际恢复，exe657732、B2原稿/实时中继核实，0输入；1.2GiB build/2.5MiB gradle/133MiB driver已回收。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-visual/report.json",
+      "sha256": "058a4acb7a28820f1c71ee29eef54ad8304bdd0932fb4a7fdb85c7ffa215d9eb",
+      "packageFingerprintKind": "SHA256 of complete ordered bundle file-manifest, not tar archive",
+      "executableSha256": "ffc871e6c59cf54a8dabf52f652a0ffb888caed55d1260e2cc959b2844d225a0"
+    },
+    "F15-COMPLETE-PATH-WRAP-REPAIR-INPUT-R281": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "not-built-yet-full-wrap",
+      "environment": "原iOS26模拟器/同bundle窄UI候选；真实D8原目标，0模型输入。Terra medium请求值，实际档位/速度未独立核实",
+      "mobileEnvironment": "not-required",
+      "scope": "新的唯一Sheets修复改为完整原路径换行并保持自然行高，不解析/重写目录，不改项目ID/草稿/协议；旧第一版结果冻结，不升级其视觉结论。新编译和0输入视觉待完成，当前共享磁盘锁串行执行。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-readability-full-wrap-repair-input.json",
+      "sha256": "387fbee039f7227dada94c738c581301eb9d9c4d93d6ed2c6679209c1f8002a4"
+    },
+    "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "b460e40a2fdfbafbbf0a3706fb6c291afabef19ea1ce2234ad3870d9c88b5838",
+      "environment": "原iOS26模拟器/真实D8 N17；视觉C22+窄UI候选，主线组合仅编译。Terra medium为请求值，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "simulator",
+      "scope": "完整原路径换行修复候选：官方可视1/0、恢复1/0；root亲看截图，两同名条目完整末级目录均可见无省略，AX完整UUID/路径正确。0业务输入，原96c4包/完整B2草稿/实时中继恢复；第一版中间省略不充分证据保留，不扩最新主线组合GUI。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-visual/full-wrap-report.json",
+      "sha256": "fe21c95f479eb2b850d2bf611b5e72c4ce047a4d61634e859d473bcf12228b17",
+      "packageFingerprintKind": "SHA256 of ordered complete bundle-file manifest; not tar archive",
+      "sourceCandidatePatchSha256": "273dc0a1478318a7f05ca1bde54077c1d438850af428d3af9c3cb3c6d6904b25",
+      "executableSha256": "2f2c45161599a56d01933573067cf436cd650ba00b3638f7d777ba238c6330c4",
+      "independentVisualReviewPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-visual/full-wrap-root-independent-visual-review.json"
+    },
+    "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282": {
+      "kind": "exact-match-review",
+      "sourceCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
+      "packageSha256": "b460e40a2fdfbafbbf0a3706fb6c291afabef19ea1ce2234ad3870d9c88b5838",
+      "environment": "原iOS26模拟器/真实D8 N17；视觉C22+窄UI候选，主线组合仅编译。Terra medium为请求值，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "root核完整518字符projectChoice修复组件在C22视觉候选和当前主线逐字节相同，差异只完整原目录换行；主线组合Node24 parity及独立bundle原生编译通过，未安装新组合。项目ID/草稿协议不变，Android独立可读性不补签。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f15-full-wrap-root-source-and-checks-review.json",
+      "sha256": "e7e24797aa3f182e53ee7b09d448a39ddc929c0bd075e9c336ce04e05c9b90b9",
+      "auxiliaryReportPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f15-path-full-wrap-checks/report.json",
+      "auxiliaryReportSha256": "98701d49a970c2ff7cceb92566e762425030f44c96ea1a562a95257df107efef"
+    },
+    "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282": {
+      "kind": "exact-match-review",
+      "sourceCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
+      "packageSha256": "not-applicable-source-delivery",
+      "environment": "原iOS26模拟器/真实D8 N17；视觉C22+窄UI候选，主线组合仅编译。Terra medium为请求值，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "not-required",
+      "scope": "root独立fetch核Gitea PR197 head89537/main0a7和Sheets2980源一致；正常合并、无required checks，合并时两CI进行中不计通过。普通同名目录显示修复源已交付。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f15-path-root-actual-main-review.json",
+      "sha256": "1e64ac02e9caa54feeb7920283c1248f41d3cf3a751ace81d42bbece00916106",
+      "receiptPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f15-path-source-delivery-receipt.json"
+    },
+    "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282": {
+      "kind": "real-dev",
+      "sourceCommit": "5aa9cec4343474af16f30d2986d4f15f4647b2a1",
+      "packageSha256": "96c4a1b644f975e996351f8e5aa85e2e923c72e4f018bd2ca494847abfec8ace",
+      "environment": "原iOS26模拟器/真实D8 N17；视觉C22+窄UI候选，主线组合仅编译。Terra medium为请求值，实际模型/档位/速度无独立遥测。",
+      "mobileEnvironment": "simulator",
+      "scope": "root通过官方simctl只读独立核实际已安装原exe657732；官方恢复1/0核原B2全文草稿/连接。两轮自有编译/driver均按共享锁回收，临时legacy仅UI提交8ee与main稳定patch-id相同，工作树/临时branch已清，保护C22/5aa原branch仍在。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f15-context/path-visual/full-wrap-root-installed-rollback-review.json",
+      "sha256": "d7521ff98181b1587ae0d061d8195554f77420d036c29926d316785243b0b1a5",
+      "resourceCleanupReceipt": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f15-legacy-branch-cleanup.json"
     }
   },
   "openItems": [
@@ -13715,12 +14032,14 @@
         "ENV-DEFAULT-BUNDLE-INSTALL-SAFE-CLEANUP-R151",
         "REV17-REAL-WRAPPED-TOOL-FULL-CONTENT-VISIBLE-END-SEARCH-R152",
         "REV17-REQUIRED-FULLCHECK-790S-AND-SOURCE-MATCH-R152",
-        "REV17-VALIDATED-LOCAL-C5-SAVE-AND-DOC-CHECKS-R153"
+        "REV17-VALIDATED-LOCAL-C5-SAVE-AND-DOC-CHECKS-R153",
+        "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
+        "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280"
       ],
-      "ios": "登记的结构化工具软换行范围已实现并真实通过：346pt视口、多行/实际纵向滚动、完整原文、末尾可见、展开折叠和准确搜索；普通包5145eb/源856f17a，完整检查790s0，原失败保留。复制实测/旧模拟器clipboard恢复未完成，真实Codex与Android未验；不把这些限制混成wrap未实现。 R153当前范围已保存本地C5 28053f8，四项提交前文档检查全过，实际源码/包复用指纹独立确认。",
+      "ios": "登记的结构化工具软换行范围已实现并真实通过：346pt视口、多行/实际纵向滚动、完整原文、末尾可见、展开折叠和准确搜索；普通包5145eb/源856f17a，完整检查790s0，原失败保留。复制实测/旧模拟器clipboard恢复未完成，真实Codex与Android未验；不把这些限制混成wrap未实现。 R153当前范围已保存本地C5 28053f8，四项提交前文档检查全过，实际源码/包复用指纹独立确认。 R280：原补丁已按当前授权交付PR196/main7ce9，组合编译及Node24 parity通过；限定复用普通文本路径，保留新子代理入口。",
       "desktop": "Actualtools_search/subagent canonicalcomplete; no Desktopmethod/field/runtimechange; reusedoneactualtaskwithnoadditionalmodelinput.",
-      "nextAction": "登记的单行横向结构化长工具缺口关闭；C5待INT01推送/主线交付（当前未授权执行）。F20/AC07其他矩阵、真实Codex/Android及复制旧模拟器clipboard限制保留，不重复本输入。",
-      "updatedAt": "2026-11-14T22:58:28.720285+00:00"
+      "nextAction": "登记的结构化工具换行源已合PR196，不再列待授权/待合；复制/旧clipboard恢复、Android及全父项按原独立范围，不重发原输入。",
+      "updatedAt": "2026-11-18T20:24:56.739860+00:00"
     },
     {
       "id": "REV18",
@@ -14442,10 +14761,19 @@
         "PHASE1-QWEN-SAME-CHAT-SINGLE-SEND-MOBILE-DESKTOP-STREAM-END-R258",
         "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
         "PHASE1-C22-FREEZE-TREE-CORRECTION-D8-OPEN-AND-PAGING-REVIEW-R259",
-        "PHASE1-REAL-LONG-HISTORY-OLDER-PAGE-NATIVE-DESKTOP-R265"
+        "PHASE1-REAL-LONG-HISTORY-OLDER-PAGE-NATIVE-DESKTOP-R265",
+        "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277",
+        "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277",
+        "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277",
+        "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277",
+        "F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281",
+        "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+        "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+        "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+        "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-18T16:13:58.478232+00:00",
+      "updatedAt": "2026-11-18T20:42:26.560926+00:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -14522,10 +14850,41 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["PHASE1-REAL-LONG-HISTORY-OLDER-PAGE-NATIVE-DESKTOP-R265"],
           "scope": "原缺少超过50条真实历史的前置已消除。正常交流26轮后，模拟器向上加载到第1轮，26组用户及回复标签有序且无重复。桌面独立核同一原chat末轮，第1轮桌面UI不作通过。"
+        },
+        {
+          "id": "core-r277-same-name-distinct-project-and-projectless-draft-roundtrip",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277",
+            "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277",
+            "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277",
+            "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277"
+          ],
+          "scope": "现有同名不同目录项目A/B按UUID选择，原消息/独立草稿往返，原无项目B2及原稿恢复；桌面规范归属一致。B仅1新输入；测试草稿已清。"
+        },
+        {
+          "id": "core-r281-same-name-complete-directory-visible",
+          "state": "failed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": ["F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281"],
+          "scope": "原UUID/AX和草稿归属正确，但第一版路径中间省略仍隐藏目录尾名开头，完整可见目标未达。正在改完整换行。"
+        },
+        {
+          "id": "core-r282-same-name-complete-directory-visible",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+            "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+            "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+            "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
+          ],
+          "scope": "同名项目两个完整目录末级在真实截图均可见，无省略；原完整AX/UUID仍正确，0输入；原包/完整B2草稿恢复。R281第一版失败作为历史保留。"
         }
       ],
-      "remainingScope": "普通长历史更早页、目录/项目、短历史、全文搜索及nil/同名子范围已分别通过或按已合PR复用；在途切项目或分支、重复乱序/缺口reset、压缩及断线中分页等工程边界继续保留。",
-      "nextAction": "普通长历史上一页不再列为卡点；优先结束第二目标隔离和F28实际主动打开，其他工程边界仍按原阶段。",
+      "remainingScope": "普通目录/搜索/长历史、同名/无项目聊天与草稿及完整目录显示已分别通过；在途切项目、乱序/缺口reset/压缩/断线分页等工程边界保留。",
+      "nextAction": "普通长历史、搜索及同名/无项目聊天往返已完成，不重跑；保留在途切项目等工程边界。",
       "auxiliaryEvidence": ["F18-REAL-EXISTING-CHILD-FEED-42-CHECKPOINTS-READINESS-R255"]
     },
     {
@@ -14536,10 +14895,11 @@
         "AC07-ACTUAL-ONE-PARENT-TWO-CHILD-PROVIDER-AND-GUI-R149",
         "AC07-ACTUAL-LONG-TOOL-CONTENT-AND-READABILITY-GAP-R150",
         "REV17-REAL-WRAPPED-TOOL-FULL-CONTENT-VISIBLE-END-SEARCH-R152",
-        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"
+        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+        "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-16T15:12:11.911563+00:00",
+      "updatedAt": "2026-11-18T19:36:00.470658+00:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -14588,13 +14948,22 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"],
           "scope": "在原聊天展开、查看和折叠真实文档解析工具。Diff 仍按原场景排期。"
+        },
+        {
+          "id": "core-r276-real-owned-file-diff",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": ["PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276"],
+          "scope": "one actual user input; original completed run; successful fileChange expanded; visible -VALUE=before/+VALUE=after/+CHECKED=true; same-card full path in AX and actual expected desktop file SHA; original B2 draft restored. Path tail clipped in screenshot; no broad/multi-file claim."
         }
       ],
       "auxiliaryEvidence": [
         "AC07-READINESS-AND-REVIEWED-ONE-INPUT-TWO-CHILD-INTENT-R148",
-        "REV17-REQUIRED-FULLCHECK-790S-AND-SOURCE-MATCH-R152"
+        "REV17-REQUIRED-FULLCHECK-790S-AND-SOURCE-MATCH-R152",
+        "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276",
+        "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276"
       ],
-      "nextAction": "先保存当前已核REV17源/证据本地提交；AC26真实用量零模型读取进行中，随后按有限矩阵继续事件/分页及其他计划，不重放原输入。",
+      "nextAction": "本次普通真实Diff已通过；原JSON长工具换行源码正在交付，不重复原通过。长子正文/推理/复制和事件恢复余项按原阶段保留。",
       "remainingScope": "当前真实父+2child/独立输出冷读、长工具完整内容和软换行阅读/可见首尾/展开折叠/搜索已过；长子正文/实际推理段、运行中刷新/分页、跨branch迟到/终态回退与完整事件恢复矩阵仍开。复制点击后因跨App提示超时未核值，原模拟器旧clipboard状态未知且未恢复；本机无已保存Codex客户端，不能作真实Codex回归。"
     },
     {
@@ -15680,10 +16049,12 @@
         "REV18-ONE-FRESH-ASYNC-PENDING-NO-REPLAY-ENV-RECOVERY-R161",
         "REV18-STRICT-ACK-REAL-GUI-SKIP-ONLINE-COLD-N6-R162",
         "REV18-PAGING-FOUR-FIELD-EXACT-DEPENDENCY-REUSE-R163",
-        "PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262"
+        "PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262",
+        "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279",
+        "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-17T14:38:26.743421+00:00",
+      "updatedAt": "2026-11-18T20:20:25.406883+00:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -15734,6 +16105,16 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262"],
           "scope": "同一真实旧聊天里的计划 v1 和 v2 可展开阅读，版本、标题、步骤及状态正确，桌面核对原计划正文。"
+        },
+        {
+          "id": "core-r279-existing-completed-plan-expand-collapse",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279",
+            "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279"
+          ],
+          "scope": "同一原计划v2展开时正文可见、收起时正文隐藏且版本/状态保持；原B2完整草稿恢复；0输入。"
         }
       ],
       "nextAction": "F58非阻塞/分页范围已关闭；AC17仍有计划勾选/离线审批，AC18仍有错Run/请求/目标与竞争/过期等矩阵。按原操作继续，不整场景关闭。"
@@ -19958,6 +20339,151 @@
         "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
         "F09-PR191-ACTUAL-MAIN-MERGE-R271"
       ]
+    },
+    {
+      "revision": 272,
+      "date": "2026-11-19",
+      "kind": "f09-ledger-delivered-cleanup-and-f08-minimal-main-integration",
+      "scope": "PR192实际合main2292，root已逐字节核R271四文件，F09源码worktree/2本地远端分支与独占idle Gradle已清。F08准确原候选4Swift/聚焦检查局部移植，保留主线保护并后置观察写盘，正在正式检查；Node24具名交接给已创建F08阶段。原GUI/模型/配对不重做。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F08-ALREADY-ACCEPTED-CANDIDATE-MAIN-INTEGRATION-REVIEW-R272"]
+    },
+    {
+      "revision": 273,
+      "date": "2026-11-19",
+      "kind": "f40-ordinary-plan-read-complete-main-call-chain-reconciliation",
+      "scope": "完成F40普通两版阅读的原消息/分页/sync、iOS解析/模型/展示完整必要链核对，无候选必需补丁，已有PR142/桌面59及来源提交实际在主线；按用户约定直接复用R262原验收并记具体功能merged。未升级原包为新组合运行，折叠及全F40不补签。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newMergedFunctionalScopes": 1,
+      "evidenceRefs": ["F40-PLAN-VERSION-READ-ALREADY-MERGED-EXACT-SCOPE-R273"]
+    },
+    {
+      "revision": 274,
+      "date": "2026-11-19",
+      "kind": "f13-ordinary-search-merged-code-exact-scope-reconciliation",
+      "scope": "F13-search完整普通调用链核对无候选必需差异，root确认PR142和桌面59确为目标主线祖先及原R259报告SHA，按用户规则复用原验收，具体功能记merged。不提升新组合为新GUI通过，完整同名/早页/容量不补签。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newMergedFunctionalScopes": 1,
+      "evidenceRefs": ["F13-ORDINARY-SEARCH-ALREADY-MERGED-EXACT-SCOPE-R274"]
+    },
+    {
+      "revision": 275,
+      "date": "2026-11-19",
+      "kind": "f08-actual-main-delivery-and-f20-normal-diff-preparation",
+      "scope": "F08准确局部源完整check及模拟器编译通过，已合PR193/main7d4cb547，具体登记功能记merged，旧包真实证据不提升为新组合运行。F20新Diff准备阶段runner重复登记两个空测试项目，原create均completed，0业务输入观察已核；唯一方法枚举/正常滚动恢复后复用canonical继续，不算功能通过。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newProjectMetadataCreates": 2,
+      "newMergedFunctionalScopes": 1,
+      "evidenceRefs": [
+        "F08-FINAL-MAIN-FULL-CHECK-AND-SIMULATOR-BUILD-R275",
+        "F08-PR193-ACTUAL-MAIN-MERGE-R275",
+        "F20-REAL-DIFF-PREPARATION-RUNNER-GUARD-AND-ORIGINAL-RECEIPTS-R275"
+      ]
+    },
+    {
+      "revision": 276,
+      "date": "2026-11-19",
+      "kind": "real-file-diff-accepted-and-original-tool-wrap-integration",
+      "scope": "真实F20唯一输入/原Run完成/成功Diff三行与完整AX路径/实际文件SHA和B2原稿恢复通过；root独立核三xcresult各1过0败，误建第二空项目正式API清metadata、0受影响线程。原始Diff展示源范围已有main；另外原已验28053 JSON换行23行移植，整个组件与C22相同，检查中。F15同名双目录B元数据已准备，普通UI验收中。未把旧包证据升成最新组合实测。",
+      "newProductAcceptancePasses": 1,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 1,
+      "newProjectMetadataCreates": 1,
+      "newProjectMetadataDeletes": 1,
+      "evidenceRefs": [
+        "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276",
+        "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276",
+        "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276",
+        "F15-SAME-NAME-TWO-DIRECTORY-NATIVE-SETUP-R276"
+      ]
+    },
+    {
+      "revision": 277,
+      "date": "2026-11-19",
+      "kind": "same-name-project-roundtrip-accepted-cleaned-and-bounded-source-correction",
+      "scope": "新增同名双目录/无项目聊天与草稿往返1个功能通过，B1真实输入/原Run完成；独立复核8个官方原生结果和桌面规范归属。自有标记草稿已清、原B2恢复、8个derived已清。普通必要路径按已合142/59复用，父F15在途刷新未闭合；纠正更新后工具组件整体匹配表述，子代理新入口保留并排除复用。",
+      "newProductAcceptancePasses": 1,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 1,
+      "evidenceRefs": [
+        "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277",
+        "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277",
+        "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277",
+        "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277",
+        "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277"
+      ]
+    },
+    {
+      "revision": 278,
+      "date": "2026-11-19",
+      "kind": "same-name-project-visual-gap-reopened-with-owned-fix",
+      "scope": "主会话直接看原图发现同名项目两长目录的尾名均不可见，F15具体动作从仅逻辑范围merged改preparing，保留R277归属/草稿通过。隔离5aa候选只改路径标签中间省略，等待原生编译/0输入视觉补验。F20源PR196等待正常CI；现有计划收起补验中。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F15-SAME-NAME-LONG-PATH-VISIBLE-DISTINCTION-GAP-R278"]
+    },
+    {
+      "revision": 279,
+      "date": "2026-11-19",
+      "kind": "existing-plan-collapse-real-native-and-merged-source-reuse",
+      "scope": "正常UI现有v2计划展开/收起1个新范围通过，原B2全文草稿恢复；root独立核官方1/0、原图、源码和原chat0新增Run/消息。必要组件/读取源已合142/59，无需新补丁；133MiB自有derived已回收。F15显示修复候选准备完成，等待共享磁盘互斥后继续原生检查。",
+      "newProductAcceptancePasses": 1,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279",
+        "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279"
+      ]
+    },
+    {
+      "revision": 280,
+      "date": "2026-11-19",
+      "kind": "tool-json-wrap-actual-gitea-main-delivery",
+      "scope": "PR196 headc803实际普通合main7ce9，root独立fetch/祖先/Root00ab核验。保留主线iOS115/子代理入口/packager库存；native与Node24 parity通过，workspace CI合并时仍进行中，不声称全CI通过。原文本范围复用，0新业务输入/0GUI重跑，REV17旧未授权/待合描述撤销。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
+        "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280"
+      ]
+    },
+    {
+      "revision": 281,
+      "date": "2026-11-19",
+      "kind": "same-name-path-first-repair-visual-insufficient-and-full-wrap-fix",
+      "scope": "第一版原生1/0不能代替完整末级目录视觉通过，root看原图确认仍裁开头；不增加通过数。原96c4/完整B2草稿/连接已恢复，本轮1.2GiB编译等产物已清。新两行完整换行修复已准备，源码和GUI检查按共享锁串行，不扩大模型输入。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281",
+        "F15-COMPLETE-PATH-WRAP-REPAIR-INPUT-R281"
+      ]
+    },
+    {
+      "revision": 282,
+      "date": "2026-11-19",
+      "kind": "same-name-complete-directory-visible-fixed-accepted-merged-and-restored",
+      "scope": "完整原路径换行实际可视/AX及原包恢复各官方1/0，root看原图及simctl核657732原exe；0输入。原逻辑已过范围不重测；当前main组合编译/Node24 parity过，原518字符UI组件匹配，PR197 head89537实际合main0a7。原第一版不充分、旧包与最新组合边界保留；本轮生成物、legacy工作树/临时branch已清，保护C22/真实数据未改。",
+      "newProductAcceptancePasses": 1,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+        "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+        "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+        "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -22902,6 +23428,39 @@
       "evidenceRefs": [
         "F09-FINAL-NATIVE-BUILD-AND-SCOPED-AUX-CHECKS-R271",
         "F09-PR191-ACTUAL-MAIN-MERGE-R271"
+      ]
+    },
+    {
+      "component": "F08已验认证地址获取/保存主线交付",
+      "baseCommit": "7b3e89defb37f89b0340aa11da03842d30c7e984",
+      "mainMergeCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb",
+      "verification": "准确原候选局部集成并保留主线保护，完整check/模拟器编译通过；未安装新包，原GUI证据按原组合保留。",
+      "evidenceRefs": [
+        "F08-FINAL-MAIN-FULL-CHECK-AND-SIMULATOR-BUILD-R275",
+        "F08-PR193-ACTUAL-MAIN-MERGE-R275"
+      ]
+    },
+    {
+      "component": "F20已验结构化工具详情换行主线交付",
+      "baseCommit": "c8036a0af3011aedaa20abf394748cfd7c93e686",
+      "mainMergeCommit": "7ce9e6c17f653d215b76af1b6d0284b3c4f725d5",
+      "verification": "Root00ab和普通工具文本路径已复核；iOS115组合编译/Node24 parity通过，main新增子代理历史入口保留且不在复用范围；未部署新组合App。",
+      "evidenceRefs": [
+        "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
+        "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280",
+        "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277"
+      ]
+    },
+    {
+      "component": "F15同名项目完整目录显示主线交付",
+      "baseCommit": "89537d7a5c7b666a6be3cb0fd4ca7fe21d51b5be",
+      "mainMergeCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
+      "verification": "C22+窄修复518字符组件视觉通过，主线相同组件/Sheets2980源与独立bundle编译通过；原96c4包恢复，未部署当前主线组合App。",
+      "evidenceRefs": [
+        "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+        "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+        "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+        "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
       ]
     }
   ],
@@ -26792,8 +27351,8 @@
     }
   ],
   "executionFocus": {
-    "summary": "F09原已验安全整数修复已合PR191/main d5ca4c74，原同会话恢复/去重证据分别复用。F28 iOS已合PR189；桌面首次opened已过，未知回执持久恢复仍缺且三项租约具体恢复确认待答。配对/长历史/隔离不重测。",
-    "firstRun": "完成本次状态文档交付并清理F09无依赖环境，接着交付F08已验认证地址获取候选；桌面仍等待具体租约恢复确认，恢复后先查原失败批，再补F28持久恢复及桌面PR。",
+    "summary": "F08/F09、工具JSON换行PR196、同名项目完整目录修复PR197均已合主线；真实Diff、同名/无项目聊天及草稿、计划收起已完成。其余第一阶段普通动作按唯一清单继续；F28桌面未知回执持久恢复及3锁确认、第二目标额外桌面GUI仍单列。",
+    "firstRun": "继续核已验候选必要差异是否已合，补普通图片/系统分享、原队列执行和附件草稿重开等真正缺证动作。已过普通搜索、长历史、Diff、同名项目/草稿和计划收起不重测；桌面3锁明确确认前保持现场。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "异常协议帧、DPoP 轮换和拒绝细节、故障码矩阵、极限文件和复杂断点、性能及投递压力单独排在常用功能之后。同一父项的普通用户动作可先验收，相关保护条件继续执行；若缺陷阻断常用流程，随该流程修复。",
     "desktop": [
@@ -26837,11 +27396,11 @@
             "reuse": ["F16"],
             "items": {
               "F12": "普通界面刷新工作区并向下加载更多，当前项目、目录顺序和阅读位置合理。",
-              "F13": "项目和旧正文普通查询定位已通过；保留同名和完整整项断言。",
-              "F15": "从同名项目和无项目入口打开，手机与桌面指向同一聊天，往返切换不会串项目。",
+              "F13": "普通项目和旧正文查询/定位/清空无结果所需链已合PR142/桌面59，复用R259；同名项目完整矩阵继续原项。",
+              "F15": "同名/无项目聊天归属与独立草稿已过；完整目录显示修复0输入视觉通过并合PR197，恢复原验收包/原稿。普通动作不重复，工程隔离单列。",
               "F17": "普通长历史上一页已完成，PR142 I2.4/桌面59原交付直接复用；本次26轮真实聊天的模拟器向上读取和桌面末轮核对已留证，不再重复验收。",
               "F18": "普通流式回复与双端最终一致已通过，权威快照恢复及子运行补证按原场景排期。",
-              "F20": "当前普通工具展开阅读已通过；补实际 Diff 的用户可见内容。",
+              "F20": "真实成功Diff已过并对账，JSON工具换行已合PR196；普通文本范围复用原验收，不重复。复制/子代理新增历史入口及完整父项仍单列。",
               "F28": "首次普通主动打开已真实通过，iOS已合PR189；桌面提交及未知后确认回执持久化待补。原流程不重验。"
             }
           },
@@ -26853,7 +27412,7 @@
               "F37": "主仓 PR144 与桌面 PR59 已合，原生队列相应交付范围直接复用；只补确实缺少的执行/桌面状态。",
               "F38": "普通立即追加已通过。补已结束运行的迟到追加拒绝与下一轮设置隔离。",
               "F39": "普通停止和明确继续已通过。按现存运行目标补明确重新运行入口及相应状态。",
-              "F40": "PR142/桌面59已合的计划修订与当前版批准直接复用；折叠及后续实际变化单独跟进。",
+              "F40": "普通两版阅读、当前版批准/调整和收起均已按各自范围通过并对账已合PR142/桌面59，不重测；工程边界单列。",
               "F42": "主仓 PR142/143 与桌面 PR59 已合，常见问题回答与先答/迟到范围直接复用；后续候选修复单独合并。"
             }
           },
@@ -27033,6 +27592,26 @@
         "scenario": "AC16",
         "assertion": "core-r263-steer-current-run-applied",
         "title": "立即追加到当前任务"
+      },
+      {
+        "scenario": "AC07",
+        "assertion": "core-r276-real-owned-file-diff",
+        "title": "阅读真实成功文件差异"
+      },
+      {
+        "scenario": "AC06",
+        "assertion": "core-r277-same-name-distinct-project-and-projectless-draft-roundtrip",
+        "title": "同名项目与无项目聊天往返"
+      },
+      {
+        "scenario": "AC17",
+        "assertion": "core-r279-existing-completed-plan-expand-collapse",
+        "title": "展开后收起现有计划"
+      },
+      {
+        "scenario": "AC06",
+        "assertion": "core-r282-same-name-complete-directory-visible",
+        "title": "同名项目完整目录可辨认"
       }
     ]
   },
@@ -27186,32 +27765,54 @@
       "phase": "core",
       "behavior": "按项目名和旧正文查找聊天",
       "acceptanceCriteria": "复用 R259 项目查询、正文定位和清空/无结果通过范围",
-      "state": "passed-awaiting-merge",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
-      "evidenceRefs": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"],
-      "pullRequests": [],
-      "nextAction": "核对应提交和合并范围，复用原验收；仅完成交付或受影响补验",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00"
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+        "F13-ORDINARY-SEARCH-ALREADY-MERGED-EXACT-SCOPE-R274"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59"],
+      "nextAction": "普通项目/正文查询定位、清空和无结果已合并，复用R259，不重复运行；完整同名矩阵沿F13-same-name单列。",
+      "updatedAt": "2026-11-18T18:40:10.629949+00:00"
     },
     {
       "id": "F15-same-name-project",
       "featureIds": ["F15"],
       "phase": "core",
       "behavior": "从同名项目及无项目入口往返打开聊天",
-      "acceptanceCriteria": "每次打开准确原聊天，手机和桌面归属一致",
-      "state": "planned",
+      "acceptanceCriteria": "同名项目显示完整可辨认目录，每次打开准确聊天，手机和桌面归属一致，独立草稿不串写",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "pending",
-      "evidenceRefs": [],
-      "pullRequests": [],
-      "nextAction": "每次打开准确原聊天，手机和桌面归属一致",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "F15-SAME-NAME-TWO-DIRECTORY-NATIVE-SETUP-R276",
+        "PHASE1-SAME-NAME-PROJECT-PROJECTLESS-DRAFT-ROUNDTRIP-R277",
+        "F15-NAVIGATION-DRAFT-KEY-MAIN-EXACT-AND-INDEPENDENT-RESULT-R277",
+        "F15-OWNED-MARKER-DRAFT-CLEANUP-RESTORE-R277",
+        "F15-DESKTOP-PROJECT-IDENTITY-MAIN-SOURCE-REVIEW-R277",
+        "F15-SAME-NAME-LONG-PATH-VISIBLE-DISTINCTION-GAP-R278",
+        "F15-MIDDLE-ELLIPSIS-NATIVE-AX-PASS-VISUAL-INCOMPLETE-R281",
+        "F15-COMPLETE-PATH-WRAP-REPAIR-INPUT-R281",
+        "PHASE1-SAME-NAME-COMPLETE-PATH-WRAP-VISIBLE-RESTORE-R282",
+        "F15-FULL-PATH-COMPONENT-MATCH-AND-COMBINED-NATIVE-R282",
+        "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
+        "F15-ORIGINAL-96C4-INSTALLED-AND-OWNED-CLEANUP-R282"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59", "BCAI/agent-hub-app#197"],
+      "nextAction": "聊天归属/独立草稿往返已过，完整目录换行显示已0输入补验并合PR197；原包/原稿恢复，普通动作不重测。在途刷新隔离留父F15工程范围。",
+      "updatedAt": "2026-11-18T20:42:26.560926+00:00",
       "mergedScopeReview": {
-        "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
+        "evidenceRef": "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282",
         "previousAcceptanceScope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R147：当前目录15项／14项目归属、短历史或全文UI按各自关联子项通过；不升级长历史、nil／同名、stream reset、child或压缩完整范围。 R257：当前源包打开原无项目聊天，桌面核对同一ID、原消息及真实新输入。",
-        "retainedBoundary": "保留同名往返未决；nil限定范围复用原证据，核相应候选是否已合。",
-        "candidateDifferenceDelivery": "需逐差异核实；不得假定已合"
+        "retainedBoundary": "原R277逻辑和新R282视觉均过；在途刷新、完整创建执行器/冷迁移及同名搜索仍按各自范围，不升级最新主线组合GUI",
+        "candidateDifferenceDelivery": "新增完整目录换行已实际合PR197；原基础身份逻辑仍按142/59复用"
+      },
+      "actualInput": {
+        "operationId": "904749F1-E629-4A39-A8E1-5372659ED182",
+        "runId": "de566991-3a39-43fe-9a46-f29a25c6de9e",
+        "businessInputs": 1,
+        "state": "completed"
       }
     },
     {
@@ -27277,18 +27878,24 @@
       "phase": "core",
       "behavior": "展开并收起原聊天工具详情",
       "acceptanceCriteria": "复用 R259 真实工具内容和折叠通过范围",
-      "state": "passed-awaiting-merge",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
-      "evidenceRefs": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"],
-      "pullRequests": [],
-      "nextAction": "核对应提交和合并范围，复用原验收；仅完成交付或受影响补验",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+        "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276",
+        "F20-RELEASE115-BOUNDED-SOURCE-CORRECTION-R277",
+        "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
+        "F20-COMBINED-RELEASE115-NATIVE-AND-NODE24-PARITY-R280"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#196"],
+      "nextAction": "原已验JSON软换行已合PR196，普通工具阅读/折叠和真实Diff按原范围复用，不重跑；子代理新增历史入口、复制和全F20仍独立跟进。",
+      "updatedAt": "2026-11-18T20:24:56.739860+00:00",
       "mergedScopeReview": {
-        "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
+        "evidenceRef": "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280",
         "previousAcceptanceScope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R149：1父2子真实模型完成/独立输出与GUI冷读通过；长工具和事件/分页等剩余，不关闭父功能。 R152：当前新普通包结构化长工具全文/纵向阅读/可见末端/展开折叠/准确搜索子范围通过；复制/模拟器clipboard恢复、Codex真实共用UI回归及其余子项未升级。 R259：当前包正常查看现有真实文档解析详情并折叠通过，Diff 继续原场景。",
-        "retainedBoundary": "保留已有通过及候选未合边界；需精确对比，不能以R259证明Diff。",
-        "candidateDifferenceDelivery": "需逐差异核实；不得假定已合"
+        "retainedBoundary": "复制及全父功能/子代理新入口/最新组合GUI未整体通过",
+        "candidateDifferenceDelivery": "原23行JSON换行补丁已交付PR196，普通阅读源范围匹配；新子代理历史入口保留但不由原GUI证明"
       }
     },
     {
@@ -27297,18 +27904,28 @@
       "phase": "core",
       "behavior": "打开真实文件差异内容",
       "acceptanceCriteria": "手机显示对应文件、增加/删除内容和原任务归属",
-      "state": "planned",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "pending",
-      "evidenceRefs": [],
-      "pullRequests": [],
-      "nextAction": "手机显示对应文件、增加/删除内容和原任务归属",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "F20-REAL-DIFF-PREPARATION-RUNNER-GUARD-AND-ORIGINAL-RECEIPTS-R275",
+        "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276",
+        "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59"],
+      "nextAction": "成功Diff增删行、同卡完整AX文件路径、原Run和桌面文件已核；原始Diff展示源已合，复用该范围，不重发。截图的长路径尾名裁切如实保留；多文件/大差异等未扩展。",
+      "updatedAt": "2026-11-18T19:36:00.470658+00:00",
       "mergedScopeReview": {
         "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
         "previousAcceptanceScope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R149：1父2子真实模型完成/独立输出与GUI冷读通过；长工具和事件/分页等剩余，不关闭父功能。 R152：当前新普通包结构化长工具全文/纵向阅读/可见末端/展开折叠/准确搜索子范围通过；复制/模拟器clipboard恢复、Codex真实共用UI回归及其余子项未升级。 R259：当前包正常查看现有真实文档解析详情并折叠通过，Diff 继续原场景。",
         "retainedBoundary": "继续真实文件、增删和原任务归属场景；是否需独有候选修复待逐差异核对。",
         "candidateDifferenceDelivery": "需逐差异核实；不得假定已合"
+      },
+      "actualInput": {
+        "messageId": "EF5C7842-3547-4834-8606-5B2A4945B06C",
+        "runId": "4fe9615b-0cb7-4d0a-be8b-15255d6b78d9",
+        "businessInputs": 1,
+        "state": "completed"
       }
     },
     {
@@ -27462,13 +28079,16 @@
       "phase": "core",
       "behavior": "阅读同一聊天中的两版计划",
       "acceptanceCriteria": "复用 R262 版本、标题、步骤和已替代/已完成状态",
-      "state": "passed-awaiting-merge",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
-      "evidenceRefs": ["PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262"],
-      "pullRequests": [],
-      "nextAction": "核对应提交和合并范围，复用原验收；仅完成交付或受影响补验",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "PHASE1-REAL-HISTORICAL-PLAN-V1-V2-READ-R262",
+        "F40-PLAN-VERSION-READ-ALREADY-MERGED-EXACT-SCOPE-R273"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59"],
+      "nextAction": "普通两版阅读的必要链已合，复用R262原验收，不重复执行；折叠沿F40-collapse单列，批准/调整沿已合F40-approve-adjust复用。",
+      "updatedAt": "2026-11-18T18:36:58.275254+00:00",
       "mergedScopeReview": {
         "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
         "previousAcceptanceScope": "Current actual native/Desktop bounded assertions inR156 passed; whole feature remains open for explicit remaining UI/target/recovery assertions. Plan v1/v2/current approval real output, settingsinheritance/cold passed; offlinecache approval andplan toggle actualinteraction unverified. R262：同一真实旧聊天里的计划 v1 和 v2 可展开阅读，版本、标题、步骤及状态正确，桌面核对原计划正文。",
@@ -27499,13 +28119,16 @@
       "phase": "core",
       "behavior": "展开后收起计划正文",
       "acceptanceCriteria": "收起状态可见，正文位置与原聊天保留",
-      "state": "planned",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "pending",
-      "evidenceRefs": [],
-      "pullRequests": [],
-      "nextAction": "收起状态可见，正文位置与原聊天保留",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "PHASE1-EXISTING-PLAN-EXPAND-COLLAPSE-RESTORE-R279",
+        "F40-COLLAPSE-MAIN-EXACT-AND-ROOT-INDEPENDENT-RESULT-R279"
+      ],
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59"],
+      "nextAction": "现有计划普通展开→收起已实际通过，必要UI和读取链已有主线实现，无新增源补丁；不重生成计划或重放批准。父项离线审批/其他工程边界继续原范围。",
+      "updatedAt": "2026-11-18T20:20:25.406883+00:00",
       "mergedScopeReview": {
         "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
         "previousAcceptanceScope": "Current actual native/Desktop bounded assertions inR156 passed; whole feature remains open for explicit remaining UI/target/recovery assertions. Plan v1/v2/current approval real output, settingsinheritance/cold passed; offlinecache approval andplan toggle actualinteraction unverified. R262：同一真实旧聊天里的计划 v1 和 v2 可展开阅读，版本、标题、步骤及状态正确，桌面核对原计划正文。",
@@ -28109,9 +28732,9 @@
       "phase": "completed",
       "behavior": "EasyWork 双通道偏好与切换",
       "acceptanceCriteria": "当前登记模拟器范围通过。三种偏好在普通界面保存后分别独立冷启动，测试 LAN 关闭后同 App 自然回退中继。原目标、凭据、原可信候选、草稿、回执和未知原操作保持，后台无新增执行。",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F08-NEW04CEB-REAL-FIRST-AUTHENTICATED-LAN-DURABLE-ACQUISITION-PASS-R244",
         "F08-ORDINARY-RELAY-UI-INDEPENDENT-COLD-FIVE-LAN-AND-REV25-SCOPED-PASS-R245",
@@ -28119,11 +28742,24 @@
         "F08-LAN-COLD-STRICT-IDENTITY-OLDPINS-REAL-V3-PASS-R248",
         "F08-ORDINARY-AUTOMATIC-NATURAL-RELAY-AND-OWNED-LAN-RELEASE-R249",
         "F08-INDEPENDENT-FINAL-AUTOMATIC-COLD-STRICT-ORIGINALS-R249",
-        "F08-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R249"
+        "F08-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R249",
+        "F08-ALREADY-ACCEPTED-CANDIDATE-MAIN-INTEGRATION-REVIEW-R272",
+        "F08-FINAL-MAIN-FULL-CHECK-AND-SIMULATOR-BUILD-R275",
+        "F08-PR193-ACTUAL-MAIN-MERGE-R275"
       ],
-      "pullRequests": [],
-      "nextAction": "保持原关闭范围，核对应 PR 后只完成尚未交付的提交合并",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00"
+      "pullRequests": ["BCAI/agent-hub-app#142", "BCAI/comfy-desktop#59", "BCAI/agent-hub-app#193"],
+      "nextAction": "原已验三偏好/冷恢复和认证地址获取/保存对应源码已合，沿准确旧证据复用；无新组合GUI/正式部署声明，不重复原流程。",
+      "updatedAt": "2026-11-18T18:56:34.439508+00:00",
+      "sourceDeliveries": {
+        "ios": {
+          "state": "merged",
+          "pullRequest": "BCAI/agent-hub-app#193",
+          "headCommit": "7b3e89defb37f89b0340aa11da03842d30c7e984",
+          "mergeCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb",
+          "formalDeployment": "not-performed",
+          "buildOnlyBundle": "com.easyai.agenthub.easyworkf08delivery"
+        }
+      }
     },
     {
       "id": "F16-registered-scope",
@@ -28614,6 +29250,45 @@
       "checkedAt": "2026-11-18T18:22:20.580382+00:00",
       "evidenceRef": "F09-PR191-ACTUAL-MAIN-MERGE-R271",
       "mergedAt": "2026-11-19T02:20:36+08:00"
+    },
+    "BCAI/agent-hub-app#193": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 193,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/193",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "7b3e89defb37f89b0340aa11da03842d30c7e984",
+      "mergeCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb",
+      "mergedAt": "2026-11-19T02:54:20+08:00",
+      "checkedMainCommit": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb",
+      "checkedAt": "2026-11-18T18:56:34.439508+00:00",
+      "evidenceRef": "F08-PR193-ACTUAL-MAIN-MERGE-R275"
+    },
+    "BCAI/agent-hub-app#196": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 196,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/196",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "c8036a0af3011aedaa20abf394748cfd7c93e686",
+      "mergeCommit": "7ce9e6c17f653d215b76af1b6d0284b3c4f725d5",
+      "mergedAt": "2026-11-19T04:22:30+08:00",
+      "checkedMainCommit": "7ce9e6c17f653d215b76af1b6d0284b3c4f725d5",
+      "checkedAt": "2026-11-18T20:24:56.739860+00:00",
+      "evidenceRef": "F20-STRUCTURED-DETAIL-WRAP-PR196-ACTUAL-MAIN-R280"
+    },
+    "BCAI/agent-hub-app#197": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 197,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/197",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "89537d7a5c7b666a6be3cb0fd4ca7fe21d51b5be",
+      "mergeCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
+      "mergedAt": "2026-11-19T04:38:17+08:00",
+      "checkedMainCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
+      "checkedAt": "2026-11-18T20:42:26.560926+00:00",
+      "evidenceRef": "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282"
     }
   },
   "deliveryWorkflow": {
@@ -28631,9 +29306,9 @@
       "paused": "按原要求暂停",
       "blocked": "有明确外部阻塞"
     },
-    "lastReconciledAt": "2026-11-18T18:22:20.580382+00:00",
+    "lastReconciledAt": "2026-11-18T18:56:34.439508+00:00",
     "sourceHeads": {
-      "BCAI/agent-hub-app/main": "d5ca4c7427af831343c5c3178c41e135e74a9797",
+      "BCAI/agent-hub-app/main": "7d4cb547bc88c4f9fce44014457b4bee8de6dddb",
       "BCAI/comfy-desktop/master": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6"
     }
   },

@@ -185,6 +185,7 @@ protocol AgentClient: Sendable {
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data
   func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String
+  func recoverVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String
   func permissionOptions(_ client: Client) -> [AgentPermissionOption]
   func registerNotifications(_ client: Client, registration: TaskNotificationRegistration) async throws -> TaskNotificationStatus
   func unregisterNotifications(_ client: Client, deviceId: String) async throws
@@ -198,6 +199,7 @@ protocol AgentClient: Sendable {
   func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata
   func close(_ client: Client) async
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse
   func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind?
@@ -224,6 +226,7 @@ protocol AgentClient: Sendable {
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL?
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
+  func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt
@@ -245,6 +248,9 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
+    throw HostServiceError.message(L10n.tr("此客户端暂不支持完整子 Agent 过程"))
+  }
   func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata {
     AgentConnectionMetadata(title: await connectionTitle(client))
   }
@@ -256,6 +262,7 @@ extension AgentClient {
   func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { throw HostServiceError.unavailable }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { throw HostServiceError.unavailable }
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { nil }
+  func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。")) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
   func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? { nil }
@@ -274,6 +281,7 @@ extension AgentClient {
   }
   func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness { throw HostServiceError.message(L10n.tr("此电脑尚未支持录音转写，请更新电脑连接程序。")) }
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String { throw HostServiceError.unavailable }
+  func recoverVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String { throw HostServiceError.unavailable }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { throw HostServiceError.message(L10n.tr("此连接尚未支持文件互传，请更新电脑连接程序。")) }
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt { throw HostServiceError.unavailable }
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt { throw HostServiceError.unavailable }
@@ -310,6 +318,19 @@ extension AgentClient {
 enum AgentDEVReplayOperation: String, Sendable { case create, reply }
 #endif
 struct CodexAgentClient: AgentClient {
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
+    var query = ["threadId": parentThreadId, "messageId": messageId]
+    if let childId { query["childId"] = childId }
+    if let cursor { query["cursor"] = cursor }
+    let value: SubagentHistorySnapshot = try await HostService.load(HostService.request(try HostService.url(client, "v1/subagents/history", query), token: CredentialVault.token(client.id)))
+    let expected = client.codexDirect?.target ?? client.readingTarget
+    guard value.version == 1, ["saved-history", "desktop-runtime"].contains(value.source), value.hostId == client.id, value.parentThreadId == parentThreadId, value.messageId == messageId,
+      value.children.contains(where: { $0.id == value.childId }), value.threadId == value.childId,
+      childId == nil || value.childId == childId,
+      expected?.agentId == value.readTarget.agentId, expected?.hostId == value.readTarget.hostId,
+      expected?.workspaceId == value.readTarget.workspaceId, expected?.runtimeId == value.readTarget.runtimeId else { throw HostServiceError.wrongHost }
+    return value
+  }
   func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? {
     guard workspace.connectionMode == "desktop-runtime", workspace.readTarget?.agentId == "codex" else { return nil }
     if workspace.capabilities?.contains("desktop:suggestions:displayed:v1") == true { return .desktopDisplay }
@@ -341,23 +362,32 @@ struct CodexAgentClient: AgentClient {
     return value
   }
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String {
+    try await voiceResult(client, recording: recording, threadId: threadId, draftId: draftId, queryOnly: false)
+  }
+  func recoverVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String {
+    try await voiceResult(client, recording: recording, threadId: threadId, draftId: draftId, queryOnly: true)
+  }
+  private func voiceResult(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String, queryOnly: Bool) async throws -> String {
     let manifest = VoiceTranscriptionRequest(hostId: client.id, threadId: threadId, draftId: draftId,
       operationId: recording.operationId, mediaType: "audio/wav", sizeBytes: recording.data.count,
       sha256: recording.sha256, durationMs: recording.durationMs)
     func validate(_ receipt: VoiceTranscriptionReceipt) throws {
       guard try receipt.matches(manifest) else { throw HostServiceError.message(L10n.tr("转写回执与原录音或目标不一致")) }
     }
-    func status() async throws -> VoiceTranscriptionReceipt {
-      try await HostService.load(HostService.request(try HostService.url(client, "v1/voice/transcriptions", ["id": manifest.operationId]), token: CredentialVault.token(client.id)))
+    func status(wait: Bool = false) async throws -> VoiceTranscriptionReceipt {
+      var request = HostService.request(try HostService.url(client, "v1/voice/transcriptions", ["id": manifest.operationId]), token: CredentialVault.token(client.id))
+      if wait { request.setValue("wait=20", forHTTPHeaderField: "Prefer") }
+      return try await HostService.load(request)
     }
     var receipt: VoiceTranscriptionReceipt
     do { receipt = try await status() }
     catch HostServiceError.rejected(404, _) {
+      guard !queryOnly else { throw HostServiceError.message(L10n.tr("转写仍在处理中，录音已保留；点击重试查询原结果。")) }
       // Prepare stores metadata only. If the response is lost, query the same ID on explicit retry.
       receipt = try await HostService.load(HostService.request(try HostService.url(client, "v1/voice/transcriptions"), token: CredentialVault.token(client.id), method: "POST", body: JSONEncoder().encode(manifest)))
     }
     try validate(receipt)
-    if receipt.phase == "awaiting-audio" {
+    if receipt.phase == "awaiting-audio", !queryOnly {
       var request = HostService.request(try HostService.url(client, "v1/voice/transcriptions/audio", ["id": manifest.operationId]), token: CredentialVault.token(client.id), method: "POST", body: recording.data)
       request.setValue("audio/wav", forHTTPHeaderField: "Content-Type")
       receipt = try await HostService.load(request)
@@ -365,10 +395,12 @@ struct CodexAgentClient: AgentClient {
     }
     let deadline = Date().addingTimeInterval(100)
     while receipt.phase == "transcribing", Date() < deadline {
-      try await Task.sleep(for: .milliseconds(700))
       try Task.checkCancellation()
-      receipt = try await status()
+      receipt = try await status(wait: true)
       try validate(receipt)
+      // Older Hosts ignore Prefer; keep their polling bounded. New Hosts wake
+      // this read when the durable result is ready, without an initial delay.
+      if receipt.phase == "transcribing" { try await Task.sleep(for: .milliseconds(700)) }
     }
     if receipt.phase == "completed", let text = receipt.text { return text }
     throw HostServiceError.message(receipt.error ?? L10n.tr("转写仍在处理中，录音已保留；点击重试查询原结果。"))
@@ -446,7 +478,9 @@ struct CodexAgentClient: AgentClient {
     return try await HostService.replyDeliveryStatus(client, reply: reply, target: target)
   }
   func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt {
-    guard client.codexDirect?.target == target else { throw HostServiceError.wrongHost }
+    // A new, explicitly requested resend can also use a legacy connection's
+    // validated full reading target. Same-ID recovery keeps its direct-only gate.
+    guard (client.codexDirect?.target ?? client.readingTarget) == target else { throw HostServiceError.wrongHost }
     return try await HostService.send(client, reply, target: target)
   }
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch { try await HostService.events(client, epoch: epoch, after: after, threadId: threadId) }
@@ -467,6 +501,7 @@ struct CodexAgentClient: AgentClient {
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL { try await HostService.download(client, file: file, progress: progress) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await HostService.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
+  func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment { try await HostService.resolveDocumentFile(client, file: file, reference: reference, sourceSha256: sourceSha256) }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data {
     CodexHostRoutes.shared.register(client)
     var request = HostService.request(try HostService.url(client, "v1/usage", ["target": try usageTargetJSON(target)]), token: CredentialVault.token(client.id))

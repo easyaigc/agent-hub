@@ -312,7 +312,7 @@ private struct ProjectGitFilesView: View {
 }
 
 extension SessionStore {
-  var supportsProjectGit: Bool { client.map { $0.agentConnection?.target.agentId == "easywork" && saved.workspaces[$0.id]?.capabilities?.contains("project-git.status.v1") == true } ?? false }
+  var supportsProjectGit: Bool { client.map { saved.workspaces[$0.id]?.capabilities?.contains("project-git.status.v1") == true } ?? false }
   var conversationGitProject: Project? {
     guard let conversation, let projectId=conversation.projectId else{return nil}
     return projects.first { $0.id==projectId && $0.hostId==conversation.hostId }

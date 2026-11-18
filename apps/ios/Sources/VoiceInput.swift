@@ -65,8 +65,36 @@ struct VoiceTranscriptionProvider {
   // Reads a prepared route and obtains any required sharing consent; never performs I/O.
   let prepare: @MainActor () throws -> Bool
   let transcribe: @MainActor (VoiceRecording) async throws -> String
+  // Foreground recovery may read the original receipt, but must never upload again.
+  var recover: (@MainActor (VoiceRecording) async throws -> String)? = nil
   static func local(scopeKey: String) -> Self {
     Self(scopeKey: scopeKey, prepare: { false }, transcribe: { _ in throw HostServiceError.unavailable })
+  }
+}
+
+/// Keep an in-flight transcription with its draft, rather than with the visible page.
+@MainActor
+final class VoiceInputSessions: ObservableObject {
+  private var controllers: [String: VoiceInputController] = [:]
+  private var observations: [String: AnyCancellable] = [:]
+
+  func controller(for target: String) -> VoiceInputController {
+    if let controller = controllers[target] { return controller }
+    // Keep controller identity stable while SwiftUI holds it in another subtree.
+    // Completion/discard releases its audio and callbacks in reset().
+    let controller = VoiceInputController()
+    controllers[target] = controller
+    observations[target] = controller.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+    return controller
+  }
+
+  func handleScenePhase(_ phase: ScenePhase) { for controller in controllers.values { controller.handleScenePhase(phase) } }
+  func leave(_ target: String) { controllers[target]?.suspend() }
+  func suspend() { for controller in controllers.values { controller.suspend() } }
+  func enterBackground() { for controller in controllers.values { controller.enterBackground() } }
+  func recover() { for controller in controllers.values { controller.recoverAfterInterruption() } }
+  func prepareCapture(except target: String) {
+    for (key, controller) in controllers where key != target { controller.suspend() }
   }
 }
 
@@ -204,13 +232,18 @@ final class VoiceInputController: ObservableObject {
   private var interruptionObserver: NSObjectProtocol?
   private let audioSession = VoiceAudioSession.shared
   private var activeAudioSession: UUID?
+  private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+  private var backgroundGeneration = UUID()
+  private var needsReceiptRecovery = false
+  private var backgroundedWhileFinishing = false
+  private var fixtureCaptured = false
   private var isFixture: Bool {
     let args = ProcessInfo.processInfo.arguments
     return args.contains("-ui-testing") && args.contains("-voice-input-fixture")
   }
   var isActive: Bool { phase != .idle }
   var canRetryTranscription: Bool {
-    phase == .failed && (recording != nil || fileURL != nil || localRecognition != nil || simulatesTranscriptionFailure)
+    phase == .failed && (recording != nil || fileURL != nil || localRecognition != nil || fixtureCaptured)
   }
   var failureTitle: String {
     canRetryTranscription ? L10n.tr("转写失败") : L10n.tr("录音未完成")
@@ -246,6 +279,7 @@ final class VoiceInputController: ObservableObject {
     VoiceMigrationSafety.track(self)
     targetKey = target; originalText = text; self.provider = provider; onDraftChange = onChange
     transcript = ""; error = nil; diagnosticInfo = ""; recording = nil; recordingPersisted = false
+    fixtureCaptured = false
     usesLocalRecognition = VoiceTranscriptionPreference.current == .local
     usesLocalFallback = false
     usesSavedLocalRecognition = false
@@ -271,6 +305,7 @@ final class VoiceInputController: ObservableObject {
             return
           }
           diagnosticInfo = usesLocalRecognition ? "backend=LocalSpeech fixture=true" : "backend=HostTranscription fixture=true"
+          fixtureCaptured = true
           phase = .listening
           levels = [0.3, 0.55, 0.8, 0.4, 0.9, 0.65, 0.35, 0.6, 0.25]
           return
@@ -347,12 +382,14 @@ final class VoiceInputController: ObservableObject {
     guard canUseLocalTranscription else { return false }
     return await finish(usingLocalRecording: true)
   }
-  func finish(usingLocalRecording: Bool = false) async -> Bool {
+  func finish(usingLocalRecording: Bool = false, queryOnly: Bool = false) async -> Bool {
     if let finishTask { return await finishTask.value }
     guard phase == .listening || phase == .failed else { return phase == .idle && error == nil }
     let id = generation
     usesSavedLocalRecognition = usingLocalRecording
     phase = usingLocalRecording ? .requesting : .finishing; error = nil
+    needsReceiptRecovery = false
+    beginBackgroundTime(id: id)
     let task = Task<Bool, Never> {
       do {
         let text: String
@@ -370,7 +407,8 @@ final class VoiceInputController: ObservableObject {
             try PendingVoiceStore.save(saved, target: targetKey, scopeKey: provider.scopeKey, text: originalText)
           }
           #endif
-          let delay = ProcessInfo.processInfo.environment["VOICE_PENDING_FIXTURE_WAV"] == nil ? 300 : 8000
+          let configuredDelay = Int(ProcessInfo.processInfo.environment["VOICE_TRANSCRIPTION_FIXTURE_DELAY_MS"] ?? "")
+          let delay = max(0, min(60000, configuredDelay ?? (ProcessInfo.processInfo.environment["VOICE_PENDING_FIXTURE_WAV"] == nil ? 300 : 8000)))
           try await Task.sleep(for: .milliseconds(delay))
           if simulatesTranscriptionFailure && !usingLocalRecording {
             throw HostServiceError.message(L10n.tr("电脑转写暂不可用"))
@@ -410,7 +448,12 @@ final class VoiceInputController: ObservableObject {
           guard let provider, let recording else { throw HostServiceError.unavailable }
           try PendingVoiceStore.save(recording, target: targetKey, scopeKey: provider.scopeKey, text: originalText)
           recordingPersisted = true
-          text = try await provider.transcribe(recording)
+          if queryOnly {
+            guard let recover = provider.recover else { throw HostServiceError.unavailable }
+            text = try await recover(recording)
+          } else {
+            text = try await provider.transcribe(recording)
+          }
         }
         guard generation == id, !Task.isCancelled else { return false }
         transcript = text
@@ -428,13 +471,22 @@ final class VoiceInputController: ObservableObject {
         guard generation == id, !Task.isCancelled else { return false }
         stopCapture()
         phase = .failed
+        needsReceiptRecovery = !queryOnly && !usesLocalRecognition && !usingLocalRecording
+          && recording != nil && provider?.recover != nil
         self.error = error.localizedDescription + (usesLocalRecognition ? L10n.tr(" 原草稿已保留。") : usingLocalRecording ? L10n.tr(" 录音和原草稿已保留，可再次选择转写方式。") : L10n.tr(" 录音已保留；重试只查询或补齐原操作。"))
         return false
       }
     }
     finishTask = task
     let result = await task.value
-    if generation == id { finishTask = nil }
+    if generation == id {
+      finishTask = nil; endBackgroundTime()
+      // Activation can arrive before URLSession delivers its background error.
+      if backgroundedWhileFinishing, UIApplication.shared.applicationState == .active {
+        backgroundedWhileFinishing = false
+        recoverAfterInterruption()
+      }
+    }
     return result
   }
   func recordAgain(text: String) {
@@ -482,6 +534,8 @@ final class VoiceInputController: ObservableObject {
   }
   func suspend() {
     guard phase != .idle, phase != .failed else { return }
+    // A sealed request survives navigation; only receipt recovery resumes it.
+    if finishTask != nil { return }
     guard phase != .requesting else { cancel(); return }
     generation = UUID()
     setupTask?.cancel(); finishTask?.cancel(); finishTask = nil
@@ -494,6 +548,46 @@ final class VoiceInputController: ObservableObject {
     }
     phase = .failed
     error = L10n.tr("录音已暂停并保留，点击重试查询或完成原转写。")
+  }
+  func enterBackground() {
+    if finishTask != nil { backgroundedWhileFinishing = true }
+    suspend()
+  }
+  func recoverAfterInterruption() {
+    guard needsReceiptRecovery, phase == .failed, finishTask == nil else { return }
+    needsReceiptRecovery = false
+    let id = generation
+    Task {
+      guard generation == id, phase == .failed, finishTask == nil else { return }
+      _ = await finish(queryOnly: true)
+    }
+  }
+  private func beginBackgroundTime(id: UUID) {
+    endBackgroundTime()
+    let budget = UUID()
+    backgroundGeneration = budget
+    backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Voice transcription") { [weak self] in
+      Task { @MainActor in
+        guard let self, self.generation == id, self.backgroundGeneration == budget else { return }
+        self.endBackgroundTime()
+        // The host keeps the original operation. On return only GET its receipt.
+        self.generation = UUID()
+        self.finishTask?.cancel(); self.finishTask = nil
+        self.stopCapture()
+        self.localRecognition?.cancel()
+        self.phase = .failed
+        self.needsReceiptRecovery = !self.usesLocalRecognition && !self.usesSavedLocalRecognition
+          && self.recording != nil && self.provider?.recover != nil
+        self.error = L10n.tr("录音已暂停并保留，点击重试查询或完成原转写。")
+        if UIApplication.shared.applicationState == .active { self.recoverAfterInterruption() }
+      }
+    }
+  }
+  private func endBackgroundTime() {
+    backgroundGeneration = UUID()
+    guard backgroundTask != .invalid else { return }
+    let task = backgroundTask; backgroundTask = .invalid
+    UIApplication.shared.endBackgroundTask(task)
   }
   private func beginLocalRecognition(id: UUID) {
     let local = LocalVoiceInputController()
@@ -540,6 +634,10 @@ final class VoiceInputController: ObservableObject {
     if let id = activeAudioSession { audioSession.deactivate(id: id); activeAudioSession = nil }
   }
   private func reset(discard: Bool, preservePending: Bool = false) {
+    endBackgroundTime()
+    needsReceiptRecovery = false
+    backgroundedWhileFinishing = false
+    fixtureCaptured = false
     stopCapture()
     localObservation = nil
     localRecognition?.cancel(); localRecognition = nil
@@ -692,7 +790,8 @@ struct VoiceInputControls: View {
             if voice.phase == .finishing {
               ProgressView().tint(.primary)
             } else if voice.phase == .failed {
-              Image(systemName: "arrow.clockwise").font(.system(size: 17))
+              Label(voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音"), systemImage: "arrow.clockwise")
+                .font(.subheadline).padding(.horizontal, 12)
             } else {
               Image(systemName: "stop.fill").font(.system(size: 17))
             }
@@ -701,7 +800,7 @@ struct VoiceInputControls: View {
           .accessibilityLabel(voice.phase == .finishing ? voice.status : voice.phase == .failed
             ? (voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音")) : L10n.tr("结束录音并转写"))
           .accessibilityIdentifier(identifier("stop-dictation", question: "question-voice-"))
-          .background(Color.primary.opacity(0.06), in: Circle())
+          .background(Color.primary.opacity(0.06), in: Capsule())
           .disabled(voice.phase != .listening && voice.phase != .failed)
       }
       if voice.phase != .finishing {

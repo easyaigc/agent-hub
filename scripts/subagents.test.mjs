@@ -254,3 +254,199 @@ test('native desktop activities update one stable parent card from the exact chi
     runtime.close();
   }
 });
+
+test('paged child history keeps original messages and rejects stale cursors', async () => {
+  const { subagentHistoryMessages, subagentHistoryPage } =
+    await import('../packages/codex-adapter/dist/subagents.js');
+  const { historyIdentity } =
+    await import('../packages/codex-adapter/dist/desktop-history-identity.js');
+  const input = Array.from({ length: 181 }, (_, i) => ({
+    id: 'm' + i,
+    type: 'agentMessage',
+    text: 'message ' + i,
+  }));
+  const messages = subagentHistoryMessages([{ id: 'turn', status: 'completed', items: input }]);
+  assert.equal(messages.length, 181);
+  assert.equal(messages[0].id, historyIdentity('m0', 'turn'));
+  let page = subagentHistoryPage(messages),
+    collected = page.messages;
+  while (page.nextCursor) {
+    page = subagentHistoryPage(messages, page.nextCursor);
+    collected = [...page.messages, ...collected];
+  }
+  assert.deepEqual(collected, messages);
+  assert.throws(() => subagentHistoryPage(messages, 'missing'), /cursor/);
+  const filtered = subagentHistoryMessages([{ id: 't', items: input }], (item) =>
+    item.id === 'm0' ? item : undefined,
+  );
+  assert.equal(filtered.length, 1);
+});
+
+test('read-only child pages require a named parent item and retain native activity deduplication', async () => {
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const { historyIdentity } =
+    await import('../packages/codex-adapter/dist/desktop-history-identity.js');
+  const runtime = new DesktopRuntime({}, 'host', 'test');
+  const activity = (id, child, kind) => ({
+    type: 'subAgentActivity',
+    id,
+    agentThreadId: child,
+    agentPath: '/agents/' + child,
+    kind,
+  });
+  const parent = {
+    id: 'parent',
+    turns: [
+      {
+        id: 'pt',
+        items: [activity('start', 'child', 'started'), activity('end', 'child', 'completed')],
+      },
+    ],
+  };
+  const reads = [];
+  runtime.ipc.hasOwner = () => false;
+  runtime.ipc.state = (id) => (id === 'parent' ? parent : undefined);
+  runtime.ipc.close = () => {};
+  runtime.reader.close = () => {};
+  runtime.reader.read = async (method, { threadId }) => {
+    reads.push([method, threadId]);
+    return {
+      thread: {
+        id: threadId,
+        title: 'Named child',
+        turns: [
+          {
+            id: 'ct',
+            status: 'completed',
+            items: [
+              { id: 'answer', type: 'agentMessage', text: 'complete child output' },
+              activity('nested', 'grandchild', 'started'),
+              activity('nested-end', 'grandchild', 'completed'),
+            ],
+          },
+        ],
+      },
+    };
+  };
+  try {
+    const id = historyIdentity('desktop-subagent-child', 'pt');
+    await assert.rejects(runtime.subagentHistoryPage('parent', id, 'unrelated'), /not named/);
+    assert.deepEqual(reads, [], 'unnamed children must never be queried');
+    const page = await runtime.subagentHistoryPage('parent', id, 'child');
+    assert.equal(page.source, 'saved-history');
+    assert.equal(page.threadId, 'child');
+    assert.equal(page.children.length, 1);
+    assert.equal(page.messages[0].text, 'complete child output');
+    assert.equal(page.messages.filter((m) => m.kind === 'subAgent').length, 1);
+    assert.deepEqual(reads, [['thread/read', 'child']]);
+    await assert.rejects(runtime.subagentHistoryPage('parent', 'missing', 'child'), /unavailable/);
+  } finally {
+    runtime.close();
+  }
+});
+
+test('runtime-bound child cursors reject cross-target reuse before querying history', async () => {
+  const { RuntimeSession } = await import('../packages/codex-adapter/dist/runtime-session.js');
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const runtime = Object.create(DesktopRuntime.prototype);
+  Object.defineProperty(runtime, 'ready', { value: true });
+  const session = Object.create(RuntimeSession.prototype);
+  let reads = 0;
+  const target = {
+    agentId: 'codex',
+    hostId: 'host',
+    workspaceId: 'workspace',
+    runtimeId: 'desktop-runtime',
+  };
+  session.runtime = runtime;
+  Object.defineProperty(session, 'hostId', { value: 'host' });
+  session.closed = false;
+  session.subagentReadParents = new Map();
+  session.requireReady = () => {};
+  session.thread = (id) => assert.equal(id, 'parent');
+  session.readingTarget = () => target;
+  runtime.subagentHistoryPage = async (parent, message, child, cursor) => {
+    reads++;
+    assert.equal(parent, 'parent');
+    assert.equal(message, 'message');
+    assert.equal(child ?? 'child', 'child');
+    if (cursor) assert.equal(cursor, 'anchor');
+    return {
+      children: [{ id: 'child', title: 'Child', status: 'completed' }],
+      childId: 'child',
+      threadId: 'child',
+      source: 'saved-history',
+      messages: [],
+      nextCursor: cursor ? null : 'anchor',
+    };
+  };
+  const first = await session.subagentHistoryPage('parent', 'message');
+  assert.match(first.nextCursor, /^subagent-page-v1:/);
+  await session.subagentHistoryPage('parent', 'message', undefined, first.nextCursor);
+  for (const [parent, message, child] of [
+    ['parent', 'other', 'child'],
+    ['parent', 'message', 'other'],
+  ])
+    await assert.rejects(
+      session.subagentHistoryPage(parent, message, child, first.nextCursor),
+      /target changed/,
+    );
+  target.runtimeId = 'other-runtime';
+  await assert.rejects(
+    session.subagentHistoryPage('parent', 'message', 'child', first.nextCursor),
+    /target changed/,
+  );
+  assert.equal(reads, 2);
+});
+
+test('legacy ordinal child cursors require a unique original turn', async () => {
+  const { subagentHistoryMessages, subagentHistoryPage } =
+    await import('../packages/codex-adapter/dist/subagents.js');
+  const messages = subagentHistoryMessages([
+    {
+      id: 'first-turn',
+      items: [
+        { id: 'item-0', type: 'agentMessage', text: 'first' },
+        { id: 'item-1', type: 'agentMessage', text: 'anchor' },
+      ],
+    },
+    { id: 'second-turn', items: [{ id: 'item-0', type: 'agentMessage', text: 'second' }] },
+  ]);
+  assert.notEqual(messages[0].id, messages[2].id);
+  assert.deepEqual(subagentHistoryPage(messages, 'item-1').messages, [messages[0]]);
+  assert.throws(
+    () => subagentHistoryPage(messages, 'item-0'),
+    (error) => error.status === 409 && /refresh/.test(error.message),
+  );
+});
+
+test('named child request errors retain explicit HTTP status at the session boundary', async () => {
+  const { RuntimeSession } = await import('../packages/codex-adapter/dist/runtime-session.js');
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const { SubagentHistoryError } = await import('../packages/codex-adapter/dist/subagents.js');
+  const runtime = Object.create(DesktopRuntime.prototype),
+    session = Object.create(RuntimeSession.prototype);
+  Object.defineProperty(runtime, 'ready', { value: true });
+  Object.defineProperty(session, 'hostId', { value: 'host' });
+  session.runtime = runtime;
+  session.closed = false;
+  session.subagentReadParents = new Map();
+  session.requireReady = () => {};
+  session.thread = () => {};
+  session.readingTarget = () => ({
+    agentId: 'codex',
+    hostId: 'host',
+    workspaceId: 'workspace',
+    runtimeId: 'desktop-runtime',
+  });
+  for (const status of [403, 404, 409]) {
+    const reason = 'Named child validation ' + status;
+    runtime.subagentHistoryPage = async () => {
+      throw new SubagentHistoryError(status, reason);
+    };
+    await assert.rejects(
+      session.subagentHistoryPage('parent', 'message', 'child'),
+      (error) => error.status === status && error.message === reason,
+    );
+  }
+});

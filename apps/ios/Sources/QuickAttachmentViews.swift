@@ -10,12 +10,13 @@ struct RecentAttachmentHint: View {
     if let photo = library.suggestion {
       HStack(spacing: 8) {
         Button { preview = photo } label: { AttachmentPhotoThumbnail(photo: photo).frame(width: 48, height: 52) }
+          .buttonStyle(.plain)
           .accessibilityLabel(L10n.tr("预览最近图片"))
         VStack(alignment: .leading, spacing: 3) {
           Text(L10n.tr("要添加这张图片吗？")).font(.subheadline)
           Text(L10n.tr("最近新增的图片")).font(.caption).foregroundStyle(Palette.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
-        Button(L10n.tr("添加")) { add(photo) }.buttonStyle(.borderedProminent)
+        Button(L10n.tr("添加")) { add(photo) }.buttonStyle(RecentAttachmentAddStyle())
           .disabled(store.isImporting || store.localRecoveryRequired).accessibilityIdentifier("recent-attachment-add")
         IconButton(symbol: "xmark", label: L10n.tr("忽略这张图片"), id: "recent-attachment-dismiss") { library.dismiss(photo) }
       }.padding(8).floatingSurface(cornerRadius: 16).padding(.horizontal, 12)
@@ -26,7 +27,7 @@ struct RecentAttachmentHint: View {
               Text(L10n.tr("仅添加到草稿，发送时再上传。")).font(.caption)
               Spacer()
               Button(L10n.tr("添加到当前草稿")) { preview = nil; add(photo) }
-                .buttonStyle(.borderedProminent).controlSize(.large).disabled(store.isImporting)
+                .buttonStyle(RecentAttachmentAddStyle()).disabled(store.isImporting || store.localRecoveryRequired)
             }
           }
         }
@@ -39,6 +40,20 @@ struct RecentAttachmentHint: View {
       await store.addLocalAttachments(to: destination, loaders: [{ try await library.input(for: photo) }])
       if (store.drafts.values[destination.key]?.attachments.count ?? 0) > count { library.dismiss(photo) }
     }
+  }
+}
+
+private struct RecentAttachmentAddStyle: ButtonStyle {
+  @Environment(\.isEnabled) private var isEnabled
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .font(.subheadline.weight(.semibold))
+      .fixedSize(horizontal: false, vertical: true)
+      .padding(.horizontal, 14).frame(minHeight: 44)
+      .foregroundStyle(Palette.bubbleText)
+      .background(Palette.bubble, in: RoundedRectangle(cornerRadius: 12))
+      .opacity(!isEnabled ? 0.45 : configuration.isPressed ? 0.7 : 1)
   }
 }
 

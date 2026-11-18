@@ -19,6 +19,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import org.json.JSONObject
+import java.text.NumberFormat
+internal fun usageRemaining(metric:JSONObject):String? {
+    if(metric.optString("state")=="unlimited")return "无限额"
+    if(metric.optString("state")=="amount" && metric.optString("kind")=="balance")return metricText(metric)
+    if(metric.has("remainingValue"))return metric.getString("remainingValue")+metric.optString("unit").let { if(it.isEmpty())"" else " $it" }
+    if(!metric.has("remainingPercent"))return null
+    val percent=metric.getDouble("remainingPercent")
+    if(percent>0 && percent<0.01)return "<0.01%"
+    return NumberFormat.getNumberInstance().apply { maximumFractionDigits=2 }.format(percent)+"%"
+}
+internal fun usageResetCountdown(raw:String,now:Long,compact:Boolean=false):String {
+    val seconds=UsageRules.resetSeconds(raw,now) ?: return "暂不可用"
+    if(seconds<=0)return "已到重置时间，等待更新"
+    return listOf(seconds/86400 to "天",seconds%86400/3600 to "小时",seconds%3600/60 to "分钟",seconds%60 to "秒")
+        .filter { it.first>0 }.take(if(compact)2 else 4).joinToString(" "){"${it.first} ${it.second}"}
+}
 
 internal fun usageTarget(client: MobileClient): JSONObject {
     val scope=client.scope ?: error("电脑运行目标尚未就绪")
@@ -52,14 +68,26 @@ class MobileUsageStore(private val read: suspend (MobileClient)->String) {
     suspend fun poll(client:MobileClient) { while(true){refresh(client);delay(30000)} }
 }
 private fun metricText(m:JSONObject)=when(m.optString("state")){"unlimited"->"无限额";"unavailable"->"暂不可用";else->m.optString("value")+m.optString("unit").let { if(it.isEmpty())"" else " $it" }}
+private fun usageResetSummary(metric:JSONObject,now:Long):String {
+    if(metric.isNull("resetAt"))return "重置时间暂不可用"
+    val value=usageResetCountdown(metric.getString("resetAt"),now,compact=true)
+    return if(value in listOf("已到重置时间，等待更新","暂不可用"))value else value+"后重置"
+}
+private fun usageWindowSummary(metric:JSONObject,now:Long)=usageResetSummary(metric,now)+" · 剩余"+(usageRemaining(metric) ?: "暂不可用")
+@Composable private fun usageSummaryTime(active:Boolean):Long {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(active) { while(active) { now=System.currentTimeMillis();delay(1000) } }
+    return now
+}
 @Composable internal fun ClientUsageSummary(session:MobileSession,client:MobileClient) {
     val view=LocalView.current
     var visible by remember(client) { mutableStateOf(false) }
     val data=session.usage.value(client);val metrics=data.optJSONArray("metrics")
-    val limits=if(metrics==null)emptyList()else (0 until metrics.length()).map { metrics.getJSONObject(it) }.filter { it.optString("kind") in listOf("window-limit","capacity-limit") }
+    val limits=if(metrics==null)emptyList()else (0 until metrics.length()).map { metrics.getJSONObject(it) }.filter { it.optString("kind")=="window-limit" && it.optString("state")!="unlimited" }
+    val now=usageSummaryTime(session.usageForeground && visible && limits.isNotEmpty())
     Column(Modifier.onGloballyPositioned { coordinates -> val bounds=coordinates.boundsInWindow();visible=bounds.width>0 && bounds.height>0 && bounds.bottom>0 && bounds.top<view.height }) {
         if(data.has("balance"))Text(data.optString("balance")+" "+data.optString("balanceUnit")+if(data.optInt("extraBalances")>0)" +${data.optInt("extraBalances")}" else "",fontSize=11.sp)
-        if(limits.isNotEmpty())Text(limits.joinToString(" · "){it.optString("label")+" "+metricText(it)},fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,maxLines=2)
+        for(metric in limits)Text((if(limits.size>1)metric.optString("label")+" · " else "")+usageWindowSummary(metric,now),modifier=Modifier.testTag("client-usage-window-"+metric.getString("id")),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,maxLines=2)
         if(data.optString("status")!="ok")Text("暂未提供额度",fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         if(session.usage.cached(client))Text("缓存额度",fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         else if(data.optBoolean("partial"))Text("部分额度暂不可用",fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -69,17 +97,20 @@ private fun metricText(m:JSONObject)=when(m.optString("state")){"unlimited"->"�
 @Composable internal fun UsageFooter(session:MobileSession,client:MobileClient,active:Boolean) {
     val data=session.usage.value(client);val cached=session.usage.cached(client)
     var details by remember(client) { mutableStateOf(false) }
-    val percent=data.optDouble("percent",Double.NaN).takeIf { it.isFinite() }
-    Row(Modifier.heightIn(min=48.dp).testTag("current-client-usage").clickable { details=true }.semantics { role=Role.Button;contentDescription=listOfNotNull("当前客户端额度",percent?.let { "${data.optString("ringLabel","用量")} ${kotlin.math.round(it).coerceAtMost(9999.0).toInt()}%" },if(data.has("balance"))data.optString("balance")+" "+data.optString("balanceUnit") else null,if(cached)"缓存额度" else null,if(percent==null && !data.has("balance"))"暂不可用" else null).joinToString("，") },verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.size(34.dp),contentAlignment=Alignment.Center) {
+    val metrics=data.optJSONArray("metrics")
+    val window=if(metrics==null) null else (0 until metrics.length()).map { metrics.getJSONObject(it) }.firstOrNull { it.optString("id")==data.optString("ringMetricId") && it.optString("kind")=="window-limit" }
+    val percent=if(window==null)null else data.optDouble("percent",Double.NaN).takeIf { it.isFinite() }
+    Row(Modifier.heightIn(min=48.dp).testTag("current-client-usage").clickable { details=true }.semantics { role=Role.Button;contentDescription=listOfNotNull("当前客户端额度",window?.let { usageRemaining(it) }?.let { "剩余$it" },if(data.has("balance"))data.optString("balance")+" "+data.optString("balanceUnit") else null,if(cached)"缓存额度" else null,if(window==null && !data.has("balance"))"暂不可用" else null).joinToString("，") },verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        if(percent!=null)Box(Modifier.size(34.dp).testTag("usage-remaining-ring"),contentAlignment=Alignment.Center) {
             CircularProgressIndicator(progress={1f},modifier=Modifier.fillMaxSize(),strokeWidth=3.dp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f))
-            if(percent!=null)CircularProgressIndicator(progress={ (percent/100).coerceIn(0.0,1.0).toFloat() },modifier=Modifier.fillMaxSize(),strokeWidth=3.dp,color=Color(0xFF007AFF),trackColor=Color.Transparent)
-            Text(percent?.let { "${kotlin.math.round(it).coerceAtMost(9999.0).toInt()}%" } ?: "—",fontSize=10.sp)
+            CircularProgressIndicator(progress={ (percent/100).coerceIn(0.0,1.0).toFloat() },modifier=Modifier.fillMaxSize(),strokeWidth=3.dp,color=Color(0xFF007AFF),trackColor=Color.Transparent)
+            Text("${percent.coerceIn(0.0,100.0).toInt()}%",fontSize=10.sp)
         }
         if(data.has("balance"))Column(horizontalAlignment=Alignment.End) {
             Text(data.optString("balance"),fontSize=12.sp,maxLines=1)
             Text(data.optString("balanceUnit")+(if(data.optInt("extraBalances")>0)" +${data.optInt("extraBalances")}" else "")+(if(cached)" · 缓存" else ""),fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,maxLines=1)
         } else if(cached)Text("缓存",fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        else if(window==null)Text("当前客户端额度",fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
     }
     LaunchedEffect(client,session.usageForeground,active){if(session.usageForeground && active)session.usage.poll(client)}
     if(details)AlertDialog(onDismissRequest={details=false},title={Text("当前客户端额度")},text={

@@ -118,8 +118,7 @@ final class SessionStore: ObservableObject {
   @Published var sheet: AppSheet?
   @Published var projectGitContext: ProjectGitContext?
   var projectGitClient: Client? {
-    guard let client, client.agentConnection?.target.agentId == "easywork" else { return nil }
-    return readingClient(client)
+    client.map { readingClient($0) }
   }
   @Published var search = ""
   @Published var chatSearchJump: ChatSearchJump?
@@ -665,8 +664,21 @@ private var userRequestedWorkspaceGeneration: UUID?
     let target = targetKey, threadId = selectedThreadId, navigation = clientGeneration
     let connection = readingClient(host)
     let agent = try? AgentClients.resolve(connection)
+    let deviceToken = CredentialVault.token(host.id)
     func validateTarget() throws {
       guard clientGeneration == navigation, targetKey == target, client?.id == host.id else { throw HostServiceError.message(L10n.tr("录音目标已变化")) }
+    }
+    func validateConnection() throws {
+      // Selection is presentation state. The captured machine, TLS trust,
+      // device credential and sharing grant remain the authority for this job.
+      guard let current = saved.clients.first(where: { $0.id == host.id }),
+        aiSharingScope(current, model: "codex-dictation") == scope,
+        current.codexDirect?.fingerprint == host.codexDirect?.fingerprint,
+        current.agentConnection == host.agentConnection,
+        CredentialVault.token(host.id) == deviceToken else {
+        throw HostServiceError.message(L10n.tr("录音目标已变化"))
+      }
+      try validateAISharing(current, scope: scope)
     }
     return VoiceTranscriptionProvider(scopeKey: voiceDraftId, prepare: {
       try validateTarget()
@@ -678,13 +690,16 @@ private var userRequestedWorkspaceGeneration: UUID?
       try self.validateAISharing(host, scope: scope)
       return true
     }, transcribe: { recording in
-      try validateTarget()
-      guard self.requireAISharing(host, model: "codex-dictation") else { throw CancellationError() }
-      try self.validateAISharing(host, scope: scope)
+      try validateConnection()
       guard let agent else { throw HostServiceError.unavailable }
       let text = try await agent.transcribeVoice(connection, recording: recording, threadId: threadId, draftId: voiceDraftId)
-      try validateTarget()
-      try self.validateAISharing(host, scope: scope)
+      try validateConnection()
+      return text
+    }, recover: { recording in
+      try validateConnection()
+      guard let agent else { throw HostServiceError.unavailable }
+      let text = try await agent.recoverVoice(connection, recording: recording, threadId: threadId, draftId: voiceDraftId)
+      try validateConnection()
       return text
     })
   }
@@ -955,6 +970,20 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   func unreadCount(for host: Client, snapshot: MobileUnreadBadge.Snapshot) -> Int {
     host.isDemo ? 0 : snapshot.count(for: mobileReadingTarget(host))
+  }
+  func clearMobileUnread(for host: Client, target: AgentRuntimeTarget) {
+    guard !host.isDemo, !localRecoveryRequired,
+      let current = saved.clients.first(where: { $0.id == host.id }), !current.isDemo,
+      mobileReadingTarget(current) == target else { return }
+    unreadReconciler.submitClear(target: target) { [weak self] result in
+      Task { @MainActor in
+        guard let self else { return }
+        if case .failure(let failure) = result {
+          self.error = (failure as? MobileUnreadPersistenceError)?.description
+            ?? L10n.tr("无法保存手机阅读状态，已有记录已保留，请稍后重试。")
+        } else { TaskNotificationController.shared.updateBadge() }
+      }
+    }
   }
   func runningConversationCount(for host: Client) -> Int? {
     let workspace = saved.workspaces[host.id]
@@ -1729,6 +1758,9 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   var isProjectlessDraft: Bool { selectedThreadId == nil && saved.newProjects[client?.id ?? ""] == "__projectless__" }
   var runtime: ThreadRuntime? { saved.runtimes?[targetKey] }
+  var supportsSubagentHistory: Bool {
+    client.map { saved.workspaces[$0.id]?.capabilities?.contains("subagents:history:read:v1") == true } ?? false
+  }
   var supportsPlanMode: Bool {
     client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("plan-mode") == true
   }
@@ -1778,6 +1810,106 @@ private var userRequestedWorkspaceGeneration: UUID?
     if saved.dismissedReceiptFailures == nil { saved.dismissedReceiptFailures = [:] }
     saved.dismissedReceiptFailures?[targetKey, default: []].insert(receipt.id)
     persist()
+  }
+
+  func canResendFailure(_ receipt: DeliveryReceipt, target: String) -> Bool {
+    guard targetKey == target, receipt.isUnsubmittedFailure,
+      receipt.hostId == client?.id, receipt.threadId == selectedThreadId,
+      let host = client, host.online, isWritable, canCompose, pending == nil,
+      !sendingKeys.contains(target), replyRecoveryFlights[target] == nil,
+      !(saved.dismissedReceiptFailures?[target]?.contains(receipt.id) ?? false),
+      let original = saved.replyRecovery?[receipt.id]?.original,
+      failedReplyStillApplicable(original),
+      let record = replyQueryRecord(host, reply: original), record.resentAs == nil, record.resendDisabled != true,
+      runtime?.receipts.contains(where: { $0.id == receipt.id && $0.isUnsubmittedFailure }) == true
+    else { return false }
+    return true
+  }
+
+  func resendFailure(_ receipt: DeliveryReceipt, target: String) {
+    guard canResendFailure(receipt, target: target), let host = client,
+      let original = saved.replyRecovery?[receipt.id]?.original,
+      let record = replyQueryRecord(host, reply: original) else { return }
+    let sharing = record.sharingScope ?? aiSharingScope(host, model: original.model)
+    guard requireAISharing(host, scope: sharing) else { return }
+    let epoch = historyGeneration, flight = UUID()
+    replyRecoveryFlights[target] = flight
+    sendingKeys.insert(target)
+    error = nil
+    Task {
+      defer {
+        if replyRecoveryFlights[target] == flight {
+          replyRecoveryFlights.removeValue(forKey: target)
+          sendingKeys.remove(target)
+        }
+      }
+      @MainActor func stillCurrent() -> Bool {
+        targetKey == target && historyGeneration == epoch && client?.id == host.id
+          && selectedThreadId == original.threadId && codexStorageConflictMessage == nil
+          && replyRecoveryTrust(client ?? host) == record.trust
+          && aiSharingScope(client ?? host, model: original.model).target == record.target
+          && failedReplyStillApplicable(original)
+      }
+      do {
+        let provider = try AgentClients.resolve(host)
+        var capturedHost = host
+        capturedHost.readingTarget = record.target
+        // A stale failure card is not permission to submit. Re-read the exact
+        // original receipt before creating a separately identified user request.
+        let inspection = try await provider.replyDeliveryStatus(capturedHost, reply: original, target: record.target)
+        guard inspection.version == 2, inspection.status == "accepted",
+          inspection.hostId == original.hostId, inspection.threadId == original.threadId,
+          inspection.clientMessageId == original.clientMessageId, inspection.target == record.target,
+          inspection.capturedTarget?.matchesCapturedPayload(record.target) == true,
+          inspection.fingerprintVersion == 2, inspection.fingerprint == record.fingerprint,
+          let fresh = inspection.receipt else {
+          throw HostServiceError.message(L10n.tr("原消息结果仍待核对，仅查询原操作 ID；没有重新提交。"))
+        }
+        guard stillCurrent(), saved.replyRecovery?[receipt.id]?.resentAs == nil,
+          saved.replyRecovery?[receipt.id]?.resendDisabled != true,
+          !(saved.dismissedReceiptFailures?[target]?.contains(receipt.id) ?? false), pending == nil,
+          fresh.clientMessageId == original.clientMessageId, fresh.hostId == original.hostId,
+          fresh.threadId == original.threadId else { return }
+        guard fresh.isUnsubmittedFailure else {
+          try accept(fresh, reply: original, key: target)
+          await loadHistory(threadId: original.threadId)
+          return
+        }
+        try validateAISharing(host, scope: sharing)
+        let replacement = PendingReply(hostId: original.hostId, threadId: original.threadId,
+          clientMessageId: UUID().uuidString, text: original.text, attachmentIds: original.attachmentIds,
+          mode: original.mode, expectedTurnId: original.expectedTurnId, model: original.model,
+          effort: original.effort, collaborationMode: original.collaborationMode,
+          expectedPlanId: original.expectedPlanId, permissionMode: original.permissionMode,
+          speed: original.speed, sourceAttachments: original.sourceAttachments)
+        saved.outbox?[target] = replacement
+        saved.replyRecovery?[replacement.clientMessageId] = ReplyRecoveryRecord(original: replacement,
+          target: record.target, trust: record.trust,
+          fingerprint: try ReplyRecoveryPolicy.fingerprint(replacement, target: record.target),
+          phase: "not-written", sharingScope: sharing)
+        // Keep the original immutable record and durably link its replacement.
+        // A double tap, restart or lost response cannot create another resend.
+        saved.replyRecovery?[receipt.id]?.resentAs = replacement.clientMessageId
+        if saved.dismissedReceiptFailures == nil { saved.dismissedReceiptFailures = [:] }
+        saved.dismissedReceiptFailures?[target, default: []].insert(receipt.id)
+        try await persistBeforeCommand()
+        guard stillCurrent(), samePending(replacement, key: target) else { return }
+        try validateAISharing(host, scope: sharing)
+        saved.replyRecovery?[replacement.clientMessageId]?.phase = "uncertain"
+        try await persistBeforeCommand()
+        guard stillCurrent(), samePending(replacement, key: target) else { return }
+        try validateAISharing(host, scope: sharing)
+        let result = try await provider.sendCapturedReply(capturedHost, reply: replacement, target: record.target)
+        try accept(result, reply: replacement, key: target)
+        if stillCurrent() { await loadHistory(threadId: original.threadId) }
+      } catch {
+        if stillCurrent(), replyRecoveryFlights[target] == flight { self.presentError(error) }
+      }
+    }
+  }
+  private func failedReplyStillApplicable(_ reply: PendingReply) -> Bool {
+    if reply.mode == "next-turn" { return !isRunning }
+    return isRunning && runtime?.turnId == reply.expectedTurnId
   }
   var isRunning: Bool { SessionPolicies.shared.running(turnId: runtime?.turnId, state: runtime?.state) }
   var pending: PendingReply? { saved.outbox?[targetKey] }
@@ -4970,6 +5102,7 @@ final class ComposerDraftStore: ObservableObject {
   @Published var values: [String: Draft] = [:]
   @Published fileprivate(set) var suggestionUndo: DesktopSuggestionDraftUndo?
   fileprivate var textRevisions: [String: UInt64] = [:]
+  func textRevision(for target: String) -> UInt64 { textRevisions[target, default: 0] }
 }
 
 @MainActor

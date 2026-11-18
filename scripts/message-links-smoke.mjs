@@ -175,6 +175,77 @@ try {
     session.resolveAttachment(thread.id, id),
     (e) => e.status === 410 && e.code === 'ENOENT',
   );
+  const childPath = join(root, 'child 中文.md');
+  const parentPath = join(root, 'index.md');
+  await writeFile(childPath, '# Child\n\n[back](index.md)');
+  await writeFile(
+    parentPath,
+    '# Index\n\n[child](child%20中文.md#child)\n![image](photo.png)\n`[fake](secret.md)`',
+  );
+  await session.upsert(thread, { id: 'document', type: 'agentMessage', text: '[index](index.md)' });
+  const parent = thread.messages.at(-1).attachments[0];
+  const child = await session.resolveDocumentFile(
+    thread.id,
+    parent.id,
+    'child%20%E4%B8%AD%E6%96%87.md#child',
+    parent.sha256,
+  );
+  assert.equal(child.sourceAttachmentId, parent.id);
+  assert.equal(child.attachment.name, 'child 中文.md');
+  assert(!('path' in child.attachment));
+  assert.equal(
+    (await session.download(thread.id, child.attachment.id)).data.toString(),
+    '# Child\n\n[back](index.md)',
+  );
+  assert.equal(
+    (
+      await session.resolveDocumentFile(
+        thread.id,
+        child.attachment.id,
+        'index.md',
+        child.attachment.sha256,
+      )
+    ).attachment.id,
+    parent.id,
+  );
+  await assert.rejects(
+    session.resolveDocumentFile('another-thread', parent.id, 'child%20中文.md', parent.sha256),
+  );
+  await assert.rejects(
+    session.resolveDocumentFile(thread.id, parent.id, 'secret.md', parent.sha256),
+    (e) => e.status === 403,
+  );
+  await assert.rejects(
+    session.resolveDocumentFile(thread.id, parent.id, '../secret.md', parent.sha256),
+    (e) => e.status === 403,
+  );
+  await assert.rejects(
+    session.resolveDocumentFile(thread.id, parent.id, 'https://example.com/a', parent.sha256),
+    (e) => e.status === 400,
+  );
+  await assert.rejects(
+    session.resolveDocumentFile(thread.id, parent.id, 'photo.png', parent.sha256),
+    (e) => e.status === 410,
+  );
+  await writeFile(parentPath, '# changed\n\n[secret](secret.md)');
+  await assert.rejects(
+    session.resolveDocumentFile(thread.id, parent.id, 'secret.md', parent.sha256),
+    (e) => e.status === 409,
+  );
+  await writeFile(parentPath, '# Updated\n\n[child](child%20中文.md#child)');
+  const refreshedParent = (await session.resolveAttachment(thread.id, parent.id)).attachment;
+  assert.equal(
+    (
+      await session.resolveDocumentFile(
+        thread.id,
+        parent.id,
+        'child%20中文.md#child',
+        refreshedParent.sha256,
+      )
+    ).attachment.id,
+    child.attachment.id,
+    'A refreshed preview digest resolves through the same original resource without using stale bytes',
+  );
   const secret = join(directory, 'secret.md');
   await writeFile(secret, 'private');
   await symlink(secret, join(root, 'escape.md'));
@@ -182,9 +253,9 @@ try {
   await assert.rejects(session.resolveAttachment(thread.id, id), (e) => e.status === 403);
   const denied = `[outside](${secret}) [symlink](escape.md) [missing](missing.md) [web](https://example.com/report.md) [code](javascript:alert(1))`;
   await session.upsert(thread, { id: 'denied', type: 'agentMessage', text: denied });
-  assert.equal(thread.messages[1].attachments.length, 0);
+  assert.equal(thread.messages.find((m) => m.id === 'denied').attachments.length, 0);
   assert.equal(
-    thread.messages[1].text,
+    thread.messages.find((m) => m.id === 'denied').text,
     denied,
     'unauthorized paths and URLs are never exposed as attachments',
   );

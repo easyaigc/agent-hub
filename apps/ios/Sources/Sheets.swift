@@ -9,6 +9,7 @@ struct ClientPickerView: View {
         NavigationStack {
             List {
                 ForEach(store.saved.clients) { client in
+                    let target = store.mobileReadingTarget(client)
                     HStack(spacing: 12) {
                         Button {
                             store.selectClient(client.id)
@@ -17,9 +18,7 @@ struct ClientPickerView: View {
                                 Image(systemName: "laptopcomputer").font(.title3)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(client.name)
-                                    ClientUsageSummary(client: client, target: store.mobileReadingTarget(client))
-                                    Text(store.sourceLabel(for: client))
-                                        .font(.caption).foregroundStyle(Palette.secondary)
+                                    ClientUsageSummary(client: client, target: target)
                                     let running = store.runningConversationCount(for: client).map { $0.formatted() } ?? "—"
                                     let unread = store.unreadCount(for: client, snapshot: notifications.unreadSnapshot)
                                     ViewThatFits(in: .horizontal) {
@@ -45,6 +44,15 @@ struct ClientPickerView: View {
                                 .buttonStyle(.borderless).frame(minHeight: 44)
                                 .accessibilityLabel(L10n.tr("编辑\(client.name)"))
                                 .accessibilityIdentifier("edit-client-\(client.id)")
+                        }
+                    }.swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        if !client.isDemo {
+                            Button {
+                                store.clearMobileUnread(for: client, target: target)
+                            } label: {
+                                Label(L10n.tr("清理未读"), systemImage: "checkmark.message")
+                            }.tint(.blue)
+                                .accessibilityIdentifier("clear-client-unread-\(client.id)")
                         }
                     }.swipeActions {
                         Button(L10n.tr("移除连接"), role: .destructive) { store.removeClient(client.id) }
@@ -486,7 +494,8 @@ struct ProjectPickerView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(project.name)
                 ForEach(Array(project.roots.enumerated()), id: \.offset) { _, root in
-                    Text(root).font(.caption).foregroundStyle(Palette.secondary).lineLimit(2)
+                    Text(root).font(.caption).foregroundStyle(Palette.secondary)
+                        .lineLimit(nil).fixedSize(horizontal: false, vertical: true)
                 }
             }
         } icon: { Image(systemName: icon) }

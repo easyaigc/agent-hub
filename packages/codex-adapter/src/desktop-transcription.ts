@@ -19,12 +19,60 @@ export class DesktopTranscription {
     private readonly codexHome = process.env.CODEX_HOME ?? join(homedir(), '.codex'),
     private readonly executable: string | (() => Promise<string>) = 'codex',
   ) {}
-  private async authRead() {
+  private async authRead(scope: 'authorization' | 'identity' = 'authorization') {
     const executable =
       typeof this.executable === 'function' ? await this.executable() : this.executable;
-    return readDesktopBackendAuth(executable, this.codexHome).catch(() => {
+    return readDesktopBackendAuth(executable, this.codexHome, scope).catch(() => {
       throw new RuntimeError(503, '电脑暂时无法读取 Codex 登录状态，请稍后重试；原录音不会提交');
     });
+  }
+  /** Fresh official identity for stored receipts; never grants upstream access. */
+  async identity(): Promise<string> {
+    if (this.closed) throw new RuntimeError(503, '电脑转写连接已关闭，原录音未提交');
+    const { auth } = await this.authRead('identity');
+    if (this.closed) throw new RuntimeError(503, '电脑转写连接已关闭，原录音未提交');
+    return this.authIdentity(auth).principal;
+  }
+  private authIdentity(auth: Record<string, unknown>) {
+    try {
+      const token = auth.authToken;
+      if (
+        auth.authMethod !== 'chatgpt' ||
+        typeof token !== 'string' ||
+        !token ||
+        token.length > 32_000
+      )
+        throw new Error('ChatGPT login required');
+      const claims = JSON.parse(
+        Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8'),
+      ) as {
+        exp?: number;
+        sub?: string;
+        'https://api.openai.com/auth'?: { chatgpt_account_id?: string };
+      };
+      const accountId = claims['https://api.openai.com/auth']?.chatgpt_account_id;
+      if (
+        typeof claims.exp !== 'number' ||
+        claims.exp * 1000 <= Date.now() + 30_000 ||
+        typeof claims.sub !== 'string' ||
+        !claims.sub ||
+        typeof accountId !== 'string' ||
+        !accountId
+      )
+        throw new Error('Desktop refresh required');
+      return {
+        token,
+        accountId,
+        principal: createHash('sha256')
+          .update(JSON.stringify([accountId, claims.sub]))
+          .digest('hex'),
+      };
+    } catch {
+      throw new RuntimeError(
+        401,
+        '请在原 Codex 桌面登录 ChatGPT 并刷新登录状态，再重试转写；当前 Host 未取得有效的私有桌面凭据',
+      );
+    }
   }
   private async auth() {
     try {

@@ -1,3 +1,4 @@
+import { SubagentHistoryError } from './subagents.js';
 import type { CodexHistoryReader } from './history-reader.js';
 import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
 import type { UploadManifest } from '@codex-manage/protocol';
@@ -465,6 +466,7 @@ export class RuntimeSession {
   >();
   private activeDesktopProjections = 0;
   private loaded = new Set<string>();
+  private subagentReadParents = new Map<string, string>();
   private sharedPinnedThreadIds = new Set<string>();
   private sharedVersions = new Map<string, number>();
   private sharedLiveItems = new Map<string, Set<string>>();
@@ -795,6 +797,7 @@ export class RuntimeSession {
             'threads:archive:unloaded',
             'threads:read',
             'history:read',
+            'subagents:history:read:v1',
             'threads:read-state',
             'reply',
             'reply:delivery-status',
@@ -1954,6 +1957,83 @@ export class RuntimeSession {
       this.saveBackground();
     return { ...page, readTarget: this.readingTarget() };
   }
+  async subagentHistoryPage(
+    parentThreadId: string,
+    messageId: string,
+    childId?: string,
+    cursor?: string,
+  ) {
+    this.requireReady();
+    if (!(this.runtime instanceof DesktopRuntime))
+      throw new RuntimeError(409, '需要原桌面子 Agent 历史连接');
+    const readTarget = this.readingTarget();
+    const scope = createHash('sha256').update(machineRuntimeTargetKey(readTarget)).digest('hex');
+    if (this.subagentReadParents.get(parentThreadId) !== scope) this.thread(parentThreadId);
+    let selectedChild = childId;
+    if (cursor?.startsWith('subagent-page-v1:')) {
+      let value: unknown;
+      try {
+        value = JSON.parse(
+          Buffer.from(cursor.slice('subagent-page-v1:'.length), 'base64url').toString(),
+        );
+      } catch {
+        throw new RuntimeError(400, 'Invalid subagent cursor');
+      }
+      if (
+        !Array.isArray(value) ||
+        value.length !== 7 ||
+        value[0] !== 1 ||
+        value[1] !== this.hostId ||
+        value[2] !== scope ||
+        value[3] !== parentThreadId ||
+        value[4] !== messageId ||
+        typeof value[5] !== 'string' ||
+        (selectedChild !== undefined && value[5] !== selectedChild) ||
+        typeof value[6] !== 'string'
+      )
+        throw new RuntimeError(409, 'Subagent cursor target changed; refresh the record');
+      selectedChild = value[5];
+      cursor = value[6];
+    }
+    const page = await this.runtime
+      .subagentHistoryPage(parentThreadId, messageId, selectedChild, cursor)
+      .catch((error: unknown) => {
+        if (error instanceof SubagentHistoryError)
+          throw new RuntimeError(error.status, error.message);
+        throw error;
+      });
+    if (page.nextCursor)
+      page.nextCursor =
+        'subagent-page-v1:' +
+        Buffer.from(
+          JSON.stringify([
+            1,
+            this.hostId,
+            scope,
+            parentThreadId,
+            messageId,
+            page.childId,
+            page.nextCursor,
+          ]),
+        ).toString('base64url');
+    if (
+      this.closed ||
+      !this.ready ||
+      machineRuntimeTargetKey(readTarget) !== machineRuntimeTargetKey(this.readingTarget())
+    )
+      throw new RuntimeError(409, '读取目标已变化');
+    this.subagentReadParents.set(page.childId, scope);
+    while (this.subagentReadParents.size > 512)
+      this.subagentReadParents.delete(this.subagentReadParents.keys().next().value!);
+    return {
+      version: 1 as const,
+      hostId: this.hostId,
+      readTarget,
+      parentThreadId,
+      messageId,
+      ...page,
+    };
+  }
   async refreshHistory(threadId: string, cursor?: string, windowed = false) {
     if (isDesktopHistoryCursor(cursor)) return this.hostHistoryPage(threadId, cursor);
     if (
@@ -1972,7 +2052,14 @@ export class RuntimeSession {
       lastPageMessageId = lastId;
     });
     if (!windowed || !(this.runtime instanceof DesktopRuntime)) return result;
-    if (!cursor || !pageRead) return this.history(threadId, true);
+    if (!cursor || !pageRead) {
+      // A new owner snapshot can arrive while open() reads model/queue metadata.
+      // Join its projection at the response boundary too, before exposing the
+      // latest window. The earlier projection barrier alone is insufficient.
+      const projection = this.desktopProjections.get(threadId);
+      if (projection) await projection.work;
+      return this.history(threadId, true);
+    }
     if (!lastPageMessageId)
       return {
         ...this.history(threadId, true),
@@ -3748,6 +3835,85 @@ export class RuntimeSession {
       );
       throw new RuntimeError(fileError.status, fileError.message, fileError.code);
     }
+  }
+
+  /** Resolve only a link present in the exact registered Markdown snapshot. */
+  async resolveDocumentFile(
+    threadId: string,
+    sourceAttachmentId: string,
+    reference: string,
+    sourceSha256: string,
+  ) {
+    const thread = this.thread(threadId);
+    let source = this.state.attachments.find(
+      (file) => file.threadId === threadId && file.id === sourceAttachmentId,
+    );
+    if (!source) throw new RuntimeError(403, '原文件不属于当前对话', 'DOCUMENT_SOURCE_MISMATCH');
+    {
+      if (!/^[a-f0-9]{64}$/.test(sourceSha256))
+        throw new RuntimeError(400, '文档摘要无效', 'INVALID_DOCUMENT_DIGEST');
+      const path = source.path;
+      source = this.state.attachments.find(
+        (file) => file.threadId === threadId && file.path === path && file.sha256 === sourceSha256,
+      );
+      if (!source)
+        throw new RuntimeError(409, '文档版本已变化，请重新打开原文件', 'DOCUMENT_VERSION_CHANGED');
+    }
+    if (
+      (!/\.(md|markdown|mdown|mkd)$/i.test(source.name) &&
+        !['text/markdown', 'text/x-markdown'].includes(
+          source.mediaType.split(';')[0]!.trim().toLowerCase(),
+        )) ||
+      source.sizeBytes > 2 * 1024 * 1024
+    )
+      throw new RuntimeError(
+        422,
+        '原文件不是可解析的 Markdown 文档',
+        'DOCUMENT_SOURCE_UNSUPPORTED',
+      );
+    const pathOf = (value: string) => localMessagePath(value.split('#')[0]!);
+    const local = pathOf(reference);
+    if (!local || Buffer.byteLength(reference, 'utf8') > 8192)
+      throw new RuntimeError(400, '不是有效的文档文件链接', 'INVALID_FILE_LINK');
+    // Checks the original digest and fixed real path before reading any destination.
+    const { data } = await this.download(threadId, source.id);
+    let text: string;
+    try {
+      text = new TextDecoder(
+        data[0] === 0xff && data[1] === 0xfe
+          ? 'utf-16le'
+          : data[0] === 0xfe && data[1] === 0xff
+            ? 'utf-16be'
+            : 'utf-8',
+        { fatal: true },
+      ).decode(data);
+    } catch {
+      throw new RuntimeError(422, '暂不支持此文件的文本编码', 'DOCUMENT_ENCODING_UNSUPPORTED');
+    }
+    const link = messageLinks(text).find((entry) => pathOf(entry.reference) === local);
+    if (!link)
+      throw new RuntimeError(403, '链接不属于当前文档，请重新打开原文件', 'DOCUMENT_LINK_MISMATCH');
+    let file: Attachment;
+    try {
+      file = await this.registerMessageFile(
+        thread,
+        'document:' + source.id,
+        resolve(dirname(source.path), local),
+        this.runtime instanceof DesktopRuntime ? link.reference : undefined,
+      );
+    } catch (error) {
+      const failure = attachmentFileError(error);
+      throw new RuntimeError(failure.status, failure.message, failure.code);
+    }
+    this.save();
+    return {
+      hostId: this.hostId,
+      threadId,
+      sourceAttachmentId,
+      reference,
+      readTarget: this.readingTarget(),
+      attachment: this.cleanAttachment(file),
+    };
   }
 
   private async projectMessageAttachments(
@@ -5911,6 +6077,23 @@ export class RuntimeSession {
           }
           job.resolve();
         } catch (error) {
+          if (this.desktopProjections.get(id) === job) {
+            // A previous projection cannot prove that this newer snapshot was
+            // rendered successfully. Keep real failures visible after the job
+            // is removed, until a fresh authoritative projection succeeds.
+            this.verifiedDesktopMessageIds.delete(id);
+            appendRuntimeDiagnostic(
+              this.options.directory,
+              {
+                scope: 'desktop',
+                stage: 'message-projection-failed',
+                hostId: this.hostId,
+                threadId: id,
+              },
+              error,
+            );
+            this.emit(id, 'desktop/projection-failed', false, false);
+          }
           job.reject(error);
         } finally {
           if (this.desktopProjections.get(id) === job) this.desktopProjections.delete(id);
@@ -6059,6 +6242,38 @@ export class RuntimeSession {
       });
     if (!signal.aborted && !reset && this.seq > after)
       await new Promise<void>((done) => setTimeout(done, 75));
+    if (windowed && threadId && this.runtime instanceof DesktopRuntime) {
+      const projection = this.desktopProjections.get(threadId);
+      if (projection && !signal.aborted) {
+        // Controls wake a poll before rich messages finish rendering. Do not
+        // publish that internal transition as an unavailable cached snapshot.
+        // Bound this reader's wait without cancelling the shared projection.
+        await new Promise<void>((done) => {
+          const finish = () => {
+            clearTimeout(timer);
+            signal.removeEventListener('abort', finish);
+            done();
+          };
+          const timer = setTimeout(finish, 1000);
+          signal.addEventListener('abort', finish, { once: true });
+          void projection.work.then(finish, finish);
+        });
+      }
+      if (this.desktopProjections.has(threadId) && this.runtime.ipc.hasOwner(threadId)) {
+        // Preserve the caller's checkpoint, including a not-yet-repaired epoch.
+        // This is a quiet heartbeat, not fresh progress or an acknowledged reset.
+        // Completion/owner loss wakes the next poll with an authoritative snapshot.
+        return {
+          hostId: this.hostId,
+          epoch,
+          ready: this.ready,
+          capabilities: this.capabilities,
+          cursor: after,
+          reset: false,
+          events: [],
+        };
+      }
+    }
     // A latest snapshot per thread coalesces bursts while retaining actual streamed text/progress.
     const latest = new Map<string, (typeof this.events)[number]>();
     for (const event of this.events)

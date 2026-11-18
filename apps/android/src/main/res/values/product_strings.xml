@@ -1736,6 +1736,89 @@
     <string name="product_47a9db424c7f4ad6439ed740" formatted="false">"Connecting to development service…"</string>
     <string name="product_a4076e5a80aaf5158acdc118" formatted="false">"Open this link separately or configure the service URL."</string>
     <string name="product_e92331b3ad22ad8d2554ca77" formatted="false">"Development previews require a direct LAN or VPN connection. Switch the connection mode to continue."</string>
+    <string name="product_9287ac799e545bb0c0e31fcf" formatted="false">"Resend"</string>
+    <string name="product_38844b135cf70dfce3b4fa55" formatted="false">"More"</string>
+    <string name="product_921c3b62f1f7d6f4eac2ac1e" formatted="false">"View Source"</string>
+    <string name="product_c568c3012a5e0f7742ebac57" formatted="false">"Back to Preview"</string>
+    <string name="product_d6f766f2adf532274a487ddd" formatted="false">"Queued"</string>
+    <string name="product_b0e23003ee5ea8b0e0255f66" formatted="false">"Swipe up to send"</string>
+    <string name="product_bd5972ce4662d6eb67a17853" formatted="false">"Keep sliding up · Slide back to cancel"</string>
+    <string name="product_e4a1ce533246f24faa4359fc" formatted="false">"Release to send · Slide back to cancel"</string>
+    <string name="product_8a12ea24a16ceea6fd31551e" formatted="false">"Swipe up here and release to send; slide back to cancel. You can still edit in the text area."</string>
+    <string name="product_8f8d4e39c125ba14884bfb5f" formatted="false">"Uncommitted files"</string>
+    <string name="product_8bc69c2f309dfeccbf83cc52" formatted="false">"Unpushed commits"</string>
+    <string name="product_aaa84a22003af309eb011bce" formatted="false">"Ahead of project mainline"</string>
+    <string name="product_0b1d7e25f190b5fda517f415" formatted="false">"Behind project mainline"</string>
+    <string name="product_e06ea4e33554b75635067639" formatted="false">"Conflicted files"</string>
+    <string name="product_54030c68e840e87d0a3db334" formatted="false">"Git status"</string>
+    <string name="product_f905f192f1fe63c6f5e73f77" formatted="false">"Comparison target is not configured"</string>
+    <string name="product_b01266dc8e437ed23e168985" formatted="false">"Branch reference is missing locally"</string>
+    <string name="product_1baad14481ace8beb08220ee" formatted="false">"Incomplete history; difference unknown"</string>
+    <string name="product_233a788301dc1cc3e1ae1815" formatted="false">"No commits yet"</string>
+    <string name="product_6434d16e8936be5e72b9b938" formatted="false">"No common history"</string>
+    <string name="product_08db1de87717657599090c6c" formatted="false">"Repository read timed out"</string>
+    <string name="product_768f220833844dc38e2bf04f" formatted="false">"Too many files to read repository status"</string>
+    <string name="product_f4dcd11cbe15fe7c193f4d90" formatted="false">"A supported Git installation is required on this computer"</string>
+    <string name="product_15a4b891051a019988da24d1" formatted="false">"Git status unavailable"</string>
+    <string name="product_d3d0944d93d68452259f3e33" formatted="false">"Project directory unavailable"</string>
+    <string name="product_5a8d639fb408beffe3a8917a" formatted="false">"Directory is outside the project"</string>
+    <string name="product_2667916f61f7c51830fa32ad" formatted="false">"Repository scan incomplete"</string>
+    <string name="product_3a7b6afea361e3122635e3cd" formatted="false">"Repository changed while reading; refresh to retry"</string>
+    <string name="product_393acd7908e0cadd4e158b76" formatted="false">"This repository type is not supported yet"</string>
+    <string name="product_7f4f6fcaac6e0531956c4216" formatted="false">"Cached status"</string>
+    <string name="product_19db87f1a5fc7f397f28a609" formatted="false">"Checking repositories"</string>
+    <string name="product_0646a9d7e01fdcbca2c02cab" formatted="false">"Show next repository"</string>
+    <string name="product_d0794c03a3709e0a72b7e24d" formatted="false">"This project has no Git repositories"</string>
+    <string name="product_82c7d4a28d860a2ef76383b8" formatted="false">"Detached HEAD"</string>
+    <string name="product_85cfec66f9b6617b55f1a312" formatted="false">"Git repository status"</string>
+    <string name="product_3869160b09543716348f5efc" formatted="false">"Refresh repository status"</string>
+    <string name="product_d7bee82a8a8ee51ee516616b" formatted="false">"Offline or refresh failed; showing the last snapshot"</string>
+    <string name="product_da7b9f53694c5b22f721e03f" formatted="false">"Read at"</string>
+    <string name="product_179ee09914497e5a6a5fee13" formatted="false">"Remote status uses local references and has not been checked for updates"</string>
+    <string name="product_7eaa4d2f6710e6f2abd09071" formatted="false">"Some repository status is incomplete"</string>
+    <string name="product_847d376afd41a3347a3c3af1" formatted="false">"Staged"</string>
+    <string name="product_944994f59a762cb214306d34" formatted="false">"Unstaged"</string>
+    <string name="product_c2f9d2d89a1e0141894902ba" formatted="false">"Untracked"</string>
+    <string name="product_18919d02ca0f0bd9612137a6" formatted="false">"A file may be both staged and unstaged. Uncommitted files are counted once."</string>
+    <string name="product_c6ce280e2e573dacd7557afb" formatted="false">"View file status"</string>
+    <string name="product_33f9f10aba15d686ebca57c9" formatted="false">"Compared with current upstream"</string>
+    <string name="product_aa01e0d7f1e441296d3f28a7" formatted="false">"Compared with push destination"</string>
+    <string name="product_ad494d8fcac586b53f812fe5" formatted="false">"Compared with project mainline"</string>
+    <string name="product_b5c66e4ef5576555e6837b9d" formatted="false">"Ahead"</string>
+    <string name="product_aa0049d9877663551a993e56" formatted="false">"Behind"</string>
+    <string name="product_f25c26da2c791647a02ebe62" formatted="false">"Submodule"</string>
+    <string name="product_519648d33a58f3de1bbdfe0c" formatted="false">"Working tree clean"</string>
+    <string name="product_f70dbdaab1e89e4cf1368bb9" formatted="false">"File status"</string>
+    <string name="product_f006e7383e9c211a86d7edb6" formatted="false">"Unable to read file status. The snapshot may have changed; go back and refresh repository status."</string>
+    <string name="product_9b71e47710337910ee2c55b3" formatted="false">"Repository status is unavailable on this computer"</string>
+    <string name="product_5f5b7c3a1f0b27ee2c27c4e0" formatted="false">"This chat is not associated with a project"</string>
+    <string name="product_883e9a23f304258823fea318" formatted="false">"Shanghai time UTC+8"</string>
+    <string name="product_ff93499bc7dc686f50b1a8f8" formatted="false">"Remaining allowance"</string>
+    <string name="product_b808aeaaacdc397ce4240126" formatted="false">"Used allowance"</string>
+    <string name="product_af295275f3442d4e99368d05" formatted="false">"Each window is calculated independently"</string>
+    <string name="product_d0fb4930ae8acea225cf60e4" formatted="false">"Next reset in"</string>
+    <string name="product_fb4ef68522643f38c0e77bc2" formatted="false">"Reset time unavailable"</string>
+    <string name="product_8f2bb7446d85a6d33d6002a7" formatted="false">"Reset time reached, waiting for an update"</string>
+    <string name="product_49da61ceeea2f2714263cb2b" formatted="false">"d"</string>
+    <string name="product_3b6fefc50febace4472333c8" formatted="false">"h"</string>
+    <string name="product_bd957bc497aa1a4101b19975" formatted="false">"m"</string>
+    <string name="product_03fa558f517c671e9e09bbe8" formatted="false">"This client does not yet support full subagent history"</string>
+    <string name="product_a1112df6432c82045a434b7b" formatted="false">"Latest saved history"</string>
+    <string name="product_0352f4befd527cd5ef49e5ce" formatted="false">"Live history"</string>
+    <string name="product_d8705d0af6c0d89abea7da6a" formatted="false">"%@ remaining"</string>
+    <string name="product_7392d1cf1b577c7297647ddb" formatted="false">"Resets in %@"</string>
+    <string name="product_544e27598aba15ddc473cb74" formatted="false">"Clear unread"</string>
+    <string name="product_38a7d18e2c884279396eb278" formatted="false">"Online resources allowed for this preview"</string>
+    <string name="product_15c53fa0ac8aa46c6f557902" formatted="false">"Offline preview; external resources blocked"</string>
+    <string name="product_782c070d411d48908a5ef852" formatted="false">"Go offline"</string>
+    <string name="product_3fc9ac5260b719edb72d4e7d" formatted="false">"Allow online resources…"</string>
+    <string name="product_88567f3b98b4ac9c1fd9144d" formatted="false">"If allowed, this document can load scripts, fonts and images from the third-party sites below. They receive your IP address and request information. Loaded scripts can also read this document and what you enter in the preview, and send data to these sites. Allow online resources only for documents you trust."</string>
+    <string name="product_4dd9f8dfa27fbb6ed8b793fb" formatted="false">"The preview has no computer credentials or native action interface. Permission applies only to this open file and is not saved after closing. Offline preview can still display content that does not need external resources."</string>
+    <string name="product_463f69ff5adb3dc019823f2e" formatted="false">"Allow online resources for this preview"</string>
+    <string name="product_93a3c5f08bcb01443ed761f6" formatted="false">"Stay offline"</string>
+    <string name="product_eb861bd98327b9276bfc7566" formatted="false">"Preview network permission"</string>
+    <string name="product_66d76cddae5ad1f06af88582" formatted="false">"The computer connector does not support links inside documents. Update the connector and try again."</string>
+    <string name="product_1e4125d224073a40f12051e0" formatted="false">"View full history"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

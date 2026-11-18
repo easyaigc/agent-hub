@@ -1,3 +1,4 @@
+import { historyIdentity } from './desktop-history-identity.js';
 import {
   boundedSubagentDetail,
   combinedSubagentStatus,
@@ -10,6 +11,16 @@ import {
   subagentStatus,
   type WireObject,
 } from './runtime.js';
+
+export class SubagentHistoryError extends Error {
+  constructor(
+    readonly status: 403 | 404 | 409,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'SubagentHistoryError';
+  }
+}
 
 const maxChildren = 32;
 const outputKinds = new Set([
@@ -124,5 +135,88 @@ export function subagentItem(
       SUBAGENT_DETAIL_LIMIT,
       omitted || transcript.omitted,
     ),
+  };
+}
+
+/** Same item renderer as the parent, preserving message and tool boundaries. */
+export function subagentHistoryMessages(
+  turns: WireObject[],
+  project?: (item: WireObject) => WireObject | undefined,
+) {
+  return turns.flatMap((turn) => {
+    const items = list(turn.items).map(object);
+    if (turn.status === 'failed')
+      items.push({
+        id: 'turn-failure-' + string(turn.turnId || turn.id),
+        type: 'turnFailure',
+        text: string(object(turn.error).message) || '任务执行失败，电脑未提供错误详情。',
+        status: 'failed',
+      });
+    return items.flatMap((raw) => {
+      let item = project ? project(raw) : raw;
+      if (!item) return [];
+      if (['todo-list', 'planImplementation', 'steered'].includes(string(item.type))) return [];
+      if (item.type === 'steeringUserMessage') {
+        if (!string(item.serverUserMessageId)) return [];
+        item = {
+          ...item,
+          type: 'userMessage',
+          id: item.serverUserMessageId,
+          content: item.input,
+          status: item.status === 'accepted' ? 'completed' : 'inProgress',
+        };
+      }
+      const { paths, ...message } = renderItem({ ...item, runId: turn.turnId || turn.id });
+      void paths;
+      if (!message.id) return [];
+      if (message.kind === 'reasoning' && !message.text) return [];
+      if (message.role === 'assistant')
+        message.status =
+          turn.status === 'inProgress' &&
+          item.status !== 'completed' &&
+          !Object.hasOwn(object(turn.agentMessageCompletedAtMsById), message.id)
+            ? 'inProgress'
+            : ['failed', 'interrupted'].includes(string(turn.status))
+              ? string(turn.status)
+              : 'completed';
+      else if (
+        message.status === 'inProgress' &&
+        ['failed', 'interrupted', 'completed'].includes(string(turn.status))
+      )
+        message.status = string(turn.status);
+      message.id = historyIdentity(message.id, string(turn.turnId || turn.id));
+      return [message];
+    });
+  });
+}
+
+export function subagentHistoryPage(
+  messages: ReturnType<typeof subagentHistoryMessages>,
+  cursor?: string,
+) {
+  let end =
+    cursor === undefined ? messages.length : messages.findIndex((message) => message.id === cursor);
+  if (end < 0 && cursor && /^item-\d+$/.test(cursor)) {
+    const matches = messages.flatMap((message, index) =>
+      message.id === historyIdentity(cursor, message.runId) ? [index] : [],
+    );
+    if (matches.length === 1) end = matches[0]!;
+  }
+  if (end < 0)
+    throw new SubagentHistoryError(
+      409,
+      'Subagent history cursor no longer exists; refresh the record',
+    );
+  let start = end;
+  let bytes = 0;
+  while (start > 0 && end - start < 80) {
+    const size = Buffer.byteLength(JSON.stringify(messages[start - 1]));
+    if (bytes + size > 1024 * 1024 && start < end) break;
+    bytes += size;
+    start--;
+  }
+  return {
+    messages: messages.slice(start, end),
+    nextCursor: start > 0 ? messages[start]!.id : null,
   };
 }

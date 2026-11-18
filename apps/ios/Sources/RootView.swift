@@ -1482,7 +1482,7 @@ struct RootView: View {
   @AppStorage(VoiceTranscriptionPreference.storageKey) private var voicePreference = VoiceTranscriptionPreference.desktop
   @StateObject private var store: SessionStore
   @StateObject private var taskHub: TaskHubStore
-  @StateObject private var voice = VoiceInputController()
+  @StateObject private var voiceSessions = VoiceInputSessions()
   @StateObject private var sidebarMotion = SidebarDrawerCommands()
   @StateObject private var readingCovers = ChatReadingCovers()
   @ObservedObject private var notifications = TaskNotificationController.shared
@@ -1526,6 +1526,8 @@ struct RootView: View {
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+  private var voice: VoiceInputController { voiceSessions.controller(for: store.targetKey) }
+
   init(store: SessionStore, taskHub: TaskHubStore) {
     _store = StateObject(wrappedValue: store)
     _taskHub = StateObject(wrappedValue: taskHub)
@@ -1552,7 +1554,7 @@ struct RootView: View {
             IndependentAcceptanceLifecycle.beginAuthorizedEnrollment()
           }
         }
-        .onChange(of: scenePhase) { _, phase in
+            .onChange(of: scenePhase) { _, phase in
           TaskNotificationController.shared.setActive(phase == .active)
           IndependentAcceptanceLifecycle.scene(phase)
         }
@@ -1613,7 +1615,6 @@ struct RootView: View {
             store.sidebarInteracting = true
             composerFocused = false
             sidebarSearchFocused = false
-            if voice.isActive { voice.cancel() }
           }, onSettle: { open in
             store.drawerOpen = open
           }, onInteractionEnd: { store.sidebarInteracting = false })
@@ -1635,6 +1636,8 @@ struct RootView: View {
     .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
       if store.localRecoveryRequired { store.retryLocalRecovery() }
     }
+    .modifier(SubagentHistoryPresentation(targetKey: store.targetKey, client: store.devPreviewClient,
+      threadId: store.selectedThreadId, enabled: store.supportsSubagentHistory))
     .preferredColorScheme(store.colorScheme)
     .task {
       guard !hostedExaminerOwnsRefresh else { return }
@@ -1682,6 +1685,7 @@ struct RootView: View {
     }
     .tint(.primary)
     .environmentObject(voice)
+    .environmentObject(voiceSessions)
     .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented || devServiceSource != nil))
     .sheet(item: $devServiceSource) { source in
       DevServiceEntry(client: source.client, threadId: source.threadId)
@@ -1755,11 +1759,13 @@ struct RootView: View {
           if store.client?.isDemo == false { Task { await store.refresh() } }
         }
       }
-      voice.handleScenePhase(phase)
+      voiceSessions.handleScenePhase(phase)
+      if phase == .background { voiceSessions.enterBackground() }
+      if phase == .active { voiceSessions.recover() }
       if phase != .active { store.suspendEvents(); store.persistForBackground() }
     }
     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("CodexNetworkPathChanged"))) { _ in
-      if !hostedExaminerOwnsRefresh, scenePhase == .active { store.recoverNetworkReads() }
+      if !hostedExaminerOwnsRefresh, scenePhase == .active { store.recoverNetworkReads(); voiceSessions.recover() }
     }
     .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
       guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
@@ -1771,18 +1777,8 @@ struct RootView: View {
         store.sheet = nil; store.projectGitContext = nil
       }
     }
-    .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
-      guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
-        let context = store.currentProjectGitContext else { return }
-      await ProjectGitStore.shared.refresh(context.client, context.target, context.project.id)
-    }
-    .onChange(of: store.conversation?.projectId) { _, projectId in
-      if store.sheet == .projectGit, store.projectGitContext?.project.id != projectId {
-        store.sheet = nil; store.projectGitContext = nil
-      }
-    }
-    .onChange(of: store.targetKey) { _, _ in
-      voice.cancel()
+    .onChange(of: store.targetKey) { previous, _ in
+      voiceSessions.leave(previous)
       store.chatSearchJump = nil
       readySearchJump = nil
       if store.sheet == .chatSearch || store.sheet == .projectGit { store.sheet = nil }
@@ -1802,16 +1798,16 @@ struct RootView: View {
       store.projectGitContext = nil
     }
     .task(id: store.modelLoadingKey) { if store.modelLoadingKey != nil { await store.loadModels() } }
-    .onChange(of: store.drawerOpen) { _, open in if open { voice.cancel() } }
     .onChange(of: sidebarClientKey) { _, _ in sidebarRefreshRequest = nil }
-    .onChange(of: store.sheet) { _, sheet in if sheet != nil { voice.cancel() } }
+    .onChange(of: store.sheet) { _, sheet in if sheet != nil { voiceSessions.suspend() } }
+    .onChange(of: store.drawerOpen) { _, open in if open { voiceSessions.suspend() } }
     .onChange(of: voice.isActive && scenePhase == .active, initial: true) { _, keepAwake in
       // Keep the live transcript visible throughout setup, capture and finalization.
       UIApplication.shared.isIdleTimerDisabled = keepAwake
     }
     .onDisappear {
       store.sidebarInteracting = false
-      voice.cancel()
+      voiceSessions.suspend()
       UIApplication.shared.isIdleTimerDisabled = false
     }
   }
@@ -2072,6 +2068,7 @@ struct RootView: View {
                         .accessibilityIdentifier("task-failure-history-\(message.id)")
                     } else if message.kind == "subAgent" {
                       EasyWorkSubagentMessageView(message: message)
+                      SubagentHistoryAction(message: message)
                     } else if message.kind == "plan" {
                       ProposedPlanMessageView(message: message,native:store.client?.agentConnection?.target.agentId=="easywork")
                     } else {
@@ -2379,7 +2376,7 @@ struct RootView: View {
       if !questions.isEmpty {
         AsyncQuestionDeck(store: store, approvals: questions, targetKey: store.targetKey) {
           composerFocused = false
-          voice.cancel()
+          voice.suspend()
         }.id(store.targetKey).padding(.horizontal, 16)
       }
       let editor = ComposerView(suggestionReader: store.desktopSuggestionReader, store: store, drafts: store.drafts, voice: voice,
@@ -3525,6 +3522,17 @@ struct ToolCallView: View {
   private var style: ToolActivityStyle { ToolActivityStyle(message.kind) }
   private var emphasized: Bool { !single && (expanded || hovered) }
   private var title: String { SharedMobileRules.toolTitle(message, single: single, native: NativeToolPresentationText.shared) }
+  private var wrapsStructuredDetail: Bool {
+    guard message.kind != "commandExecution", let first = message.detail?.first(where: { !$0.isWhitespace }) else { return false }
+    return first == "{" || first == "["
+  }
+
+  private var detailText: some View {
+    Text(verbatim: message.detail.orEmpty)
+      .font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
+      .foregroundStyle(Palette.secondary.opacity(0.75))
+      .accessibilityIdentifier("tool-output-content-\(message.id)")
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -3550,6 +3558,7 @@ struct ToolCallView: View {
         .accessibilityIdentifier("tool-item-\(message.id)")
         .accessibilityLabel(title)
         .accessibilityValue(L10n.tr("\(statusLabel)，\(expanded ? L10n.tr("已展开") : L10n.tr("已折叠"))"))
+      if message.kind == "subAgent" { SubagentHistoryAction(message: message) }
       if expanded {
         VStack(alignment: .leading, spacing: 8) {
           Text(style.detailTitle).font(.subheadline).foregroundStyle(Palette.secondary)
@@ -3572,12 +3581,16 @@ struct ToolCallView: View {
               .font(.caption).foregroundStyle(Palette.secondary)
           } else {
             ScrollView(.vertical) {
-              ScrollView(.horizontal) {
-                Text(verbatim: message.detail.orEmpty)
-                  .font(.system(.subheadline, design: .monospaced)).textSelection(.enabled)
-                  .foregroundStyle(Palette.secondary.opacity(0.75))
+              if wrapsStructuredDetail {
+                // Soft wrap the original structured output without reserializing
+                // values or changing the exact text used by copy and search.
+                detailText.fixedSize(horizontal: false, vertical: true)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+              } else {
+                ScrollView(.horizontal) { detailText }
               }
             }.frame(maxHeight: 180)
+              .accessibilityIdentifier("tool-output-scroll-\(message.id)")
           }
           HStack {
             Spacer(minLength: 0)
@@ -3772,21 +3785,43 @@ private struct MarkdownBlockView: View {
       }.fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("markdown-quote")
     case .divider: Divider().padding(.vertical, 4)
     case .table(let rows):
-      ScrollView(.horizontal) {
-        VStack(spacing: 0) {
-          ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, cells in
-            HStack(alignment: .top, spacing: 0) {
-              ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                MarkdownParagraph(text: cell).font(.subheadline)
-                  .fontWeight(rowIndex == 0 ? .semibold : .regular)
-                  .frame(width: 136, alignment: .leading).padding(10)
-              }
-            }.background(rowIndex == 0 ? Palette.sidebar : Palette.background)
-            Divider()
-          }
-        }.overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2)))
-      }.accessibilityIdentifier("markdown-table")
+      MarkdownTable(rows: rows)
     }
+  }
+}
+
+private struct MarkdownTable: View {
+  let rows: [[String]]
+  @ScaledMetric(relativeTo: .subheadline) private var minimumColumnWidth: CGFloat = 160
+  @State private var viewportWidth: CGFloat = 0
+
+  private var columnWidth: CGFloat {
+    max(minimumColumnWidth, viewportWidth / CGFloat(max(rows.first?.count ?? 0, 1)))
+  }
+
+  var body: some View {
+    ScrollView(.horizontal) {
+      VStack(spacing: 0) {
+        ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, cells in
+          HStack(alignment: .top, spacing: 0) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+              MarkdownParagraph(text: cell).font(.subheadline)
+                .fontWeight(rowIndex == 0 ? .semibold : .regular)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: max(0, columnWidth - 20), alignment: .leading).padding(10)
+            }
+          }.background(rowIndex == 0 ? Palette.sidebar : Palette.background)
+          if rowIndex < rows.count - 1 { Divider() }
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.secondary.opacity(0.2)))
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    // Measure the viewport, not the unbounded content of the horizontal scroller.
+    // Short tables fill the message; wide tables keep readable, scalable columns.
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { viewportWidth = $0 }
+    .accessibilityIdentifier("markdown-table")
   }
 }
 
@@ -4276,8 +4311,22 @@ struct RuntimePanel: View {
             if let error = receipt.error, !error.isEmpty {
               Text(EasyWorkFailurePresentation.text(error,enabled:store.client?.agentConnection?.target.agentId=="easywork")).font(.caption).foregroundStyle(Palette.secondary).textSelection(.enabled)
             }
+            if receipt.state == "failed", receipt.turnId?.isEmpty != false {
+              HStack(spacing: 16) {
+                Button { store.dismissReceiptFailure(receipt, expectedTargetKey: target) } label: {
+                  Text(L10n.tr("取消")).frame(minWidth: 44, minHeight: 44)
+                }
+                  .foregroundStyle(Palette.secondary)
+                  .accessibilityIdentifier("dismiss-receipt-\(receipt.id)")
+                Button { store.resendFailure(receipt, target: target) } label: {
+                  Text(L10n.tr("重新发送")).frame(minWidth: 44, minHeight: 44)
+                }
+                  .disabled(!store.canResendFailure(receipt, target: target))
+                  .accessibilityIdentifier("resend-receipt-\(receipt.id)")
+              }.font(.caption).buttonStyle(.borderless).frame(minHeight: 44)
+            }
           }.frame(maxWidth: .infinity, alignment: .leading)
-          if receipt.state == "failed" {
+          if receipt.state == "failed", receipt.turnId?.isEmpty == false {
             Button { store.dismissReceiptFailure(receipt, expectedTargetKey: target) } label: {
               Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44)
             }.buttonStyle(.plain).foregroundStyle(Palette.secondary)
@@ -4703,12 +4752,13 @@ private struct QuestionAnswerField: View {
   let actionContext: SessionStore.ApprovalActionContext
   @Binding var text: String
   @Binding var recordingQuestionId: String?
-  @StateObject private var voice = VoiceInputController()
+  @EnvironmentObject private var voiceSessions: VoiceInputSessions
   @EnvironmentObject private var composerVoice: VoiceInputController
   @FocusState private var focused: Bool
   @Environment(\.scenePhase) private var scenePhase
 
   private var voiceTarget: String { targetKey + ":" + approval.id + ":" + question.id }
+  private var voice: VoiceInputController { voiceSessions.controller(for: voiceTarget) }
 
   var body: some View {
     VStack(spacing: 4) {
@@ -4728,11 +4778,15 @@ private struct QuestionAnswerField: View {
             id: "question-voice-\(question.id)") {
             focused = false
             guard let provider = store.voiceProvider(draftId: voiceTarget) else { return }
-            voice.start(target: voiceTarget, text: text, provider: provider) { target, value in
-              guard target == voiceTarget, store.targetKey == targetKey,
-                text == voice.originalText,
-                store.canEditApproval(approval, context: actionContext) else { return false }
-              text = value
+            voiceSessions.prepareCapture(except: voiceTarget)
+            let originalText = text
+            voice.start(target: voiceTarget, text: originalText, provider: provider) {
+              [store, answer = $text, approval, actionContext, targetKey, expectedTarget = voiceTarget] target, value in
+              guard target == expectedTarget, store.targetKey == targetKey,
+                answer.wrappedValue == originalText,
+                store.runtime?.approvals.contains(where: { $0.id == approval.id }) == true,
+                !store.isAnswering(approval), store.canEditApproval(approval, context: actionContext) else { return false }
+              answer.wrappedValue = value
               return true
             }
           }.disabled(composerVoice.isActive
@@ -4749,15 +4803,17 @@ private struct QuestionAnswerField: View {
         else if recordingQuestionId == question.id { recordingQuestionId = nil }
         UIApplication.shared.isIdleTimerDisabled = (active || composerVoice.isActive) && scenePhase == .active
       }
-      .onChange(of: composerVoice.isActive) { _, active in if active { voice.cancel() } }
+      .onChange(of: composerVoice.isActive) { _, active in if active { voice.suspend() } }
       .onChange(of: scenePhase) { _, phase in
         voice.handleScenePhase(phase)
+        if phase == .background { voice.enterBackground() }
+        if phase == .active { voice.recoverAfterInterruption() }
       }
-      .onChange(of: store.targetKey) { _, _ in voice.cancel() }
-      .onChange(of: approval) { _, _ in voice.cancel() }
-      .onChange(of: store.approvalActionContext) { _, _ in voice.cancel() }
+      .onChange(of: store.targetKey) { _, _ in voice.suspend() }
+      .onChange(of: approval) { _, _ in voice.suspend() }
+      .onChange(of: store.approvalActionContext) { _, _ in voice.suspend() }
       .onDisappear {
-        voice.cancel()
+        voice.suspend()
         if recordingQuestionId == question.id { recordingQuestionId = nil }
         UIApplication.shared.isIdleTimerDisabled = composerVoice.isActive && scenePhase == .active
       }
@@ -4942,6 +4998,7 @@ private struct ComposerView: View,Equatable {
   @ObservedObject var store: SessionStore
   @ObservedObject var drafts: ComposerDraftStore
   @ObservedObject var voice: VoiceInputController
+  @EnvironmentObject private var voiceSessions: VoiceInputSessions
   @StateObject private var attachmentPhotos = RecentAttachmentPhotos()
   @State private var attachmentRequest: QuickAttachmentRequest?
   @State private var draftImagePreview: DraftAttachmentPreviewRequest?
@@ -5374,7 +5431,25 @@ private struct ComposerView: View,Equatable {
           composerActionButton
         }.buttonStyle(.plain).id(suggestionControlIdentity(presentation.action))
       }
+      if !store.draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        ComposerSwipeSend(intent: swipeSendIntent, enabled: canSwipeSend) { original in
+          guard canSwipeSend, swipeSendIntent == original else { return }
+          store.send()
+          composerFocused = false
+        }
+      }
     }
+  }
+
+  private var swipeSendIntent: ComposerSwipeSendIntent {
+    ComposerSwipeSendIntent(target: store.targetKey, draft: store.draft,
+      snapshot: store.suggestionDraftSnapshot, replyMode: store.activeReplyMode)
+  }
+
+  private var canSwipeSend: Bool {
+    scenePhase == .active && !voice.isActive && !store.drawerOpen
+      && store.sheet == nil && !attachmentModalPresented && suggestionPreview == nil
+      && store.composerAction == .send && store.canPerformComposerAction && store.canSend
   }
 
   @ViewBuilder private func composerTextField(showsGhost: Bool) -> some View {
@@ -5416,9 +5491,14 @@ private struct ComposerView: View,Equatable {
   private func startVoiceInput() {
     guard !voice.isActive, let provider = store.voiceProvider(draftId: store.targetKey) else { return }
     composerFocused = false
-    voice.start(target: store.targetKey, text: store.draft.text, provider: provider) { target, text in
-      guard store.targetKey == target, store.draft.text == voice.originalText else { return false }
+    let originalText = store.draft.text
+    let revision = store.drafts.textRevision(for: store.targetKey)
+    voiceSessions.prepareCapture(except: store.targetKey)
+    voice.start(target: store.targetKey, text: originalText, provider: provider) { [store] target, text in
+      guard (store.drafts.values[target]?.text ?? "") == originalText,
+        store.drafts.textRevision(for: target) == revision else { return false }
       store.setText(text, target: target)
+      store.persistForBackground()
       return true
     }
   }

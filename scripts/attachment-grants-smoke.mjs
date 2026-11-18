@@ -243,6 +243,74 @@ try {
     });
     assert.equal(rejected, authenticated ? 400 : 401);
   }
+  const indexPath = join(outside, 'index.md');
+  await writeFile(indexPath, '# Index\n\n[child](report.md#section)');
+  const documentThread = service.session.state.threads.find((t) => t.id === 'authorized');
+  await service.session.upsert(documentThread, {
+    id: 'document-index',
+    type: 'agentMessage',
+    text: `[index](${indexPath})`,
+  });
+  assert.equal(
+    documentThread.messages.find((m) => m.id === 'document-index').attachments.length,
+    0,
+    'background projection must not resolve a file before the user opens its original link',
+  );
+  const indexQuery = new URLSearchParams({
+    hostId: service.session.hostId,
+    threadId: 'authorized',
+    messageId: 'document-index',
+    reference: indexPath,
+  });
+  const indexResponse = await fetch(endpoint + '/v1/attachments/resolve-link?' + indexQuery, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  assert.equal(indexResponse.status, 200);
+  const indexFile = (await indexResponse.json()).attachment;
+  const documentQuery = new URLSearchParams({
+    hostId: service.session.hostId,
+    threadId: 'authorized',
+    sourceAttachmentId: indexFile.id,
+    sourceSha256: indexFile.sha256,
+    reference: 'report.md#section',
+  });
+  const documentURL = endpoint + '/v1/attachments/resolve-document-link?';
+  const documentRead = (query, authorized = true) =>
+    fetch(documentURL + query, {
+      headers: authorized ? { Authorization: 'Bearer ' + token } : {},
+    });
+  assert.equal((await documentRead(documentQuery, false)).status, 401);
+  const documentResponse = await documentRead(documentQuery);
+  assert.equal(documentResponse.status, 200);
+  const documentResult = await documentResponse.json();
+  assert.equal(documentResult.sourceAttachmentId, indexFile.id);
+  assert.equal(documentResult.attachment.name, 'report.md');
+  assert(!('path' in documentResult.attachment));
+  assert.equal((await documentRead(documentQuery + '&reference=private.txt')).status, 400);
+  for (const [key, value, status] of [
+    ['reference', 'private.txt', 403],
+    ['reference', '../private.txt', 403],
+    ['threadId', 'other', 403],
+    ['hostId', 'wrong-host', 403],
+    ['sourceSha256', '0'.repeat(64), 409],
+    ['sourceSha256', '', 400],
+    ['unexpected', 'field', 400],
+  ]) {
+    const rejected = new URLSearchParams(documentQuery);
+    rejected.set(key, value);
+    assert.equal((await documentRead(rejected)).status, status, key + '=' + value);
+  }
+  await rm(report);
+  await symlink(sibling, report);
+  assert.equal(
+    (await documentRead(documentQuery)).status,
+    403,
+    'A previously authorized document link cannot follow a changed symlink target',
+  );
+  await rm(report);
+  await writeFile(report, 'CURRENT_REPORT_TWO');
+  await writeFile(indexPath, '# Changed');
+  assert.equal((await documentRead(documentQuery)).status, 409);
   const alive = await fetch(endpoint + '/healthz', {
     headers: { Authorization: 'Bearer ' + token },
   });

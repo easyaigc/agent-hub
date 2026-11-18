@@ -1581,3 +1581,5 @@ iOS resolves suggestion source kinds through the Agent adapter while EasyWork ke
 Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协作工具接收者记录分别识别明确的子线程。重复活动更新稳定的独立卡片，已有工具卡片继续负责其显式子线程。关联只供读取，保存内容刷新不赋予子 owner 控制。见[阶段123](plans/android-alignment-20261022/records/stage123-c2-codex-live-parent-and-copy.md)。
 
 2026-11-08 F03/F06/F57/F63。双端私有直连地址支持专用 `*.mesh.51easyai.com` 电脑名，候选归为 VPN 并沿用稳定顺序。地址仅提供路径，实际读取仍核对配对证书指纹、完整 Host/workspace/runtime 目标与桌面公钥。远程 issuer、已有 grant 与已提交操作保持各自原身份；新路径的原生及真实网络结果见[阶段126](plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
+
+2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。

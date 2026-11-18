@@ -19,9 +19,14 @@ final class UsageUITests: XCTestCase {
     let settings = app.buttons["open-settings"], usage = app.buttons["current-client-usage"], collapse = app.buttons["close-sidebar"]
     XCTAssertTrue(settings.waitForExistence(timeout: 30))
     XCTAssertTrue(usage.waitForExistence(timeout: 30)); XCTAssertTrue(collapse.exists)
-    let loaded = NSPredicate { _, _ in usage.label.contains("7d") }
+    let loaded = NSPredicate { _, _ in fixture["quotaMetricId"] != nil ? usage.label.contains("35%") : usage.label.contains("credits") }
     expectation(for: loaded, evaluatedWith: usage)
     waitForExpectations(timeout: 30)
+    if fixture["quotaMetricId"] != nil {
+      XCTAssertTrue(usage.label.contains("剩余35%"), usage.label)
+      XCTAssertFalse(usage.label.contains("重置"), usage.label)
+      XCTAssertFalse(usage.label.contains("65%"), usage.label)
+    }
     XCTAssertLessThan(settings.frame.maxX, usage.frame.midX)
     XCTAssertLessThan(usage.frame.midX, collapse.frame.midX)
     XCTAssertFalse(app.staticTexts["个人空间"].exists)
@@ -38,6 +43,20 @@ final class UsageUITests: XCTestCase {
     app.buttons["完成"].tap()
     app.buttons["sidebar-client-switch"].tap()
     XCTAssertTrue(app.staticTexts["Usage DEV"].waitForExistence(timeout: 10))
+    if fixture["quotaMetricId"] != nil {
+      let clientID = try XCTUnwrap((fixture["client"] as? [String: Any])?["id"] as? String)
+      let row = app.buttons["client-" + clientID]
+      XCTAssertTrue(row.waitForExistence(timeout: 10))
+      XCTAssertTrue(row.label.contains("剩余35%"), row.label)
+      XCTAssertTrue(row.label.contains("后重置"), row.label)
+      XCTAssertFalse(row.label.contains("65%"), row.label)
+      if let reset = row.label.range(of: "后重置"), let remaining = row.label.range(of: "剩余35%") {
+        XCTAssertLessThan(reset.lowerBound, remaining.lowerBound, row.label)
+      }
+      let firstSummary = row.label
+      let changes = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in row.label != firstSummary }, object: row)
+      XCTAssertEqual(XCTWaiter.wait(for: [changes], timeout: 5), .completed, "Compact countdown must update")
+    }
     shot("f73-real-host-client-picker")
     let done = app.buttons["完成"]; if done.exists { done.tap() } else { app.swipeDown() }
     XCTAssertTrue(settings.waitForExistence(timeout: 10));settings.tap()
@@ -47,6 +66,38 @@ final class UsageUITests: XCTestCase {
     app.buttons["open-sidebar"].tap()
     XCTAssertTrue(collapse.waitForExistence(timeout: 10)); collapse.tap()
     XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 10))
+  }
+  @MainActor func testSummaryWithoutPeriodicLimit() throws {
+    continueAfterFailure = false
+    let env = ProcessInfo.processInfo.environment
+    guard env["USAGE_ACCEPTANCE_BUNDLE"] == "com.easyai.agenthub.usage.acceptance",
+      let raw = env["USAGE_SUMMARY_SCENARIOS"],
+      let scenarios = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [[String: Any]], scenarios.count == 3 else {
+      throw XCTSkip("Requires three independent no-periodic-limit fixtures")
+    }
+    for scenario in scenarios {
+      let fixture = try XCTUnwrap(scenario["fixture"] as? [String: Any])
+      let clientID = try XCTUnwrap((fixture["client"] as? [String: Any])?["id"] as? String)
+      let encoded = String(decoding: try JSONSerialization.data(withJSONObject: fixture), as: UTF8.self)
+      let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.usage.acceptance")
+      app.launchArguments = ["-ui-testing", "-usage-acceptance", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      app.launchEnvironment["USAGE_ACCEPTANCE_FIXTURE"] = encoded
+      app.launch()
+      let usage = app.buttons["current-client-usage"]
+      XCTAssertTrue(usage.waitForExistence(timeout: 30))
+      XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'credits'"), object: usage)], timeout: 30), .completed, usage.label)
+      for forbidden in ["%", "重置"] { XCTAssertFalse(usage.label.contains(forbidden), usage.label) }
+      XCTAssertFalse(app.descendants(matching: .any)["usage-remaining-ring"].exists)
+      shot("usage-no-period-footer-" + (scenario["name"] as? String ?? "unknown"))
+      app.buttons["sidebar-client-switch"].tap()
+      let row = app.buttons["client-" + clientID]
+      XCTAssertTrue(row.waitForExistence(timeout: 10))
+      XCTAssertTrue(row.label.contains("credits"), row.label)
+      for forbidden in ["%", "重置"] { XCTAssertFalse(row.label.contains(forbidden), row.label) }
+      XCTAssertFalse(app.descendants(matching: .any)["client-usage-windows-" + clientID].exists)
+      shot("usage-no-period-" + (scenario["name"] as? String ?? "unknown"))
+      app.terminate()
+    }
   }
   @MainActor func testRealEasyWorkUsageBothTransports() async throws {
     continueAfterFailure = false

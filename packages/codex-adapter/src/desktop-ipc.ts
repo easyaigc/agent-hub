@@ -1,3 +1,5 @@
+import { historyIdentity } from './desktop-history-identity.js';
+import { subagentDisplayLabel } from './runtime.js';
 import { diagnosticEvent } from './diagnostic-events.js';
 import { connect } from 'node:net';
 import type { Duplex } from 'node:stream';
@@ -13,6 +15,9 @@ import {
   subagentIds,
   subagentItem,
   subagentTranscript,
+  SubagentHistoryError,
+  subagentHistoryMessages,
+  subagentHistoryPage,
   type SubagentTranscript,
 } from './subagents.js';
 import { DesktopFrameDecoder, desktopFrameLimits } from './desktop-framing.js';
@@ -1283,6 +1288,139 @@ export class DesktopRuntime {
       },
       (id) => this.subagentHistory.get(id),
     );
+  }
+  private async savedSubagentThread(id: string): Promise<WireObject> {
+    const thread = object(
+      (await this.reader.read('thread/read', { threadId: id, includeTurns: true })).thread,
+    );
+    if (thread.id !== id) throw new SubagentHistoryError(409, 'Saved history identity mismatch');
+    if (thread.historyMode !== 'paginated') return thread;
+    const turns = new Map<string, WireObject>();
+    for (const turn of desktopTurns(thread)) turns.set(string(turn.turnId || turn.id), turn);
+    const readPages = async (method: string, extra: WireObject) => {
+      const entries: WireObject[] = [];
+      const seen = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const page = await this.reader.read(method, {
+          threadId: id,
+          sortDirection: 'desc',
+          limit: 100,
+          ...extra,
+          ...(cursor ? { cursor } : {}),
+        });
+        entries.push(...list(page.data).map(object));
+        const next = string(page.nextCursor);
+        if (next && seen.has(next)) throw new Error('Saved history cursor did not advance');
+        if (next) seen.add(next);
+        cursor = next || undefined;
+      } while (cursor);
+      return entries.reverse();
+    };
+    const summaries = await readPages('thread/turns/list', { itemsView: 'notLoaded' });
+    for (const turn of summaries) turns.set(string(turn.id), turn);
+    const ordered = new Map<string, WireObject>();
+    for (const turn of summaries) ordered.set(string(turn.id), { ...turn, items: [] });
+    for (const entry of await readPages('thread/items/list', {})) {
+      const turnId = string(entry.turnId);
+      if (!turnId) throw new Error('Saved item turn identity unavailable');
+      let turn = ordered.get(turnId);
+      if (!turn) {
+        turn = { ...turns.get(turnId), id: turnId, items: [] };
+        ordered.set(turnId, turn);
+      }
+      (turn.items as WireObject[]).push(object(entry.item));
+    }
+    return { ...thread, turns: [...ordered.values()] };
+  }
+  async subagentHistoryPage(
+    parentId: string,
+    messageId: string,
+    childId?: string,
+    cursor?: string,
+  ) {
+    let parent = this.ipc.state(parentId);
+    if (parent && parent.id !== parentId)
+      throw new SubagentHistoryError(409, 'Parent history identity mismatch');
+    const find = (state: WireObject | undefined) => {
+      const matches: WireObject[] = [];
+      for (const turn of desktopTurns(state ?? {})) {
+        for (const value of list(turn.items)) {
+          const item = object(value);
+          if (!subagentIds(item).length) continue;
+          const projected = this.projectSubagent(item, state);
+          if (!projected) continue;
+          const id = string(projected.id);
+          if (
+            messageId === historyIdentity(id, string(turn.turnId || turn.id)) ||
+            messageId === id ||
+            messageId === item.id
+          )
+            matches.push(item);
+        }
+      }
+      if (matches.length > 1)
+        throw new SubagentHistoryError(409, 'Parent subagent item is ambiguous');
+      return matches[0];
+    };
+    let item = find(parent);
+    if (!item) {
+      parent = this.ipc.hasOwner(parentId)
+        ? await this.ipc.completeHistory(parentId)
+        : await this.savedSubagentThread(parentId);
+      if (parent.id !== parentId)
+        throw new SubagentHistoryError(409, 'Parent history identity mismatch');
+      item = find(parent);
+    }
+    if (!item) throw new SubagentHistoryError(404, 'Subagent tool item is unavailable');
+    const ids = subagentIds(item).filter((id) => id !== parentId);
+    const selected = childId ?? ids[0];
+    if (!selected || !ids.includes(selected))
+      throw new SubagentHistoryError(403, 'Child is not named by the parent tool item');
+    const source = this.ipc.hasOwner(selected)
+      ? ('desktop-runtime' as const)
+      : ('saved-history' as const);
+    const child =
+      source === 'desktop-runtime'
+        ? await this.ipc.completeHistory(selected)
+        : await this.savedSubagentThread(selected);
+    if (child.id !== selected || (source === 'desktop-runtime' && !this.ipc.hasOwner(selected)))
+      throw new SubagentHistoryError(409, 'Child history identity changed');
+    const states = { ...object(item.agentsStates) };
+    for (const turn of desktopTurns(parent ?? {}))
+      for (const value of list(turn.items)) {
+        const report = object(value);
+        if (report.type === 'collabAgentToolCall')
+          Object.assign(states, object(report.agentsStates));
+      }
+    if (parent) {
+      const projection = this.subagentsForParent(parent);
+      Object.assign(states, projection.reported);
+      if (item.type === 'subAgentActivity')
+        for (const id of ids) {
+          const status = projection.activities.get(id)?.status;
+          if (status) states[id] = { ...object(states[id]), status };
+        }
+    }
+    return {
+      children: ids.map((id) => ({
+        id,
+        title: subagentDisplayLabel(id === selected ? child : this.ipc.state(id)),
+        status:
+          id === selected
+            ? string(desktopTurns(child).at(-1)?.status) ||
+              string(object(states[id]).status) ||
+              'unknown'
+            : string(object(states[id]).status) || 'unknown',
+      })),
+      childId: selected,
+      threadId: selected,
+      source,
+      ...subagentHistoryPage(
+        subagentHistoryMessages(desktopTurns(child), (item) => this.projectSubagent(item, child)),
+        cursor,
+      ),
+    };
   }
   private async refreshSubagentHistory(): Promise<void> {
     if (this.subagentsClosed || this.subagentHistoryReading || !this.ready) return;

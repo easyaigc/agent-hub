@@ -90,7 +90,7 @@
       },
       "expected": {
         "balance": "9,007,199,254,740,993.12",
-        "percent": 23,
+        "percent": 77,
         "partial": false
       }
     },
@@ -176,7 +176,7 @@
       },
       "expected": {
         "balance": "0",
-        "percent": 23,
+        "percent": 77,
         "partial": false
       }
     },
@@ -240,7 +240,7 @@
         }
       },
       "expected": {
-        "percent": 23,
+        "percent": 77,
         "partial": false
       }
     },
@@ -389,7 +389,7 @@
       },
       "expected": {
         "balance": "9,007,199,254,740,993.12",
-        "percent": 23,
+        "percent": 77,
         "partial": false
       }
     },
@@ -481,7 +481,7 @@
       },
       "expected": {
         "balance": "9,007,199,254,740,993.12",
-        "percent": 200,
+        "percent": 0,
         "partial": false
       }
     },
@@ -671,7 +671,7 @@
       },
       "expected": {
         "balance": "9,007,199,254,740,993.12",
-        "percent": 23,
+        "percent": 77,
         "partial": true
       }
     },

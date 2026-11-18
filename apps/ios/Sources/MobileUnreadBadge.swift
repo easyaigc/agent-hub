@@ -139,6 +139,11 @@ final class MobileUnreadReconciler: @unchecked Sendable {
     var completions: [@Sendable (Result<Void, Error>) -> Void]
   }
   private var visible: [VisibleRequest] = []
+  private struct ClearRequest {
+    var target: AgentRuntimeTarget
+    var completion: @Sendable (Result<Void, Error>) -> Void
+  }
+  private var clears: [ClearRequest] = []
   private var running = false
 
   func submit(scopes: [AgentRuntimeTarget], snapshots: [MobileUnreadSnapshot],
@@ -169,6 +174,15 @@ final class MobileUnreadReconciler: @unchecked Sendable {
     if start { queue.async { self.drain() } }
   }
 
+  func submitClear(target: AgentRuntimeTarget, completion: @escaping @Sendable (Result<Void, Error>) -> Void) {
+    lock.lock()
+    clears.append(ClearRequest(target: target, completion: completion))
+    let start = !running
+    running = true
+    lock.unlock()
+    if start { queue.async { self.drain() } }
+  }
+
   private func save(_ action: () throws -> Void) -> Result<Void, Error> {
     // Only retry a local file-lock conflict; no remote command or input is retried.
     for attempt in 0..<3 {
@@ -183,10 +197,11 @@ final class MobileUnreadReconciler: @unchecked Sendable {
   private func drain() {
     while true {
       lock.lock()
-      guard pending != nil || !visible.isEmpty else { running = false; lock.unlock(); return }
-      let request = pending, reads = visible
+      guard pending != nil || !visible.isEmpty || !clears.isEmpty else { running = false; lock.unlock(); return }
+      let request = pending, reads = visible, clearing = clears
       pending = nil
       visible = []
+      clears = []
       lock.unlock()
       if let request {
         let result = save { _ = try MobileUnreadBadge.reconcile(scopes: request.scopes, snapshots: request.snapshots) }
@@ -197,6 +212,11 @@ final class MobileUnreadReconciler: @unchecked Sendable {
         let result = save { _ = try MobileUnreadBadge.readVisible(read.value) }
         MobileUnreadPersistenceDiagnostics.record("visible", result: result)
         for completion in read.completions { completion(result) }
+      }
+      for clear in clearing {
+        let result = save { _ = try MobileUnreadBadge.clearUnread(target: clear.target) }
+        MobileUnreadPersistenceDiagnostics.record("clear-client", result: result)
+        clear.completion(result)
       }
     }
   }
@@ -480,4 +500,19 @@ enum MobileUnreadBadge {
     }
   }
   static func reset() throws { try transaction { $0 = Ledger() } }
+
+  /// A device-local acknowledgement of the current heads, never a desktop read command.
+  @discardableResult static func clearUnread(target: AgentRuntimeTarget) throws -> Int {
+    try transaction { ledger in
+      guard ledger.scopes.contains(target) else { return ledger.count }
+      for id in Array(ledger.threads.keys) {
+        guard var row = ledger.threads[id], key(row.target, "") == key(target, "") else { continue }
+        if let latest = row.latest, latest.revision >= (row.read?.revision ?? 0) { row.read = latest }
+        row.replyUnread = false
+        for noticeId in Array(row.notices.keys) { row.notices[noticeId]?.seen = true }
+        ledger.threads[id] = row
+      }
+      return ledger.count
+    }
+  }
 }

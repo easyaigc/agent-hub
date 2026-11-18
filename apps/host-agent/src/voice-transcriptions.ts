@@ -20,6 +20,8 @@ import {
 
 export interface VoiceTranscriber {
   readiness(): Promise<{ available: boolean; reason: string | null; principal: string | null }>;
+  /** Fresh identity only; full routing/policy checks remain mandatory before ASR. */
+  identity?(): Promise<string>;
   transcribe(audio: Buffer, principal: string): Promise<string>;
 }
 interface StoredReceipt extends VoiceTranscriptionReceipt {
@@ -37,6 +39,7 @@ export class VoiceTranscriptions {
   private readonly directory: string;
   private readonly active = new Set<string>();
   private readonly locks = new Set<string>();
+  private readonly running = new Map<string, Promise<void>>();
   constructor(
     private readonly hostId: string,
     stateDirectory: string,
@@ -199,12 +202,36 @@ export class VoiceTranscriptions {
       this.locks.delete(manifest.operationId);
     }
   }
-  async status(id: string) {
+  async status(id: string, waitMs = 0) {
+    if (!Number.isSafeInteger(waitMs) || waitMs < 0 || waitMs > 20_000)
+      throw new RuntimeError(400, '无效转写等待时间');
     const receipt = await this.recordStatus(id);
     await this.validatePrincipal(receipt);
-    return publicReceipt(receipt);
+    const running = this.running.get(id);
+    if (waitMs && running) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          running,
+          new Promise<void>((resolve) => {
+            timer = setTimeout(resolve, waitMs);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+      // Identity can change while a read waits. Validate again before delivery.
+      await this.validatePrincipal(receipt);
+    }
+    // ASR can finish during identity I/O; never return the stale first snapshot.
+    return publicReceipt(await this.recordStatus(id));
   }
   private async validatePrincipal(receipt: StoredReceipt) {
+    if (this.transcriber.identity) {
+      if ((await this.transcriber.identity()) !== receipt.principal)
+        throw new RuntimeError(403, 'Codex 登录账户已变化，不能读取或提交原账户的录音');
+      return;
+    }
     const current = await this.transcriber.readiness();
     if (!current.available)
       throw new RuntimeError(401, current.reason ?? '请恢复原 Codex 登录再查询转写');
@@ -275,7 +302,11 @@ export class VoiceTranscriptions {
         this.active.delete(id);
         throw error;
       }
-      void this.run(receipt, audio);
+      const running = this.run(receipt, audio);
+      this.running.set(id, running);
+      void running.finally(() => {
+        if (this.running.get(id) === running) this.running.delete(id);
+      });
       return publicReceipt(receipt);
     } finally {
       this.locks.delete(id);

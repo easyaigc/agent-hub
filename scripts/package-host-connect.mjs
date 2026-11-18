@@ -39,6 +39,14 @@ const sourceRoots = [
 // Nonstandard source paths require explicit review, rather than permitting all
 // JARs, properties, Dockerfiles or Bash scripts. The wrapper checksum stays fixed.
 const fixedSourceFiles = new Set([
+  // Reviewed task-owned Android acceptance helpers; these are source, not captured data.
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationControlV4.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocuments.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedMainMigrationDocumentsV3.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafBoundedFd.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/P7MainSafLeaseV3.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeRweProcessCapture.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedP9SystemUiEvidence.java',
   'apps/android/src/androidTest/java/com/agenthub/android/NativeSoundForeignWitnessProvider.java',
   'scripts/mobile/fixtures/android/os/Looper.java',
   'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm/android/util/Base64.java',
@@ -80,6 +88,47 @@ const fixedSourceFiles = new Set([
   'scripts/mobile/fixtures/NaturalVisibilityVectors.java',
 ]);
 const reviewedBinarySourceSha256 = new Map([
+  // Deterministic synthetic chimes, pinned to task-sound-fixtures.manifest.json.
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.aiff',
+    '948ae3435193740cff64743cd63d2547e6ec21406e98a5c48c3643c2d7604445',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-24.caf',
+    '73f1661d0474e99e860771ecf653cf689017099050add697dec20b9686b206e5',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32-big.caf',
+    '2112d3026d7fd34e25fd8d4d23eb26bad2ce67202c68ee1575b6393f85778d1f',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-32.wav',
+    '6a152280eaf1978b56caedd569f5c6325324e0d093065dff4befb2938450e417',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-big.caf',
+    '6fe6a6c23b6f8445aa42919f7a6a7ed91cfc08eab361de379c9af6e86cb2a991',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.caf',
+    '495188a63f4bb6a32f6641cb3c1b820824b6cc979c587a064ebe0c99e8f5204e',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float32.wav',
+    '57ad32020e107c73075b15c896ad4b69614c2343cf7261cca65743c84af8d676',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic-float64-big.caf',
+    'fa0a83f1da441a227c0e3d95801931495074c2c6e634780f424ea91c69b5872d',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.aiff',
+    '6e892732a18240c371a496c88366919a94b4f8fb31afec870f1e63f31eb07600',
+  ],
+  [
+    'packages/protocol/fixtures/mobile/task-sound-synthetic.caf',
+    '4b4818ba108d7b2f84b2c433c47bb0e01c71007127eec5439af6f286a0f49cdd',
+  ],
   [
     'apps/android/src/main/assets/chat-notification-sounds/v1/attention.wav',
     '6ea2939f779d5a29b1d65f811f29811704cfa6cc58ac576a9a55e05a491fdb7f',

@@ -75,7 +75,7 @@ private struct Builder {
     }
     func append(_ kind: PreviewBlock.Kind, markdown: String? = nil, text override: String? = nil,
       rows: [[String]] = [], anchor: String? = nil) {
-      let value = markdown ?? node.children.map { $0.format() }.joined()
+      let value = markdown ?? node.children.map(formattedInline).joined()
       blocks.append(PreviewBlock(id: blocks.count, kind: kind, markdown: value,
         text: override ?? text, sourceLine: line, indent: indent, rows: rows, images: images(node), anchor: anchor,
         attributed: styled(value), attributedRows: rows.map { $0.map(styled) }))
@@ -88,8 +88,8 @@ private struct Builder {
     case let code as CodeBlock:
       append(.code(code.language ?? ""), markdown: "", text: originalCode(code))
     case let table as Table:
-      var rows = [Array(table.head.cells).map { $0.children.map { $0.format() }.joined() }]
-      for row in table.body.rows { rows.append(row.cells.map { $0.children.map { $0.format() }.joined() }) }
+      var rows = [Array(table.head.cells).map { $0.children.map(formattedInline).joined() }]
+      for row in table.body.rows { rows.append(row.cells.map { $0.children.map(formattedInline).joined() }) }
       guard rows.count <= 1_000, rows.allSatisfy({ $0.count <= 32 }) else { throw PreviewError.complexity }
       append(.table, markdown: "", rows: rows)
     case is ThematicBreak: append(.divider)
@@ -147,6 +147,37 @@ private struct Builder {
     if end < lines.count { result += "\n" }
     return result
   }
+}
+
+// Swift Markdown's formatter omits destination angle brackets. Encode URI
+// delimiters before formatting so Foundation does not turn valid spaced links
+// into literal Markdown. Rewrite the tree to also cover links inside emphasis.
+private struct PreviewLinkFormatting: MarkupRewriter {
+  mutating func visitLink(_ link: Markdown.Link) -> (any Markup)? {
+    guard var value = defaultVisit(link) as? Markdown.Link else { return link }
+    value.destination = value.destination.map(encodedDestination)
+    return value
+  }
+  mutating func visitImage(_ image: Markdown.Image) -> (any Markup)? {
+    guard var value = defaultVisit(image) as? Markdown.Image else { return image }
+    value.source = value.source.map(encodedDestination)
+    return value
+  }
+}
+
+private func encodedDestination(_ value: String) -> String {
+  // Preserve existing escapes, chapter fragments and IPv6 authorities. Asking
+  // URL to repair a string containing spaces can double-encode existing escapes.
+  var allowed = CharacterSet.urlFragmentAllowed
+  allowed.insert(charactersIn: "%#[]")
+  allowed.remove(charactersIn: "()<>\\\"`")
+  let escaped = value.replacingOccurrences(of: "%(?![0-9A-Fa-f]{2})", with: "%25", options: .regularExpression)
+  return escaped.addingPercentEncoding(withAllowedCharacters: allowed) ?? escaped
+}
+
+private func formattedInline(_ node: any Markup) -> String {
+  var formatter = PreviewLinkFormatting()
+  return (formatter.visit(node) ?? node).format()
 }
 
 private func styled(_ text: String) -> AttributedString {

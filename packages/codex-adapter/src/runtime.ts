@@ -298,6 +298,26 @@ export function boundedSubagentDetail(
   return subagentDetailPrefix(text, limit - notice.length) + notice;
 }
 
+/** A compact identity label, separate from tool verbs and streaming output. */
+export function subagentDisplayLabel(child: WireObject = {}, fallbackTitle = ''): string {
+  const line = (value: unknown, limit: number) => {
+    const first =
+      string(value)
+        .split(/\r?\n/)
+        .find((part) => part.trim()) ?? '';
+    const compact = first.replace(/\s+/g, ' ').trim().slice(0, limit);
+    return /[\uD800-\uDBFF]$/.test(compact) ? compact.slice(0, -1) : compact;
+  };
+  const spawned = object(object(object(child.source).subAgent).thread_spawn);
+  const name = line(child.agentNickname, 64) || line(spawned.agent_nickname, 64);
+  const title =
+    line(child.name, 160) ||
+    line(child.title, 160) ||
+    line(child.preview, 160) ||
+    line(fallbackTitle, 160);
+  return [...new Set([name, title].filter(Boolean))].join(' · ') || '子 Agent';
+}
+
 export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
   const item = object(value);
   const kind = string(item.type);

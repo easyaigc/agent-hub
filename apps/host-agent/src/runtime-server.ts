@@ -969,7 +969,10 @@ export async function startRuntimeServer() {
         else if (url.pathname === '/v1/voice/transcriptions' && request.method === 'POST')
           result = await voice.prepare(data);
         else if (url.pathname === '/v1/voice/transcriptions' && request.method === 'GET')
-          result = await voice.status(url.searchParams.get('id') ?? '');
+          result = await voice.status(
+            url.searchParams.get('id') ?? '',
+            request.headers.prefer === 'wait=20' ? 20_000 : 0,
+          );
         else if (url.pathname === '/v1/voice/transcriptions/audio' && request.method === 'POST') {
           if (request.headers['content-type'] !== 'audio/wav')
             throw new RuntimeError(415, '需要 WAV 录音文件');
@@ -1355,6 +1358,29 @@ export async function startRuntimeServer() {
             threadId,
             url.searchParams.get('cursor') ?? undefined,
           );
+        } else if (url.pathname === '/v1/subagents/history') {
+          if (
+            [...url.searchParams.keys()].some(
+              (key) =>
+                !['hostId', 'threadId', 'messageId', 'childId', 'cursor'].includes(key) ||
+                url.searchParams.getAll(key).length !== 1,
+            )
+          )
+            throw new RuntimeError(400, '无效子 Agent 历史请求');
+          const messageId = url.searchParams.get('messageId') ?? '';
+          if (
+            !messageId ||
+            messageId.length > 512 ||
+            (url.searchParams.get('childId')?.length ?? 0) > 512 ||
+            (url.searchParams.get('cursor')?.length ?? 0) > 4096
+          )
+            throw new RuntimeError(400, '无效子 Agent 历史标识');
+          result = await session.subagentHistoryPage(
+            threadId,
+            messageId,
+            url.searchParams.get('childId') ?? undefined,
+            url.searchParams.get('cursor') ?? undefined,
+          );
         } else if (url.pathname === '/v1/history')
           result = await session.refreshHistory(
             threadId,
@@ -1412,6 +1438,22 @@ export async function startRuntimeServer() {
             threadId,
             url.searchParams.get('messageId') ?? '',
             url.searchParams.get('reference') ?? '',
+          );
+        } else if (url.pathname === '/v1/attachments/resolve-document-link') {
+          if (
+            [...url.searchParams.keys()].some(
+              (key) =>
+                !['hostId', 'threadId', 'sourceAttachmentId', 'reference', 'sourceSha256'].includes(
+                  key,
+                ) || url.searchParams.getAll(key).length !== 1,
+            )
+          )
+            throw new RuntimeError(400, '文档文件解析请求无效', 'INVALID_FILE_LINK_REQUEST');
+          result = await session.resolveDocumentFile(
+            threadId,
+            url.searchParams.get('sourceAttachmentId') ?? '',
+            url.searchParams.get('reference') ?? '',
+            url.searchParams.get('sourceSha256') ?? '',
           );
         } else if (url.pathname === '/v1/attachments/resolve') {
           if (

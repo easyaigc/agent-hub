@@ -633,3 +633,5 @@ The subsequent Windows P2 launch failed its non-administrator prerequisite on a 
 阶段101 F59源：NativeSessionStorage窄入口要求实际Session/raw Frozen及准确当前generation，既有key-only解码、固定目录FD/单record读取和全cipher摘要，终态缺失要求真实fsync-close/双目录barrier；close未知保留owner。当前只支持单child、无export/activation接线，old-generation family/新容器/惰性发布/iOS与完整验收继续，旧整包拒绝保持。普通编译和8方法源码/独立940输入SDK资格不等于运行通过。见docs/plans/android-alignment-20261022/records/stage101-f59-readonly-source.md。
 
 阶段104 F59 family：实际root与全部受限retained generation按代严格只读/独立graph，保留UNKNOWN/原receipt，目录存在不授予lineage或激活权。仅新增内部source入口，旧整包F59拒绝和Host/传输边界不变；新SDK/15项Native、认证容器/目的端/iOS仍待验。见docs/plans/android-alignment-20261022/records/stage104-f59-family-source.md。
+
+2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。

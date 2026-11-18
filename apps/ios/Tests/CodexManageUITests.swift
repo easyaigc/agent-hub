@@ -949,6 +949,23 @@ final class CodexManageUITests: XCTestCase {
       app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
       return
     }
+    if name.contains("testFailedMessageResendPhysicalDEV") {
+      guard let raw = ProcessInfo.processInfo.environment["MESSAGE_RESEND_FIXTURE"],
+        let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+        let bundleId = fixture["bundleId"] as? String,
+        bundleId.hasPrefix("com.easyai.agenthub.resend.") else {
+        throw XCTSkip("Requires the independent message resend acceptance App")
+      }
+      XCUIDevice.shared.orientation = .portrait
+      app = XCUIApplication(bundleIdentifier: bundleId)
+      addUIInterruptionMonitor(withDescription: "Resend acceptance network permission") { alert in
+        let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow"])).firstMatch
+        guard allow.exists else { return false }; allow.tap(); return true
+      }
+      app.launchArguments = ["-ui-testing"]
+      app.launchChineseTest()
+      return
+    }
     if name.contains("testVisualizationPhysicalDEV") {
       guard let raw = ProcessInfo.processInfo.environment["VISUALIZATION_FIXTURE"],
         let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
@@ -7880,8 +7897,10 @@ final class CodexManageUITests: XCTestCase {
     composer.tap()
     typeComposerText("studio-draft")
     switchClient("demo-mac")
-    XCTAssertEqual(composer.value as? String, "mac-draft")
-    app.buttons["voice-input"].tap()
+    // Leaving capture preserves that recording; returning must not start a second one.
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "mac-draft")
+    XCTAssertEqual(app.buttons["stop-dictation"].label, "重试转写")
     XCTAssertTrue(app.buttons["stop-dictation"].waitForExistence(timeout: 3))
     XCUIDevice.shared.press(.home)
     app.activate()
@@ -18424,4 +18443,314 @@ final class ComposerFocusLongPressUITests: XCTestCase {
     XCTAssertEqual(composer.value as? String, "short-tap-draft")
   }
 
+}
+
+extension CodexManageUITests {
+  // Read-only original MacBook conversation; never submit an input or action.
+  @MainActor func testHistoryInstalledAppReadOnlyDEVMacBook128ConversationSyncReadOnly() async throws {
+    let (data, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:18943/")!)
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    XCTAssertNotNil(UUID(uuidString: fixture.hostId))
+    XCTAssertNotNil(UUID(uuidString: fixture.threadId))
+    XCTAssertEqual(fixture.nonce, "readonly")
+    app.launchArguments = ["-ui-testing", "-restore-testing"]
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    app.buttons["client-switch"].tap()
+    let host = app.buttons["client-" + fixture.hostId]
+    XCTAssertTrue(host.waitForExistence(timeout: 15)); host.tap()
+    if app.buttons["完成"].exists { app.buttons["完成"].tap() }
+    let menu = app.buttons["chat-menu"]
+    XCTAssertTrue(menu.waitForExistence(timeout: 20)); menu.tap()
+    let archived = app.buttons["archived-chats"]
+    XCTAssertTrue(archived.waitForExistence(timeout: 10)); archived.tap()
+    XCTAssertTrue(app.navigationBars["已归档对话"].waitForExistence(timeout: 10))
+    let thread = app.buttons["archived-chat-" + fixture.threadId]
+    for _ in 0..<100 {
+      if thread.exists && thread.isHittable { break }
+      let list = app.collectionViews.firstMatch.exists ? app.collectionViews.firstMatch : app.scrollViews.firstMatch
+      if list.exists { list.swipeUp() } else { app.swipeUp() }
+    }
+    XCTAssertTrue(thread.exists && thread.isHittable, "Expected exact archived project thread")
+    thread.tap()
+    let connected = app.buttons["client-switch"]
+    print("MACBOOK_SYNC_OPEN", Date().timeIntervalSince1970, connected.value as? String ?? "")
+    shot("macbook-sync-open")
+    for cycle in 0..<3 {
+      let menu = app.buttons["chat-menu"]
+      XCTAssertTrue(menu.waitForExistence(timeout: 20)); menu.tap()
+      let refresh = app.buttons["刷新历史"]
+      XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+      print("MACBOOK_SYNC_REFRESH", cycle, Date().timeIntervalSince1970)
+      for sample in 0..<15 {
+        let failed = app.staticTexts["conversation-sync-failure"].exists || app.buttons["conversation-sync-retry"].exists
+        print("MACBOOK_SYNC_SAMPLE", cycle, sample, Date().timeIntervalSince1970, failed, connected.value as? String ?? "")
+        if failed { shot("macbook-sync-failure-\(cycle)-\(sample)") }
+        try await Task.sleep(for: .seconds(1))
+      }
+    }
+    shot("macbook-sync-final")
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testConversationSyncRealDesktopProjection() async throws {
+    let base = URL(string: "http://127.0.0.1:18943/")!
+    let (data, response) = try await URLSession.shared.data(from: base)
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    XCTAssertTrue(["baseline", "fixed"].contains(fixture.nonce))
+    connectLive(fixture, supportsCreation: false)
+    let search = openDesktopSidebarSearch()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    search.tap(); search.typeText(fixture.threadTitle ?? ""); search.typeText("\n")
+    let candidates = ["recent-thread-", "thread-", "pinned-thread-"].map { app.buttons[$0 + fixture.threadId] }
+    var selected: XCUIElement?
+    for _ in 0..<20 {
+      if let row = candidates.first(where: { $0.exists && $0.isHittable }) { selected = row; break }
+      try await Task.sleep(for: .milliseconds(500))
+    }
+    XCTAssertNotNil(selected, "Expected exact original desktop thread")
+    selected?.tap()
+    let draft = "SYNC_ACCEPTANCE_UNSENT_DRAFT"
+    XCTAssertTrue(composer.waitForExistence(timeout: 30)); composer.tap(); typeComposerText(draft)
+    let (_, armed) = try await URLSession.shared.data(from: base.appendingPathComponent("arm"))
+    XCTAssertEqual((armed as? HTTPURLResponse)?.statusCode, 200)
+    let menu = app.buttons["chat-menu"]
+    XCTAssertTrue(menu.waitForExistence(timeout: 20)); menu.tap()
+    let refresh = app.buttons["刷新历史"]
+    XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+    let failure = app.staticTexts["conversation-sync-failure"]
+    let retry = app.buttons["conversation-sync-retry"]
+    if fixture.nonce == "baseline" {
+      let visible = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in failure.exists || retry.exists }, object: app)
+      XCTAssertEqual(XCTWaiter.wait(for: [visible], timeout: 20), .completed, "Original projection should expose the failure banner")
+      shot("sync-real-desktop-baseline-unavailable")
+    } else {
+      for _ in 0..<5 {
+        XCTAssertFalse(failure.exists || retry.exists, "Pending projection must not produce a false failure")
+        try await Task.sleep(for: .seconds(1))
+      }
+      shot("sync-real-desktop-fixed-pending")
+    }
+    let (_, released) = try await URLSession.shared.data(from: base.appendingPathComponent("release"))
+    XCTAssertEqual((released as? HTTPURLResponse)?.statusCode, 200)
+    let cleared = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !failure.exists && !retry.exists }, object: app)
+    XCTAssertEqual(XCTWaiter.wait(for: [cleared], timeout: 30), .completed)
+    XCTAssertEqual(composer.value as? String, draft)
+    XCTAssertFalse(app.buttons["send-message"].isSelected)
+    shot("sync-real-desktop-released-draft")
+  }
+}
+
+// Synthetic transport acceptance for the real production DocumentFilePreview.
+// The entry exists only in a task source copy; never sends a model input.
+final class MarkdownDocumentLinkUITests: XCTestCase {
+  private var app: XCUIApplication!
+  override func setUpWithError() throws {
+    continueAfterFailure = false
+    guard let raw = ProcessInfo.processInfo.environment["MD_CONFIG"],
+      let config = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+      let bundle = config["bundleId"] as? String,
+      bundle == "com.easyai.agenthub.markdownlinks.n20261107" else {
+      throw XCTSkip("Requires task-only independent Markdown acceptance bundle")
+    }
+    XCUIDevice.shared.orientation = .portrait
+    app = XCUIApplication(bundleIdentifier: bundle)
+    app.launchEnvironment["MD_CONFIG"] = raw
+    app.launchArguments = ["-ui-testing", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    addUIInterruptionMonitor(withDescription: "Synthetic Host local network") { alert in
+      let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "无线局域网与蜂窝网络", "无线局域网与蜂窝数据"])).firstMatch
+      guard allow.exists else { return false }; allow.tap(); return true
+    }
+    app.launch()
+    XCTAssertTrue(app.buttons["md-open-root"].waitForExistence(timeout: 20))
+    app.buttons["md-open-root"].tap()
+    XCTAssertTrue(app.buttons["file-preview-close"].waitForExistence(timeout: 20), app.debugDescription)
+  }
+  private func shot(_ name: String) {
+    let a = XCTAttachment(screenshot: app.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a)
+  }
+  private func link(_ label: String) -> XCUIElement {
+    app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+  }
+  private func tapLink(_ label: String) {
+    let e = link(label)
+    XCTAssertTrue(e.waitForExistence(timeout: 10), app.debugDescription)
+    XCTAssertTrue(e.isHittable, app.debugDescription); e.tap()
+  }
+  private func section(_ title: String, in documentName: String = "根 文档.md") {
+    app.navigationBars[documentName].buttons["file-preview-outline"].tap()
+    let entry = app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
+    XCTAssertTrue(entry.waitForExistence(timeout: 5), app.debugDescription); entry.tap()
+  }
+  private func visible(_ label: String, timeout: TimeInterval = 15) {
+    let e = app.staticTexts.matching(NSPredicate(format: "label == %@", label)).firstMatch
+    let check = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND hittable == true"), object: e)
+    XCTAssertEqual(XCTWaiter.wait(for: [check], timeout: timeout), .completed, app.debugDescription)
+  }
+  func testNestedChineseSpaceLinksAndReadingRestoration() throws {
+    section("测试链接")
+    visible("READING_ROOT_MARKER")
+    XCTAssertTrue(link("进入子文档").waitForExistence(timeout: 10), app.debugDescription)
+    let rootY = link("进入子文档").frame.minY
+    shot("root-reading-position")
+    tapLink("进入子文档")
+    XCTAssertTrue(app.navigationBars["子 文档.md"].waitForExistence(timeout: 25), app.debugDescription)
+    visible("CHILD_TOP")
+    section("子阅读位置", in: "子 文档.md")
+    visible("READING_CHILD_MARKER")
+    XCTAssertTrue(link("进入孙文档").waitForExistence(timeout: 10), app.debugDescription)
+    let childY = link("进入孙文档").frame.minY
+    tapLink("进入孙文档")
+    XCTAssertTrue(app.navigationBars["孙 文档.md"].waitForExistence(timeout: 25), app.debugDescription)
+    visible("GRAND_ANCHOR_REACHED")
+    shot("grandchild-relative-link-anchor")
+    app.navigationBars["孙 文档.md"].buttons["file-preview-close"].tap()
+    XCTAssertTrue(app.navigationBars["子 文档.md"].waitForExistence(timeout: 10))
+    visible("READING_CHILD_MARKER")
+    XCTAssertEqual(link("进入孙文档").frame.minY, childY, accuracy: 16)
+    shot("child-reading-position-restored")
+    app.navigationBars["子 文档.md"].buttons["file-preview-close"].tap()
+    XCTAssertTrue(app.navigationBars["根 文档.md"].waitForExistence(timeout: 10))
+    visible("READING_ROOT_MARKER")
+    XCTAssertEqual(link("进入子文档").frame.minY, rootY, accuracy: 16)
+    shot("root-reading-position-restored")
+    app.navigationBars["根 文档.md"].buttons["file-preview-close"].tap()
+    XCTAssertTrue(app.buttons["md-open-root"].waitForExistence(timeout: 5))
+    app.buttons["md-open-root"].tap()
+    visible("READING_ROOT_MARKER")
+    shot("root-reopened-reading-position")
+  }
+  func testCancellationCopyableFailureAndPageAnchors() throws {
+    tapLink("根页内跳转")
+    visible("ROOT_ANCHOR_REACHED")
+    shot("same-document-anchor")
+    section("测试链接")
+    tapLink("慢速可取消")
+    let cancel = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label == %@", "file-preview-link-loading", "取消")).firstMatch
+    XCTAssertTrue(cancel.waitForExistence(timeout: 5), app.debugDescription)
+    XCTAssertTrue(cancel.isHittable)
+    shot("cancellable-link-loading")
+    cancel.tap()
+    let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: cancel)
+    XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+    sleep(9)
+    XCTAssertFalse(app.navigationBars["迟到 文档.md"].exists)
+    XCTAssertFalse(app.alerts.firstMatch.exists, app.debugDescription)
+    visible("READING_ROOT_MARKER")
+    tapLink("错误链接")
+    XCTAssertTrue(app.alerts["无法打开链接"].waitForExistence(timeout: 10), app.debugDescription)
+    XCTAssertTrue(app.alerts.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "SYNTHETIC_DENIED_COPYABLE")).firstMatch.exists)
+    shot("copyable-host-failure")
+    app.alerts.buttons["复制链接"].tap()
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    tapLink("无效锚点")
+    XCTAssertTrue(app.alerts["无法打开链接"].waitForExistence(timeout: 5))
+    app.alerts.buttons["好"].tap()
+    app.buttons["file-preview-close"].tap()
+    app.buttons["md-read-clipboard"].tap()
+    XCTAssertEqual(app.staticTexts["md-clipboard"].label, "missing.md")
+    shot("copied-original-failed-link")
+  }
+  func testWebAndSystemPreviewReturnToDocument() throws {
+    section("测试链接")
+    tapLink("本机测试网页")
+    let web = app.descendants(matching: .any)["message-web-preview"].firstMatch
+    XCTAssertTrue(web.waitForExistence(timeout: 15), app.debugDescription)
+    visible("SYNTHETIC_WEB_REACHED")
+    shot("nested-safari-preview")
+    let done = web.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@", ["关闭", "DoneButton", "CloseButton"])).firstMatch
+    XCTAssertTrue(done.waitForExistence(timeout: 5), app.debugDescription)
+    // SFSafari reports false isHittable on this OS despite the visible AX frame.
+    // Tap the observed control's centre, then require the original document.
+    XCTAssertGreaterThan(done.frame.width, 20)
+    XCTAssertTrue(app.frame.contains(done.frame), app.debugDescription)
+    done.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    visible("READING_ROOT_MARKER")
+    tapLink("普通文件")
+    XCTAssertTrue(app.navigationBars["plain"].waitForExistence(timeout: 20), app.debugDescription)
+    XCTAssertTrue(app.textViews.matching(NSPredicate(format: "label == %@", "SYNTHETIC_SYSTEM_PREVIEW_ONLY")).firstMatch.waitForExistence(timeout: 15), app.debugDescription)
+    shot("nested-system-quicklook")
+    let close = app.buttons["QLOverlayDoneButtonAccessibilityIdentifier"]
+    XCTAssertTrue(close.waitForExistence(timeout: 5), app.debugDescription)
+    XCTAssertGreaterThan(close.frame.width, 20)
+    XCTAssertTrue(app.frame.contains(close.frame), app.debugDescription)
+    close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    visible("READING_ROOT_MARKER")
+    shot("system-preview-returned-to-document")
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testFailedMessageResendPhysicalDEV() async throws {
+    struct Fixture: Decodable {
+      let bundleId: String
+      let connection: LiveFixture
+      let marker: String
+      let pairingUri: String?
+    }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["MESSAGE_RESEND_FIXTURE"])
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(raw.utf8))
+    XCTAssertTrue(fixture.bundleId.hasPrefix("com.easyai.agenthub.resend."))
+    if let pairingUri = fixture.pairingUri {
+      allowAcceptanceLocalNetworkPermission()
+      app.buttons["client-switch"].tap()
+      let add = app.buttons["add-client"]
+      for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+      XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+      selectConnectionMethod("扫码连接", agent: "codex")
+      let qr = app.textFields["codex-qr-description"]
+      XCTAssertTrue(qr.waitForExistence(timeout: 15)); qr.tap(); qr.typeText(pairingUri)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+      app.buttons["codex-connect-qr"].tap()
+      XCTAssertTrue(qr.waitForNonExistence(timeout: 90), app.debugDescription)
+      dismissSystemPasswordOffer()
+    } else { connectLive(fixture.connection, supportsCreation: false, nickname: "消息重发 DEV") }
+    _ = openDesktopSidebarSearch()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    let ownThread = app.buttons["recent-thread-" + fixture.connection.threadId]
+    XCTAssertTrue(ownThread.waitForExistence(timeout: 30), app.debugDescription)
+    ownThread.tap()
+    let resends = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "resend-receipt-"))
+    let cancels = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "dismiss-receipt-"))
+    func failure() {
+      let alert = app.alerts["无法完成操作"]
+      if alert.waitForExistence(timeout: 10) { alert.buttons["好"].tap() }
+      XCTAssertTrue(resends.firstMatch.waitForExistence(timeout: 30), app.debugDescription)
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: resends.firstMatch)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed, app.debugDescription)
+      XCTAssertEqual(cancels.firstMatch.label, "取消")
+      XCTAssertEqual(resends.firstMatch.label, "重新发送")
+    }
+    focusLiveComposer(); typeComposerText("取消失败消息 " + fixture.connection.nonce)
+    sendLiveComposer(); failure()
+    shot("failed-message-cancel-and-resend")
+    cancels.firstMatch.tap()
+    XCTAssertFalse(resends.firstMatch.exists)
+    // A second independent failure is retried only by the explicit native action.
+    focusLiveComposer()
+    typeComposerText("独立消息重发验收，请只原样回复 " + fixture.marker + "，不要调用工具。")
+    sendLiveComposer(); failure()
+    let nextDraft = "UNSENT_DRAFT_" + fixture.connection.nonce
+    focusLiveComposer(); typeComposerText(nextDraft)
+    app.buttons["composer-dismiss-keyboard"].tap()
+    app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, nextDraft)
+    failure()
+    shot("failed-message-restart-preserves-original-and-draft")
+    resends.firstMatch.tap()
+    XCTAssertTrue(app.staticTexts[fixture.marker].waitForExistence(timeout: 180), app.debugDescription)
+    XCTAssertEqual(composer.value as? String, nextDraft)
+    XCTAssertFalse(resends.firstMatch.exists)
+    XCTAssertFalse(app.descendants(matching: .any)["outbox-pending"].exists)
+    shot("failed-message-resend-completed-draft-preserved")
+    app.terminate(); app.launchChineseTest()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, nextDraft)
+    XCTAssertFalse(resends.firstMatch.exists)
+    shot("failed-message-completed-relaunch-no-replay")
+  }
 }

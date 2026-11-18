@@ -16,6 +16,27 @@ object UsageRules {
         while(carry>0) { result.append(carry%10); carry/=10 }
         return result.reverse().toString().trimStart('0').ifEmpty { "0" }
     }
+    /** Exact remaining quantity, including values beyond the native floating-point range. */
+    private fun remainingQuantity(limit: String, used: String): String {
+        val scale=maxOf(limit.substringAfter('.',"").length,used.substringAfter('.',"").length)
+        fun integer(value:String)=(value.substringBefore('.')+value.substringAfter('.',"").padEnd(scale,'0')).trimStart('0').ifEmpty { "0" }
+        val upper=integer(limit);val lower=integer(used)
+        if(compare(upper,lower)<=0)return "0"
+        val digits=upper.toCharArray();val padded=lower.padStart(digits.size,'0');var borrow=0
+        for(i in digits.lastIndex downTo 0) {
+            var n=(digits[i]-'0')-(padded[i]-'0')-borrow
+            borrow=if(n<0)1 else 0;if(n<0)n+=10;digits[i]=('0'.code+n).toChar()
+        }
+        val result=digits.concatToString().padStart(scale+1,'0')
+        val whole=result.dropLast(scale).trimStart('0').ifEmpty { "0" }
+        val fraction=if(scale>0)result.takeLast(scale).trimEnd('0')else ""
+        return whole+if(fraction.isEmpty())"" else ".$fraction"
+    }
+    /** Zero means the provider's reset is due, never that a new allowance was observed. */
+    fun resetSeconds(resetAt: String, nowMillis: Long): Long? = try {
+        val remaining=Instant.parse(resetAt).toEpochMilliseconds()-nowMillis
+        if(remaining<=0)0 else remaining/1000+if(remaining%1000>0)1 else 0
+    } catch(_: Exception) { null }
     /** Bounded, exact decimal long division for a graph only. Original quantities remain strings. */
     private fun ratio(used: String, limit: String): Double? {
         if(limit=="0")return null
@@ -138,18 +159,21 @@ object UsageRules {
                 put("entitlement",reading?.get("entitlement") ?: JsonNull)
                 put("note",m["note"] ?: JsonNull)
                 if(percent!=null)put("percent",percent)
+                if(percent!=null && percent.isFinite())put("remainingPercent",maxOf(0.0,100.0-percent))
+                if(state=="measured" && usage?.text("kind")=="quantity")put("remainingValue",remainingQuantity(usage.text("limit")!!,usage.text("used")!!))
             }
             metrics.add(projected)
             if(m.text("kind")=="balance" && state in setOf("amount","unlimited"))balances.add(projected)
             // Choose an actual provider-ordered metric, never add/average distinct pools or windows.
-            if(percent!=null && m.text("kind") in setOf("window-limit","capacity-limit") && m["appliesTo"]?.jsonObject?.text("kind")=="all" && (ring==null || ring.text("kind")=="capacity-limit" && m.text("kind")=="window-limit"))ring=projected
+            if(ring==null && projected["remainingPercent"]!=null && m.text("kind")=="window-limit" && m["appliesTo"]?.jsonObject?.text("kind")=="all")ring=projected
         }
         require((snapshot.text("coverage")=="partial")==missing)
         return buildJsonObject {
             put("status","ok");put("partial",missing || unknown);put("stale",expires<nowMillis)
             put("snapshotId",snapshot.getValue("snapshotId"));put("sampledAt",snapshot.getValue("sampledAt"));put("source",source)
             put("metrics",JsonArray(metrics));put("issues",snapshot.getValue("issues"))
-            put("ringLabel",ring?.text("label") ?: "usage");ring?.get("percent")?.let { put("percent",it) }
+            put("ringLabel",ring?.text("label") ?: "usage")
+            ring?.let { put("ringMetricId",it.getValue("id"));put("percent",it.getValue("remainingPercent")) }
             balances.firstOrNull()?.let { b -> put("balance",if(b.text("state")=="amount")displayAmount(b.text("value")!!)else "∞");put("balanceUnit",b.getValue("unit")) }
             put("extraBalances",maxOf(0,balances.size-1))
         }.toString()

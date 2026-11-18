@@ -1736,6 +1736,89 @@
     <string name="product_47a9db424c7f4ad6439ed740" formatted="false">"正在连接开发服务…"</string>
     <string name="product_a4076e5a80aaf5158acdc118" formatted="false">"此链接需要单独打开或配置服务地址。"</string>
     <string name="product_e92331b3ad22ad8d2554ca77" formatted="false">"开发服务预览需要局域网或 VPN 直连，请切换连接方式。"</string>
+    <string name="product_9287ac799e545bb0c0e31fcf" formatted="false">"重新发送"</string>
+    <string name="product_38844b135cf70dfce3b4fa55" formatted="false">"更多"</string>
+    <string name="product_921c3b62f1f7d6f4eac2ac1e" formatted="false">"查看源码"</string>
+    <string name="product_c568c3012a5e0f7742ebac57" formatted="false">"返回预览"</string>
+    <string name="product_d6f766f2adf532274a487ddd" formatted="false">"排队中"</string>
+    <string name="product_b0e23003ee5ea8b0e0255f66" formatted="false">"上滑发送"</string>
+    <string name="product_bd5972ce4662d6eb67a17853" formatted="false">"继续上滑 · 回滑取消"</string>
+    <string name="product_e4a1ce533246f24faa4359fc" formatted="false">"松开发送 · 回滑取消"</string>
+    <string name="product_8a12ea24a16ceea6fd31551e" formatted="false">"从此处向上滑动，松开发送；回滑取消。文字区域仍可正常编辑。"</string>
+    <string name="product_8f8d4e39c125ba14884bfb5f" formatted="false">"未提交文件"</string>
+    <string name="product_8bc69c2f309dfeccbf83cc52" formatted="false">"未推送提交"</string>
+    <string name="product_aaa84a22003af309eb011bce" formatted="false">"领先项目主线"</string>
+    <string name="product_0b1d7e25f190b5fda517f415" formatted="false">"落后项目主线"</string>
+    <string name="product_e06ea4e33554b75635067639" formatted="false">"冲突文件"</string>
+    <string name="product_54030c68e840e87d0a3db334" formatted="false">"Git 状态"</string>
+    <string name="product_f905f192f1fe63c6f5e73f77" formatted="false">"尚未配置比较目标"</string>
+    <string name="product_b01266dc8e437ed23e168985" formatted="false">"本地缺少分支记录"</string>
+    <string name="product_1baad14481ace8beb08220ee" formatted="false">"历史不完整，差距未知"</string>
+    <string name="product_233a788301dc1cc3e1ae1815" formatted="false">"尚无提交"</string>
+    <string name="product_6434d16e8936be5e72b9b938" formatted="false">"历史无共同祖先"</string>
+    <string name="product_08db1de87717657599090c6c" formatted="false">"仓库读取超时"</string>
+    <string name="product_768f220833844dc38e2bf04f" formatted="false">"仓库文件过多，暂无法读取"</string>
+    <string name="product_f4dcd11cbe15fe7c193f4d90" formatted="false">"电脑尚未安装可用的 Git"</string>
+    <string name="product_15a4b891051a019988da24d1" formatted="false">"Git 状态暂不可用"</string>
+    <string name="product_d3d0944d93d68452259f3e33" formatted="false">"项目目录暂不可用"</string>
+    <string name="product_5a8d639fb408beffe3a8917a" formatted="false">"目录超出项目范围"</string>
+    <string name="product_2667916f61f7c51830fa32ad" formatted="false">"仓库扫描未完成"</string>
+    <string name="product_3a7b6afea361e3122635e3cd" formatted="false">"读取期间有变化，请刷新"</string>
+    <string name="product_393acd7908e0cadd4e158b76" formatted="false">"此仓库类型暂不支持"</string>
+    <string name="product_7f4f6fcaac6e0531956c4216" formatted="false">"缓存状态"</string>
+    <string name="product_19db87f1a5fc7f397f28a609" formatted="false">"正在检查仓库"</string>
+    <string name="product_0646a9d7e01fdcbca2c02cab" formatted="false">"切换下一个仓库"</string>
+    <string name="product_d0794c03a3709e0a72b7e24d" formatted="false">"当前项目没有 Git 仓库"</string>
+    <string name="product_82c7d4a28d860a2ef76383b8" formatted="false">"分离 HEAD"</string>
+    <string name="product_85cfec66f9b6617b55f1a312" formatted="false">"Git 仓库状态"</string>
+    <string name="product_3869160b09543716348f5efc" formatted="false">"刷新仓库状态"</string>
+    <string name="product_d7bee82a8a8ee51ee516616b" formatted="false">"离线或更新失败，显示上次读取"</string>
+    <string name="product_da7b9f53694c5b22f721e03f" formatted="false">"读取时间"</string>
+    <string name="product_179ee09914497e5a6a5fee13" formatted="false">"远端依据本地记录，尚未核实最新状态"</string>
+    <string name="product_7eaa4d2f6710e6f2abd09071" formatted="false">"部分仓库状态未完成"</string>
+    <string name="product_847d376afd41a3347a3c3af1" formatted="false">"已暂存"</string>
+    <string name="product_944994f59a762cb214306d34" formatted="false">"未暂存"</string>
+    <string name="product_c2f9d2d89a1e0141894902ba" formatted="false">"未跟踪"</string>
+    <string name="product_18919d02ca0f0bd9612137a6" formatted="false">"同一文件可以同时已暂存与未暂存，未提交按文件去重。"</string>
+    <string name="product_c6ce280e2e573dacd7557afb" formatted="false">"查看文件状态"</string>
+    <string name="product_33f9f10aba15d686ebca57c9" formatted="false">"与当前上游比较"</string>
+    <string name="product_aa01e0d7f1e441296d3f28a7" formatted="false">"与推送目标比较"</string>
+    <string name="product_ad494d8fcac586b53f812fe5" formatted="false">"与项目主线比较"</string>
+    <string name="product_b5c66e4ef5576555e6837b9d" formatted="false">"领先"</string>
+    <string name="product_aa0049d9877663551a993e56" formatted="false">"落后"</string>
+    <string name="product_f25c26da2c791647a02ebe62" formatted="false">"子模块"</string>
+    <string name="product_519648d33a58f3de1bbdfe0c" formatted="false">"工作区干净"</string>
+    <string name="product_f70dbdaab1e89e4cf1368bb9" formatted="false">"文件状态"</string>
+    <string name="product_f006e7383e9c211a86d7edb6" formatted="false">"文件状态读取失败；快照可能已变化，请返回刷新仓库状态。"</string>
+    <string name="product_9b71e47710337910ee2c55b3" formatted="false">"此电脑暂未提供仓库状态"</string>
+    <string name="product_5f5b7c3a1f0b27ee2c27c4e0" formatted="false">"当前对话未关联项目"</string>
+    <string name="product_883e9a23f304258823fea318" formatted="false">"上海时间 UTC+8"</string>
+    <string name="product_ff93499bc7dc686f50b1a8f8" formatted="false">"剩余额度"</string>
+    <string name="product_b808aeaaacdc397ce4240126" formatted="false">"已用额度"</string>
+    <string name="product_af295275f3442d4e99368d05" formatted="false">"各窗口单独计算"</string>
+    <string name="product_d0fb4930ae8acea225cf60e4" formatted="false">"距离下次重置"</string>
+    <string name="product_fb4ef68522643f38c0e77bc2" formatted="false">"重置时间暂不可用"</string>
+    <string name="product_8f2bb7446d85a6d33d6002a7" formatted="false">"已到重置时间，等待更新"</string>
+    <string name="product_49da61ceeea2f2714263cb2b" formatted="false">"天"</string>
+    <string name="product_3b6fefc50febace4472333c8" formatted="false">"小时"</string>
+    <string name="product_bd957bc497aa1a4101b19975" formatted="false">"分钟"</string>
+    <string name="product_03fa558f517c671e9e09bbe8" formatted="false">"此客户端暂不支持完整子 Agent 过程"</string>
+    <string name="product_a1112df6432c82045a434b7b" formatted="false">"最近保存的记录"</string>
+    <string name="product_0352f4befd527cd5ef49e5ce" formatted="false">"实时记录"</string>
+    <string name="product_d8705d0af6c0d89abea7da6a" formatted="false">"剩余%@"</string>
+    <string name="product_7392d1cf1b577c7297647ddb" formatted="false">"%@后重置"</string>
+    <string name="product_544e27598aba15ddc473cb74" formatted="false">"清理未读"</string>
+    <string name="product_38a7d18e2c884279396eb278" formatted="false">"已允许本次预览联网"</string>
+    <string name="product_15c53fa0ac8aa46c6f557902" formatted="false">"默认离线预览，外部资源已阻止"</string>
+    <string name="product_782c070d411d48908a5ef852" formatted="false">"切回离线"</string>
+    <string name="product_3fc9ac5260b719edb72d4e7d" formatted="false">"允许联网…"</string>
+    <string name="product_88567f3b98b4ac9c1fd9144d" formatted="false">"允许后，此文档可从下列第三方站点加载脚本、字体和图片。这些站点会收到你的 IP 地址和请求信息；加载的脚本也能读取此文档及你在预览中输入的内容，并可向下列站点发送数据。请只为你信任的文档允许联网。"</string>
+    <string name="product_4dd9f8dfa27fbb6ed8b793fb" formatted="false">"预览不提供电脑凭据或原生操作接口。联网许可仅适用于当前打开的这个文件，关闭后不保存。选择离线仍可查看不依赖外部资源的内容。"</string>
+    <string name="product_463f69ff5adb3dc019823f2e" formatted="false">"允许本次预览联网"</string>
+    <string name="product_93a3c5f08bcb01443ed761f6" formatted="false">"保持离线"</string>
+    <string name="product_eb861bd98327b9276bfc7566" formatted="false">"预览联网许可"</string>
+    <string name="product_66d76cddae5ad1f06af88582" formatted="false">"当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"</string>
+    <string name="product_1e4125d224073a40f12051e0" formatted="false">"查看完整过程"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

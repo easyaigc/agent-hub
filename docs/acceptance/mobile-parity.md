@@ -1974,3 +1974,9 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 2026-11-15 F69 CI辅助：PR3公开运行003bfd5已通过原生下载准备/业务及iOS构建，随后旧Worker预算夹具将已耗尽预算的零帧误认为失败。测试后续以真实时钟1800ms截止、确定过期/超时调度、零请求/零Native等待和完整退休分别断言，在途未知失败原请求计数及750ms/300ms检查保持；不改变双端实现或升级F69实机验收。1250源匹配复用PR3 Android冷会话，完整CI结果按后续候选另记。
 
 2026-11-19：F17/F18 的 Codex 原 owner 投影与刷新同步修复见 [专项证据](conversation-sync-refresh-20261118.md)。本次在最新主线组合重跑边界检查及 iOS 模拟器；Android 仅共享 Host 行为，本轮无新增原生通过。
+
+### Codex 控制请求完整等待上限（2026-11-19）
+
+F17/F18/F28/F47、UI04/UI05、S03/S11：除普通断线外，覆盖持续少量数据使空闲计时续期、初始打开与原ID查询悬挂、后台返回、取消和迟到结果。前后对照须独立证明发送锁退出、草稿/附件与原ID保留、只查回执且没有重复POST；正式Host同步修复部署不替代手机候选验收，模拟故障不冒充真实蜂窝/VPN。Android独立验证，不借用iOS通过。范围和结果见[专项记录](codex-control-deadline-20261119.md)。
+
+2026-11-19 EasyWork完整子历史恢复：以认证父快照中的原child/root/branch为只读来源，兼容原result.content、checkpoint transcript/content/messages；父子共用投影与消息/工具组。新增生产Swift边界检查纳入pnpm check，覆盖目标/游标、原字节、分页、附件及协议分派；默认原生基线共8项。真实本机EasyWork和具体包指纹结果见[本轮记录](../acceptance/released-workflow-regressions-20261119.md)，合成与辅助不冒充真实来源。Android未改，新增入口待对齐；A6保持暂停。

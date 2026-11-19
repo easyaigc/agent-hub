@@ -111,7 +111,8 @@ final class CodexHostRoutes: @unchecked Sendable {
     for session in previous {
       session.getAllTasks { tasks in
         for task in tasks where task.originalRequest?.httpMethod == "GET" {
-          if let path = task.originalRequest?.url?.path, ["/v1/events", "/v1/history"].contains(path) { task.cancel() }
+          if let path = task.originalRequest?.url?.path,
+            ["/v1/events", "/v1/history", "/v1/workspace", "/v1/desktop/open-status", "/v1/receipts", "/v1/replies/status"].contains(path) { task.cancel() }
         }
         // Let every submitted write finish on its original connection. Recovery
         // only rotates read connections and never retries a command.
@@ -149,17 +150,50 @@ final class CodexHostRoutes: @unchecked Sendable {
   }
   func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) {
     let session = session(for: request)
-    if let maxBytes {
-      let (bytes, response) = try await session.bytes(for: request)
-      defer { bytes.task.cancel() }
-      var data = Data()
-      for try await byte in bytes {
-        guard data.count < maxBytes else { throw HostServiceError.invalidResponse }
-        data.append(byte)
+    let read: @Sendable () async throws -> (Data, URLResponse) = {
+      if let maxBytes {
+        let (bytes, response) = try await session.bytes(for: request)
+        defer { bytes.task.cancel() }
+        var data = Data()
+        for try await byte in bytes {
+          guard data.count < maxBytes else { throw HostServiceError.invalidResponse }
+          data.append(byte)
+        }
+        return (data, response)
       }
-      return (data, response)
+      return try await session.data(for: request)
     }
-    return try await session.data(for: request)
+    // Legacy binary uploads and downloads retain their transfer budgets.
+    // A JSON control response, unlike an idle timeout, must finish even when
+    // an old connection keeps delivering small amounts of data indefinitely.
+    if let type = request.value(forHTTPHeaderField: "Content-Type"),
+      !type.lowercased().hasPrefix("application/json") { return try await read() }
+    return try await CodexControlRequestBudget.perform(timeout: request.timeoutInterval, operation: read)
+  }
+}
+
+enum CodexControlRequestBudget {
+  @TaskLocal static var connectionDeadline: ContinuousClock.Instant?
+
+  static func perform(timeout: TimeInterval,
+    operation: @escaping @Sendable () async throws -> (Data, URLResponse)) async throws -> (Data, URLResponse) {
+    let clock = ContinuousClock()
+    let requestDeadline = clock.now.advanced(by: .seconds(timeout))
+    let deadline = min(connectionDeadline ?? requestDeadline, requestDeadline)
+    try Task.checkCancellation()
+    guard clock.now < deadline else { throw URLError(.timedOut) }
+    return try await withThrowingTaskGroup(of: (Data, URLResponse).self) { group in
+      group.addTask { try await operation() }
+      group.addTask {
+        try await clock.sleep(until: deadline)
+        throw URLError(.timedOut)
+      }
+      defer { group.cancelAll() }
+      guard let response = try await group.next() else { throw URLError(.cancelled) }
+      try Task.checkCancellation()
+      guard clock.now < deadline else { throw URLError(.timedOut) }
+      return response
+    }
   }
 }
 /// Observe the task itself: async download(for:) does not forward intermediate

@@ -18855,3 +18855,361 @@ final class StartupBrandUITests: XCTestCase {
     XCTAssertTrue(app.buttons["onboarding-add"].waitForExistence(timeout: 10))
   }
 }
+extension CodexManageUITests {
+  @MainActor private func prepareControlDeadlinePhysicalNetwork() async {
+    #if !targetEnvironment(simulator)
+    let appID = "com.easyai.agenthub.controldeadline20261119"
+    let runnerID = appID + ".uitests.xctrunner"
+    guard Bundle.main.bundleIdentifier == runnerID,
+      ProcessInfo.processInfo.environment["HOST_KEY_DEV_APP_BUNDLE_ID"] == appID else {
+      XCTFail("Refuse network settings for an unverified App or Runner identity"); return
+    }
+    addUIInterruptionMonitor(withDescription: "Independent control deadline network permission") { alert in
+      let label = alert.label
+      guard (label.contains("CodexManageUITests-Runner") || label.contains("Agent Hub")),
+        label.contains("本地网络") || label.contains("无线数据") || label.localizedCaseInsensitiveContains("local network") else { return false }
+      let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["仅无线局域网", "无线局域网与蜂窝网络", "允许", "Allow"])).firstMatch
+      guard allow.exists else { return false }; allow.tap(); return true
+    }
+    prepareOwnAcceptanceNetworkPermission()
+    // The Runner does not access the network. The Mac controls synthetic
+    // fixtures and independently verifies identifiers, counts, and timing.
+    #endif
+  }
+}
+
+// Regression cases use dedicated synthetic services. CODEX_FIXTURE_URL and
+// CODEX_REPLY_FIXTURE_URL select addresses reachable from the tested device.
+extension CodexManageUITests {
+  @MainActor func testInFlightOpenBackgroundDeadlineAndSameIDRecovery() async throws {
+    await prepareControlDeadlinePhysicalNetwork()
+    #if !targetEnvironment(simulator)
+    try await runPhysicalControlDeadlineOpen()
+    return
+    #else
+    let control = URL(string: ProcessInfo.processInfo.environment["CODEX_FIXTURE_URL"] ?? "http://127.0.0.1:18802")!
+    func call(_ path: String, post: Bool = false) async throws -> [String: Any] {
+      var request = URLRequest(url: control.appendingPathComponent(path))
+      request.httpMethod = post ? "POST" : "GET"
+      request.timeoutInterval = 5
+      let (data, response) = try await URLSession.shared.data(for: request)
+      XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200, "fixture control " + path)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    let initial = try await call("fixture")
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: JSONSerialization.data(withJSONObject: initial))
+    XCTAssertTrue(["baseline", "fixed"].contains(fixture.nonce))
+    connectLive(fixture, supportsCreation: false)
+    openDesktopTestConversation(fixture)
+    XCTAssertTrue(app.staticTexts["INFLIGHT_FIXTURE_READY"].waitForExistence(timeout: 20))
+    let marker = "INFLIGHT_DRAFT_" + fixture.nonce
+    focusLiveComposer(); composer.typeText(marker)
+    sendLiveComposer()
+    var state: [String: Any] = [:]
+    for _ in 0..<100 {
+      state = try await call("results")
+      if state["openPosts"] as? Int == 1 { break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTAssertEqual(state["openPosts"] as? Int, 1, "open must actually reach fixture")
+    let originalID = try XCTUnwrap(state["openId"] as? String)
+    let startMS = try XCTUnwrap(state["startedAt"] as? Double)
+    let transfer = app.descendants(matching: .any)["transfer-status"].firstMatch
+    XCTAssertTrue(transfer.waitForExistence(timeout: 5), "connection transfer must be visible")
+    XCTAssertTrue(!app.buttons["send-message"].exists || !app.buttons["send-message"].isEnabled)
+    XCTAssertEqual(composer.value as? String, marker)
+    XCUIDevice.shared.press(.home)
+    try await Task.sleep(for: .seconds(2))
+    app.activate()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, marker)
+    let recovered = try await call("recover", post: true)
+    XCTAssertEqual(recovered["originalOpenId"] as? String, originalID)
+    state = try await call("results")
+    XCTAssertEqual(state["statusGets"] as? Int, 0, "recovery cannot issue input or a status query")
+    XCTAssertEqual(state["replies"] as? Int, 0)
+    // Measure from server's first received POST; no app relaunch or new Send.
+    let remaining = max(0, 38.5 - (Date().timeIntervalSince1970 - startMS / 1000))
+    if remaining > 0 { try await Task.sleep(for: .seconds(remaining)) }
+    state = try await call("results")
+    XCTAssertEqual(state["openPosts"] as? Int, 1)
+    XCTAssertEqual(state["replies"] as? Int, 0)
+    XCTAssertEqual(state["openId"] as? String, originalID)
+    XCTAssertEqual(composer.value as? String, marker)
+    XCTAssertGreaterThanOrEqual(state["streamChunks"] as? Int ?? 0, 500, "trickle must span the timeout window")
+    if fixture.nonce == "baseline" {
+      XCTAssertEqual(state["streamClosed"] as? Bool, false, "original POST must still be held at 38 seconds")
+      let lastMS = try XCTUnwrap(state["streamLastAt"] as? Double)
+      XCTAssertGreaterThanOrEqual(lastMS - startMS, 38_000, "continuous stream lasted at least 38 seconds")
+      XCTAssertTrue(transfer.exists, "baseline still shows connecting")
+      XCTAssertTrue(!app.buttons["send-message"].exists || !app.buttons["send-message"].isEnabled, "baseline send flight remains occupied")
+      shot("inflight-open-baseline-still-busy")
+      // Deliberate baseline-only restart comparison. It does not resend input.
+      app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
+      XCTAssertTrue(composer.waitForExistence(timeout: 25))
+      XCTAssertEqual(composer.value as? String, marker)
+    } else {
+      XCTAssertEqual(state["streamClosed"] as? Bool, true, "budget must cancel the held URLSession request")
+      let closedMS = try XCTUnwrap(state["streamClosedAt"] as? Double)
+      XCTAssertGreaterThanOrEqual(closedMS - startMS, 30_000, "not a premature unrelated failure")
+      XCTAssertLessThanOrEqual(closedMS - startMS, 37_500, "35-second budget with scheduling tolerance")
+      XCTAssertFalse(transfer.exists, "fixed candidate must exit the connection wait")
+      let alert = app.alerts["暂时无法连接电脑"]
+      XCTAssertTrue(alert.waitForExistence(timeout: 5), "timeout must be surfaced with connection title")
+      XCTAssertTrue(alert.staticTexts["连接电脑超时。请确认电脑已开机并联网，且连接服务正在运行，然后重试。"].exists, "exact timeout explanation")
+      alert.buttons["好"].tap()
+      XCTAssertTrue(app.buttons["send-message"].isEnabled, "fixed send flight must be released")
+      shot("inflight-open-fixed-timeout-draft-preserved")
+    }
+    // One explicit new user action; fixture rejects duplicate POST or reply.
+    sendLiveComposer()
+    for _ in 0..<150 {
+      state = try await call("results")
+      if state["replies"] as? Int == 1 { break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTAssertEqual(state["openPosts"] as? Int, 1)
+    XCTAssertEqual(state["replies"] as? Int, 1)
+    XCTAssertEqual(state["statusIds"] as? [String], [originalID], "explicit Send queries original ID before reply")
+    XCTAssertEqual(state["sequence"] as? [String], ["open", "status", "reply"], "query must precede the one reply")
+    XCTAssertEqual(state["errors"] as? [String], [])
+    XCTAssertTrue(app.staticTexts["INFLIGHT_FIXTURE_REPLY"].waitForExistence(timeout: 20))
+    shot("inflight-open-" + fixture.nonce + "-same-id-recovered")
+    print("INFLIGHT_OPEN_RESULT phase=\(fixture.nonce) originalID=\(originalID) openPosts=1 statusGets=1 replies=1 realModelWrites=0")
+    #endif
+  }
+}
+extension CodexManageUITests {
+  @MainActor func testControlDeadlineSubmittedReplyRecovery() async throws {
+    await prepareControlDeadlinePhysicalNetwork()
+    #if !targetEnvironment(simulator)
+    try await runPhysicalControlDeadlineReply()
+    return
+    #else
+    let base = try XCTUnwrap(URL(string: ProcessInfo.processInfo.environment["CODEX_REPLY_FIXTURE_URL"] ?? "http://127.0.0.1:18816"))
+    let (metadata, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: metadata)
+    func control(_ path: String) async throws -> [String: Any] {
+      var request = URLRequest(url: URL(string: fixture.endpoint + path)!)
+      request.setValue("Bearer " + fixture.token, forHTTPHeaderField: "Authorization")
+      let (data, response) = try await URLSession.shared.data(for: request)
+      XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    connectLive(fixture, supportsCreation: false)
+    openDesktopTestConversation(fixture)
+    XCTAssertTrue(app.staticTexts["REPLY_WAIT_READY"].waitForExistence(timeout: 20))
+    focusLiveComposer(); composer.typeText("CONTROL_DEADLINE_ORIGINAL_FIXTURE")
+    sendLiveComposer()
+    let pending = app.descendants(matching: .any)["outbox-pending"].firstMatch
+    XCTAssertTrue(pending.waitForExistence(timeout: 15))
+    var initial: [String: Any] = [:]
+    for _ in 0..<100 {
+      initial = try await control("/wait/status")
+      if (initial["sends"] as? [[String: Any]])?.count == 1, initial["trickleStart"] != nil { break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    let sends = try XCTUnwrap(initial["sends"] as? [[String: Any]])
+    XCTAssertEqual(sends.count, 1)
+    let id = try XCTUnwrap(sends.first?["clientMessageId"] as? String)
+    focusLiveComposer(); composer.typeText("CONTROL_DEADLINE_NEW_DRAFT")
+    XCUIDevice.shared.press(.home)
+    try await Task.sleep(for: .seconds(2)); app.activate()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    let start = try XCTUnwrap(initial["trickleStart"] as? Double)
+    let remaining = max(0, 38.5 - (Date().timeIntervalSince1970 - start / 1000))
+    if remaining > 0 { try await Task.sleep(for: .seconds(remaining)) }
+    let stalled = try await control("/wait/status")
+    let closed = try XCTUnwrap(stalled["trickleClosed"] as? Double)
+    XCTAssertGreaterThanOrEqual(closed - start, 30_000)
+    XCTAssertLessThanOrEqual(closed - start, 37_500)
+    XCTAssertEqual((stalled["sends"] as? [[String: Any]])?.count, 1)
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    _ = try await control("/wait/confirm?index=0")
+    if app.alerts.firstMatch.exists { app.alerts.firstMatch.buttons["好"].tap() }
+    if pending.exists && app.buttons["query-original-reply"].exists { app.buttons["query-original-reply"].tap() }
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: pending)], timeout: 40), .completed)
+    let final = try await control("/wait/status")
+    XCTAssertEqual((final["sends"] as? [[String: Any]])?.count, 1, "submitted reply must not be repeated")
+    XCTAssertTrue((final["queries"] as? [String] ?? []).contains(id), "original receipt ID must be queried")
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    shot("control-deadline-reply-original-id")
+    #endif
+  }
+}
+
+extension CodexManageUITests {
+  // CODEX_FORMAL_FIXTURE_URL selects a task-specific read-only Host proxy.
+  @MainActor func testControlDeadlineFormalHostReadOnlyRecovery() async throws {
+    await prepareControlDeadlinePhysicalNetwork()
+    #if !targetEnvironment(simulator)
+    let fixture = try controlDeadlinePhysicalFixture("CODEX_FORMAL_FIXTURE_JSON")
+    #else
+    guard let value = ProcessInfo.processInfo.environment["CODEX_FORMAL_FIXTURE_URL"], let url = URL(string: value) else { throw XCTSkip("Provide task-specific read-only fixture URL") }
+    let (data, response) = try await URLSession.shared.data(from: url.appendingPathComponent("fixture"))
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    #endif
+    #if !targetEnvironment(simulator)
+    try connectPhysicalFormalHost(fixture)
+    #else
+    connectLive(fixture, supportsCreation: false)
+    #endif
+    openDesktopTestConversation(fixture)
+    let close = app.buttons["close-async-questions"]
+    if close.waitForExistence(timeout: 5) { close.tap() }
+    XCTAssertTrue(composer.waitForExistence(timeout: 30))
+    let draft = "CONTROL_DEADLINE_READONLY_UNSENT_DRAFT"
+    focusLiveComposer(); typeComposerText(draft)
+    XCUIDevice.shared.press(.home); try await Task.sleep(for: .seconds(2)); app.activate()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, draft)
+    for cycle in 1...3 {
+      XCTAssertTrue(app.buttons["chat-menu"].waitForExistence(timeout: 20)); app.buttons["chat-menu"].tap()
+      XCTAssertTrue(app.buttons["刷新历史"].waitForExistence(timeout: 10)); app.buttons["刷新历史"].tap()
+      for _ in 0..<10 {
+        XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists || app.buttons["conversation-sync-retry"].exists, "cycle \(cycle)")
+        XCTAssertEqual(composer.value as? String, draft)
+        try await Task.sleep(for: .milliseconds(500))
+      }
+    }
+    shot("control-deadline-formal-readonly-recovery")
+  }
+
+  // CODEX_REAL_FIXTURE_URL exposes only one task-owned creation/send target.
+  @MainActor func testControlDeadlineRealDesktopSingleCreation() async throws {
+    await prepareControlDeadlinePhysicalNetwork()
+    #if !targetEnvironment(simulator)
+    let fixture = try controlDeadlinePhysicalFixture("CODEX_REAL_FIXTURE_JSON")
+    #else
+    guard let value = ProcessInfo.processInfo.environment["CODEX_REAL_FIXTURE_URL"], let url = URL(string: value) else { throw XCTSkip("Provide scoped real Host fixture URL") }
+    let (data, response) = try await URLSession.shared.data(from: url.appendingPathComponent("fixture"))
+    XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    #endif
+    let project = try XCTUnwrap(fixture.creationProjectId)
+    #if !targetEnvironment(simulator)
+    try connectPhysicalFormalHost(fixture)
+    #else
+    connectLive(fixture)
+    #endif
+    chooseDesktopProject(project)
+    let marker = "CONTROL_DEADLINE_REAL_" + fixture.nonce
+    guard composer.waitForExistence(timeout: 20) else { XCTFail("Creation composer unavailable"); return }
+    let prompt = "只原样回复 \(marker)，不要调用工具。"
+    focusLiveComposer(); typeComposerText(prompt)
+    XCTAssertEqual(composer.value as? String, prompt, "Verify the immutable text before the single real submission")
+    guard app.buttons["send-message"].isEnabled else { XCTFail("Single submission unavailable"); return }
+    sendLiveComposer()
+    guard app.staticTexts[marker].waitForExistence(timeout: 240) else { XCTFail("Original submission outcome unresolved; do not replay"); return }
+    shot("control-deadline-real-single-creation")
+  }
+}
+
+// On device, test metadata arrives through the private xctestrun environment.
+// The Mac's fixture controller records and asserts the original IDs, exact
+// counts and stream-close timing without using the Runner's denied network.
+extension CodexManageUITests {
+  private func controlDeadlinePhysicalFixture(_ key: String) throws -> LiveFixture {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment[key])
+    return try JSONDecoder().decode(LiveFixture.self, from: Data(raw.utf8))
+  }
+
+  @MainActor private func connectPhysicalControlFixture(_ key: String) throws {
+    struct Pairing: Decodable { let pairingUri: String }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment[key])
+    let pairing = try JSONDecoder().decode(Pairing.self, from: Data(raw.utf8))
+    app.buttons["client-switch"].tap()
+    let add = app.buttons["add-client"]
+    for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+    XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+    selectConnectionMethod("扫码连接", agent: "codex")
+    let code = app.textFields["codex-qr-description"]
+    XCTAssertTrue(code.waitForExistence(timeout: 15)); code.tap(); code.typeText(pairing.pairingUri)
+    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    app.buttons["codex-connect-qr"].tap()
+    XCTAssertTrue(code.waitForNonExistence(timeout: 90), "Pinned synthetic HTTPS pairing must complete")
+    dismissSystemPasswordOffer()
+  }
+
+  @MainActor private func typePhysicalControlExact(_ value: String) async throws {
+    focusLiveComposer()
+    for character in value {
+      composer.typeText(String(character))
+      try await Task.sleep(for: .milliseconds(70))
+    }
+    XCTAssertEqual(composer.value as? String, value, "Verify the exact draft before submission")
+  }
+
+  @MainActor private func connectPhysicalFormalHost(_ fixture: LiveFixture) throws {
+    let hostKey = try XCTUnwrap(ProcessInfo.processInfo.environment["CODEX_FORMAL_HOST_KEY"])
+    app.buttons["client-switch"].tap()
+    let add = app.buttons["add-client"]
+    for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+    XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+    selectConnectionMethod("自动发现", agent: "codex")
+    let row = app.buttons["codex-discovered-" + fixture.hostId]
+    XCTAssertTrue(row.waitForExistence(timeout: 45), "Require the exact original Host ID")
+    row.tap()
+    let key = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(key.waitForExistence(timeout: 15)); key.tap(); key.typeText(hostKey)
+    app.buttons["codex-authorize-connect"].tap()
+    XCTAssertTrue(key.waitForNonExistence(timeout: 90), "Original Host device claim must complete")
+    dismissSystemPasswordOffer()
+  }
+
+  @MainActor private func runPhysicalControlDeadlineOpen() async throws {
+    let fixture = try controlDeadlinePhysicalFixture("CODEX_PHYSICAL_OPEN_FIXTURE_JSON")
+    XCTAssertEqual(fixture.nonce, "fixed")
+    try connectPhysicalControlFixture("CODEX_PHYSICAL_OPEN_FIXTURE_JSON")
+    openDesktopTestConversation(fixture)
+    XCTAssertTrue(app.staticTexts["INFLIGHT_FIXTURE_READY"].waitForExistence(timeout: 20))
+    let draft = "INFLIGHT_DRAFT_" + fixture.nonce
+    try await typePhysicalControlExact(draft)
+    sendLiveComposer()
+    let transfer = app.descendants(matching: .any)["transfer-status"].firstMatch
+    XCTAssertTrue(transfer.waitForExistence(timeout: 10))
+    let started = ProcessInfo.processInfo.systemUptime
+    XCTAssertTrue(!app.buttons["send-message"].exists || !app.buttons["send-message"].isEnabled)
+    XCTAssertEqual(composer.value as? String, draft)
+    XCUIDevice.shared.press(.home); try await Task.sleep(for: .seconds(2)); app.activate()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15)); XCTAssertEqual(composer.value as? String, draft)
+    let remaining = max(0, 40.0 - (ProcessInfo.processInfo.systemUptime - started))
+    if remaining > 0 { try await Task.sleep(for: .seconds(remaining)) }
+    XCTAssertFalse(transfer.exists)
+    XCTAssertEqual(composer.value as? String, draft)
+    let alert = app.alerts["暂时无法连接电脑"]
+    XCTAssertTrue(alert.waitForExistence(timeout: 5))
+    XCTAssertTrue(alert.staticTexts["连接电脑超时。请确认电脑已开机并联网，且连接服务正在运行，然后重试。"].exists)
+    alert.buttons["好"].tap(); XCTAssertTrue(app.buttons["send-message"].isEnabled)
+    shot("physical-open-deadline-draft")
+    sendLiveComposer()
+    XCTAssertTrue(app.staticTexts["INFLIGHT_FIXTURE_REPLY"].waitForExistence(timeout: 30))
+    shot("physical-open-recovered")
+  }
+
+  @MainActor private func runPhysicalControlDeadlineReply() async throws {
+    let fixture = try controlDeadlinePhysicalFixture("CODEX_PHYSICAL_REPLY_FIXTURE_JSON")
+    try connectPhysicalControlFixture("CODEX_PHYSICAL_REPLY_FIXTURE_JSON")
+    openDesktopTestConversation(fixture)
+    XCTAssertTrue(app.staticTexts["REPLY_WAIT_READY"].waitForExistence(timeout: 20))
+    try await typePhysicalControlExact("CONTROL_DEADLINE_ORIGINAL_FIXTURE")
+    sendLiveComposer()
+    let pending = app.descendants(matching: .any)["outbox-pending"].firstMatch
+    XCTAssertTrue(pending.waitForExistence(timeout: 15))
+    let started = ProcessInfo.processInfo.systemUptime
+    try await typePhysicalControlExact("CONTROL_DEADLINE_NEW_DRAFT")
+    XCUIDevice.shared.press(.home); try await Task.sleep(for: .seconds(2)); app.activate()
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    let remaining = max(0, 40.0 - (ProcessInfo.processInfo.systemUptime - started))
+    if remaining > 0 { try await Task.sleep(for: .seconds(remaining)) }
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    if app.alerts.firstMatch.exists { app.alerts.firstMatch.buttons["好"].tap() }
+    if pending.exists && app.buttons["query-original-reply"].exists { app.buttons["query-original-reply"].tap() }
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: pending)], timeout: 40), .completed)
+    XCTAssertEqual(composer.value as? String, "CONTROL_DEADLINE_NEW_DRAFT")
+    shot("physical-reply-receipt-draft")
+  }
+}

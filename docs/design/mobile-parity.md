@@ -1898,3 +1898,9 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 2026-11-19：聊天刷新期间原 owner 消息仍在投影时，Host 返回保留原游标的空心跳；客户端沿用现有四类同步状态与失败恢复文案。真实 owner 丢失、投影失败仍显示失败。UI 无新增页面；Android 共享 Host 行为，原生界面本轮未验。
 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](../acceptance/mainline-release-compatibility-20261119.md)。
+
+### Codex iOS 控制请求的等待边界（2026-11-19）
+
+F17/F18/F28/F47：控制请求的空闲超时与完整等待上限分别核对。初始打开、同ID状态查询和控制就绪验证都计入连接总预算；超时结束本次转圈，原打开/消息意图、操作ID、草稿和附件保留。超时不表示取消远端，也不授权重发。网络路径恢复只取消具名安全GET以便按原ID继续核对，在途POST保持原意图；文件传输与预览不采用控制请求预算。Android使用自身传输路径，本项不改变其UI或验收。源码候选、正式Host部署和原生前后对照分别见[专项验收](../acceptance/codex-control-deadline-20261119.md)。
+
+2026-11-19 EasyWork完整子历史恢复：以认证父快照中的原child/root/branch为只读来源，兼容原result.content、checkpoint transcript/content/messages；父子共用投影与消息/工具组。新增生产Swift边界检查纳入pnpm check，覆盖目标/游标、原字节、分页、附件及协议分派；默认原生基线共8项。真实本机EasyWork和具体包指纹结果见[本轮记录](../acceptance/released-workflow-regressions-20261119.md)，合成与辅助不冒充真实来源。Android未改，新增入口待对齐；A6保持暂停。

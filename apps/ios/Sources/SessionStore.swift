@@ -3366,6 +3366,20 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   private func connectForReply(_ host: Client, threadId: String, key: String, generation: UUID) async throws {
+    guard host.agentConnection == nil else {
+      // Other adapters own their transport deadlines and keep their existing
+      // open-observation budget. This fix is for the Codex HTTP connection.
+      try await connectForReply(host, threadId: threadId, key: key, generation: generation, deadline: nil)
+      return
+    }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(180))
+    try await CodexControlRequestBudget.$connectionDeadline.withValue(deadline) {
+      try await connectForReply(host, threadId: threadId, key: key, generation: generation, deadline: deadline)
+    }
+  }
+
+  private func connectForReply(_ host: Client, threadId: String, key: String, generation: UUID,
+    deadline: ContinuousClock.Instant?) async throws {
     try requireReplyTarget(host, threadId: threadId, generation: generation)
     let adapter = try AgentClients.resolve(host)
     let existingOperation = drafts.values[key]?.desktopOpenOperationId
@@ -3390,7 +3404,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       operation = try await adapter.openThread(host, threadId: threadId, operationId: operationId)
     }
     let clock = ContinuousClock()
-    let deadline = clock.now.advanced(by: .seconds(180))
+    let deadline = deadline ?? clock.now.advanced(by: .seconds(180))
     while clock.now < deadline {
       try requireReplyTarget(host, threadId: threadId, generation: generation)
       guard operation.hostId == host.id, operation.threadId == threadId,

@@ -1583,3 +1583,7 @@ Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协�
 2026-11-08 F03/F06/F57/F63。双端私有直连地址支持专用 `*.mesh.51easyai.com` 电脑名，候选归为 VPN 并沿用稳定顺序。地址仅提供路径，实际读取仍核对配对证书指纹、完整 Host/workspace/runtime 目标与桌面公钥。远程 issuer、已有 grant 与已提交操作保持各自原身份；新路径的原生及真实网络结果见[阶段126](plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。
+
+2026-11-19 Codex iOS 控制请求：原生适配层对 JSON 控制响应增加 ContinuousClock 绝对截止，避免小段数据无限续期空闲超时；连接预算在首次打开前建立并传播到各请求。路径恢复只取消旧安全读取，已提交 POST 仍按原 ID 查询；原草稿／附件和独立文件传输预算保持。Android 不使用此原生实现；源码、辅助、原生与正式 Host 部署分列于[专项记录](acceptance/codex-control-deadline-20261119.md)。
+
+2026-11-19 子历史恢复：`AgentClient.supportsSubagentHistory` 由具体适配器判断读取能力。Codex沿用Host独立capability，EasyWork从已认证runtime的父线程快照投影持久child内容，不要求桌面新增同名Host接口。父/子消息调用同一投影器，UI调用同一消息/工具组组件；完整target、父消息、root、child、branch绑定只读选择和新分页游标。旧摘要与result/transcript格式继续兼容，已提交操作不重放。源码组合曾遗漏完整入口/适配的事实及本次验证边界见[回退核对](acceptance/released-workflow-regressions-20261119.md)。

@@ -160,6 +160,21 @@ enum CodexUploadAPI {
   }
 }
 
+// Presentation only: keep the stored diagnostic and all transfer/receipt semantics unchanged.
+// Older checkpoints contain Foundation's cancellation domain rather than user-facing copy.
+enum UploadFailurePresentation {
+  static func text(_ original: String) -> String {
+    if original.contains("(Swift.CancellationError") || original.contains("（Swift.CancellationError") {
+      return L10n.tr("上次上传过程已中断，文件和消息已保留。")
+    }
+    if original.trimmingCharacters(in: .whitespacesAndNewlines)
+      .replacingOccurrences(of: "-", with: "_").uppercased() == "TRANSFER_NOT_FOUND" {
+      return L10n.tr("电脑端未找到这次上传记录。")
+    }
+    return original
+  }
+}
+
 struct UploadJob: Codable, Identifiable, Sendable {
   var client: Client
   let manifest: UploadManifest
@@ -394,6 +409,7 @@ struct UploadJob: Codable, Identifiable, Sendable {
         if cancelled.contains(id) { continue }
         if needsReconcile { receipt = try await call(client, manifest: manifest, action: .status); needsReconcile = false }
         try receipt.validate(manifest)
+        if receipt.phase != "cancelled" { jobs[id]?.error = nil }
         jobs[id]?.committedBytes = receipt.committedBytes; jobs[id]?.receipt = receipt
         if receipt.phase == "completed" {
           jobs[id]?.phase = "completed"; jobs[id]?.bytesPerSecond = 0; autoResume.remove(id); try save(id)
@@ -479,7 +495,10 @@ struct UploadProgressView: View {
           Text(L10n.tr("剩余约 \(max(1, Int(Double(job.manifest.sizeBytes - job.committedBytes) / job.bytesPerSecond))) 秒"))
         } else if job.phase == "uploading" { Text(L10n.tr("正在等待传输进展…")) }
       }.font(.caption2).monospacedDigit().foregroundStyle(.secondary)
-      if let error = job.error, job.phase == "failed" { Text(error).font(.caption2).foregroundStyle(.red) }
+      if let error = job.error, !error.isEmpty, ["failed", "paused", "waiting"].contains(job.phase) {
+        Text(UploadFailurePresentation.text(error)).font(.caption2).foregroundStyle(.red)
+          .accessibilityIdentifier("upload-error-" + job.id)
+      }
       if legacy { Text(L10n.tr("此电脑版本不支持断点续传，中断后需重新上传")).font(.caption2).foregroundStyle(.secondary) }
       if !["completed", "cancelled", "verifying"].contains(job.phase) && !legacy {
         HStack {

@@ -1819,6 +1819,8 @@
     <string name="product_eb861bd98327b9276bfc7566" formatted="false">"预览联网许可"</string>
     <string name="product_66d76cddae5ad1f06af88582" formatted="false">"当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"</string>
     <string name="product_1e4125d224073a40f12051e0" formatted="false">"查看完整过程"</string>
+    <string name="product_6af87f7e618fa33c9f4ccf00" formatted="false">"上次上传过程已中断，文件和消息已保留。"</string>
+    <string name="product_4f61994973c9e50d08d48d39" formatted="false">"电脑端未找到这次上传记录。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

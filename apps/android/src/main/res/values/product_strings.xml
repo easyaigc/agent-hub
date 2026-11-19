@@ -1819,6 +1819,8 @@
     <string name="product_eb861bd98327b9276bfc7566" formatted="false">"Preview network permission"</string>
     <string name="product_66d76cddae5ad1f06af88582" formatted="false">"The computer connector does not support links inside documents. Update the connector and try again."</string>
     <string name="product_1e4125d224073a40f12051e0" formatted="false">"View full history"</string>
+    <string name="product_6af87f7e618fa33c9f4ccf00" formatted="false">"Your last upload attempt was interrupted. The file and message are retained."</string>
+    <string name="product_4f61994973c9e50d08d48d39" formatted="false">"The computer could not find this upload record."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

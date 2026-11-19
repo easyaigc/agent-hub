@@ -133,7 +133,9 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
         binary,
         swift,
       ],
-      { env, timeout: 30000 },
+      // Cold Swift module compilation can overlap the native iOS build.
+      // Keep the fixture execution deadline separate from compiler startup.
+      { env, timeout: 120000 },
     );
     const result = JSON.parse((await run(binary, [vectorFile], { env, timeout: 5000 })).stdout);
     assert.deepEqual(result, { passed: true, checks: 35 + vectorCases.cases.length });

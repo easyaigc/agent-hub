@@ -103,6 +103,11 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     case "other-method": record["method"] = "thread/create"
     case "completed": record["state"] = "completed"; record["response"] = ["result": ["threadId": "fixture-thread", "runId": "fixture-run"]]
     case "null-completed": record["state"] = "completed"; record["response"] = ["result": NSNull()]
+    case "known-rejection": record["state"] = "failed"; record["response"] = ["ok": false, "error": ["message": "invalid_generation_settings"]]
+    case "failed-no-response": record["state"] = "failed"
+    case "completed-empty-result": record["state"] = "completed"; record["response"] = ["result": [String: Any]()]
+    case "noninput-completed-run": record["method"] = "thread/create"; record["state"] = "completed"; record["response"] = ["result": ["runId": "fixture-run"]]
+    case "contradictory-rejection": record["state"] = "failed"; record["response"] = ["ok": false, "result": ["runId": "fixture-run"]]
     case "empty-queue": queued = [String: Any]()
     case "malformed-result": record["response"] = ["result": "not-an-object"]
     case "wrong-command": record["operationId"] = "another-original"
@@ -158,7 +163,7 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     let wrongIdentity = !phase.isEmpty && field != "valid" && field != "legacy-null"
     if wrongIdentity || name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
       guard let failure, case HostServiceError.wrongHost = failure else { throw NSError(domain: name + ": wrong target was not rejected", code: 2) }
-    } else if name == "malformed-result" {
+    } else if name == "malformed-result" || name == "contradictory-rejection" {
       guard let failure, case HostServiceError.invalidResponse = failure else { throw NSError(domain: name + ": malformed value was adopted", code: 3) }
     } else if name == "denied" {
       try require((failure as? EasyWorkRemoteRejection)?.code == "device_not_authorized", "authorization rejection must remain visible")
@@ -167,6 +172,11 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       guard let result else { throw HostServiceError.invalidResponse }
       try require(result.clientMessageId == "fixture-operation" && result.threadId == "fixture-thread" && result.hostId == "fixture-host", "original identity")
       if name == "completed" || phase == "result" { try require(result.state == "submitted" && result.turnId == "fixture-run", "completed original root") }
+      else if name == "known-rejection" {
+        try require(result.state == "failed" && result.turnId == nil && result.error == "invalid_generation_settings", "authenticated original rejection stays a known failure")
+      } else if name == "noninput-completed-run" {
+        try require(result.state == "uncertain", "unrelated completed method does not prove model input acceptance")
+      }
       else {
         try require(result.state == (name == "queued-admission" ? "queued" : "uncertain") && result.turnId == nil, "original outcome never borrows a current root")
         if ["queue", "submitting", "queued-admission"].contains(name) || phase == "outer" || phase == "queue" {
@@ -176,7 +186,8 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     }
     let expected = phase == "owner" ? [] :
       (phase == "result" || phase == "outer" && wrongIdentity ||
-        ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation"].contains(name)
+        ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation",
+         "known-rejection", "failed-no-response", "completed-empty-result", "noninput-completed-run", "contradictory-rejection"].contains(name)
         ? ["command/status"] : ["command/status", "queue/status"])
     try require(gateway.calls == expected, "only original status reads; no execute or resend")
     print("passed")
@@ -199,7 +210,9 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
         binary,
         swift,
       ],
-      { env, timeout: 30000 },
+      // Cold Swift module compilation can overlap the native iOS build.
+      // Keep the fixture execution deadline separate from compiler startup.
+      { env, timeout: 120000 },
     );
     const originalCases = [
       'queue',
@@ -215,6 +228,11 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       'denied',
       'queue-unavailable',
       'null-completed',
+      'known-rejection',
+      'failed-no-response',
+      'completed-empty-result',
+      'noninput-completed-run',
+      'contradictory-rejection',
       'empty-queue',
       'malformed-result',
       'wrong-command',

@@ -880,9 +880,18 @@ struct EasyWorkAgentClient: AgentClient {
         // Older hosts can still report the original unknown command without a queue query port.
       }
     }
+    // A stored failed command with its authenticated rejection is a known
+    // failure. A failed/incomplete record without that response stays unknown.
+    // Conversely, an outer completed flag alone is not proof of a submitted
+    // model input: only the methods returning a concrete run can imply it.
+    if response?["ok"] as? Bool == false, result != nil { throw HostServiceError.invalidResponse }
+    let rejected = value["state"] as? String == "failed" && response?["ok"] as? Bool == false
+    let hasRun = !(result?["runId"] as? String ?? "").isEmpty
+    let submitted = value["state"] as? String == "completed" && hasRun
+      && ["turn/start", "plan/action"].contains(value["method"] as? String ?? "")
     return try EasyWorkReceiptNormalization.decode(result ?? [:], clientMessageId: id,
       hostId: client.id, threadId: result?["threadId"] as? String ?? value["threadId"] as? String ?? "",
-      defaultState: result != nil && value["state"] as? String == "completed" ? "submitted" : "uncertain",
+      defaultState: rejected ? "failed" : submitted ? "submitted" : "uncertain",
       fallbackError: (response?["error"] as? [String: Any])?["message"] as? String)
   }
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {

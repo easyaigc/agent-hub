@@ -4263,6 +4263,13 @@ struct RuntimePanel: View {
           Spacer()
         }.accessibilityIdentifier("runtime-progress")
       }
+      if !store.isRunning, store.pending == nil, store.receiptNotices.isEmpty,
+        ["cancelled", "interrupted"].contains(runtime.state), let thread = store.conversation {
+        Text(store.chatTaskStatus(thread))
+          .font(.caption).foregroundStyle(Palette.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .accessibilityIdentifier("runtime-terminal-state")
+      }
       if !runtime.plan.isEmpty {
         DisclosureGroup(
           L10n.tr("执行计划 · \(runtime.plan.filter { $0.status == "completed" }.count)/\(runtime.plan.count)")

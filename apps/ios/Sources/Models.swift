@@ -463,6 +463,17 @@ struct ReadAcknowledgement: Decodable {
   var read: ReadPosition
 }
 
+struct DocumentMessageSource: Codable, Equatable {
+  let messageId: String
+  let reference: String
+}
+
+struct DocumentFileSource: Codable, Equatable {
+  let grantId: String
+  let version: String
+  let messageId: String
+}
+
 struct RemoteAttachment: Identifiable, Codable, Equatable {
   let id: String
   let hostId: String
@@ -472,7 +483,21 @@ struct RemoteAttachment: Identifiable, Codable, Equatable {
   let sizeBytes: Int
   let sha256: String
   var resourceId: String? = nil
+  var documentSource: DocumentFileSource? = nil
+  var documentMessageSource: DocumentMessageSource? = nil
   var resourceIdentity: String { resourceId ?? id }
+  // A fresh download may receive a new resource ID. Reading position follows
+  // the validated original message/reference; target, thread and content digest
+  // are added by the reader. This key never selects a download or grants access.
+  var readingResourceIdentity: String {
+    guard let original = documentMessageSource, !original.messageId.isEmpty,
+      !original.reference.isEmpty,
+      let data = try? JSONEncoder().encode([original.messageId, original.reference]) else {
+      // Preserve the reading key of existing attachments without a message source.
+      return resourceIdentity
+    }
+    return "message-source-v1:" + SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
 }
 struct PlanStep: Codable, Equatable {
   let step: String

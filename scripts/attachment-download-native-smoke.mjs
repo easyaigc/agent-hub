@@ -59,7 +59,7 @@ const errors = source.slice(
   source.indexOf('// Tokens never'),
 );
 const attachment = models.slice(
-  models.indexOf('struct RemoteAttachment:'),
+  models.indexOf('struct DocumentMessageSource:'),
   models.indexOf('struct PlanStep:'),
 );
 const identitySource = await readFile('apps/ios/Sources/NotificationModels.swift', 'utf8');

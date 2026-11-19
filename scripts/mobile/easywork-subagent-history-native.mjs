@@ -9,9 +9,10 @@ const paths = [
   'apps/ios/Sources/AgentClient.swift',
   'apps/ios/Sources/EasyWorkReading.swift',
   'apps/ios/Sources/SessionStore.swift',
+  'apps/ios/Sources/Models.swift',
   'scripts/mobile/easywork-subagent-history-native.swift',
 ];
-const [source, agent, reading, store, fixture] = await Promise.all(
+const [source, agent, reading, store, models, fixture] = await Promise.all(
   paths.map((p) => readFile(p, 'utf8')),
 );
 function between(s, a, b) {
@@ -42,6 +43,11 @@ const defaults = between(
   '\n  func connectionMetadata(',
 ).replace('extension AgentClient {', '');
 const integer = between(reading, '  static func integer(', '\n  static func position(');
+const documentMessageSource = between(
+  models,
+  'struct DocumentMessageSource:',
+  '\nstruct DocumentFileSource:',
+);
 assert(
   agent.includes(
     '  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool',
@@ -76,7 +82,7 @@ const combined = join(dir, 'boundary.swift'),
   executable = join(dir, 'boundary');
 const program = fixture.replace(
   '// PRODUCTION_BOUNDARIES',
-  `enum EasyWorkReading {\n${integer}\n}\n${attachment}\n${helper}\nextension AgentClient {\n${defaults}\n}\nstruct EasyWorkAgentClient: AgentClient {\n${projection}\n${provider}\n  func testProject(_ originals: [[String: Any]], client: Client, channel: EasyWorkRemoteSession) async throws -> [ChatMessage] { try await projectMessages(originals, client: client, threadId: "parent", channel: channel) }\n}`,
+  `${documentMessageSource}\nenum EasyWorkReading {\n${integer}\n}\n${attachment}\n${helper}\nextension AgentClient {\n${defaults}\n}\nstruct EasyWorkAgentClient: AgentClient {\n${projection}\n${provider}\n  func testProject(_ originals: [[String: Any]], client: Client, channel: EasyWorkRemoteSession) async throws -> [ChatMessage] { try await projectMessages(originals, client: client, threadId: "parent", channel: channel) }\n}`,
 );
 assert.notEqual(program, fixture);
 try {
@@ -95,7 +101,9 @@ try {
         sources: Object.fromEntries(
           paths.map((p, i) => [
             p,
-            createHash('sha256').update([source, agent, reading, store, fixture][i]).digest('hex'),
+            createHash('sha256')
+              .update([source, agent, reading, store, models, fixture][i])
+              .digest('hex'),
           ]),
         ),
         transport: 'stub',

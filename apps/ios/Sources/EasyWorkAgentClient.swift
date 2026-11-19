@@ -733,7 +733,12 @@ struct EasyWorkAgentClient: AgentClient {
           let verified = try await EasyWorkHistoricalAttachment.readOrResolve(threadId: threadId, original: data) { method,params in
             try object(await channel.request(method, params))
           }
-          let file = verified.flatMap { resource(client, threadId: threadId, data: $0) }
+          var file = verified.flatMap { resource(client, threadId: threadId, data: $0) }
+          if file != nil, let reference = [data["absolutePath"], data["workspaceRelativePath"], data["resourceUri"]]
+            .compactMap({ $0 as? String }).first(where: { !$0.isEmpty }) {
+            // A routing hint from the canonical typed attachment, never authority by itself.
+            file?.documentMessageSource = DocumentMessageSource(messageId: id, reference: reference)
+          }
           let name = data["name"] as? String ?? L10n.tr("文件")
           messages.append(ChatMessage(id: "\(id):\(index)", role: role,
             text: file == nil ? L10n.tr("附件暂不可下载") : "", files: file == nil ? [name] : [], status: status,
@@ -1189,6 +1194,31 @@ struct EasyWorkAgentClient: AgentClient {
     guard let attachment = resource(client, threadId: threadId, data: completed) else { throw HostServiceError.invalidResponse }
     return attachment
   }
+  func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment {
+    guard file.hostId == client.id, sourceSha256 == file.sha256 else { throw HostServiceError.wrongHost }
+    let channel = try await session(client)
+    let context = try object(await channel.request("runtime/context", [:]))
+    let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+    guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+    guard (context["capabilities"] as? [String] ?? []).contains(EasyWorkDocumentFileResolution.capability) else {
+      throw HostServiceError.message(L10n.tr("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"))
+    }
+    var authorized = file
+    if authorized.documentSource == nil, let original = file.documentMessageSource {
+      authorized = try await resolveMessageFile(client, threadId: file.threadId,
+        messageId: original.messageId, reference: original.reference)
+      guard authorized.hostId == file.hostId, authorized.threadId == file.threadId,
+        authorized.sha256 == sourceSha256 else { throw HostServiceError.invalidResponse }
+    }
+    guard let source = authorized.documentSource else { throw HostServiceError.invalidResponse }
+    let data = try await EasyWorkDocumentFileResolution.attachment(target: confirmed.dictionary,
+      threadId: file.threadId, source: ["resourceId": authorized.id, "grantId": source.grantId,
+        "version": source.version, "messageId": source.messageId, "sha256": sourceSha256], reference: reference) { method, params in
+      try object(await channel.request(method, params))
+    }
+    guard let attachment = resource(client, threadId: file.threadId, data: data) else { throw HostServiceError.invalidResponse }
+    return attachment
+  }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment {
     let channel = try await session(client)
     let context = try object(await channel.request("runtime/context", [:]))
@@ -1206,12 +1236,23 @@ struct EasyWorkAgentClient: AgentClient {
     } catch let error as EasyWorkRemoteRejection where error.code == "message_file_link_mismatch" {
       throw HostServiceError.message(L10n.tr("此文件尚未由电脑提供，请刷新对话后重试。"))
     }
-    guard let file = resource(client, threadId: threadId, data: data) else { throw HostServiceError.invalidResponse }
+    guard var file = resource(client, threadId: threadId, data: data) else { throw HostServiceError.invalidResponse }
+    // Set only after the peer has validated the exact original message/link.
+    // Projection chunk IDs must not split the local reading position.
+    file.documentMessageSource = DocumentMessageSource(
+      messageId: EasyWorkMessageFileResolution.originalMessageId(messageId), reference: reference)
     return file
   }
   private func resource(_ client: Client, threadId: String, data: [String: Any]) -> RemoteAttachment? {
     guard let id = data["resourceId"] as? String, let hash = data["sha256"] as? String else { return nil }
-    return RemoteAttachment(id: id, hostId: client.id, threadId: threadId, name: data["name"] as? String ?? L10n.tr("文件"), mediaType: data["contentType"] as? String ?? "application/octet-stream", sizeBytes: data["size"] as? Int ?? 0, sha256: hash)
+    var attachment = RemoteAttachment(id: id, hostId: client.id, threadId: threadId, name: data["name"] as? String ?? L10n.tr("文件"), mediaType: data["contentType"] as? String ?? "application/octet-stream", sizeBytes: data["size"] as? Int ?? 0, sha256: hash)
+    if let raw = data["documentSource"] {
+      guard let value = raw as? [String: Any], Set(value.keys) == Set(["grantId", "version", "messageId"]),
+        ["grantId", "version", "messageId"].allSatisfy({ EasyWorkDocumentFileResolution.identifier(value[$0]) }),
+        let decoded = try? JSONDecoder().decode(DocumentFileSource.self, from: easyWorkJSON(value)) else { return nil }
+      attachment.documentSource = decoded
+    }
+    return attachment
   }
   private func downloadDestination(_ client: Client,file: RemoteAttachment) throws -> URL {
     guard file.hostId == client.id, let target = client.agentConnection?.target else { throw HostServiceError.wrongHost }

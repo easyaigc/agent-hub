@@ -21,7 +21,7 @@ struct FileDownloadProgressView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
       HStack {
-        Text(title)
+        Text(title).accessibilityIdentifier("file-download-phase")
         Spacer(minLength: 8)
         if let fraction = progress.fraction {
           Text(fraction, format: .percent.precision(.fractionLength(0)))
@@ -70,7 +70,7 @@ struct FilePreviewItem: Identifiable {
     let target = client.readingTarget ?? client.agentConnection?.target
     let machine = target.map { SharedMobileRules.machineReadingKey($0, threadId: file.threadId) }
       ?? client.id + ":" + (client.readingScopeId ?? "") + ":" + file.threadId
-    scopeKey = machine + "\n" + file.resourceIdentity
+    scopeKey = machine + "\n" + file.readingResourceIdentity
   }
 }
 
@@ -153,6 +153,8 @@ private struct DocumentFilePreview: View {
   @State private var webURL: PreviewWebLink?
   @State private var linkedFile: FilePreviewItem?
   @State private var pendingLink: URL?
+  @State private var linkDownloadProgress = FileDownloadProgress()
+  @State private var linkDownloadOwner: UUID?
   @State private var selectedLink: URL?
   @FocusState private var searchFocused: Bool
 
@@ -222,29 +224,48 @@ private struct DocumentFilePreview: View {
       .filePreview($linkedFile)
       .overlay(alignment: .bottom) {
         if pendingLink != nil {
-          HStack {
-            ProgressView(); Text(L10n.tr("正在准备文件…"))
-            Button(L10n.tr("取消")) { pendingLink = nil }
+          HStack(spacing: 12) {
+            FileDownloadProgressView(progress: linkDownloadProgress)
+              .frame(maxWidth: .infinity)
+            Button(L10n.tr("取消")) { linkDownloadOwner = nil; pendingLink = nil }
+              .accessibilityIdentifier("file-preview-link-cancel")
           }.padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             .padding().accessibilityIdentifier("file-preview-link-loading")
         }
       }
       .task(id: pendingLink) {
         guard let url = pendingLink, let document else { return }
-        defer { if !Task.isCancelled { pendingLink = nil } }
+        let owner = UUID()
+        linkDownloadOwner = owner
+        defer {
+          if linkDownloadOwner == owner {
+            linkDownloadOwner = nil
+            if !Task.isCancelled, pendingLink == url { pendingLink = nil }
+          }
+        }
         do {
           let service = try AgentClients.resolve(item.client)
           let file = try await service.resolveDocumentFile(item.client, file: item.file, reference: url.absoluteString, sourceSha256: document.digest)
           try Task.checkCancellation()
-          let local = try await service.download(item.client, file: file)
+          let local = try await service.download(item.client, file: file, progress: { value in
+            Task { @MainActor in
+              guard linkDownloadOwner == owner, pendingLink == url,
+                value.sampledAt >= linkDownloadProgress.sampledAt else { return }
+              linkDownloadProgress = value
+            }
+          })
           try Task.checkCancellation()
+          guard linkDownloadOwner == owner, pendingLink == url else { return }
           var next = FilePreviewItem(url: local, file: file, client: item.client)
           next.initialAnchor = url.fragment?.removingPercentEncoding
           linkedFile = next
         } catch {
-          if !Task.isCancelled { linkError = error.localizedDescription }
+          if !Task.isCancelled, linkDownloadOwner == owner, pendingLink == url {
+            linkError = error.localizedDescription
+          }
         }
       }
+      .onDisappear { linkDownloadOwner = nil; pendingLink = nil }
       .quickLookPreview($systemURL)
       .alert(L10n.tr("无法打开链接"), isPresented: Binding(get: { linkError != nil }, set: { if !$0 { linkError = nil } })) {
         if let selectedLink {
@@ -361,6 +382,7 @@ private struct DocumentFilePreview: View {
     } else if kind == "external" {
       UIApplication.shared.open(url)
     } else if case .computerFile = MessageLinkDestination.resolve(url) {
+      linkDownloadProgress = FileDownloadProgress()
       pendingLink = url
     } else {
       linkError = L10n.tr("此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。")

@@ -195,6 +195,7 @@ actor EasyWorkRemoteSession {
     "model/list", "queue/list", "queue/status",
     "filesystem/access-status", "filesystem/roots", "filesystem/list-directories", "filesystem/list-entries",
     "voice/readiness", "voice/status", "resource/read", "resource/download", "resource/resolve", "resource/transfer-list",
+    "resource/resolve-document-link",
     "resource/upload-status", "command/status",
     "notification/status", "notification/events",
   ]

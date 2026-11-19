@@ -4163,6 +4163,19 @@
       "apps/ios/Sources/CodexManageApp.swift",
       "apps/ios/Resources/LaunchScreen.storyboard",
       "apps/ios/Resources/Assets.xcassets/StartupLogo.imageset/Contents.json"
+    ],
+    "EasyWorkDocumentLinks": [
+      "apps/ios/Sources/EasyWorkDocumentFileResolution.swift",
+      "apps/ios/Sources/EasyWorkAgentClient.swift",
+      "apps/ios/Sources/EasyWorkSession.swift",
+      "apps/ios/Sources/Models.swift",
+      "apps/ios/Sources/FilePreview.swift",
+      "scripts/mobile/easywork-document-file-native.mjs",
+      "scripts/mobile/easywork-document-file-native.swift",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+      "scripts/attachment-download-native-smoke.mjs",
+      "scripts/mobile/easywork-subagent-history-native.mjs",
+      "scripts/mobile/easywork-subagent-history-native.swift"
     ]
   },
   "groups": [
@@ -8065,7 +8078,7 @@
     {
       "id": "F72",
       "group": "消息与展示",
-      "assertion": "点击 Markdown 文件进入原生内置阅读页，标题、列表、引用、代码、表格可读；目录、按内容块搜索、预览和源码切换、原文件分享与阅读位置按完整目标和内容版本隔离；其他类型使用平台兜底，不执行 HTML，不由文档相对路径扩大电脑权限；共用资源准备区按真实接收字节显示下载百分比、已收／总大小及实时速度，停滞归零，准备／校验／缓存阶段独立呈现，完整目标或资源变更不接收旧进度",
+      "assertion": "点击 Markdown 文件进入原生内置阅读页，标题、列表、引用、代码、表格可读；目录、按内容块搜索、预览和源码切换、原文件分享与阅读位置按完整目标和内容版本隔离；其他类型使用平台兜底，不执行 HTML，不由文档相对路径扩大电脑权限；共用资源准备区按真实接收字节显示下载百分比、已收／总大小及实时速度，停滞归零，准备／校验／缓存阶段独立呈现，完整目标或资源变更不接收旧进度; document links validate the original message, source digest and grant version; cancellation or leaving the page discards late child results",
       "sourceAliases": [
         "Preview",
         "Agent",
@@ -8073,13 +8086,17 @@
         "AndroidPreviewUpstream",
         "AndroidMarkdownReader",
         "AndroidNativeProbeStrictSynchronousTransport",
-        "IOSReleaseCompatibility"
+        "IOSReleaseCompatibility",
+        "EasyWorkDocumentLinks"
       ],
       "androidStages": ["A4"],
       "scenarios": ["S04", "S18"],
       "ui": ["UI05", "UI07", "UI12"],
-      "revision": 5,
-      "implementation": { "ios": "implemented", "android": "in-progress" },
+      "revision": 6,
+      "implementation": {
+        "ios": "implemented",
+        "android": "in-progress"
+      },
       "verification": {
         "ios": "not-verified-for-current-product",
         "android": "not-verified-for-current-product"
@@ -8091,7 +8108,7 @@
           "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/FilePreviewRules.kt"
         ]
       },
-      "sourceNotes": "iOS 原生核心阅读闭环本次通过，完整 UI／失败与隔离组合仍待验；Android 已编译但原生待验。解析／KMP／构建与真实结果见 docs/acceptance/file-preview-20261026.md；图片为显式打开引用，相对资源导航、图表和编辑未实现，A6 保持暂停。正式产品未部署，不关闭完整 F72。 Android对照I4源合并中：保留既有受控资源卡片与读取边界，新增阅读器源码尚未接入当前卡片入口；入口、完整本地化和原生UI矩阵将按I4后续补齐，不以主线编译或iOS真机替代。 I4源集成中：对账N053至N065共13节点，保留既有资源/附件/回调与本地化边界；新增当前模型/强度与下次发送分离，适配Android空字符串草稿。Android Markdown新阅读入口及图片多选预览仍待后续，iOS旧真机结果不升级。 I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。 I4-2：Android阅读器改由原消息授权下载快照进入，按目标和文件版本隔离阅读点；源码原文、表格横滑、目录/搜索、原入口重试、迟到回调与共享只读URI正在原生验收。UTF-8 BOM首标题解析已修复，保留原文件及CRLF；完整真实资源、格式和系统矩阵未关闭。 I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。 2026-11-15：消息文件准备卡新增Codex实际网络字节／EasyWork原分块进度，保留主线目标隔离、缓存及受验证导出；共用显示组件属于F72影响面，未合入其他文档导航候选。Android同等UI待对齐，源码和验收分列，见 docs/acceptance/file-download-progress-20261114.md。 2026-11-19：整合本地已发布114功能与更新主线，保留目标、权限、原操作和主线后续保护。子Agent具名只读分页独立协商；新组合辅助／原生／真实DEV／部署分列，见docs/acceptance/mainline-release-compatibility-20261119.md，不升级完整功能或Android A6状态。 iOS文档内相对文件／标题链接按原文与摘要授权，Android对应文档内跳转未验。"
+      "sourceNotes": "iOS 原生核心阅读闭环本次通过，完整 UI／失败与隔离组合仍待验；Android 已编译但原生待验。解析／KMP／构建与真实结果见 docs/acceptance/file-preview-20261026.md；图片为显式打开引用，相对资源导航、图表和编辑未实现，A6 保持暂停。正式产品未部署，不关闭完整 F72。 Android对照I4源合并中：保留既有受控资源卡片与读取边界，新增阅读器源码尚未接入当前卡片入口；入口、完整本地化和原生UI矩阵将按I4后续补齐，不以主线编译或iOS真机替代。 I4源集成中：对账N053至N065共13节点，保留既有资源/附件/回调与本地化边界；新增当前模型/强度与下次发送分离，适配Android空字符串草稿。Android Markdown新阅读入口及图片多选预览仍待后续，iOS旧真机结果不升级。 I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。 I4-2：Android阅读器改由原消息授权下载快照进入，按目标和文件版本隔离阅读点；源码原文、表格横滑、目录/搜索、原入口重试、迟到回调与共享只读URI正在原生验收。UTF-8 BOM首标题解析已修复，保留原文件及CRLF；完整真实资源、格式和系统矩阵未关闭。 I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。 2026-11-15：消息文件准备卡新增Codex实际网络字节／EasyWork原分块进度，保留主线目标隔离、缓存及受验证导出；共用显示组件属于F72影响面，未合入其他文档导航候选。Android同等UI待对齐，源码和验收分列，见 docs/acceptance/file-download-progress-20261114.md。 2026-11-19：整合本地已发布114功能与更新主线，保留目标、权限、原操作和主线后续保护。子Agent具名只读分页独立协商；新组合辅助／原生／真实DEV／部署分列，见docs/acceptance/mainline-release-compatibility-20261119.md，不升级完整功能或Android A6状态。 iOS文档内相对文件／标题链接按原文与摘要授权，Android对应文档内跳转未验。 2026-11-20: EasyWork Docv1 source/echo checks, stable validated message reading identity and cancellation ownership are ported from the accepted candidate. Attachments without a message source retain their legacy reading key. Desktop authority/final publication merged as BCAI/comfy-desktop PR73. Original scoped evidence is matched separately; cold position and full matrix remain open. Android internal navigation remains unverified. Current progress: docs/plans/ios-easywork-alignment-20261112/README.md."
     },
     {
       "id": "F74",
@@ -21863,6 +21880,25 @@
         "apps/android/src/main/res/values-zh/product_strings.xml": "9faa553f2d4eb08155cf37b52154286c4883c82aa841ed2434c878c4140a8c2f",
         "apps/ios/Resources/en.lproj/Localizable.strings": "24338091d045d0bdb962539ca7c27c8a47ddf213e56e99cd84b365dddf598354",
         "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "704330241faa66a26ad52f1465211a350366235957b391c3c1e9d5712ee81b89"
+      }
+    },
+    {
+      "id": "ios-easywork-document-links-20261120",
+      "baseCommit": "7adc9757d72562cb5a53c209f4f9ff7f57110ea9",
+      "features": ["F72"],
+      "summary": "Map the shared document resolver to strict EasyWork Docv1 and full target/source grant/version/message/digest echo. Preserve legacy attachment reading keys and stable validated message identities. Discard cancelled or displaced late children. Desktop PR73 supplies authority/final publication. Original scoped evidence, Android navigation, cold reading recovery and full matrix are recorded separately. Native download fixture includes the new optional document source model dependencies; its behavioral assertions remain unchanged.",
+      "files": {
+        "apps/ios/Sources/EasyWorkDocumentFileResolution.swift": "10d527eda6aa2abe92f346a8dbddd4bbc0142edc624736a5d34b99812744420b",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "aedf2bcdbbe52a01043723b90a5dc31b1ae7ec7c926ab25d5b578027420246e7",
+        "apps/ios/Sources/EasyWorkSession.swift": "f111d231e676f88f32dd2aba3aa47f20dceab14a4c5adfd9571fd06e9e275bff",
+        "apps/ios/Sources/Models.swift": "26afa5eb249c4cfd19534fd243269c672c3212c891fca45819e86e0063ea73b0",
+        "apps/ios/Sources/FilePreview.swift": "cd61065ea9ed4ca3a148c0c1baf5c1b28dd480ce5d464c4bf1ac243581c6993a",
+        "scripts/mobile/easywork-document-file-native.mjs": "a491cd7744cec257d86757102f698f47bdde53df31d790aa1570d23e31cb7a05",
+        "scripts/mobile/easywork-document-file-native.swift": "2ea42e18caa21f55dbbe37958cfdf3d603d4745aacbf42d403831064b9498c2c",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "839038a02d66f332272da62b6feec1a674efd4bbd8d531b6e723ff30a00ed40d",
+        "scripts/attachment-download-native-smoke.mjs": "f0f1635adb547e7000966c85a31ea3822fc8769f1bdf6665c8ee042a644133b4",
+        "scripts/mobile/easywork-subagent-history-native.mjs": "e3e5f988fe81747741d4a59366a34413f6ba598c79bf896bd1537afea57d26e2",
+        "scripts/mobile/easywork-subagent-history-native.swift": "2827a4b2853c08c2181440bc4beb961bd746cc409ec6930364f01364c24fb127"
       }
     }
   ]

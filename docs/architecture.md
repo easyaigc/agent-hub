@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-20 F72：共用AgentClient.resolveDocumentFile作为文档导航边界，EasyWork适配器独立协商Docv1，校验完整目标及源资源/授权/版本/消息/SHA和引用回显。原消息路由提示用于重新授权，不授予文件访问；桌面负责来源作用域和最终发布。阅读位置与下载授权分离，旧资源键兼容，取消或离开后按操作代次隔离迟到进度和结果。桌面PR73、iOS检查与原验匹配分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+
 ## 独立文件接收（2026-11-20）
 
 iOS 的 AgentClient 增加具名独立接收和已校验本地副本读取；ComputerFileCatalog.incomingFiles 为可选，旧 Codex Host 响应继续解码，不开放未实现入口。EasyWork 沿用 resource/transfer-list、resource/download 和 resource/download-complete，保留真实无聊天的 desktop-to-mobile/transfer 记录、完整目标、设备及原传输/资源 ID，不伪造 threadId。固定大小分块流写独占临时文件，摘要校验后发布；完成确认失败保留文件并沿原 ID 恢复，成功确认的本地副本在打开前重新校验。没有新增任意路径或 IPC 入口。

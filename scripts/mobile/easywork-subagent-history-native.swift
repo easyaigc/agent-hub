@@ -20,7 +20,9 @@ struct AgentJSONValue: Codable, Equatable {
 enum AgentContentPart: Codable, Equatable {
   case text(String), extensionData(namespace: String, data: [String: AgentJSONValue]), resource(id: String, name: String, mediaType: String), tool(id: String, name: String, status: String, input: String?, output: String?), diff(id: String, text: String)
 }
-struct RemoteAttachment: Codable, Equatable {}
+struct RemoteAttachment: Codable, Equatable {
+  var documentMessageSource: DocumentMessageSource? = nil
+}
 struct PlanArtifactSnapshot: Codable, Equatable {}
 enum EasyWorkPlanArtifactProjection { static func decode(_ data: [String: Any]) -> PlanArtifactSnapshot? { PlanArtifactSnapshot() } }
 enum L10n { static func tr(_ text: String) -> String { text } }

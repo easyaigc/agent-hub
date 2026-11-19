@@ -86,7 +86,14 @@ struct CodexManageApp: App {
                 return await Stores(session: session, taskHub: taskHub)
             }
         }
-        stores = await restoration?.value
+        let restored = await restoration?.value
+        #if DEBUG
+        // Opt-in visual acceptance only, bounded so the normal startup path never waits for branding.
+        if ProcessInfo.processInfo.arguments.contains("-startup-brand-acceptance") {
+            try? await Task.sleep(for: .seconds(12))
+        }
+        #endif
+        stores = restored
         restoration = nil
     }
 }
@@ -101,17 +108,81 @@ private struct AppStartupView: View {
                 RootView(store: stores.session, taskHub: stores.taskHub)
                     .onAppear { startup.deliverPendingLinks() }
             } else {
-                VStack(spacing: 20) {
-                    Text("Agent Hub").font(.title2.weight(.semibold))
-                    ProgressView(L10n.tr("正在恢复本地数据…"))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(uiColor: .systemBackground))
-                .accessibilityIdentifier("app-startup-loading")
+                AppStartupBrandView()
             }
         }
         .onOpenURL { startup.receive($0) }
         .task { await startup.start() }
+    }
+}
+
+/// The system launch screen holds the same mark still; only local restoration breathes.
+private struct AppStartupBrandView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var breathing = false
+
+    private var animates: Bool { !reduceMotion && scenePhase == .active }
+    private let blue = Color(red: 0.02, green: 0.54, blue: 0.98)
+    private let cyan = Color(red: 0, green: 0.79, blue: 0.91)
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                Image("StartupLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: blue.opacity(colorScheme == .dark ? 0.08 : 0.05), radius: 12, y: 4)
+                    .scaleEffect(breathing ? 1.025 : 1)
+                    .background {
+                        Circle()
+                            .fill(RadialGradient(colors: [cyan.opacity(0.09), blue.opacity(0.04), .clear],
+                                                 center: .center, startRadius: 10, endRadius: 84))
+                            .frame(width: 168, height: 168)
+                            .scaleEffect(breathing ? 1.08 : 0.94)
+                            .opacity(breathing ? 1 : 0.65)
+                    }
+                    .accessibilityHidden(true)
+                Text("Agent Hub")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            .offset(y: -32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            VStack {
+                Spacer()
+                HStack(spacing: 10) {
+                    // Reduce Motion also removes the decorative spinning indicator.
+                    if !reduceMotion { ProgressView().tint(.secondary) }
+                    Text(L10n.tr("正在恢复本地数据…"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .accessibilityIdentifier("app-startup-loading")
+        .onAppear { updateBreathing() }
+        .onChange(of: animates) { _, _ in updateBreathing() }
+    }
+
+    private func updateBreathing() {
+        // Reset without animation before replacing an infinite animation (including foreground recovery).
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { breathing = false }
+        if animates {
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { breathing = true }
+        }
     }
 }
 

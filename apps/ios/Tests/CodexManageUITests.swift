@@ -18754,3 +18754,37 @@ extension CodexManageUITests {
     shot("failed-message-completed-relaunch-no-replay")
   }
 }
+
+final class StartupBrandUITests: XCTestCase {
+  func testBrandAndNormalRestart() {
+    let app = XCUIApplication()
+    app.launchArguments = ["-startup-brand-acceptance"]
+    app.launch()
+    XCTAssertTrue(app.staticTexts["Agent Hub"].waitForExistence(timeout: 8))
+    let hint = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS %@", "Restoring local data", "正在恢复本地数据")).firstMatch
+    XCTAssertTrue(hint.waitForExistence(timeout: 5))
+    for index in 0..<4 {
+      let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+      attachment.name = "startup-frame-\(index)"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+      Thread.sleep(forTimeInterval: 0.8)
+    }
+    XCTAssertTrue(app.staticTexts["Agent Hub"].waitForNonExistence(timeout: 25))
+    XCTAssertEqual(app.state, .runningForeground)
+    XCTAssertTrue(app.buttons["onboarding-add"].waitForExistence(timeout: 10))
+    app.terminate()
+    app.launchArguments = []
+    app.launch()
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+    XCTAssertTrue(app.staticTexts["Agent Hub"].waitForNonExistence(timeout: 25))
+    XCTAssertEqual(app.state, .runningForeground)
+    XCTAssertTrue(app.buttons["onboarding-add"].waitForExistence(timeout: 10))
+    app.terminate()
+    app.launch()
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+    XCTAssertTrue(app.staticTexts["Agent Hub"].waitForNonExistence(timeout: 25))
+    XCTAssertEqual(app.state, .runningForeground)
+    XCTAssertTrue(app.buttons["onboarding-add"].waitForExistence(timeout: 10))
+  }
+}

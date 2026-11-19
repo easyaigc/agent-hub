@@ -4162,7 +4162,11 @@ struct ReplyDeliveryRecordsView: View {
           }
           Text(status(record.receipt)).font(.caption).foregroundStyle(Palette.secondary)
             .accessibilityIdentifier("reply-record-state-" + record.id)
-          if let error = record.error { Text(error).font(.caption).textSelection(.enabled) }
+          if let error = [record.error, record.receipt?.error].compactMap({ $0 }).first(where: { !$0.isEmpty }) {
+            Text(EasyWorkFailurePresentation.text(error, enabled: store.client?.agentConnection?.target.agentId == "easywork"))
+              .font(.caption).textSelection(.enabled)
+              .accessibilityIdentifier("reply-record-error-" + record.id)
+          }
           Button(L10n.tr("查询原回执")) { store.queryDetachedReply(record, target: target) }
             .accessibilityIdentifier("query-detached-reply-" + record.id)
         }.accessibilityElement(children: .contain).accessibilityIdentifier("reply-record-" + record.id)

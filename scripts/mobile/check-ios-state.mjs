@@ -68,7 +68,11 @@ assert(verifier.includes('// PRODUCTION_SELECTION_GETTERS'));
 const contextStart = store.indexOf('  private struct ReadingKeyContext {');
 const contextEnd = store.indexOf('  private func readingClient(', contextStart);
 const projectionStart = store.indexOf('  private func mobileUnreadSnapshots()');
-const projectionEnd = store.indexOf('  func synchronizeMobileUnread()', projectionStart);
+// Stop at the next member; the following migration writer is not part of this read-only projection.
+const projectionEnd = store.indexOf(
+  '  @discardableResult private func discardUnverifiedEasyWorkReading()',
+  projectionStart,
+);
 assert(contextStart >= 0 && contextEnd > contextStart && projectionEnd > projectionStart);
 const unreadSource = await readFile('apps/ios/Sources/MobileUnreadBadge.swift', 'utf8');
 const snapshotType = unreadSource.slice(

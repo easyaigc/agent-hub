@@ -4496,6 +4496,10 @@ private var userRequestedWorkspaceGeneration: UUID?
       updateDetachedReceipt(receipt, key: key, index: index)
     } else if ["failed", "cancelled"].contains(receipt.state), samePending(reply, key: key) {
       archiveReply(reply, key: key, receipt: receipt)
+      if reply.mode == "steer", receipt.state == "failed", receipt.turnId?.isEmpty != false,
+        targetKey == key, let reason = receipt.error, !reason.isEmpty {
+        error = reason
+      }
     } else if ReplyRecoveryRules.shared.acceptedReceipt(state: receipt.state, source: receipt.queueSource, present: receipt.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: receipt.queueDisposition) {
       finishPending(reply, key: key)
     } else if reportUnknown, targetKey == key && samePending(reply, key: key) {

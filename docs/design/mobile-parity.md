@@ -1908,3 +1908,7 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 F17/F18/F28/F47：控制请求的空闲超时与完整等待上限分别核对。初始打开、同ID状态查询和控制就绪验证都计入连接总预算；超时结束本次转圈，原打开/消息意图、操作ID、草稿和附件保留。超时不表示取消远端，也不授权重发。网络路径恢复只取消具名安全GET以便按原ID继续核对，在途POST保持原意图；文件传输与预览不采用控制请求预算。Android使用自身传输路径，本项不改变其UI或验收。源码候选、正式Host部署和原生前后对照分别见[专项验收](../acceptance/codex-control-deadline-20261119.md)。
 
 2026-11-19 EasyWork完整子历史恢复：以认证父快照中的原child/root/branch为只读来源，兼容原result.content、checkpoint transcript/content/messages；父子共用投影与消息/工具组。新增生产Swift边界检查纳入pnpm check，覆盖目标/游标、原字节、分页、附件及协议分派；默认原生基线共8项。真实本机EasyWork和具体包指纹结果见[本轮记录](../acceptance/released-workflow-regressions-20261119.md)，合成与辅助不冒充真实来源。Android未改，新增入口待对齐；A6保持暂停。
+
+### F38：迟到追加的具体原因（2026-11-19）
+
+F38：仅当前目标、未产生执行 turn 的失败追加显示即时原因；切换目标后的旧回包继续留在原记录。发送记录使用已有错误文案与版式，查询错误为空时回退原回执原因，不新增页面或设计 token。Android 对应错误呈现仍单独对齐。 当前进度与证据只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。

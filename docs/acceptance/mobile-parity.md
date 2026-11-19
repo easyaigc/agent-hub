@@ -1984,3 +1984,7 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 F17/F18/F28/F47、UI04/UI05、S03/S11：除普通断线外，覆盖持续少量数据使空闲计时续期、初始打开与原ID查询悬挂、后台返回、取消和迟到结果。前后对照须独立证明发送锁退出、草稿/附件与原ID保留、只查回执且没有重复POST；正式Host同步修复部署不替代手机候选验收，模拟故障不冒充真实蜂窝/VPN。Android独立验证，不借用iOS通过。范围和结果见[专项记录](codex-control-deadline-20261119.md)。
 
 2026-11-19 EasyWork完整子历史恢复：以认证父快照中的原child/root/branch为只读来源，兼容原result.content、checkpoint transcript/content/messages；父子共用投影与消息/工具组。新增生产Swift边界检查纳入pnpm check，覆盖目标/游标、原字节、分页、附件及协议分派；默认原生基线共8项。真实本机EasyWork和具体包指纹结果见[本轮记录](../acceptance/released-workflow-regressions-20261119.md)，合成与辅助不冒充真实来源。Android未改，新增入口待对齐；A6保持暂停。
+
+### F38：迟到追加的具体原因（2026-11-19）
+
+F38：分别记录普通命名空间生产 adapter 对真实已完成 Run 的拒绝、下一轮本地设置保留，以及隔离 Acceptance 状态下 UI-owned Store 发送/真实 Host 拒绝/原生提示与发送记录呈现。后者的旧运行缓存为显式输入夹具，不冒充真实网络竞态；必须独立核目标、原回执及零新增模型，保护原正常命名空间和 Keychain。 当前进度与证据只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。

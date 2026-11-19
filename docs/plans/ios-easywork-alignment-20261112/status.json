@@ -1746,7 +1746,8 @@
       },
       "delivery": {
         "state": "target-assembly-unverified",
-        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 当前登记的父/子共用消息投影与渲染、子正文只在详情挂载的回退修复已合PR208/main1f0f5ddd；真实EasyWork1例及最终CI子详情3项按各自范围留证，其他正文/Markdown矩阵保持原状态。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "shared-maintenance",
@@ -1755,7 +1756,7 @@
       },
       "nextAction": "先核共享源码采用状态；未改纯手机行为匹配原证据，不重复完整UI验收。 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
       "openItemIds": [],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "shared-mobile",
       "functionalDeliverableIds": []
     },
@@ -1821,16 +1822,17 @@
       },
       "delivery": {
         "state": "integrated-not-deployed",
-        "note": "原JSON换行已合Gitea PR196/main7ce9，iOS115组合编译/Node24 parity通过；未安装最新主线App，不把旧96c4 GUI升级新组合。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "原JSON换行已合Gitea PR196/main7ce9，iOS115组合编译/Node24 parity通过；未安装最新主线App，不把旧96c4 GUI升级新组合。 当前完整子历史适配、单行入口/按需详情及共用工具组恢复已合PR208/main1f0f5ddd；最终CI3项、生产173条三页/旧格式/目标游标边界受默认门禁保护，真实1例按未变组件匹配；其余F20范围继续。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "in-progress",
         "ownerRole": "当前主会话接续其余原范围；普通工具换行交付职责完成，资源由交付方收尾",
         "note": " R302：本次回退修复与同类盘点已完成限定源/辅助及原生范围核验；原任务负责人、执行状态及F75/A6暂停保持，整仓检查另留本任务证据。"
       },
-      "nextAction": "Diagnose formal native CI with bounded case summaries; validate PR207 combination and pass exact-head CI before normal PR208 merge.",
+      "nextAction": "本条完整子历史恢复与登记真实场景已合PR208并交付；原F20长页/重连/事件、复制字节与其余矩阵按原计划独立继续，不重放原业务输入。",
       "openItemIds": ["REV17"],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC07"],
@@ -4349,7 +4351,8 @@
       },
       "delivery": {
         "state": "target-assembly-unverified",
-        "note": "普通1e042/c2abd已保留数据部署模拟器；就绪矩阵尚待修正清空驱动后完整通过，源码尚未合基准main。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "普通1e042/c2abd已保留数据部署模拟器；就绪矩阵尚待修正清空驱动后完整通过，源码尚未合基准main。 本次44pt子入口、详情生命周期/复制菜单和唯一通用sheet路由修复已合PR208/main1f0f5ddd；最终CI8项及重复路由硬门禁通过，不扩签完整性能/无障碍矩阵。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "in-progress",
@@ -4358,7 +4361,7 @@
       },
       "nextAction": "Prior cancelled case exact actual-owned fields restored, original input/history preserved. New independent empty-thread actual-catalog Claude-Fable-5.1/xhigh/strict case executing after observer fixes; original Qwen failure remains. No old input replay. 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
       "openItemIds": ["REV13", "REV14"],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "shared-mobile",
       "functionalDeliverableIds": []
     },
@@ -4796,7 +4799,8 @@
       },
       "delivery": {
         "state": "target-assembly-unverified",
-        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 本次录音波形/草稿/状态点击停止、收尾期间不重复及失败状态不重试恢复已合PR208/main1f0f5ddd；最终CI4项零跳过，未新增真实麦克风/ASR通过。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "planned",
@@ -4805,7 +4809,7 @@
       },
       "nextAction": "按AC27在模拟器核原WAV/Host ASR、许可/取消/恢复与原草稿绑定。 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
       "openItemIds": [],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC27"],
@@ -5343,7 +5347,8 @@
       },
       "delivery": {
         "state": "candidate-not-integrated",
-        "note": "C19 9d05414/普通386已核准确模拟器与D8/N15真实组合登记范围；206输入等价，源码仅本地保存，未推送/合主线/发布。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "C19 9d05414/普通386已核准确模拟器与D8/N15真实组合登记范围；206输入等价，源码仅本地保存，未推送/合主线/发布。 本次剩余额度/倒计时详情及通用usage弹窗路由修复已合PR208/main1f0f5ddd；最终CI1项零跳过。原C19/F73更大范围及真实余额矩阵不因本次UI修复自动合入或升级。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "closed",
@@ -5352,7 +5357,7 @@
       },
       "nextAction": "Registered scope closed; continue F45/F44 lifecycle and remaining40 parents. F46 registered simulator scope now closed; original inputs query-only. Mainline delivery separate. 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
       "openItemIds": ["REV24"],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC26"],
@@ -5443,7 +5448,8 @@
       },
       "delivery": {
         "state": "target-assembly-unverified",
-        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
+        "note": "已合提交与实际部署分开；当前主线/工作分支分叉，最新桌面包未核实。 本次Codex项目Git两项动态协议请求及唯一通用Git弹窗路由恢复已合PR208/main1f0f5ddd，默认原生分派/路由边界保护；真实整页、EasyWork完整F75及原暂停范围不扩签。",
+        "currentEvidence": ["F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"]
       },
       "execution": {
         "state": "paused",
@@ -5453,7 +5459,7 @@
       },
       "nextAction": "保持暂停；恢复该范围后再核源码与Git快照矩阵。 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
       "openItemIds": ["HOLD01"],
-      "updatedAt": "2026-11-19T07:10:22.158501+00:00",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC31"],
@@ -5469,8 +5475,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 324,
-  "updatedAt": "2026-11-19T09:40:23.280225+00:00",
+  "revision": 326,
+  "updatedAt": "2026-11-19T10:13:35.807396+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13820,6 +13826,36 @@
       "scope": "本机默认voiceTap wrapper已实际4/0/0、零跳过，主会话独立提取官方xcresult确认；619.73秒含冷Gradle依赖HTTP等待，未改生产、原用例或通过门槛。13文件提交6d84d0df及远端SHA已核。期间实际主线合入PR209/3301886a，PR208需整合：正常保留Codex绝对请求/连接预算及其原生回归，EasyWork非Codex预算不变；9个已验子历史/共用呈现/录音/额度测试与runner关键文件逐字节相同。文档双方范围和manifest按ID合并，无单侧覆盖；当前组合检查/构建和最终精确CI待执行，尚未合并PR208。",
       "path": ".local/subagent-easywork-restore-20261119/integration-pr209-source-review.json",
       "sha256": "34b9362da26f7b38ee2ff0f600cc6bc52dd271ccbdc5dcdc53efdb103004d006"
+    },
+    "PR208-FINAL-E010-COMBINATION-BUILD-AND-CI12862-PENDING-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "e010ecdd29fa881a209412c82262da668ef707c3",
+      "packageSha256": "standard-build-not-deployed",
+      "environment": "Independent candidate integration209 standard build115.69s, boundary/fixtures/checks; official final Gitea12862 currently running",
+      "mobileEnvironment": "not-required",
+      "scope": "e010ecdd已正常推送到PR208，精确双父6d84d0df/3301886a及22个blob由主会话独立核对。新组合标准pnpm build:ios退出0/115.69秒，runner、子历史及两项Codex deadline夹具、格式/lint/parity/台账检查均通过。最终精确头CI12862正在运行（workspace29979/iOS29980），PR208目标main/330、mergeable=true；原6d的12861两job已由既有并发规则取消，不手工重放或删除原失败证据。正式CI和实际合并仍待核，不新增完整功能或真实模型通过。",
+      "path": ".local/subagent-easywork-restore-20261119/delivery/integration209-3_q2twmj/checks.json",
+      "sha256": "b0ef317a8a80014850606b9e325e59396e98eed87e09c70cc95af0078d15e3ea"
+    },
+    "PR208-FINAL-CI12862-FULL-WORKSPACE-EIGHT-UI-PASS-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "e010ecdd29fa881a209412c82262da668ef707c3",
+      "packageSha256": "not-a-formal-deployment",
+      "environment": "Actual official Gitea run12862, workspace29979 and iOS29980 success; main verified strict3/4/1 log counts",
+      "mobileEnvironment": "simulator",
+      "scope": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/ci12862-final-jobs.json",
+      "sha256": "6210b2df1055e209df34cc6685c1254dcd73919551a9429f0940762450417a9e"
+    },
+    "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119": {
+      "kind": "exact-match-review",
+      "sourceCommit": "1f0f5ddddfd4e70d3744229b7d2c306d37bff24a",
+      "packageSha256": "not-a-formal-deployment",
+      "environment": "Independent GiteaPR/remoteGit/parents/tree/CI and scoped old-real-input equality review",
+      "mobileEnvironment": "not-required",
+      "scope": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/actual-main-merge-verification.json",
+      "sha256": "8477945330841c16f69e2e154891c66265dd5429e1fb64f99de105fb04035bcf"
     }
   },
   "openItems": [
@@ -22041,6 +22077,30 @@
         "VOICE-TAP-BOUNDED-DEFAULT-WRAPPER-LOCAL-FOUR-PASS-20261119",
         "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
       ]
+    },
+    {
+      "revision": 325,
+      "date": "2026-11-19",
+      "kind": "exact-main209-combination-e010-built-pushed-and-formal-ci12862-running",
+      "scope": "e010ecdd已正常推送到PR208，精确双父6d84d0df/3301886a及22个blob由主会话独立核对。新组合标准pnpm build:ios退出0/115.69秒，runner、子历史及两项Codex deadline夹具、格式/lint/parity/台账检查均通过。最终精确头CI12862正在运行（workspace29979/iOS29980），PR208目标main/330、mergeable=true；原6d的12861两job已由既有并发规则取消，不手工重放或删除原失败证据。正式CI和实际合并仍待核，不新增完整功能或真实模型通过。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["PR208-FINAL-E010-COMBINATION-BUILD-AND-CI12862-PENDING-20261119"]
+    },
+    {
+      "revision": 326,
+      "date": "2026-11-19",
+      "kind": "released-workflows-and-complete-easywork-child-history-actual-pr208-main-delivery",
+      "scope": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "newConcreteDeliverableMerged": ["F20-child-history"],
+      "evidenceRefs": [
+        "PR208-FINAL-CI12862-FULL-WORKSPACE-EIGHT-UI-PASS-20261119",
+        "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -25076,6 +25136,17 @@
       "mainMergeCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
       "verification": "正式PR实际核head/baseHead/merge/remote源删除。14文件与759测试源4e11逐字节一致；处置块与原3888经TypeScript规范打印匹配，原真实N9/native范围复用。主线整合0新Unit不计新pass；同版Electron复制的签名校验失败仅作局限，不宣称发行签名通过。新正式包未部署。",
       "evidenceRefs": ["F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"]
+    },
+    {
+      "component": "F20 EasyWork complete child-history PR208 actual main delivery",
+      "baseCommit": "1f0f5ddddfd4e70d3744229b7d2c306d37bff24a",
+      "testedHeadCommit": "e010ecdd29fa881a209412c82262da668ef707c3",
+      "verification": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。",
+      "evidenceRefs": [
+        "PR208-FINAL-CI12862-FULL-WORKSPACE-EIGHT-UI-PASS-20261119",
+        "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119",
+        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119"
+      ]
     }
   ],
   "sourcePinHistory": [
@@ -30852,9 +30923,9 @@
       "phase": "extensions",
       "behavior": "点开 EasyWork 子 Agent 阅读完整过程",
       "acceptanceCriteria": "专用Provider按完整目标、父聊天、原消息及child Run身份读取；真实持久完整消息/工具过程可分页阅读，返回父聊天后草稿和位置保持。旧记录仅有摘要时明确保留摘要范围，不冒称完整过程。",
-      "state": "passed-awaiting-merge",
-      "owner": "本次主会话（恢复/验收/主线交付）；其余F20沿原负责人",
-      "acceptanceBasis": "current-real-dev-scoped",
+      "state": "merged",
+      "owner": "Current main: scoped implementation/acceptance/Gitea delivery complete; broaderF20 retained by existing coordinator",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304",
         "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306",
@@ -30869,21 +30940,15 @@
         "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119",
         "PR208-FINAL-COMBINATION12854-VOICE-GROUP-TIMEOUT-20261119",
         "VOICE-TAP-BOUNDED-DEFAULT-WRAPPER-LOCAL-FOUR-PASS-20261119",
-        "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
+        "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119",
+        "PR208-FINAL-CI12862-FULL-WORKSPACE-EIGHT-UI-PASS-20261119",
+        "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"
       ],
-      "pullRequests": [],
-      "nextAction": "Verify combined PR209 source/build and final exact-headCI, then normally merge PR208 and record actual merge facts; keep broaderF20 scope open.",
-      "updatedAt": "2026-11-19T09:40:23.280225+00:00",
+      "pullRequests": ["BCAI/agent-hub-app#208"],
+      "nextAction": "本条完整子历史恢复与登记真实场景已合PR208并交付；原F20长页/重连/事件、复制字节与其余矩阵按原计划独立继续，不重放原业务输入。",
+      "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "retainedAcceptanceBoundary": "本次真实1child含reasoning/tool/result/Markdown和父目标/草稿；173消息3页与错误目标/失败/附件为生产辅助边界，无真实80条页GUI新通过。",
-      "pendingPullRequest": {
-        "repository": "BCAI/agent-hub-app",
-        "number": 208,
-        "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/208",
-        "headCommit": "6d84d0df481b6e207acd16b736c96b4734966475",
-        "baseBranch": "main",
-        "ci": "12861-queued;current-main209-integration-required-before-finalCI",
-        "checkedAt": "2026-11-19T09:40:23.280225+00:00"
-      }
+      "mergedScope": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。"
     }
   ],
   "mergedPullRequests": {
@@ -31144,6 +31209,20 @@
       "checkedAt": "2026-11-19T07:22:18.954944+00:00",
       "evidenceRef": "F48-PR206-ACTUAL-MAIN-SOURCE-AND-FINAL-CLEANUP-ROOT-R313",
       "scope": "Known failure classifier and stopped-without-assistant caption plus exact scoped boundary/GUI evidence and R305 docs; not wholeF44 network or desktop package rollout."
+    },
+    "BCAI/agent-hub-app#208": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 208,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/208",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "e010ecdd29fa881a209412c82262da668ef707c3",
+      "mergeCommit": "1f0f5ddddfd4e70d3744229b7d2c306d37bff24a",
+      "mergedAt": "2026-11-19T18:09:54+08:00",
+      "checkedMainCommit": "1f0f5ddddfd4e70d3744229b7d2c306d37bff24a",
+      "checkedAt": "2026-11-19T10:10:25.782612+00:00",
+      "evidenceRef": "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119",
+      "scope": "Released interaction repairs and EasyWork child history; exactCI tree equality. No formalApp/Host deployment or wholeF20/Android/F75 closure."
     }
   },
   "deliveryWorkflow": {

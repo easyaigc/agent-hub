@@ -5,6 +5,7 @@ import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash, createPublicKey, randomBytes, randomUUID, verify } from 'node:crypto';
 import { resolve, join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 if (process.platform !== 'darwin') {
   console.log('Relay transport fixture requires macOS Swift; not verified here.');
@@ -52,6 +53,19 @@ const publishGate = sessionSource.match(/ {2}private var publishingEpochs[^\n]+/
 assert(publishGate);
 const acknowledged = new Set();
 const polls = [];
+const pollAcknowledgements = [];
+const idlePollTarget = 3;
+const idleResponseDelayMs = Number(process.env.EASYWORK_RELAY_FIXTURE_IDLE_DELAY_MS ?? 0);
+assert(
+  Number.isSafeInteger(idleResponseDelayMs) &&
+    idleResponseDelayMs >= 0 &&
+    idleResponseDelayMs <= 5000,
+  'EASYWORK_RELAY_FIXTURE_IDLE_DELAY_MS must be an integer from 0 to 5000',
+);
+let idlePolls = 0;
+let heldPollCancelled = false;
+const pollingReady = Promise.withResolvers();
+const pollingCancelled = Promise.withResolvers();
 const accessToken = randomBytes(32).toString('base64url');
 const refreshToken = randomBytes(32).toString('base64url');
 const deviceRequests = [];
@@ -102,6 +116,15 @@ const server = createServer(async (request, response) => {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
     const bytes = Buffer.concat(chunks);
+    // Fixture-only barriers observe real HTTP requests. They do not replace
+    // the transport clock, ACK path or cancellation with synthetic results.
+    if (['/fixture/polling-ready', '/fixture/polling-cancelled'].includes(request.url)) {
+      assert.equal(request.method, 'GET');
+      assert.equal(request.headers.authorization, undefined);
+      await (request.url.endsWith('polling-ready') ? pollingReady : pollingCancelled).promise;
+      response.writeHead(200).end('{}');
+      return;
+    }
     if (request.url === '/redirect-target') {
       redirectedRequests++;
       response.writeHead(200).end('{}');
@@ -134,8 +157,23 @@ const server = createServer(async (request, response) => {
       response.writeHead(200).end('{}');
     } else if (request.url.endsWith('/relay/pending')) {
       polls.push(performance.now());
+      pollAcknowledgements.push([...acknowledged].sort());
       // A real durable mailbox retains each envelope until its ACK is committed.
       const batch = acknowledged.size < 3 ? [1, 2, 3] : [4, 5];
+      if (acknowledged.size === 5) {
+        idlePolls++;
+        if (idlePolls === idlePollTarget) {
+          // Hold this real request until Swift cancels it. The count is now
+          // independent of how long CI scheduling or earlier responses took.
+          response.once('close', () => {
+            heldPollCancelled = !response.writableEnded;
+            pollingCancelled.resolve();
+          });
+          pollingReady.resolve();
+          return;
+        }
+        if (idlePolls === 1 && idleResponseDelayMs) await delay(idleResponseDelayMs);
+      }
       response.writeHead(200).end(
         JSON.stringify({
           envelopes: batch
@@ -274,10 +312,21 @@ ${sessionSource.slice(publishStart, publishEnd)}
       try await transport.acknowledge(frame)
     }
     let waiting = Task { try await transport.receive() }
-    try await Task.sleep(for: .milliseconds(1250))
+    func waitForFixture(_ phase: String) async throws {
+      var request = URLRequest(url: URL(string: "http://127.0.0.1:${server.address().port}/fixture/" + phase)!)
+      request.timeoutInterval = 10
+      let (_, response) = try await URLSession.shared.data(for: request)
+      guard (response as? HTTPURLResponse)?.statusCode == 200 else { fatalError("Fixture barrier failed: " + phase) }
+    }
+    try await waitForFixture("polling-ready")
     waiting.cancel()
-    do { _ = try await waiting.value; fatalError("Unexpected envelope") } catch { if !waiting.isCancelled { throw error } }
+    do { _ = try await waiting.value; fatalError("Unexpected envelope") }
+    catch is CancellationError {}
+    catch let error as URLError where error.code == .cancelled {}
     await transport.close()
+    try await waitForFixture("polling-cancelled")
+    do { _ = try await transport.receive(); fatalError("A closed route polled the mailbox") }
+    catch is CancellationError {}
     let legacyCalls = FixtureSecrets.lock.withLock { FixtureSecrets.legacyCalls }
     let identity = try EasyWorkIdentity.load(), signer = try EasyWorkDPoP.load(identity)
     let account = AgentAccount(authority: "https://fixture.invalid", subject: "synthetic-account")
@@ -377,14 +426,24 @@ ${sessionSource.slice(publishStart, publishEnd)}
     timeout: 60000,
     maxBuffer: 4 * 1024 * 1024,
   });
-  const result = await run(binary, [], { env, timeout: 15000 });
+  const result = await run(binary, [], { env, timeout: 20000 });
   assert.ifError(serverFailure);
   assert.match(result.stdout, /bounded polling passed/);
   assert.match(result.stdout, /production DPoP signing/);
   assert.deepEqual([...acknowledged].sort(), [1, 2, 3, 4, 5]);
-  assert(polls.length >= 4 && polls.length <= 5);
+  assert.equal(polls.length, 2 + idlePollTarget, 'Expected two ACKed batches and three idle polls');
+  assert.equal(idlePolls, idlePollTarget);
+  assert(heldPollCancelled, 'Cancellation must close the outstanding mailbox HTTP request');
+  assert.deepEqual(pollAcknowledgements, [
+    [],
+    [1, 2, 3],
+    ...Array.from({ length: idlePollTarget }, () => [1, 2, 3, 4, 5]),
+  ]);
   for (let index = 1; index < polls.length; index++)
-    assert(polls[index] - polls[index - 1] >= 450, 'Mailbox polling exceeded its budget');
+    assert(
+      polls[index] - polls[index - 1] >= 450,
+      `Mailbox polling exceeded its budget: interval ${index} was ${(polls[index] - polls[index - 1]).toFixed(1)}ms`,
+    );
   assert.deepEqual(deviceRequests, [
     'POST /v2/remote-access/relay/envelopes',
     'GET /v2/remote-access/bindings',
@@ -413,6 +472,10 @@ ${sessionSource.slice(publishStart, publishEnd)}
           .digest('hex'),
         acknowledged: [...acknowledged].sort(),
         mailboxPolls: polls.length,
+        idlePolls,
+        idleResponseDelayMs,
+        pollIntervalsMs: polls.slice(1).map((time, index) => time - polls[index]),
+        heldPollCancelled,
         validDeviceProofs: proofIds.size,
         redirectedRequests,
         limitations: [
@@ -428,7 +491,23 @@ ${sessionSource.slice(publishStart, publishEnd)}
   console.log(
     'Native Swift Relay transport passed: retained batches ACK before repoll; idle reads bounded; concurrent session publishes preserve sequence; device-grant guards and ES256 DPoP verified on localhost, revoked errors preserved and redirects refused. Fixture evidence only.',
   );
+} catch (error) {
+  console.error(
+    'Relay mailbox diagnostics:',
+    JSON.stringify({
+      mailboxPolls: polls.length,
+      idlePolls,
+      idleResponseDelayMs,
+      pollIntervalsMs: polls.slice(1).map((time, index) => time - polls[index]),
+      acknowledged: [...acknowledged].sort(),
+      pollAcknowledgements,
+      heldPollCancelled,
+    }),
+  );
+  throw error;
 } finally {
+  pollingReady.resolve();
+  pollingCancelled.resolve();
   server.closeAllConnections();
   await new Promise((done) => server.close(done));
 }

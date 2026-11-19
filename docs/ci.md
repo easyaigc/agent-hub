@@ -6,6 +6,8 @@ Gitea 的工作区使用 Linux，会跳过 macOS 专属 Swift 回归；因此 ma
 
 GitHub 同步任务总时限为 30 分钟，容纳完整源历史与公开父提交的初次读取；发布仍使用原独立公开父历史、来源祖先检查、普通推送和远端 SHA 核对。超时没有发布确认时先读取 GitHub 实际状态，再决定恢复，不能把任务提交或重试当作同步成功。
 
+Relay 原生通信夹具以服务器观察屏障结束空闲轮询：先核对两批信封的真实 ACK，再观察三次空闲请求，保持最后一个 HTTP 请求未响应，由 Swift 取消并独立核对连接关闭。轮询间隔仍使用生产真实时钟，保留 500 ms 预算及服务器观测的 450 ms 下限、准确 ACK 快照和关闭后读取拒绝。旧夹具在固定等待 1250 ms 后要求总请求数为 4～5；首个空闲响应受控延迟 1500 ms 时，三次复现均只有 3 次请求并触发原断言，即使频率符合限制也会误报。当前夹具可用 `EASYWORK_RELAY_FIXTURE_IDLE_DELAY_MS=1500 node scripts/easywork-relay-transport-native-smoke.mjs` 重验慢响应（允许 0～5000 ms）；控制屏障请求限时 10 秒、原生执行总计限时 20 秒，失败输出实际次数、间隔及 ACK 状态。该修复只调整 macOS 本地 Swift/HTTP 辅助检查，不改变产品轮询逻辑，也不等同于真实账号或手机验收；GitHub 原失败日志未记录次数，无法据此还原当次调度或网络延迟。
+
 工作流保留在 `.github/workflows/ci.yml`，由 Gitea Actions 读取。当前工作区任务使用明确配置在 Linux 容器上的 `agent-hub-linux`，原生构建使用 `macos-latest`；旧工作流还使用 `ubuntu-latest`。这些名称都是任务匹配标签，Gitea 不会因为名称自动创建 GitHub 托管机器。仓库及组织均没有可用运行器时，任务保持 queued，尚未执行任何检查。
 
 ## 运行环境

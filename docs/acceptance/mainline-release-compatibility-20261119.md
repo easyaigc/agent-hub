@@ -24,3 +24,9 @@ Frozen ad5b7212d9eb78791ba5a29e27924e91fb43ea1b passed pnpm check (exit 0, 907.4
 A real named child returned 15 saved-history messages with exact target/parent/child identity; it had no desktop owner. Initial wrong-message and unnamed-child responses were generic 502 failures. The follow-up maps known validation failures to 403/404/409, with separate current-source boundary and HTTP verification. No real next page was present; actual pagination, cross-parent cursor and detail-sheet interaction remain unverified.
 
 The subsequent F08 main delivery retains authenticated EasyWork routes. Its existing proof and this combined build/delta verification stay separate. The final signed IPA is rebuilt from the actual merged main; unpublished earlier candidates are retired rather than relabelled.
+
+## 后续纠错：已发布交互未被完整保留
+
+2026-11-19 用户报告子 Agent 展示回退后，对照已发布114冻结源确认：本记录所述“保留已发布功能”的源码组合未完整恢复单行／按需完整详情／主子共用组件、昵称和任务标题、Codex Git请求、额度精简详情及录音文字点击停止。较早主线还存在重复且仅允许EasyWork的额度／Git弹窗分支；Swift只警告，实际Codex／demo会打开空白页。本表是当时的组合意图及原验证边界，不能再解释成这些行为已全部保留或通过。
+
+当前修复、逐项根因、原生失败及补测、只读真实来源核对、未验证范围和默认回归门禁统一见[已发布交互回退核对](released-workflow-regressions-20261119.md)。原通过、失败及无真实下一页等历史证据继续保留，不改写为本次全部通过；正式提交、合并和安装另计。

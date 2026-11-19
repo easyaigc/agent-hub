@@ -1785,11 +1785,13 @@
           "RELEASED-REGRESSION-ISOLATED-FULL-CHECK-AND-CLEANUP-R304",
           "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304",
           "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306",
-          "F20-ACTUAL-MASTER-TRANSCRIPT-INPUT-SCOPE-DISAMBIGUATION-R307",
           "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119",
           "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119",
           "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119",
-          "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119"
+          "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119",
+          "F20-LEGACY-NULL-TRANSCRIPT-COMPATIBILITY-RED-GREEN-20261119",
+          "F20-ACTUAL-MASTER-TRANSCRIPT-INPUT-SCOPE-DISAMBIGUATION-R307",
+          "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
         ]
       },
       "acceptance": {
@@ -1811,7 +1813,10 @@
           "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304",
           "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119",
           "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119",
-          "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119"
+          "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119",
+          "F20-LEGACY-NULL-TRANSCRIPT-COMPATIBILITY-RED-GREEN-20261119",
+          "SUBAGENTS-DEFAULT-WRAPPER-LOCAL-THREE-PASS-20261119",
+          "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
         ]
       },
       "delivery": {
@@ -1819,11 +1824,11 @@
         "note": "原JSON换行已合Gitea PR196/main7ce9，iOS115组合编译/Node24 parity通过；未安装最新主线App，不把旧96c4 GUI升级新组合。 R302：已发布交互回退修复为当前本地主线候选，未提交/合并/安装正式包，不升级原交付状态。 本轮EasyWork子历史恢复及已发布交互回归已在独立main候选完成同包8UI/真实1子历史；尚待Gitea检查/提交合并，未正式安装。"
       },
       "execution": {
-        "state": "planned",
+        "state": "in-progress",
         "ownerRole": "当前主会话接续其余原范围；普通工具换行交付职责完成，资源由交付方收尾",
         "note": " R302：本次回退修复与同类盘点已完成限定源/辅助及原生范围核验；原任务负责人、执行状态及F75/A6暂停保持，整仓检查另留本任务证据。"
       },
-      "nextAction": "提交并合并本轮已验恢复候选到Gitea main；后续真实长页/失败/重连/附件与F20其他原登记矩阵继续，不重放原模型输入。",
+      "nextAction": "Diagnose formal native CI with bounded case summaries; validate PR207 combination and pass exact-head CI before normal PR208 merge.",
       "openItemIds": ["REV17"],
       "updatedAt": "2026-11-19T07:10:22.158501+00:00",
       "initialScopeStatus": "open",
@@ -5464,8 +5469,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 313,
-  "updatedAt": "2026-11-19T07:22:18.954944+00:00",
+  "revision": 324,
+  "updatedAt": "2026-11-19T09:40:23.280225+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13375,6 +13380,125 @@
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-superseded-driver-derived-released.json",
       "sha256": "2b126343abcb96eafa6170a56053ea5d88720fabcacc42fcd9b38d9b84e3c770"
     },
+    "RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": {
+        "apps/ios/Sources/AgentClient.swift": "e676e1e3a6fed6a7b2bbdae9968b2469958e9f7c65536f6cb52a9a71d3c21b83",
+        "apps/ios/Sources/RootView.swift": "8c80f9a893ed69750b6d2edb8f93e4ba7b9d01720b5142eda821ceef09a7c178",
+        "apps/ios/Sources/SessionStore.swift": "0a6879d7d36dd4594a9c05be1dc9a882437bcb7af406c8e7dfef53f126ad2479",
+        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
+        "apps/ios/Sources/UsageViews.swift": "0337c355decf16f81f56ec426d51c74e55a2a9143019a2d82d63072f889a9041",
+        "apps/ios/Sources/VoiceInput.swift": "bbdd0e100bfdbfbd93b916824eea9861aaa45f6fad9f1588bd45a276398b82e0",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "8cc47aea9cf04da407b19f26e4affefa3d10ef8910184f8719e882dfac5db8c0",
+        "apps/ios/Tests/UsageUITests.swift": "0d694d95b512e5aa52d756f58559f129f72799d065aead541a53b68b71c8eb9a",
+        "apps/ios/Tests/VoiceLifecycleUITests.swift": "90ff3f60683330ba1385da382d89b91f058895506106e4c9eb216b264ea865c3",
+        "packages/codex-adapter/src/desktop-ipc.ts": "55283371523cab03555e0e77c5f7377faf6c335be008d74c70cffa0dba264e25",
+        "packages/codex-adapter/src/runtime.ts": "018f95133ae3664d9562d2b78e0150a3e94544dcda61c9fc319256010a5c6399",
+        "packages/codex-adapter/src/subagents.ts": "3b6bcda16827868fc9f60588a842f9f7fa1ecfefb6c9791408717650b0fb92db",
+        "scripts/subagents.test.mjs": "26095500beb1e68250e7dd15b3b9a39b994e909265db410502e750967a03dbbe",
+        "scripts/mobile/native-ios-cases.mjs": "e45eb7b9fa6ae4ec52f4d1b7c53e5b9e565152771e588097384b0fd8d8020007",
+        "scripts/mobile/ios-baseline.mjs": "e97afa77339a00360cca52494a68f85756fd3a2ecda26ce6424fa2ac904eba7b",
+        "scripts/subagent-reading-ios-fixture.mjs": "2893efd489c584ac20204110968ce41fa0c6c3b44a785085fc06633658ab7811",
+        "scripts/voice-tap-stop-ios-fixture.mjs": "e33247834808656b85a4e7af20d3f77629eac739079289158d54619dbd58df15",
+        "scripts/usage-details-ios-fixture.mjs": "57300dddaee9a878b83ae5bcc2db3c9f7a0ce6a6c0659768314424075ab1a73a",
+        "scripts/mobile/codex-project-git-native-smoke.mjs": "9736f5847118281e20e1f98b90e856c02da18253689c05ef7076c6a5a16150ac",
+        "scripts/mobile/check-ios-sheet-routes.mjs": "bd985ca112f469a2707759f01000675e68c6a930bd5f935a2b5ff9e4014db8a2",
+        "apps/ios/Resources/Assets.xcassets/StartupLogo.imageset/Contents.json": "f3adfa84be935246a68e1e33bc2ab1194a78908b5240f856ba64a8b4a75c56cc"
+      },
+      "packageSha256": "b1d6f21760bd90df5e5330d3e2ba4994d3aa4ba791fac74f382c49f8d6eeb1a7",
+      "environment": "Local Xcode27 / iOS26 native simulator; current original Codex read-only runtime checked separately; no official deployment",
+      "mobileEnvironment": "simulator",
+      "scope": "Release114/mainline regression source repair. Initial native six: five pass, usage blank-sheet failure retained. Unique generic sheet route repair: usage countdown/remaining and native copy-menu two pass. Prior five reused only for unchanged component/scenario scopes, not seven cases on one final binary. Adapter18 boundary tests pass; independent real saved command/id/run/output/exit match current12 source-dist pins; official metadata lacks title. No new EasyWork actual-source/model or Android/physical microphone/ASR/Git-page acceptance. Prior EasyWork386 and other accepted candidates retain their original scope; F75/A6 pause unchanged.",
+      "path": ".local/subagent-ui-regression-20261119/scoped-validation.json",
+      "sha256": "6d0f6c4af9bf80d7c983c86bb1ea2f3e4c6f63186fdf45e76c2da0c54483d553"
+    },
+    "RELEASED-REGRESSION-ISOLATED-FULL-CHECK-AND-CLEANUP-R304": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": "not-built",
+      "environment": "Node24.22.3 / pnpm11.19 / Java17 / Darwin arm64; isolated local exact repair clone over main baseline; no shared WIP or CI claim",
+      "mobileEnvironment": "not-required",
+      "scope": "Full pnpm check exit0 in900.52s; Git dynamic protocol4 requests and13unique sheet route guard pass. Initial missing dist/JAVA_HOME and test umask077 failures retained and recovered without test/production semantic changes. All production/script input hashes match; later documentation/ledger additions separate. Temporary clone/dependencies/download remnants/owned Gradle and simulator removed; five helper threads officially archived and independently verified. No formal deployment or whole-platform new acceptance.",
+      "path": ".local/subagent-ui-regression-20261119/isolated-check/execution-summary.txt",
+      "sha256": "36d40d0e5b5400dde21456fe66683ec4e0bdedc7a63b67bea2a221964936bff0"
+    },
+    "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": "not-built",
+      "environment": "Release114 frozen source versus current local EasyWorkAgentClient and AgentClient defaults; static source review",
+      "mobileEnvironment": "not-required",
+      "scope": "114 EasyWork provider has complete subagentHistory; current provider lacks the override and inherits unsupported default. Legacy summary fallback remains. Old114 record explicitly excluded new actual EasyWork full-UI pass; current gap is un-restored and not marked accepted. Original F20 remains open for provider adaptation and real existing child Run verification without input replay or unrequested remote coordination.",
+      "path": ".local/subagent-ui-regression-20261119/risk-registry.json",
+      "sha256": "9110eab29dadb613bf7b678caccc34c8e981af26cbd11387993f2128132acd52"
+    },
+    "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "834ef865be3b9f6f0d13544b4228a079981e8cd3",
+      "packageSha256": "not-built-new-child-provider",
+      "environment": "Current merged candidate provider versus old963 source; actual N17 owned legacy children read-only metadata, no new GUI/model",
+      "mobileEnvironment": "not-required",
+      "scope": "当前EasyWork provider没有subagentHistory覆盖而旧963有。真实既有两个child各completed但没有checkpoint.subagentTranscript，仅input/result；恢复旧fallback不等于补齐缺失的中间过程。Desktop当前主线存在transcript持久实现/测试文件，仍需按实际协议与运行包核对适配和完整原生读取。仅明确待开发功能，不新增通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-provider-gap-and-existing-legacy-child-transcript-source-followup.json",
+      "sha256": "adaffce7ca62d5fae7397dd3ecba9544bc5f404955d5b12077be0263858a0c06"
+    },
+    "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119": {
+      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
+      "sourceTree": {
+        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
+        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
+        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0623727be9c6dba830a57f9579d19538a4d0a17346309f3b3fa63aa546adac37"
+      },
+      "packageSha256": "6a3a55592331bdb4b35700597b32b3cba84efc2dd4cdc2f1cc36289a03932dd4",
+      "environment": "Local authenticated EasyWork Electron / EWDAP independent device / iOS26 Simulator with real production app; actual source and binary pins retained privately",
+      "mobileEnvironment": "simulator",
+      "path": ".local/subagent-easywork-restore-20261119/main-acceptance-review.json",
+      "sha256": "8f38de07dec4424b6c1539e9dca2965c428efa8615be5f55d20ca94a834a8bf4",
+      "kind": "real-dev",
+      "scope": "Official native1/0/0: real original child task, two reasoning entries, tool call/result, rendered Markdown, close/reopen, exact parent target and unsent marker draft preservation/restoration. One new controlled parent input/one child only, official API equals readonly DB decoded payload, no replay. Actual child easyai/Qwen3.8-Flash; reasoning/speed unavailable. Real80-item page/wrong-target/failure/attachment GUI not tested; auxiliary boundaries separate. Main reviewed original official tool actions/log/summary/source hashes/screenshot, not successful re-extraction after xcresult cleanup."
+    },
+    "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119": {
+      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
+      "sourceTree": {
+        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
+        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
+        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0623727be9c6dba830a57f9579d19538a4d0a17346309f3b3fa63aa546adac37"
+      },
+      "packageSha256": "6a3a55592331bdb4b35700597b32b3cba84efc2dd4cdc2f1cc36289a03932dd4",
+      "environment": "Local authenticated EasyWork Electron / EWDAP independent device / iOS26 Simulator with real production app; actual source and binary pins retained privately",
+      "mobileEnvironment": "simulator",
+      "path": ".local/subagent-easywork-restore-20261119/main-acceptance-review.json",
+      "sha256": "8f38de07dec4424b6c1539e9dca2965c428efa8615be5f55d20ca94a834a8bf4",
+      "kind": "auxiliary-check",
+      "scope": "Same production binary8/0/0 synthetic native GUI: subagent detail lifecycle/tool group/copy menu3, recording waveform/draft/status tap-stop and failed-no-retry4, quota remaining/countdown1. No physical microphone/ASR, real quota/Git page or Android claim. Original failures retained; final unchanged production binary matches real acceptance."
+    },
+    "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
+      "packageSha256": "not-deployed-standard-build",
+      "environment": "Node24.22.3 pnpm11.19 Java17 Xcode27; independent Gitea-main delivery worktree",
+      "mobileEnvironment": "not-required",
+      "scope": "Full pnpm check exit0/1448.78s and pnpm build:ios exit0/118.53s. Production/package lock/native harness unchanged during full check; final real GUI driver and metadata changes recorded, final format/lint/parity/ledger recheck required before commit. Build72 inputs unchanged. Current Foundation child paging/identity/readonly, Codex Git4 requests and13sheet guard pass; no CI or formal installation claim.",
+      "path": ".local/subagent-easywork-restore-20261119/check/full-v4z3c2fx/summary.json",
+      "sha256": "7421d9860c0dcea08b3ef155a59aaeb0f689ce3441f2ee65588dc10514adb3fc",
+      "sourceTree": {
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
+        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
+        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
+        "scripts/mobile/easywork-subagent-history-native.mjs": "9f71e9be1747ca266f04550a29e97f60c246393f971a8e57548e617bcf804c9d",
+        "scripts/mobile/easywork-subagent-history-native.swift": "c992eb529343f852cae986e8d88d098f7d780130db0189748501534c14554389"
+      },
+      "standardBuildEvidence": {
+        "path": ".local/subagent-easywork-restore-20261119/check/full-v4z3c2fx/build-ios-summary.json",
+        "sha256": "c9234e4fa6b10180c8be2b17cb646df846a043d8dbb7fba320158da0aef543b7",
+        "seconds": 118.53
+      }
+    },
     "F44-F48-KNOWN-FAILURE-REPAIR-NOT-IN-MAIN-SOURCE-REVIEW-R299": {
       "kind": "auxiliary-check",
       "sourceCommit": "95f55975b8c4ab972647862ecee43fc003f01dc6",
@@ -13475,39 +13599,6 @@
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f12-empty-extraction-directory-final-cleanup.json",
       "sha256": "5702502a17fac3d7b45b36307111c309fb8814c3bd74fd6c55a604f0e0ae1b00"
     },
-    "RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302": {
-      "kind": "auxiliary-check",
-      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
-      "sourceTree": {
-        "apps/ios/Sources/AgentClient.swift": "e676e1e3a6fed6a7b2bbdae9968b2469958e9f7c65536f6cb52a9a71d3c21b83",
-        "apps/ios/Sources/RootView.swift": "8c80f9a893ed69750b6d2edb8f93e4ba7b9d01720b5142eda821ceef09a7c178",
-        "apps/ios/Sources/SessionStore.swift": "0a6879d7d36dd4594a9c05be1dc9a882437bcb7af406c8e7dfef53f126ad2479",
-        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
-        "apps/ios/Sources/UsageViews.swift": "0337c355decf16f81f56ec426d51c74e55a2a9143019a2d82d63072f889a9041",
-        "apps/ios/Sources/VoiceInput.swift": "bbdd0e100bfdbfbd93b916824eea9861aaa45f6fad9f1588bd45a276398b82e0",
-        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "8cc47aea9cf04da407b19f26e4affefa3d10ef8910184f8719e882dfac5db8c0",
-        "apps/ios/Tests/UsageUITests.swift": "0d694d95b512e5aa52d756f58559f129f72799d065aead541a53b68b71c8eb9a",
-        "apps/ios/Tests/VoiceLifecycleUITests.swift": "90ff3f60683330ba1385da382d89b91f058895506106e4c9eb216b264ea865c3",
-        "packages/codex-adapter/src/desktop-ipc.ts": "55283371523cab03555e0e77c5f7377faf6c335be008d74c70cffa0dba264e25",
-        "packages/codex-adapter/src/runtime.ts": "018f95133ae3664d9562d2b78e0150a3e94544dcda61c9fc319256010a5c6399",
-        "packages/codex-adapter/src/subagents.ts": "3b6bcda16827868fc9f60588a842f9f7fa1ecfefb6c9791408717650b0fb92db",
-        "scripts/subagents.test.mjs": "26095500beb1e68250e7dd15b3b9a39b994e909265db410502e750967a03dbbe",
-        "scripts/mobile/native-ios-cases.mjs": "e45eb7b9fa6ae4ec52f4d1b7c53e5b9e565152771e588097384b0fd8d8020007",
-        "scripts/mobile/ios-baseline.mjs": "e97afa77339a00360cca52494a68f85756fd3a2ecda26ce6424fa2ac904eba7b",
-        "scripts/subagent-reading-ios-fixture.mjs": "2893efd489c584ac20204110968ce41fa0c6c3b44a785085fc06633658ab7811",
-        "scripts/voice-tap-stop-ios-fixture.mjs": "e33247834808656b85a4e7af20d3f77629eac739079289158d54619dbd58df15",
-        "scripts/usage-details-ios-fixture.mjs": "57300dddaee9a878b83ae5bcc2db3c9f7a0ce6a6c0659768314424075ab1a73a",
-        "scripts/mobile/codex-project-git-native-smoke.mjs": "9736f5847118281e20e1f98b90e856c02da18253689c05ef7076c6a5a16150ac",
-        "scripts/mobile/check-ios-sheet-routes.mjs": "bd985ca112f469a2707759f01000675e68c6a930bd5f935a2b5ff9e4014db8a2",
-        "apps/ios/Resources/Assets.xcassets/StartupLogo.imageset/Contents.json": "f3adfa84be935246a68e1e33bc2ab1194a78908b5240f856ba64a8b4a75c56cc"
-      },
-      "packageSha256": "b1d6f21760bd90df5e5330d3e2ba4994d3aa4ba791fac74f382c49f8d6eeb1a7",
-      "environment": "Local Xcode27 / iOS26 native simulator; current original Codex read-only runtime checked separately; no official deployment",
-      "mobileEnvironment": "simulator",
-      "scope": "Release114/mainline regression source repair. Initial native six: five pass, usage blank-sheet failure retained. Unique generic sheet route repair: usage countdown/remaining and native copy-menu two pass. Prior five reused only for unchanged component/scenario scopes, not seven cases on one final binary. Adapter18 boundary tests pass; independent real saved command/id/run/output/exit match current12 source-dist pins; official metadata lacks title. No new EasyWork actual-source/model or Android/physical microphone/ASR/Git-page acceptance. Prior EasyWork386 and other accepted candidates retain their original scope; F75/A6 pause unchanged.",
-      "path": ".local/subagent-ui-regression-20261119/scoped-validation.json",
-      "sha256": "6d0f6c4af9bf80d7c983c86bb1ea2f3e4c6f63186fdf45e76c2da0c54483d553"
-    },
     "F48-REAL-STOPPED-CAPTION-MISSING-AND-DRAFT-RESTORED-R303": {
       "kind": "real-dev",
       "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
@@ -13538,26 +13629,6 @@
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/r298-actual-main-four-docs-and-cleanup-final-root-review.json",
       "sha256": "ff572d38cc0d83067d1e194c34530385619cce31843d2a5f6dc857cd5ddc48ac"
     },
-    "RELEASED-REGRESSION-ISOLATED-FULL-CHECK-AND-CLEANUP-R304": {
-      "kind": "auxiliary-check",
-      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
-      "packageSha256": "not-built",
-      "environment": "Node24.22.3 / pnpm11.19 / Java17 / Darwin arm64; isolated local exact repair clone over main baseline; no shared WIP or CI claim",
-      "mobileEnvironment": "not-required",
-      "scope": "Full pnpm check exit0 in900.52s; Git dynamic protocol4 requests and13unique sheet route guard pass. Initial missing dist/JAVA_HOME and test umask077 failures retained and recovered without test/production semantic changes. All production/script input hashes match; later documentation/ledger additions separate. Temporary clone/dependencies/download remnants/owned Gradle and simulator removed; five helper threads officially archived and independently verified. No formal deployment or whole-platform new acceptance.",
-      "path": ".local/subagent-ui-regression-20261119/isolated-check/execution-summary.txt",
-      "sha256": "36d40d0e5b5400dde21456fe66683ec4e0bdedc7a63b67bea2a221964936bff0"
-    },
-    "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304": {
-      "kind": "auxiliary-check",
-      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
-      "packageSha256": "not-built",
-      "environment": "Release114 frozen source versus current local EasyWorkAgentClient and AgentClient defaults; static source review",
-      "mobileEnvironment": "not-required",
-      "scope": "114 EasyWork provider has complete subagentHistory; current provider lacks the override and inherits unsupported default. Legacy summary fallback remains. Old114 record explicitly excluded new actual EasyWork full-UI pass; current gap is un-restored and not marked accepted. Original F20 remains open for provider adaptation and real existing child Run verification without input replay or unrequested remote coordination.",
-      "path": ".local/subagent-ui-regression-20261119/risk-registry.json",
-      "sha256": "9110eab29dadb613bf7b678caccc34c8e981af26cbd11387993f2128132acd52"
-    },
     "F48-NEW-CAPTION-NATIVE-ZERO-INPUT-BINDING-AND-ROOT-REVIEW-R305": {
       "kind": "real-dev",
       "sourceCommit": "bc6a19fad7922183fd7b8c7bc69ee815dd9b41b6",
@@ -13568,15 +13639,33 @@
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f48-new-caption-native-result-binding-source-root-review.json",
       "sha256": "ab66a705030f545e40b419c8dd837e62e46cdef48f9dfc0c27ef8c3cb8b375ea"
     },
-    "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306": {
-      "kind": "auxiliary-check",
-      "sourceCommit": "834ef865be3b9f6f0d13544b4228a079981e8cd3",
-      "packageSha256": "not-built-new-child-provider",
-      "environment": "Current merged candidate provider versus old963 source; actual N17 owned legacy children read-only metadata, no new GUI/model",
+    "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119": {
+      "kind": "exact-match-review",
+      "sourceCommit": "9becc0d7407a46b3f10dbc2ec180c53ba08e6e17",
+      "packageSha256": "not-built-combination-yet",
+      "environment": "Normal merge of actual Gitea PR206 main into bfea56d repair branch; main semantic review",
       "mobileEnvironment": "not-required",
-      "scope": "当前EasyWork provider没有subagentHistory覆盖而旧963有。真实既有两个child各completed但没有checkpoint.subagentTranscript，仅input/result；恢复旧fallback不等于补齐缺失的中间过程。Desktop当前主线存在transcript持久实现/测试文件，仍需按实际协议与运行包核对适配和完整原生读取。仅明确待开发功能，不新增通过。",
-      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f20-provider-gap-and-existing-legacy-child-transcript-source-followup.json",
-      "sha256": "adaffce7ca62d5fae7397dd3ecba9544bc5f404955d5b12077be0263858a0c06"
+      "scope": "Preserve actual-main known failed receipt normalization and stopped RuntimePanel caption. Child select/page, parent-child projection/provider, shared renderer, Codex Git, usage and voice components byte-identical to accepted repair. Reuse real child evidence only within unchanged components; current combined boundary/native/CI pending. Ledger/manifest merge by IDs and evidence, not one-sided overwrite.",
+      "path": ".local/subagent-easywork-restore-20261119/integration-source-equivalence.json",
+      "sha256": "1b7b39c9f67e98177d8d7a206c2efd98827530d57c80b43cc7f7a8cd1d53eb00",
+      "originalEvidenceRefs": [
+        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119",
+        "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119"
+      ]
+    },
+    "F20-LEGACY-NULL-TRANSCRIPT-COMPATIBILITY-RED-GREEN-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "bfea56d13d1662d35fff64cc154d0fdea68533b3",
+      "packageSha256": "not-built-null-compatibility-yet",
+      "environment": "Production Swift extraction/Foundation on local Xcode; actual accepted canonical source shape separately checked",
+      "mobileEnvironment": "not-required",
+      "scope": "Red current helper rejects optional NSNull messages; green one-line null-as-absent restores114 saved-result fallback. Non-null malformed messages still rejected; lineage/cursor unchanged. Actual real accepted sample has messages absent, identical guard-short-circuit/read path; no new actual GUI/model, not whole-file equality. Final build/CI follows.",
+      "path": ".local/subagent-easywork-restore-20261119/legacy-null-compatibility-review.json",
+      "sha256": "5222e364914d07b1382a684ed51106aed58209dc8634c0504be09ffc70f3c1b4",
+      "sourceTree": {
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "ae65e5e6724033ef350a2078a7ad233bf2557e1eb744fb1be84fb7d94f3ad2d1",
+        "scripts/mobile/easywork-subagent-history-native.swift": "6d551532a102422cc7dc4d901d0e34dafd35e12bd27c049977ffa87bbff4dc62"
+      }
     },
     "F05-ORDINARY-OFFLINE-CACHE-DRAFT-RECOVERY-PARTIAL-AND-WAIT-AMBIGUITY-R307": {
       "kind": "real-dev",
@@ -13618,40 +13707,6 @@
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f05-candidate-independent-source-zip-root-review.json",
       "sha256": "8eecd94a32b0456583c256d9da4666df83066747bfaf63487e55845e6d580748"
     },
-    "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119": {
-      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
-      "sourceTree": {
-        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
-        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
-        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
-        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
-        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0623727be9c6dba830a57f9579d19538a4d0a17346309f3b3fa63aa546adac37"
-      },
-      "packageSha256": "6a3a55592331bdb4b35700597b32b3cba84efc2dd4cdc2f1cc36289a03932dd4",
-      "environment": "Local authenticated EasyWork Electron / EWDAP independent device / iOS26 Simulator with real production app; actual source and binary pins retained privately",
-      "mobileEnvironment": "simulator",
-      "path": ".local/subagent-easywork-restore-20261119/main-acceptance-review.json",
-      "sha256": "8f38de07dec4424b6c1539e9dca2965c428efa8615be5f55d20ca94a834a8bf4",
-      "kind": "real-dev",
-      "scope": "Official native1/0/0: real original child task, two reasoning entries, tool call/result, rendered Markdown, close/reopen, exact parent target and unsent marker draft preservation/restoration. One new controlled parent input/one child only, official API equals readonly DB decoded payload, no replay. Actual child easyai/Qwen3.8-Flash; reasoning/speed unavailable. Real80-item page/wrong-target/failure/attachment GUI not tested; auxiliary boundaries separate. Main reviewed original official tool actions/log/summary/source hashes/screenshot, not successful re-extraction after xcresult cleanup."
-    },
-    "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119": {
-      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
-      "sourceTree": {
-        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
-        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
-        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
-        "apps/ios/Sources/SubagentHistory.swift": "6cc8a50efd37401420f90444bfe4cb12028906af980a1b50a80374269d7ea5ae",
-        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0623727be9c6dba830a57f9579d19538a4d0a17346309f3b3fa63aa546adac37"
-      },
-      "packageSha256": "6a3a55592331bdb4b35700597b32b3cba84efc2dd4cdc2f1cc36289a03932dd4",
-      "environment": "Local authenticated EasyWork Electron / EWDAP independent device / iOS26 Simulator with real production app; actual source and binary pins retained privately",
-      "mobileEnvironment": "simulator",
-      "path": ".local/subagent-easywork-restore-20261119/main-acceptance-review.json",
-      "sha256": "8f38de07dec4424b6c1539e9dca2965c428efa8615be5f55d20ca94a834a8bf4",
-      "kind": "auxiliary-check",
-      "scope": "Same production binary8/0/0 synthetic native GUI: subagent detail lifecycle/tool group/copy menu3, recording waveform/draft/status tap-stop and failed-no-retry4, quota remaining/countdown1. No physical microphone/ASR, real quota/Git page or Android claim. Original failures retained; final unchanged production binary matches real acceptance."
-    },
     "SHARED-DEV-REAL-OWNER-F20-ACCEPTED-SCOPE-AND-F05-OWN-PATH-R310": {
       "kind": "auxiliary-check",
       "sourceCommit": "834ef865be3b9f6f0d13544b4228a079981e8cd3",
@@ -13661,42 +13716,6 @@
       "scope": "只读资源ID匹配确认新增4400/7023和真实受控父子样本属于既有本机Thread01a1f225。R309该负责人已登记官方1/0/0完整子历史和同包8/0/0，两个注册SHA与现存审查JSON相符，交付仍待Gitea；本协调不重复输入。result.content可保存完整过程，checkpoint空不等于过程丢失。F05原LAN补验预检未安装/执行官方case；改仅720正常连接偏好造成无可用通道，之后恢复automatic真实直连，不关闭共享服务或动他人绑定/桌面。",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f05-shared-dev-existing-owner-and-isolated-route-scope-review.json",
       "sha256": "f731e8ba6c5b1afb4731ee4da0e891cd6780053a49d9bb4f177b58adafd06f18"
-    },
-    "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119": {
-      "kind": "auxiliary-check",
-      "sourceCommit": "87ae309e15abc6ccebaee8f8b7cfcff2a95c6ea4",
-      "packageSha256": "not-deployed-standard-build",
-      "environment": "Node24.22.3 pnpm11.19 Java17 Xcode27; independent Gitea-main delivery worktree",
-      "mobileEnvironment": "not-required",
-      "scope": "Full pnpm check exit0/1448.78s and pnpm build:ios exit0/118.53s. Production/package lock/native harness unchanged during full check; final real GUI driver and metadata changes recorded, final format/lint/parity/ledger recheck required before commit. Build72 inputs unchanged. Current Foundation child paging/identity/readonly, Codex Git4 requests and13sheet guard pass; no CI or formal installation claim.",
-      "path": ".local/subagent-easywork-restore-20261119/check/full-v4z3c2fx/summary.json",
-      "sha256": "7421d9860c0dcea08b3ef155a59aaeb0f689ce3441f2ee65588dc10514adb3fc",
-      "sourceTree": {
-        "apps/ios/Sources/EasyWorkAgentClient.swift": "d177c57f54677b90075eaf959bb7ade15774abde8ac61c8ed4a1bbdd3a9e69a1",
-        "apps/ios/Sources/AgentClient.swift": "4942ccf348e106fb3b76a7da4bd41bf9a25f964a11b5188cdae11fd8250ba09d",
-        "apps/ios/Sources/SessionStore.swift": "fb7f22a13ec7b02a115b28dc06048b8fabd048dcc687f0033974c0e88e0ccc1b",
-        "scripts/mobile/easywork-subagent-history-native.mjs": "9f71e9be1747ca266f04550a29e97f60c246393f971a8e57548e617bcf804c9d",
-        "scripts/mobile/easywork-subagent-history-native.swift": "c992eb529343f852cae986e8d88d098f7d780130db0189748501534c14554389"
-      },
-      "standardBuildEvidence": {
-        "path": ".local/subagent-easywork-restore-20261119/check/full-v4z3c2fx/build-ios-summary.json",
-        "sha256": "c9234e4fa6b10180c8be2b17cb646df846a043d8dbb7fba320158da0aef543b7",
-        "seconds": 118.53
-      }
-    },
-    "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119": {
-      "kind": "exact-match-review",
-      "sourceCommit": "9becc0d7407a46b3f10dbc2ec180c53ba08e6e17",
-      "packageSha256": "not-built-combination-yet",
-      "environment": "Normal merge of actual Gitea PR206 main into bfea56d repair branch; main semantic review",
-      "mobileEnvironment": "not-required",
-      "scope": "Preserve actual-main known failed receipt normalization and stopped RuntimePanel caption. Child select/page, parent-child projection/provider, shared renderer, Codex Git, usage and voice components byte-identical to accepted repair. Reuse real child evidence only within unchanged components; current combined boundary/native/CI pending. Ledger/manifest merge by IDs and evidence, not one-sided overwrite.",
-      "path": ".local/subagent-easywork-restore-20261119/integration-source-equivalence.json",
-      "sha256": "1b7b39c9f67e98177d8d7a206c2efd98827530d57c80b43cc7f7a8cd1d53eb00",
-      "originalEvidenceRefs": [
-        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119",
-        "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119"
-      ]
     },
     "F48-PR206-ACTUAL-MAIN-SOURCE-AND-FINAL-CLEANUP-ROOT-R313": {
       "kind": "exact-match-review",
@@ -13717,6 +13736,90 @@
       "scope": "F05普通不可达/缓存/草稿/恢复具体功能限定通过：旧真实LAN关开已验缓存和草稿恢复，缺失败进度呈现已修。新808/SessionStore3906在原720仅中继不可用路径，首采样24.713秒已失败/缓存，后约22秒仍该状态；缓存原回复和两文件名、未发草稿与恢复直连/发送手势、清回空稿/末端均已核。两官方各1/0，状态/附件/入口为Root人工核真实日志，非额外XCTest断言。不是同包新桌面LAN关闭/runtime未就绪、精确网络timeout/连续帧或Codex/Android全验。A34/60/4逐行hash不变、原731完成/9631active，0新输入。",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f05-combined-ordinary-source-match-and-native-scope-root-review.json",
       "sha256": "94d45ca169aa05c5a54d2866538c3aa869fda9aa5f2947dac7aed4fc92365fa4"
+    },
+    "F20-RESTORE-GITEA-PR208-OPEN-CI-PENDING-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "65d1e6d3338ce912c22b9305a18310ca9ed34520",
+      "packageSha256": "not-deployed-gitea-pr-candidate",
+      "environment": "Authenticated primary Gitea API; exact source branch independently verified",
+      "mobileEnvironment": "not-required",
+      "scope": "Actual PR208 open, main9becc0d base,65d1e6d head. Original39 and integration15 blobs/parents match reviewed scopes. Final null boundary, format/lint/parity/ledger and fresh standard iOS build passed. Two formal CI jobs pending; not merged or deployed.",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/073555281423-pr.json",
+      "sha256": "c25b561c118629fe201717c022b6c60aa0144db9817ea974a11ac1baae2ce1ce"
+    },
+    "PR208-FIRST-CI-NATIVE-GROUP-FAILURE-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "65d1e6d3338ce912c22b9305a18310ca9ed34520",
+      "packageSha256": "ci-build-not-deployed",
+      "environment": "Actual Gitea run12844, workspace29954 and iOS29955",
+      "mobileEnvironment": "simulator",
+      "scope": "Workspace full CI passed; iOS app build and native boundaries passed; first default baseline subagents group failed. Original log exposes only outer assertion and job directory was cleaned, so product/test/environment cause not yet established. Strict conditions retained; bounded official-case diagnostics and owned local wrapper reproduction in progress. No merge, no new product pass.",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/first-ci-failure.json",
+      "sha256": "60879fb2e46a18128520b259da6f0930872c3aed2c3f5d14fccbd21e87332c46"
+    },
+    "SUBAGENTS-DEFAULT-WRAPPER-LOCAL-THREE-PASS-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f4ecca5541a0f977e965f12b108839f5639f0c1",
+      "packageSha256": "not-deployed-local-default-wrapper",
+      "environment": "Owned iPhone16ProMax/iOS26 Simulator; actual default native baseline wrapper, independent main xcresult extraction",
+      "mobileEnvironment": "simulator",
+      "scope": "Default subagents wrapper and merged official summary3/3 pass, zero failures/skips/expected failures,615.83s. Startup logging version differs only diagnostic text; all production/TestCase sources unchanged. This does not reproduce or explain original Gitea failure; formal diagnostic CI12847 pending. Owned simulator/build/private Gradle retired, official proof retained.",
+      "path": ".local/subagent-easywork-restore-20261119/main-local-wrapper-summary.json",
+      "sha256": "9480902739e1c291b6d409e3971b752b21d55f330262bc79f8a329a0ab8f27d7"
+    },
+    "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119": {
+      "kind": "exact-match-review",
+      "sourceCommit": "4825e1536e287e6adf5873b178b8e29a53798ccd",
+      "packageSha256": "not-built-pr207-combination",
+      "environment": "Main reviewed normal merge of actual PR207 main into diagnostic1f4 branch",
+      "mobileEnvironment": "not-required",
+      "scope": "Preserve12 SessionStore offline failed/waiting state lines. Child capability getter and fixture initializer byte-identical; provider/renderer unchanged. Demo target returns before changed connection-label branch and cannot be connecting. Reuse prior local wrapper only on matching paths; combined compile/CI separately required.",
+      "path": ".local/subagent-easywork-restore-20261119/integration-pr207-review.json",
+      "sha256": "cadfe3440e4bdf2469195d859f6748ecdcad70f87e4070467e2232c453ab8ee9",
+      "originalEvidenceRefs": [
+        "SUBAGENTS-DEFAULT-WRAPPER-LOCAL-THREE-PASS-20261119",
+        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119"
+      ]
+    },
+    "PR208-FINAL-COMBINATION12854-VOICE-GROUP-TIMEOUT-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "0e917a3a421b2a1eec74455df2747d74e6c8af17",
+      "packageSha256": "ci-build-not-deployed",
+      "environment": "Actual Gitea run12854 workspace29967 success and iOS29968 outer-step timeout",
+      "mobileEnvironment": "simulator",
+      "scope": "Gitea精确0e组合的CI12854：workspace通过，iOS编译/边界和subagents三项通过，进入voiceTap后无逐例日志并在30分钟外层截止被终止。保留原失败，不推断业务根因。补逐阶段实时进度、每例xcodebuild墙钟截止和自有进程组收尾、持续index及失败后有界日志导出，原产品/断言和无跳过门槛不变；独立Terra正在复测录音4项，PR208保持未合并。",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/ci12854-timeout.json",
+      "sha256": "59ee457edd3167f8ad67b1b7306f924112bf6861aadbdb5606659686cb832a1c"
+    },
+    "PR208-DIAGNOSTIC-CI12847-EIGHT-UI-AND-WORKSPACE-PASS-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f4ecca5541a0f977e965f12b108839f5639f0c1",
+      "packageSha256": "ci-simulator-not-deployed",
+      "environment": "Actual primary Gitea run12847 workspace29959/iOS29960; main inspected official job log counts",
+      "mobileEnvironment": "simulator",
+      "scope": "Both CI jobs success, iOS build/native boundaries success, subagents3/voiceTap4/usageDetails1 all passed zero skips. Product/TestCase/pass conditions unchanged from original CI65d; only bounded diagnostics and factual records changed. Original failure cause cannot be established from preserved outer log and was not reproduced locally. New actual-main207 combination0e separately awaits CI12854.",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/ci12847-success.json",
+      "sha256": "0104c062db538561d6f16884d3b143ee87fc420f4ff09334f12e3516b5753630"
+    },
+    "VOICE-TAP-BOUNDED-DEFAULT-WRAPPER-LOCAL-FOUR-PASS-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6d84d0df481b6e207acd16b736c96b4734966475",
+      "packageSha256": "local-simulator-not-deployed",
+      "environment": "Owned iOS26 Simulator default wrapper, official XCTest4/0/0 independently extracted by main",
+      "mobileEnvironment": "simulator",
+      "scope": "本机默认voiceTap wrapper已实际4/0/0、零跳过，主会话独立提取官方xcresult确认；619.73秒含冷Gradle依赖HTTP等待，未改生产、原用例或通过门槛。13文件提交6d84d0df及远端SHA已核。期间实际主线合入PR209/3301886a，PR208需整合：正常保留Codex绝对请求/连接预算及其原生回归，EasyWork非Codex预算不变；9个已验子历史/共用呈现/录音/额度测试与runner关键文件逐字节相同。文档双方范围和manifest按ID合并，无单侧覆盖；当前组合检查/构建和最终精确CI待执行，尚未合并PR208。",
+      "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/main-local-voice4-review.json",
+      "sha256": "6d1b2c2bdea6d185599ce32e82f200b346960a886bb3a44d134a28b3962c5da4"
+    },
+    "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6d84d0df481b6e207acd16b736c96b4734966475",
+      "packageSha256": "local-simulator-not-deployed",
+      "environment": "Actual main3301886a PR209 preserved in current integration; exact-source review, build/CI pending",
+      "mobileEnvironment": "not-required",
+      "scope": "本机默认voiceTap wrapper已实际4/0/0、零跳过，主会话独立提取官方xcresult确认；619.73秒含冷Gradle依赖HTTP等待，未改生产、原用例或通过门槛。13文件提交6d84d0df及远端SHA已核。期间实际主线合入PR209/3301886a，PR208需整合：正常保留Codex绝对请求/连接预算及其原生回归，EasyWork非Codex预算不变；9个已验子历史/共用呈现/录音/额度测试与runner关键文件逐字节相同。文档双方范围和manifest按ID合并，无单侧覆盖；当前组合检查/构建和最终精确CI待执行，尚未合并PR208。",
+      "path": ".local/subagent-easywork-restore-20261119/integration-pr209-source-review.json",
+      "sha256": "34b9362da26f7b38ee2ff0f600cc6bc52dd271ccbdc5dcdc53efdb103004d006"
     }
   },
   "openItems": [
@@ -21862,6 +21965,82 @@
         "F48-PR206-ACTUAL-MAIN-SOURCE-AND-FINAL-CLEANUP-ROOT-R313",
         "F05-NEW-NATIVE-UNAVAILABLE-PATH-CACHE-DRAFT-RECOVERY-COMBINED-ROOT-R313"
       ]
+    },
+    {
+      "revision": 314,
+      "date": "2026-11-19",
+      "kind": "preserve114-nullable-child-transcript-before-main-delivery",
+      "scope": "末轮兼容审查补nullable旧record：恢复候选显式null messages原会invalidResponse，生产红测复现后仅将null按缺省继续result/content，错误非null类型继续拒绝，正负回归通过。原真实样本无messages字段，实际执行路径相同，按该输入路径复用原1/0/0，不冒称补跑完整新包；最终构建/CI随后。0新模型/整父项通过。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F20-LEGACY-NULL-TRANSCRIPT-COMPATIBILITY-RED-GREEN-20261119"]
+    },
+    {
+      "revision": 315,
+      "date": "2026-11-19",
+      "kind": "restored-child-history-pr208-open-final-local-build-pass-ci-pending",
+      "scope": "PR208 open at reviewed65d/main9be. Main verified two parents and exact15 integration blobs; final null boundary/checks/fresh standard iOS build passed. Formal workspace and iOS CI pending. Main owns CI, merge and worktree cleanup; Terra retains explicit follow-up merge-fact documentation commit responsibility. No new whole-feature or model pass.",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F20-RESTORE-GITEA-PR208-OPEN-CI-PENDING-20261119"]
+    },
+    {
+      "revision": 317,
+      "date": "2026-11-19",
+      "kind": "pr208-native-ci-group-failure-held-for-diagnosis",
+      "scope": "PR208 first formal workspace passed and iOS build/native boundary passed, but actual default subagents group failed. Hold merge. Main adds bounded failure diagnostics without changing expectations; Terra reproduces the same default wrapper in a new owned Simulator. Original failure preserved, no unverified product cause or whole-feature pass claimed.",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["PR208-FIRST-CI-NATIVE-GROUP-FAILURE-20261119"]
+    },
+    {
+      "revision": 318,
+      "date": "2026-11-19",
+      "kind": "default-wrapper-three-pass-and-actual-pr207-main-preserved-before-final-ci",
+      "scope": "Main independently extracted retained default wrapper official3/0/0; original CI failure still unexplained and diagnostic12847 pending. Actual PR207/main4825 moved during wait: normal merge preserves12 offline-state lines, child getter/fixture/provider/renderer unchanged; scope and metadata reconciled by IDs/evidence. No one-sided overwrite or production expectation change; current combination build/CI follows.",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "SUBAGENTS-DEFAULT-WRAPPER-LOCAL-THREE-PASS-20261119",
+        "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
+      ]
+    },
+    {
+      "revision": 319,
+      "date": "2026-11-19",
+      "kind": "formal-ci-eight-ui-protection-validated-and-final-main207-combination-pushed",
+      "scope": "Official diagnostic1f4 CI12847 both jobs success; main independently verified3/4/1 zero-skip log counts. No product or expectation change was used to obtain this pass. Original first failure remains unclassified and retained. Normal actual-main207 combination0e was built/checked and pushed, two parents11 blobs verified; final exact-head12854 CI running. No new functional/model pass and no PR merge yet.",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["PR208-DIAGNOSTIC-CI12847-EIGHT-UI-AND-WORKSPACE-PASS-20261119"]
+    },
+    {
+      "revision": 322,
+      "date": "2026-11-19",
+      "kind": "pr208-final-combination-native-runner-timeout-held-before-merge",
+      "scope": "Gitea精确0e组合的CI12854：workspace通过，iOS编译/边界和subagents三项通过，进入voiceTap后无逐例日志并在30分钟外层截止被终止。保留原失败，不推断业务根因。补逐阶段实时进度、每例xcodebuild墙钟截止和自有进程组收尾、持续index及失败后有界日志导出，原产品/断言和无跳过门槛不变；独立Terra正在复测录音4项，PR208保持未合并。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["PR208-FINAL-COMBINATION12854-VOICE-GROUP-TIMEOUT-20261119"]
+    },
+    {
+      "revision": 324,
+      "date": "2026-11-19",
+      "kind": "bounded-native-voice-four-pass-and-main209-preserved-before-final-ci",
+      "scope": "本机默认voiceTap wrapper已实际4/0/0、零跳过，主会话独立提取官方xcresult确认；619.73秒含冷Gradle依赖HTTP等待，未改生产、原用例或通过门槛。13文件提交6d84d0df及远端SHA已核。期间实际主线合入PR209/3301886a，PR208需整合：正常保留Codex绝对请求/连接预算及其原生回归，EasyWork非Codex预算不变；9个已验子历史/共用呈现/录音/额度测试与runner关键文件逐字节相同。文档双方范围和manifest按ID合并，无单侧覆盖；当前组合检查/构建和最终精确CI待执行，尚未合并PR208。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "VOICE-TAP-BOUNDED-DEFAULT-WRAPPER-LOCAL-FOUR-PASS-20261119",
+        "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -29384,30 +29563,6 @@
       }
     },
     {
-      "id": "F20-child-history",
-      "featureIds": ["F20"],
-      "phase": "extensions",
-      "behavior": "点开 EasyWork 子 Agent 阅读完整过程",
-      "acceptanceCriteria": "专用Provider按完整目标、父聊天、原消息及child Run身份读取；真实持久完整消息/工具过程可分页阅读，返回父聊天后草稿和位置保持。旧记录仅有摘要时明确保留摘要范围，不冒称完整过程。",
-      "state": "passed-awaiting-merge",
-      "owner": "本机Thread01a1f225-72c4-7d72-94bf-4c1073bb3c7e负责交付；本协调复核唯一台账",
-      "acceptanceBasis": "current-real-dev-scoped",
-      "evidenceRefs": [
-        "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304",
-        "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306",
-        "F20-ACTUAL-MASTER-TRANSCRIPT-INPUT-SCOPE-DISAMBIGUATION-R307",
-        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119",
-        "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119",
-        "SHARED-DEV-REAL-OWNER-F20-ACCEPTED-SCOPE-AND-F05-OWN-PATH-R310",
-        "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119",
-        "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119"
-      ],
-      "pullRequests": [],
-      "nextAction": "按已核字节等价范围复用原真实子历史通过；补测含PR206的组合，提交正常集成merge并在Gitea main目标开PR，等实际CI通过后合并。",
-      "updatedAt": "2026-11-19T07:19:11.585578+00:00",
-      "retainedAcceptanceBoundary": "本次真实1child含reasoning/tool/result/Markdown和父目标/草稿；173消息3页与错误目标/失败/附件为生产辅助边界，无真实80条页GUI新通过。"
-    },
-    {
       "id": "F28-desktop-open",
       "featureIds": ["F28"],
       "phase": "core",
@@ -30690,6 +30845,45 @@
       "pullRequests": [],
       "nextAction": "保持原关闭范围，核对应 PR 后只完成尚未交付的提交合并",
       "updatedAt": "2026-11-18T14:53:16.859236+00:00"
+    },
+    {
+      "id": "F20-child-history",
+      "featureIds": ["F20"],
+      "phase": "extensions",
+      "behavior": "点开 EasyWork 子 Agent 阅读完整过程",
+      "acceptanceCriteria": "专用Provider按完整目标、父聊天、原消息及child Run身份读取；真实持久完整消息/工具过程可分页阅读，返回父聊天后草稿和位置保持。旧记录仅有摘要时明确保留摘要范围，不冒称完整过程。",
+      "state": "passed-awaiting-merge",
+      "owner": "本次主会话（恢复/验收/主线交付）；其余F20沿原负责人",
+      "acceptanceBasis": "current-real-dev-scoped",
+      "evidenceRefs": [
+        "F20-EASYWORK-COMPLETE-CHILD-PROVIDER-SOURCE-GAP-R304",
+        "F20-EXPLICIT-FULL-CHILD-HISTORY-GAP-LEGACY-TRANSCRIPT-BOUNDARY-R306",
+        "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119",
+        "RELEASED-WORKFLOWS-SAME-BINARY-8-NATIVE-20261119",
+        "RELEASED-WORKFLOWS-FULL-CHECK-AND-STANDARD-IOS-BUILD-20261119",
+        "CHILD-HISTORY-PR206-MAIN-COMBINATION-EQUIVALENCE-20261119",
+        "F20-LEGACY-NULL-TRANSCRIPT-COMPATIBILITY-RED-GREEN-20261119",
+        "F20-ACTUAL-MASTER-TRANSCRIPT-INPUT-SCOPE-DISAMBIGUATION-R307",
+        "SHARED-DEV-REAL-OWNER-F20-ACCEPTED-SCOPE-AND-F05-OWN-PATH-R310",
+        "SUBAGENTS-DEFAULT-WRAPPER-LOCAL-THREE-PASS-20261119",
+        "PR207-OFFLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119",
+        "PR208-FINAL-COMBINATION12854-VOICE-GROUP-TIMEOUT-20261119",
+        "VOICE-TAP-BOUNDED-DEFAULT-WRAPPER-LOCAL-FOUR-PASS-20261119",
+        "PR209-CODEX-DEADLINE-MAIN-CHILD-RESTORE-COMBINATION-20261119"
+      ],
+      "pullRequests": [],
+      "nextAction": "Verify combined PR209 source/build and final exact-headCI, then normally merge PR208 and record actual merge facts; keep broaderF20 scope open.",
+      "updatedAt": "2026-11-19T09:40:23.280225+00:00",
+      "retainedAcceptanceBoundary": "本次真实1child含reasoning/tool/result/Markdown和父目标/草稿；173消息3页与错误目标/失败/附件为生产辅助边界，无真实80条页GUI新通过。",
+      "pendingPullRequest": {
+        "repository": "BCAI/agent-hub-app",
+        "number": 208,
+        "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/208",
+        "headCommit": "6d84d0df481b6e207acd16b736c96b4734966475",
+        "baseBranch": "main",
+        "ci": "12861-queued;current-main209-integration-required-before-finalCI",
+        "checkedAt": "2026-11-19T09:40:23.280225+00:00"
+      }
     }
   ],
   "mergedPullRequests": {

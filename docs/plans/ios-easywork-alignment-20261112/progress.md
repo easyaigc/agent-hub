@@ -1,6 +1,6 @@
 # 当前唯一进度总表
 
-> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 313，更新 2026-11-19T07:22:18.954944+00:00。台账 SHA-256：`668b7872776a6965aa815615aa820ccd669192579db4242e1908ac29e400bce7`。
+> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 324，更新 2026-11-19T09:40:23.280225+00:00。台账 SHA-256：`66217dd4e60bc1f355a7281bd139d842b7849291683b348472bf139f25b77a1f`。
 
 本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。
 
@@ -60,9 +60,9 @@ commit 是已有提交；tree 是隔离候选的内容快照，不表示已合�
 | 状态                 | 项数 |
 | -------------------- | ---- |
 | 共用维护，免重复验收 | 12   |
-| 待执行（未在进行）   | 35   |
+| 待执行（未在进行）   | 34   |
 | 范围外               | 8    |
-| 正在执行             | 5    |
+| 正在执行             | 6    |
 | 按范围关闭           | 14   |
 | 暂停/暂缓            | 1    |
 
@@ -401,14 +401,14 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 
 | 修订 | 日期       | 变化                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 306  | 2026-11-19 | R306：将R304已确认的EasyWork完整子历史缺口落实为独立F20-child-history具体待办，排在扩展阶段，普通工具/Diff已合状态保持。真实既有2child只有结果而无transcript，旧fallback恢复不能冒充完整过程。父75F/核心38不变，具体功能76项；0新增验收/模型。当前F48准确新包已过待主线交付，F05普通离线全链正在真实验收。                                                                                                                                                                     |
-| 307  | 2026-11-19 | R307：F05真实普通离线得缓存/草稿/重连保留子通过，整链不通过；暂态失败与重连spinner并存。40秒观察含中途重选，不断言单次请求超时。Root修前台失败呈现和后台刷新重置（SessionStore3906），新包构建/补验中，0模型；原现场恢复、runner清理。F48完整检查继续；补明F20实际master249440和检出651e4ef范围，具体76项/核心38保持。                                                                                                                                                         |
-| 308  | 2026-11-19 | R308：F48原失败/停止提示源PR206已创建，head834ef865准确13文件，完整pnpm check实际通过17分50.91秒，当前head CI12839待完成，未冒称已合。F05新提示候选构建127秒/arm64 SDK27通过，ZIP808dd9/exe0a8c与SessionStore3906独立核，parity/建议回归通过；构建产物已清，新包正在普通模拟器补验。0新增模型或验收闭合。                                                                                                                                                                      |
-| 309  | 2026-11-19 | 按用户追加要求恢复EasyWork完整子历史专用Provider、父子共用投影及严格目标/父子/分支/分页；实际同包8合成UI与真实1子Run1/0/0均通过，主核官方原执行/摘要/原文来源及指纹。checkpoint空不等于过程缺失，result.content原持久来源已核；新增一次受控父输入，实际Qwen子模型/推理速度未记录分列。默认回归与Gitea iOS CI接入8项及3边界；完整check及PR/main交付进行中，不关闭F20全矩阵或F75/A6暂停，不改并行其他任务。                                                                      |
-| 310  | 2026-11-19 | R310：保留并复核另一负责人刚追加的R309完整子历史真实/8项原生通过与待交付事实，F20-child-history由既有Thread01a1f225负责，不重复开发/模型。Root核新增4400绑定/7023与42ec子任务归属；F05最初补验仅预检退出，改由原720正常仅中继不可用路径补提示，不关共享LAN。当前自身新增输入0。前阶段旧F44专属缓存已持锁回收，共享缓存与并行现场保护。                                                                                                                                         |
-| 311  | 2026-11-19 | 本次隔离main候选完整pnpm check0/1448.78s及标准pnpm build:ios0/118.53s，实际生产/锁/原生边界检查源未变，GUI最终驱动与元数据变更单列并在提交前补format/lint/parity/台账校验。真实子历史1/0/0和同包8/0/0不扩为其他平台/场景/部署；测试聊天已正式归档、自己的设备授权撤销及模拟器/DerivedData清理，原3绑定/正式Electron保持。当前进入39文件精确提交/Gitea PR/CI阶段，不触碰并行WIP及暂停项。                                                                                       |
-| 312  | 2026-11-19 | 推送bfea56d后main前进到PR206/9becc0d。Root已正常合并，生产仅吸收原失败回执和停止文案，子历史/共用渲染组件逐段字节相等；复用证据严格按组件范围。冲突仅台账/manifest及生成视图，按ID合并双方事实并重建，补测组合后再PR，不强推、不回退新主线或吞并共享WIP。                                                                                                                                                                                                                      |
 | 313  | 2026-11-19 | R313：F48失败回执/明确停止提示已随PR206实际合入Gitea main9becc0d7，Root独立核ls-remote、祖先、整tree与2生产SHA；完整check与两CI最终成功，首次iOS启动超时原失败保留且只重试失败job。旧F44树/本地远端分支及独占缓存已实际清。F05新808包正常不可用路径/缓存附件名/草稿和恢复入口限定通过，Root重提两官方1/0及安装exe并人工核实际AX日志，旧LAN子范围按未变分类/传输复用；源待提交合并，0新模型。核心31/38已合，另F05通过待合，6项仍待继续；并行R309/R311子历史通过与交付归属保持。 |
+| 314  | 2026-11-19 | 末轮兼容审查补nullable旧record：恢复候选显式null messages原会invalidResponse，生产红测复现后仅将null按缺省继续result/content，错误非null类型继续拒绝，正负回归通过。原真实样本无messages字段，实际执行路径相同，按该输入路径复用原1/0/0，不冒称补跑完整新包；最终构建/CI随后。0新模型/整父项通过。                                                                                                                                                                             |
+| 315  | 2026-11-19 | PR208 open at reviewed65d/main9be. Main verified two parents and exact15 integration blobs; final null boundary/checks/fresh standard iOS build passed. Formal workspace and iOS CI pending. Main owns CI, merge and worktree cleanup; Terra retains explicit follow-up merge-fact documentation commit responsibility. No new whole-feature or model pass.                                                                                                                    |
+| 317  | 2026-11-19 | PR208 first formal workspace passed and iOS build/native boundary passed, but actual default subagents group failed. Hold merge. Main adds bounded failure diagnostics without changing expectations; Terra reproduces the same default wrapper in a new owned Simulator. Original failure preserved, no unverified product cause or whole-feature pass claimed.                                                                                                               |
+| 318  | 2026-11-19 | Main independently extracted retained default wrapper official3/0/0; original CI failure still unexplained and diagnostic12847 pending. Actual PR207/main4825 moved during wait: normal merge preserves12 offline-state lines, child getter/fixture/provider/renderer unchanged; scope and metadata reconciled by IDs/evidence. No one-sided overwrite or production expectation change; current combination build/CI follows.                                                 |
+| 319  | 2026-11-19 | Official diagnostic1f4 CI12847 both jobs success; main independently verified3/4/1 zero-skip log counts. No product or expectation change was used to obtain this pass. Original first failure remains unclassified and retained. Normal actual-main207 combination0e was built/checked and pushed, two parents11 blobs verified; final exact-head12854 CI running. No new functional/model pass and no PR merge yet.                                                          |
+| 322  | 2026-11-19 | Gitea精确0e组合的CI12854：workspace通过，iOS编译/边界和subagents三项通过，进入voiceTap后无逐例日志并在30分钟外层截止被终止。保留原失败，不推断业务根因。补逐阶段实时进度、每例xcodebuild墙钟截止和自有进程组收尾、持续index及失败后有界日志导出，原产品/断言和无跳过门槛不变；独立Terra正在复测录音4项，PR208保持未合并。                                                                                                                                                      |
+| 324  | 2026-11-19 | 本机默认voiceTap wrapper已实际4/0/0、零跳过，主会话独立提取官方xcresult确认；619.73秒含冷Gradle依赖HTTP等待，未改生产、原用例或通过门槛。13文件提交6d84d0df及远端SHA已核。期间实际主线合入PR209/3301886a，PR208需整合：正常保留Codex绝对请求/连接预算及其原生回归，EasyWork非Codex预算不变；9个已验子历史/共用呈现/录音/额度测试与runner关键文件逐字节相同。文档双方范围和manifest按ID合并，无单侧覆盖；当前组合检查/构建和最终精确CI待执行，尚未合并PR208。                   |
 
 ## 候选代码审查问题
 

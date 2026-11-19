@@ -1,6 +1,34 @@
 import XCTest
 
 final class UsageUITests: XCTestCase {
+  @MainActor func testDemoUsageDetailRemainingAndCountdown() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-ui-testing", "-usage-details-fixture"]
+    app.launchChineseTest()
+    defer { app.terminate() }
+    let usage = app.buttons["current-client-usage"]
+    if !usage.waitForExistence(timeout: 10) {
+      let sidebar = app.buttons["open-sidebar"]
+      XCTAssertTrue(sidebar.waitForExistence(timeout: 15)); sidebar.tap()
+    }
+    XCTAssertTrue(usage.waitForExistence(timeout: 20)); usage.tap()
+    let details = app.descendants(matching: .any)["usage-details-content"].firstMatch
+    let remaining = app.descendants(matching: .any)["usage-remaining-fixture-window"].firstMatch
+    let countdown = app.descendants(matching: .any)["usage-reset-countdown-fixture-window"].firstMatch
+    XCTAssertTrue(details.waitForExistence(timeout: 10))
+    XCTAssertTrue(remaining.waitForExistence(timeout: 10))
+    XCTAssertTrue(remaining.label.contains("35%"), remaining.label)
+    for removed in ["7d", "已用额度", "65%", "各窗口单独计算", "适用范围", "按服务端规则", "观察时间", "更新时间", "重置时间：", "上海时间"] {
+      XCTAssertFalse(details.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", removed)).firstMatch.exists, "Redundant detail must be absent: \(removed)")
+    }
+    XCTAssertTrue(countdown.waitForExistence(timeout: 10))
+    let first = countdown.label
+    let changed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in countdown.label != first }, object: countdown)
+    XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed, "Countdown must update each second")
+    XCTAssertTrue(remaining.label.contains("35%"))
+    shot("usage-demo-detail-regression")
+  }
   @MainActor func testRealHostUsageFooterPickerAndSettings() throws {
     continueAfterFailure = false
     guard ProcessInfo.processInfo.environment["USAGE_ACCEPTANCE_BUNDLE"] == "com.easyai.agenthub.usage.acceptance",
@@ -32,8 +60,26 @@ final class UsageUITests: XCTestCase {
     XCTAssertFalse(app.staticTexts["个人空间"].exists)
     shot("f73-real-host-footer")
     usage.tap()
-    XCTAssertTrue(app.navigationBars["当前客户端额度"].waitForExistence(timeout: 10))
-    XCTAssertTrue(app.staticTexts["7d"].exists)
+    let usageNavigation = app.navigationBars["当前客户端额度"]
+    XCTAssertTrue(usageNavigation.waitForExistence(timeout: 10))
+    if let metricID = fixture["quotaMetricId"] as? String {
+      let remaining = app.descendants(matching: .any)["usage-remaining-" + metricID].firstMatch
+      let countdown = app.descendants(matching: .any)["usage-reset-countdown-" + metricID].firstMatch
+      XCTAssertTrue(remaining.waitForExistence(timeout: 10))
+      XCTAssertTrue(remaining.label.contains("35%"), "Expected 35% remaining: \(remaining.label)")
+      let details = app.descendants(matching: .any)["usage-details-content"].firstMatch
+      XCTAssertTrue(details.exists)
+      for removed in ["7d", "已用额度", "65%", "各窗口单独计算", "适用范围", "按服务端规则", "观察时间", "更新时间", "重置时间：", "上海时间"] {
+        XCTAssertFalse(details.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", removed)).firstMatch.exists, "Redundant detail must be absent: \(removed)")
+      }
+      shot("f73-detail-before-countdown-assertion")
+      XCTAssertTrue(countdown.waitForExistence(timeout: 10), app.debugDescription)
+      let first = countdown.label
+      XCTAssertFalse(first.contains("2026-11-06T00:20:08"))
+      let changed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in countdown.label != first }, object: countdown)
+      XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed, "Countdown must update each second")
+      XCTAssertTrue(remaining.label.contains("35%"))
+    }
     shot("f73-real-host-window-detail")
     if fixture["expectedBalance"] as? Bool == true {
       for _ in 0..<3 where !app.staticTexts["Credits"].exists { app.swipeUp() }

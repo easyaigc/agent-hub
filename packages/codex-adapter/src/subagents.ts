@@ -8,6 +8,7 @@ import {
   string,
   SUBAGENT_DETAIL_LIMIT,
   subagentDetailPrefix,
+  subagentDisplayLabel,
   subagentStatus,
   type WireObject,
 } from './runtime.js';
@@ -93,6 +94,7 @@ export function subagentItem(
   item: WireObject,
   state: (id: string) => WireObject | undefined,
   saved: (id: string) => SubagentTranscript | undefined = () => undefined,
+  identity: (id: string) => WireObject | undefined = () => undefined,
 ): WireObject {
   if (item.type !== 'collabAgentToolCall') return item;
   const agents = object(item.agentsStates);
@@ -104,7 +106,11 @@ export function subagentItem(
       ? string(object(list(live.turns).at(-1)).status) ||
         string(object(live.threadRuntimeStatus).type)
       : string(reported.status);
-    return { id, status, live, reported };
+    const label = subagentDisplayLabel(
+      live ?? identity(id),
+      ['spawn', 'spawnAgent'].includes(string(item.tool)) ? string(item.prompt) : '',
+    );
+    return { id, status, live, reported, label };
   });
 
   let omitted = ids.length > children.length;
@@ -129,7 +135,7 @@ export function subagentItem(
     ...item,
     type: 'subAgent',
     status: combinedSubagentStatus(children.map(({ status }) => subagentStatus(status))),
-    text: string(item.tool) || '子 Agent',
+    text: [...new Set(children.map(({ label }) => label))].join('；') || '子 Agent',
     detail: boundedSubagentDetail(
       transcript.text,
       SUBAGENT_DETAIL_LIMIT,

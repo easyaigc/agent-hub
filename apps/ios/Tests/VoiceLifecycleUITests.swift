@@ -65,6 +65,69 @@ final class VoiceLifecycleUITests: XCTestCase {
     add(attachment)
   }
 
+  private func launchTapFixture(failure: Bool = false) {
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture"]
+      + (failure ? ["-voice-transcription-failed"] : [])
+    app.launchEnvironment["VOICE_TRANSCRIPTION_FIXTURE_DELAY_MS"] = failure ? "1000" : "12000"
+    app.launchChineseTest()
+    XCTAssertTrue(composer.waitForExistence(timeout: 20))
+    composer.tap(); composer.typeText("tap-stop-draft")
+    let microphone = app.buttons["voice-input"]
+    wait("exists == true AND isHittable == true", on: microphone)
+    microphone.tap()
+    if !app.buttons["stop-dictation"].waitForExistence(timeout: 2), microphone.exists && microphone.isHittable {
+      microphone.tap()
+    }
+    wait("exists == true AND isEnabled == true", on: app.buttons["stop-dictation"])
+  }
+
+  func testWaveformTapStopsRecordingAndFinishingTapsDoNotDuplicate() {
+    launchTapFixture()
+    let waveform = app.descendants(matching: .any).matching(identifier: "dictation-waveform").firstMatch
+    XCTAssertTrue(waveform.isHittable)
+    screenshot("recording-before-waveform-tap")
+    waveform.tap()
+    let stop = app.buttons["stop-dictation"]
+    wait("exists == true AND isEnabled == false", on: stop, timeout: 5)
+    waveform.tap(); waveform.tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 20))
+    XCTAssertEqual(composer.value as? String, "tap-stop-draft\n语音输入测试")
+    XCTAssertFalse(stop.exists)
+    screenshot("waveform-tap-completed-unsent")
+  }
+
+  func testRecordingDraftTapStopsRecording() {
+    launchTapFixture()
+    app.staticTexts["dictation-transcript"].tap()
+    wait("exists == true AND isEnabled == false", on: app.buttons["stop-dictation"], timeout: 5)
+    XCTAssertTrue(composer.waitForExistence(timeout: 20))
+    XCTAssertEqual(composer.value as? String, "tap-stop-draft\n语音输入测试")
+    screenshot("draft-tap-completed-unsent")
+  }
+
+  func testRecordingStatusTapStopsRecording() {
+    launchTapFixture()
+    app.staticTexts["voice-status"].tap()
+    wait("exists == true AND isEnabled == false", on: app.buttons["stop-dictation"], timeout: 5)
+    XCTAssertTrue(composer.waitForExistence(timeout: 20))
+    XCTAssertEqual(composer.value as? String, "tap-stop-draft\n语音输入测试")
+    screenshot("status-tap-completed-unsent")
+  }
+
+  func testFailureStatusTapDoesNotRetryTranscription() {
+    launchTapFixture(failure: true)
+    app.buttons["stop-dictation"].tap()
+    let failure = app.staticTexts["voice-failure-title"]
+    XCTAssertTrue(failure.waitForExistence(timeout: 10))
+    app.staticTexts["voice-status"].tap()
+    XCTAssertTrue(failure.exists)
+    XCTAssertEqual(app.buttons["stop-dictation"].label, "重试转写")
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertEqual(composer.value as? String, "tap-stop-draft")
+  }
+
   func testTranscriptionSurvivesSidebarButtonAndSearch() {
     start()
     openSidebar()

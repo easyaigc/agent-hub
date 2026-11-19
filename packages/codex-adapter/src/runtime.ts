@@ -331,7 +331,13 @@ export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
       .filter(Boolean)
       .join('\n');
   if (kind === 'collabAgentToolCall' || kind === 'subAgent') {
-    text = string(item.tool) || text || '子 Agent';
+    text =
+      kind === 'subAgent'
+        ? text || '子 Agent'
+        : subagentDisplayLabel(
+            {},
+            ['spawn', 'spawnAgent'].includes(string(item.tool)) ? string(item.prompt) : '',
+          );
     detail =
       string(item.detail) ||
       [string(item.prompt), JSON.stringify(item.agentsStates ?? {})].filter(Boolean).join('\n\n');

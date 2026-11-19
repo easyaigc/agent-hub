@@ -1,5 +1,7 @@
 # 开发指南
 
+已发布交互合入新主线时，按原用户动作核对生产入口、状态、原测试及当前验收结果；行为只恢复一部分时不能称为已保留。子 Agent 状态行、按需详情与共用工具组已加入默认 iOS 原生基线的 `subagents` 组；单独执行入口和本轮回退根因见[已发布交互回退核对](acceptance/released-workflow-regressions-20261119.md)。编译、Node 边界测试及旧包验收不替代当前原生交互通过。
+
 2026-10-29 Host 诊断与只读恢复的字段、轮转、抑制、私有权限、关闭屏障及逐平台故障验收见[专项指南](host-reconnect-diagnostics.md)。先保存具体 503 分类／诊断 ID，未知写入查原回执；不得以增加 timeout、反复重启原 Codex 或重新发送输入代替诊断。
 
 长历史性能续验见 [2026-10-24 专项](research/history-thermal-20261024.md)。`thermal-ios-comparison.mjs --cpu-profile --work-profile` 同时采集相同设备、安装路径和PID的CPU栈、Power Profiler及数值帧；`thermal-ios-results.py <本轮目录>` 只统计正式窗口中的完整手势和移动帧，保留导航/预热累计值但不混为正式最大帧。纯滚动要求24个实测手势；`testThermalMixedInteractionDEV` 与 `--mixed-targets <私有目标元数据文件>` 另要求三客户端17个具名交互步骤、22个历史手势与三次不同的在途回复。远端参数从既有私有清单读取，仅通过 `xcodebuild(1)` 的 `TEST_RUNNER_<VAR>` 内存环境传给Runner，不复制至xctestrun；驱动不导出远端既有消息正文。每轮使用新目录与原始不可变输入标识，模型原owner、轮次和无重放另核对，未知结果不能重新提交。该混合用例需人类授权所选其他客户端，不能因为脚本可用而自动联系远端Agent。
@@ -854,3 +856,7 @@ CPU百分比是单核等价；帧间隔不是系统hitch，充电不能用于电
 生成设置的原生测试已通过、仅独立核对需要恢复时，使用 `GENERATION_VERIFY_DIRECTORY=<original-run-directory> GENERATION_PROJECT_ROOT=<saved-project-root> node scripts/generation-settings-desktop-ios-acceptance.mjs`。该入口保留原报告，要求相同 Adapter／原生源码／断言与准确模拟器证据，只查询原 owner 和回执，不再次启动 UI 测试或提交模型输入；标准速度接受桌面规范化的 null，未知档位保持拒绝。
 
 协调客户端私有目录的tlsPin为sha256与certificatePath嵌套对象，只接受一张公有自签PEM和精确DER SHA256。先验证源码/真实TLS与完整包，再安装本机客户端，核对目标Host/desktop-runtime和实际workspace后新建专用对话。证书不加入全局信任；标准HTTPS无pin路径保持原行为。源码包的既有声音向量按固定路径及字节指纹登记，未知音频/源码仍拒绝。
+
+已验收交互的主线整合同时保留生产路径、原用户动作和回归入口。EasyWork子历史的生产Swift边界检查进入 `pnpm check`；默认原生基线固定包含子详情三项、语音点击四项及额度一项。真实已有子Run验收使用具名认证来源和独立模拟器，并与fixture结果分列。恢复及本轮根因见[已发布交互回退核对](acceptance/released-workflow-regressions-20261119.md)。
+
+Gitea iOS CI 在独立模拟器运行上述8项原生交互，并运行EasyWork子历史、Codex Git动态分派及唯一sheet路由边界。模拟器由job创建并按准确ID收尾；任何失败、跳过或缺项都阻止该job通过。

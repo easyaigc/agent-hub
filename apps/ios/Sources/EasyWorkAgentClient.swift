@@ -260,6 +260,113 @@ enum EasyWorkHistoricalAttachment {
   }
 }
 
+/// Read-only child runs stay inside the authenticated parent thread and branch.
+enum EasyWorkSubagentHistory {
+  struct Selection {
+    let childId: String
+    let rootId: String
+    let revision: Int
+    let run: [String: Any]
+    var status: String {
+      switch run["status"] as? String ?? "unknown" {
+      case "running", "starting", "in_progress": return "inProgress"
+      case "cancelled": return "interrupted"
+      default: return run["status"] as? String ?? "unknown"
+      }
+    }
+  }
+  struct Window { let messages: [ChatMessage]; let nextCursor: String? }
+  private struct Cursor: Codable { let scope: String; let before: String }
+  private static let prefix = "ew-subagent-v1."
+
+  static func select(_ page: [String: Any], threadId: String, messageId: String, childId: String?) throws -> Selection {
+    guard !threadId.isEmpty, messageId.hasPrefix("subagent:"),
+      let snapshot = page["snapshot"] as? [String: Any],
+      let thread = snapshot["thread"] as? [String: Any], thread["id"] as? String == threadId else { throw HostServiceError.wrongHost }
+    let id = String(messageId.dropFirst("subagent:".count))
+    guard !id.isEmpty, childId == nil || childId == id else { throw HostServiceError.wrongHost }
+    let revision = try EasyWorkReading.integer(thread["branchRevision"] ?? page["branchRevision"])
+    if let outer = page["branchRevision"] {
+      guard try EasyWorkReading.integer(outer) == revision else { throw HostServiceError.invalidResponse }
+    }
+    var matches: [Selection] = []
+    for tree in snapshot["subagentRunTrees"] as? [[String: Any]] ?? [] {
+      guard let root = tree["root"] as? [String: Any], let rootId = root["id"] as? String, !rootId.isEmpty,
+        root["threadId"] as? String == threadId,
+        (try? EasyWorkReading.integer(root["branchRevision"])) == revision else { continue }
+      for run in tree["runs"] as? [[String: Any]] ?? [] where run["id"] as? String == id {
+        guard run["kind"] as? String == "child", run["threadId"] as? String == threadId,
+          run["rootRunId"] as? String == rootId,
+          (try? EasyWorkReading.integer(run["branchRevision"])) == revision else { continue }
+        matches.append(Selection(childId: id, rootId: rootId, revision: revision, run: run))
+      }
+    }
+    guard matches.count == 1, let selected = matches.first else { throw HostServiceError.invalidResponse }
+    return selected
+  }
+
+  static func originalMessages(_ selected: Selection) throws -> [[String: Any]] {
+    let run = selected.run
+    let input = run["input"] as? [String: Any] ?? [:]
+    let result = run["result"] as? [String: Any] ?? [:]
+    let transcript = (run["checkpoint"] as? [String: Any])?["subagentTranscript"] as? [String: Any] ?? [:]
+    if let raw = transcript["messages"], !(raw is NSNull), !(raw is [[String: Any]]) { throw HostServiceError.invalidResponse }
+    var messages = transcript["messages"] as? [[String: Any]] ?? []
+    if messages.isEmpty {
+      let parts = result["content"] as? [[String: Any]] ?? transcript["content"] as? [[String: Any]] ?? []
+      if !parts.isEmpty {
+        messages = [["id": selected.childId + ":transcript", "role": "assistant",
+          "status": run["status"] as? String ?? "unknown", "content": parts, "sourceRunId": selected.childId]]
+      }
+    }
+    if let task = input["task"] as? String, !task.isEmpty {
+      messages.insert(["id": selected.childId + ":input", "role": "user",
+        "content": [["type": "text", "text": task]], "sourceRunId": selected.childId], at: 0)
+    }
+    return messages.enumerated().map { index, original in
+      var value = original
+      if value["id"] as? String == nil { value["id"] = selected.childId + ":message:\(index)" }
+      if value["sourceRunId"] == nil { value["sourceRunId"] = selected.childId }
+      if value["status"] == nil { value["status"] = run["status"] }
+      return value
+    }
+  }
+
+  static func scope(target: EasyWorkTarget, selected: Selection, parentThreadId: String, messageId: String) throws -> String {
+    let data = try easyWorkJSON(["target": target.dictionary, "parentThreadId": parentThreadId,
+      "messageId": messageId, "rootRunId": selected.rootId, "childId": selected.childId,
+      "branchRevision": selected.revision])
+    return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
+
+  static func page(_ messages: [ChatMessage], scope: String, cursor: String?) throws -> Window {
+    guard Set(messages.map(\.id)).count == messages.count else { throw HostServiceError.invalidResponse }
+    var before = cursor
+    if let cursor, cursor.hasPrefix(prefix) {
+      guard cursor.utf8.count <= 4096 else { throw HostServiceError.invalidResponse }
+      var encoded = String(cursor.dropFirst(prefix.count)).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+      encoded += String(repeating: "=", count: (4 - encoded.count % 4) % 4)
+      guard let data = Data(base64Encoded: encoded), let value = try? JSONDecoder().decode(Cursor.self, from: data),
+        value.scope == scope else { throw HostServiceError.wrongHost }
+      before = value.before
+    }
+    let end: Int
+    if let before {
+      guard before.utf8.count <= 4096, let index = messages.firstIndex(where: { $0.id == before }) else { throw HostServiceError.invalidResponse }
+      end = index
+    } else { end = messages.count }
+    var start = end
+    var bytes = 0
+    while start > 0 && end - start < 80 {
+      let size = try JSONEncoder().encode(messages[start - 1]).count
+      if bytes + size > 1_048_576 && start < end { break }
+      bytes += size; start -= 1
+    }
+    let next = start > 0 ? prefix + (try JSONEncoder().encode(Cursor(scope: scope, before: messages[start].id))).base64URL : nil
+    return Window(messages: Array(messages[start..<end]), nextCursor: next)
+  }
+}
+
 struct EasyWorkAgentClient: AgentClient {
   var requiresConfirmedDesktopOpenReceipt: Bool { true }
   func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data {
@@ -592,49 +699,11 @@ struct EasyWorkAgentClient: AgentClient {
     }
     return thread
   }
-  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
-    let channel = try await session(client)
-    let value: [String: Any]
-    let snapshot: [String: Any]
-    let latestPage = try object(await channel.synchronizedThread(threadId))
-    guard let revision = latestPage["branchRevision"] as? Int, revision >= 0 else { throw HostServiceError.invalidResponse }
-    if let cursor {
-      value = try object(await channel.request("thread/history", ["threadId": threadId, "before": cursor, "limit": 60])); snapshot = [:]
-      let after = try object(await channel.synchronizedThread(threadId))
-      guard after["branchRevision"] as? Int == revision else { throw HostServiceError.message("聊天历史已变化，请刷新后重试。") }
-    } else {
-      value = latestPage; snapshot = try object(value["snapshot"] ?? [:])
-    }
-    let thread = snapshot["thread"] as? [String: Any] ?? ["id": threadId]
-    guard thread["id"] as? String == threadId else { throw HostServiceError.wrongHost }
-    let active = snapshot["activeRun"] as? [String: Any]
-    let pendingApproval = snapshot["pendingPermissionConfirmation"] as? [String: Any]
-    let pendingQuestion = snapshot["pendingQuestion"] as? [String: Any]
-    let control = snapshot["runControl"] as? [String: Any]
-    let latest = snapshot["latestRun"] as? [String: Any]
-    let terminalStatus = latest?["status"] as? String
-    let state = pendingApproval != nil || pendingQuestion != nil ? "waiting-for-approval" : control?["phase"] as? String == "paused" ? "paused" : active != nil ? runState(active) : ["failed", "cancelled", "interrupted"].contains(terminalStatus ?? "") ? terminalStatus! : "idle"
-    var approvals: [Approval] = []
-    if let request = pendingApproval {
-      let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
-      var identity: [String: Any] = [:]
-      for key in keys { guard let value = request[key] as? String, !value.isEmpty else { throw HostServiceError.invalidResponse }; identity[key] = value }
-      let labels = ["command": L10n.tr("命令"), "workdir": L10n.tr("目录"), "shell": L10n.tr("终端")]
-      let summary = (request["argsSummary"] as? [[String: Any]] ?? []).compactMap { argument -> String? in
-        guard let name = argument["name"] as? String, let value = argument["value"] as? String, !value.isEmpty else { return nil }
-        return (labels[name] ?? name) + ": " + value
-      }.joined(separator: "\n")
-      let detail = request["message"] as? String ?? request["description"] as? String ?? (summary.isEmpty ? request["title"] as? String ?? L10n.tr("请确认此操作。") : summary)
-      approvals.append(Approval(id: "approval." + (try easyWorkJSON(identity)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "command", title: request["title"] as? String ?? L10n.tr("操作需要确认"), detail: detail, questions: [], decisions: ["approve", "deny"], notificationRequestId: request["requestHash"] as? String))
-    }
-    if let request = pendingQuestion {
-      let questions = (request["questions"] as? [[String: Any]] ?? []).map { question in
-        ApprovalQuestion(id: question["header"] as? String ?? L10n.tr("问题"), question: question["question"] as? String ?? "", options: (question["options"] as? [[String: Any]])?.map { QuestionOption(label: $0["label"] as? String ?? "", description: $0["description"] as? String ?? "") }, isSecret: question["isSecret"] as? Bool, multiple: question["multiple"] as? Bool, custom: question["custom"] as? Bool)
-      }
-      approvals.append(Approval(id: "question." + (try easyWorkJSON(request)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "question", title: L10n.tr("需要你的回答"), detail: "", questions: questions, decisions: ["answer", "deny"], notificationRequestId: request["toolCallId"] as? String))
-    }
+  /// Parent and child messages share all current text/tool/attachment projection rules.
+  private func projectMessages(_ originals: [[String: Any]], client: Client, threadId: String,
+    channel: EasyWorkRemoteSession) async throws -> [ChatMessage] {
     var messages: [ChatMessage] = []
-    for message in value["messages"] as? [[String: Any]] ?? [] {
+    for message in originals {
       let id = message["id"] as? String ?? UUID().uuidString
       let role = message["role"] as? String ?? "assistant"
       let status = message["status"] as? String
@@ -690,6 +759,81 @@ struct EasyWorkAgentClient: AgentClient {
         messages[index].replyMessageId = id
       }
     }
+    return messages
+  }
+
+  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool {
+    // This is a local projection of the existing authenticated thread snapshot,
+    // not an extra desktop command or a Codex Host capability requirement.
+    workspace?.connectionMode == "easywork-runtime"
+  }
+
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
+    let channel = try await session(client)
+    let page = try object(await channel.synchronizedThread(parentThreadId))
+    let selected = try EasyWorkSubagentHistory.select(page, threadId: parentThreadId, messageId: messageId, childId: childId)
+    var messages = try await projectMessages(try EasyWorkSubagentHistory.originalMessages(selected),
+      client: client, threadId: parentThreadId, channel: channel)
+    if let failure = (selected.run["error"] as? [String: Any])?["message"] as? String, !failure.isEmpty {
+      messages.append(ChatMessage(id: selected.childId + ":error", role: "tool", text: failure,
+        kind: "turnFailure", status: "failed", runId: selected.childId))
+    }
+    let scope = try EasyWorkSubagentHistory.scope(target: channel.target, selected: selected,
+      parentThreadId: parentThreadId, messageId: messageId)
+    let window = try EasyWorkSubagentHistory.page(messages, scope: scope, cursor: cursor)
+    let activities = await channel.subagentActivities(try easyWorkJSON(page["snapshot"] ?? [:]), threadId: parentThreadId)
+    let input = selected.run["input"] as? [String: Any] ?? [:]
+    let title = activities.first(where: { $0.id == messageId })?.title ?? input["title"] as? String ?? selected.childId
+    return SubagentHistorySnapshot(version: 1, hostId: client.id, readTarget: readingTarget(channel.target),
+      parentThreadId: parentThreadId, messageId: messageId,
+      children: [.init(id: selected.childId, title: title, status: selected.status)],
+      childId: selected.childId, threadId: parentThreadId, source: "saved-history",
+      messages: window.messages, nextCursor: window.nextCursor)
+  }
+
+  func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
+    let channel = try await session(client)
+    let value: [String: Any]
+    let snapshot: [String: Any]
+    let latestPage = try object(await channel.synchronizedThread(threadId))
+    guard let revision = latestPage["branchRevision"] as? Int, revision >= 0 else { throw HostServiceError.invalidResponse }
+    if let cursor {
+      value = try object(await channel.request("thread/history", ["threadId": threadId, "before": cursor, "limit": 60])); snapshot = [:]
+      let after = try object(await channel.synchronizedThread(threadId))
+      guard after["branchRevision"] as? Int == revision else { throw HostServiceError.message("聊天历史已变化，请刷新后重试。") }
+    } else {
+      value = latestPage; snapshot = try object(value["snapshot"] ?? [:])
+    }
+    let thread = snapshot["thread"] as? [String: Any] ?? ["id": threadId]
+    guard thread["id"] as? String == threadId else { throw HostServiceError.wrongHost }
+    let active = snapshot["activeRun"] as? [String: Any]
+    let pendingApproval = snapshot["pendingPermissionConfirmation"] as? [String: Any]
+    let pendingQuestion = snapshot["pendingQuestion"] as? [String: Any]
+    let control = snapshot["runControl"] as? [String: Any]
+    let latest = snapshot["latestRun"] as? [String: Any]
+    let terminalStatus = latest?["status"] as? String
+    let state = pendingApproval != nil || pendingQuestion != nil ? "waiting-for-approval" : control?["phase"] as? String == "paused" ? "paused" : active != nil ? runState(active) : ["failed", "cancelled", "interrupted"].contains(terminalStatus ?? "") ? terminalStatus! : "idle"
+    var approvals: [Approval] = []
+    if let request = pendingApproval {
+      let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
+      var identity: [String: Any] = [:]
+      for key in keys { guard let value = request[key] as? String, !value.isEmpty else { throw HostServiceError.invalidResponse }; identity[key] = value }
+      let labels = ["command": L10n.tr("命令"), "workdir": L10n.tr("目录"), "shell": L10n.tr("终端")]
+      let summary = (request["argsSummary"] as? [[String: Any]] ?? []).compactMap { argument -> String? in
+        guard let name = argument["name"] as? String, let value = argument["value"] as? String, !value.isEmpty else { return nil }
+        return (labels[name] ?? name) + ": " + value
+      }.joined(separator: "\n")
+      let detail = request["message"] as? String ?? request["description"] as? String ?? (summary.isEmpty ? request["title"] as? String ?? L10n.tr("请确认此操作。") : summary)
+      approvals.append(Approval(id: "approval." + (try easyWorkJSON(identity)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "command", title: request["title"] as? String ?? L10n.tr("操作需要确认"), detail: detail, questions: [], decisions: ["approve", "deny"], notificationRequestId: request["requestHash"] as? String))
+    }
+    if let request = pendingQuestion {
+      let questions = (request["questions"] as? [[String: Any]] ?? []).map { question in
+        ApprovalQuestion(id: question["header"] as? String ?? L10n.tr("问题"), question: question["question"] as? String ?? "", options: (question["options"] as? [[String: Any]])?.map { QuestionOption(label: $0["label"] as? String ?? "", description: $0["description"] as? String ?? "") }, isSecret: question["isSecret"] as? Bool, multiple: question["multiple"] as? Bool, custom: question["custom"] as? Bool)
+      }
+      approvals.append(Approval(id: "question." + (try easyWorkJSON(request)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "question", title: L10n.tr("需要你的回答"), detail: "", questions: questions, decisions: ["answer", "deny"], notificationRequestId: request["toolCallId"] as? String))
+    }
+    var messages = try await projectMessages(value["messages"] as? [[String: Any]] ?? [],
+      client: client, threadId: threadId, channel: channel)
     if cursor == nil {
       let activities = await channel.subagentActivities(try easyWorkJSON(snapshot), threadId: threadId)
       for item in activities {

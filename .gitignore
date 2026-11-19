@@ -115,3 +115,5 @@ apps/ios/FilePreviewKit/.swiftpm/
 !/docs/acceptance/mainline-release-compatibility-20261119.md
 
 !/docs/acceptance/attachment-dark-20261119.md
+
+!/docs/acceptance/released-workflow-regressions-20261119.md

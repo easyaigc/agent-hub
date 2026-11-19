@@ -34,7 +34,22 @@ func usageTargetJSON(_ target: AgentRuntimeTarget) throws -> String {
     return [client.id, client.endpoint ?? "", (try? usageTargetJSON(target)) ?? "", connection, direct].joined(separator: "\n")
   }
   func identity(_ client: Client, target: AgentRuntimeTarget) -> String { key(client, target) }
+  #if DEBUG && targetEnvironment(simulator)
+  private static let fixtureReset = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3661))
+  #endif
   func value(_ client: Client, target: AgentRuntimeTarget) -> UsageViewData {
+    #if DEBUG && targetEnvironment(simulator)
+    if client.isDemo, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      ProcessInfo.processInfo.arguments.contains("-usage-details-fixture") {
+      let window = UsageMetricViewData(id: "fixture-window", label: "7d", bucket: "7d", kind: "window-limit",
+        state: "percent", value: "65", unit: "%", validUntil: Self.fixtureReset, observedAt: "fixture",
+        resetAt: Self.fixtureReset, expiresAt: nil, percent: 65, remainingPercent: 35, remainingValue: nil,
+        entitlement: nil, note: nil, appliesTo: .init(kind: "all", ids: nil), combination: .init(kind: "all-of"))
+      return UsageViewData(status: "ok", reason: nil, partial: false, stale: false, snapshotId: "fixture",
+        sampledAt: "fixture", metrics: [window], ringMetricId: window.id, ringLabel: "7d", percent: 35,
+        balance: nil, balanceUnit: nil, extraBalances: nil)
+    }
+    #endif
     guard let entry = entries[key(client, target)] else { return .unknown }
     guard let json = try? UsageRules.shared.project(json: entry.raw, targetJson: usageTargetJSON(target), nowMillis: Int64(Date().timeIntervalSince1970 * 1000)), let value = try? JSONDecoder().decode(UsageViewData.self, from: Data(json.utf8)) else { return entry.value }
     return value
@@ -182,29 +197,41 @@ struct UsageDetailsView: View {
   @Environment(\.dismiss) private var dismiss
   var body: some View {
     let data = usage.value(client, target: target)
+    let metrics = data.metrics ?? []
+    let limitCount = metrics.filter { $0.kind == "window-limit" || $0.kind == "capacity-limit" }.count
+    let balanceCount = metrics.filter { $0.kind == "balance" }.count
     NavigationStack {
       List {
-        Section {
-          Text(client.name)
-          if usage.cached(client, target: target) { Label(L10n.tr("缓存额度"), systemImage: "clock") }
-          if data.partial == true { Text(L10n.tr("部分额度暂不可用")) }
-          if let sampled = data.sampledAt { Text(L10n.tr("更新时间") + "：" + sampled).font(.caption).foregroundStyle(.secondary) }
-        }
-        ForEach(data.metrics ?? []) { metric in
-          Section(metric.bucket ?? metric.label) {
-            LabeledContent(metric.label, value: usageValue(metric)).textSelection(.enabled)
-            if metric.kind == "window-limit" || metric.kind == "capacity-limit" { Text(L10n.tr("百分比为已用用量，各窗口单独计算")).font(.caption).foregroundStyle(.secondary) }
-            Text(L10n.tr("适用范围") + "：" + (metric.appliesTo.kind == "all" ? L10n.tr("所有模型和功能") : (metric.appliesTo.ids ?? []).joined(separator: " · "))).font(.caption)
-            Text(L10n.tr(metric.combination.kind == "all-of" ? "全部限制同时生效" : metric.combination.kind == "any-of" ? "任一限制可用" : "按服务端规则")).font(.caption).foregroundStyle(.secondary)
-            Text(L10n.tr("观察时间") + "：" + metric.observedAt).font(.caption).foregroundStyle(.secondary)
-            if let note = metric.note { Text(note).font(.caption) }
-            if let reset = metric.resetAt { Text(L10n.tr("重置时间") + "：" + reset).font(.caption) }
-            if let expiry = metric.expiresAt { Text(L10n.tr("到期时间") + "：" + expiry).font(.caption) }
-            if metric.entitlement == "unlimited" { Text(L10n.tr("无限额")) }
+        if usage.cached(client, target: target) || data.partial == true {
+          Section {
+            if usage.cached(client, target: target) { Label(L10n.tr("缓存额度"), systemImage: "clock") }
+            if data.partial == true { Text(L10n.tr("部分额度暂不可用")) }
           }
         }
-        if data.status != "ok" { Text(L10n.tr("暂未提供额度")); if let reason = data.reason { Text(reason).font(.caption).foregroundStyle(.secondary) } }
-      }.navigationTitle(L10n.tr("当前客户端额度"))
+        ForEach(metrics) { metric in
+          Section {
+            if metric.kind != "extension", (metric.kind == "balance" ? balanceCount : limitCount) > 1 {
+              Text(metric.label).font(.caption).foregroundStyle(.secondary)
+            }
+            if metric.kind == "window-limit" {
+              if let reset = metric.resetAt {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                  LabeledContent(L10n.tr("距离下次重置"), value: UsagePresentation.countdown(reset, now: context.date))
+                    .monospacedDigit().accessibilityIdentifier("usage-reset-countdown-" + metric.id)
+                }
+              } else { Text(L10n.tr("重置时间暂不可用")).font(.caption).foregroundStyle(.secondary) }
+            }
+            if metric.kind == "extension" { LabeledContent(metric.label, value: usageValue(metric)).textSelection(.enabled) }
+            else {
+              LabeledContent(L10n.tr("剩余额度"), value: UsagePresentation.remaining(metric) ?? L10n.tr("暂不可用"))
+                .textSelection(.enabled).accessibilityIdentifier("usage-remaining-" + metric.id)
+            }
+          }
+        }
+        if data.status != "ok" { Text(L10n.tr("暂未提供额度")) }
+      }.accessibilityIdentifier("usage-details-content")
+        .navigationTitle(L10n.tr("当前客户端额度"))
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.tr("完成")) { dismiss() } } }
         .refreshable { await usage.refresh(client, target: target, force: true) }
         .task(id: scenePhase) { if scenePhase == .active { await usage.poll(client, target: target) } }

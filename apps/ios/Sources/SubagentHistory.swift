@@ -15,33 +15,61 @@ struct SubagentHistoryPresentation: ViewModifier {
   let targetKey: String
   let client: Client?
   let threadId: String?
-  var enabled = true
+  var supportsHistory = true
   @State private var selection: Selection?
   private struct Selection: Identifiable { let id: String; let message: ChatMessage }
   func body(content: Content) -> some View {
     let open: @MainActor @Sendable (ChatMessage) -> Void = { message in
       selection = Selection(id: targetKey + "|" + message.id, message: message)
     }
-    return content.environment(\.openSubagentHistory, enabled ? open : nil)
+    return content.environment(\.openSubagentHistory, open)
     .sheet(item: $selection) { value in
-      SubagentDetailView(message: value.message, client: client, threadId: threadId).id(value.id)
+      SubagentDetailView(message: value.message, client: client, threadId: threadId, supportsHistory: supportsHistory).id(value.id)
     }
     .onChange(of: targetKey) { _, _ in selection = nil }
   }
 }
 
-struct SubagentHistoryAction: View {
+struct SubagentMessageView: View {
   let message: ChatMessage
-  @Environment(\.openSubagentHistory) private var open
+  @Environment(\.openSubagentHistory) private var openDetail
+
   var body: some View {
-    if let open {
-      Button(L10n.tr("查看完整过程")) { open(message) }
-        .font(.caption).accessibilityIdentifier("subagent-history-\(message.id)")
-    }
+    Button { openDetail?(message) } label: {
+      // Detail-only streams must not rebuild the main timeline's status label.
+      SubagentStatusRow(title: message.text, status: message.status).equatable()
+    }.buttonStyle(.plain)
+      .accessibilityIdentifier("subagent-\(message.id)")
+      .accessibilityLabel(message.text.isEmpty || message.text == "子 Agent" ? L10n.tr("子 Agent") : L10n.tr("子 Agent") + " · " + message.text)
+      .accessibilityValue(L10n.tr(LocalizedText(stringLiteral: SharedMobileRules.toolStatus(message.status))))
   }
 }
 
-private struct SubagentHistoryEntryView: View {
+private struct SubagentStatusRow: View, Equatable {
+  let title: String
+  let status: String?
+  @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
+
+  nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.title == rhs.title && lhs.status == rhs.status
+  }
+
+  var body: some View {
+    HStack(spacing: 8) {
+      Image(systemName: "person.2").font(.system(size: 16)).frame(width: 18, height: 18)
+        .accessibilityHidden(true)
+      Text(title.isEmpty || title == "子 Agent" ? L10n.tr("子 Agent") : L10n.tr("子 Agent") + " · " + title).fontWeight(.regular).lineLimit(1)
+      Text(L10n.tr(LocalizedText(stringLiteral: SharedMobileRules.toolStatus(status))))
+        .font(.caption).fixedSize()
+      Image(systemName: "chevron.right").font(.system(size: 11)).accessibilityHidden(true)
+      Spacer(minLength: 0)
+    }.font(.callout).foregroundStyle(Palette.secondary)
+      .frame(minHeight: 44).contentShape(Rectangle())
+  }
+}
+
+/// Parent and child timelines use the same message and tool presentation.
+struct ChatTimelineEntryView: View {
   let item: ChatTimeline.Item
   var client: Client?
   var threadId: String?
@@ -49,6 +77,7 @@ private struct SubagentHistoryEntryView: View {
   var isRunning = false
   var isLive = false
 
+  var toolDisclosure: ((String) -> Binding<ToolDisclosureState>)?
   @State private var disclosure = ToolDisclosureState()
 
   @ViewBuilder var body: some View {
@@ -57,22 +86,19 @@ private struct SubagentHistoryEntryView: View {
       if message.kind == "turnFailure" {
         VStack(alignment: .leading, spacing: 4) {
           Label(L10n.tr("任务失败记录"), systemImage: "exclamationmark.circle")
-          Text(message.text).textSelection(.enabled)
+          Text(EasyWorkFailurePresentation.text(message.text, enabled: client?.agentConnection?.target.agentId == "easywork")).textSelection(.enabled)
         }.font(.caption).foregroundStyle(Palette.secondary)
           .accessibilityIdentifier("task-failure-history-\(message.id)")
       } else if message.kind == "subAgent" {
-        VStack(alignment: .leading) {
-          EasyWorkSubagentMessageView(message: message)
-          SubagentHistoryAction(message: message)
-        }
+        SubagentMessageView(message: message)
           .id("\(targetKey)-subagent-\(message.id)")
       } else if message.kind == "plan" {
-        ProposedPlanMessageView(message: message)
+        ProposedPlanMessageView(message: message, native: client?.agentConnection?.target.agentId == "easywork")
       } else {
         MessageView(message: message, client: client, threadId: threadId).equatable()
       }
     case .tools(let id, let messages):
-      ToolCallGroupView(id: id, messages: messages, client: client, disclosure: $disclosure)
+      ToolCallGroupView(id: id, messages: messages, client: client, disclosure: toolDisclosure?(id) ?? $disclosure)
         .padding(.vertical, messages.count > 1 ? -6 : 0)
     case .compaction(let message):
       ContextCompactionView(message: message, isLive: isLive)
@@ -97,6 +123,7 @@ private struct SubagentDetailView: View {
   let message: ChatMessage
   var client: Client?
   var threadId: String?
+  var supportsHistory = true
   @Environment(\.dismiss) private var dismiss
   @Environment(\.scenePhase) private var scenePhase
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
@@ -141,12 +168,16 @@ private struct SubagentDetailView: View {
       .task(id: refreshKey) { await observe() }
       .onDisappear { earlierTask?.cancel(); earlierTask = nil }
       .onChange(of: scenePhase) { _, phase in if phase != .active { earlierTask?.cancel() } }
-      .modifier(SubagentHistoryPresentation(targetKey: key, client: client, threadId: snapshot?.threadId))
+      .modifier(SubagentHistoryPresentation(targetKey: key, client: client, threadId: snapshot?.threadId, supportsHistory: supportsHistory))
   }
 
   private var content: some View {
     VStack(alignment: .leading, spacing: 18) {
-      if let snapshot { historyContent(snapshot) }
+      if !supportsHistory {
+        Text(L10n.tr("此客户端暂不支持完整子 Agent 过程")).font(.caption).foregroundStyle(Palette.secondary)
+        Text(verbatim: message.detail ?? "").textSelection(.enabled)
+          .accessibilityIdentifier("subagent-legacy-detail")
+      } else if let snapshot { historyContent(snapshot) }
       else if error == nil { ProgressView().accessibilityIdentifier("subagent-history-loading") }
       if let error {
         Text(error).font(.callout).foregroundStyle(Palette.secondary).textSelection(.enabled)
@@ -186,7 +217,7 @@ private struct SubagentDetailView: View {
       activeRunId: messages.last?.runId, isRunning: running, focusedMessageId: nil)
     return VStack(alignment: .leading, spacing: 18) {
       ForEach(timeline.items) { item in
-        SubagentHistoryEntryView(item: item, client: client, threadId: value.threadId,
+        ChatTimelineEntryView(item: item, client: client, threadId: value.threadId,
           targetKey: key, isRunning: running, isLive: value.source == "desktop-runtime").id(item.id)
       }
     }.accessibilityElement(children: .contain)
@@ -194,7 +225,7 @@ private struct SubagentDetailView: View {
   }
 
   @MainActor private func observe() async {
-    guard scenePhase == .active else { return }
+    guard supportsHistory, scenePhase == .active else { return }
     if loadedKey != key {
       earlierTask?.cancel()
       earlierRequest = nil
@@ -212,6 +243,27 @@ private struct SubagentDetailView: View {
 
   @MainActor private func page(cursor: String? = nil) async throws -> SubagentHistorySnapshot {
     guard let client, let threadId else { throw HostServiceError.invalidResponse }
+    #if DEBUG && targetEnvironment(simulator)
+    if client.isDemo, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      ProcessInfo.processInfo.arguments.contains("-subagent-timeline-fixture") {
+      let childId = "c2-timeline-child"
+      let runId = "c2-timeline-run"
+      let records = [
+        ChatMessage(id: "c2-child-prompt", role: "user", text: "C2 child task", kind: "userMessage", runId: runId),
+        ChatMessage(id: "c2-child-command-1", role: "tool", text: "printf child-one", kind: "commandExecution",
+          status: "completed", detail: "C2_CHILD_OUTPUT_ONE\nExit 0", runId: runId),
+        ChatMessage(id: "c2-child-command-2", role: "tool", text: "printf child-two", kind: "commandExecution",
+          status: "completed", detail: "C2_CHILD_OUTPUT_TWO\nExit 0", runId: runId),
+        ChatMessage(id: "c2-child-reply", role: "assistant", text: "**C2 child completed**", kind: "agentMessage",
+          status: "completed", runId: runId)
+      ]
+      return SubagentHistorySnapshot(version: 1, hostId: client.id,
+        readTarget: AgentRuntimeTarget(agentId: "codex", hostId: client.id, workspaceId: "demo", runtimeId: "demo"),
+        parentThreadId: threadId, messageId: message.id,
+        children: [.init(id: childId, title: "C2 original child", status: "completed")],
+        childId: childId, threadId: childId, source: "saved-history", messages: records, nextCursor: nil)
+    }
+    #endif
     return try await AgentClients.resolve(client).subagentHistory(client, parentThreadId: threadId,
       messageId: message.id, childId: selectedChild.isEmpty ? (cursor == nil ? nil : snapshot?.childId) : selectedChild, cursor: cursor)
   }

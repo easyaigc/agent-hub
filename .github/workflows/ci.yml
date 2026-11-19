@@ -116,3 +116,38 @@ jobs:
           node apps/ios/Tests/desktop-suggestions-smoke.mjs all
           node scripts/attachment-download-native-smoke.mjs
           node scripts/upload-wire-cancellation-native-smoke.mjs
+          node scripts/mobile/codex-project-git-native-smoke.mjs
+          node scripts/mobile/check-ios-sheet-routes.mjs
+          node scripts/mobile/easywork-subagent-history-native.mjs
+      - name: Regress released child history, recording taps and quota details
+        if: github.server_url == 'https://git.51easyai.com'
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          set -euo pipefail
+          IOS_SIMULATOR_ID=$(node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import { randomUUID } from 'node:crypto';
+          const inventory = JSON.parse(execFileSync('xcrun', ['simctl', 'list', '-j']));
+          const runtime = inventory.runtimes
+            .filter((r) => r.isAvailable && r.identifier.includes('.iOS-'))
+            .sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }))[0];
+          const types = runtime?.supportedDeviceTypes ?? inventory.devicetypes;
+          const type = types.find((d) => d.name === 'iPhone 16 Pro Max')
+            ?? types.find((d) => d.name.startsWith('iPhone'));
+          assert(runtime && type, 'An available iOS Simulator runtime and iPhone type are required');
+          process.stdout.write(execFileSync('xcrun', ['simctl', 'create',
+            'AgentHub-ReleasedWorkflows-' + randomUUID(), type.identifier, runtime.identifier],
+            { encoding: 'utf8' }).trim());
+          JS
+          )
+          export IOS_SIMULATOR_ID
+          trap 'xcrun simctl shutdown "$IOS_SIMULATOR_ID" >/dev/null 2>&1 || true; xcrun simctl delete "$IOS_SIMULATOR_ID"' EXIT
+          xcrun simctl boot "$IOS_SIMULATOR_ID"
+          xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
+          node scripts/mobile/ios-baseline.mjs subagents voiceTap usageDetails
+      - name: Preserve bounded native failure diagnostics before cleanup
+        if: (failure() || cancelled()) && github.server_url == 'https://git.51easyai.com'
+        timeout-minutes: 2
+        run: node scripts/mobile/ios-baseline-diagnostics.mjs

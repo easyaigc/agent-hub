@@ -1637,7 +1637,7 @@ struct RootView: View {
       if store.localRecoveryRequired { store.retryLocalRecovery() }
     }
     .modifier(SubagentHistoryPresentation(targetKey: store.targetKey, client: store.devPreviewClient,
-      threadId: store.selectedThreadId, enabled: store.supportsSubagentHistory))
+      threadId: store.selectedThreadId, supportsHistory: store.supportsSubagentHistory))
     .preferredColorScheme(store.colorScheme)
     .task {
       guard !hostedExaminerOwnsRefresh else { return }
@@ -2056,42 +2056,18 @@ struct RootView: View {
               VStack(alignment: .leading, spacing: 18) {
                 ForEach(timeline.items) { item in
                   Group {
-                  switch item {
-                  case .message(let message):
-                    if store.chatSearchJump?.targetKey == store.targetKey, store.chatSearchJump?.message.id == message.id {
-                      LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query, client: store.devPreviewClient, threadId: store.selectedThreadId)
-                    } else if message.kind == "turnFailure" {
-                      VStack(alignment: .leading, spacing: 4) {
-                        Label(L10n.tr("任务失败记录"), systemImage: "exclamationmark.circle")
-                        Text(EasyWorkFailurePresentation.text(message.text,enabled:store.client?.agentConnection?.target.agentId=="easywork")).textSelection(.enabled)
-                      }.font(.caption).foregroundStyle(Palette.secondary)
-                        .accessibilityIdentifier("task-failure-history-\(message.id)")
-                    } else if message.kind == "subAgent" {
-                      EasyWorkSubagentMessageView(message: message)
-                      SubagentHistoryAction(message: message)
-                    } else if message.kind == "plan" {
-                      ProposedPlanMessageView(message: message,native:store.client?.agentConnection?.target.agentId=="easywork")
-                    } else {
-                      MessageView(message: message, client: store.devPreviewClient, threadId: store.selectedThreadId).equatable()
-                    }
-                  case .tools(let id, let messages):
-                    ToolCallGroupView(id: id, messages: messages, client: store.client,
-                      disclosure: toolDisclosure(targetKey: target, groupId: id))
-                      .padding(.vertical, messages.count > 1 ? -6 : 0)
-                  case .replyActions(let id, let text, let turnId):
+                  if case .message(let message) = item,
+                    store.chatSearchJump?.targetKey == store.targetKey,
+                    store.chatSearchJump?.message.id == message.id {
+                    LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query,
+                      client: store.devPreviewClient, threadId: store.selectedThreadId)
+                  } else if case .replyActions(let id, let text, let turnId) = item {
                     ReplyActionsView(store: store, id: id, text: text, turnId: turnId, source: store.forkSource)
-                  case .compaction(let message):
-                    ContextCompactionView(message: message,
-                      isLive: store.client?.online == true && store.isWritable)
-                  case .errors(let id, let messages):
-                    VStack(alignment: .leading, spacing: 4) {
-                      Label(store.isRunning ? L10n.tr("电脑报告运行异常，仍在处理中") : L10n.tr("运行异常记录（\(messages.count) 条）"), systemImage: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
-                      if let last = messages.last {
-                        let detail = last.detail?.isEmpty == false ? last.detail! : last.text
-                        if !detail.isEmpty && detail != "error" { Text(detail).lineLimit(3) }
-                      }
-                    }.font(.caption).foregroundStyle(Palette.secondary)
-                      .accessibilityIdentifier("runtime-error-group-\(id)")
+                  } else {
+                    ChatTimelineEntryView(item: item, client: store.devPreviewClient, threadId: store.selectedThreadId,
+                      targetKey: target, isRunning: store.isRunning,
+                      isLive: store.client?.online == true && store.isWritable,
+                      toolDisclosure: { toolDisclosure(targetKey: target, groupId: $0) })
                   }
                   }.id(item.id)
                     .background {
@@ -2850,11 +2826,9 @@ struct RootView: View {
   @ViewBuilder private func sheets(_ route: AppSheet) -> some View {
     switch route {
     case .projectGit:
-      if let context = store.projectGitContext, context.target.agentId == "easywork" { ProjectGitDetailsView(context: context) }
+      if let context = store.projectGitContext { ProjectGitDetailsView(context: context) }
     case .usage:
-      if let client = store.client, client.agentConnection?.target.agentId == "easywork" {
-        UsageDetailsView(client: client, target: store.mobileReadingTarget(client))
-      }
+      if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client)) }
     case .chatSearch: ChatHistorySearchView(store: store, targetKey: store.targetKey)
     case .archivedChats: ArchivedChatsView(store: store)
     case .taskHub: TaskHubView(store: taskHub, openExecution: { navigation in try await store.openTaskExecution(navigation) }).presentationDetents([.large])
@@ -2862,9 +2836,6 @@ struct RootView: View {
     case .addClient: AddClientView(store: store)
     case .projects: ProjectPickerView(store: store)
     case .settings: SettingsView(store: store)
-    case .usage: if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client)) }
-    case .projectGit:
-      if let context = store.projectGitContext, context.target.agentId == "easywork" { ProjectGitDetailsView(context: context) }
     case .addProject: AddProjectView(store: store)
     case .generation: GenerationSettings(store: store)
     case .aiSharing: AISharingPermissionView(store: store)
@@ -3393,36 +3364,6 @@ struct ToolDisclosureState {
   var groupExpanded = false
   var expandedTools: Set<String> = []
 }
-/// Native presentation of an authenticated child-run projection. No commands.
-struct EasyWorkSubagentMessageView: View {
-  let message: ChatMessage
-  @State private var expanded = false
-  private var detail: String { message.detail ?? "" }
-  private var preview: String {
-    String(detail.split(separator: "\n", omittingEmptySubsequences: false).suffix(6).joined(separator: "\n").suffix(1200))
-  }
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack {
-        Image(systemName: "person.2")
-        Text(L10n.tr("子 Agent") + " · " + message.text).fontWeight(.medium)
-        Spacer(minLength: 0)
-        if message.status == "inProgress" { ProgressView().controlSize(.mini) }
-        Text(L10n.tr(LocalizedText(stringLiteral: SharedMobileRules.toolStatus(message.status)))).font(.caption)
-      }
-      if !detail.isEmpty {
-        Text(verbatim: expanded ? detail : preview).font(.callout)
-          .lineLimit(expanded ? nil : 5).textSelection(.enabled)
-        Button(expanded ? L10n.tr("收起") : L10n.tr("展开")) { expanded.toggle() }
-          .font(.caption).accessibilityIdentifier("subagent-expand-\(message.id)")
-      } else { Text(L10n.tr("等待子 Agent 更新…")).font(.caption).foregroundStyle(.secondary) }
-    }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-      .background(Palette.toolDetail, in: RoundedRectangle(cornerRadius: 12))
-      .accessibilityElement(children: .contain)
-      .accessibilityIdentifier("subagent-\(message.id)")
-  }
-}
-
 struct ToolCallGroupView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let id: String
@@ -3558,7 +3499,6 @@ struct ToolCallView: View {
         .accessibilityIdentifier("tool-item-\(message.id)")
         .accessibilityLabel(title)
         .accessibilityValue(L10n.tr("\(statusLabel)，\(expanded ? L10n.tr("已展开") : L10n.tr("已折叠"))"))
-      if message.kind == "subAgent" { SubagentHistoryAction(message: message) }
       if expanded {
         VStack(alignment: .leading, spacing: 8) {
           Text(style.detailTitle).font(.subheadline).foregroundStyle(Palette.secondary)
@@ -5678,6 +5618,7 @@ private struct ComposerView: View,Equatable {
         .foregroundStyle(store.draft.text.isEmpty ? Palette.secondary : .primary)
         .font(.body).lineLimit(1...6).frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14).padding(.top, 10)
+        .contentShape(Rectangle()).onTapGesture { voice.stopRecordingOnTap() }
         .accessibilityIdentifier("dictation-transcript")
       VoiceInputControls(voice: voice, text: store.draft.text)
     }.padding(4)

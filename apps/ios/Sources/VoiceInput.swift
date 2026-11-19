@@ -382,6 +382,13 @@ final class VoiceInputController: ObservableObject {
     guard canUseLocalTranscription else { return false }
     return await finish(usingLocalRecording: true)
   }
+  // Only a listening gesture may seal a recording; finishing and failures are inert.
+  func stopRecordingOnTap() {
+    Task {
+      guard phase == .listening else { return }
+      _ = await finish()
+    }
+  }
   func finish(usingLocalRecording: Bool = false, queryOnly: Bool = false) async -> Bool {
     if let finishTask { return await finishTask.value }
     guard phase == .listening || phase == .failed else { return phase == .idle && error == nil }
@@ -805,6 +812,7 @@ struct VoiceInputControls: View {
       }
       if voice.phase != .finishing {
         Text(voice.status).font(.caption).foregroundStyle(Palette.secondary).padding(.horizontal, 14)
+          .contentShape(Rectangle()).onTapGesture { voice.stopRecordingOnTap() }
           .accessibilityIdentifier(identifier("voice-status", question: "question-voice-status-"))
       }
       if voice.phase == .failed && voice.canRetryTranscription {

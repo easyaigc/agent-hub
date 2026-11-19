@@ -544,7 +544,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     if let hostId = saved.selectedClientId { restoreSelection(hostId) }
     #if DEBUG && targetEnvironment(simulator)
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing")
-      && ProcessInfo.processInfo.arguments.contains("-subagent-reading-fixture"), client?.isDemo == true {
+      && (ProcessInfo.processInfo.arguments.contains("-subagent-reading-fixture")
+        || ProcessInfo.processInfo.arguments.contains("-subagent-timeline-fixture")), client?.isDemo == true {
       let section = String(repeating: "Original C2 text 100% %@ 🧭 stays intact.\n", count: 1000)
       saved.history[targetKey] = [ChatMessage(id: "c2-fixture-child", role: "tool", text: "C2 original child",
         kind: "subAgent", status: "completed", detail: "C2_DETAIL_HEAD\n" + section + "C2_DETAIL_MIDDLE\n" + section + "C2_DETAIL_TAIL")]
@@ -1759,7 +1760,12 @@ private var userRequestedWorkspaceGeneration: UUID?
   var isProjectlessDraft: Bool { selectedThreadId == nil && saved.newProjects[client?.id ?? ""] == "__projectless__" }
   var runtime: ThreadRuntime? { saved.runtimes?[targetKey] }
   var supportsSubagentHistory: Bool {
-    client.map { saved.workspaces[$0.id]?.capabilities?.contains("subagents:history:read:v1") == true } ?? false
+    #if DEBUG && targetEnvironment(simulator)
+    if client?.isDemo == true, testMode,
+      ProcessInfo.processInfo.arguments.contains("-subagent-timeline-fixture") { return true }
+    #endif
+    guard let client, let provider = try? AgentClients.resolve(client) else { return false }
+    return provider.supportsSubagentHistory(client, workspace: saved.workspaces[client.id])
   }
   var supportsPlanMode: Bool {
     client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("plan-mode") == true

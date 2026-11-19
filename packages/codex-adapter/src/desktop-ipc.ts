@@ -1124,6 +1124,7 @@ export class DesktopRuntime {
   private subagentReads = new Set<string>();
   private subagentRetryAt = new Map<string, number>();
   private subagentHistory = new Map<string, SubagentTranscript>();
+  private subagentIdentities = new Map<string, WireObject>();
   private subagentHistoryTimer?: NodeJS.Timeout;
   private subagentHistoryReading = false;
   private subagentHistoryOffset = 0;
@@ -1200,6 +1201,7 @@ export class DesktopRuntime {
         if (!this.subagentParents.get(id)?.size) {
           this.subagentParents.delete(id);
           this.subagentHistory.delete(id);
+          this.subagentIdentities.delete(id);
           this.subagentRetryAt.delete(id);
         }
       }
@@ -1258,6 +1260,17 @@ export class DesktopRuntime {
     this.parentSubagents.set(state, parent);
     return parent;
   }
+  private withSubagentIdentity(id: string, state?: WireObject): WireObject | undefined {
+    if (!state) return this.subagentIdentities.get(id);
+    const metadata = this.subagentIdentities.get(id);
+    return {
+      ...state,
+      agentNickname: string(state.agentNickname) || metadata?.agentNickname,
+      name: string(state.name) || string(state.title) || metadata?.name || metadata?.title,
+      preview: string(state.preview) || metadata?.preview,
+      source: state.source ?? metadata?.source,
+    };
+  }
   projectSubagent(item: WireObject, parentState?: WireObject): WireObject | undefined {
     let tool = item;
     if (item.type === 'subAgentActivity') {
@@ -1284,9 +1297,12 @@ export class DesktopRuntime {
       tool,
       (id) => {
         const state = this.ipc.state(id);
-        return state ? { ...state, turns: desktopTurns(state) } : undefined;
+        return state
+          ? this.withSubagentIdentity(id, { ...state, turns: desktopTurns(state) })
+          : undefined;
       },
       (id) => this.subagentHistory.get(id),
+      (id) => this.subagentIdentities.get(id),
     );
   }
   private async savedSubagentThread(id: string): Promise<WireObject> {
@@ -1405,7 +1421,9 @@ export class DesktopRuntime {
     return {
       children: ids.map((id) => ({
         id,
-        title: subagentDisplayLabel(id === selected ? child : this.ipc.state(id)),
+        title: subagentDisplayLabel(
+          this.withSubagentIdentity(id, id === selected ? child : this.ipc.state(id)),
+        ),
         status:
           id === selected
             ? string(desktopTurns(child).at(-1)?.status) ||
@@ -1424,14 +1442,15 @@ export class DesktopRuntime {
   }
   private async refreshSubagentHistory(): Promise<void> {
     if (this.subagentsClosed || this.subagentHistoryReading || !this.ready) return;
-    const ids = [...this.subagentParents.keys()].filter(
-      (id) =>
-        !this.ipc.hasOwner(id) &&
-        (!this.subagentHistory.has(id) ||
+    const ids = [...this.subagentParents.keys()].filter((id) =>
+      this.ipc.hasOwner(id)
+        ? !this.subagentIdentities.has(id)
+        : !this.subagentIdentities.has(id) ||
+          !this.subagentHistory.has(id) ||
           [...this.subagentParents.get(id)!].some((parent) => {
             const state = this.ipc.state(parent);
             return state && desktopTurns(state).some((turn) => turn.status === 'inProgress');
-          })),
+          }),
     );
     if (!ids.length) return;
     this.subagentHistoryReading = true;
@@ -1441,19 +1460,38 @@ export class DesktopRuntime {
     try {
       await Promise.allSettled(
         batch.map(async (id) => {
-          // Metadata is evidence of saved output only, never of a live child owner.
+          // Fill an owner's missing identity once. Metadata never grants ownership.
+          const metadataOnly = this.ipc.hasOwner(id);
           const result = await this.reader.read('thread/read', {
             threadId: id,
-            includeTurns: true,
+            includeTurns: !metadataOnly,
           });
           const child = object(result.thread);
           if (this.subagentsClosed || child.id !== id || !this.subagentParents.has(id)) return;
-          const value = subagentTranscript(child.turns);
-          const previous = this.subagentHistory.get(id);
-          if (previous?.text === value.text && previous.omitted === value.omitted) return;
-          this.subagentHistory.set(id, value);
-          while (this.subagentHistory.size > 128)
-            this.subagentHistory.delete(this.subagentHistory.keys().next().value!);
+          const previousIdentity = this.subagentIdentities.get(id);
+          const identity = {
+            id,
+            agentNickname:
+              string(child.agentNickname) ||
+              string(object(object(object(child.source).subAgent).thread_spawn).agent_nickname) ||
+              previousIdentity?.agentNickname,
+            name: child.name ?? previousIdentity?.name,
+            title: child.title ?? previousIdentity?.title,
+            preview: child.preview ?? previousIdentity?.preview,
+          };
+          this.subagentIdentities.set(id, identity);
+          while (this.subagentIdentities.size > 128)
+            this.subagentIdentities.delete(this.subagentIdentities.keys().next().value!);
+          let changed = JSON.stringify(previousIdentity) !== JSON.stringify(identity);
+          if (!metadataOnly) {
+            const value = subagentTranscript(child.turns);
+            const previous = this.subagentHistory.get(id);
+            changed ||= previous?.text !== value.text || previous?.omitted !== value.omitted;
+            this.subagentHistory.set(id, value);
+            while (this.subagentHistory.size > 128)
+              this.subagentHistory.delete(this.subagentHistory.keys().next().value!);
+          }
+          if (!changed) return;
           this.publishSubagentParents(id);
         }),
       );
@@ -1791,6 +1829,7 @@ export class DesktopRuntime {
     this.subagentParents.clear();
     this.parentChildren.clear();
     this.subagentHistory.clear();
+    this.subagentIdentities.clear();
     this.ipc.close();
     this.reader.close();
   }

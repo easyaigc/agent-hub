@@ -7,69 +7,92 @@ import Vision
 /// Drives the actual history card in a fresh owned simulator. The app's DEBUG
 /// demo fixture supplies the long text; no device credentials or desktop writes.
 final class EasyWorkSubagentReadingUITests: XCTestCase {
+  private func evidence(_ name: String, app: XCUIApplication) {
+    let image = XCTAttachment(screenshot: app.screenshot())
+    image.name = name; image.lifetime = .keepAlways; add(image)
+  }
+
+  @MainActor func testLongChildDetailOpensClosesAndReopensWithOriginalText() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-ui-testing", "-subagent-reading-fixture"]
+    app.launch()
+    defer { app.terminate() }
+    let row = app.buttons["subagent-c2-fixture-child"]
+    let sheet = app.scrollViews["subagent-detail-c2-fixture-child"]
+    let close = app.buttons["subagent-detail-close"]
+    let full = app.staticTexts["subagent-legacy-detail"]
+    XCTAssertTrue(row.waitForExistence(timeout: 30))
+    XCTAssertFalse(sheet.exists)
+    XCTAssertFalse(full.exists, "The full body must not be mounted in the list")
+    XCTAssertEqual(row.frame.height, 44, accuracy: 1, "The status row should remain compact")
+    evidence("subagent-status-row", app: app)
+    let section = String(repeating: "Original C2 text 100% %@ 🧭 stays intact.\n", count: 1000)
+    let original = "C2_DETAIL_HEAD\n" + section + "C2_DETAIL_MIDDLE\n" + section + "C2_DETAIL_TAIL"
+    row.tap()
+    XCTAssertTrue(sheet.waitForExistence(timeout: 15))
+    XCTAssertTrue(full.waitForExistence(timeout: 15))
+    XCTAssertEqual(full.label, original, "Sheet must expose the entire unmodified original")
+    evidence("subagent-long-sheet", app: app)
+    XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
+    XCTAssertTrue(row.waitForExistence(timeout: 10))
+    let unmounted = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: sheet)
+    XCTAssertEqual(XCTWaiter.wait(for: [unmounted], timeout: 10), .completed)
+    XCTAssertFalse(full.exists, "Closing the sheet must unmount the body")
+    row.tap()
+    XCTAssertTrue(full.waitForExistence(timeout: 15))
+    XCTAssertEqual(full.label, original, "Reopening must preserve the original")
+  }
+
   @MainActor func testNativeLongPressSelectAndCopyChildDetail() {
     continueAfterFailure = false
     let app = XCUIApplication()
     app.launchArguments = ["-ui-testing", "-subagent-reading-fixture"]
     app.launch()
     defer { app.terminate() }
-    let disclosure = app.buttons["subagent-expand-c2-fixture-child"]
-    XCTAssertTrue(disclosure.waitForExistence(timeout: 30))
-    disclosure.tap()
-    let full = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "C2_DETAIL_HEAD")).firstMatch
+    let row = app.buttons["subagent-c2-fixture-child"]
+    XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+    let full = app.staticTexts["subagent-legacy-detail"]
     XCTAssertTrue(full.waitForExistence(timeout: 15))
-    let original = full.label
-    XCTAssertTrue(original.utf8.count > 65_536)
-    // The element is much taller than the viewport. Press visible text near the
-    // top of its actual frame, rather than the offscreen element centre.
     let visible = full.frame.intersection(app.frame)
     XCTAssertGreaterThan(visible.height, 40)
     let point = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX, dy: visible.minY + 30))
     point.press(forDuration: 1.2)
     let copy = app.menuItems.matching(NSPredicate(format: "label == 'Copy' OR label == '拷贝' OR label == '复制'")).firstMatch
     XCTAssertTrue(copy.waitForExistence(timeout: 15), "Native selection menu must expose Copy")
-    let menu = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-    menu.name = "c2-native-selection-menu"; menu.lifetime = .keepAlways; add(menu)
+    evidence("subagent-native-selection-menu", app: app)
     copy.tap()
-    // The separate XCTest runner has no paste permission on this OS. Verify
-    // the system pasteboard externally with simctl after the UI test exits.
-
+    // The runner cannot read the app pasteboard on this OS; this checks the native action, not its contents.
   }
 
-  @MainActor func testLongChildDetailExpandsAndCollapsesWithoutLosingContent() {
+  @MainActor func testStructuredChildTimelineToolGroupAndCommandOutput() {
     continueAfterFailure = false
     let app = XCUIApplication()
-    app.launchArguments = ["-ui-testing", "-subagent-reading-fixture"]
+    app.launchArguments = ["-ui-testing", "-subagent-timeline-fixture"]
     app.launch()
     defer { app.terminate() }
-    let history = app.scrollViews["message-list"]
-    let disclosure = app.buttons["subagent-expand-c2-fixture-child"]
-    XCTAssertTrue(history.waitForExistence(timeout: 30))
-    XCTAssertTrue(disclosure.waitForExistence(timeout: 20))
-    let full = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "C2_DETAIL_HEAD")).firstMatch
-    XCTAssertFalse(full.exists)
-    XCTAssertTrue(["展开", "Expand"].contains(disclosure.label))
-    func evidence(_ name: String) {
-      let image = XCTAttachment(screenshot: app.screenshot())
-      image.name = name; image.lifetime = .keepAlways; add(image)
-    }
-    evidence("subagent-collapsed")
-    disclosure.tap()
-    XCTAssertTrue(full.waitForExistence(timeout: 15))
-    let original = full.label
-    XCTAssertTrue(original.utf8.count > 65_536)
-    XCTAssertTrue(original.contains("C2_DETAIL_MIDDLE"))
-    XCTAssertTrue(original.hasSuffix("C2_DETAIL_TAIL"))
-    XCTAssertTrue(["收起", "Collapse"].contains(disclosure.label))
-    evidence("subagent-expanded")
-    for _ in 0..<80 where !disclosure.isHittable { history.swipeUp(velocity: .fast) }
-    XCTAssertTrue(disclosure.isHittable, "The original detail remains scrollable to the disclosure at its end")
-    evidence("subagent-detail-end")
-    disclosure.tap()
-    XCTAssertFalse(full.exists)
-    XCTAssertTrue(["展开", "Expand"].contains(disclosure.label))
+    let row = app.buttons["subagent-c2-fixture-child"]
+    let sheet = app.scrollViews["subagent-detail-c2-fixture-child"]
+    XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+    XCTAssertTrue(sheet.waitForExistence(timeout: 15))
+    let group = sheet.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "tool-group-")).firstMatch
+    let command = sheet.buttons["tool-item-c2-child-command-1"]
+    let output = sheet.staticTexts["tool-output-content-c2-child-command-1"]
+    XCTAssertTrue(group.waitForExistence(timeout: 15))
+    XCTAssertFalse(command.exists, "Tool group must initially be collapsed")
+    group.tap()
+    XCTAssertTrue(command.waitForExistence(timeout: 10))
+    XCTAssertFalse(output.exists, "Command output must initially be collapsed")
+    command.tap()
+    XCTAssertTrue(output.waitForExistence(timeout: 10))
+    XCTAssertEqual(output.label, "C2_CHILD_OUTPUT_ONE\nExit 0")
+    evidence("subagent-structured-command", app: app)
+    group.tap()
+    XCTAssertFalse(command.exists, "Collapsing the group must remove its tool rows")
+    XCTAssertFalse(output.exists)
   }
 }
+
 #endif
 
 /// Minimal real UIAutomation bootstrap. Does not launch, tap or mutate the App.
@@ -2822,3 +2845,162 @@ extension CodexManageUITests {
     easyWorkExaminerText("Canonical completed notice presentation/privacy/master-reenable inspected by actual App UNUserNotificationCenter read-only probe; distinct new model inputs \(inputCount); physical iPhone false; Codex tests false",name:"easywork-original-notice-native-scope",testCase:self)
   }
 }
+
+#if targetEnvironment(simulator)
+/// Real pre-existing EasyWork child outputs only; no send, pairing, or metadata mutation.
+final class EasyWorkExistingChildHistoryUITests: XCTestCase {
+  @MainActor func testExistingChildrenOriginalOutputAndReopen() throws {
+    continueAfterFailure = false
+    let env = ProcessInfo.processInfo.environment
+    guard let raw = env["EASYWORK_EXISTING_CHILD_CASE"], let data = raw.data(using: .utf8),
+      let config = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let thread = config["threadId"] as? String, UUID(uuidString: thread) != nil,
+      let children = config["children"] as? [[String: String]], !children.isEmpty,
+      config["newModelInputsAuthorized"] as? Int == 0 else { throw XCTSkip("Exact private read-only case required") }
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev"]
+    app.launch()
+    defer { app.terminate() }
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    XCTAssertTrue(target.waitForExistence(timeout: 45))
+    if !(target.value as? String ?? "").contains(thread) {
+      let sidebar = app.buttons["open-sidebar"]; XCTAssertTrue(sidebar.waitForExistence(timeout: 15)); sidebar.tap()
+      let rows = app.buttons.matching(NSPredicate(format: "identifier IN %@", ["recent-thread-" + thread, "thread-" + thread, "pinned-thread-" + thread]))
+      let list = app.scrollViews["sidebar-list"]
+      for _ in 0..<15 where !rows.firstMatch.isHittable { list.swipeUp() }
+      XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15)); rows.firstMatch.tap()
+      let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value CONTAINS %@", thread), object: target)
+      XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 30), .completed)
+    }
+    XCTAssertTrue((target.value as? String ?? "").contains(thread), "Must open the exact existing parent thread before reading")
+    let composer = app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch
+    XCTAssertTrue(composer.waitForExistence(timeout: 15))
+    let draftMarker = "F20_OWNED_DRAFT_9271"
+    let beforeDraft = composer.value as? String ?? ""
+    let resumedOwnedMarker = beforeDraft.hasSuffix(draftMarker)
+    let originalDraft = resumedOwnedMarker ? String(beforeDraft.dropLast(draftMarker.count)) : beforeDraft
+    // This freshly paired test device had an empty original draft, verified by
+    // the first attempt. Never select or delete any unknown pre-existing text.
+    guard originalDraft.isEmpty else { throw NSError(domain: "EasyWorkOwnedDraft", code: 1) }
+    if !resumedOwnedMarker { composer.tap(); composer.typeText(draftMarker) }
+    XCTAssertEqual(composer.value as? String ?? "", draftMarker)
+    func restoreOwnedDraft() {
+      let close = app.buttons["subagent-detail-close"]
+      if close.exists { close.tap() }
+      guard composer.value as? String == draftMarker else { return }
+      composer.tap(); composer.press(forDuration: 1.1)
+      let labels = NSPredicate(format: "label IN %@", ["全选", "Select All"])
+      let selectButton = app.buttons.matching(labels).firstMatch
+      let selectItem = app.menuItems.matching(labels).firstMatch
+      if selectButton.waitForExistence(timeout: 2) { selectButton.tap() }
+      else if selectItem.exists { selectItem.tap() }
+      else { composer.tap(withNumberOfTaps: 3, numberOfTouches: 1) }
+      composer.typeText(XCUIKeyboardKey.delete.rawValue)
+      let restored = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        (composer.value as? String ?? "") == originalDraft
+      }, object: composer)
+      _ = XCTWaiter.wait(for: [restored], timeout: 8)
+    }
+    defer { restoreOwnedDraft() }
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    let list = app.scrollViews["message-list"]
+    XCTAssertTrue(list.waitForExistence(timeout: 30))
+    for child in children {
+      let id = try XCTUnwrap(child["messageId"]), expected = try XCTUnwrap(child["output"]), task = try XCTUnwrap(child["task"])
+      let row = app.buttons["subagent-" + id]
+      for _ in 0..<12 where !row.isHittable { list.swipeUp() }
+      XCTAssertTrue(row.waitForExistence(timeout: 15)); XCTAssertTrue(row.isHittable)
+      XCTAssertEqual(row.frame.height, 44, accuracy: 2)
+      let sheet = app.scrollViews["subagent-detail-" + id]
+      XCTAssertFalse(sheet.exists); row.tap()
+      XCTAssertTrue(sheet.waitForExistence(timeout: 20))
+      let body = sheet.descendants(matching: .any).matching(identifier: "subagent-detail-body-" + id).firstMatch
+      XCTAssertTrue(body.waitForExistence(timeout: 30), "Actual structured history must load")
+      // The native Markdown view renders paragraphs and list items separately.
+      // Parse the actual inline Markdown syntax and require each complete rendered block.
+      let renderedBlocks = try expected.components(separatedBy: "\n").filter { !$0.isEmpty }.map { line in
+        let range = line.range(of: "^(?:[-+*]|[0-9]+[.)])\\s+", options: .regularExpression)
+        let content = range.map { String(line[$0.upperBound...]) } ?? line
+        return String(try AttributedString(markdown: content, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)).characters)
+      }
+      XCTAssertFalse(renderedBlocks.isEmpty)
+      for block in renderedBlocks {
+        let text = sheet.staticTexts.matching(NSPredicate(format: "label == %@", block)).firstMatch
+        XCTAssertTrue(text.waitForExistence(timeout: 15), "Complete native-rendered child block must match canonical Markdown")
+      }
+      XCTAssertTrue(sheet.staticTexts.matching(NSPredicate(format: "label == %@", task)).firstMatch.exists, "Exact canonical child task must be displayed")
+      XCTAssertFalse(app.staticTexts["subagent-history-error"].exists)
+      if let toolId = child["toolMessageId"], let expectedJSON = child["toolPartJSON"] {
+        let group = sheet.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "tool-group-")).firstMatch
+        if group.exists { group.tap() }
+        if let raw = child["reasoningJSON"], let data = raw.data(using: .utf8),
+          let entries = try JSONSerialization.jsonObject(with: data) as? [[String: String]] {
+          for entry in entries {
+            let reasonId = try XCTUnwrap(entry["id"]), expectedReason = try XCTUnwrap(entry["text"])
+            let reason = sheet.buttons["tool-item-" + reasonId]
+            XCTAssertTrue(reason.waitForExistence(timeout: 15)); reason.tap()
+            let detail = sheet.staticTexts["tool-output-content-" + reasonId]
+            XCTAssertTrue(detail.waitForExistence(timeout: 15)); XCTAssertEqual(detail.label, expectedReason)
+          }
+        }
+        let tool = sheet.buttons["tool-item-" + toolId]
+        XCTAssertTrue(tool.waitForExistence(timeout: 15)); tool.tap()
+        let details = sheet.staticTexts["tool-output-content-" + toolId]
+        XCTAssertTrue(details.waitForExistence(timeout: 15))
+        let actual = try XCTUnwrap(details.label.data(using: .utf8))
+        let expectedData = try XCTUnwrap(expectedJSON.data(using: .utf8))
+        let actualObject = try XCTUnwrap(try JSONSerialization.jsonObject(with: actual) as? NSDictionary)
+        let expectedObject = try XCTUnwrap(try JSONSerialization.jsonObject(with: expectedData) as? NSDictionary)
+        XCTAssertEqual(actualObject, expectedObject, "Displayed tool call and result must match the actual service value")
+      }
+      let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "real-child-detail"; shot.lifetime = .keepAlways; add(shot)
+      let close = app.buttons["subagent-detail-close"]; XCTAssertTrue(close.waitForExistence(timeout: 5)); close.tap()
+      XCTAssertTrue(row.waitForExistence(timeout: 10)); row.tap()
+      XCTAssertTrue(sheet.waitForExistence(timeout: 15))
+      for block in renderedBlocks {
+        XCTAssertTrue(sheet.staticTexts.matching(NSPredicate(format: "label == %@", block)).firstMatch.waitForExistence(timeout: 20))
+      }
+      close.tap()
+      XCTAssertTrue(row.waitForExistence(timeout: 10))
+      XCTAssertTrue((target.value as? String ?? "").contains(thread))
+      XCTAssertTrue((composer.value as? String ?? "").hasSuffix(draftMarker), "Unsent draft must survive child detail")
+    }
+    restoreOwnedDraft()
+    XCTAssertEqual(composer.value as? String ?? "", originalDraft, "Restore the original owned draft without sending")
+  }
+}
+#endif
+
+#if targetEnvironment(simulator)
+final class EasyWorkOwnedDevicePairingUITests: XCTestCase {
+  @MainActor func testPairOwnedDeviceThroughOfficialForm() throws {
+    continueAfterFailure = false
+    guard let offer = ProcessInfo.processInfo.environment["EASYWORK_OWN_DEVICE_OFFER"], offer.hasPrefix("easywork://pair?") else { throw XCTSkip("Dedicated EWDAP offer required") }
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev"]
+    app.launchEnvironment["EASYWORK_DEV_LAN_OFFER"] = offer
+    app.launchEnvironment["AppleLanguages"] = "(zh-Hans)"
+    app.launchEnvironment["AppleLocale"] = "zh_CN"
+    app.launch()
+    let initial = app.buttons["添加客户端"]
+    if initial.waitForExistence(timeout: 20) { initial.tap() }
+    else {
+      let add = app.buttons["add-client"]
+      if !add.exists { let sidebar = app.buttons["open-sidebar"]; XCTAssertTrue(sidebar.waitForExistence(timeout: 15)); sidebar.tap() }
+      XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+    }
+    let easywork = app.buttons["EasyWork"]
+    XCTAssertTrue(easywork.waitForExistence(timeout: 15)); easywork.tap()
+    let method = app.buttons["easywork-connection-method"]
+    XCTAssertTrue(method.waitForExistence(timeout: 15)); method.tap()
+    let qr = app.buttons["扫码连接"]
+    XCTAssertTrue(qr.waitForExistence(timeout: 10)); qr.tap()
+    let connect = app.buttons["easywork-pair-lan"]
+    XCTAssertTrue(connect.waitForExistence(timeout: 10)); XCTAssertTrue(connect.isEnabled); connect.tap()
+    let error = app.staticTexts["easywork-pair-error"]
+    let done = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !connect.exists || error.exists }, object: app)
+    XCTAssertEqual(XCTWaiter.wait(for: [done], timeout: 100), .completed)
+    XCTAssertFalse(error.exists, "Owned EWDAP pairing failed")
+  }
+}
+#endif

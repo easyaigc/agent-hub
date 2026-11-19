@@ -228,7 +228,7 @@ test('native desktop activities update one stable parent card from the exact chi
     const card = runtime.projectSubagent(started, parent);
     assert.equal(card.type, 'subAgent');
     assert.equal(card.id, 'desktop-subagent-child');
-    assert.equal(card.text, '/root/child');
+    assert.equal(card.text, '子 Agent'); // A path is not the child's identity or task title.
     assert.equal(card.status, 'completed');
     assert.equal(card.detail, 'child · completed\n最近保存的输出\n' + text);
     for (const item of parent.turns[0].items.slice(1)) {
@@ -449,4 +449,332 @@ test('named child request errors retain explicit HTTP status at the session boun
       (error) => error.status === status && error.message === reason,
     );
   }
+});
+
+test('owned child reads metadata once while keeping live status and output', async () => {
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const { renderItem } = await import('../packages/codex-adapter/dist/runtime.js');
+  const runtime = new DesktopRuntime({}, 'host', 'test');
+  Object.defineProperty(runtime.ipc, 'ready', { value: true });
+  Object.defineProperty(runtime.reader, 'ready', { value: true });
+  const item = {
+    id: 'tool',
+    type: 'collabAgentToolCall',
+    tool: 'sendInput',
+    prompt: 'followup',
+    receiverThreadIds: ['child'],
+    agentsStates: { child: { status: 'failed' } },
+  };
+  const parent = {
+    id: 'parent',
+    turns: [{ id: 'parent-turn', status: 'inProgress', items: [item] }],
+  };
+  const child = {
+    id: 'child',
+    source: {},
+    turns: [
+      {
+        id: 'child-turn',
+        status: 'inProgress',
+        items: [{ id: 'live', type: 'agentMessage', text: 'live progress' }],
+      },
+    ],
+  };
+  const reads = [];
+  let owned = true;
+  runtime.ipc.hasOwner = (id) => id === 'child' && owned;
+  runtime.ipc.state = (id) =>
+    id === 'parent' ? parent : id === 'child' && owned ? child : undefined;
+  runtime.ipc.completeHistory = async () => child;
+  runtime.ipc.close = () => {};
+  runtime.reader.close = () => {};
+  runtime.reader.read = async (method, args) => {
+    reads.push([method, args]);
+    return {
+      thread: {
+        id: 'child',
+        title: 'Investigate task',
+        source: { subAgent: { thread_spawn: { agent_nickname: 'Terra' } } },
+        turns: args.includeTurns
+          ? [
+              {
+                status: 'completed',
+                items: [{ type: 'agentMessage', text: 'saved output after owner exit' }],
+              },
+            ]
+          : [],
+      },
+    };
+  };
+  try {
+    runtime.followSubagents('parent', parent);
+    await runtime.refreshSubagentHistory();
+    const result = renderItem(runtime.projectSubagent(item));
+    assert.equal(result.text, 'Terra · Investigate task');
+    assert.equal(result.status, 'inProgress');
+    assert.match(result.detail, /live progress/);
+    assert.doesNotMatch(result.detail, /stale saved output|最近保存的输出/);
+    const popup = await runtime.subagentHistoryPage('parent', 'tool', 'child');
+    assert.equal(popup.children[0].title, 'Terra · Investigate task');
+    assert.equal(popup.children[0].status, 'inProgress');
+    assert.equal(popup.source, 'desktop-runtime');
+    await runtime.refreshSubagentHistory();
+    assert.deepEqual(reads, [['thread/read', { threadId: 'child', includeTurns: false }]]);
+    assert.equal(runtime.subagentHistory.has('child'), false);
+    assert.equal(runtime.subagentIdentities.get('child').agentNickname, 'Terra');
+    assert.equal(runtime.subagentIdentities.get('child').title, 'Investigate task');
+    owned = false;
+    parent.turns[0].status = 'completed';
+    await runtime.refreshSubagentHistory();
+    assert.deepEqual(reads, [
+      ['thread/read', { threadId: 'child', includeTurns: false }],
+      ['thread/read', { threadId: 'child', includeTurns: true }],
+    ]);
+    assert.equal(runtime.subagentHistory.has('child'), true);
+    const saved = renderItem(runtime.projectSubagent(item));
+    assert.equal(saved.text, 'Terra · Investigate task');
+    assert.equal(saved.status, 'failed');
+    assert.match(saved.detail, /最近保存的输出/);
+    assert.match(saved.detail, /saved output after owner exit/);
+    assert.doesNotMatch(saved.detail, /live progress/);
+    await runtime.refreshSubagentHistory();
+    assert.equal(reads.length, 2);
+    // Identity eviction must be recoverable even with cached output and a terminal parent.
+    runtime.subagentIdentities.delete('child');
+    await runtime.refreshSubagentHistory();
+    assert.equal(reads.length, 3);
+    assert.equal(renderItem(runtime.projectSubagent(item)).text, 'Terra · Investigate task');
+  } finally {
+    runtime.close();
+  }
+});
+
+async function historyRuntime() {
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const runtime = new DesktopRuntime({}, 'host', 'test');
+  const item = {
+    id: 'tool-1',
+    type: 'collabAgentToolCall',
+    receiverThreadIds: ['child'],
+    agentsStates: { child: { status: 'running' } },
+  };
+  const parent = { id: 'parent', turns: [{ id: 'p-turn', status: 'completed', items: [item] }] };
+  const child = {
+    id: 'child',
+    turns: [
+      {
+        id: 'c-turn',
+        status: 'completed',
+        items: [{ id: 'child-message', type: 'agentMessage', text: 'saved' }],
+      },
+    ],
+  };
+  const reads = [];
+  const live = [];
+  runtime.ipc.state = () => undefined;
+  runtime.ipc.hasOwner = () => false;
+  runtime.ipc.completeHistory = async (id) => {
+    live.push(id);
+    return id === 'parent' ? parent : child;
+  };
+  runtime.reader.read = async (method, args) => {
+    reads.push([method, args]);
+    return { thread: args.threadId === 'parent' ? parent : child };
+  };
+  return { runtime, parent, child, reads, live };
+}
+
+test('saved paginated parent and child histories retain order and turn status', async () => {
+  const { runtime } = await historyRuntime();
+  const calls = [];
+  runtime.reader.read = async (method, args) => {
+    calls.push([method, { ...args }]);
+    const parent = args.threadId === 'parent';
+    if (method === 'thread/read')
+      return { thread: { id: args.threadId, historyMode: 'paginated', turns: [] } };
+    assert.equal(args.sortDirection, 'desc');
+    assert.equal(args.limit, 100);
+    if (method === 'thread/turns/list') {
+      assert.equal(args.itemsView, 'notLoaded');
+      if (parent)
+        return {
+          data: [
+            { id: 'p-new', status: 'completed' },
+            { id: 'p-old', status: 'completed' },
+          ],
+          nextCursor: null,
+        };
+      return args.cursor
+        ? { data: [{ id: 'c-old', status: 'completed' }], nextCursor: null }
+        : {
+            data: [
+              { id: 'c-failed', status: 'failed', error: { message: 'failed turn' } },
+              { id: 'c-new', status: 'inProgress' },
+            ],
+            nextCursor: 'turn-page-2',
+          };
+    }
+    assert.equal(method, 'thread/items/list');
+    if (parent)
+      return args.cursor
+        ? {
+            data: [
+              {
+                turnId: 'p-old',
+                item: { id: 'tool-1', type: 'collabAgentToolCall', receiverThreadIds: ['child'] },
+              },
+            ],
+            nextCursor: null,
+          }
+        : {
+            data: [{ turnId: 'p-new', item: { id: 'other', type: 'agentMessage', text: 'later' } }],
+            nextCursor: 'parent-page-2',
+          };
+    return args.cursor
+      ? {
+          data: [{ turnId: 'c-old', item: { id: 'older', type: 'agentMessage', text: 'older' } }],
+          nextCursor: null,
+        }
+      : {
+          data: [{ turnId: 'c-new', item: { id: 'newer', type: 'agentMessage', text: 'newer' } }],
+          nextCursor: 'child-page-2',
+        };
+  };
+  const result = await runtime.subagentHistoryPage('parent', 'tool-1', 'child');
+  assert.deepEqual(
+    result.messages.map(({ id, runId, status }) => [id, runId, status]),
+    [
+      ['older', 'c-old', 'completed'],
+      ['newer', 'c-new', 'inProgress'],
+      ['turn-failure-c-failed', 'c-failed', 'failed'],
+    ],
+  );
+  assert.ok(
+    calls.some(
+      ([method, args]) =>
+        method === 'thread/items/list' &&
+        args.threadId === 'parent' &&
+        args.cursor === 'parent-page-2',
+    ),
+  );
+  assert.ok(
+    calls.some(
+      ([method, args]) =>
+        method === 'thread/items/list' &&
+        args.threadId === 'child' &&
+        args.cursor === 'child-page-2',
+    ),
+  );
+  assert.ok(
+    calls.some(
+      ([method, args]) =>
+        method === 'thread/turns/list' &&
+        args.threadId === 'child' &&
+        args.cursor === 'turn-page-2',
+    ),
+  );
+});
+
+test('saved paginated history rejects a repeated next cursor', async () => {
+  const { runtime } = await historyRuntime();
+  let pageCalls = 0;
+  runtime.reader.read = async (method, args) => {
+    if (method === 'thread/read')
+      return { thread: { id: args.threadId, historyMode: 'paginated', turns: [] } };
+    assert.equal(method, 'thread/turns/list');
+    pageCalls++;
+    return { data: [], nextCursor: 'same-cursor' };
+  };
+  await assert.rejects(
+    runtime.subagentHistoryPage('parent', 'tool-1', 'child'),
+    /cursor did not advance/i,
+  );
+  assert.equal(pageCalls, 2);
+});
+
+test('child identity and title survive projection, rendering, and metadata updates', async () => {
+  const { renderItem } = await import('../packages/codex-adapter/dist/runtime.js');
+  const item = {
+    type: 'collabAgentToolCall',
+    tool: 'sendInput',
+    prompt: 'followup instruction',
+    receiverThreadIds: ['a'],
+    agentsStates: { a: { status: 'running' } },
+  };
+  const child = {
+    agentNickname: 'Terra',
+    name: 'Investigate issue',
+    turns: [{ status: 'inProgress', items: [{ type: 'agentMessage', text: 'output' }] }],
+  };
+  const projected = subagentItem(item, () => child);
+  const rendered = renderItem(projected);
+  assert.equal(rendered.text, 'Terra · Investigate issue');
+  assert.equal(rendered.status, 'inProgress');
+  assert.match(rendered.detail, /output/);
+  assert.doesNotMatch(rendered.text, /sendInput|followup|output/);
+  const updated = renderItem(
+    subagentItem({ ...item, agentsStates: { a: { status: 'completed' } } }, () => ({
+      ...child,
+      turns: [{ status: 'completed', items: [] }],
+    })),
+  );
+  assert.equal(updated.text, rendered.text);
+  assert.equal(updated.status, 'completed');
+});
+
+test('multiple explicit children and spawn fallback do not use followup instructions as titles', async () => {
+  const { renderItem } = await import('../packages/codex-adapter/dist/runtime.js');
+  const children = {
+    a: { agentNickname: 'Alpha', name: 'First' },
+    b: {
+      source: { subAgent: { thread_spawn: { agent_nickname: 'Beta' } } },
+      preview: 'Second\nmore',
+    },
+    extra: { name: 'Unrelated' },
+  };
+  const base = {
+    type: 'collabAgentToolCall',
+    receiverThreadIds: ['a', 'b'],
+    agentsStates: { extra: { status: 'running' } },
+  };
+  const result = renderItem(
+    subagentItem({ ...base, tool: 'sendInput', prompt: 'followup' }, (id) => children[id]),
+  );
+  assert.match(result.text, /Alpha · First/);
+  assert.match(result.text, /Beta · Second/);
+  assert.doesNotMatch(result.text, /Unrelated|followup|sendInput/);
+  assert.equal(
+    renderItem(
+      subagentItem(
+        { ...base, receiverThreadIds: ['missing'], tool: 'spawn', prompt: 'Spawn task\nmore' },
+        () => undefined,
+      ),
+    ).text,
+    'Spawn task',
+  );
+  assert.equal(
+    renderItem(
+      subagentItem(
+        { ...base, receiverThreadIds: ['missing'], tool: 'sendInput', prompt: 'followup' },
+        () => undefined,
+      ),
+    ).text,
+    '子 Agent',
+  );
+});
+
+test('saved raw collaboration items keep task identity instead of tool verbs', async () => {
+  const { renderItem } = await import('../packages/codex-adapter/dist/runtime.js');
+  const raw = {
+    type: 'collabAgentToolCall',
+    prompt: 'Original task\nfull instructions',
+    agentsStates: {},
+  };
+  for (const tool of ['spawn', 'spawnAgent'])
+    assert.equal(renderItem({ ...raw, tool }).text, 'Original task');
+  assert.equal(renderItem({ ...raw, tool: 'sendInput', prompt: 'Followup only' }).text, '子 Agent');
+  assert.equal(
+    renderItem({ type: 'subAgent', text: 'Terra · Original task', tool: 'sendInput' }).text,
+    'Terra · Original task',
+  );
 });

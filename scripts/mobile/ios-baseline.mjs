@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
+import { createInterface } from 'node:readline';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 // Each phase reuses this native regression baseline. Real desktop/device tests
@@ -43,10 +44,15 @@ const fixtures = {
   history: ['history-pagination', 5],
   sidebar: ['sidebar-refresh', 9],
   readUI: ['native-read-ui', 2],
+  subagents: ['subagent-reading', 3],
+  voiceTap: ['voice-tap-stop', 4],
+  usageDetails: ['usage-details', 1],
 };
 const simulator = process.env.IOS_SIMULATOR_ID;
 assert(simulator, 'Set IOS_SIMULATOR_ID to a dedicated simulator');
-const devices = JSON.parse(execFileSync('xcrun', ['simctl', 'list', 'devices', '-j']));
+const devices = JSON.parse(
+  execFileSync('xcrun', ['simctl', 'list', 'devices', '-j'], { timeout: 60000 }),
+);
 const device = Object.values(devices.devices)
   .flat()
   .find((entry) => entry.udid === simulator);
@@ -104,6 +110,7 @@ const toolingFiles = [
   'scripts/mobile/ios-baseline.mjs',
   'scripts/mobile/export-ios-baseline.mjs',
   'scripts/mobile/native-ios-cases.mjs',
+  'scripts/mobile/native-process.mjs',
   'scripts/mobile/android-read-fixture.mjs',
   'scripts/mobile/generate-design-tokens.mjs',
   'package.json',
@@ -135,7 +142,9 @@ for (const group of groups) {
   // A dedicated simulator contains only synthetic App data. Notification
   // permission survives the App's test reset, so isolate independent groups
   // by reinstalling. Relaunch/persistence cases within a group keep their data.
-  execFileSync('xcrun', ['simctl', 'uninstall', simulator, 'com.codexmanage.ios']);
+  execFileSync('xcrun', ['simctl', 'uninstall', simulator, 'com.codexmanage.ios'], {
+    timeout: 60000,
+  });
   const start = Date.now();
   const logPath = output + '/' + group + '.log';
   const nativeResult = output + '/native.xcresult';
@@ -156,6 +165,17 @@ for (const group of groups) {
   const child = spawn(command, args, { env: environment });
   child.stdout.pipe(log, { end: false });
   child.stderr.pipe(log, { end: false });
+  // Keep full logs on disk while exposing bounded, useful progress before a
+  // CI deadline can terminate this parent and remove the workspace.
+  for (const stream of [child.stdout, child.stderr])
+    createInterface({ input: stream }).on('line', (line) => {
+      if (
+        /^(Starting isolated native case:|Native phase:|Native process exited:|Native wall deadline|Passed isolated native case:|Failed isolated native case:|Test Case .* (started|passed|failed))/.test(
+          line,
+        )
+      )
+        console.log('[' + group + ']', line.slice(0, 4096));
+    });
   const code = await new Promise((resolve, reject) => {
     child.once('error', reject);
     child.once('close', resolve);
@@ -173,7 +193,7 @@ for (const group of groups) {
         execFileSync(
           'xcrun',
           ['xcresulttool', 'get', 'test-results', 'summary', '--path', result, '--compact'],
-          { encoding: 'utf8' },
+          { encoding: 'utf8', timeout: 60000 },
         ),
       );
     } catch {
@@ -199,6 +219,49 @@ for (const group of groups) {
   });
   report.status = passed ? 'running' : 'failed';
   await writeFile(output + '/report.json', JSON.stringify(report, null, 2));
+  if (!passed) {
+    console.error(
+      'Native baseline failure:',
+      JSON.stringify({
+        group,
+        code,
+        expected,
+        result,
+        outcome: summary?.result,
+        total: summary?.totalTestCount,
+        passed: summary?.passedTests,
+        failed: summary?.failedTests,
+        skipped: summary?.skippedTests,
+      }),
+    );
+    console.error('Group log tail:', Buffer.from(text).subarray(-8192).toString('utf8'));
+    try {
+      const casesPath = environment.IOS_RESULT_BUNDLE_PATH.replace(
+        /\.xcresult$/,
+        '-cases/index.json',
+      );
+      const cases = JSON.parse(await readFile(casesPath, 'utf8'));
+      const diagnostics = cases.slice(-3).map((entry) => ({
+        test: entry.test,
+        exitCode: entry.exitCode,
+        result: entry.summary?.result,
+        total: entry.summary?.totalTestCount,
+        passed: entry.summary?.passedTests,
+        failed: entry.summary?.failedTests,
+        skipped: entry.summary?.skippedTests,
+        failures: JSON.stringify(entry.summary?.testFailures ?? []).slice(0, 2048),
+      }));
+      console.error(
+        'Official per-case summaries:',
+        Buffer.from(JSON.stringify(diagnostics)).subarray(0, 4096).toString('utf8'),
+      );
+    } catch (error) {
+      console.error(
+        'Per-case summary unavailable:',
+        error.code ?? String(error.message).slice(0, 512),
+      );
+    }
+  }
   assert(passed, `${group} failed or omitted a required test; inspect ${logPath}`);
   console.log('Passed', group, expected, 'tests, zero skips');
 }

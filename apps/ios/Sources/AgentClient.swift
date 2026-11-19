@@ -199,6 +199,7 @@ protocol AgentClient: Sendable {
   func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata
   func close(_ client: Client) async
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
+  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse
@@ -248,6 +249,10 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool {
+    workspace?.capabilities?.contains("subagents:history:read:v1") == true
+  }
+
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
     throw HostServiceError.message(L10n.tr("此客户端暂不支持完整子 Agent 过程"))
   }
@@ -507,6 +512,22 @@ struct CodexAgentClient: AgentClient {
     var request = HostService.request(try HostService.url(client, "v1/usage", ["target": try usageTargetJSON(target)]), token: CredentialVault.token(client.id))
     request.timeoutInterval = 8
     return try await HostService.bytes(request, maxBytes: 262144)
+  }
+  func projectGit(_ client: Client, projectId: String, target: AgentRuntimeTarget, refresh: Bool) async throws -> Data {
+    CodexHostRoutes.shared.register(client)
+    var query = ["projectId": projectId, "target": try projectGitTargetJSON(target)]
+    if refresh { query["refresh"] = "1" }
+    var request = HostService.request(try HostService.url(client, "v1/project-git", query), token: CredentialVault.token(client.id))
+    request.timeoutInterval = 15
+    return try await HostService.bytes(request, maxBytes: 131072)
+  }
+  func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data {
+    CodexHostRoutes.shared.register(client)
+    var query = ["projectId": projectId, "target": try projectGitTargetJSON(target), "snapshotId": snapshotId, "worktreeId": worktreeId]
+    if let cursor { query["cursor"] = cursor }
+    var request = HostService.request(try HostService.url(client, "v1/project-git/files", query), token: CredentialVault.token(client.id))
+    request.timeoutInterval = 15
+    return try await HostService.bytes(request, maxBytes: 131072)
   }
   func models(_ client: Client) async throws -> ModelList { try await HostService.load(HostService.request(try HostService.url(client, "v1/models"), token: CredentialVault.token(client.id))) }
   func openThread(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await HostService.post(client, "v1/desktop/open", ["threadId": threadId, "clientOperationId": operationId]) }

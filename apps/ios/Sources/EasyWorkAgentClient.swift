@@ -1082,7 +1082,7 @@ struct EasyWorkAgentClient: AgentClient {
     guard value["purpose"] as? String == "transfer", value["direction"] as? String == "mobile-to-desktop",
       value["threadId"] == nil, let id = value["transferId"] as? String, UUID(uuidString: id) != nil,
       let name = value["name"] as? String, let mediaType = value["contentType"] as? String,
-      let size = value["size"] as? Int, size > 0, size <= 20 * 1024 * 1024,
+      let size = value["size"] as? Int, size > 0,
       let expected = value["expectedSha256"] as? String, expected.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil,
       let status = value["status"] as? String, ["waiting", "transferring", "completed"].contains(status),
       let createdAt = value["createdAt"] as? String else { throw HostServiceError.invalidResponse }
@@ -1094,13 +1094,48 @@ struct EasyWorkAgentClient: AgentClient {
       sha256: expected, phase: completed ? "completed" : "prepared", destinationPath: path, createdAt: createdAt)
   }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog {
-    let value = try object(await session(client).request("resource/transfer-list", [:]))
+    let channel = try await session(client)
+    let value = try object(await channel.request("resource/transfer-list", [:]))
     guard let directory = value["destinationDirectory"] as? String, !directory.isEmpty,
-      let limit = value["maxFileBytes"] as? Int, limit > 0, limit <= 20 * 1024 * 1024,
       let records = value["transfers"] as? [[String: Any]] else { throw HostServiceError.message(L10n.tr("请更新电脑连接程序以使用文件互传。")) }
+    let limit: Int?
+    if value["maxFileBytes"] is NSNull { limit = nil }
+    else { let finite = try EasyWorkReading.integer(value["maxFileBytes"]); guard finite > 0 else { throw HostServiceError.invalidResponse }; limit = finite }
     let independent = records.filter { $0["purpose"] as? String == "transfer" && $0["direction"] as? String == "mobile-to-desktop" && $0["threadId"] == nil && ["waiting", "transferring", "completed"].contains($0["status"] as? String ?? "") }
+    let offered = records.filter { $0["purpose"] as? String == "transfer" && $0["direction"] as? String == "desktop-to-mobile" && $0["threadId"] == nil }
+    let deviceId = await channel.mobileDeviceId
     return ComputerFileCatalog(hostId: client.id, destinationDirectory: directory, maxFileBytes: limit,
-      files: try independent.map { try independentFile(client, $0, directory: directory) })
+      files: try independent.map { try independentFile(client, $0, directory: directory) },
+      incomingFiles: try offered.map { try EasyWorkIncomingFiles.record($0, hostId: client.id, deviceId: deviceId) })
+  }
+  private func incomingDirectory(_ client: Client) throws -> URL {
+    guard let target = client.agentConnection?.target, target.agentId == "easywork" else { throw HostServiceError.wrongHost }
+    let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+    let scope = HostService.hash(Data(client.id.utf8) + (try encoder.encode(target)))
+    let testing = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+    return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent(testing ? "IncomingFilesAcceptance" : "IncomingFiles", isDirectory: true).appendingPathComponent(scope, isDirectory: true)
+  }
+  func cachedReceivedFile(_ client: Client, file: IncomingComputerFile) async throws -> URL? {
+    let channel = try await session(client)
+    try file.validate(hostId: client.id, deviceId: await channel.mobileDeviceId)
+    let directory = try incomingDirectory(client)
+    return try await Task.detached(priority: .utility) { try EasyWorkIncomingFiles.cached(file, directory: directory) }.value
+  }
+  func receiveComputerFile(_ client: Client, file: IncomingComputerFile, progress: FileDownloadProgressHandler?) async throws -> URL {
+    let channel = try await session(client)
+    try file.validate(hostId: client.id, deviceId: await channel.mobileDeviceId)
+    let directory = try incomingDirectory(client)
+    let context = try object(await channel.request("runtime/context", [:]))
+    let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+    guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+    let catalog = try await fileTransfers(client)
+    guard let fresh = catalog.incomingFiles?.first(where: { $0.id == file.id }), fresh.sameFile(as: file),
+      !["failed", "cancelled"].contains(fresh.phase) else { throw HostServiceError.invalidResponse }
+    return try await EasyWorkIncomingFiles.download(fresh, directory: directory, progress: progress) { method, params, id in
+      if let id { return try object(await channel.request(method, params, id: id)) }
+      return try object(await channel.request(method, params))
+    }
   }
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt {
     guard UUID(uuidString: id) != nil else { throw HostServiceError.invalidResponse }

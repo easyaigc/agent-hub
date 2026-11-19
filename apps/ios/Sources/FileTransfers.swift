@@ -1,4 +1,5 @@
 import SwiftUI
+import QuickLook
 import UniformTypeIdentifiers
 
 struct ComputerFileManifest: Codable, Equatable, Sendable, Identifiable {
@@ -31,6 +32,11 @@ struct ComputerFileCatalog: Decodable, Sendable {
   let destinationDirectory: String
   let maxFileBytes: Int?
   let files: [ComputerFileReceipt]
+  var incomingFiles: [IncomingComputerFile]? = nil
+}
+private struct IncomingFileJournal: Codable {
+  var files: [IncomingComputerFile] = []
+  var localCopies: [IncomingComputerFile] = []
 }
 private struct PendingComputerFile: Codable, Sendable, Identifiable {
   let file: ComputerFileManifest
@@ -46,6 +52,13 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
   @Published var busy = false
   @Published var activity: String?
   @Published var error: String?
+  @Published private(set) var incoming: [IncomingComputerFile] = []
+  @Published private(set) var localCopies: [IncomingComputerFile] = []
+  @Published private(set) var receivingId: String?
+  @Published private(set) var receiveProgress = FileDownloadProgress()
+  @Published var previewURL: URL?
+  private var receiveTask: Task<Void, Never>?
+  private var incomingUsable = true
   private let directory: URL
   private var journalUsable = true
   private var adapter: any AgentClient { get throws { try AgentClients.resolve(client) } }
@@ -67,7 +80,49 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
         for index in pending.indices where pending[index].phase != "ready" { pending[index].phase = "unknown" }
       }
     } catch { journalUsable = false; pending = []; self.error = L10n.tr("无法读取保存的传输记录；请保留手机数据并检查存储空间。") }
+    do {
+      let url = directory.appendingPathComponent("incoming.dat")
+      if FileManager.default.fileExists(atPath: url.path) {
+        let saved = try AgentCache.open(Data(contentsOf: url), as: IncomingFileJournal.self)
+        for file in saved.files + saved.localCopies { try file.validate(hostId: client.id) }
+        guard Set(saved.files.map(\.id)).count == saved.files.count else { throw HostServiceError.invalidResponse }
+        incoming = saved.files; localCopies = saved.localCopies
+      }
+    } catch { incomingUsable = false; self.error = L10n.tr("无法读取保存的传输记录；请保留手机数据并检查存储空间。") }
   }
+  private func saveIncoming() throws {
+    let bytes = try AgentCache.seal(IncomingFileJournal(files: incoming, localCopies: localCopies))
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try bytes.write(to: directory.appendingPathComponent("incoming.dat"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+  }
+  func hasLocalCopy(_ file: IncomingComputerFile) -> Bool { localCopies.contains { $0.sameFile(as: file) } }
+  func receive(_ file: IncomingComputerFile) {
+    guard receiveTask == nil, !busy, incomingUsable else { return }
+    receivingId = file.id; receiveProgress = FileDownloadProgress(); error = nil
+    receiveTask = Task {
+      defer { receivingId = nil; receiveTask = nil }
+      do {
+        let service = try adapter
+        let cached = hasLocalCopy(file) ? try await service.cachedReceivedFile(client, file: file) : nil
+        let local: URL
+        if let cached { local = cached }
+        else { local = try await service.receiveComputerFile(client, file: file) { value in
+          Task { @MainActor [weak self] in
+            guard self?.receivingId == file.id else { return }
+            self?.receiveProgress = value
+          }
+        } }
+        try Task.checkCancellation()
+        let previous = localCopies
+        localCopies = localCopies.filter { $0.id != file.id } + [file]
+        do { try saveIncoming() } catch { localCopies = previous; throw error }
+        previewURL = local
+      } catch is CancellationError {
+        self.error = L10n.tr("下载已停止，可重新下载同一文件。")
+      } catch { self.error = error.localizedDescription }
+    }
+  }
+  func stopReceiving() { receiveTask?.cancel() }
   private var journalURL: URL { directory.appendingPathComponent("pending.dat") }
   private func localURL(_ id: String) -> URL { directory.appendingPathComponent(id + ".data") }
   private func persist() async throws {
@@ -89,7 +144,7 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
     }
   }
   func refresh() async {
-    guard !busy, journalUsable else { return }
+    guard !busy, receivingId == nil, journalUsable else { return }
     busy = true
     defer { busy = false }
     do {
@@ -99,6 +154,12 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
       else { throw HostServiceError.invalidResponse }
       for file in value.files { try await apply(file) }
       catalog = value
+      if incomingUsable, let files = value.incomingFiles {
+        for file in files { try file.validate(hostId: client.id) }
+        guard Set(files.map(\.id)).count == files.count else { throw HostServiceError.invalidResponse }
+        let previous = incoming; incoming = files
+        do { try saveIncoming() } catch { incoming = previous; throw error }
+      }
       error = nil
     } catch { self.error = error.localizedDescription }
   }
@@ -129,14 +190,17 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
     var imported: [String] = []
     for url in urls {
       do {
-        let hostId = client.id, limit = catalog.maxFileBytes, directory = directory
+        // The legacy EasyWork upload path still buffers data. Its streaming upgrade
+        // is separate from independent receiving; do not offer unbounded imports.
+        let hostId = client.id, directory = directory
+        let limit = client.agentConnection?.target.agentId == "easywork" ? min(catalog.maxFileBytes ?? Int.max, 20 * 1024 * 1024) : catalog.maxFileBytes
         activity = L10n.tr("正在读取 \(url.lastPathComponent)…")
         let file = try await Task.detached { () throws -> ComputerFileManifest in
           let scoped = url.startAccessingSecurityScopedResource()
           defer { if scoped { url.stopAccessingSecurityScopedResource() } }
           let metadata = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey, .contentTypeKey])
           guard metadata.isRegularFile == true, let size = metadata.fileSize, size > 0 else { throw HostServiceError.message(L10n.tr("请选择非空的普通文件。")) }
-          if let limit, size > limit { throw HostServiceError.message(L10n.tr("电脑当前版本的文件大小上限为 \(ByteCountFormatter.string(fromByteCount: Int64(limit), countStyle: .file))，请更新电脑端。")) }
+          if let limit, size > limit { throw HostServiceError.message(L10n.tr("本次传输的文件大小上限为 \(ByteCountFormatter.string(fromByteCount: Int64(limit), countStyle: .file))。")) }
           let id = UUID().uuidString.lowercased()
           try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
           let snapshot = directory.appendingPathComponent(id + ".data")
@@ -224,12 +288,30 @@ struct FileTransfersView: View {
               .accessibilityIdentifier("file-transfer-destination")
           }
           Button { selecting = true } label: { Label(L10n.tr("选择文件上传"), systemImage: "arrow.up.doc") }
-            .disabled(model.catalog == nil || model.busy).accessibilityIdentifier("choose-transfer-files")
+            .disabled(model.catalog == nil || model.busy || model.receivingId != nil).accessibilityIdentifier("choose-transfer-files")
         } footer: { Text(L10n.tr("手机 → 电脑 · 同名文件会保留独立副本。")) }
         Section { UploadJobsView(client: model.client, independent: true) }
         if let activity = model.activity { Section { ProgressView(activity).accessibilityIdentifier("file-transfer-progress") } }
         else if model.busy { Section { ProgressView(L10n.tr("正在查询传输记录…")) } }
         if let error = model.error { Section { Text(error).foregroundStyle(.red) } }
+        if model.catalog?.incomingFiles != nil || !model.incoming.isEmpty {
+          Section(L10n.tr("电脑发来的文件")) {
+            if model.incoming.isEmpty { Text(L10n.tr("在电脑的在线客户端中选择此手机，即可发送文件。")).foregroundStyle(.secondary) }
+            ForEach(model.incoming) { file in
+              VStack(alignment: .leading, spacing: 8) {
+                Label(file.name, systemImage: "arrow.down.doc")
+                Text(ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file)).font(.caption).foregroundStyle(.secondary)
+                if model.receivingId == file.id {
+                  FileDownloadProgressView(progress: model.receiveProgress)
+                  Button(L10n.tr("停止下载")) { model.stopReceiving() }.accessibilityIdentifier("stop-incoming-\(file.id)")
+                } else if model.hasLocalCopy(file) || !["failed", "cancelled"].contains(file.phase) {
+                  Button(model.hasLocalCopy(file) ? L10n.tr("打开文件") : L10n.tr("下载并打开")) { model.receive(file) }
+                    .disabled(model.busy || model.receivingId != nil).accessibilityIdentifier("receive-transfer-\(file.id)")
+                } else { Text(L10n.tr("电脑已停止此文件传输。")).font(.caption).foregroundStyle(.secondary) }
+              }.accessibilityIdentifier("incoming-transfer-\(file.id)")
+            }
+          }
+        }
         if !model.pending.isEmpty {
           Section(L10n.tr("待完成")) {
             ForEach(model.pending) { pending in
@@ -239,7 +321,7 @@ struct FileTransfersView: View {
                   .font(.caption).foregroundStyle(.secondary)
                 if let error = pending.error { Text(error).font(.caption).foregroundStyle(.red) }
                 Button(pending.phase == "unknown" ? L10n.tr("查询结果") : L10n.tr("上传到电脑")) { Task { await model.retry(pending.id) } }
-                  .disabled(model.busy || model.catalog == nil).accessibilityIdentifier("retry-transfer-\(pending.id)")
+                .disabled(model.busy || model.receivingId != nil || model.catalog == nil).accessibilityIdentifier("retry-transfer-\(pending.id)")
               }
             }
           }
@@ -260,10 +342,12 @@ struct FileTransfersView: View {
       }.navigationTitle(L10n.tr("文件互传")).navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("完成")) { dismiss() } }
-          ToolbarItem(placement: .primaryAction) { Button { Task { await model.refresh() } } label: { Image(systemName: "arrow.clockwise") }.disabled(model.busy).accessibilityLabel(L10n.tr("刷新传输记录")) }
+          ToolbarItem(placement: .primaryAction) { Button { Task { await model.refresh() } } label: { Image(systemName: "arrow.clockwise") }.disabled(model.busy || model.receivingId != nil).accessibilityLabel(L10n.tr("刷新传输记录")) }
         }
     }.task { await model.refresh(); await model.reconcileUploads() }
       .onChange(of: uploads.jobs.values.map { $0.id + ":" + $0.phase }.sorted()) { _, _ in Task { await model.reconcileUploads() } }
+      .quickLookPreview($model.previewURL)
+      .onDisappear { model.stopReceiving() }
       .fileImporter(isPresented: $selecting, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
         selecting = false
         switch result {

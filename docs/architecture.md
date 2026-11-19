@@ -1,5 +1,11 @@
 # 架构设计
 
+## 独立文件接收（2026-11-20）
+
+iOS 的 AgentClient 增加具名独立接收和已校验本地副本读取；ComputerFileCatalog.incomingFiles 为可选，旧 Codex Host 响应继续解码，不开放未实现入口。EasyWork 沿用 resource/transfer-list、resource/download 和 resource/download-complete，保留真实无聊天的 desktop-to-mobile/transfer 记录、完整目标、设备及原传输/资源 ID，不伪造 threadId。固定大小分块流写独占临时文件，摘要校验后发布；完成确认失败保留文件并沿原 ID 恢复，成功确认的本地副本在打开前重新校验。没有新增任意路径或 IPC 入口。
+
+目录上限兼容有效有限值与 null。本轮先补接收；当前 iOS 旧 EasyWork 独立上传保留原 20 MiB 客户端边界，避免原 Data 全量读取路径接受无限大导入。上传流式候选与大文件主线对齐单独跟进，本次接收不代表大文件上传已交付。
+
 2026-11-19 F08：EasyWork适配器从已认证、完整目标匹配的runtime/context读取可选直连地址及固定证书指纹，规范化且有界合并，保留中继和旧入口。通用连接观察接口在客户端代次、工作区结果与管理修订仍匹配时，按原目标/凭据/偏好及当前连接快照保存；无可选字段或无效可选元数据仍可沿原通道读取，不主动关闭健康会话，不重放输入。原已验候选、当前主线检查和交付分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-19 F09：iOS适配层在验证加密信封版本/序号及更新订阅游标前采用桌面协议的JSON安全整数边界，拒绝布尔、分数、负值及越界值；合法旧信封省略发送会话标识仍兼容。目标、凭据、原操作ID及恢复流程保持。原真实同会话恢复与去重证据、源码对应和交付状态统一见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。

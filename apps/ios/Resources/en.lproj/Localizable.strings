@@ -1981,3 +1981,19 @@
 "上次上传过程已中断，文件和消息已保留。" = "Your last upload attempt was interrupted. The file and message are retained.";
 
 "电脑端未找到这次上传记录。" = "The computer could not find this upload record.";
+
+"本次传输的文件大小上限为 %@。" = "The file size limit for this transfer is %@.";
+
+"电脑发来的文件" = "Files from computer";
+
+"在电脑的在线客户端中选择此手机，即可发送文件。" = "Select this phone in the computer’s online clients to send files.";
+
+"下载已停止，可重新下载同一文件。" = "Download stopped. You can download the same file again.";
+
+"下载并打开" = "Download and open";
+
+"电脑已停止此文件传输。" = "The computer stopped this file transfer.";
+
+"停止下载" = "Stop download";
+
+"打开文件" = "Open file";

@@ -1821,6 +1821,14 @@
     <string name="product_1e4125d224073a40f12051e0" formatted="false">"View full history"</string>
     <string name="product_6af87f7e618fa33c9f4ccf00" formatted="false">"Your last upload attempt was interrupted. The file and message are retained."</string>
     <string name="product_4f61994973c9e50d08d48d39" formatted="false">"The computer could not find this upload record."</string>
+    <string name="product_0946b12dd470ca4d4c5b8faa" formatted="false">"The file size limit for this transfer is %@."</string>
+    <string name="product_129fb7d9bc83b9d2d0096577" formatted="false">"Files from computer"</string>
+    <string name="product_5c105cdc831478bd4be8434b" formatted="false">"Select this phone in the computer’s online clients to send files."</string>
+    <string name="product_1402fc3ed0b9d93168e6e278" formatted="false">"Download stopped. You can download the same file again."</string>
+    <string name="product_412d0cf0192a6386153d3f9c" formatted="false">"Download and open"</string>
+    <string name="product_fa8851e580b24bee85375d65" formatted="false">"The computer stopped this file transfer."</string>
+    <string name="product_fbe4a2580083f25655ccadf6" formatted="false">"Stop download"</string>
+    <string name="product_4c8a4e3da39e5c2a4d810136" formatted="false">"Open file"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

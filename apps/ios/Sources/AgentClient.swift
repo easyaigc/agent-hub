@@ -229,6 +229,8 @@ protocol AgentClient: Sendable {
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
   func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
+  func receiveComputerFile(_ client: Client, file: IncomingComputerFile, progress: FileDownloadProgressHandler?) async throws -> URL
+  func cachedReceivedFile(_ client: Client, file: IncomingComputerFile) async throws -> URL?
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt
   func uploadFileTransfer(_ client: Client, file: ComputerFileManifest, data: Data) async throws -> ComputerFileReceipt
@@ -288,6 +290,8 @@ extension AgentClient {
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String { throw HostServiceError.unavailable }
   func recoverVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String { throw HostServiceError.unavailable }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { throw HostServiceError.message(L10n.tr("此连接尚未支持文件互传，请更新电脑连接程序。")) }
+  func receiveComputerFile(_ client: Client, file: IncomingComputerFile, progress: FileDownloadProgressHandler?) async throws -> URL { throw HostServiceError.unavailable }
+  func cachedReceivedFile(_ client: Client, file: IncomingComputerFile) async throws -> URL? { nil }
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt { throw HostServiceError.unavailable }
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt { throw HostServiceError.unavailable }
   func uploadFileTransfer(_ client: Client, file: ComputerFileManifest, data: Data) async throws -> ComputerFileReceipt { throw HostServiceError.unavailable }

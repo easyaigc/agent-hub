@@ -994,15 +994,15 @@ private var userRequestedWorkspaceGeneration: UUID?
       workspaceAvailable: workspace != nil, connectionMode: workspace?.connectionMode, conversations: conversations)
   }
   func isConnecting(_ host: Client) -> Bool {
-    host.migrationNeedsVerification != true && !host.isDemo && !host.online && connectionPhases[host.id] != .failed
+    host.migrationNeedsVerification != true && !host.isDemo && !host.online
+      && connectionPhases[host.id] != .failed && connectionPhases[host.id] != .waiting
   }
   func connectionLabel(for host: Client) -> String {
     if host.migrationNeedsVerification == true { return L10n.tr("迁移后需重新配对") }
     if host.online { return L10n.tr("已连接") }
     if host.isDemo { return L10n.tr("离线 · 查看缓存") }
     switch connectionPhases[host.id] {
-    case .failed: return L10n.tr("连接未完成 · 查看缓存")
-    case .waiting: return L10n.tr("正在重新连接…")
+    case .failed, .waiting: return L10n.tr("连接未完成 · 查看缓存")
     default: return L10n.tr("正在连接…")
     }
   }
@@ -3152,7 +3152,11 @@ private var userRequestedWorkspaceGeneration: UUID?
     let startedAt = ProcessInfo.processInfo.systemUptime
     let managementRevision = managementRevisions[host.id]
     loading = true
-    if !host.online { connectionPhases[host.id] = .connecting }
+    // Background recovery must not turn a known failure back into an endless
+    // foreground spinner. An explicit retry may show its own connection check.
+    if !host.online, userInitiated || connectionPhases[host.id] == nil {
+      connectionPhases[host.id] = .connecting
+    }
     defer {
       if workspaceRefreshOwner == owner {
         workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil

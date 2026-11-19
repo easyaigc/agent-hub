@@ -15,6 +15,8 @@ GitHub 同步任务总时限为 30 分钟，容纳完整源历史与公开父提
 - Linux：美国 Gitea 部署中的仓库专用容器运行器，例如 `agent-hub-linux-us-gitea`。每个容器以 UID1000、2 CPU／3 GiB、非 privileged 模式运行，不挂载宿主 Docker socket；`agent-hub-linux:host` 在这个隔离 Linux 容器内部执行，每个实例容量为 1。扩容先核对整机负载和内存，使用独立身份及数据卷，避免并发写同一个工具缓存或 pnpm 安装目录。
 - macOS：`macos-latest:host`，在安装 Xcode 的 Mac 上原生构建，容量为 1。
 
+与 Gitea 同机的 Linux Runner 在各自 Compose 中将 `git.51easyai.com` 映射到 `host-gateway`（`extra_hosts`）。继续使用原 HTTPS 域名、证书、Nginx 和仓库认证，仅将同机 API／Git 访问改走 Docker 到宿主机的内网路径；外部 macOS Runner 和其他访问方保持原解析。更新时逐台通过正式 API 禁止领取新任务，等待已有任务自然结束并复核空闲后，只重建该 Runner 容器，再恢复领取。保留原身份、挂载、工具缓存、标签和资源配置，不重启 Gitea 或数据库。验收需核对容器实际解析／连接地址、TLS、私有仓库未授权拒绝和真实 CI 检出；回滚只移除该映射，按相同空闲流程重建。
+
 网络较慢时可用 `scripts/ci/Dockerfile` 构建专用小镜像：`docker build -t agent-hub-ci:node24-bookworm -f scripts/ci/Dockerfile scripts/ci`。它基于锁定摘要的官方 Node Debian 镜像并安装检查所需工具；标签可配置为 `agent-hub-linux:docker://agent-hub-ci:node24-bookworm`。不得把本地镜像可用写成服务器已部署或检查已通过。
 
 完整检查还执行原有 stdio 研究夹具，其进程路径和 bundle 版本读取原先依赖 macOS CLI。Linux CI 镜像安装 `research-posix-tools.py`：仅在明确启用、仓库匹配、私有且同 UID 的 `transport-poc` 配置存在时，为该夹具的 `ps -p PID -o comm=` 返回真实 `/proc/PID/exe`，并从配置对应的真实 XML／二进制 `Info.plist` 读取版本。它不回显配置中的期望路径或版本，不提供写入／任意 plist 读取；其他 `ps` 调用仍执行保存的原 procps 二进制。代码只安装在 CI 容器，不安装到电脑／服务器宿主，不声明 Linux 原桌面接入能力，不跳过夹具。`research-posix-tools.test.py` 覆盖真实内核路径、错误 PID、实际版本与预期不同、格式损坏、范围及原工具透传；原 `desktop-stdio-entry-fixture.mjs` 的十五项断言保持不变并单独执行。

@@ -102,7 +102,7 @@
     "check:ios:publication": "node scripts/mobile/check-ios-publication.mjs",
     "check:mobile-idle-performance": "node scripts/mobile-idle-performance-smoke.mjs",
     "generate:mobile-localization": "node scripts/mobile/generate-localization.mjs --write",
-    "check:github-sync": "node --test scripts/ci/sync-github.test.mjs",
+    "check:github-sync": "node --test scripts/ci/sync-github.test.mjs scripts/ci/sync-github-preflight.test.mjs",
     "check:file-preview": "node scripts/mobile/file-preview-smoke.mjs",
     "check:notification-recovery-v2": "node scripts/notification-recovery-v2-contract.mjs && node --test scripts/notification-recovery-v2.test.mjs",
     "configure:responses-proxy": "pnpm build && node scripts/configure-responses-proxy.mjs",

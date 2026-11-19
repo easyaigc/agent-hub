@@ -21,14 +21,89 @@ jobs:
     runs-on: agent-hub-linux
     timeout-minutes: 30
     steps:
+      - name: Check published source before checkout
+        id: preflight
+        shell: bash
+        env:
+          GITEA_SYNC_API: ${{ github.server_url }}/api/v1
+          GITEA_SYNC_REPOSITORY: ${{ github.repository }}
+          GITEA_SYNC_TOKEN: ${{ github.token }}
+          GITHUB_PUBLIC_SYNC_API: https://api.github.com
+        run: |
+          node --input-type=module <<'PREFLIGHT'
+          import { appendFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const env = process.env;
+          const sha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
+          let needsSync = true;
+          try {
+            if (!env.GITEA_SYNC_TOKEN) throw new Error('Source API token unavailable');
+            const sourceApi = `${env.GITEA_SYNC_API}/repos/${env.GITEA_SYNC_REPOSITORY}`;
+            const publicApi = `${env.GITHUB_PUBLIC_SYNC_API}/repos/easyaigc/agent-hub`;
+            async function metadata(url, source = false) {
+              const response = await fetch(url, {
+                headers: {
+                  Accept: 'application/json',
+                  ...(source ? { Authorization: `token ${env.GITEA_SYNC_TOKEN}` } : {}),
+                },
+                redirect: 'error',
+                signal: AbortSignal.timeout(20000),
+              });
+              if (!response.ok) throw new Error(`Metadata HTTP ${response.status}`);
+              return response.json();
+            }
+            const sourceHead = async () => (await metadata(`${sourceApi}/branches/main`, true)).commit?.id;
+            const publicHead = async () => (await metadata(`${publicApi}/git/ref/heads/main`)).object?.sha;
+            const source = await sourceHead();
+            const target = await publicHead();
+            if (!sha(source) || !sha(target)) throw new Error('Invalid branch metadata');
+            const sourceRoot = await metadata(`${sourceApi}/git/trees/${source}`, true);
+            const targetCommit = await metadata(`${publicApi}/git/commits/${target}`);
+            const previousSource = targetCommit.message?.match(/^Gitea-Source-Commit: ([a-f0-9]{40})$/m)?.[1];
+            if (sourceRoot.sha !== source || sourceRoot.truncated !== false || !Array.isArray(sourceRoot.tree) ||
+                targetCommit.sha !== target || !sha(targetCommit.tree?.sha)) {
+              throw new Error('Invalid commit metadata');
+            }
+            // This Gitea version echoes the input commit as tree.sha. Hash the complete,
+            // non-recursive root entries instead of trusting that field or downloading blobs.
+            const names = new Set();
+            const entries = sourceRoot.tree.map(entry => {
+              if (!sha(entry.sha) || !/^(040000|40000|100644|100755|120000|160000)$/.test(entry.mode) ||
+                  typeof entry.path !== 'string' || !entry.path || /[\0/]/.test(entry.path) || names.has(entry.path)) {
+                throw new Error('Invalid root tree entry');
+              }
+              names.add(entry.path);
+              const mode = entry.mode.replace(/^0+/, '');
+              return { sort: Buffer.from(entry.path + (mode === '40000' ? '/' : '')),
+                body: Buffer.concat([Buffer.from(`${mode} ${entry.path}\0`), Buffer.from(entry.sha, 'hex')]) };
+            }).sort((a, b) => Buffer.compare(a.sort, b.sort));
+            const body = Buffer.concat(entries.map(entry => entry.body));
+            const tree = createHash('sha1').update(`tree ${body.length}\0`).update(body).digest('hex');
+            if (previousSource === source && tree === targetCommit.tree.sha) {
+              // Re-read both mutable pointers before skipping the original validated sync.
+              needsSync = await sourceHead() !== source || await publicHead() !== target;
+            }
+            console.log(JSON.stringify({
+              status: needsSync ? 'sync-required' : 'unchanged-before-checkout',
+              source, target, tree,
+            }));
+          } catch {
+            // An unavailable API must never turn an unverified source into a successful skip.
+            console.log('Metadata verification unavailable; continuing the original validated sync.');
+          }
+          appendFileSync(env.GITHUB_OUTPUT, `needs_sync=${needsSync}\n`);
+          PREFLIGHT
       - uses: actions/checkout@v4
+        if: steps.preflight.outputs.needs_sync != 'false'
         with:
           ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v4
+        if: steps.preflight.outputs.needs_sync != 'false'
         with:
           node-version-file: .node-version
       - name: Publish source snapshot to GitHub
+        if: steps.preflight.outputs.needs_sync != 'false'
         shell: bash
         env:
           GH_PUBLIC_SYNC_SSH_KEY: ${{ secrets.GH_PUBLIC_SYNC_SSH_KEY }}

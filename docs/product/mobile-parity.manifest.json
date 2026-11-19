@@ -21928,6 +21928,15 @@
         "apps/ios/CodexManage.xcodeproj/project.pbxproj": "c830e0b9e25611c7ddd46bd88c841926fc9dfc39148b94646e91db52f27c0a9d",
         "apps/ios/Tests/CodexManageUITests.swift": "5cbbb4f03ce65237e1e151367791c39ff5493fe88370a0873a0dcf5f51c29143"
       }
+    },
+    {
+      "id": "ci-startup-logo-format-20261119",
+      "baseCommit": "95f55975b8c4ab972647862ecee43fc003f01dc6",
+      "features": ["F01", "F47"],
+      "summary": "仅规范启动图标元数据 JSON 排版以恢复 CI 格式检查，解析内容与图像资源不变；不修改产品能力或提升既有原生验收状态。",
+      "files": {
+        "apps/ios/Resources/Assets.xcassets/StartupLogo.imageset/Contents.json": "f3adfa84be935246a68e1e33bc2ab1194a78908b5240f856ba64a8b4a75c56cc"
+      }
     }
   ]
 }

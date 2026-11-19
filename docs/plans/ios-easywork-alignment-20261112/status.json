@@ -369,7 +369,7 @@
       "priority": "P1",
       "executionState": "planned",
       "ownerRole": "当前主会话与本机执行方接续",
-      "nextAction": "F29登记发送范围已闭合；继续F31上传边界/恢复、F32下载预览导出、F59独立互传当前组合剩余验收。已结束阶段资源立即回收。",
+      "nextAction": "同一720模拟器继续F12正常工作区刷新/分页，保护A聊天和空稿；普通TXT/PNG不再重传。之后按原具体ID补上传失败保留与其他核心未闭合项；大文件/恢复候选和正式运行包部署分别跟进。",
       "currentEvidence": [
         "HOST-START-R3",
         "NATIVE-RESOURCE-PACKAGE-R27",
@@ -388,9 +388,13 @@
         "F29-ONE-FOLLOWING-PLAINTEXT-REAL-ROOT-PROVIDER-STATE-R193",
         "F29-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R193",
         "N12-ENDED-25-PROCESSES-346-OUT-NATIVE3-SIDECARS6-RETIRED-R193",
-        "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257"
+        "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
       ],
-      "updatedAt": "2026-11-16T14:29:10.398599+00:00"
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00"
     },
     {
       "id": "EW10",
@@ -1327,12 +1331,12 @@
         "note": "当前C5/734706e组合限定子项已验；仅本地保存，未合主线。"
       },
       "execution": {
-        "state": "planned",
-        "ownerRole": "iOS与EasyWork对接实施/验收负责人（执行时登记具体负责人）"
+        "state": "in-progress",
+        "ownerRole": "Root coordination; dedicated Terra medium native simulator/normal Desktop DOM executor, actual telemetry unavailable"
       },
-      "nextAction": "按原AC06/08/24剩余实际点击/首聊/最近五项/并发与未知/归档列表及删除确认矩阵继续，原三空聊天已软归档，原ID回执不重放。",
+      "nextAction": "同一720模拟器继续F12正常工作区刷新/分页，保护A聊天和空稿；普通TXT/PNG不再重传。之后按原具体ID补上传失败保留与其他核心未闭合项；大文件/恢复候选和正式运行包部署分别跟进。",
       "openItemIds": [],
-      "updatedAt": "2026-11-16T14:29:10.398599+00:00",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC06"],
@@ -2412,7 +2416,7 @@
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "当前21MiB独立上传及64MiB同ID App中断恢复已具实际模拟器/桌面字节证据；父项其余断言未验，不按父项通过。 R257：当前源包普通TXT选择、发送与目标文件SHA-256本次一致。 R259：当前包正常系统文件选择取消保留原会话和草稿已通过。 R288: 原96c4模拟器正常选择PNG，在同一A聊天只发送一次；原operation、唯一用户输入seq26/新Run及双端完成回复独立核对。手机和真实Desktop均实际打开图片。原PNG131字节经既有UIImage.pngData规范化为490字节，手机prepared/桌面原件SHA完全相同，root独立解PNG像素64×48/0通道差异。最初raw-byte相等额外检查未达及模型调用media读取保留；不修改该结果，不重发。实际规范化/预览必要组件与main一致，但新UploadCenter互通不由旧包通过升级。原B2全文/阅读末尾恢复，独占Documents文件及Derived已清。",
+        "scope": "当前21MiB独立上传及64MiB同ID App中断恢复已具实际模拟器/桌面字节证据；父项其余断言未验，不按父项通过。 R257：当前源包普通TXT选择、发送与目标文件SHA-256本次一致。 R259：当前包正常系统文件选择取消保留原会话和草稿已通过。 R288: 原96c4模拟器正常选择PNG，在同一A聊天只发送一次；原operation、唯一用户输入seq26/新Run及双端完成回复独立核对。手机和真实Desktop均实际打开图片。原PNG131字节经既有UIImage.pngData规范化为490字节，手机prepared/桌面原件SHA完全相同，root独立解PNG像素64×48/0通道差异。最初raw-byte相等额外检查未达及模型调用media读取保留；不修改该结果，不重发。实际规范化/预览必要组件与main一致，但新UploadCenter互通不由旧包通过升级。原B2全文/阅读末尾恢复，独占Documents文件及Derived已清。 R298：新main上传管线以一次双附件消息完成真实EasyWork互通；普通TXT/PNG两具体功能已有本次通过并对账原PR178/桌面59普通范围。唯一输入DE7416B1/Run731a0970完成，两端均实际打开；PNG沿既有重编码，prepared490字节一致而raw131字节不等的历史边界保留。9个独占runner已移除；同一720继续F12刷新分页，0额外模型。",
         "evidenceRefs": [
           "LEDGER",
           "PEER-FILE-EXECUTION-R37",
@@ -2429,21 +2433,27 @@
           "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288",
           "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
           "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
-          "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+          "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295",
+          "F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296",
+          "F31-GRANT-ONLY-EXPLICIT-FIRST-SUBMIT-SOURCE-CONTRACT-R297",
+          "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+          "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+          "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+          "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
         ],
         "auxiliaryEvidence": ["F31-IMAGE-ROOT-INDEPENDENT-PIXELS-UNCHANGED-R288"]
       },
       "delivery": {
         "state": "candidate-not-integrated",
-        "note": "a668手机与d6c5桌面隔离候选已冻结并构建；未合入基准主线或部署最新950目标。 R287: 原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。"
+        "note": "a668手机与d6c5桌面隔离候选已冻结并构建；未合入基准主线或部署最新950目标。 R287: 原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。 R298: ordinary clean TXT/PNG matched existing iOS PR178 and Desktop PR59 source only; parent unmerged recovery/large-file extensions retained, liveD8 not declared newmaster runtime."
       },
       "execution": {
-        "state": "blocked",
-        "ownerRole": "当前主会话；F31待具体共享确认，原生执行方仅只读收尾"
+        "state": "in-progress",
+        "ownerRole": "Root语义修复/验收复核；Terra medium执行原生模拟器与真实桌面验证，请求设置已明示，独立遥测不可核"
       },
-      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
+      "nextAction": "同一720模拟器继续F12正常工作区刷新/分页，保护A聊天和空稿；普通TXT/PNG不再重传。之后按原具体ID补上传失败保留与其他核心未闭合项；大文件/恢复候选和正式运行包部署分别跟进。",
       "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16"],
-      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC09", "AC21"],
@@ -5342,8 +5352,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 295,
-  "updatedAt": "2026-11-19T03:14:10.399511+00:00",
+  "revision": 298,
+  "updatedAt": "2026-11-19T04:18:57.066664+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13182,6 +13192,76 @@
       "scope": "03:09:56Z只读原canonicalDB：本次MAIN_UPLOAD_19A7_OK非host-prompt用户输入0、关联user_triggeredRun0。未操作UI、未重新发送；原共享审批仍待明确回复。",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-current-original-marker-zero-input-root-readonly-review.json",
       "sha256": "fb784a53c979214e4ff1853011941be22cb9cf07202c3ff85bcbb65732720ac5"
+    },
+    "F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Explicit human reply; same original native simulator/pendingprompt and stablemarker, no UI/product result at authorization record",
+      "mobileEnvironment": "not-required",
+      "scope": "用户已明确允许本次测试文字/TXT/PNG向原EasyWork DEV及当前Qwen3.8-Flash处理方共享。旧拒绝保留，先核原marker状态，再只确认原提示，不再次发送手势；本次原操作真实验收正在恢复，授权本身不计功能通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/r296-human-specific-sharing-approval.json",
+      "sha256": "5785df939d48dc88a055d56a1f9082ccc5d1fc57c148d89574eddb449608f942"
+    },
+    "F31-GRANT-ONLY-EXPLICIT-FIRST-SUBMIT-SOURCE-CONTRACT-R297": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Exact installedsource1989, grantmethod and normalUI footer inspected; nativefixture driver identity being verified, no newbusiness result",
+      "mobileEnvironment": "not-required",
+      "scope": "授权只保存许可，不自动发送；批准后回原草稿核目标/模型/两附件及0输入，再明确首次发送一次。纠正Root此前“只确认提示不再手势”的过严解释；不将预授权手势当已提交操作。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-grant-only-explicit-submit-source-contract.json",
+      "sha256": "0318cc97e894641c0fc179c7aa826d74e3ac56d056dc6822b96dd09e8c272f7d"
+    },
+    "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298": {
+      "kind": "real-dev",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "720C4B2C iOS26, SDK27; exact main1989 App exe7abf/ZIP8771; real N17/D8 6138 Desktop; specified paired target and Qwen3.8-Flash",
+      "mobileEnvironment": "simulator",
+      "scope": "原一次已授权消息：80字节TXT、prepared490字节PNG在同一A聊天完成2上传/1用户输入/1真实completed Run，手机Quick Look/图片预览及真实桌面同chat两预览通过。原项目acceptance.txt摘要不变，桌面原选中聊天/空稿恢复。仅本范围，无新增逐token流式直接采样、最新启动GUI、主线Desktop实际部署、大文件/中断恢复通过。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f31-main-upload/shared-authorized-resume-report.json",
+      "sha256": "a169b9a94b759babcd7677c7174f35330f340e19c7825ca3b124789d62085f8a"
+    },
+    "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Real N17 workspace SQLite mode=ro and exact two files",
+      "mobileEnvironment": "not-required",
+      "scope": "Root independent read-only SQLite excludes host-prompt carrier; unique seq33 human input/one completed user-triggered Run, final reply and real80/490 file SHA; zero review business input",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-main-single-input-files-root-review.json",
+      "sha256": "c1d083867c3e313e933f56d3b54062e52de1ef997959ad7620cf91ae3d226203"
+    },
+    "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298": {
+      "kind": "exact-match-review",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Gitea GET and read-only Git objects",
+      "mobileEnvironment": "not-required",
+      "scope": "PR178 merged actualAPI/ancestry; iOS UploadCenter/ordinary preview retained between1989 and95f. Desktop PR59/master ordinary clean wire/storage flows structurally correspond; candidate recovery/document differences retained, no whole-master runtime claim",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-existing-main-pr178-and-desktop-ordinary-source-scope-review.json",
+      "sha256": "b4bf5b1c4982ba1cfe7ebd1657c3540a0fb22018b6772a9b83b0ba35fff1ff87"
+    },
+    "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298": {
+      "kind": "exact-match-review",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Read-only Git object SHA/body comparison and code diagnosis",
+      "mobileEnvironment": "not-required",
+      "scope": "Root supplements ordinary source review: attachmentsFromParts whole file, turn/start case, ChatAttachments/ChatImageViewerOverlay byte-identical D8->master249440; conversion adds restored-reference fallback/data while retaining ordinary reference values. No actual master deployment inferred",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-desktop-message-and-preview-bounded-source-review.json",
+      "sha256": "8cceff60f584181a93c9b354c6f5b8bbca5cfbf75629e31ee70c0c8efea9c601"
+    },
+    "F31-ENDED-STAGE-NINE-RUNNERS-AND-OLD-DERIVED-RELEASED-R298": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Shared disk exclusive mutex; exact old driver-derived, lsof no consumers; F12 independent output confirmed",
+      "mobileEnvironment": "not-required",
+      "scope": "F31 old149832KiB derived removed,796 files150895698 logicalbytes; exactsmallxctestrun rebuild inputs preserved. Nine unique runner apps uninstalled per originalreport. Installed720/ownedbinding/LAN/ZIP retained solely immediateF12. Volume delta not exclusive physical release.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-superseded-driver-derived-released.json",
+      "sha256": "2b126343abcb96eafa6170a56053ea5d88720fabcacc42fcd9b38d9b84e3c770"
     }
   },
   "openItems": [
@@ -15404,10 +15484,14 @@
         "B2-COLD-ACCEPTED-ORIGINAL-RECEIPT-FIVE-STATE-DISK-PASS-R209",
         "F27-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R209",
         "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
-        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"
+        "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-16T15:12:11.911563+00:00",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -15482,6 +15566,13 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259"],
           "scope": "正常系统文件选择器点取消，仍在原聊天，原草稿和附件状态准确保留。"
+        },
+        {
+          "id": "core-r298-main-single-message-two-ordinary-uploads-and-dual-preview",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": ["F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298"],
+          "scope": "原一次已授权消息：80字节TXT、prepared490字节PNG在同一A聊天完成2上传/1用户输入/1真实completed Run，手机Quick Look/图片预览及真实桌面同chat两预览通过。原项目acceptance.txt摘要不变，桌面原选中聊天/空稿恢复。仅本范围，无新增逐token流式直接采样、最新启动GUI、主线Desktop实际部署、大文件/中断恢复通过。"
         }
       ],
       "auxiliaryEvidence": [
@@ -16932,10 +17023,14 @@
         "REV15-REAL-ORIGINAL-MESSAGE-NUMERIC-COMPLETE-CANCEL-R143",
         "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
         "PHASE1-EXISTING-TXT-SYSTEM-SHARE-CANCEL-RESTORE-R284",
-        "F32-SYSTEM-SHARE-PR176-MAIN-EXACT-AND-ROOT-REVIEW-R284"
+        "F32-SYSTEM-SHARE-PR176-MAIN-EXACT-AND-ROOT-REVIEW-R284",
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-18T20:59:40.622575+00:00",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -17136,6 +17231,13 @@
             "F32-SYSTEM-SHARE-PR176-MAIN-EXACT-AND-ROOT-REVIEW-R284"
           ],
           "scope": "原已配对模拟器打开同一80字节TXT，系统分享面板显示原名/文本文稿/80字节及保存到文件；取消无发送。原B2草稿及阅读末尾独立恢复各官方1/0。0业务输入，原文件未重传。"
+        },
+        {
+          "id": "core-r298-main-single-message-two-ordinary-uploads-and-dual-preview",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": ["F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298"],
+          "scope": "原一次已授权消息：80字节TXT、prepared490字节PNG在同一A聊天完成2上传/1用户输入/1真实completed Run，手机Quick Look/图片预览及真实桌面同chat两预览通过。原项目acceptance.txt摘要不变，桌面原选中聊天/空稿恢复。仅本范围，无新增逐token流式直接采样、最新启动GUI、主线Desktop实际部署、大文件/中断恢复通过。"
         }
       ],
       "auxiliaryEvidence": [
@@ -21026,6 +21128,42 @@
         "F28-ALL-TEN-GENERATED-MIGRATED-PATHS-RELEASED-R295",
         "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
       ]
+    },
+    {
+      "revision": 296,
+      "date": "2026-11-19",
+      "kind": "specific-sharing-human-approved-original-operation-resume",
+      "scope": "用户已明确允许本次测试文字/TXT/PNG向原EasyWork DEV及当前Qwen3.8-Flash处理方共享。旧拒绝保留，先核原marker状态，再只确认原提示，不再次发送手势；本次原操作真实验收正在恢复，授权本身不计功能通过。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296"]
+    },
+    {
+      "revision": 297,
+      "date": "2026-11-19",
+      "kind": "grant-only-source-contract-and-driver-identity-before-one-submit",
+      "scope": "R297：本次共享已获明确授权；源核实允许仅保存许可，之后从原草稿明确首次提交。原生驱动缓存身份先校准，旧case在手势前断言退出，0新输入不算产品失败。F31新main一次双附件互通→同设备F12继续。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F31-GRANT-ONLY-EXPLICIT-FIRST-SUBMIT-SOURCE-CONTRACT-R297"]
+    },
+    {
+      "revision": 298,
+      "date": "2026-11-19",
+      "kind": "main-ordinary-two-attachment-interoperability-and-existing-delivery-scope-closed",
+      "scope": "R298：新main上传管线以一次双附件消息完成真实EasyWork互通；普通TXT/PNG两具体功能已有本次通过并对账原PR178/桌面59普通范围。唯一输入DE7416B1/Run731a0970完成，两端均实际打开；PNG沿既有重编码，prepared490字节一致而raw131字节不等的历史边界保留。9个独占runner已移除；同一720继续F12刷新分页，0额外模型。 F12独立输出已确认，F31旧编译目录150,895,698逻辑字节已在共享互斥下回收，保留重建输入与原结果。",
+      "newProductAcceptancePasses": 2,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 1,
+      "evidenceRefs": [
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298",
+        "F31-ENDED-STAGE-NINE-RUNNERS-AND-OLD-DERIVED-RELEASED-R298"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -22490,15 +22628,16 @@
     },
     {
       "id": "F31-CURRENT-TEST-SHARING-SPECIFIC-AUTO-REVIEW",
-      "state": "blocked",
+      "state": "resolved",
       "scope": "Only current simulator normal AI sharing prompt; previous exact pairing and lease permissions already resolved",
-      "reason": "自动审批明确拒绝点击允许此电脑和模型处理内容，认为本条测试消息/TXT/PNG向具体模型处理方的目的地授权不足；未执行确认，没有新模型输入。已仅就这一步发出具体确认请求，不绕过。",
+      "reason": "用户已明确允许本次测试文字/TXT/PNG向原EasyWork DEV及当前Qwen3.8-Flash处理方共享。旧拒绝保留，先核原marker状态，再只确认原提示，不再次发送手势；本次原操作真实验收正在恢复，授权本身不计功能通过。",
       "evidenceRefs": [
         "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
-        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295",
+        "F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296"
       ],
-      "owner": "当前主会话等待具体回复；原生执行方只读保留原提示/草稿/两附件",
-      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。"
+      "owner": "Root + f31_main_upload_shared_content_authorized",
+      "nextAction": "核原状态并仅确认原共享提示一次，继续单条双附件/实时回复/手机打开/独立桌面验收，再原设备F12。"
     }
   ],
   "auxiliaryValidation": {
@@ -27949,8 +28088,8 @@
     }
   ],
   "executionFocus": {
-    "summary": "R295：F28桌面PR68/master4cda及F42桌面PR69/master249440均已实合，原普通打开/异步问题真实证据按范围复用，不重复模型输入。F42原候选92文件759测试通过；整合主线后lint/类型/边界通过、0新Unit不计新增通过。两任务工作树、本地/远端分支与无依赖生成物均已清理，F28只留26,010字节最小清单/诊断。第一阶段38个具体动作已有27个合主线，剩11项，其中新main普通TXT/PNG仍待本次具体共享确认，原草稿/绑定保留，当前标记输入与Run均0。",
-    "firstRun": "等待已发出的具体共享确认，保留原提示/草稿/80B TXT与490B PNG；批准后仅确认原提示并核一次正常提交、两附件、手机打开和桌面结果。随后同一main720完成F12正常刷新/加载更多；样本不足时用准确完整目标准备本任务零Turn空会话让正常分页出现，按ID收尾，不将样本不足当长期阻塞、不制造模型业务输入。其余专项维持原优先级。",
+    "summary": "R298：新main上传管线以一次双附件消息完成真实EasyWork互通；普通TXT/PNG两具体功能已有本次通过并对账原PR178/桌面59普通范围。唯一输入DE7416B1/Run731a0970完成，两端均实际打开；PNG沿既有重编码，prepared490字节一致而raw131字节不等的历史边界保留。9个独占runner已移除；同一720继续F12刷新分页，0额外模型。",
+    "firstRun": "同一720模拟器继续F12正常工作区刷新/分页，保护A聊天和空稿；普通TXT/PNG不再重传。之后按原具体ID补上传失败保留与其他核心未闭合项；大文件/恢复候选和正式运行包部署分别跟进。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "异常协议帧、DPoP 轮换和拒绝细节、故障码矩阵、极限文件和复杂断点、性能及投递压力单独排在常用功能之后。同一父项的普通用户动作可先验收，相关保护条件继续执行；若缺陷阻断常用流程，随该流程修复。",
     "desktop": [
@@ -28029,7 +28168,7 @@
             "flow": "用日常大小的图片或文档完成一条真实入口链路。已有文件子场景按其包和断言复用，先排查用户常走的入口和候选装配。",
             "reuse": ["F29"],
             "items": {
-              "F31": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
+              "F31": "R298：新main上传管线以一次双附件消息完成真实EasyWork互通；普通TXT/PNG两具体功能已有本次通过并对账原PR178/桌面59普通范围。唯一输入DE7416B1/Run731a0970完成，两端均实际打开；PNG沿既有重编码，prepared490字节一致而raw131字节不等的历史边界保留。9个独占runner已移除；同一720继续F12刷新分页，0额外模型。",
               "F32": "点开聊天中的真实文件，完成下载、预览或系统分享；返回聊天后阅读位置合理，失败时有可用提示。"
             }
           }
@@ -28348,13 +28487,13 @@
       "phase": "core",
       "behavior": "刷新项目并加载下一页目录",
       "acceptanceCriteria": "刷新后项目数量和顺序正确，下一页无重复且阅读位置合理",
-      "state": "planned",
+      "state": "preparing",
       "owner": "当前主会话",
       "acceptanceBasis": "pending",
       "evidenceRefs": [],
       "pullRequests": [],
-      "nextAction": "刷新后项目数量和顺序正确，下一页无重复且阅读位置合理",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00",
+      "nextAction": "同一720模拟器继续F12正常工作区刷新/分页，保护A聊天和空稿；普通TXT/PNG不再重传。之后按原具体ID补上传失败保留与其他核心未闭合项；大文件/恢复候选和正式运行包部署分别跟进。",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "mergedScopeReview": {
         "evidenceRef": "MERGED-FUNCTION-SCOPE-FOLLOWUP-23-REVIEW-R268",
         "previousAcceptanceScope": "按冻结源/目标包/设备/通道/子断言；本次状态整理未新增运行 R147：当前目录15项／14项目归属、短历史或全文UI按各自关联子项通过；不升级长历史、nil／同名、stream reset、child或压缩完整范围。 R154：3个真实自有空聊天/nil项目/同名身份及已登记管理回执、pin中间状态、程序导航空态和独立cold子范围通过；其余全功能断言保留。 R257：当前源包从最近列表打开同一真实旧聊天。",
@@ -28905,9 +29044,9 @@
       "phase": "core",
       "behavior": "从文件选择器发送普通 TXT",
       "acceptanceCriteria": "复用 R257 上传和桌面原字节预览，复用 R259 选择取消保留草稿",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
         "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
@@ -28917,15 +29056,22 @@
         "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
         "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
         "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
-        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295",
+        "F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296",
+        "F31-GRANT-ONLY-EXPLICIT-FIRST-SUBMIT-SOURCE-CONTRACT-R297",
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
       ],
-      "pullRequests": [],
-      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
-      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
+      "pullRequests": ["BCAI/agent-hub-app#178", "BCAI/comfy-desktop#59"],
+      "nextAction": "Ordinary scope delivered by existing iOS PR178/desktop PR59 and current actual interoperability. Do not resend; failure/large-file/recovery and formal runtime deployment remain separate.",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
       "mergedScopeReview": {
-        "evidenceRef": "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
-        "retainedBoundary": "原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。",
-        "candidateDifferenceDelivery": "New main UploadCenter already present from50681c24/PR178; old96c4 ordinary upload not exact new pipeline. No duplicate old input; affected new path separately pending."
+        "evidenceRef": "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "additionalRootEvidenceRef": "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298",
+        "retainedBoundary": "Exact ordinary80B TXT/normalized490B PNG path only. Actual live N17/D8, not new master runtime. Large-file/recovery/document candidate not declared merged; raw131PNG is reencoded, pixels preserved via same R288 hashes.",
+        "candidateDifferenceDelivery": "PR59 ordinary clean methods present; unmerged D8 extensions separately remain under parent F31/DEV01 and F72."
       }
     },
     {
@@ -28934,9 +29080,9 @@
       "phase": "core",
       "behavior": "发送普通图片并打开",
       "acceptanceCriteria": "桌面和手机可查看同一图片原件",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "existing-evidence",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "PHASE1-ORDINARY-NORMALIZED-IMAGE-SINGLE-SEND-AND-DUAL-OPEN-R288",
         "F31-IMAGE-ROOT-CANONICAL-SINGLE-RUN-NATIVE-AND-FILES-REVIEW-R288",
@@ -28947,11 +29093,23 @@
         "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
         "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
         "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
-        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295",
+        "F31-HUMAN-SPECIFIC-SHARING-APPROVAL-ORIGINAL-PROMPT-RESUME-R296",
+        "F31-GRANT-ONLY-EXPLICIT-FIRST-SUBMIT-SOURCE-CONTRACT-R297",
+        "F31-MAIN-TXT-PNG-SINGLE-SEND-DUAL-PREVIEW-REAL-R298",
+        "F31-MAIN-ROOT-CANONICAL-AND-FILES-REVIEW-R298",
+        "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298"
       ],
-      "pullRequests": [],
-      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
-      "updatedAt": "2026-11-19T03:14:10.399511+00:00"
+      "pullRequests": ["BCAI/agent-hub-app#178", "BCAI/comfy-desktop#59"],
+      "nextAction": "Ordinary scope delivered by existing iOS PR178/desktop PR59 and current actual interoperability. Do not resend; failure/large-file/recovery and formal runtime deployment remain separate.",
+      "updatedAt": "2026-11-19T04:18:57.066664+00:00",
+      "mergedScopeReview": {
+        "evidenceRef": "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+        "additionalRootEvidenceRef": "F31-ROOT-MESSAGE-AND-PREVIEW-BOUNDED-MASTER-SOURCE-R298",
+        "retainedBoundary": "Exact ordinary80B TXT/normalized490B PNG path only. Actual live N17/D8, not new master runtime. Large-file/recovery/document candidate not declared merged; raw131PNG is reencoded, pixels preserved via same R288 hashes.",
+        "candidateDifferenceDelivery": "PR59 ordinary clean methods present; unmerged D8 extensions separately remain under parent F31/DEV01 and F72."
+      }
     },
     {
       "id": "F31-upload-failure",
@@ -30000,6 +30158,20 @@
       "checkedMainCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
       "checkedAt": "2026-11-19T03:01:33.981Z",
       "evidenceRef": "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"
+    },
+    "BCAI/agent-hub-app#178": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 178,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/178",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "4d83853907ca10fb517d523dc8f4ab1f5f8f3ecf",
+      "mergeCommit": "83c8dc84083150e39801846d95baf5537d6b02e7",
+      "mergedAt": "2026-11-15T14:01:00+08:00",
+      "checkedMainCommit": "95f55975b8c4ab972647862ecee43fc003f01dc6",
+      "checkedAt": "2026-11-19T04:18:57.066664+00:00",
+      "evidenceRef": "F31-EXISTING-PR178-AND-DESKTOP-ORDINARY-SOURCE-SCOPE-R298",
+      "scope": "Upload implementation50681 plus followup PR178, ordinary path matched; no new master runtime deployment"
     }
   },
   "deliveryWorkflow": {

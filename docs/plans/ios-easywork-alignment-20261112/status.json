@@ -2192,21 +2192,25 @@
         "evidenceRefs": ["LEDGER"],
         "currentEvidence": [
           "PHASE1-EASYWORK-NAMED-ORIGINAL-DESKTOP-OPEN-R266",
-          "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268"
+          "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268",
+          "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+          "F28-OPEN-READONLY-CONFIRMATION-DURABILITY-REGRESSION11-R292",
+          "F28-PUSHED-ORIGINAL-RECORD-MASTER-ADVANCED-ROOT-MERGE-R293",
+          "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294"
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "iOS侧PR189已合Gitea main5cad53fe；桌面1b3596基准上的具名打开候选仍未提交/未合master，整体两端交付未完成。最终iOS包1321未安装/未正式发布。",
-        "evidenceRefs": ["F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269"]
+        "state": "integrated-not-deployed",
+        "note": "iOS PR189/main5cad及Desktop PR68/master4cda均实合；原普通opened证据按范围复用，新持久化11辅助通过。N17/D8原运行及账号/设备未改，不宣称新正式包已部署。",
+        "evidenceRefs": ["F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294"]
       },
       "execution": {
-        "state": "blocked",
-        "ownerRole": "当前主会话负责具体租约恢复确认；Terra交付执行方待正式恢复"
+        "state": "planned",
+        "ownerRole": "当前主会话跟进父项未覆盖扩展与准确正式部署；普通功能已交付"
       },
-      "nextAction": "保留原首次opened通过，不重测；等待已核3项残留租约具体恢复确认，先恢复原第15批错误完整日志，再补原open-status确认持久化及相关边界检查，完成桌面PR。",
+      "nextAction": "普通主动打开已同时交付iOS PR189/main5cad与桌面PR68/master4cda；原首次opened及零新增输入复用，不重复。只读确认持久化/原uncertain恢复和晚到不降级已合并，11项辅助回归通过；新增扩展GUI/正式包部署与整父项工程范围分别跟进。",
       "openItemIds": ["VER01"],
-      "updatedAt": "2026-11-18T18:14:33.916364+00:00",
+      "updatedAt": "2026-11-19T02:41:39.907257+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC10"],
@@ -2422,7 +2426,10 @@
           "PHASE1-ORDINARY-NAVIGATION-FILE-CANCEL-DISCOVERY-C22-D8-R259",
           "PHASE1-ORDINARY-NORMALIZED-IMAGE-SINGLE-SEND-AND-DUAL-OPEN-R288",
           "F31-IMAGE-ROOT-CANONICAL-SINGLE-RUN-NATIVE-AND-FILES-REVIEW-R288",
-          "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288"
+          "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288",
+          "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+          "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
+          "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
         ],
         "auxiliaryEvidence": ["F31-IMAGE-ROOT-INDEPENDENT-PIXELS-UNCHANGED-R288"]
       },
@@ -2432,11 +2439,11 @@
       },
       "execution": {
         "state": "blocked",
-        "ownerRole": "Root awaits specific target approval; original executor only resource closeout"
+        "ownerRole": "当前主会话；F31待具体共享确认，原生执行方仅只读收尾"
       },
-      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
+      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
       "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16"],
-      "updatedAt": "2026-11-18T22:46:36.231743+00:00",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC09", "AC21"],
@@ -3241,7 +3248,8 @@
           "REV18-ACK-STRICT-RESULT-NEW-ORDINARY-PACKAGE-THREE-HELPERS-R160",
           "REV18-IOS-LOCAL-C8-SAVE-AND-DOCS-ONLY-REUSE-R164",
           "AC18-TYPED-TERMINAL-REPAIR-RED-GREEN-AUX-R174",
-          "AC18-TYPED-DESKTOP-LOCAL-SAVE-FORMAL-CHECKS-R175"
+          "AC18-TYPED-DESKTOP-LOCAL-SAVE-FORMAL-CHECKS-R175",
+          "F42-LEGACY-UNKNOWN-COUNT-AND-NARROW-RESOLVER-EXTRACTION-R294"
         ]
       },
       "acceptance": {
@@ -3271,20 +3279,23 @@
           "AC18-REAL-N9-DESKTOP-LATE-TYPED-REJECTION-R175",
           "AC18-REAL-N9-NATIVE-LATE-NONRETRYABLE-ZERO-DELTA-R175",
           "AC18-REAL-N9-NATIVE-ONLINE-COLD-SAVED-STATE-EXACT-R175",
-          "AC18-ACTUAL-NATIVE-SIX-LOCAL-IDENTITY-GUARDS-R176"
+          "AC18-ACTUAL-NATIVE-SIX-LOCAL-IDENTITY-GUARDS-R176",
+          "F42-ASYNC-PREREQUISITE-AND-TYPED-REPAIR-SOURCE-REUSE-R293",
+          "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "Desktop修复3888e1705已本地保存并在真实N9/模拟器验收登记边界；W C10 49ab3a81保存R176台账及六份公共规范，iOS生产仍C8/c76（实际编译c5c/e76）。本阶段临时进程/编译产物已核对释放，原profile、sole current验收包和未合并源保留。两仓均未推送或合主线。"
+        "state": "integrated-not-deployed",
+        "note": "原9f150/3888必要边界已合Desktop PR69/master249440；当前新getter兼容/有界模块提取通过正式门禁，原N9/native按范围复用。N17/D8原实例未重启/换包，不声明新正式运行包部署。",
+        "evidenceRefs": ["F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"]
       },
       "execution": {
         "state": "planned",
-        "ownerRole": "Main负责后续真实双端竞争/失效矩阵；本轮各执行方职责与资源收尾完成"
+        "ownerRole": "当前主会话跟进父项剩余真实竞争/错目标矩阵；普通功能及后续修复均已交付"
       },
-      "nextAction": "主仓 PR142/143 与桌面 PR59 已合，常见问题回答与先答/迟到范围直接复用；后续候选修复单独合并。",
+      "nextAction": "异步非首待答项/结束后处置及迟到终态错误映射已合桌面PR69/master249440。原N9/原生限定范围复用，搬移处置块经TypeScript规范打印与原3888一致；旧服务无元数据时保留未知的兼容边界有2项Unit覆盖，759项实际通过。完整真实同时竞争/错目标矩阵及新正式包部署仍按父项后续范围，不重跑普通回答。",
       "openItemIds": ["REV18"],
-      "updatedAt": "2026-11-15T08:23:01.694322+00:00",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
       "initialScopeStatus": "historical-scoped-closure-to-match",
       "acceptancePlan": {
         "scenarioIds": ["AC18"],
@@ -5331,8 +5342,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 291,
-  "updatedAt": "2026-11-18T22:49:38.294946+00:00",
+  "revision": 295,
+  "updatedAt": "2026-11-19T03:14:10.399511+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13071,6 +13082,106 @@
       "scope": "已结束主App构建阶段的独占derived约1.1GiB、工作树.build约103MiB/.gradle约2.5MiB及clean QA工作树/无独有提交分支已核后回收；仅该工作树idle Gradle44604精确退出。root独立核路径、Git登记/分支消失及ZIP/driver保留。卷实测35,555,270,656→36,813,725,696字节，复核36,782,080,000；不是目录块数当独占物理回收量。driver约144MiB、已装新Sim/ZIP36MiB和临时LAN保留给待批准连接/当前主线上传/F12，满足完成或放弃条件再释放。",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f31-main-upload/root-stage-cleanup-review.json",
       "sha256": "ccb11558500f6dde3ee7a7451b47035479a007d5669594d112954efb91ac4ef7"
+    },
+    "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Explicit human replies; exact 3 stale leases released; native simulator connection setup only, no new upload acceptance",
+      "mobileEnvironment": "not-required",
+      "scope": "R292：用户已明确批准两项具体恢复动作。已安全解除F28原3残留租约并补只读确认持久化，11项回归通过，正在沿原记录交付；新720模拟器已正常绑定既有EasyWork，新主线上传互通继续实际验收。旧拒绝/原通过保留，第一阶段尚未全完。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/r292-two-specific-human-approvals-and-recovery.json",
+      "sha256": "32075b2755b63579d6c4daf12e28e3af40c209f98f92ca70638cfa70e6f8bf3f"
+    },
+    "F28-OPEN-READONLY-CONFIRMATION-DURABILITY-REGRESSION11-R292": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6",
+      "packageSha256": "not-built-this-revision",
+      "environment": "Desktop source candidate; native-restoring Vitest 11 passed, actual Electron ABI restored",
+      "mobileEnvironment": "not-required",
+      "scope": "F28 unknown original open can reconcile through readonly status; confirmed original durable SQLite restart, late unknown cannot downgrade; 11 tests passed; no new GUI assertion.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-open-receipt-regression-report.txt",
+      "sha256": "138d12397b64fc7efbba5b1f639deb5fd646a32d5aad5fa89704af81f4105ffa"
+    },
+    "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "not-built-this-revision",
+      "environment": "720 iOS26 exactmain; 105pt correct gesture triggers original sharing prompt; confirmation refused before process; no new upload/model acceptance",
+      "mobileEnvironment": "not-required",
+      "scope": "等待已发出的本次EasyWork DEV及Qwen3.8-Flash具体共享确认；回复允许后仅在原ai-sharing-allow提示继续，禁止再次发送手势。当前TXT80B/PNG490B同一草稿保留、输入/Run0；新设备/绑定/LAN/driver供原操作及随后F12保留。旧目标/旧绑定/旧包通过不重做。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/f31-main-upload/data-sharing-specific-auto-review-refusal.json",
+      "sha256": "ac3396d51d24c2336e12a45bd81a8ca2972cb9700f46516f167d6d41fae31a80"
+    },
+    "F28-PUSHED-ORIGINAL-RECORD-MASTER-ADVANCED-ROOT-MERGE-R293": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "09a1873450361f0ee0a7ef2add07263d5858f8c9",
+      "packageSha256": "not-built-this-revision",
+      "environment": "Formal original delivery record; integration input review only, not actual merge to master yet",
+      "mobileEnvironment": "not-required",
+      "scope": "原普通主动打开通过保持。09a1已正式检查/推送，原第15批实际通过；master f617新增独立browser/resource功能，Root已正常无冲突合并且相对master仍仅原19F28文件，Terra沿原时钟和publishedAttempts续正式交付/合master/准确收尾。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-master-advanced-normal-merge-root-review.json",
+      "sha256": "f80edddb8077fab26507421b44b08af4fec2984eb6b0f22d1fda173ee6428a34"
+    },
+    "F42-ASYNC-PREREQUISITE-AND-TYPED-REPAIR-SOURCE-REUSE-R293": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "f6174ac75b95dc2335e98418debc8a7ec99d783a",
+      "packageSha256": "not-built-this-revision",
+      "environment": "New isolated Desktop worktree, original4 evidence hash verified; readonly source review, not new product acceptance",
+      "mobileEnvironment": "not-required",
+      "scope": "当前master仅原同步pending入口，缺9f150异步非首题/结束后处置前置及3888终态错误映射。Root已在独立候选精确补齐必要13文件（不含夹在中间的无关db94存储修复），保留新getThreadStatus；原N9/原生4份证据SHA及resolve方法已匹配。待F28主线稳定后正常整合并正式门禁/PR合并，原通过不重复模型输入。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f42-root-reviewed-original-reuse-input.json",
+      "sha256": "74f55ac64d7f4e4fb5ac27727622c249174021287b21117e78d180496be39d8c"
+    },
+    "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "packageSha256": "not-built-this-revision",
+      "environment": "Exact source/formal receipts/actual Git and path checks; original GUI scope reused, no new model or simulator business input",
+      "mobileEnvironment": "not-required",
+      "scope": "普通主动打开已同时交付iOS PR189/main5cad与桌面PR68/master4cda；原首次opened及零新增输入复用，不重复。只读确认持久化/原uncertain恢复和晚到不降级已合并，11项辅助回归通过；新增扩展GUI/正式包部署与整父项工程范围分别跟进。 Officialcleanupfailedhistorypreserved; RootnormalGitactualpath/registration/branchesabsenceverified.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-pr68-main-and-cleanup-root-review.json",
+      "sha256": "844cb9d6b5a54f04a1bc99084207d871d58a2bd33c40b742e3ec0b1a186c7289"
+    },
+    "F42-LEGACY-UNKNOWN-COUNT-AND-NARROW-RESOLVER-EXTRACTION-R294": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "packageSha256": "not-built-this-revision",
+      "environment": "Exact source/formal receipts/actual Git and path checks; original GUI scope reused, no new model or simulator business input",
+      "mobileEnvironment": "not-required",
+      "scope": "Root已补齐9f150异步处置前置和3888终态映射，保留新主线getThreadStatus/F28；旧服务缺元数据时保留未知并增2回归。正式lint因bridge805行>800失败后，仅把同一处置块搬入已有helper，完整目标/问题身份、相同答案幂等和错误语义不变；14文件范围内按原记录继续正式检查、PR合master和阶段收尾，原N9/原生按范围复用。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f42-max-lines-narrow-extraction-root-review.json",
+      "sha256": "af6bb95ad318453ba1bb2524e749878955d5ab98255ef75a76fcc5b15077f3b8"
+    },
+    "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "packageSha256": "not-applicable-source-and-resource-review",
+      "environment": "Exact source and originalformalreceipt/rootchecks only; no new mobile business/GUI pass",
+      "mobileEnvironment": "not-required",
+      "scope": "异步非首待答项/结束后处置及迟到终态错误映射已合桌面PR69/master249440。原N9/原生限定范围复用，搬移处置块经TypeScript规范打印与原3888一致；旧服务无元数据时保留未知的兼容边界有2项Unit覆盖，759项实际通过。完整真实同时竞争/错目标矩阵及新正式包部署仍按父项后续范围，不重跑普通回答。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f42-pr69-main-source-reuse-and-cleanup-root-review.json",
+      "sha256": "2c5573bed3d118d777c36159a9b3e2ce0102f62bbbb718ce221e2a010018a1fa"
+    },
+    "F28-ALL-TEN-GENERATED-MIGRATED-PATHS-RELEASED-R295": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "packageSha256": "not-applicable-source-and-resource-review",
+      "environment": "Exact source and originalformalreceipt/rootchecks only; no new mobile business/GUI pass",
+      "mobileEnvironment": "not-required",
+      "scope": "F28真实用户资料与正式回执保护；8生成目录及2个已溯源Unit夹具/缓存目录均已核原指纹/无消费者释放，原迁出根消失，最小manifest/失败诊断26,010字节保留。原19源码全部在主线Git，不把原官方失败回执改成成功；以随后实际正常Git/目录/登记复核作当前清理事实。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f28-final-two-generated-paths-released.json",
+      "sha256": "dfb84b23ee2b80430d963bbf94eaee5053f35410f7c37ac48fd0099b53f62e27"
+    },
+    "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1989dfc38607dfbc685283b9593f2ec1a7eef45d",
+      "packageSha256": "8771f0cc8ba9bcb614f7148934df67d3004d935a19c99d2fd382ff3a49d11b41",
+      "environment": "Exact source and originalformalreceipt/rootchecks only; no new mobile business/GUI pass",
+      "mobileEnvironment": "not-required",
+      "scope": "03:09:56Z只读原canonicalDB：本次MAIN_UPLOAD_19A7_OK非host-prompt用户输入0、关联user_triggeredRun0。未操作UI、未重新发送；原共享审批仍待明确回复。",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/main/f31-current-original-marker-zero-input-root-readonly-review.json",
+      "sha256": "fb784a53c979214e4ff1853011941be22cb9cf07202c3ff85bcbb65732720ac5"
     }
   },
   "openItems": [
@@ -20861,6 +20972,60 @@
         "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
         "F31-MAIN-BUILD-STAGE-UNUSED-RESOURCES-RELEASED-R291"
       ]
+    },
+    {
+      "revision": 292,
+      "date": "2026-11-19",
+      "kind": "specific-human-approvals-recovered-and-narrow-durability-fixed",
+      "scope": "R292：用户已明确批准两项具体恢复动作。已安全解除F28原3残留租约并补只读确认持久化，11项回归通过，正在沿原记录交付；新720模拟器已正常绑定既有EasyWork，新主线上传互通继续实际验收。旧拒绝/原通过保留，第一阶段尚未全完。 原首次主动打开真实通过继续复用；新持久化/晚到保护11项回归通过。仅原3残留租约已获明确授权核后解除，由Terra按原runId恢复正式门禁/原失败批日志、提交并合桌面master；不重放打开操作。 具体EasyWork目标的新模拟器绑定已获用户明确允许且原生正常连接成功，当前两附件草稿沿一次正常提交验收主线上传互通；结果不确定先查原回执。原E022及2旧绑定保留，原旧包TXT/PNG通过不重复。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+        "F28-OPEN-READONLY-CONFIRMATION-DURABILITY-REGRESSION11-R292"
+      ]
+    },
+    {
+      "revision": 293,
+      "date": "2026-11-19",
+      "kind": "desktop-original-delivery-recovered-main-integrated-and-next-typed-question-fix-reviewed-sharing-specific-step-refused",
+      "scope": "R293：两项具体恢复授权已落实。F28原失败批现已通过、代码09a1正式推送，因master新增独立功能，已正常无冲突整合并续原记录交付。新main上传长拖已触发正常AI共享提示，但自动审批又拒绝点击具体共享，正在等仅该步骤的确认，0新输入/Run；原草稿与两附件保留。等待期间同步补齐F42异步问题前置与终态映射交付差异，不重跑原验收。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
+        "F28-PUSHED-ORIGINAL-RECORD-MASTER-ADVANCED-ROOT-MERGE-R293",
+        "F42-ASYNC-PREREQUISITE-AND-TYPED-REPAIR-SOURCE-REUSE-R293"
+      ]
+    },
+    {
+      "revision": 294,
+      "date": "2026-11-19",
+      "kind": "f28-actual-desktop-master-merged-and-owned-tree-recovered-next-question-fix-in-formal-gates",
+      "scope": "R294：F28桌面已通过PR68合master4cda，普通主动打开按原真实通过复用；持久化修复11项回归及正式门禁通过。已恢复中断清理并核工作树/本地分支/远端分支移除，迁出生成物正按准确归属分类收尾。F42已在该主线补齐14文件，正式lint行数限制已用同一处置块窄提取修复，续原记录检查交付。F31仅待本次具体共享批准，0新增业务输入，第一阶段仍未全完。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294",
+        "F42-LEGACY-UNKNOWN-COUNT-AND-NARROW-RESOLVER-EXTRACTION-R294"
+      ]
+    },
+    {
+      "revision": 295,
+      "date": "2026-11-19",
+      "kind": "f42-actual-master-merged-and-both-core-delivery-stages-cleaned-specific-sharing-stillpending",
+      "scope": "R295：F28桌面PR68/master4cda及F42桌面PR69/master249440均已实合，原普通打开/异步问题真实证据按范围复用，不重复模型输入。F42原候选92文件759测试通过；整合主线后lint/类型/边界通过、0新Unit不计新增通过。两任务工作树、本地/远端分支与无依赖生成物均已清理，F28只留26,010字节最小清单/诊断。第一阶段38个具体动作已有27个合主线，剩11项，其中新main普通TXT/PNG仍待本次具体共享确认，原草稿/绑定保留，当前标记输入与Run均0。",
+      "newProductAcceptancePasses": 0,
+      "newWholeFeaturePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295",
+        "F28-ALL-TEN-GENERATED-MIGRATED-PATHS-RELEASED-R295",
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -22286,12 +22451,17 @@
     },
     {
       "id": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION",
-      "state": "blocked",
+      "state": "resolved",
       "scope": "F28桌面候选提交/PR交付恢复；产品普通主动打开已真实通过",
-      "reason": "已退出92664留下3项会话/目标/工作区租约。正式工具无恢复入口；自动审批拒绝手动解除，未绕过。原第15批未处理错误尚待完整输出定位，未当通过。",
-      "evidenceRefs": ["F28-FORMAL-DELIVERY-DEAD-LEASE-REVIEW-REFUSED-R267"],
-      "owner": "当前主会话；需具体恢复确认后由Terra原交付执行方接续",
-      "nextAction": "iOS代码已独立合PR189；仍等待仅解除桌面已核3项租约的明确回复。确认前不处理这些锁；恢复后只补原失败批并完整存日志，继续原桌面交付。"
+      "reason": "用户明确回复允许按核对清单恢复。Root重新核PID92664已退出、原HEAD/19文件暂存及3租约SHA后，仅解除原3项；新修复11项回归通过。原拒绝及第15批失败历史保留，正式交付尚未完成。",
+      "evidenceRefs": [
+        "F28-FORMAL-DELIVERY-DEAD-LEASE-REVIEW-REFUSED-R267",
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+        "F28-OPEN-READONLY-CONFIRMATION-DURABILITY-REGRESSION11-R292",
+        "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294"
+      ],
+      "owner": "当前主会话审查；f28_desktop_formal_delivery_resume负责原记录交付",
+      "nextAction": "具体恢复授权已落实，桌面PR68已合；原租约及交付阻塞解除，不重做原打开。"
     },
     {
       "id": "SECOND-TARGET-REMOTE-DESKTOP-GUI-WITNESS",
@@ -22307,15 +22477,28 @@
     },
     {
       "id": "F31-NEW-MAIN-SIM-EASYWORK-TARGET-APPROVAL",
-      "state": "blocked",
+      "state": "resolved",
       "scope": "New main UploadCenter live EasyWork interoperability setup; prior old96c4 acceptance remains",
-      "reason": "自动审批将本机Codex协调Host身份25d82f80与EasyWork应用运行目标device-7b897eea混淆，补齐地址、证书a572及完整target只读证明后，仍以“目标与授权不一致”拒绝实际连接。工具拒绝不得绕过，当前新binding=0/业务输入=0。",
+      "reason": "用户明确允许该EasyWork目标的新模拟器绑定。720C4B2C从正常发现入口连接一次成功，新绑定9631d09d active；root只读核3绑定含原2项不变，LAN临时开启供当前验收。上传功能尚待单次提交和双端核对，准备成功不计功能通过。",
       "evidenceRefs": [
         "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
-        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292"
       ],
-      "owner": "Root specific-target approval and resource closeout",
-      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。"
+      "owner": "当前主会话；f31_main_upload_authorized_resume执行正常原生验收",
+      "nextAction": "具体EasyWork目标的新模拟器绑定已获用户明确允许且原生正常连接成功，当前两附件草稿沿一次正常提交验收主线上传互通；结果不确定先查原回执。原E022及2旧绑定保留，原旧包TXT/PNG通过不重复。"
+    },
+    {
+      "id": "F31-CURRENT-TEST-SHARING-SPECIFIC-AUTO-REVIEW",
+      "state": "blocked",
+      "scope": "Only current simulator normal AI sharing prompt; previous exact pairing and lease permissions already resolved",
+      "reason": "自动审批明确拒绝点击允许此电脑和模型处理内容，认为本条测试消息/TXT/PNG向具体模型处理方的目的地授权不足；未执行确认，没有新模型输入。已仅就这一步发出具体确认请求，不绕过。",
+      "evidenceRefs": [
+        "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
+      ],
+      "owner": "当前主会话等待具体回复；原生执行方只读保留原提示/草稿/两附件",
+      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。"
     }
   ],
   "auxiliaryValidation": {
@@ -23863,6 +24046,20 @@
         "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
         "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
       ]
+    },
+    {
+      "component": "F28 EasyWork桌面原聊天打开及原回执恢复已合master PR68",
+      "baseCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "mainMergeCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "verification": "正式PR回执独立核head/baseHead/merge/sourceDeleted；原opened真实通过复用；原uncertain只读确认/SQLite重启/晚到不降级11辅助通过。N17/D8未重启或换包，正式部署未执行。",
+      "evidenceRefs": ["F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294"]
+    },
+    {
+      "component": "F42 EasyWork异步后续问题与迟到终态修复已合桌面PR69",
+      "baseCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "mainMergeCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "verification": "正式PR实际核head/baseHead/merge/remote源删除。14文件与759测试源4e11逐字节一致；处置块与原3888经TypeScript规范打印匹配，原真实N9/native范围复用。主线整合0新Unit不计新pass；同版Electron复制的签名校验失败仅作局限，不宣称发行签名通过。新正式包未部署。",
+      "evidenceRefs": ["F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"]
     }
   ],
   "sourcePinHistory": [
@@ -27752,8 +27949,8 @@
     }
   ],
   "executionFocus": {
-    "summary": "R291：R289已合PR200；新主线包在全新模拟器已构建安装，但新设备连接遭自动审批目标身份拒绝，现等待具体目标确认。旧包普通TXT/PNG与其他核心通过保留；第一阶段未全完。F28租约解除确认与第二目标额外GUI仍分别保留。",
-    "firstRun": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
+    "summary": "R295：F28桌面PR68/master4cda及F42桌面PR69/master249440均已实合，原普通打开/异步问题真实证据按范围复用，不重复模型输入。F42原候选92文件759测试通过；整合主线后lint/类型/边界通过、0新Unit不计新增通过。两任务工作树、本地/远端分支与无依赖生成物均已清理，F28只留26,010字节最小清单/诊断。第一阶段38个具体动作已有27个合主线，剩11项，其中新main普通TXT/PNG仍待本次具体共享确认，原草稿/绑定保留，当前标记输入与Run均0。",
+    "firstRun": "等待已发出的具体共享确认，保留原提示/草稿/80B TXT与490B PNG；批准后仅确认原提示并核一次正常提交、两附件、手机打开和桌面结果。随后同一main720完成F12正常刷新/加载更多；样本不足时用准确完整目标准备本任务零Turn空会话让正常分页出现，按ID收尾，不将样本不足当长期阻塞、不制造模型业务输入。其余专项维持原优先级。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "异常协议帧、DPoP 轮换和拒绝细节、故障码矩阵、极限文件和复杂断点、性能及投递压力单独排在常用功能之后。同一父项的普通用户动作可先验收，相关保护条件继续执行；若缺陷阻断常用流程，随该流程修复。",
     "desktop": [
@@ -27802,7 +27999,7 @@
               "F17": "普通长历史上一页已完成，PR142 I2.4/桌面59原交付直接复用；本次26轮真实聊天的模拟器向上读取和桌面末轮核对已留证，不再重复验收。",
               "F18": "普通流式回复与双端最终一致已通过，权威快照恢复及子运行补证按原场景排期。",
               "F20": "真实成功Diff已过并对账，JSON工具换行已合PR196；普通文本范围复用原验收，不重复。复制/子代理新增历史入口及完整父项仍单列。",
-              "F28": "首次普通主动打开已真实通过，iOS已合PR189；桌面提交及未知后确认回执持久化待补。原流程不重验。"
+              "F28": "普通主动打开已同时交付iOS PR189/main5cad与桌面PR68/master4cda；原首次opened及零新增输入复用，不重复。只读确认持久化/原uncertain恢复和晚到不降级已合并，11项辅助回归通过；新增扩展GUI/正式包部署与整父项工程范围分别跟进。"
             }
           },
           {
@@ -27814,7 +28011,7 @@
               "F38": "普通立即追加已通过。补已结束运行的迟到追加拒绝与下一轮设置隔离。",
               "F39": "普通停止和明确继续已通过。按现存运行目标补明确重新运行入口及相应状态。",
               "F40": "普通两版阅读、当前版批准/调整和收起均已按各自范围通过并对账已合PR142/桌面59，不重测；工程边界单列。",
-              "F42": "主仓 PR142/143 与桌面 PR59 已合，常见问题回答与先答/迟到范围直接复用；后续候选修复单独合并。"
+              "F42": "异步非首待答项/结束后处置及迟到终态错误映射已合桌面PR69/master249440。原N9/原生限定范围复用，搬移处置块经TypeScript规范打印与原3888一致；旧服务无元数据时保留未知的兼容边界有2项Unit覆盖，759项实际通过。完整真实同时竞争/错目标矩阵及新正式包部署仍按父项后续范围，不重跑普通回答。"
             }
           },
           {
@@ -27832,7 +28029,7 @@
             "flow": "用日常大小的图片或文档完成一条真实入口链路。已有文件子场景按其包和断言复用，先排查用户常走的入口和候选装配。",
             "reuse": ["F29"],
             "items": {
-              "F31": "当前普通 TXT 上传及选择取消保留原稿已过；图片和真正上传失败保留按影响补验。",
+              "F31": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
               "F32": "点开聊天中的真实文件，完成下载、预览或系统分享；返回聊天后阅读位置合理，失败时有可用提示。"
             }
           }
@@ -28342,19 +28539,23 @@
       "phase": "core",
       "behavior": "从手机主动打开桌面指定聊天",
       "acceptanceCriteria": "EasyWork 通过具名操作打开完整原目标，返回同操作可查询回执，无新输入",
-      "state": "passed-awaiting-merge",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "real-dev",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "PHASE1-EASYWORK-NAMED-ORIGINAL-DESKTOP-OPEN-R266",
         "F28-FINAL-ADAPTER-POLICY-BOUNDED-SOURCE-EQUIVALENCE-R268",
         "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269",
-        "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270"
+        "F28-UNKNOWN-OPEN-STATUS-DURABILITY-SOURCE-GAP-R270",
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+        "F28-OPEN-READONLY-CONFIRMATION-DURABILITY-REGRESSION11-R292",
+        "F28-PUSHED-ORIGINAL-RECORD-MASTER-ADVANCED-ROOT-MERGE-R293",
+        "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294",
+        "F28-ALL-TEN-GENERATED-MIGRATED-PATHS-RELEASED-R295"
       ],
-      "pullRequests": ["BCAI/agent-hub-app#189"],
-      "nextAction": "保留原首次opened通过，不重测；等待已核3项残留租约具体恢复确认，先恢复原第15批错误完整日志，再补原open-status确认持久化及相关边界检查，完成桌面PR。",
-      "updatedAt": "2026-11-18T18:14:33.916364+00:00",
-      "deliveryBlocker": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION",
+      "pullRequests": ["BCAI/agent-hub-app#189", "BCAI/comfy-desktop#68"],
+      "nextAction": "普通主动打开已同时交付iOS PR189/main5cad与桌面PR68/master4cda；原首次opened及零新增输入复用，不重复。只读确认持久化/原uncertain恢复和晚到不降级已合并，11项辅助回归通过；新增扩展GUI/正式包部署与整父项工程范围分别跟进。",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
       "sourceDeliveries": {
         "ios": {
           "state": "merged",
@@ -28365,16 +28566,16 @@
           "formalDeployment": "not-performed"
         },
         "desktop": {
-          "state": "blocked-not-committed",
+          "state": "merged",
           "repository": "BCAI/comfy-desktop",
-          "branch": "codex/easywork-desktop-open-20261118",
-          "baseCommit": "1b359600e40f6ec0f87b6779db5e4139cb4d21d6",
-          "blockerId": "F28-DELIVERY-LEASE-RECOVERY-CONFIRMATION"
+          "pullRequest": "BCAI/comfy-desktop#68",
+          "headCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+          "mergeCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+          "formalDeployment": "not-performed"
         }
       },
-      "unclosedAssertions": [
-        "原open-status后来确认opened后需持久保存，并在进程重启/界面离开后保持；原uncertain错误需允许只读核对，不能重开导航。"
-      ]
+      "unclosedAssertions": [],
+      "mergedScope": "普通主动打开已同时交付iOS PR189/main5cad与桌面PR68/master4cda；原首次opened及零新增输入复用，不重复。只读确认持久化/原uncertain恢复和晚到不降级已合并，11项辅助回归通过；新增扩展GUI/正式包部署与整父项工程范围分别跟进。"
     },
     {
       "id": "F37-native-queue",
@@ -28574,15 +28775,34 @@
       "id": "F42-candidate-question-fix",
       "featureIds": ["F42"],
       "phase": "core",
-      "behavior": "交付后续问题错误映射修复",
-      "acceptanceCriteria": "把已测候选3888对应实际变更审查合入，原验收按影响复用",
-      "state": "planned",
+      "behavior": "运行结束后处置原异步问题并拒绝迟到答案",
+      "acceptanceCriteria": "完整thread/session/run/tool-call匹配非首待答项；已处置不同答案不可重试，原答案和投递不增加",
+      "state": "merged",
       "owner": "当前主会话",
-      "acceptanceBasis": "pending",
-      "evidenceRefs": [],
-      "pullRequests": [],
-      "nextAction": "把已测候选3888对应实际变更审查合入，原验收按影响复用",
-      "updatedAt": "2026-11-18T14:53:16.859236+00:00"
+      "acceptanceBasis": "merged-pr",
+      "evidenceRefs": [
+        "F42-ASYNC-PREREQUISITE-AND-TYPED-REPAIR-SOURCE-REUSE-R293",
+        "F42-LEGACY-UNKNOWN-COUNT-AND-NARROW-RESOLVER-EXTRACTION-R294",
+        "AC18-REAL-N9-DESKTOP-LATE-TYPED-REJECTION-R175",
+        "AC18-REAL-N9-NATIVE-LATE-NONRETRYABLE-ZERO-DELTA-R175",
+        "AC18-REAL-N9-NATIVE-ONLINE-COLD-SAVED-STATE-EXACT-R175",
+        "REV18-REAL-ORIGINAL-ASYNC-METADATA-NONFIRST-SKIP-R158",
+        "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"
+      ],
+      "pullRequests": ["BCAI/comfy-desktop#69"],
+      "nextAction": "异步非首待答项/结束后处置及迟到终态错误映射已合桌面PR69/master249440。原N9/原生限定范围复用，搬移处置块经TypeScript规范打印与原3888一致；旧服务无元数据时保留未知的兼容边界有2项Unit覆盖，759项实际通过。完整真实同时竞争/错目标矩阵及新正式包部署仍按父项后续范围，不重跑普通回答。",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
+      "mergedScope": "异步非首待答项/结束后处置及迟到终态错误映射已合桌面PR69/master249440。原N9/原生限定范围复用，搬移处置块经TypeScript规范打印与原3888一致；旧服务无元数据时保留未知的兼容边界有2项Unit覆盖，759项实际通过。完整真实同时竞争/错目标矩阵及新正式包部署仍按父项后续范围，不重跑普通回答。",
+      "sourceDeliveries": {
+        "desktop": {
+          "state": "merged",
+          "repository": "BCAI/comfy-desktop",
+          "pullRequest": "BCAI/comfy-desktop#69",
+          "headCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+          "mergeCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+          "formalDeployment": "not-performed"
+        }
+      }
     },
     {
       "id": "F44-query-original",
@@ -28694,11 +28914,14 @@
         "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
         "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290",
         "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
-        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+        "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
       ],
       "pullRequests": [],
-      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
-      "updatedAt": "2026-11-18T22:46:36.231743+00:00",
+      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00",
       "mergedScopeReview": {
         "evidenceRef": "F31-ORIGINAL-TXT-AND-NEW-MAIN-UPLOAD-PIPELINE-BOUNDARY-R287",
         "retainedBoundary": "原R257普通TXT已验保留；主线上传管线已存在，受影响的新管线与真实EasyWork互通待对应验收，不能把旧包结果当新组合通过。旧包不重复上传同一TXT。",
@@ -28721,11 +28944,14 @@
         "F31-EXISTING-IMAGE-NORMALIZATION-AND-PREVIEW-MAIN-REVIEW-R288",
         "F31-MAIN-UPLOAD-FRESH-SIMULATOR-ISOLATION-PREFLIGHT-R290",
         "F31-MAIN-FRESH-SIM-NATIVE-PACKAGE-INSTALL-AUX-R291",
-        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291"
+        "F31-EASYWORK-TARGET-IDENTITY-APPROVAL-REFUSAL-REVIEW-R291",
+        "TWO-SPECIFIC-HUMAN-APPROVALS-RECOVERED-F28-AND-MAIN-SIM-R292",
+        "F31-ORIGINAL-MAIN-SHARING-PROMPT-SPECIFIC-REFUSAL-R293",
+        "F31-ORIGINAL-SHARING-MARKER-ROOT-READONLY-ZERO-R295"
       ],
       "pullRequests": [],
-      "nextAction": "等待具体允许新模拟器绑定既有EasyWork device-7b897eea-fb3d-40f1-8094-3545370a3852 / workspace-005b0fcbf056e65ab539328f / local 的审批确认；原生新包/目标/TLS证据均已准备。未确认不执行连接，旧包TXT/PNG原通过保持；批准后仅跑新主线上传受影响流程。",
-      "updatedAt": "2026-11-18T22:46:36.231743+00:00"
+      "nextAction": "具体绑定授权已落实。当前仅待本次EasyWork DEV及Qwen3.8-Flash共享确认；批准后只在原提示继续，先查原标记/回执，不重复发送手势。同一两附件草稿仅一条测试输入，核新UploadCenter两传输、手机TXT/PNG打开、真实桌面文件字节/像素和单Run结果，再沿同一main720做F12。原send按钮AX“可用/Disabled”不一致也保留，批准后只做零输入定位，不误归上传失败。",
+      "updatedAt": "2026-11-19T03:14:10.399511+00:00"
     },
     {
       "id": "F31-upload-failure",
@@ -29691,7 +29917,9 @@
       "headCommit": "3ca92dad96de8d70d032d042a3c2d2b281bb4142",
       "checkedMainCommit": "5cad53fe17008f9fb2cafda7bcc1b236c24273ed",
       "checkedAt": "2026-11-18T17:42:13.158324+00:00",
-      "evidenceRef": "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269"
+      "evidenceRef": "F28-IOS-PR189-ACTUAL-MAIN-MERGE-AND-NATIVE-SOURCE-PROOF-R269",
+      "mergedAt": "2026-11-19T01:23:27+08:00",
+      "mergedAtSource": "Actual Gitea merge commit committerDate; prior compact PR receipt omitted API merged_at"
     },
     "BCAI/agent-hub-app#191": {
       "repository": "BCAI/agent-hub-app",
@@ -29744,6 +29972,34 @@
       "checkedMainCommit": "0a7ffddb1302ee2a010b3acb1680b12f48e8d9ca",
       "checkedAt": "2026-11-18T20:42:26.560926+00:00",
       "evidenceRef": "F15-PATH-PR197-ACTUAL-GITEA-MAIN-R282"
+    },
+    "BCAI/comfy-desktop#68": {
+      "repository": "BCAI/comfy-desktop",
+      "number": 68,
+      "url": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/68",
+      "baseBranch": "master",
+      "state": "merged",
+      "headCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "mergeCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "checkedMainCommit": "4cda3e474dfb668f088945782534ce7e5b7bc7ea",
+      "checkedAt": "2026-11-19T02:28:09.670Z",
+      "evidenceRef": "F28-DESKTOP-PR68-ACTUAL-MASTER-AND-NORMAL-CLEANUP-RECOVERY-R294",
+      "mergedAt": "2026-11-19",
+      "mergedAtPrecision": "day; formal tool exposes verifiedAt rather than merged_at, commit creation and successful merge verification are on this UTC date"
+    },
+    "BCAI/comfy-desktop#69": {
+      "repository": "BCAI/comfy-desktop",
+      "number": 69,
+      "url": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/69",
+      "baseBranch": "master",
+      "state": "merged",
+      "headCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "mergeCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "mergedAt": "2026-11-19",
+      "mergedAtPrecision": "day; officialtool returns verifiedAt rather than APImerged_at, creation and successfulmergeverification onthis UTCdate",
+      "checkedMainCommit": "24944047ec870dc6a493ad26a1b612745ebd7262",
+      "checkedAt": "2026-11-19T03:01:33.981Z",
+      "evidenceRef": "F42-PR69-ACTUAL-MASTER-REUSE-759-AND-CLEANUP-R295"
     }
   },
   "deliveryWorkflow": {

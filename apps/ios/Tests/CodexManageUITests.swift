@@ -405,6 +405,11 @@ extension CodexManageUITests {
       app.collectionViews.firstMatch.swipeDown()
     }
     XCTAssertTrue(app.staticTexts["photo-strip-ready"].waitForExistence(timeout: 40), app.debugDescription)
+    // Reopening refreshes the PhotoKit-backed recent list on a fresh simulator
+    // and brings the ownership row back into the List's realized viewport.
+    quickAttachmentClosePanel()
+    quickAttachmentPanel()
+    _ = quickAttachmentControl("quick-attachment-test-preview-metadata")
     let owned = app.staticTexts["quick-attachment-owned-photos"]
     let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
       owned.label.components(separatedBy: "|").count >= 6
@@ -422,6 +427,68 @@ extension CodexManageUITests {
     for _ in 0..<5 where !app.staticTexts["photos-cleaned"].isHittable { app.collectionViews.firstMatch.swipeDown() }
     XCTAssertTrue(app.staticTexts["photos-cleaned"].waitForExistence(timeout: 20))
     quickAttachmentClosePanel()
+  }
+
+  // Run once in each simulator appearance; screenshots also verify the actual
+  // contrast of the ordinal and button labels, beyond accessibility values.
+  @MainActor func testQuickAttachmentAppearanceSelection() throws {
+    quickAttachmentPanel()
+    let ids = try quickAttachmentPreparePreviewPhotos()
+    let footer = app.buttons["attachment-add-selected"]
+    XCTAssertFalse(footer.isEnabled)
+    shot("attachment-appearance-panel-empty")
+    quickAttachmentControl("attachment-photo-library").tap()
+    XCTAssertTrue(app.scrollViews["attachment-photo-grid"].waitForExistence(timeout: 10))
+    XCTAssertFalse(footer.isEnabled)
+    shot("attachment-appearance-grid-empty")
+    for (index, id) in ids.prefix(3).enumerated() {
+      let control = quickAttachmentGridSelection(id)
+      control.tap()
+      XCTAssertEqual(control.value as? String, String(index + 1))
+    }
+    XCTAssertTrue(footer.isEnabled)
+    XCTAssertTrue(footer.label.contains("3"), footer.label)
+    shot("attachment-appearance-grid-three")
+    quickAttachmentGridSelection(ids[1]).tap()
+    XCTAssertEqual(quickAttachmentGridSelection(ids[1]).value as? String, "0")
+    XCTAssertEqual(quickAttachmentGridSelection(ids[2]).value as? String, "2")
+    XCTAssertTrue(footer.label.contains("2"), footer.label)
+    shot("attachment-appearance-grid-reordered")
+    app.buttons["attachment-photo-library-back"].tap()
+    XCTAssertEqual(quickAttachmentControl("select-photo-" + ids[0]).value as? String, "1")
+    XCTAssertEqual(quickAttachmentControl("select-photo-" + ids[2]).value as? String, "2")
+    XCTAssertTrue(footer.label.contains("2"), footer.label)
+    shot("attachment-appearance-panel-selected")
+    quickAttachmentControl("attachment-photo-library").tap()
+    XCTAssertTrue(app.scrollViews["attachment-photo-grid"].waitForExistence(timeout: 10))
+    app.buttons["recent-photo-" + ids[2]].tap()
+    let select = app.buttons["attachment-preview-select"]
+    let add = app.buttons["attachment-preview-add-selected"]
+    XCTAssertTrue(select.waitForExistence(timeout: 15))
+    XCTAssertEqual(select.value as? String, "1")
+    XCTAssertTrue(add.isEnabled)
+    XCTAssertTrue(add.label.contains("2"), add.label)
+    shot("attachment-appearance-preview-two")
+    select.tap()
+    XCTAssertEqual(select.value as? String, "0")
+    XCTAssertTrue(add.label.contains("1"), add.label)
+    app.buttons["attachment-preview-back"].tap()
+    XCTAssertEqual(quickAttachmentGridSelection(ids[0]).value as? String, "1")
+    quickAttachmentGridSelection(ids[0]).tap()
+    XCTAssertFalse(footer.isEnabled)
+    shot("attachment-appearance-grid-cleared")
+    quickAttachmentGridSelection(ids[1]).tap()
+    app.buttons["recent-photo-" + ids[1]].tap()
+    XCTAssertTrue(add.waitForExistence(timeout: 10))
+    select.tap()
+    XCTAssertFalse(add.isEnabled)
+    shot("attachment-appearance-preview-empty")
+    select.tap()
+    XCTAssertTrue(add.isEnabled)
+    shot("attachment-appearance-preview-one")
+    add.tap()
+    XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.waitForExistence(timeout: 20))
+    shot("attachment-appearance-added")
   }
 
   @MainActor func testQuickAttachmentImagePreviewSelection() throws {

@@ -85,6 +85,28 @@ struct AttachmentPhotoThumbnail: View {
   }
 }
 
+// Keep foreground and fill paired: the app's accent becomes white in dark mode.
+// A fixed white ordinal (or a prominent button's automatic label) then disappears.
+private enum AttachmentSelectionAppearance {
+  static let fill = Color(uiColor: .label)
+  static let foreground = Color(uiColor: .systemBackground)
+}
+
+private struct AttachmentSelectionButtonStyle: ButtonStyle {
+  @Environment(\.isEnabled) private var isEnabled
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .font(.headline)
+      .padding(.horizontal, 20)
+      .frame(minHeight: 48)
+      .foregroundStyle(AttachmentSelectionAppearance.foreground)
+      .tint(AttachmentSelectionAppearance.foreground)
+      .background(AttachmentSelectionAppearance.fill, in: Capsule())
+      .opacity(!isEnabled ? 0.4 : configuration.isPressed ? 0.7 : 1)
+  }
+}
+
 struct AttachmentPhotoTile: View {
   let photo: RecentAttachmentPhoto
   let order: Int?
@@ -98,10 +120,10 @@ struct AttachmentPhotoTile: View {
         .accessibilityIdentifier("recent-photo-" + photo.id)
       Button(action: select) {
         ZStack {
-          Circle().fill(alreadyAdded ? Color.secondary : order == nil ? Color.black.opacity(0.35) : Color.accentColor)
+          Circle().fill(alreadyAdded ? Color(white: 0.35) : order == nil ? Color.black.opacity(0.35) : AttachmentSelectionAppearance.fill)
           Circle().strokeBorder(.white, lineWidth: 2)
           if alreadyAdded { Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white) }
-          else if let order { Text(String(order)).font(.caption.bold()).foregroundStyle(.white) }
+          else if let order { Text(String(order)).font(.caption.bold()).foregroundStyle(AttachmentSelectionAppearance.foreground) }
         }.frame(width: 26, height: 26).frame(width: 44, height: 44).contentShape(Rectangle())
       }.buttonStyle(.plain).disabled(alreadyAdded).zIndex(1)
         .accessibilityLabel(L10n.tr(alreadyAdded ? "已添加" : order == nil ? "选择图片" : "取消选择图片"))
@@ -113,7 +135,7 @@ struct AttachmentPhotoTile: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading).padding(5)
           .allowsHitTesting(false)
       }
-    }.overlay { RoundedRectangle(cornerRadius: 10).strokeBorder(order == nil ? .clear : Color.accentColor, lineWidth: 2).allowsHitTesting(false) }
+    }.overlay { RoundedRectangle(cornerRadius: 10).strokeBorder(order == nil ? .clear : AttachmentSelectionAppearance.fill, lineWidth: 2).allowsHitTesting(false) }
   }
 }
 
@@ -147,7 +169,7 @@ struct AttachmentPhotoSelectionFooter: View {
         Button(action: add) {
           if adding { ProgressView() }
           else { Text(L10n.tr("添加") + "（\(selection.photos.count)）") }
-        }.buttonStyle(.borderedProminent).controlSize(.large)
+        }.buttonStyle(AttachmentSelectionButtonStyle())
           .disabled(adding || selection.photos.isEmpty).accessibilityIdentifier("attachment-add-selected")
       }
     }.padding(.horizontal, 16).padding(.vertical, 10)
@@ -187,7 +209,7 @@ struct AttachmentPhotoSelectionPreview: View {
             .accessibilityValue(selected || added ? "1" : "0")
           Spacer()
           Button(L10n.tr("添加") + "（\(selection.photos.count)）", action: add)
-            .buttonStyle(.borderedProminent).controlSize(.large).disabled(adding || selection.photos.isEmpty)
+            .buttonStyle(AttachmentSelectionButtonStyle()).disabled(adding || selection.photos.isEmpty)
             .accessibilityIdentifier("attachment-preview-add-selected")
         }
       }
@@ -272,6 +294,8 @@ struct AttachmentImageViewer<Actions: View>: View {
       Divider().overlay(.white.opacity(0.2))
       actions().padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
     }.foregroundStyle(.white).tint(.blue).background(Color(white: 0.06).ignoresSafeArea())
+      // The viewer always has a dark canvas, including when opened from light mode.
+      .environment(\.colorScheme, .dark)
       .onChange(of: selection) { _, _ in zoom = 1 }
       .onChange(of: items.map(\.id)) { _, ids in
         if !ids.contains(selection), let first = ids.first { selection = first }

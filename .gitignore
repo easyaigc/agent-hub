@@ -112,3 +112,5 @@ apps/ios/FilePreviewKit/.swiftpm/
 !/docs/acceptance/conversation-sync-refresh-20261118.md
 
 !/docs/acceptance/mainline-release-compatibility-20261119.md
+
+!/docs/acceptance/attachment-dark-20261119.md

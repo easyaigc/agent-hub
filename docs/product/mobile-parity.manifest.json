@@ -22120,6 +22120,15 @@
         "apps/ios/Sources/SessionStore.swift": "1185180f9c219195f78a0b0377bc6c4d3ca3e299c039f089abd03ff1f3847cdb",
         "apps/ios/Tests/CodexManageUITests.swift": "ef2650b572ea522cb5a003132cc541f1a99a4084ee58579cdb48d6b1ef5e5765"
       }
+    },
+    {
+      "id": "native-download-cancellation-progress-barrier-20261119",
+      "baseCommit": "761623280360a021765165f6af67ac6ca7a12a1b",
+      "features": ["F32", "F72"],
+      "summary": "CI辅助下载取消夹具以真实正数且未完成的字节进度代替固定800ms等待；服务器保留最后一字节，严格核对取消错误和HTTP提前关闭，进度快照加锁。旧首字节1500ms延迟精确复现Check.swift:564；0/1500/5000ms原生模拟器场景通过，取消不传播、无进度及普通网络错误三类负向均拒绝。原大文件、缓存/版本、目标、摘要和重定向断言保持；产品及双端UI实现不变，Android/实体手机/真实桌面不新增通过，完整CI按新组合另验。",
+      "files": {
+        "scripts/attachment-download-native-smoke.mjs": "d57dfe8062d758fd355af4236973a527eaa5d1139dec29ba717a7946987c0ccf"
+      }
     }
   ]
 }

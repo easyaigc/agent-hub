@@ -11,6 +11,11 @@ if (process.platform !== 'darwin') {
   console.log('Attachment native regression requires macOS Swift.');
   process.exit(0);
 }
+const cancelStartDelayMs = Number(process.env.ATTACHMENT_NATIVE_CANCEL_START_DELAY_MS ?? 1500);
+assert(
+  Number.isSafeInteger(cancelStartDelayMs) && cancelStartDelayMs >= 0 && cancelStartDelayMs <= 5000,
+  'ATTACHMENT_NATIVE_CANCEL_START_DELAY_MS must be an integer from 0 to 5000',
+);
 const execute = promisify(execFile);
 const arm = process.arch === 'arm64';
 // A cold Kotlin/Native link includes toolchain preparation. Keep its build budget
@@ -92,6 +97,13 @@ let healthRequests = 0;
 let healthReply = nonce;
 const phaseStarted = performance.now();
 const phases = [];
+const cancelClosed = Promise.withResolvers();
+const cancelTransfer = {
+  startDelayMs: cancelStartDelayMs,
+  totalBytes: 0,
+  bytesSent: 0,
+  closedEarly: false,
+};
 const enterPhase = (name) => {
   phase = name;
   phases.push({ name, elapsedMs: Math.round(performance.now() - phaseStarted) });
@@ -188,15 +200,37 @@ const server = createServer((req, res) => {
   if (['large', 'cancel'].includes(scenario)) {
     res.writeHead(200, { 'Content-Length': content.length });
     let offset = 0;
-    const timer = setInterval(() => {
-      if (res.destroyed || offset >= content.length) {
-        clearInterval(timer);
-        if (!res.destroyed) res.end();
-        return;
+    let timer, startup;
+    const stop = () => {
+      clearInterval(timer);
+      clearTimeout(startup);
+    };
+    // Keep the cancel response incomplete even if Swift is scheduled late.
+    // Cancellation must happen after observed bytes, rather than a fixed sleep.
+    const limit = content.length - (scenario === 'cancel' ? 1 : 0);
+    if (scenario === 'cancel') cancelTransfer.totalBytes = content.length;
+    res.once('close', () => {
+      stop();
+      if (scenario === 'cancel') {
+        cancelTransfer.closedEarly = !res.writableEnded && offset < content.length;
+        cancelClosed.resolve();
       }
-      res.write(content.subarray(offset, offset + 1024 * 1024));
-      offset += 1024 * 1024;
-    }, 100);
+    });
+    const stream = () => {
+      timer = setInterval(() => {
+        if (res.destroyed || offset >= limit) {
+          stop();
+          if (!res.destroyed && scenario !== 'cancel') res.end();
+          return;
+        }
+        const end = Math.min(offset + 1024 * 1024, limit);
+        res.write(content.subarray(offset, end));
+        offset = end;
+        if (scenario === 'cancel') cancelTransfer.bytesSent = offset;
+      }, 100);
+    };
+    if (scenario === 'cancel') startup = setTimeout(stream, cancelStartDelayMs);
+    else stream();
     return;
   }
   res.writeHead(200).end(scenario === 'corrupt' ? 'invalid-bytes' : content);
@@ -258,9 +292,20 @@ ${resolutions}
 ${downloads}
 }
 final class ProgressCapture: @unchecked Sendable {
-  let lock = NSLock()
-  var values: [FileDownloadProgress] = []
-  func add(_ value: FileDownloadProgress) { lock.lock(); defer { lock.unlock() }; values.append(value) }
+  private let lock = NSLock()
+  private var samples: [FileDownloadProgress] = []
+  var values: [FileDownloadProgress] { lock.withLock { samples } }
+  func add(_ value: FileDownloadProgress) { lock.withLock { samples.append(value) } }
+  func waitForActiveTransfer() async throws {
+    let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+    while !values.contains(where: { $0.phase == .downloading && $0.receivedBytes > 0 && $0.receivedBytes < $0.totalBytes }) {
+      guard ContinuousClock.now < deadline else {
+        let detail = values.map { "\\($0.phase):\\($0.receivedBytes)/\\($0.totalBytes)" }.joined(separator: ", ")
+        throw NSError(domain: "FixtureCancellation", code: 1, userInfo: [NSLocalizedDescriptionKey: "No active byte progress before cancellation deadline: " + detail])
+      }
+      try await Task.sleep(nanoseconds: 10_000_000)
+    }
+  }
 }
 @main struct Check {
   static func fixtureHealth() async throws {
@@ -324,10 +369,13 @@ final class ProgressCapture: @unchecked Sendable {
       if scenario == "cancel" {
         let capture = ProgressCapture()
         let task = Task { try await HostService.download(client, file: file, progress: { capture.add($0) }) }
-        try await Task.sleep(nanoseconds: 800_000_000)
+        defer { task.cancel() }
+        try await capture.waitForActiveTransfer()
         task.cancel()
-        do { _ = try await task.value; fatalError("cancelled download succeeded") } catch {}
-        precondition(capture.values.contains { $0.phase == .downloading && $0.receivedBytes > 0 })
+        do { _ = try await task.value; fatalError("cancelled download succeeded") }
+        catch is CancellationError {}
+        catch let error as URLError where error.code == .cancelled {}
+        precondition(capture.values.contains { $0.phase == .downloading && $0.receivedBytes > 0 && $0.receivedBytes < $0.totalBytes })
         precondition(!capture.values.contains { $0.phase == .verifying })
         print("cancelled during active byte transfer")
         continue
@@ -523,6 +571,25 @@ final class ProgressCapture: @unchecked Sendable {
     timeout: 60000,
     env: spawnEnvironment,
   });
+  let cancelDeadline;
+  try {
+    await Promise.race([
+      cancelClosed.promise,
+      new Promise((_, reject) => {
+        cancelDeadline = setTimeout(
+          () => reject(new Error('Cancelled download HTTP request stayed open')),
+          5000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(cancelDeadline);
+  }
+  assert(
+    cancelTransfer.closedEarly,
+    'Cancelling the native download must close its incomplete HTTP response',
+  );
+  assert(cancelTransfer.bytesSent > 0 && cancelTransfer.bytesSent < cancelTransfer.totalBytes);
   assert.equal(counts.get('redirect/v1/attachments'), 1);
   assert.equal(counts.get('cached/v1/attachments/resolve'), 2);
   assert.equal(counts.get('cached/v1/attachments'), 2);
@@ -539,6 +606,9 @@ final class ProgressCapture: @unchecked Sendable {
   assert.equal(counts.get('bad/v1/attachments/resolve'), undefined);
   const report = {
     passed: true,
+    fixtureSourceSha256: hash(await readFile(new URL(import.meta.url))),
+    generatedSwiftSha256: hash(swift),
+    cancelTransfer,
     sharedIdentitySourceSha256: hash(sharedSource),
     actualTargetTypesSha256: hash(targetTypes),
     binaryTargetsChecked: binaryTargets.length,
@@ -569,6 +639,7 @@ final class ProgressCapture: @unchecked Sendable {
     healthRequests,
     scenarioCounts: Object.fromEntries(counts),
     phases,
+    cancelTransfer,
     proxyEnvironmentPresent: Object.fromEntries(
       [
         'HTTP_PROXY',

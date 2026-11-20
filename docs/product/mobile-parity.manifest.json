@@ -4206,6 +4206,19 @@
       "apps/ios/Sources/EasyWorkAgentClient.swift",
       "apps/ios/Sources/EasyWorkQuestions.swift",
       "scripts/easywork-approval-policy.test.mjs"
+    ],
+    "IosEasyWorkCompression": [
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+      "apps/ios/Sources/EasyWorkAgentClient.swift",
+      "apps/ios/Sources/EasyWorkCompression.swift",
+      "scripts/easywork-compression.test.mjs",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ToolPresentation.kt",
+      "packages/protocol/fixtures/mobile/state-v1.json",
+      "apps/ios/Resources/en.lproj/Localizable.strings",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+      "apps/android/src/androidTest/assets/localization-catalog.json",
+      "apps/android/src/main/res/values/product_strings.xml",
+      "apps/android/src/main/res/values-zh/product_strings.xml"
     ]
   },
   "groups": [
@@ -5297,7 +5310,7 @@
     {
       "id": "F22",
       "group": "消息与展示",
-      "assertion": "压缩活动独立显示开始／完成／失败／中断，失联显示待同步；不虚构百分比或压缩执行接口",
+      "assertion": "压缩活动独立显示开始／完成／失败／中断／跳过，失联显示待同步；不虚构百分比或压缩执行接口",
       "sourceAliases": [
         "UI",
         "State",
@@ -5311,11 +5324,12 @@
         "AndroidLongOwnerRead",
         "AndroidActionCopy",
         "LocalizedSharedToolPresentation",
-        "AndroidParallelEasyWorkAudit"
+        "AndroidParallelEasyWorkAudit",
+        "IosEasyWorkCompression"
       ],
       "scenarios": ["S05"],
       "ui": ["UI06"],
-      "revision": 12,
+      "revision": 13,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5332,7 +5346,7 @@
           "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/MessageProjection.kt"
         ]
       },
-      "sourceNotes": "A4 已在 API26／37 通过真实原 owner 当前开发长历史的已完成压缩显示与全量加密缓存恢复；只读 GET，没有新模型输入。历史失败、实际截图摘要及源码指纹分别保留，仍不代表完整阶段通过。 2026-10-22 Android P2：更早按钮存在/加载文案/转圈和滚动控制偏移只看实际更早动作，最新GET仍禁用按钮；与iOS既有earlierHistoryRequest一致。最终同一验收器旧3项各2失败、新3项各通过；当前产品81项原生辅助分16组（各27），API37原8项90秒绘制超时及手机APK读取60秒测试前超时保留，另4+4/8通过不改原结果。当前原桌面大聊天（预检5109项/约11MB/8压缩）真实NativeHostReads+UI+独立存储三环境各1项通过：最新100、再读2页各100、完整ID去重/本地20与+60/已完成压缩/刷新锚点0偏移/草稿/磁盘缓存，版本化legacy无可选revision如实登记，新增输入/POST0。验收器旧选中/可选revision/禁用时点/后台latest覆盖page.kind失败和API26配置传输前置失败均保留；只在真实Native返回处记录earlier元数据，响应未改、事件未停。自有只读Host/代理已停止、原owner/桌面/配置和数据保持。所选大聊天读取不代替完整帧/性能/切网/正式冷启动或原手机失败，完整P2/P6继续；iOS源码不变。 2026-10-22 Android P2物理路径：当前生产APK不变，最终同runner三项实际原桌面读取通过（两模拟器回环各1、新手机实际LAN固定证书TLS+真实Wi-Fi关闭/恢复1）；另一次LAN触摸基线独立保存，不叠为最终同指纹。TLS端口未作ADB反向映射，实际peer均匹配手机Wi-Fi前后地址；原生兼容QR解析/leaf DER pin、最新/两页早期/已完成压缩/原ID/最新刷新锚点/草稿/磁盘缓存保持。真实OS监控11回调/5种路径，断网缓存和草稿可见、恢复自动读通，原目标/pin/展开ID及窗口保持，0输入/POST/操作；Wi-Fi已恢复开启。首轮在后台latest改变按钮忙碌时点失败、未切Wi-Fi，原报告保留；验收器原15秒预算内只重试未接受的原生更早触摸，实际更早失败不重试，原单页单响应/游标/ID断言及事件通道保留。两张实际断网/恢复图亲自复核，不冒称banner变化的像素锚点/全P6或正式MainActivity冷启。自有TLS/代理/Host准确停止，原桌面/owner/配置和数据保持；VPN/蜂窝、正式生命周期、完整P2和原各轮失败继续。iOS代码未改。 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。 2026-10-24 P4-4l.1：Diff检查点ba78675c先提交推送后，重做准确原owner真实超长历史只读验收。承载改为生产MainActivity、独立加密Session、默认真实草稿/附件/版本保护及仅自有Window PixelCopy；分页验收以单次SDK点击观察请求开始，修正旧验收器等响应完成期间可能再点下一页，原真机失败保留。相同App/runner在API33真机、API26、API37各1方法/独立Host通过，来源各9个Turn、3060/3081/3082条目、约7.88–7.92MB；真实最新100条、实际更早页、20起始窗口/每次60展开、原ID并集与去重、已压缩上下文锚点刷新前后位置和滚动值不变、加密磁盘缓存与独立草稿保持。九份自有Main图已核对并查看；三次均0业务POST/0操作记录/0新增模型，准确owner用户输入ID前后保持，来源冻结且各Host正常关闭。当前legacy响应不提供可选historyRevision；这9个Turn不代表超过30个Turn的原回执对账，O012的revision/acceptedTurnId冷恢复和其余控制仍待验。产品包仍62e358c7，程序未改；LAN/TLS/真实WiFi切换旧证据按旧指纹保留，本次USB只读不冒充重跑，iOS/Windows、完整P2/P4/P6不关闭。累计65条验收输入封存不变，任务/项目管理暂缓，蜂窝/VPN/人工归档待验，A6/P7暂停。 P6-3c：Android固定恢复/菜单文案、主要操作AX、原文件/目录名称格式及发送提示显式本地化；1590共享词条原值保持，29个Android专属词条通过严格补充表生成1619键，不向iOS新增键。171项当前合成原生+1项真实原owner只读核对、172份默认草稿/附件/代次保护，完整工作区与双端构建通过；平台跳过1/24/22按分组保留。侧栏分组/状态、其他动态文案/展示/系统仍开；业务项目/任务未启用。见docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeActionCopyCheckpoint。 P6-5d：工具摘要/标题的中英组合规则统一到KMP，平台只翻译固定键，iOS删除重复英文生产规则；Android工具状态/展开读屏、空输出及压缩文案对齐。原Provider内容不翻译。另修复浮动“回到最新”遮住附件分享：资源卡保留56dp右侧空间。53项当前辅助与三环境各1实际原工具/资源整例通过，56份默认存储证明，0写入/新输入；完整P6仍开。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。"
+      "sourceNotes": "A4 已在 API26／37 通过真实原 owner 当前开发长历史的已完成压缩显示与全量加密缓存恢复；只读 GET，没有新模型输入。历史失败、实际截图摘要及源码指纹分别保留，仍不代表完整阶段通过。 2026-10-22 Android P2：更早按钮存在/加载文案/转圈和滚动控制偏移只看实际更早动作，最新GET仍禁用按钮；与iOS既有earlierHistoryRequest一致。最终同一验收器旧3项各2失败、新3项各通过；当前产品81项原生辅助分16组（各27），API37原8项90秒绘制超时及手机APK读取60秒测试前超时保留，另4+4/8通过不改原结果。当前原桌面大聊天（预检5109项/约11MB/8压缩）真实NativeHostReads+UI+独立存储三环境各1项通过：最新100、再读2页各100、完整ID去重/本地20与+60/已完成压缩/刷新锚点0偏移/草稿/磁盘缓存，版本化legacy无可选revision如实登记，新增输入/POST0。验收器旧选中/可选revision/禁用时点/后台latest覆盖page.kind失败和API26配置传输前置失败均保留；只在真实Native返回处记录earlier元数据，响应未改、事件未停。自有只读Host/代理已停止、原owner/桌面/配置和数据保持。所选大聊天读取不代替完整帧/性能/切网/正式冷启动或原手机失败，完整P2/P6继续；iOS源码不变。 2026-10-22 Android P2物理路径：当前生产APK不变，最终同runner三项实际原桌面读取通过（两模拟器回环各1、新手机实际LAN固定证书TLS+真实Wi-Fi关闭/恢复1）；另一次LAN触摸基线独立保存，不叠为最终同指纹。TLS端口未作ADB反向映射，实际peer均匹配手机Wi-Fi前后地址；原生兼容QR解析/leaf DER pin、最新/两页早期/已完成压缩/原ID/最新刷新锚点/草稿/磁盘缓存保持。真实OS监控11回调/5种路径，断网缓存和草稿可见、恢复自动读通，原目标/pin/展开ID及窗口保持，0输入/POST/操作；Wi-Fi已恢复开启。首轮在后台latest改变按钮忙碌时点失败、未切Wi-Fi，原报告保留；验收器原15秒预算内只重试未接受的原生更早触摸，实际更早失败不重试，原单页单响应/游标/ID断言及事件通道保留。两张实际断网/恢复图亲自复核，不冒称banner变化的像素锚点/全P6或正式MainActivity冷启。自有TLS/代理/Host准确停止，原桌面/owner/配置和数据保持；VPN/蜂窝、正式生命周期、完整P2和原各轮失败继续。iOS代码未改。 2026-10-24 主线集成候选：用户授权已验收阶段提PR合并并清理原开发分支。核对main已复制84b609e安卓快照后，以该准确源码快照三方对照，保留main的Host Key/机器身份、LAN/Tailscale路由、iOS阅读/资源/语音及Windows/CI修复，并纳入安卓其后原操作恢复、回执、原桌面身份和侧栏改动；Markdown历史分别保留，manifest按功能ID与变更ID合并，根检查保留main64项及安卓3项独有检查共67命令。集成后代码/包/Adapter指纹将变化，旧阶段结果按原指纹保留；当前Android82任务与iOS模拟器构建、817份冻结源码下67项根检查556.93秒、三环境按4+3+9分9组共48项原生辅助验收及新手机原桌面检索/手势/IME与独立冷读取2方法均通过；六轮原owner/canonical仍原2输入，0POST/0新增模型，默认真实草稿元数据保持，75个自有MainActivity文件已核对归属并抽查9图总览/3张真机原图。只读验收器私有适配版仅增加一个准确Host的connection-routes GET，完整变体指纹单列；永久验收入口后续同步，不扩展任意调用。结果文档更新后另跑格式/一致性；远端CI与PR合并状态待平台回执，不能将本地检查当作远端通过，不宣称全P3/P4或跨机通过。任务/项目管理暂缓，A6/P7/语音验收暂停、蜂窝/VPN/人工归档待验及64条原模型输入封存不变。主线既有语音源码被保留，不新增语音验收。 2026-10-24 PR #5 准备期间main更新至4ae3b889，保留附件ctime完整快照重试与M5 Host Key发现/授权同步修复；正常三方仅manifest/检查命令冲突，按ID保留双方变更并登记组合后源码。集成构建与根检查重新执行，未新增模型输入，既有阶段结果不升级。 2026-10-24 P4-4l.1：Diff检查点ba78675c先提交推送后，重做准确原owner真实超长历史只读验收。承载改为生产MainActivity、独立加密Session、默认真实草稿/附件/版本保护及仅自有Window PixelCopy；分页验收以单次SDK点击观察请求开始，修正旧验收器等响应完成期间可能再点下一页，原真机失败保留。相同App/runner在API33真机、API26、API37各1方法/独立Host通过，来源各9个Turn、3060/3081/3082条目、约7.88–7.92MB；真实最新100条、实际更早页、20起始窗口/每次60展开、原ID并集与去重、已压缩上下文锚点刷新前后位置和滚动值不变、加密磁盘缓存与独立草稿保持。九份自有Main图已核对并查看；三次均0业务POST/0操作记录/0新增模型，准确owner用户输入ID前后保持，来源冻结且各Host正常关闭。当前legacy响应不提供可选historyRevision；这9个Turn不代表超过30个Turn的原回执对账，O012的revision/acceptedTurnId冷恢复和其余控制仍待验。产品包仍62e358c7，程序未改；LAN/TLS/真实WiFi切换旧证据按旧指纹保留，本次USB只读不冒充重跑，iOS/Windows、完整P2/P4/P6不关闭。累计65条验收输入封存不变，任务/项目管理暂缓，蜂窝/VPN/人工归档待验，A6/P7暂停。 P6-3c：Android固定恢复/菜单文案、主要操作AX、原文件/目录名称格式及发送提示显式本地化；1590共享词条原值保持，29个Android专属词条通过严格补充表生成1619键，不向iOS新增键。171项当前合成原生+1项真实原owner只读核对、172份默认草稿/附件/代次保护，完整工作区与双端构建通过；平台跳过1/24/22按分组保留。侧栏分组/状态、其他动态文案/展示/系统仍开；业务项目/任务未启用。见docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeActionCopyCheckpoint。 P6-5d：工具摘要/标题的中英组合规则统一到KMP，平台只翻译固定键，iOS删除重复英文生产规则；Android工具状态/展开读屏、空输出及压缩文案对齐。原Provider内容不翻译。另修复浮动“回到最新”遮住附件分享：资源卡保留56dp右侧空间。53项当前辅助与三环境各1实际原工具/资源整例通过，56份默认存储证明，0写入/新输入；完整P6仍开。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 2026-11-20 iOS候选消费桌面现有canonical contextCompressionState，按原thread/run/branch和操作身份显示pending及终态，空集合水位不重现旧started。保留旧诊断读取，不新增执行RPC。共享KMP及双端本地化补齐skipped；Android实时EasyWork适配与真实验收不新增通过。原证据、辅助与运行包/真实验收分别见唯一iOS×EasyWork台账。"
     },
     {
       "id": "F23",
@@ -22322,6 +22336,25 @@
         "apps/ios/Sources/EasyWorkAgentClient.swift": "1f7f1b1aa3a0159fa136d802de69e3af5fd773aa8310a09994b6c2f907e0127d",
         "apps/ios/Sources/EasyWorkQuestions.swift": "3b800275312b8c397247560ed1f161b50c517a323a4b432e8de25c6ce18eba35",
         "scripts/easywork-approval-policy.test.mjs": "9c2e9f3f4dbdf5c9a8b55df2ea0027727be0b4183ebe48ba28f8d783481b2229"
+      }
+    },
+    {
+      "id": "ios-easywork-canonical-compression-state-20261120",
+      "baseCommit": "fc4de1693dc755ea10feccb017d166e20116162c",
+      "features": ["F22"],
+      "summary": "Project existing canonical desktop compression pending/terminal watermark in the iOS adapter, validating original thread/run/branch/safe cursor and distinct operation identity. Keep legacy diagnostics and unrelated history readable; distinguish installed checkpoint, failed, cancelled, skipped and unknown outcomes. Shared label/localization change only on Android; no new execution RPC or product acceptance claimed. Base is reviewed PR219 head, subsequent delivery waits actual main merge.",
+      "files": {
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "c090f41315fcf289e855b01f7705ebaeab4366dccb0476cd8e44e823a08885d6",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "f0ee9477092ae478e52f0fbb8dd40787b8171c74117efbbc8d9dd5f675fe1446",
+        "apps/ios/Sources/EasyWorkCompression.swift": "029b1eb28c0f5dd31c6dc782e2610a5f9e41ea8c38458638303a08e6d2a358f4",
+        "scripts/easywork-compression.test.mjs": "b2907fda853c6d472b94c172e468156f8fea18bde8b8d0c902fdd2a871d21459",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ToolPresentation.kt": "a16f041e2e7625866e9e6540a538e8c1299d22146cb07d330c9e17c2b6e72cc7",
+        "packages/protocol/fixtures/mobile/state-v1.json": "8e93a2b72d18ab07de3ef8aaa6dea97146f20302815fed302c7f7f9af0da1592",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "0a2806200ac27a3aa4c367101bbf130ea99ab605fdda1f9da15f34e4fa07712d",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "4be94018e469287238c9980b2e8a91e112d34cbeff34aa67c69c144ba6b760f7",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "8107942b1ddf293756c55a7982558351fbd7d005d2fcedea561a9d88a963ea9b",
+        "apps/android/src/main/res/values/product_strings.xml": "34707bfce4175523b5c7e40a3a7b2fd9d960dc72bdf878609d6c30415a742462",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "7aaa479cce344452c8150d3fa3cec13543deb9f8e24b4f31582804b6f3092ecf"
       }
     }
   ]

@@ -61,6 +61,7 @@ object ToolPresentation {
         "completed" -> "已压缩上下文"
         "interrupted", "cancelled" -> "上下文压缩已停止"
         "failed" -> "上下文压缩失败"
+        "skipped" -> "上下文压缩已跳过"
         else -> "上下文压缩状态待同步"
     }
 }

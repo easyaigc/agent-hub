@@ -75,6 +75,7 @@
     <string name="product_bddc29ad011a93a6b759956e" formatted="false">"Context compaction"</string>
     <string name="product_3dfee69118fbc2b8d314e5fb" formatted="false">"Context compaction failed"</string>
     <string name="product_f0ad74d0525702ce8c3074a5" formatted="false">"Context compaction stopped"</string>
+    <string name="product_72d4a45b350a1b86f8d8fb4a" formatted="false">"Context compaction skipped"</string>
     <string name="product_bb8452788aa92d5bf9d9f483" formatted="false">"Waiting to sync context compaction"</string>
     <string name="product_7491bf2bfc7b361c24c5189d" formatted="false">"Context compacted"</string>
     <string name="product_ce1c9d61565f624b209c48f9" formatted="false">"Uploading…"</string>

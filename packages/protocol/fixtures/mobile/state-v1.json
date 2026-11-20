@@ -2599,6 +2599,13 @@
     },
     {
       "operation": "compaction",
+      "expected": "上下文压缩已跳过",
+      "messages": [],
+      "value": "skipped",
+      "flag": false
+    },
+    {
+      "operation": "compaction",
       "expected": "上下文压缩状态待同步",
       "messages": [],
       "value": null,

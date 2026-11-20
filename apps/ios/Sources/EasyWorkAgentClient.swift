@@ -828,6 +828,8 @@ struct EasyWorkAgentClient: AgentClient {
     var messages = try await projectMessages(value["messages"] as? [[String: Any]] ?? [],
       client: client, threadId: threadId, channel: channel)
     if cursor == nil {
+      messages = EasyWorkCompressionProjection.applying(snapshot, threadId: threadId,
+        branchRevision: revision, to: messages)
       let activities = await channel.subagentActivities(try easyWorkJSON(snapshot), threadId: threadId)
       for item in activities {
         messages.append(ChatMessage(id: item.id, role: "tool", text: item.title, kind: "subAgent",

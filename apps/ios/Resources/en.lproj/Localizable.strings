@@ -74,6 +74,7 @@
 "上下文压缩" = "Context compaction";
 "上下文压缩失败" = "Context compaction failed";
 "上下文压缩已停止" = "Context compaction stopped";
+"上下文压缩已跳过" = "Context compaction skipped";
 "上下文压缩状态待同步" = "Waiting to sync context compaction";
 "上下文已压缩" = "Context compacted";
 "上传中…" = "Uploading…";

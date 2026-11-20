@@ -327,6 +327,35 @@ try {
       desktop.download(visualThread.id, attachment.id),
       (error) => error.status === 409,
     );
+    // Media remains a lazy, source-authorized reference. Resolving it supplies
+    // a useful MIME type without turning history reads into media downloads.
+    for (const [extension, mediaType] of [
+      ['MP4', 'video/mp4'],
+      ['mov', 'video/quicktime'],
+      ['m4v', 'video/x-m4v'],
+      ['gif', 'image/gif'],
+      ['heic', 'image/heic'],
+      ['mp3', 'audio/mpeg'],
+      ['m4a', 'audio/mp4'],
+      ['wav', 'audio/wav'],
+    ]) {
+      const mediaPath = join(root, 'media.' + extension);
+      const bytes = Buffer.from('MIME projection fixture; codec playback is tested natively.');
+      await writeFile(mediaPath, bytes);
+      const messageId = 'media-' + extension;
+      const text = `![sample](<${mediaPath}>)`;
+      await desktop.upsert(visualThread, { id: messageId, type: 'agentMessage', text });
+      const message = visualThread.messages.find((entry) => entry.id === messageId);
+      assert.equal(message.text, text);
+      assert.deepEqual(message.attachments, []);
+      const resolved = await desktop.resolveMessageFile(visualThread.id, messageId, mediaPath);
+      assert.equal(resolved.attachment.mediaType, mediaType);
+      assert.equal(resolved.attachment.sha256, createHash('sha256').update(bytes).digest('hex'));
+      await assert.rejects(
+        desktop.resolveMessageFile(visualThread.id, 'wrong-message', mediaPath),
+        (error) => error.status === 403,
+      );
+    }
   } finally {
     await desktop.close();
   }

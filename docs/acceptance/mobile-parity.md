@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：图片语法指向 MP4 时手机丢失链接已由真实来源与独立 Swift Foundation 辅助诊断复现；媒体卡片及 MIME 修复已完成，隔离工作树 pnpm check、iOS 构建、通用与原样片两个原生模拟器测试均通过；视频实际进度 3→8 秒，初始解析／下载为零，正式部署另记。聊天读取不预下载媒体、视频完整下载回退与未实现流式分别见[专项验收](message-media-20261120.md)。Android 卡片／内联图与 EasyWork 原始来源均未新增通过，A6 暂停保持。
+
 2026-11-20 F09／F72：共同操作向量和生产 Swift requestData／桌面 RemoteCommandService 的故障回归作为辅助证据。原生模拟器、真实 Electron、原输入无重复与正式合并分别登记，未执行不得记通过；Android 与暂停项不新增通过。当前状态只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-20 F35/F41（S06/S09）：将已验候选的命令审批保护移入当前主线候选，保留原once/session/once_only/deny及双端竞争的实际证据。生产Swift方法辅助检查覆盖能力缺失零写入、完整身份/目标、实际回执/作用域及旧端单次确认；不重放原审批、不新增模型输入。原证据匹配、辅助结果、真实PR合并及部署分别回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)，不补签Android或跨重启会话许可。

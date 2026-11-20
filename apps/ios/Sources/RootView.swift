@@ -3779,7 +3779,7 @@ private struct MarkdownTable: View {
   }
 }
 
-struct MarkdownParagraph: View {
+struct MarkdownTextParagraph: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @Environment(\.openingMessageLink) private var openingLink
   @Environment(\.openingMessageLinkAnchor) private var openingAnchor

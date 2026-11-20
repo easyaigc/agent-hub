@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：iOS 消息媒体在文本 Markdown 前保留图片语法的目的地址，呈现按需打开的图片／视频／音频卡片，复用原消息鉴权、下载和系统预览；打开后的图片只生成有界本地缩略图，不在聊天加载时下载视频。Codex Host 补媒体 MIME，当前完整下载回退与尚未实现的流式方案分别见[消息媒体设计](design/message-media.md)及[专项验收](acceptance/message-media-20261120.md)。iOS 26 原生模拟器的图片、视频及原样片播放场景已通过，初始解析／下载为零。Android 原有图片链接入口保持，媒体卡片与缩略图待独立对齐；不新增 Android／EasyWork 通过，A6 暂停保持。
+
 统一 Host 与 App 的职责、实际契约基准及交付审查按 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md) 执行：EasyWork 在 Host／Adapter 映射同一领域语义，手机复用公共流程。已有不同认证和传输按兼容边界保留；规范生效不代表生产路径已经全部收敛，具体实现与验收只读取唯一计划。
 
 2026-11-20 F72：共用AgentClient.resolveDocumentFile作为文档导航边界，EasyWork适配器独立协商Docv1，校验完整目标及源资源/授权/版本/消息/SHA和引用回显。原消息路由提示用于重新授权，不授予文件访问；桌面负责来源作用域和最终发布。阅读位置与下载授权分离，旧资源键兼容，取消或离开后按操作代次隔离迟到进度和结果。桌面PR73、iOS检查与原验匹配分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。

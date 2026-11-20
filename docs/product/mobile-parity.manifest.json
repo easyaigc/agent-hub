@@ -22393,6 +22393,21 @@
         "scripts/easywork-operation-recovery.test.mjs": "651c3b749506b0819b72b3f53e6979d1085183d81db4c55588a345b9b2e5d74b",
         "packages/protocol/fixtures/mobile/operation-recovery-v1.json": "7aabfe601f0765bebe4f5729cd157519e7bc0abdedbc517cc5f1ff5f3d8cc995"
       }
+    },
+    {
+      "id": "message-media-markdown-20261120",
+      "baseCommit": "d61d99637cfa40bc006cbb26b483461bb55c4100",
+      "features": ["F17", "F19", "F32"],
+      "summary": "Preserve Markdown media destinations and explicit-open cards through target-bound resolution/download/QuickLook, bounded local thumbnails and media MIME mappings. Native simulator image/video/error/cache scenarios and original H264 sample playback passed with zero initial media requests. Full-download fallback remains; streaming is separate.",
+      "files": {
+        "apps/ios/Sources/MessageLinks.swift": "499b246ef9ba71e19e4efc8be29123f4ef63141ba1d005739f742153e1f3142a",
+        "apps/ios/Sources/RootView.swift": "910bbf8adf66c682139e616c04fb081a5f908c4af4acebb5c2b8879422b3a34a",
+        "packages/codex-adapter/src/runtime-session.ts": "780269d291032e25d2445e2a8198b7e67a2bc58af759d903091a60885027f4db",
+        "scripts/message-media-native-smoke.mjs": "6868bfc526a19c0388facaca00284be20a5f573c75ebfab849c67a2491535c35",
+        "scripts/message-media-ios-fixture.mjs": "4bbfefd5caa2d9455f55fefe8313d3f20e6dfcba29a82294a39f0219eca26f07",
+        "scripts/fixtures/message-media-native.swift": "383c4ea818995e66d91232ca2d5df6608ee765468d525da3836bd5975ecfc5a8",
+        "scripts/message-links-smoke.mjs": "775368118c8b5070a2218e186056e9a2da8f9c445519e9b15e7e7245569ce0d4"
+      }
     }
   ]
 }

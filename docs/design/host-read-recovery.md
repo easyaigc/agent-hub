@@ -24,6 +24,16 @@
 - 写入与未知操作继续保存稳定 ID 和不可变意图，丢结果后只查询原回执；缺失或不确定结果不允许再次发送。原管理类适配器自行核对的例外保留。
 - 授权范围不由恢复分类推导。完整目标、证书、设备绑定、EasyWork account／grant／DPoP、目录与文档来源校验不变。兼容旧端，不重算旧操作指纹或迁移原账本。
 
+## 原录音结果恢复
+
+公共 `SessionStore.voiceProvider` 捕获完整目标、原聊天、草稿和许可 scope；`VoiceInput` 对已持久化录音的重试调用 `AgentClient.recoverVoice`，转写文本仍经过原草稿修订与迟到结果屏障。
+
+Codex 适配器使用 `voiceResult(queryOnly: true)` 读取 `GET /v1/voice/transcriptions?id=...`。EasyWork 适配器以相同语义读取 `voice/status`，核对原 operation、draft、录音摘要与回执；状态缺失或 `awaiting-audio` 均保留原录音，不调用 `voice/prepare` 或 `voice/upload`。查询在途结果仍有界，未知或失败结果不能授权再次上传。
+
+公共录音控制器在失败后已保存 Host 录音时，手动“重试转写”也强制查询原回执；不能因按钮省略参数而重新进入首次准备／上传。查询失败保留同一录音，不自动退回首次转写。首次封存、明确的本地听写及原录音本地转写继续各自原流程。
+
+EasyWork Host 已有按完整目标、设备和 operation 隔离的持久转写结果与 `voice/status`。本次只补客户端原结果读取适配，不增加 Host 方法；普通首次转写继续沿原准备、上传和结果读取流程。实际实现、辅助检查和原生／真实 Host 验收分别记录在唯一台账的 F64／VOICE01，不能由历史分次证据补签本次全链通过。
+
 ## App 名称分支的有限盘点
 
 仅盘点上述 App 基线中 `RootView.swift` 与 `SessionStore.swift` 直接判断 EasyWork agentId 的 60 处，不能据此宣称全仓审计或运行缺陷复现。

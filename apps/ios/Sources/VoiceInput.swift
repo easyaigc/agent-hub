@@ -288,6 +288,13 @@ final class VoiceInputController: ObservableObject {
     phase = .requesting
     setupTask = Task {
       do {
+        #if DEBUG
+        if EasyWorkVoiceRecoveryAcceptance.requested,
+          !EasyWorkVoiceRecoveryAcceptance.allowsFixture(target: target) {
+          diagnosticInfo = "backend=HostTranscription source=fixture-file input-or-target-invalid microphone=false"
+          throw HostServiceError.wrongHost
+        }
+        #endif
         if !usesLocalRecognition, restorePending, let (saved, audio) = try PendingVoiceStore.restore(target: target, scopeKey: provider.scopeKey, text: text) {
           guard generation == id, !Task.isCancelled else { return }
           recording = saved; recordingPersisted = true; fileURL = audio; phase = .failed
@@ -311,16 +318,31 @@ final class VoiceInputController: ObservableObject {
           return
         }
 
+        #if DEBUG
+        if EasyWorkVoiceRecoveryAcceptance.allowsFixture(target: target), usesLocalRecognition {
+          diagnosticInfo = "backend=HostTranscription source=fixture-file prepare=false microphone=false"
+          throw HostServiceError.message(L10n.tr("电脑转写暂不可用"))
+        }
+        #endif
         if usesLocalRecognition {
           beginLocalRecognition(id: id)
           return
         }
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+        let scopedVoiceFixture = EasyWorkVoiceRecoveryAcceptance.allowsFixture(target: target)
+        if (ProcessInfo.processInfo.arguments.contains("-ui-testing") || scopedVoiceFixture),
           ProcessInfo.processInfo.arguments.contains("-voice-file-fixture"),
           let address = ProcessInfo.processInfo.environment["VOICE_FILE_FIXTURE_URL"], let source = URL(string: address) {
+          if scopedVoiceFixture {
+            guard source.scheme == "http", source.host == "127.0.0.1" else { throw HostServiceError.invalidResponse }
+          }
           let (data, response) = try await URLSession.shared.data(from: source)
           guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 12 * 1024 * 1024 else { throw HostServiceError.invalidResponse }
+          if scopedVoiceFixture {
+            guard ProcessInfo.processInfo.environment["VOICE_FILE_FIXTURE_SHA256"] == HostService.hash(data) else {
+              throw HostServiceError.invalidResponse
+            }
+          }
           guard generation == id, !Task.isCancelled else { return }
           let url = FileManager.default.temporaryDirectory.appendingPathComponent(id.uuidString.lowercased() + ".wav")
           try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
@@ -392,6 +414,10 @@ final class VoiceInputController: ObservableObject {
   func finish(usingLocalRecording: Bool = false, queryOnly: Bool = false) async -> Bool {
     if let finishTask { return await finishTask.value }
     guard phase == .listening || phase == .failed else { return phase == .idle && error == nil }
+    // A saved failed Host recording already owns an immutable operation.
+    // Manual retry follows the same query-only boundary as interruption recovery.
+    let recoverOriginal = queryOnly || (phase == .failed && recording != nil
+      && !usesLocalRecognition && !usingLocalRecording)
     let id = generation
     usesSavedLocalRecognition = usingLocalRecording
     phase = usingLocalRecording ? .requesting : .finishing; error = nil
@@ -455,7 +481,7 @@ final class VoiceInputController: ObservableObject {
           guard let provider, let recording else { throw HostServiceError.unavailable }
           try PendingVoiceStore.save(recording, target: targetKey, scopeKey: provider.scopeKey, text: originalText)
           recordingPersisted = true
-          if queryOnly {
+          if recoverOriginal {
             guard let recover = provider.recover else { throw HostServiceError.unavailable }
             text = try await recover(recording)
           } else {
@@ -478,7 +504,7 @@ final class VoiceInputController: ObservableObject {
         guard generation == id, !Task.isCancelled else { return false }
         stopCapture()
         phase = .failed
-        needsReceiptRecovery = !queryOnly && !usesLocalRecognition && !usingLocalRecording
+        needsReceiptRecovery = !recoverOriginal && !usesLocalRecognition && !usingLocalRecording
           && recording != nil && provider?.recover != nil
         self.error = error.localizedDescription + (usesLocalRecognition ? L10n.tr(" 原草稿已保留。") : usingLocalRecording ? L10n.tr(" 录音和原草稿已保留，可再次选择转写方式。") : L10n.tr(" 录音已保留；重试只查询或补齐原操作。"))
         return false

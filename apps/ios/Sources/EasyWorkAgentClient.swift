@@ -438,6 +438,12 @@ struct EasyWorkAgentClient: AgentClient {
     return try JSONDecoder().decode(VoiceTranscriptionReadiness.self, from: easyWorkJSON(value))
   }
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String {
+    try await voiceResult(client, recording: recording, threadId: threadId, draftId: draftId, queryOnly: false)
+  }
+  func recoverVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String {
+    try await voiceResult(client, recording: recording, threadId: threadId, draftId: draftId, queryOnly: true)
+  }
+  private func voiceResult(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String, queryOnly: Bool) async throws -> String {
     guard recording.data.count >= 44, recording.data.count <= 12 * 1024 * 1024,
       recording.durationMs > 0, recording.durationMs <= 300_000,
       SHA256.hash(data: recording.data).map({ String(format: "%02x", $0) }).joined() == recording.sha256 else {
@@ -461,10 +467,11 @@ struct EasyWorkAgentClient: AgentClient {
     var receipt: VoiceTranscriptionReceipt
     if let existing = try await status() { receipt = existing }
     else {
+      guard !queryOnly else { throw HostServiceError.message(L10n.tr("转写仍在处理中，录音已保留；点击重试查询原结果。")) }
       let original = try JSONSerialization.jsonObject(with: JSONEncoder().encode(manifest))
       receipt = try decode(await channel.request("voice/prepare", ["recording": original], id: manifest.operationId + ":prepare"))
     }
-    if receipt.phase == "awaiting-audio" {
+    if receipt.phase == "awaiting-audio", !queryOnly {
       try Task.checkCancellation()
       receipt = try decode(await channel.request("voice/upload", ["operationId": manifest.operationId, "audioBase64": recording.data.base64URL], id: manifest.operationId))
     }
@@ -474,7 +481,12 @@ struct EasyWorkAgentClient: AgentClient {
       guard let current = try await status() else { throw HostServiceError.message(L10n.tr("原转写结果尚未确认，录音已保留。")) }
       receipt = current
     }
-    if receipt.phase == "completed", let text = receipt.text { return text }
+    if receipt.phase == "completed", let text = receipt.text {
+      #if DEBUG
+      try await EasyWorkVoiceRecoveryAcceptance.completion.afterVerifiedCompletion(manifest, queryOnly: queryOnly)
+      #endif
+      return text
+    }
     throw HostServiceError.message(receipt.error ?? L10n.tr("转写仍在处理中，录音已保留；点击重试查询原结果。"))
   }
   func updateNotificationPreferences(_ client: Client, deviceId: String, target: AgentRuntimeTarget, preferences: TaskNotificationPreferences) async throws -> TaskNotificationStatus {

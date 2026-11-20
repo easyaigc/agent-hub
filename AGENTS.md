@@ -37,6 +37,17 @@
 - Prefer meaningful boundary or integration checks. Do not add tests that merely repeat static type declarations.
 - Update architecture, protocol or feasibility documents when their corresponding behavior changes. Preserve the distinction between proposed, implemented and verified capabilities.
 
+<!-- test-acceptance-content-authorization:v1:start -->
+
+## 测试验收包含必要操作与测试内容处理授权
+
+- 用户要求测试、复现、联调或验收，即包含在已授权目标、账号、数据和处理范围内完成必要操作的授权。可准备并使用任务自有、合成或用户已提供作测试的文字、普通附件、图片、音频（含 WAV）和视频，通过指定 App、Host、服务及该功能已明确采用的处理方完成上传、识别、转写或分析；不因样本类型、格式或单条内容变化而重复询问。原任务的仅模拟器、本地处理、不采集真实麦克风等限制继续遵守。
+- 必要登录、已授权目标的配对、系统权限申请、内容处理同意提示及正常界面操作，均按原测试意图执行，不再逐项请求确认。不得扩大到未经授权的目标、账号、处理方、个人资料采集、付费或生产操作；确有范围缺失或必须本人完成的身份验证时，只请求所缺的最小动作。
+- 分派测试 Agent 或专用测试会话时，一并传递可核实的人类授权、准确目标、样本来源、用途及范围限制，执行方不得再次索要相同授权。恢复前核原请求、回执和实际状态；结果未知时查询同一原操作，不重复上传、签发或执行。
+- 本规则不改变工具权限，也不能绕过自动审批或其他强制确认。遇到拒绝先核对授权与证据是否完整传递；有新的人类指示或补齐证据后，通过正式审批入口继续。仍被拒绝时保留具体动作、理由和未执行状态，继续不受影响的工作，不换入口绕过、不修改审批设置；只有确实仍缺的人类动作才再次提出，并说明其明确来源。
+
+<!-- test-acceptance-content-authorization:v1:end -->
+
 ## iOS 对接 EasyWork 的唯一计划与状态
 
 - 按用户 2026-11-12 的明确要求，`docs/plans/ios-easywork-alignment-20261112/README.md` 是本任务唯一计划入口，`status.json` 是唯一可编辑进度事实源；`progress.md`、`checklist.md` 从其生成，不独立维护完成数。

@@ -363,3 +363,7 @@ iOS 源码候选从桌面 canonical snapshot 的可选压缩状态显示进行�
 ### F36 请求速度与实际结果（新增反馈范围）
 
 共同断言：生成速度设置表示请求，不承诺服务方实际采用。通用 runtime 可选 generationSpeed 包含 version=1、runId、requested、status 及已回报时的 actual；只关联当前目标/聊天/分支的准确 Run。缺失、未知或冲突回报显示未确认，旧 Host 未提供回报仍可读取。iOS 设置页显示最近一次回复的请求/实际结果；EasyWork 桌面任务信息使用同一语义。Android 需同步此可选字段与展示；本次不登记 Android 新通过。当前实现/验收/交付只读唯一计划 status.json 的 F36-generation-speed。
+
+F64 的 EasyWork 原录音结果恢复使用共同 `AgentClient.recoverVoice`：只查询捕获的原 ID，不准备或上传录音。许可、转写文本回原草稿与修订屏障继续走公共流程；候选、辅助与实际验收分别关联唯一台账 VOICE01，Android/A6 状态保持。
+
+公共录音控制器在已保存 Host 录音的失败状态下，将手动重试强制为原回执查询；未取得原结果时保留录音，不重新准备或上传。首次封存和明确本地转写保持；Android 对应恢复语义需同步，未新增实现或通过。

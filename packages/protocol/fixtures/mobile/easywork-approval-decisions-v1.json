@@ -1,0 +1,512 @@
+{
+  "version": 1,
+  "provenance": {
+    "kind": "executed-production-confirmation-service",
+    "baseCommit": "06f691db7f66d3f8790d473d3e2bb15eaff17f14",
+    "serviceSourceSha256": "3af04eb5629e8de2749bf1969ee71ad6d8f5b0bb821eafb78c912f79688b5b90",
+    "remoteValidatorSourceSha256": "ebc2259a578802393f2c6aa05c93c2358ff297d3bbdef4d1f130c0f9521cb79a"
+  },
+  "cases": [
+    {
+      "name": "once-first",
+      "identity": {
+        "threadId": "thread-once",
+        "runId": "run-once",
+        "toolCallId": "tool-once",
+        "operationId": "op-once",
+        "requestHash": "hash-once"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-once",
+          "runId": "run-once",
+          "toolCallId": "tool-once",
+          "operationId": "op-once",
+          "requestHash": "hash-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "once-duplicate",
+      "identity": {
+        "threadId": "thread-once",
+        "runId": "run-once",
+        "toolCallId": "tool-once",
+        "operationId": "op-once",
+        "requestHash": "hash-once"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-once",
+          "runId": "run-once",
+          "toolCallId": "tool-once",
+          "operationId": "op-once",
+          "requestHash": "hash-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "once-then-session-conflict",
+      "identity": {
+        "threadId": "thread-once",
+        "runId": "run-once",
+        "toolCallId": "tool-once",
+        "operationId": "op-once",
+        "requestHash": "hash-once"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-once",
+          "runId": "run-once",
+          "toolCallId": "tool-once",
+          "operationId": "op-once",
+          "requestHash": "hash-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "session-first",
+      "identity": {
+        "threadId": "thread-session",
+        "runId": "run-session",
+        "toolCallId": "tool-session",
+        "operationId": "op-session",
+        "requestHash": "hash-session"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-session",
+          "runId": "run-session",
+          "toolCallId": "tool-session",
+          "operationId": "op-session",
+          "requestHash": "hash-session",
+          "decision": "approve",
+          "approvalScope": "session"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "session-duplicate",
+      "identity": {
+        "threadId": "thread-session",
+        "runId": "run-session",
+        "toolCallId": "tool-session",
+        "operationId": "op-session",
+        "requestHash": "hash-session"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-session",
+          "runId": "run-session",
+          "toolCallId": "tool-session",
+          "operationId": "op-session",
+          "requestHash": "hash-session",
+          "decision": "approve",
+          "approvalScope": "session"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "session-then-once-conflict",
+      "identity": {
+        "threadId": "thread-session",
+        "runId": "run-session",
+        "toolCallId": "tool-session",
+        "operationId": "op-session",
+        "requestHash": "hash-session"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-session",
+          "runId": "run-session",
+          "toolCallId": "tool-session",
+          "operationId": "op-session",
+          "requestHash": "hash-session",
+          "decision": "approve",
+          "approvalScope": "session"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "once-only-session-refused",
+      "identity": {
+        "threadId": "thread-limited",
+        "runId": "run-limited",
+        "toolCallId": "tool-limited",
+        "operationId": "op-limited",
+        "requestHash": "hash-limited"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_scope_not_allowed"
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {
+        "approvalScopePolicy": "once_only"
+      }
+    },
+    {
+      "name": "once-only-once-allowed",
+      "identity": {
+        "threadId": "thread-limited",
+        "runId": "run-limited",
+        "toolCallId": "tool-limited",
+        "operationId": "op-limited",
+        "requestHash": "hash-limited"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-limited",
+          "runId": "run-limited",
+          "toolCallId": "tool-limited",
+          "operationId": "op-limited",
+          "requestHash": "hash-limited",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {
+        "approvalScopePolicy": "once_only"
+      }
+    },
+    {
+      "name": "deny-first",
+      "identity": {
+        "threadId": "thread-denied",
+        "runId": "run-denied",
+        "toolCallId": "tool-denied",
+        "operationId": "op-denied",
+        "requestHash": "hash-denied"
+      },
+      "decision": "deny",
+      "response": {
+        "denied": true,
+        "status": "denied",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-denied",
+          "runId": "run-denied",
+          "toolCallId": "tool-denied",
+          "operationId": "op-denied",
+          "requestHash": "hash-denied",
+          "decision": "deny"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "deny-duplicate",
+      "identity": {
+        "threadId": "thread-denied",
+        "runId": "run-denied",
+        "toolCallId": "tool-denied",
+        "operationId": "op-denied",
+        "requestHash": "hash-denied"
+      },
+      "decision": "deny",
+      "response": {
+        "denied": true,
+        "status": "denied",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-denied",
+          "runId": "run-denied",
+          "toolCallId": "tool-denied",
+          "operationId": "op-denied",
+          "requestHash": "hash-denied",
+          "decision": "deny"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "deny-then-session-conflict",
+      "identity": {
+        "threadId": "thread-denied",
+        "runId": "run-denied",
+        "toolCallId": "tool-denied",
+        "operationId": "op-denied",
+        "requestHash": "hash-denied"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-denied",
+          "runId": "run-denied",
+          "toolCallId": "tool-denied",
+          "operationId": "op-denied",
+          "requestHash": "hash-denied",
+          "decision": "deny"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "approve-then-deny-conflict",
+      "identity": {
+        "threadId": "thread-once",
+        "runId": "run-once",
+        "toolCallId": "tool-once",
+        "operationId": "op-once",
+        "requestHash": "hash-once"
+      },
+      "decision": "deny",
+      "response": {
+        "denied": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-once",
+          "runId": "run-once",
+          "toolCallId": "tool-once",
+          "operationId": "op-once",
+          "requestHash": "hash-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-once-1",
+      "identity": {
+        "threadId": "thread-race-once",
+        "runId": "run-race-once",
+        "toolCallId": "tool-race-once",
+        "operationId": "op-race-once",
+        "requestHash": "hash-race-once"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-once",
+          "runId": "run-race-once",
+          "toolCallId": "tool-race-once",
+          "operationId": "op-race-once",
+          "requestHash": "hash-race-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-once-0",
+      "identity": {
+        "threadId": "thread-race-once",
+        "runId": "run-race-once",
+        "toolCallId": "tool-race-once",
+        "operationId": "op-race-once",
+        "requestHash": "hash-race-once"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-once",
+          "runId": "run-race-once",
+          "toolCallId": "tool-race-once",
+          "operationId": "op-race-once",
+          "requestHash": "hash-race-once",
+          "decision": "approve",
+          "approvalScope": "once"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-session-1",
+      "identity": {
+        "threadId": "thread-race-session",
+        "runId": "run-race-session",
+        "toolCallId": "tool-race-session",
+        "operationId": "op-race-session",
+        "requestHash": "hash-race-session"
+      },
+      "decision": "approve",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-session",
+          "runId": "run-race-session",
+          "toolCallId": "tool-race-session",
+          "operationId": "op-race-session",
+          "requestHash": "hash-race-session",
+          "decision": "approve",
+          "approvalScope": "session"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-session-0",
+      "identity": {
+        "threadId": "thread-race-session",
+        "runId": "run-race-session",
+        "toolCallId": "tool-race-session",
+        "operationId": "op-race-session",
+        "requestHash": "hash-race-session"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": true,
+        "status": "approved",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-session",
+          "runId": "run-race-session",
+          "toolCallId": "tool-race-session",
+          "operationId": "op-race-session",
+          "requestHash": "hash-race-session",
+          "decision": "approve",
+          "approvalScope": "session"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-deny-1",
+      "identity": {
+        "threadId": "thread-race-deny",
+        "runId": "run-race-deny",
+        "toolCallId": "tool-race-deny",
+        "operationId": "op-race-deny",
+        "requestHash": "hash-race-deny"
+      },
+      "decision": "acceptForSession",
+      "response": {
+        "accepted": false,
+        "status": "stale",
+        "errorCode": "approval_decision_conflict",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-deny",
+          "runId": "run-race-deny",
+          "toolCallId": "tool-race-deny",
+          "operationId": "op-race-deny",
+          "requestHash": "hash-race-deny",
+          "decision": "deny"
+        }
+      },
+      "expectedAccepted": false,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    },
+    {
+      "name": "race-deny-0",
+      "identity": {
+        "threadId": "thread-race-deny",
+        "runId": "run-race-deny",
+        "toolCallId": "tool-race-deny",
+        "operationId": "op-race-deny",
+        "requestHash": "hash-race-deny"
+      },
+      "decision": "deny",
+      "response": {
+        "denied": true,
+        "status": "denied",
+        "decisionReceipt": {
+          "version": 1,
+          "threadId": "thread-race-deny",
+          "runId": "run-race-deny",
+          "toolCallId": "tool-race-deny",
+          "operationId": "op-race-deny",
+          "requestHash": "hash-race-deny",
+          "decision": "deny"
+        }
+      },
+      "expectedAccepted": true,
+      "source": "executed-production-service-through-production-remote-validator",
+      "requestPolicy": {}
+    }
+  ]
+}

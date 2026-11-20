@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+2026-11-20 F35/F41：通用审批仍由原Host执行并约束作用域。EasyWork适配使用既有approval/respond：threadId、serverRequestId承载原threadId/runId/toolCallId/operationId/requestHash身份，decision为approve/deny，只有acceptForSession映射remember=true。会话动作要求approvals、approvals:remember:session:v1与approvals:decision-receipt:v1；收到v1决策回执须核对完整原身份、决定和once/session作用域，冲突/过期/禁止会话不冒充成功。旧端缺少可选回执能力时保留单次布尔确认。桌面会话许可/settled状态属进程内确认服务，独立持久command journal不表示会话许可跨重启。问题回答继续使用serverRequest/resolve，不引入任意wire透传。
+
 2026-11-20 F72：通用文档解析接口不变。EasyWork仅在attachments:resolve-document-link:v1存在时发送resource/resolve-document-link，参数version=1、完整target、threadId、source(resourceId/grantId/version/messageId/sha256)与reference。校验响应版本、完整目标、线程、引用、完整来源回显及子文件安全元数据和原消息授权。缺失能力明确结束本次等待。普通上传下载保持既有边界；可选documentSource承载授权，本机documentMessageSource仅用于重新授权。实现、旧证据匹配与合并进度见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
 
 F28 的 EasyWork v2 适配新增具名 thread/open 与只读 thread/open-status，参数仅 threadId 和 clientOperationId，完整目标来自加密信封。原操作按目标、设备、方法和不可变参数持久保存。打开使用原桌面窗口通道，原窗口确认后返回 opened，等待超时返回 outcome-unknown。状态查询先校验原操作，继而只读核窗口状态；原操作 ID 再次提交复用原回执。desktop:open 随已装配的原窗口通道就绪声明。iOS 映射到通用 DesktopOpenOperation；打开回执的确认策略由 Agent 适配器声明，公共状态机不按客户端名称分支，保留既有 Host 行为和旧端独立能力协商。

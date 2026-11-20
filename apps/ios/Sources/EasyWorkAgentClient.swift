@@ -820,16 +820,9 @@ struct EasyWorkAgentClient: AgentClient {
     let state = pendingApproval != nil || pendingQuestion != nil ? "waiting-for-approval" : control?["phase"] as? String == "paused" ? "paused" : active != nil ? runState(active) : ["failed", "cancelled", "interrupted"].contains(terminalStatus ?? "") ? terminalStatus! : "idle"
     var approvals: [Approval] = []
     if let request = pendingApproval {
-      let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
-      var identity: [String: Any] = [:]
-      for key in keys { guard let value = request[key] as? String, !value.isEmpty else { throw HostServiceError.invalidResponse }; identity[key] = value }
-      let labels = ["command": L10n.tr("命令"), "workdir": L10n.tr("目录"), "shell": L10n.tr("终端")]
-      let summary = (request["argsSummary"] as? [[String: Any]] ?? []).compactMap { argument -> String? in
-        guard let name = argument["name"] as? String, let value = argument["value"] as? String, !value.isEmpty else { return nil }
-        return (labels[name] ?? name) + ": " + value
-      }.joined(separator: "\n")
-      let detail = request["message"] as? String ?? request["description"] as? String ?? (summary.isEmpty ? request["title"] as? String ?? L10n.tr("请确认此操作。") : summary)
-      approvals.append(Approval(id: "approval." + (try easyWorkJSON(identity)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "command", title: request["title"] as? String ?? L10n.tr("操作需要确认"), detail: detail, questions: [], decisions: ["approve", "deny"], notificationRequestId: request["requestHash"] as? String))
+      let context = try object(await channel.request("runtime/context", [:]))
+      approvals.append(try permissionApproval(request, threadId: threadId,
+        capabilities: context["capabilities"] as? [String] ?? []))
     }
     if let request = pendingQuestion {
       let questions = (request["questions"] as? [[String: Any]] ?? []).map { question in
@@ -1060,6 +1053,61 @@ struct EasyWorkAgentClient: AgentClient {
     let response = try object(await session(client).request("turn/cancel", ["threadId": threadId, "turnId": turnId]))
     return CommandResult(ok: response["cancelled"] as? Bool == true)
   }
+  private func permissionApproval(_ request: [String: Any], threadId: String, capabilities: [String]) throws -> Approval {
+    let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
+    var identity: [String: Any] = [:]
+    for key in keys { guard let value = request[key] as? String, !value.isEmpty else { throw HostServiceError.invalidResponse }; identity[key] = value }
+    guard identity["threadId"] as? String == threadId else { throw HostServiceError.wrongHost }
+    let labels = ["command": L10n.tr("命令"), "workdir": L10n.tr("目录"), "shell": L10n.tr("终端")]
+    let summary = (request["argsSummary"] as? [[String: Any]] ?? []).compactMap { argument -> String? in
+      guard let name = argument["name"] as? String, let value = argument["value"] as? String, !value.isEmpty else { return nil }
+      return (labels[name] ?? name) + ": " + value
+    }.joined(separator: "\n")
+    let detail = request["message"] as? String ?? request["description"] as? String ?? (summary.isEmpty ? request["title"] as? String ?? L10n.tr("请确认此操作。") : summary)
+    var decisions = capabilities.contains("approvals") ? ["approve", "deny"] : []
+    // Session grants require the assembled Host capability and the original request policy.
+    if capabilities.contains("approvals"), capabilities.contains("approvals:remember:session:v1"),
+      capabilities.contains("approvals:decision-receipt:v1"), request["approvalScopePolicy"] == nil {
+      decisions.insert("acceptForSession", at: 1)
+    }
+    return Approval(id: "approval." + (try easyWorkJSON(identity)).base64URL, threadId: threadId,
+      turnId: identity["runId"] as? String ?? "", kind: "command",
+      title: request["title"] as? String ?? L10n.tr("操作需要确认"), detail: detail,
+      questions: [], decisions: decisions, notificationRequestId: request["requestHash"] as? String)
+  }
+  private func permissionDecisionResult(_ result: [String: Any], identity: [String: Any], decision: String,
+    receiptRequired: Bool) throws -> CommandResult {
+    let field = decision == "deny" ? "denied" : "accepted"
+    guard let accepted = result[field] as? Bool, let raw = result[field] as? NSNumber,
+      CFGetTypeID(raw) == CFBooleanGetTypeID() else { throw HostServiceError.invalidResponse }
+    if !receiptRequired { return CommandResult(ok: accepted) }
+    guard result["status"] as? String == (accepted ? (decision == "deny" ? "denied" : "approved") : "stale")
+      else { throw HostServiceError.invalidResponse }
+    let receipt = result["decisionReceipt"] as? [String: Any]
+    if let receipt {
+      let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
+      guard let version = receipt["version"] as? NSNumber, CFGetTypeID(version) != CFBooleanGetTypeID(),
+        version.doubleValue == 1,
+        keys.allSatisfy({ receipt[$0] as? String == identity[$0] as? String }) else { throw HostServiceError.wrongHost }
+      let originalDecision = receipt["decision"] as? String
+      let approvalScope = receipt["approvalScope"] as? String
+      let expectedKeys = keys + ["version", "decision"] + (originalDecision == "approve" ? ["approvalScope"] : [])
+      guard Set(receipt.keys) == Set(expectedKeys),
+        originalDecision == "approve" ? ["once", "session"].contains(approvalScope ?? "")
+          : ["deny", "cancel"].contains(originalDecision ?? "") else { throw HostServiceError.invalidResponse }
+      if accepted {
+        guard originalDecision == (decision == "deny" ? "deny" : "approve"),
+          decision == "deny" || approvalScope == (decision == "acceptForSession" ? "session" : "once")
+          else { return CommandResult(ok: false) }
+      }
+    } else if accepted || result["decisionReceipt"] != nil { throw HostServiceError.invalidResponse }
+    if !accepted {
+      guard let code = result["errorCode"] as? String,
+        ["approval_stale", "approval_decision_conflict", "approval_scope_not_allowed"].contains(code),
+        code != "approval_decision_conflict" || receipt != nil else { throw HostServiceError.invalidResponse }
+    }
+    return CommandResult(ok: accepted)
+  }
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult {
     let channel = try await session(client)
     let result: [String: Any]
@@ -1080,7 +1128,29 @@ struct EasyWorkAgentClient: AgentClient {
         }]
       }
       result = try object(await channel.request("serverRequest/resolve", params))
-    } else { result = try object(await channel.request("approval/respond", ["threadId": approval.threadId, "serverRequestId": approval.id, "decision": decision == "approve" || decision == "accept" ? "approve" : "deny"])) }
+    } else {
+      guard approval.kind == "command", approval.decisions.contains(decision),
+        ["approve", "deny", "acceptForSession"].contains(decision),
+        approval.id.hasPrefix("approval."),
+        let data = Data(base64URL: String(approval.id.dropFirst(9))) else { throw HostServiceError.invalidResponse }
+      let identity = try object(easyWorkObject(data))
+      let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]
+      guard keys.allSatisfy({ (identity[$0] as? String)?.isEmpty == false }),
+        identity["threadId"] as? String == approval.threadId,
+        identity["runId"] as? String == approval.turnId,
+        client.agentConnection?.target == readingTarget(channel.target) else { throw HostServiceError.wrongHost }
+      let context = try object(await channel.request("runtime/context", [:]))
+      let capabilities = context["capabilities"] as? [String] ?? []
+      guard capabilities.contains("approvals"), decision != "acceptForSession"
+        || (capabilities.contains("approvals:remember:session:v1")
+          && capabilities.contains("approvals:decision-receipt:v1")) else { throw HostServiceError.unavailable }
+      var params: [String: Any] = ["threadId": approval.threadId, "serverRequestId": approval.id,
+        "decision": decision == "deny" ? "deny" : "approve"]
+      if decision == "acceptForSession" { params["remember"] = true }
+      result = try object(await channel.request("approval/respond", params))
+      return try permissionDecisionResult(result, identity: identity, decision: decision,
+        receiptRequired: capabilities.contains("approvals:decision-receipt:v1"))
+    }
     return CommandResult(ok: result["accepted"] as? Bool == true || result["denied"] as? Bool == true)
   }
   private func independentFile(_ client: Client, _ value: [String: Any], directory: String) throws -> ComputerFileReceipt {

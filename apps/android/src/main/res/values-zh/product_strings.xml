@@ -1829,6 +1829,17 @@
     <string name="product_fa8851e580b24bee85375d65" formatted="false">"电脑已停止此文件传输。"</string>
     <string name="product_fbe4a2580083f25655ccadf6" formatted="false">"停止下载"</string>
     <string name="product_4c8a4e3da39e5c2a4d810136" formatted="false">"打开文件"</string>
+    <string name="product_bfbe61743d112c87da846dd4" formatted="false">"原创建清单或目标已变化，请先核对原操作结果。"</string>
+    <string name="product_04e096555e280077905f2885" formatted="false">"原创建结果待核对，仅查询原操作 ID"</string>
+    <string name="product_32582b226e6292c0d1bebdca" formatted="false">"原附件已有上传回执，请先核对原记录。"</string>
+    <string name="product_b93d4774a8455e6a07a0d492" formatted="false">"恢复原内容"</string>
+    <string name="product_35263fc871f5833d4d671a20" formatted="false">"文件为空、已变化或超过当前文件限制。"</string>
+    <string name="product_7806943657a9c3dbe612f16b" formatted="false">"查询原创建结果"</string>
+    <string name="product_d8a102b0af0e5c63eb639b8c" formatted="false">"正在保存创建记录…"</string>
+    <string name="product_d4655f5396c8ed62e464e4e2" formatted="false">"正在创建对话…"</string>
+    <string name="product_9ed9562e174b0f347c847ff0" formatted="false">"此连接暂不能继续该大小的附件，原文件和原记录已保留。"</string>
+    <string name="product_8ffbf37156c7b7fa1a5da82b" formatted="false">"目标对话已有草稿，原创建记录已保留。"</string>
+    <string name="product_ba4bf467dff584e5cda000a8" formatted="false">"首条消息尚未提交，原内容已保留。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

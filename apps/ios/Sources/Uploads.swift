@@ -53,6 +53,9 @@ struct UploadReceipt: Codable, Sendable {
   }
 }
 enum UploadAction: Sendable { case prepare, status, chunk(Int), complete, cancel }
+enum UploadRequestContext {
+  @TaskLocal static var capturedFile: DesktopCreationFile? = nil
+}
 struct UploadBatch: Codable, Sendable {
   let id: String
   let index: Int
@@ -64,6 +67,26 @@ struct UploadBatch: Codable, Sendable {
 extension AgentClient {
   func uploadFile(_ client: Client, threadId: String, file: LocalAttachment, source: URL) async throws -> RemoteAttachment {
     try await upload(client, threadId: threadId, file: file, data: Data(contentsOf: source))
+  }
+  /// The first input keeps its captured bytes while using the existing resumable pipeline.
+  func uploadFile(_ client: Client, threadId: String, file: LocalAttachment, source: URL, manifest expected: DesktopCreationFile) async throws -> RemoteAttachment {
+    let computed = try await uploadManifest(client, file: file, source: source, purpose: "attachment", parent: threadId)
+    guard UUID(uuidString: expected.id) != nil,
+      expected.id == file.id, expected.name == file.name,
+      expected.mediaType == computed.mediaType, expected.sizeBytes == computed.sizeBytes,
+      expected.sha256 == computed.sha256 else { throw HostServiceError.invalidResponse }
+    // Older captured first inputs already identify their remote upload by this
+    // file ID. Keep it across restart/upgrade instead of allocating another ID.
+    let manifest = UploadManifest(hostId: computed.hostId, id: expected.id,
+      name: computed.name, mediaType: computed.mediaType, sizeBytes: computed.sizeBytes,
+      sha256: computed.sha256, purpose: computed.purpose, threadId: computed.threadId,
+      creationId: computed.creationId, attachmentId: computed.attachmentId)
+    let receipt = try await UploadCenter.shared.transfer(client, manifest: manifest, source: source, capturedFile: expected)
+    let result = try receipt.value(RemoteAttachment.self)
+    guard result.hostId == client.id, result.threadId == threadId,
+      result.sha256 == manifest.sha256, result.sizeBytes == manifest.sizeBytes,
+      result.name == manifest.name, result.mediaType == manifest.mediaType else { throw HostServiceError.wrongHost }
+    return result
   }
   func uploadCreationFile(_ client: Client, id: String, file: LocalAttachment, source: URL) async throws {
     try await uploadCreation(client, id: id, file: file, data: Data(contentsOf: source))
@@ -187,6 +210,7 @@ struct UploadJob: Codable, Identifiable, Sendable {
   var receipt: UploadReceipt?
   var batch: UploadBatch? = nil
   var cancelRequested: Bool? = nil
+  var capturedFile: DesktopCreationFile? = nil
   var id: String { manifest.id }
 }
 
@@ -252,7 +276,9 @@ struct UploadJob: Codable, Identifiable, Sendable {
   func reconcile(_ client: Client) async {
     for job in jobs.values.filter({ Self.sameTarget($0.client, client) && !running.contains($0.id) && !["completed", "cancelled"].contains($0.phase) }) {
       do {
-        let receipt = try await AgentClients.resolve(client).uploadRequest(client, manifest: job.manifest, action: .status, bytes: nil, sent: nil)
+        let receipt = try await UploadRequestContext.$capturedFile.withValue(job.capturedFile) {
+          try await AgentClients.resolve(client).uploadRequest(client, manifest: job.manifest, action: .status, bytes: nil, sent: nil)
+        }
         try receipt.validate(job.manifest)
         jobs[job.id]?.client = client; jobs[job.id]?.receipt = receipt; jobs[job.id]?.committedBytes = receipt.committedBytes
         jobs[job.id]?.phase = ["completed", "cancelled"].contains(receipt.phase) ? receipt.phase : (job.cancelRequested == true ? "cancel-pending" : "paused")
@@ -336,27 +362,31 @@ struct UploadJob: Codable, Identifiable, Sendable {
   private func call(_ client: Client, manifest: UploadManifest, action: UploadAction, bytes: Data? = nil) async throws -> UploadReceipt {
     let id = manifest.id, base = jobs[id]?.committedBytes ?? 0, generation = UUID()
     requestGenerations[id] = generation
-    let task = Task { try await AgentClients.resolve(client).uploadRequest(client, manifest: manifest, action: action, bytes: bytes, sent: { count in
+    let capturedFile = jobs[id]?.capturedFile
+    let task = Task { try await UploadRequestContext.$capturedFile.withValue(capturedFile) {
+      try await AgentClients.resolve(client).uploadRequest(client, manifest: manifest, action: action, bytes: bytes, sent: { count in
       Task { @MainActor in
         guard self.jobs[id]?.phase == "uploading", self.requestGenerations[id] == generation else { return }
         self.jobs[id]?.sentBytes = max(self.jobs[id]?.committedBytes ?? 0, min(manifest.sizeBytes, base + Int(count)))
         // Socket bursts are not end-to-end throughput. Rate/ETA are sampled only
         // when the Host acknowledges this chunk, including network and disk time.
       }
-    }) }
+      })
+    } }
     requests[id] = task
     defer { requests.removeValue(forKey: id); requestGenerations.removeValue(forKey: id) }
     return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
   }
-  func transfer(_ client: Client, manifest: UploadManifest, source original: URL) async throws -> UploadReceipt {
+  func transfer(_ client: Client, manifest: UploadManifest, source original: URL, capturedFile: DesktopCreationFile? = nil) async throws -> UploadReceipt {
     let id = manifest.id
     guard UUID(uuidString: id) != nil, manifest.hostId == client.id else { throw HostServiceError.wrongHost }
     if let old = jobs[id], old.manifest != manifest || !Self.sameTarget(old.client, client) { throw HostServiceError.wrongHost }
+    if let capturedFile, let old = jobs[id], old.capturedFile != capturedFile { throw HostServiceError.wrongHost }
     guard !running.contains(id) else { throw HostServiceError.message(L10n.tr("此文件正在上传")) }
     running.insert(id)
     defer { running.remove(id); slots.remove(id); requests[id]?.cancel(); requests.removeValue(forKey: id) }
     if jobs[id] == nil {
-      jobs[id] = UploadJob(client: client, manifest: manifest, phase: "preparing")
+      jobs[id] = UploadJob(client: client, manifest: manifest, phase: "preparing", capturedFile: capturedFile)
       let destination = source(id), directory = directory
       do {
         try await Task.detached {
@@ -612,6 +642,22 @@ struct UploadJobsView: View {
   }
 }
 
+/// Captured first inputs retain their original prepare/chunk/complete identities.
+/// Ordinary uploads keep the current digest-qualified chunk request IDs.
+enum EasyWorkCapturedUploadIdentity {
+  static func validate(_ captured: DesktopCreationFile?, manifest m: UploadManifest) throws {
+    guard let captured else { return }
+    guard UUID(uuidString: captured.id) != nil, captured.id == m.id,
+      EasyWorkAttachmentUpload.displayName(captured.name) == m.name,
+      captured.mediaType == m.mediaType, captured.sizeBytes == m.sizeBytes,
+      captured.sha256 == m.sha256 else { throw HostServiceError.invalidResponse }
+  }
+  static func chunkId(_ m: UploadManifest, offset: Int, bytes: Data, captured: DesktopCreationFile?) -> String {
+    if captured != nil { return "chunk-\(m.id)-\(offset)" }
+    return "chunk-\(m.id)-\(offset)-\(HostService.hash(bytes).prefix(12))"
+  }
+}
+
 /// Preserve EasyWork's authenticated device/file scope for every resumable response.
 enum EasyWorkUploadValidation {
   static func transfer(_ response: [String: Any], manifest m: UploadManifest, deviceId: String, completed: Bool = false) throws -> [String: Any] {
@@ -654,20 +700,40 @@ extension EasyWorkAgentClient {
   }
   func uploadRequest(_ client: Client, manifest m: UploadManifest, action: UploadAction, bytes: Data?, sent: (@Sendable (Int64) -> Void)?) async throws -> UploadReceipt {
     guard m.purpose == "attachment", let threadId = m.threadId else { throw HostServiceError.unavailable }
-    guard m.sizeBytes > 0, m.sizeBytes <= 20 * 1024 * 1024 else { throw HostServiceError.message(L10n.tr("原附件内容已改变，未提交")) }
+    let captured = UploadRequestContext.capturedFile
+    guard m.sizeBytes > 0, m.sizeBytes <= 20 * 1024 * 1024 else {
+      if captured != nil { throw HostServiceError.message(L10n.tr("此连接暂不能继续该大小的附件，原文件和原记录已保留。")) }
+      throw HostServiceError.message(L10n.tr("原附件内容已改变，未提交"))
+    }
+    try EasyWorkCapturedUploadIdentity.validate(captured, manifest: m)
     let channel = try await session(client), deviceId = await channel.mobileDeviceId
     func object(_ data: Data) throws -> [String: Any] {
       guard let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw HostServiceError.invalidResponse }; return value
     }
     var result: UploadResult?, phase = "uploading", offset = 0
+    var knownStatus: [String: Any]?
     switch action {
     case .prepare:
-      let response = try object(await channel.request("resource/upload", ["transferId": m.id, "name": m.name, "mediaType": m.mediaType, "size": m.sizeBytes, "expectedSha256": m.sha256, "purpose": "attachment", "threadId": threadId], id: "upload-" + m.id))
-      _ = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
+      if captured != nil {
+        do {
+          let status = try object(await channel.request("resource/upload-status", ["transferId": m.id]))
+          _ = try EasyWorkUploadValidation.transfer(status, manifest: m, deviceId: deviceId)
+          knownStatus = status
+        } catch HostServiceError.rejected(404, _) {
+          let original = try await channel.request("command/status", ["commandId": "upload-" + m.id])
+          guard try JSONSerialization.jsonObject(with: original, options: [.fragmentsAllowed]) is NSNull else {
+            throw HostServiceError.message(L10n.tr("原附件已有上传回执，请先核对原记录。"))
+          }
+        }
+      }
+      if knownStatus == nil {
+        let response = try object(await channel.request("resource/upload", ["transferId": m.id, "name": captured?.name ?? m.name, "mediaType": m.mediaType, "size": m.sizeBytes, "expectedSha256": m.sha256, "purpose": "attachment", "threadId": threadId], id: "upload-" + m.id))
+        _ = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
+      }
     case .status: break
     case .chunk(let position):
       guard let bytes, bytes.count <= 192 * 1024 else { throw HostServiceError.invalidResponse }
-      let response = try object(await channel.request("resource/upload-chunk", ["transferId": m.id, "offset": position, "dataBase64": bytes.base64URL], id: "chunk-\(m.id)-\(position)-\(HostService.hash(bytes).prefix(12))"))
+      let response = try object(await channel.request("resource/upload-chunk", ["transferId": m.id, "offset": position, "dataBase64": bytes.base64URL], id: EasyWorkCapturedUploadIdentity.chunkId(m, offset: position, bytes: bytes, captured: captured)))
       try EasyWorkUploadValidation.chunk(response, end: position + bytes.count, size: m.sizeBytes)
       sent?(Int64(bytes.count))
     case .complete:
@@ -679,13 +745,16 @@ extension EasyWorkAgentClient {
       phase = "cancelled"
     }
     if phase == "uploading" {
-      let response = try object(await channel.request("resource/upload-status", ["transferId": m.id]))
+      let response: [String: Any]
+      if let knownStatus { response = knownStatus }
+      else { response = try object(await channel.request("resource/upload-status", ["transferId": m.id])) }
       let transfer = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
       offset = try EasyWorkReading.integer(transfer["transferredBytes"])
       if transfer["status"] as? String == "completed" {
         return try await uploadRequest(client, manifest: m, action: .complete, bytes: nil, sent: nil)
       }
-      guard ["transferring", "verifying"].contains(transfer["status"] as? String ?? "") else { throw HostServiceError.invalidResponse }
+      guard ["transferring", "verifying"].contains(transfer["status"] as? String ?? "")
+        || (captured != nil && transfer["status"] as? String == "waiting") else { throw HostServiceError.invalidResponse }
     }
     let now = ISO8601DateFormatter().string(from: Date())
     return UploadReceipt(version: 1, manifest: m, phase: phase, committedBytes: offset,

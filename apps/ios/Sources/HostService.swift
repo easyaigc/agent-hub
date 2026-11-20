@@ -350,6 +350,14 @@ struct HostService {
         ?? (file.isImage ? "image/jpeg" : "application/octet-stream"),
       sizeBytes: data.count, sha256: hash(data))
   }
+  static func creationManifest(_ file: LocalAttachment, fileURL: URL) throws -> DesktopCreationFile {
+    let reader = try FileByteStream.Reader(fileURL)
+    guard reader.size == file.size else { throw HostServiceError.invalidResponse }
+    return DesktopCreationFile(id: file.id, name: file.name,
+      mediaType: UTType(filenameExtension: (file.name as NSString).pathExtension)?.preferredMIMEType
+        ?? (file.isImage ? "image/jpeg" : "application/octet-stream"),
+      sizeBytes: reader.size, sha256: try reader.sha256())
+  }
   static func prepareCreation(_ client: Client, pending: PendingDesktopCreation) async throws -> DesktopCreationOperation {
     let files = try JSONSerialization.jsonObject(with: JSONEncoder().encode(pending.manifest))
     var body: [String: Any] = [

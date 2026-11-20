@@ -173,12 +173,86 @@ struct Draft: Codable, Equatable {
   var speed: String? = nil
 }
 
-struct DesktopCreationFile: Codable {
+struct DesktopCreationFile: Codable, Equatable, Sendable {
   let id: String
   let name: String
   let mediaType: String
   let sizeBytes: Int
   let sha256: String
+}
+struct FirstMessageCreationIntent: Codable, Equatable {
+  let version: Int
+  let operationId: String
+  let messageId: String
+  let target: AgentRuntimeTarget
+  let projectId: String?
+  let text: String
+  let manifest: [DesktopCreationFile]
+  let attachments: [LocalAttachment]
+  var metadataSubmitted = false
+  var sourceDraft: Draft? = nil
+  let collaborationMode: String?
+  let model: String?
+  let effort: String?
+  let permissionMode: String?
+  let speed: String?
+  /// Restore the captured draft identity as well as its immutable content.
+  /// Losing the import generation makes an untouched restored draft look edited.
+  func restoredDraft() -> Draft {
+    if var snapshot = sourceDraft {
+      // Effective settings may differ from an unset choice in the captured
+      // draft. Preserve that distinction when comparing untouched content.
+      snapshot.operationId = operationId
+      return snapshot
+    }
+    var draft = Draft()
+    draft.text = text
+    draft.attachments = attachments
+    draft.operationId = operationId
+    draft.collaborationMode = collaborationMode
+    draft.model = model
+    draft.effort = effort
+    draft.permissionMode = permissionMode
+    draft.speed = speed
+    return draft
+  }
+  func matchesSubmittedDraft(_ current: Draft) -> Bool {
+    guard var original = sourceDraft else { return false }
+    original.operationId = operationId
+    return current == original
+  }
+  func draftAfterMovingOriginal(_ current: Draft) -> Draft? {
+    if matchesSubmittedDraft(current) { return nil }
+    var remaining = current
+    remaining.operationId = nil
+    // Concurrent edits retain their bytes under fresh local identities. The
+    // original attachment IDs stay exclusively bound to the recovered thread.
+    remaining.attachments = current.attachments.map { file in
+      guard attachments.contains(where: { $0.id == file.id }) else { return file }
+      return LocalAttachment(id: UUID().uuidString, name: file.name, size: file.size, fileName: file.fileName,
+        isImage: file.isImage, photoAssetId: file.photoAssetId)
+    }
+    return remaining
+  }
+  func resolveMetadata(originalOperationId: String?, create: (String) async throws -> Conversation,
+    status: (String) async throws -> Conversation?) async throws -> Conversation {
+    guard version == 1, originalOperationId == nil || originalOperationId == operationId else { throw HostServiceError.invalidResponse }
+    let thread: Conversation
+    if originalOperationId != nil {
+      guard let original = try await status(operationId) else {
+        throw HostServiceError.message(L10n.tr("操作结果仍不确定，请查询状态并核对桌面结果。"))
+      }
+      thread = original
+    } else { thread = try await create(operationId) }
+    guard !thread.id.isEmpty, thread.projectId == projectId else { throw HostServiceError.wrongHost }
+    return thread
+  }
+
+}
+struct DetachedFirstMessageCreation: Codable {
+  let original: FirstMessageCreationIntent
+  var thread: Conversation? = nil
+  var error: String? = nil
 }
 struct PendingDesktopCreation: Codable {
   let hostId: String
@@ -828,6 +902,8 @@ struct SavedSession: Codable {
   var detachedReplies: [String: [DetachedReplyRecord]]? = nil
   var dismissedReceiptFailures: [String: Set<String>]?
   var agentEventCursors: [String: AgentEventCursor]?
+  var firstMessageCreations: [String: FirstMessageCreationIntent]? = nil
+  var detachedFirstMessageCreations: [String: [DetachedFirstMessageCreation]]? = nil
   var desktopCreations: [String: PendingDesktopCreation]?
   var detachedDesktopCreations: [String: [PendingDesktopCreation]]?
   var chatActionReceipts: [String: ChatActionReceipt]?

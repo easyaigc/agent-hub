@@ -1997,3 +1997,16 @@
 "停止下载" = "Stop download";
 
 "打开文件" = "Open file";
+
+// First-message creation recovery.
+"原创建清单或目标已变化，请先核对原操作结果。" = "The original creation manifest or target has changed. Check the original operation first.";
+"原创建结果待核对，仅查询原操作 ID" = "Creation result needs checking. Query the original operation ID only.";
+"原附件已有上传回执，请先核对原记录。" = "The original attachment already has an upload receipt. Check the original record first.";
+"恢复原内容" = "Restore original content";
+"文件为空、已变化或超过当前文件限制。" = "The file is empty, has changed, or exceeds the current file limit.";
+"查询原创建结果" = "Check original creation result";
+"正在保存创建记录…" = "Saving creation record…";
+"正在创建对话…" = "Creating chat…";
+"此连接暂不能继续该大小的附件，原文件和原记录已保留。" = "This connection cannot resume an attachment of this size. The original file and record are preserved.";
+"目标对话已有草稿，原创建记录已保留。" = "The target chat already has a draft. The original creation record is preserved.";
+"首条消息尚未提交，原内容已保留。" = "The first message has not been submitted. The original content is preserved.";

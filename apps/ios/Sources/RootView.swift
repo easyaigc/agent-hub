@@ -1941,6 +1941,20 @@ struct RootView: View {
               }
             }
           }
+          if !store.detachedFirstMessageCreations.isEmpty {
+            Section(L10n.tr("新建记录")) {
+              ForEach(store.detachedFirstMessageCreations, id: \.original.operationId) { record in
+                Button(record.thread == nil ? L10n.tr("查询记录 · 待确认") : L10n.tr("查询记录 · 已确认")) {
+                  store.queryDetachedFirstMessageCreation(record, target: store.targetKey)
+                }.accessibilityIdentifier("detached-first-creation-query-" + record.original.operationId)
+                if record.thread != nil {
+                  Button(L10n.tr("恢复原内容")) { store.restoreDetachedFirstMessageCreation(record, target: store.targetKey) }
+                    .accessibilityIdentifier("restore-first-creation-" + record.original.operationId)
+                }
+                if let error = record.error { Text(error) }
+              }
+            }
+          }
           Button(L10n.tr("设置"), systemImage: "gearshape") { store.sheet = .settings }
         } label: {
           Image(systemName: "ellipsis").easyWorkCompactMenuSymbol(store.client?.agentConnection?.target.agentId=="easywork").frame(width: 44, height: 44)
@@ -4940,6 +4954,7 @@ private struct ComposerView: View,Equatable {
     let revision: UInt64
   }
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
+  @State private var firstCreationWaitToDetach: (target: String, operationId: String)?
   @State private var creationWaitToDetach: (target: String, operationId: String)?
   @ObservedObject var suggestionReader: DesktopSuggestionReader
   @State private var suggestionPreview: DesktopSuggestionDraftAction?
@@ -5168,6 +5183,27 @@ private struct ComposerView: View,Equatable {
           }
         }.font(.caption).accessibilityElement(children: .contain).accessibilityIdentifier("outbox-pending")
       }
+      if let first = store.pendingFirstMessageCreation, first.metadataSubmitted {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(store.firstMessageCreationProgressTitle).font(.caption)
+            .accessibilityIdentifier("first-creation-progress")
+          HStack {
+            Button(L10n.tr("查询原创建结果")) { store.queryFirstMessageCreation() }
+              .disabled(store.sendingKeys.contains(store.targetKey)).accessibilityIdentifier("query-original-first-creation")
+            Button(L10n.tr("结束等待")) { firstCreationWaitToDetach = (store.targetKey, first.operationId) }
+              .disabled(store.detachingFirstMessageCreation).accessibilityIdentifier("detach-first-creation-wait")
+          }
+        }.font(.caption).accessibilityElement(children: .contain).accessibilityIdentifier("first-creation-pending")
+          .confirmationDialog(L10n.tr("结束等待？"), isPresented: Binding(get: { firstCreationWaitToDetach != nil }, set: { if !$0 { firstCreationWaitToDetach = nil } }), titleVisibility: .visible) {
+            Button(L10n.tr("保留记录并返回编辑")) {
+              if let request = firstCreationWaitToDetach { store.detachFirstMessageCreation(target: request.target, operationId: request.operationId) }
+              firstCreationWaitToDetach = nil
+            }
+            Button(L10n.tr("继续等待"), role: .cancel) { firstCreationWaitToDetach = nil }
+          } message: {
+            Text(L10n.tr("结束等待不会撤销可能已执行的请求。原记录仍可查询；再次发送将是一条新请求。"))
+          }
+      }
       if let creation = store.pendingDesktopCreation {
         VStack(alignment: .leading, spacing: 4) {
           Text("\(store.clientTypeName) · \(creation.progressTitle)").font(.caption)
@@ -5256,7 +5292,7 @@ private struct ComposerView: View,Equatable {
   private var hasComposerDetails: Bool {
     (store.client?.isDemo == false && !store.isWritable && !store.canConnectForReply) || store.client?.online == false
       || store.transferStatus != nil || store.isImporting || store.pending != nil
-      || store.pendingDesktopCreation != nil
+      || store.pendingDesktopCreation != nil || store.pendingFirstMessageCreation != nil
       || store.showsReplyMode || !store.draft.attachments.isEmpty
       || !store.queuedReplies.isEmpty
       || uploads.jobs.values.contains { job in

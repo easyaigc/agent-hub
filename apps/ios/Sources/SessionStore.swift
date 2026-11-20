@@ -152,6 +152,8 @@ final class SessionStore: ObservableObject {
   @Published var historyCursor: String?
   @Published var sendingKeys: Set<String> = []
   private var replySendFlights: [String: UUID] = [:]
+  @Published private var firstCreationQueryFlights: [String: UUID] = [:]
+  @Published private var detachingFirstCreationKeys: Set<String> = []
   @Published private var replyRecoveryFlights: [String: UUID] = [:]
   private var replyRecoveryQueries: [String: (id: String, next: Double, delay: Double)] = [:]
   @Published private var stoppingKeys: Set<String> = []
@@ -2004,7 +2006,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   var runningReplyModes: [String] { SessionPolicies.shared.replyModes(access: accessPolicy) }
   var activeReplyMode: String { SessionPolicies.shared.activeReplyMode(access: accessPolicy, preferred: replyMode) }
   private func canSubmit(_ content: Draft) -> Bool {
-    guard canCompose, !isImporting else { return false }
+    guard canCompose, !isImporting, !detachingFirstCreationKeys.contains(targetKey) else { return false }
     return SessionPolicies.shared.submit(access: accessPolicy, state: submissionPolicy,
       text: content.text, attachmentCount: Int32(content.attachments.count))
   }
@@ -2287,6 +2289,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     for draft in snapshot.drafts.values { files.append(contentsOf: draft.attachments) }
     for pending in snapshot.outbox?.values ?? Dictionary<String, PendingReply>().values { files.append(contentsOf: pending.sourceAttachments ?? []) }
     for record in snapshot.detachedReplies?.values.flatMap({ $0 }) ?? [] { files.append(contentsOf: record.original.sourceAttachments ?? []) }
+    for intent in snapshot.firstMessageCreations?.values ?? Dictionary<String, FirstMessageCreationIntent>().values { files.append(contentsOf: intent.attachments) }
+    for record in snapshot.detachedFirstMessageCreations?.values.flatMap({ $0 }) ?? [] { files.append(contentsOf: record.original.attachments) }
     for pending in snapshot.desktopCreations?.values ?? Dictionary<String, PendingDesktopCreation>().values { files.append(contentsOf: pending.attachments) }
     for pendingList in snapshot.detachedDesktopCreations?.values ?? Dictionary<String, [PendingDesktopCreation]>().values {
       for pending in pendingList { files.append(contentsOf: pending.attachments) }
@@ -2361,6 +2365,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     var attachmentReferences: [LocalAttachment] = payload.state.drafts.values.flatMap(\.attachments)
     if let outbox = payload.state.outbox { for pending in outbox.values { attachmentReferences.append(contentsOf: pending.sourceAttachments ?? []) } }
     for record in payload.state.detachedReplies?.values.flatMap({ $0 }) ?? [] { attachmentReferences.append(contentsOf: record.original.sourceAttachments ?? []) }
+    attachmentReferences.append(contentsOf: payload.state.firstMessageCreations?.values.flatMap(\.attachments) ?? [])
+    attachmentReferences.append(contentsOf: payload.state.detachedFirstMessageCreations?.values.flatMap { $0 }.flatMap { $0.original.attachments } ?? [])
     if let creations = payload.state.desktopCreations { for pending in creations.values { attachmentReferences.append(contentsOf: pending.attachments) } }
     if let detached = payload.state.detachedDesktopCreations { for pendingList in detached.values { for pending in pendingList { attachmentReferences.append(contentsOf: pending.attachments) } } }
     guard attachmentReferences.allSatisfy({ EncryptedMigration.safeFilename($0.fileName) && payload.attachments[$0.fileName]?.count == $0.size }) else { throw HostServiceError.invalidResponse }
@@ -2665,11 +2671,13 @@ private var userRequestedWorkspaceGeneration: UUID?
     persist()
   }
   private func removeUnreferencedAttachment(_ file: LocalAttachment) {
-    let referenced = drafts.values.values.contains { $0.attachments.contains { $0.id == file.id } }
-      || (saved.desktopCreations?.values.contains { $0.attachments.contains { $0.id == file.id } } ?? false)
-      || (saved.detachedDesktopCreations?.values.flatMap { $0 }.contains { $0.attachments.contains { $0.id == file.id } } ?? false)
-      || (saved.outbox?.values.contains { $0.sourceAttachments?.contains { $0.id == file.id } == true } ?? false)
-      || (saved.detachedReplies?.values.flatMap { $0 }.contains { $0.original.sourceAttachments?.contains { $0.id == file.id } == true } ?? false)
+    let referenced = drafts.values.values.contains { $0.attachments.contains { $0.fileName == file.fileName } }
+      || (saved.firstMessageCreations?.values.contains { $0.attachments.contains { $0.fileName == file.fileName } } ?? false)
+      || (saved.detachedFirstMessageCreations?.values.flatMap { $0 }.contains { $0.original.attachments.contains { $0.fileName == file.fileName } } ?? false)
+      || (saved.desktopCreations?.values.contains { $0.attachments.contains { $0.fileName == file.fileName } } ?? false)
+      || (saved.detachedDesktopCreations?.values.flatMap { $0 }.contains { $0.attachments.contains { $0.fileName == file.fileName } } ?? false)
+      || (saved.outbox?.values.contains { $0.sourceAttachments?.contains { $0.fileName == file.fileName } == true } ?? false)
+      || (saved.detachedReplies?.values.flatMap { $0 }.contains { $0.original.sourceAttachments?.contains { $0.fileName == file.fileName } == true } ?? false)
     if !referenced { try? FileManager.default.removeItem(at: attachmentURL(file)) }
   }
   func attachmentURL(_ file: LocalAttachment) -> URL {
@@ -3987,6 +3995,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       var attempt: PendingReply?
       var clearedDraft: Draft?
       var mayHaveSubmitted = false
+      var firstCreation = saved.firstMessageCreations?[oldKey]
       defer {
         #if DEBUG
         if Self.hostedEasyWorkAcceptanceEnabled { hostedReplySendWorkCount -= 1 }
@@ -3999,15 +4008,55 @@ private var userRequestedWorkspaceGeneration: UUID?
       }
       do {
         var threadId = existingId
-        if threadId == nil {
-          let originalOperationId = drafts.values[oldKey]?.operationId
-          let operationId = originalOperationId ?? UUID().uuidString
-          drafts.values[oldKey, default: Draft()].operationId = operationId
+        if host.agentConnection?.target.agentId == "easywork", existingId == nil || firstCreation != nil {
+          let paths = content.attachments.map { attachmentURL($0) }
+          let manifest = try await Task.detached(priority: .userInitiated) {
+            try zip(content.attachments, paths).map { try HostService.creationManifest($0.0, fileURL: $0.1) }
+          }.value
+          guard replySendFlights[oldKey] == sendFlight else { return }
+          let target = sharingScope.target
+          let captured = FirstMessageCreationIntent(version: 1,
+            operationId: firstCreation?.operationId ?? drafts.values[oldKey]?.operationId ?? UUID().uuidString,
+            messageId: firstCreation?.messageId ?? UUID().uuidString, target: target, projectId: selectedProject?.id,
+            text: content.text, manifest: manifest, attachments: content.attachments,
+            metadataSubmitted: firstCreation?.metadataSubmitted ?? false, sourceDraft: firstCreation == nil ? content : firstCreation?.sourceDraft, collaborationMode: selectedMode, model: selectedModel,
+            effort: selectedEffort, permissionMode: selectedPermission, speed: selectedSpeed)
+          guard firstCreation == nil || firstCreation == captured else {
+            throw HostServiceError.message(L10n.tr("原创建清单或目标已变化，请先核对原操作结果。"))
+          }
+          firstCreation = captured
+          if saved.firstMessageCreations == nil { saved.firstMessageCreations = [:] }
+          saved.firstMessageCreations?[oldKey] = captured
+          transfers[oldKey] = L10n.tr("正在保存创建记录…")
           try await persistBeforeCommand()
+          guard replySendFlights[oldKey] == sendFlight else { return }
+        }
+        if threadId == nil {
+          let originalOperationId = firstCreation?.metadataSubmitted == true ? firstCreation?.operationId : drafts.values[oldKey]?.operationId
+          let operationId = firstCreation?.operationId ?? originalOperationId ?? UUID().uuidString
+          drafts.values[oldKey, default: Draft()].operationId = operationId
+          firstCreation?.metadataSubmitted = true
+          if let firstCreation { saved.firstMessageCreations?[oldKey] = firstCreation }
+          if firstCreation != nil { transfers[oldKey] = L10n.tr("正在创建对话…") }
+          try await persistBeforeCommand()
+          if firstCreation != nil, replySendFlights[oldKey] != sendFlight { return }
           try validateAISharing(host, scope: sharingScope)
           let provider = try AgentClients.resolve(host)
           let thread: Conversation
-          if host.agentConnection?.target.agentId == "easywork", originalOperationId != nil {
+          if let firstCreation {
+            guard firstCreation.target == host.agentConnection?.target else { throw HostServiceError.wrongHost }
+            thread = try await firstCreation.resolveMetadata(originalOperationId: originalOperationId,
+              create: { originalId in
+                #if DEBUG
+                if Self.hostedEasyWorkAcceptanceEnabled,
+                  ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_METADATA_CREATE_CASE"] == Self.hostedEasyWorkAcceptanceRun {
+                  try devMetadataCreateBeforeTransportForAcceptance?(originalId)
+                }
+                #endif
+                return try await provider.createThread(host, projectId: firstCreation.projectId, operationId: originalId)
+              },
+              status: { try await provider.threadCreationStatus(host, projectId: firstCreation.projectId, operationId: $0) })
+          } else if host.agentConnection?.target.agentId == "easywork", originalOperationId != nil {
             // An already captured metadata intent may have committed before the
             // App lost its result. Absence is not permission to write it again.
             guard let recovered = try await provider.threadCreationStatus(host,
@@ -4031,6 +4080,10 @@ private var userRequestedWorkspaceGeneration: UUID?
             try devMetadataCreateAfterVerifiedForAcceptance?(operationId, thread)
           }
           #endif
+          // Ending local waiting retires this flight. A late metadata result
+          // remains queryable on the desktop but cannot advance to uploads or
+          // the first model input, select a chat, or replace a newer draft.
+          if firstCreation != nil, replySendFlights[oldKey] != sendFlight { return }
           threadId = thread.id
           if !(saved.workspaces[host.id]?.threads.contains(where: { $0.id == thread.id })
             ?? false)
@@ -4039,6 +4092,10 @@ private var userRequestedWorkspaceGeneration: UUID?
           }
           key = cacheKey(host, threadId: thread.id)
           drafts.values[key] = drafts.values[oldKey] ?? content
+          if let firstCreation {
+            saved.firstMessageCreations?[key] = firstCreation
+            saved.firstMessageCreations?.removeValue(forKey: oldKey)
+          }
           drafts.values.removeValue(forKey: oldKey)
           if targetKey == oldKey {
             selectedThreadId = thread.id
@@ -4055,20 +4112,30 @@ private var userRequestedWorkspaceGeneration: UUID?
         }
         var attachments: [RemoteAttachment] = []
         for (index, file) in content.attachments.enumerated() {
+          if firstCreation != nil, replySendFlights[key] != sendFlight { return }
           if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
           try validateAISharing(host, scope: sharingScope)
           transfers[key] = L10n.tr("上传附件 \(index + 1)/\(content.attachments.count) · \(file.name)")
           let source = attachmentURL(file)
           let batch = UploadBatch(id: sendFlight.uuidString, index: index, count: content.attachments.count, totalBytes: content.attachments.reduce(0) { $0 + $1.size })
-          attachments.append(
-            try await UploadBatch.$current.withValue(batch) {
-              try await AgentClients.resolve(host).uploadFile(host, threadId: threadId, file: file, source: source)
-            })
+          if let firstCreation {
+            guard let manifest = firstCreation.manifest.first(where: { $0.id == file.id }) else { throw HostServiceError.invalidResponse }
+            attachments.append(
+              try await UploadBatch.$current.withValue(batch) {
+                try await AgentClients.resolve(host).uploadFile(host, threadId: threadId, file: file, source: source, manifest: manifest)
+              })
+          } else {
+            attachments.append(
+              try await UploadBatch.$current.withValue(batch) {
+                try await AgentClients.resolve(host).uploadFile(host, threadId: threadId, file: file, source: source)
+              })
+          }
         }
+        if firstCreation != nil, replySendFlights[key] != sendFlight { return }
         if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
         try validateAISharing(host, scope: sharingScope)
         let reply = PendingReply(
-          hostId: host.id, threadId: threadId, clientMessageId: UUID().uuidString,
+          hostId: host.id, threadId: threadId, clientMessageId: firstCreation?.messageId ?? UUID().uuidString,
           text: content.text, attachmentIds: attachments.map(\.id), mode: requestedMode,
           expectedTurnId: expected,
           model: selectedModel, effort: selectedEffort, sourceAttachments: content.attachments)
@@ -4085,6 +4152,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           fingerprint: try ReplyRecoveryPolicy.fingerprint(configuredReply, target: capturedTarget), phase: "not-written",
           sharingScope: sharingScope)
         attempt = configuredReply
+        if firstCreation != nil { saved.firstMessageCreations?.removeValue(forKey: key) }
         if override == nil, let current = drafts.values[key], current.text == content.text,
           current.attachments == content.attachments
         {
@@ -4093,6 +4161,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           clearedDraft = emptyDraft
         }
         try await persistBeforeCommand()
+        if firstCreation != nil, replySendFlights[key] != sendFlight { return }
         if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
         try validateAISharing(host, scope: sharingScope)
         if replySendFlights[key] == sendFlight { transfers[key] = L10n.tr("提交给 \(host.name)…") }
@@ -4107,6 +4176,11 @@ private var userRequestedWorkspaceGeneration: UUID?
         // restart, lost response, HTTP rejection or owner idle cannot undo it.
         saved.replyRecovery?[configuredReply.clientMessageId]?.phase = "uncertain"
         try await persistBeforeCommand()
+        if firstCreation != nil, replySendFlights[key] != sendFlight {
+          saved.replyRecovery?[configuredReply.clientMessageId]?.phase = "not-written"
+          persist()
+          return
+        }
         if connectsDesktop { try requireReplyTarget(host, threadId: threadId, generation: generation) }
         try validateAISharing(host, scope: sharingScope)
         mayHaveSubmitted = true
@@ -4141,6 +4215,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           }
         }
       } catch {
+        if attempt == nil, firstCreation != nil, replySendFlights[key] != sendFlight { return }
         let definitelyUnsubmitted = !mayHaveSubmitted
         if let attempt, definitelyUnsubmitted,
           saved.outbox?[key]?.clientMessageId == attempt.clientMessageId {
@@ -4158,6 +4233,147 @@ private var userRequestedWorkspaceGeneration: UUID?
         if attempt.map({ samePending($0, key: key) }) ?? true,
           !isReadCancellation(error), client?.id == host.id && targetKey == key,
           !connectsDesktop || historyGeneration == generation { self.presentError(error) }
+      }
+    }
+  }
+  var pendingFirstMessageCreation: FirstMessageCreationIntent? { saved.firstMessageCreations?[targetKey] }
+  var detachedFirstMessageCreations: [DetachedFirstMessageCreation] { saved.detachedFirstMessageCreations?[targetKey] ?? [] }
+  var firstMessageCreationProgressTitle: String {
+    if let progress = transfers[targetKey] { return progress }
+    return selectedThreadId == nil ? L10n.tr("原创建结果待核对，仅查询原操作 ID") : L10n.tr("首条消息尚未提交，原内容已保留。")
+  }
+  var detachingFirstMessageCreation: Bool { detachingFirstCreationKeys.contains(targetKey) }
+  func detachFirstMessageCreation(target: String, operationId: String) {
+    guard targetKey == target, let pending = saved.firstMessageCreations?[target],
+      pending.operationId == operationId, pending.metadataSubmitted,
+      client?.agentConnection?.target == pending.target,
+      !detachingFirstCreationKeys.contains(target) else { return }
+    detachingFirstCreationKeys.insert(target)
+    if saved.detachedFirstMessageCreations == nil { saved.detachedFirstMessageCreations = [:] }
+    if !(saved.detachedFirstMessageCreations?[target]?.contains { $0.original.operationId == operationId } ?? false) {
+      saved.detachedFirstMessageCreations?[target, default: []].append(DetachedFirstMessageCreation(original: pending))
+    }
+    saved.firstMessageCreations?.removeValue(forKey: target)
+    if let current = drafts.values[target] { drafts.values[target] = pending.draftAfterMovingOriginal(current) }
+    // Retire all aliases of this local flight before any await. The desktop
+    // request is neither cancelled nor resubmitted, and its attachments remain
+    // referenced by the archived immutable intent across cold restarts.
+    releaseReplyWait(key: target)
+    Task {
+      defer { detachingFirstCreationKeys.remove(target) }
+      do { try await persistBeforeCommand() }
+      catch { if targetKey == target { presentError(error) } }
+    }
+  }
+  func queryDetachedFirstMessageCreation(_ record: DetachedFirstMessageCreation, target: String) {
+    let original = record.original
+    guard targetKey == target, let host = client, host.agentConnection?.target == original.target,
+      original.metadataSubmitted, firstCreationQueryFlights[original.operationId] == nil,
+      saved.detachedFirstMessageCreations?[target]?.contains(where: { $0.original == original }) == true else { return }
+    let epoch = historyGeneration, flight = UUID()
+    firstCreationQueryFlights[original.operationId] = flight
+    Task {
+      defer { if firstCreationQueryFlights[original.operationId] == flight { firstCreationQueryFlights.removeValue(forKey: original.operationId) } }
+      @MainActor func currentIndex() -> Int? {
+        guard targetKey == target, historyGeneration == epoch, client?.agentConnection?.target == original.target else { return nil }
+        return saved.detachedFirstMessageCreations?[target]?.firstIndex { $0.original == original }
+      }
+      do {
+        let provider = try AgentClients.resolve(host)
+        let thread = try await original.resolveMetadata(originalOperationId: original.operationId,
+          create: { _ in throw HostServiceError.invalidResponse },
+          status: { try await provider.threadCreationStatus(host, projectId: original.projectId, operationId: $0) })
+        guard thread.hostId == host.id else { throw HostServiceError.wrongHost }
+        guard let index = currentIndex() else { return }
+        saved.detachedFirstMessageCreations?[target]?[index].thread = thread
+        saved.detachedFirstMessageCreations?[target]?[index].error = nil
+        persist()
+      } catch {
+        guard let index = currentIndex() else { return }
+        saved.detachedFirstMessageCreations?[target]?[index].error = error.userFacingDescription
+        persist()
+      }
+    }
+  }
+  private func hasPendingAttachmentImports(_ target: String) -> Bool {
+    imports[target, default: 0] > 0 || recoveringAttachmentKeys.contains(target)
+      || localImportTargets.values.contains { $0.key == target }
+      || scopedImports.contains { $0.key.target == target && $0.value > 0 }
+  }
+  func restoreDetachedFirstMessageCreation(_ record: DetachedFirstMessageCreation, target: String) {
+    let original = record.original
+    guard targetKey == target, let host = client, host.agentConnection?.target == original.target,
+      let index = saved.detachedFirstMessageCreations?[target]?.firstIndex(where: { $0.original == original }),
+      let thread = saved.detachedFirstMessageCreations?[target]?[index].thread,
+      thread.hostId == host.id, thread.projectId == original.projectId else { return }
+    let key = cacheKey(host, threadId: thread.id)
+    // A restored snapshot retains its original generation. Wait for retired
+    // imports too, so that generation cannot admit an old in-flight callback.
+    guard !hasPendingAttachmentImports(key) else {
+      error = L10n.tr("正在导入附件…")
+      return
+    }
+    guard saved.firstMessageCreations?[key] == nil, saved.outbox?[key] == nil,
+      !sendingKeys.contains(key), !detachingFirstCreationKeys.contains(key),
+      drafts.values[key].map({ $0.text.isEmpty && $0.attachments.isEmpty && $0.operationId == nil }) ?? true else {
+      error = L10n.tr("目标对话已有草稿，原创建记录已保留。")
+      return
+    }
+    if !(saved.workspaces[host.id]?.threads.contains(where: { $0.id == thread.id }) ?? false) { saved.workspaces[host.id]?.threads.insert(thread, at: 0) }
+    drafts.values[key] = original.restoredDraft()
+    if saved.firstMessageCreations == nil { saved.firstMessageCreations = [:] }
+    saved.firstMessageCreations?[key] = original
+    saved.detachedFirstMessageCreations?[target]?.remove(at: index)
+    // Explicit restore only opens the original draft. Sending remains a
+    // separate action with the same original message/attachment identities.
+    openThread(thread)
+    persist()
+  }
+  /// This recovery action performs only the original metadata lookup. The
+  /// immutable first input returns to its own thread draft for explicit continue.
+  func queryFirstMessageCreation() {
+    guard let host = client, let pending = pendingFirstMessageCreation,
+      pending.metadataSubmitted, host.agentConnection?.target == pending.target,
+      !sendingKeys.contains(targetKey) else { return }
+    let originalKey = targetKey, flight = UUID()
+    replySendFlights[originalKey] = flight
+    sendingKeys.insert(originalKey)
+    Task {
+      var adoptedKey: String?
+      defer {
+        for key in Set([originalKey] + (adoptedKey.map { [$0] } ?? [])) where replySendFlights[key] == flight {
+          replySendFlights.removeValue(forKey: key); sendingKeys.remove(key)
+        }
+      }
+      do {
+        let provider = try AgentClients.resolve(host)
+        let thread = try await pending.resolveMetadata(originalOperationId: pending.operationId,
+          create: { _ in throw HostServiceError.invalidResponse },
+          status: { try await provider.threadCreationStatus(host, projectId: pending.projectId, operationId: $0) })
+        guard thread.hostId == host.id, client?.agentConnection?.target == pending.target,
+          saved.firstMessageCreations?[originalKey]?.operationId == pending.operationId,
+          replySendFlights[originalKey] == flight else { return }
+        let key = cacheKey(host, threadId: thread.id)
+        guard key != originalKey else { return }
+        if !(saved.workspaces[host.id]?.threads.contains(where: { $0.id == thread.id }) ?? false) { saved.workspaces[host.id]?.threads.insert(thread, at: 0) }
+        guard !hasPendingAttachmentImports(key) else { throw HostServiceError.message(L10n.tr("正在导入附件…")) }
+        guard drafts.values[key] == nil else { throw HostServiceError.invalidResponse }
+        drafts.values[key] = pending.restoredDraft()
+        saved.firstMessageCreations?[key] = pending
+        saved.firstMessageCreations?.removeValue(forKey: originalKey)
+        adoptedKey = key; replySendFlights[key] = flight; sendingKeys.insert(key)
+        if let current = drafts.values[originalKey] {
+          drafts.values[originalKey] = pending.draftAfterMovingOriginal(current)
+        }
+        try await persistBeforeCommand()
+        if targetKey == originalKey, replySendFlights[key] == flight {
+          selectedThreadId = thread.id
+          saved.lastThreads[host.id] = thread.id
+          saved.newProjects.removeValue(forKey: host.id)
+          persist()
+        }
+      } catch {
+        if replySendFlights[originalKey] == flight, targetKey == originalKey { presentError(error) }
       }
     }
   }

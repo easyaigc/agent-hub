@@ -1841,6 +1841,11 @@
     <string name="product_9ed9562e174b0f347c847ff0" formatted="false">"This connection cannot resume an attachment of this size. The original file and record are preserved."</string>
     <string name="product_8ffbf37156c7b7fa1a5da82b" formatted="false">"The target chat already has a draft. The original creation record is preserved."</string>
     <string name="product_ba4bf467dff584e5cda000a8" formatted="false">"The first message has not been submitted. The original content is preserved."</string>
+    <string name="product_3ebc3fa02ae597de5301b0d6" formatted="false">"Requested speed"</string>
+    <string name="product_73a6b82f6ee201b139304b06" formatted="false">"Actual speed"</string>
+    <string name="product_c098e854e60b951af9f99747" formatted="false">"Unconfirmed"</string>
+    <string name="product_b6938505e6d19d0a6a59dcac" formatted="false">"Latest response speed"</string>
+    <string name="product_ab1469bc9614d6e0f5ba33a7" formatted="false">"This selects a requested speed. Actual speed requires the service response; missing or conflicting reports remain unconfirmed."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

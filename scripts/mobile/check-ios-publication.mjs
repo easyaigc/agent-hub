@@ -32,6 +32,7 @@ const names = [
   'Approval',
   'DeliveryReceipt',
   'GenerationOptions',
+  'RunGenerationSpeedReport',
   'ThreadRuntime',
 ];
 const issue = source.match(/private struct ConversationSyncIssue[^\n]*/)[0];
@@ -204,6 +205,24 @@ ${region('history-state-publication')}
     var changed = runtime; changed.canControl = true
     storeRuntime(changed, key: "runtime")
     precondition(events.count > baseline, "Control change refreshes UI")
+    // Pure production parser boundaries; this is auxiliary Swift, not a simulator pass.
+    let legacySpeed = RunGenerationSpeedReport.project(["id": "run-a", "status": "completed", "settings": ["speed": "fast"]])
+    precondition(legacySpeed?.requested == "fast" && legacySpeed?.status == "unconfirmed" && legacySpeed?.actual == nil, "A legacy request must not invent an actual speed")
+    for metadata in [
+      ["version": 1, "runId": "other-run", "requested": "fast", "actual": "fast", "status": "reported"],
+      ["version": 1, "runId": "run-a", "requested": "ultrafast", "actual": "fast", "status": "reported"],
+      ["version": 2, "runId": "run-a", "requested": "fast", "actual": "fast", "status": "reported"]
+    ] as [[String: Any]] {
+      let report = RunGenerationSpeedReport.project(["id": "run-a", "status": "completed", "settings": ["speed": "fast"], "generationSpeed": metadata])
+      precondition(report?.status == "unconfirmed" && report?.actual == nil, "Wrong Run/request/version cannot confirm speed")
+    }
+    var speedRun: [String: Any] = ["id": "run-a", "status": "completed", "settings": ["speed": "fast"], "generationSpeed": ["version": 1, "runId": "run-a", "requested": "fast", "actual": "standard", "status": "reported"]]
+    precondition(RunGenerationSpeedReport.project(speedRun)?.actual == "standard", "Actual standard is separate from requested Fast")
+    speedRun["status"] = "running"
+    precondition(RunGenerationSpeedReport.project(speedRun)?.actual == nil, "In-progress reply cannot confirm its complete response speed")
+    let futureRuntime = try JSONDecoder().decode(ThreadRuntime.self, from: Data(#"{"state":"idle","plan":[],"approvals":[],"receipts":[],"generationSpeed":"future format"}"#.utf8))
+    precondition(futureRuntime.state == "idle" && futureRuntime.generationSpeed?.isValid == false, "Unsupported optional speed metadata must not break history")
+    print("PASS: four generation speed parser groups (auxiliary production Swift, not simulator/actualFast)")
     print("PASS: saved publication, metadata durability, first confirmation, binding/snapshot boundaries; complete runtime equality \\(vectors.count) field mutations")
   }
 }

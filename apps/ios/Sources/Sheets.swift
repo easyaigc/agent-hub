@@ -900,6 +900,12 @@ struct GenerationSettings: View {
                             .font(.caption).foregroundStyle(Palette.secondary)
                     } header: { Text(L10n.tr("下次发送")) }
                 }
+                if let report = store.runtime?.generationSpeed, report.isValid {
+                    Section(L10n.tr("最近一次回复速度")) {
+                        LabeledContent(L10n.tr("请求速度"), value: store.speedLabel(report.requested)).accessibilityIdentifier("last-requested-speed")
+                        LabeledContent(L10n.tr("实际速度"), value: report.status == "reported" ? store.speedLabel(report.actual) : L10n.tr("未确认")).accessibilityIdentifier("last-actual-speed")
+                    }
+                }
                 Section(L10n.tr("选择模型")) {
                     Picker(L10n.tr("模型"), selection: Binding(get: { store.draft.model ?? store.runtime?.generationSettings?.model ?? store.selectedModel?.id ?? "" }, set: { store.model = $0 })) {
                         Text(L10n.tr("跟随电脑")).tag("")
@@ -925,7 +931,7 @@ struct GenerationSettings: View {
                     }.pickerStyle(.menu).accessibilityIdentifier("effort-picker")
                 }
                 if store.supportsGenerationSpeed {
-                    Section(L10n.tr("速度")) {
+                    Section(L10n.tr("请求速度")) {
                         if store.availableSpeeds.contains("ultrafast") || (store.availableSpeeds.contains("fast") && !store.availableSpeeds.contains("standard")) {
                             Picker(L10n.tr("速度模式"), selection: Binding(get: { store.selectedSpeed ?? "" }, set: { store.speed = $0 })) {
                                 Text(L10n.tr("跟随电脑")).tag("")
@@ -941,6 +947,8 @@ struct GenerationSettings: View {
                             }
                         }
                         Button(L10n.tr("跟随电脑速度")) { store.speed = "" }.accessibilityIdentifier("reset-speed")
+                        Text(L10n.tr("选择的是请求速度；实际档位以服务方回报为准，未回报或回报不一致时显示未确认。"))
+                            .font(.caption).foregroundStyle(Palette.secondary)
                         Text(store.availableSpeeds.contains("fast") ? L10n.tr("加快模型响应，增加用量消耗。") : L10n.tr("当前模型未提供加速模式。"))
                             .font(.caption).foregroundStyle(Palette.secondary)
                     }

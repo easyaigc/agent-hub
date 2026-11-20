@@ -634,6 +634,49 @@ struct DeliveryReceipt: Identifiable, Codable, Equatable {
     turnId?.isEmpty == false ? L10n.tr("任务执行失败") : L10n.tr("消息提交失败")
   }
 }
+/// Optional observation metadata must not prevent an older history from opening.
+struct RunGenerationSpeedReport: Codable, Equatable {
+  var version: Int = 1
+  var runId: String
+  var requested: String?
+  var actual: String?
+  var status: String
+
+  var isValid: Bool { version == 1 && !runId.isEmpty && ["reported", "unconfirmed"].contains(status) }
+  private enum CodingKeys: String, CodingKey { case version, runId, requested, actual, status }
+  init(runId: String, requested: String?, actual: String? = nil, status: String = "unconfirmed") {
+    self.runId = runId; self.requested = Self.speed(requested)
+    self.actual = Self.speed(actual); self.status = status
+  }
+  init(from decoder: Decoder) throws {
+    let value = try? decoder.container(keyedBy: CodingKeys.self)
+    version = (try? value?.decode(Int.self, forKey: .version)) ?? 0
+    runId = (try? value?.decode(String.self, forKey: .runId)) ?? ""
+    requested = Self.speed(try? value?.decode(String.self, forKey: .requested))
+    actual = Self.speed(try? value?.decode(String.self, forKey: .actual))
+    status = (try? value?.decode(String.self, forKey: .status)) ?? "unconfirmed"
+    if status != "reported" { actual = nil }
+    if status == "reported" && actual == nil { status = "unconfirmed" }
+  }
+  private static func speed(_ value: String?) -> String? {
+    guard let value, ["standard", "fast", "ultrafast"].contains(value) else { return nil }
+    return value
+  }
+  static func project(_ run: [String: Any]?) -> Self? {
+    guard let run, let id = run["id"] as? String, !id.isEmpty else { return nil }
+    let requested = Self.speed((run["settings"] as? [String: Any])?["speed"] as? String)
+    if let value = run["generationSpeed"], JSONSerialization.isValidJSONObject(value),
+       let bytes = try? JSONSerialization.data(withJSONObject: value),
+       let report = try? JSONDecoder().decode(Self.self, from: bytes),
+       report.isValid, report.runId == id, report.requested == requested {
+      if run["status"] as? String == "completed" { return report }
+      return Self(runId: id, requested: requested)
+    }
+    // A recorded request is useful even when an older Host has no observation.
+    return requested.map { Self(runId: id, requested: $0) }
+  }
+}
+
 struct ThreadRuntime: Codable, Equatable {
   var state: String
   var turnId: String?
@@ -646,6 +689,7 @@ struct ThreadRuntime: Codable, Equatable {
   var proposedPlan: ProposedPlan? = nil
   var generationSettings: GenerationOptions? = nil
   var suggestionSourceTurnId: String? = nil
+  var generationSpeed: RunGenerationSpeedReport? = nil
 }
 struct EventBatch: Decodable {
   let hostId: String

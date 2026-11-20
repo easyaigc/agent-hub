@@ -1595,3 +1595,7 @@ Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协�
 2026-11-19 Codex iOS 控制请求：原生适配层对 JSON 控制响应增加 ContinuousClock 绝对截止，避免小段数据无限续期空闲超时；连接预算在首次打开前建立并传播到各请求。路径恢复只取消旧安全读取，已提交 POST 仍按原 ID 查询；原草稿／附件和独立文件传输预算保持。Android 不使用此原生实现；源码、辅助、原生与正式 Host 部署分列于[专项记录](acceptance/codex-control-deadline-20261119.md)。
 
 2026-11-19 子历史恢复：`AgentClient.supportsSubagentHistory` 由具体适配器判断读取能力。Codex沿用Host独立capability，EasyWork从已认证runtime的父线程快照投影持久child内容，不要求桌面新增同名Host接口。父/子消息调用同一投影器，UI调用同一消息/工具组组件；完整target、父消息、root、child、branch绑定只读选择和新分页游标。旧摘要与result/transcript格式继续兼容，已提交操作不重放。源码组合曾遗漏完整入口/适配的事实及本次验证边界见[回退核对](acceptance/released-workflow-regressions-20261119.md)。
+
+### 生成速度的请求与回报边界
+
+生成速度输入继续使用已有 GenerationOptions.speed，已提交操作及指纹不变。runtime 可选 generationSpeed 作为只读结果，包含 version=1、runId、requested、status=reported|unconfirmed，只有 reported 才有 actual。供应商 wire 档位由适配层转换；缺失/未知/冲突不可推定实际档位。结果只来自当前目标、聊天及分支所选 Run 的持久化采样记录，不按正文、时间或当前偏好推断。旧端缺少该字段不影响连接、历史及发送。

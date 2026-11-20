@@ -639,3 +639,7 @@ The subsequent Windows P2 launch failed its non-administrator prerequisite on a 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。
 
 2026-11-19 已发布交互回退修复：EasyWork专用子历史与共用呈现恢复，含完整目标/归属/分支校验、有界分页和父子同投影；现存record的空checkpoint不能单独证明过程丢失，result.content亦是原始持久来源。生产Swift边界与默认原生基线8项纳入Gitea CI；本地合成UI、真实Electron/持久数据及原生交互、正式CI和主线交付分别记于[本轮记录](acceptance/released-workflow-regressions-20261119.md)。配置或编译通过不代替真实验收，F20剩余矩阵、Android及F75/A6暂停边界保持。
+
+### F36 速度回报的验证边界
+
+模型目录和 speed 请求参数只能证明可选择与已请求。新增可选 Run 结果区分请求/回报；旧记录没有回报时显示未确认。EasyWork 实际 Fast 正向必须取得对应请求的明确回报；混合 auto/default 或单次耗时不构成 Fast 通过。开发、辅助检查、模拟器/桌面验收和主线交付分别登记唯一计划。

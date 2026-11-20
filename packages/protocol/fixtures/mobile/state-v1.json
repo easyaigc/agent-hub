@@ -2358,6 +2358,36 @@
       "definition": "runtime",
       "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"canControl\":false,\"suggestionSourceTurnId\":7}",
       "valid": false
+    },
+    {
+      "name": "runtime-speed-requested-fast-unconfirmed",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"generationSpeed\":{\"version\":1,\"runId\":\"run-example\",\"requested\":\"fast\",\"status\":\"unconfirmed\"}}",
+      "valid": true
+    },
+    {
+      "name": "runtime-speed-future-observation-keeps-history",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"generationSpeed\":{\"version\":2,\"runId\":\"run-example\",\"status\":\"future\"}}",
+      "valid": true
+    },
+    {
+      "name": "runtime-speed-future-shape-keeps-history",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"generationSpeed\":\"future extension\"}",
+      "valid": true
+    },
+    {
+      "name": "speed-v1-confirmation-requires-actual",
+      "definition": "runGenerationSpeedReport",
+      "json": "{\"version\":1,\"runId\":\"run-example\",\"requested\":\"fast\",\"status\":\"reported\"}",
+      "valid": false
+    },
+    {
+      "name": "speed-v1-standard-response-independent-of-fast-request",
+      "definition": "runGenerationSpeedReport",
+      "json": "{\"version\":1,\"runId\":\"run-example\",\"requested\":\"fast\",\"actual\":\"standard\",\"status\":\"reported\"}",
+      "valid": true
     }
   ],
   "toolPresentation": [

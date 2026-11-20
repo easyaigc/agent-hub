@@ -1841,6 +1841,11 @@
     <string name="product_9ed9562e174b0f347c847ff0" formatted="false">"此连接暂不能继续该大小的附件，原文件和原记录已保留。"</string>
     <string name="product_8ffbf37156c7b7fa1a5da82b" formatted="false">"目标对话已有草稿，原创建记录已保留。"</string>
     <string name="product_ba4bf467dff584e5cda000a8" formatted="false">"首条消息尚未提交，原内容已保留。"</string>
+    <string name="product_3ebc3fa02ae597de5301b0d6" formatted="false">"请求速度"</string>
+    <string name="product_73a6b82f6ee201b139304b06" formatted="false">"实际速度"</string>
+    <string name="product_c098e854e60b951af9f99747" formatted="false">"未确认"</string>
+    <string name="product_b6938505e6d19d0a6a59dcac" formatted="false">"最近一次回复速度"</string>
+    <string name="product_ab1469bc9614d6e0f5ba33a7" formatted="false">"选择的是请求速度；实际档位以服务方回报为准，未回报或回报不一致时显示未确认。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

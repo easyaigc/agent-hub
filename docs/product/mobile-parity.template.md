@@ -355,3 +355,7 @@ iOS 将电脑返回的全部待处理异步问题交给现有分页面板；异�
 ### F22：EasyWork 权威压缩状态（2026-11-20）
 
 iOS 源码候选从桌面 canonical snapshot 的可选压缩状态显示进行中和终态，绑定原聊天、Run、分支及压缩操作；多个操作分别呈现，空 pending 水位不因保留 started 事件重新转圈。只有已安装检查点报告完成，失败、取消、跳过与未知分开显示。旧端未提供该字段时继续读取既有历史诊断，错误的可选元数据不影响普通聊天读取；不新增压缩执行接口。共享 KMP 文案补齐“已跳过”，Android 仅同步此词条及共享呈现规则，EasyWork 实时适配和原生验收仍独立记录。当前源码、辅助检查、真实模拟器及实际运行包分别见[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。
+
+### F36 请求速度与实际结果（新增反馈范围）
+
+共同断言：生成速度设置表示请求，不承诺服务方实际采用。通用 runtime 可选 generationSpeed 包含 version=1、runId、requested、status 及已回报时的 actual；只关联当前目标/聊天/分支的准确 Run。缺失、未知或冲突回报显示未确认，旧 Host 未提供回报仍可读取。iOS 设置页显示最近一次回复的请求/实际结果；EasyWork 桌面任务信息使用同一语义。Android 需同步此可选字段与展示；本次不登记 Android 新通过。当前实现/验收/交付只读唯一计划 status.json 的 F36-generation-speed。

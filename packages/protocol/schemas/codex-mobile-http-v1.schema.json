@@ -260,6 +260,9 @@
               "const": null
             }
           ]
+        },
+        "generationSpeed": {
+          "description": "Optional read-only observation extension. Readers normalize the documented runGenerationSpeedReport v1 shape and ignore unsupported or malformed versions without rejecting ordinary history. Not command input."
         }
       }
     },
@@ -608,7 +611,14 @@
           ]
         },
         "submissionState": {
-          "oneOf": [{ "enum": ["not-submitted"] }, { "const": null }]
+          "oneOf": [
+            {
+              "enum": ["not-submitted"]
+            },
+            {
+              "const": null
+            }
+          ]
         },
         "supersededByTurnId": {
           "oneOf": [
@@ -1422,7 +1432,9 @@
         },
         "decisionLabels": {
           "type": "object",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "sourceItemId": {
           "oneOf": [
@@ -2304,6 +2316,56 @@
           ]
         }
       }
+    },
+    "runGenerationSpeedReport": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["version", "runId", "status", "actual"],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "requested": {
+              "enum": ["standard", "fast", "ultrafast"]
+            },
+            "status": {
+              "const": "reported"
+            },
+            "actual": {
+              "enum": ["standard", "fast", "ultrafast"]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["version", "runId", "status"],
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "requested": {
+              "enum": ["standard", "fast", "ultrafast"]
+            },
+            "status": {
+              "const": "unconfirmed"
+            },
+            "actual": {
+              "const": null
+            }
+          }
+        }
+      ]
     }
   }
 }

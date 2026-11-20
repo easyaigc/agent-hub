@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-20 F09／F72：共同操作向量和生产 Swift requestData／桌面 RemoteCommandService 的故障回归作为辅助证据。原生模拟器、真实 Electron、原输入无重复与正式合并分别登记，未执行不得记通过；Android 与暂停项不新增通过。当前状态只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+
 2026-11-20 F35/F41（S06/S09）：将已验候选的命令审批保护移入当前主线候选，保留原once/session/once_only/deny及双端竞争的实际证据。生产Swift方法辅助检查覆盖能力缺失零写入、完整身份/目标、实际回执/作用域及旧端单次确认；不重放原审批、不新增模型输入。原证据匹配、辅助结果、真实PR合并及部署分别回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)，不补签Android或跨重启会话许可。
 
 2026-11-20 F72/S04/S18：逐组件匹配原真实文档、中文/嵌套链接、来源变化拒绝、同进程父返回/重开位置、认证回复取消和进度证据。新增原生辅助直接调用生产Docv1校验及Codable/阅读身份，不代替GUI迟到竞态、冷启位置或完整矩阵。桌面PR73与iOS交付分别登记，普通下载边界保持。Android内部导航未新增通过；结果只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。

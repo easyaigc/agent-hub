@@ -1,5 +1,7 @@
 # 文档索引
 
+跨客户端接入必须遵守 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)：复用现有 App 与实际 Host 契约，差异留在 Host／Adapter，操作分类、回执与恢复按共同语义审查。
+
 持续适用的升级原则见 [全局设计规范：版本演进与兼容](design/compatibility.md)：默认保留已有功能，独立协商新能力；不兼容例外须说明影响并提供迁移、回退与回归安排。
 
 iOS 对接 EasyWork 的唯一计划入口为 [对齐总览](plans/ios-easywork-alignment-20261112/README.md)，当前状态见 [自动生成进度表](plans/ios-easywork-alignment-20261112/progress.md)。后续开发、验收、交付和阻塞统一更新该计划的 `status.json`，旧计划与矩阵仅保留历史证据；不在其他文档独立维护本任务完成数。规则见 [维护约定](plans/ios-easywork-alignment-20261112/maintenance.md)。

@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+跨 Codex／EasyWork 的统一要求见 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)。已有能力以实际运行时契约和对应已实现解析器为基准，统一操作、完整目标、能力、错误、回执及恢复语义；认证和 wire 差异限制在适配边界。早期领域草案或相同 Schema 摘要不等于生产调用统一，不为接入草案类型另造并行协议。
+
 2026-11-20 F22 源码候选：EasyWork 适配层读取现有 thread/sync canonical snapshot 的可选 contextCompressionState，不新增方法或执行命令。验证其 threadId、runId、branchRevision 与当前 thread/activeRun，cursor 使用既有安全整数和来源契约；pending 按原 compressionOperationId／generationId 区分，空集合保留终态水位，不从旧 started 或通用 item/delta 状态猜测仍在压缩。block_created 仅在检查点已安装且未报告持久化失败时显示完成，rejected 保留取消／跳过／失败；未知或错误可选状态不妨碍旧历史读取。缺字段的旧端继续使用既有诊断投影，目标、事件游标、分页、缓存和原输入去重规则保持。真实结果只见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-20 F35/F41：通用审批仍由原Host执行并约束作用域。EasyWork适配使用既有approval/respond：threadId、serverRequestId承载原threadId/runId/toolCallId/operationId/requestHash身份，decision为approve/deny，只有acceptForSession映射remember=true。会话动作要求approvals、approvals:remember:session:v1与approvals:decision-receipt:v1；收到v1决策回执须核对完整原身份、决定和once/session作用域，冲突/过期/禁止会话不冒充成功。旧端缺少可选回执能力时保留单次布尔确认。桌面会话许可/settled状态属进程内确认服务，独立持久command journal不表示会话许可跨重启。问题回答继续使用serverRequest/resolve，不引入任意wire透传。

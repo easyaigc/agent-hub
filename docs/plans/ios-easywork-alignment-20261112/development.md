@@ -6,6 +6,8 @@
 
 ## 一套公共协议，两种适配实现
 
+后续实施必须遵守 [统一 Host 协议与客户端适配规范](../../design/unified-host-protocol.md)。本计划的工作包是缺口与验收索引，不是为 EasyWork 重新开发 App 的清单。先列实际契约和调用链，已有能力复用，Host／Adapter 补上游缺口，App 只补必要适配或共同缺陷；禁止为接入未使用的公共命令草案增加第三套协议。操作分类、错误、回执与恢复须按共同来源核对，公共界面不按客户端名称复制业务规则。
+
 用户要求的“与 Codex Host 相同协议”落实为：**公共层只有一份版本化领域模型、具名操作、能力描述、错误/回执状态机和验收断言**。不新增 EasyWork 专属业务规则副本；Codex JSON-RPC 和 EasyWork v2/EWDAP/1 留在各自 Adapter/Transport 内。现有 HTTPS 与加密 WSS/Relay 可以不同，不能借统一协议删除 EasyWork 的 account/grant/DPoP 或套用 Codex Host Key。
 
 | 边界         | 统一要求                                                                                              | 实现位置                                                                             |

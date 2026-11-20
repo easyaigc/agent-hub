@@ -167,6 +167,7 @@ actor EasyWorkRemoteSession {
   private var responses: [String: [String: Any]] = [:]
   #if DEBUG
   private var fileCompletionFaultConsumed = false
+  private var droppedReadRequestId: String?
   #endif
   private var pendingRequestIds: Set<String> = []
   private var events: [[String: Any]] = []
@@ -188,8 +189,8 @@ actor EasyWorkRemoteSession {
   private var closed = false
   private static let readMethods: Set<String> = [
     "thread/open-status",
-    "usage/read", "runtime/context", "runtime/summary", "project/list", "thread/list", "thread/search",
-    "thread/read", "thread/history", "thread/sync", "thread/subscribe", "thread/unsubscribe",
+    "usage/read", "runtime/context", "runtime/summary", "project/list", "project/git/status", "project/git/files", "thread/list", "thread/search",
+    "thread/read", "thread/history", "thread/sync",
     "thread/suggestion/read",
     "thread/fork-options", "thread/fork-status", "workspace/manage-status", "thread/read-state", "thread/read-state-list",
     "model/list", "queue/list", "queue/status",
@@ -199,7 +200,7 @@ actor EasyWorkRemoteSession {
     "resource/upload-status", "command/status",
     "notification/status", "notification/events",
   ]
-  private static let subscriptionMethods: Set<String> = ["notification/register", "notification/unregister", "notification/preferences"]
+  private static let subscriptionMethods: Set<String> = ["thread/subscribe", "thread/unsubscribe", "notification/register", "notification/unregister", "notification/preferences"]
   private(set) var epoch = UUID().uuidString
   private(set) var eventSequence = 0
   #if DEBUG
@@ -437,6 +438,25 @@ actor EasyWorkRemoteSession {
             throw EasyWorkRemoteRejection(code: error?["code"] as? String, message: message)
           }
           #if DEBUG
+          // Drop only an authenticated read result in the dedicated acceptance App.
+          // The Host has performed the original read; normal recovery must keep its identity.
+          if droppedReadRequestId == nil,
+            ["project/git/status", "project/git/files", "resource/resolve-document-link"].contains(method),
+            Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+            ProcessInfo.processInfo.arguments.contains("-read-recovery-acceptance"),
+            ProcessInfo.processInfo.arguments.contains("-easywork-local-dev"),
+            ProcessInfo.processInfo.environment["EASYWORK_DROP_READ_COMPLETION_METHOD"] == method,
+            let scopeId = ProcessInfo.processInfo.environment["EASYWORK_DROP_READ_SCOPE_ID"], !scopeId.isEmpty,
+            (try easyWorkObject(params))[method == "resource/resolve-document-link" ? "threadId" : "projectId"] as? String == scopeId,
+            ProcessInfo.processInfo.environment["EASYWORK_DROP_READ_TARGET_SHA256"] == HostService.hash(try easyWorkJSON(target.dictionary)) {
+            droppedReadRequestId = id
+            diagnostic("read-completion-dropped", "\(method):\(id)")
+            throw URLError(.networkConnectionLost)
+          }
+          if droppedReadRequestId == id,
+            ProcessInfo.processInfo.environment["EASYWORK_DROP_READ_COMPLETION_METHOD"] == method {
+            diagnostic("read-completion-recovered", "\(method):\(id)")
+          }
           if await EasyWorkFilePrepareReconciliationFault.shared.consume(target: target, method: method, id: id) {
             throw URLError(.networkConnectionLost)
           }

@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "scope": "Existing named Host operation recovery mapping; no new endpoint, permission or write replay authorization. Queries still validate exact runtime/resource target.",
+  "readQueries": [
+    "filesystem/access-status",
+    "filesystem/list-directories",
+    "filesystem/list-entries",
+    "filesystem/roots",
+    "model/list",
+    "notification/events",
+    "notification/status",
+    "project/git/files",
+    "project/git/status",
+    "project/list",
+    "queue/list",
+    "queue/status",
+    "resource/download",
+    "resource/read",
+    "resource/resolve",
+    "resource/resolve-document-link",
+    "resource/transfer-list",
+    "resource/upload-status",
+    "runtime/context",
+    "runtime/summary",
+    "thread/fork-options",
+    "thread/fork-status",
+    "thread/history",
+    "thread/list",
+    "thread/read",
+    "thread/read-state",
+    "thread/read-state-list",
+    "thread/search",
+    "thread/suggestion/read",
+    "thread/sync",
+    "usage/read",
+    "voice/readiness",
+    "voice/status",
+    "workspace/manage-status"
+  ],
+  "subscriptionManagement": [
+    "thread/subscribe",
+    "thread/unsubscribe",
+    "notification/register",
+    "notification/unregister",
+    "notification/preferences"
+  ],
+  "originalReceiptQueries": ["command/status", "thread/open-status"],
+  "writeExamples": [
+    "turn/start",
+    "turn/steer",
+    "plan/action",
+    "resource/upload-complete",
+    "thread/manage",
+    "workspace/manage",
+    "thread/acknowledge-read"
+  ],
+  "unknownMethodRecovery": "original-receipt-only",
+  "cases": [
+    {
+      "method": "project/git/status",
+      "kind": "read",
+      "params": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "easywork",
+          "hostId": "desktop",
+          "workspaceId": "workspace",
+          "runtimeId": "runtime"
+        },
+        "projectId": "project",
+        "refresh": true
+      }
+    },
+    {
+      "method": "project/git/files",
+      "kind": "read",
+      "params": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "easywork",
+          "hostId": "desktop",
+          "workspaceId": "workspace",
+          "runtimeId": "runtime"
+        },
+        "projectId": "project",
+        "snapshotId": "snapshot",
+        "worktreeId": "tree"
+      }
+    },
+    {
+      "method": "resource/resolve-document-link",
+      "kind": "read",
+      "params": {
+        "version": 1,
+        "target": {
+          "account": {
+            "authority": "https://account.example",
+            "subject": "owner"
+          },
+          "desktopDeviceId": "desktop",
+          "workspaceId": "workspace",
+          "runtimeId": "runtime"
+        },
+        "threadId": "thread",
+        "source": {
+          "resourceId": "resource",
+          "grantId": "grant",
+          "version": "source-version",
+          "messageId": "message",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "reference": "./child.md"
+      }
+    }
+  ]
+}

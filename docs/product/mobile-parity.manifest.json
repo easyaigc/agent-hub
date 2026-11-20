@@ -4219,6 +4219,11 @@
       "apps/android/src/androidTest/assets/localization-catalog.json",
       "apps/android/src/main/res/values/product_strings.xml",
       "apps/android/src/main/res/values-zh/product_strings.xml"
+    ],
+    "HostReadRecovery": [
+      "apps/ios/Sources/EasyWorkSession.swift",
+      "scripts/easywork-operation-recovery.test.mjs",
+      "packages/protocol/fixtures/mobile/operation-recovery-v1.json"
     ]
   },
   "groups": [
@@ -4680,11 +4685,12 @@
         "AndroidDiscoveryTargetValueLayoutMeasurement",
         "AndroidNsdSdkTerminalGenerationOwners",
         "AndroidFormLifecycleOwningComposeClock",
-        "AndroidReadonlyTargetFiniteColumnLayout"
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "HostReadRecovery"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 24,
+      "revision": 25,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4694,7 +4700,7 @@
         "android": "not-verified"
       },
       "androidStages": ["A2", "A5"],
-      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open. 2026-11-19 iOS对齐既有EasyWork桌面JSON安全整数边界，保持旧信封兼容；原同会话订阅恢复和原操作去重模拟器/真实桌面通过按准确源码复用，未新增业务输入。Android保持其既有安全整数实现和独立验收边界。状态见iOS×EasyWork唯一计划，授权恢复其余子项不补签。"
+      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. 数值修复候选：原始sequence/version在AAD/回放键前严格验证，原API26/真机42.5基线失败保留，修复原生待验；合法Node/legacy与安全整数边界需保持。iOS只读Foundation门槛有4差异，未据此宣称iOS完整解密失败或通过，A6不动。 PAR3 easywork-transport: exact source checkpoint integrated; native/real product acceptance separate and pending. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open. 2026-11-19 iOS对齐既有EasyWork桌面JSON安全整数边界，保持旧信封兼容；原同会话订阅恢复和原操作去重模拟器/真实桌面通过按准确源码复用，未新增业务输入。Android保持其既有安全整数实现和独立验收边界。状态见iOS×EasyWork唯一计划，授权恢复其余子项不补签。 2026-11-20: ALIGN01 audits real Host/adapter/read recovery; Git queries remain safe reads and document-link queries preserve source authorization. Shared vectors and auxiliary requestData checks do not replace simulator/Electron acceptance; Android unchanged, F75/A6 paused."
     },
     {
       "id": "F10",
@@ -8454,12 +8460,13 @@
         "AndroidMarkdownReader",
         "AndroidNativeProbeStrictSynchronousTransport",
         "IOSReleaseCompatibility",
-        "EasyWorkDocumentLinks"
+        "EasyWorkDocumentLinks",
+        "HostReadRecovery"
       ],
       "androidStages": ["A4"],
       "scenarios": ["S04", "S18"],
       "ui": ["UI05", "UI07", "UI12"],
-      "revision": 6,
+      "revision": 7,
       "implementation": {
         "ios": "implemented",
         "android": "in-progress"
@@ -8475,7 +8482,7 @@
           "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/FilePreviewRules.kt"
         ]
       },
-      "sourceNotes": "iOS 原生核心阅读闭环本次通过，完整 UI／失败与隔离组合仍待验；Android 已编译但原生待验。解析／KMP／构建与真实结果见 docs/acceptance/file-preview-20261026.md；图片为显式打开引用，相对资源导航、图表和编辑未实现，A6 保持暂停。正式产品未部署，不关闭完整 F72。 Android对照I4源合并中：保留既有受控资源卡片与读取边界，新增阅读器源码尚未接入当前卡片入口；入口、完整本地化和原生UI矩阵将按I4后续补齐，不以主线编译或iOS真机替代。 I4源集成中：对账N053至N065共13节点，保留既有资源/附件/回调与本地化边界；新增当前模型/强度与下次发送分离，适配Android空字符串草稿。Android Markdown新阅读入口及图片多选预览仍待后续，iOS旧真机结果不升级。 I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。 I4-2：Android阅读器改由原消息授权下载快照进入，按目标和文件版本隔离阅读点；源码原文、表格横滑、目录/搜索、原入口重试、迟到回调与共享只读URI正在原生验收。UTF-8 BOM首标题解析已修复，保留原文件及CRLF；完整真实资源、格式和系统矩阵未关闭。 I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。 2026-11-15：消息文件准备卡新增Codex实际网络字节／EasyWork原分块进度，保留主线目标隔离、缓存及受验证导出；共用显示组件属于F72影响面，未合入其他文档导航候选。Android同等UI待对齐，源码和验收分列，见 docs/acceptance/file-download-progress-20261114.md。 2026-11-19：整合本地已发布114功能与更新主线，保留目标、权限、原操作和主线后续保护。子Agent具名只读分页独立协商；新组合辅助／原生／真实DEV／部署分列，见docs/acceptance/mainline-release-compatibility-20261119.md，不升级完整功能或Android A6状态。 iOS文档内相对文件／标题链接按原文与摘要授权，Android对应文档内跳转未验。 2026-11-20: EasyWork Docv1 source/echo checks, stable validated message reading identity and cancellation ownership are ported from the accepted candidate. Attachments without a message source retain their legacy reading key. Desktop authority/final publication merged as BCAI/comfy-desktop PR73. Original scoped evidence is matched separately; cold position and full matrix remain open. Android internal navigation remains unverified. Current progress: docs/plans/ios-easywork-alignment-20261112/README.md."
+      "sourceNotes": "iOS 原生核心阅读闭环本次通过，完整 UI／失败与隔离组合仍待验；Android 已编译但原生待验。解析／KMP／构建与真实结果见 docs/acceptance/file-preview-20261026.md；图片为显式打开引用，相对资源导航、图表和编辑未实现，A6 保持暂停。正式产品未部署，不关闭完整 F72。 Android对照I4源合并中：保留既有受控资源卡片与读取边界，新增阅读器源码尚未接入当前卡片入口；入口、完整本地化和原生UI矩阵将按I4后续补齐，不以主线编译或iOS真机替代。 I4源集成中：对账N053至N065共13节点，保留既有资源/附件/回调与本地化边界；新增当前模型/强度与下次发送分离，适配Android空字符串草稿。Android Markdown新阅读入口及图片多选预览仍待后续，iOS旧真机结果不升级。 I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。 I4-2：Android阅读器改由原消息授权下载快照进入，按目标和文件版本隔离阅读点；源码原文、表格横滑、目录/搜索、原入口重试、迟到回调与共享只读URI正在原生验收。UTF-8 BOM首标题解析已修复，保留原文件及CRLF；完整真实资源、格式和系统矩阵未关闭。 I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。 2026-11-15：消息文件准备卡新增Codex实际网络字节／EasyWork原分块进度，保留主线目标隔离、缓存及受验证导出；共用显示组件属于F72影响面，未合入其他文档导航候选。Android同等UI待对齐，源码和验收分列，见 docs/acceptance/file-download-progress-20261114.md。 2026-11-19：整合本地已发布114功能与更新主线，保留目标、权限、原操作和主线后续保护。子Agent具名只读分页独立协商；新组合辅助／原生／真实DEV／部署分列，见docs/acceptance/mainline-release-compatibility-20261119.md，不升级完整功能或Android A6状态。 iOS文档内相对文件／标题链接按原文与摘要授权，Android对应文档内跳转未验。 2026-11-20: EasyWork Docv1 source/echo checks, stable validated message reading identity and cancellation ownership are ported from the accepted candidate. Attachments without a message source retain their legacy reading key. Desktop authority/final publication merged as BCAI/comfy-desktop PR73. Original scoped evidence is matched separately; cold position and full matrix remain open. Android internal navigation remains unverified. Current progress: docs/plans/ios-easywork-alignment-20261112/README.md. 2026-11-20: ALIGN01 audits real Host/adapter/read recovery; Git queries remain safe reads and document-link queries preserve source authorization. Shared vectors and auxiliary requestData checks do not replace simulator/Electron acceptance; Android unchanged, F75/A6 paused."
     },
     {
       "id": "F74",
@@ -22374,6 +22381,17 @@
         "apps/android/src/androidTest/assets/localization-catalog.json": "c709194827408cb6ee2767a2d83a50d9f89f9bac0f9f3e37678737d604e7c1af",
         "packages/protocol/fixtures/mobile/state-v1.json": "8d5ed51f0e5de3f417ea15ce7d0917056dbcee0d67c4c0ada63f79308f917142",
         "scripts/mobile/check-ios-publication.mjs": "7f45b93ad15122e90cb469cd2011cfa6139124369e928aec3f60f19ce5128d45"
+      }
+    },
+    {
+      "id": "host-read-recovery-classification-20261120",
+      "baseCommit": "1d0e71317fb4a100458a83bf0a3a0ec4162240ba",
+      "features": ["F09", "F72"],
+      "summary": "Correct named read recovery classification at existing adapter/journal boundaries, check same vectors, keep subscription management distinct and preserve original-ID-only write recovery. Debug-only acceptance fault may drop an authenticated result for one known read on the exact configured target, allowing real simulator/Host recovery checks; it never fabricates a response or replays business writes. No new UI or Android implementation, no F75/A6 acceptance. Source/auxiliary/runtime/delivery tracked separately in sole ledger. The dedicated DEBUG read-recovery acceptance argument uses the original normal product state directory; generic ui-testing mode is not used on the paired simulator. Fault selection also matches the exact original project/thread scope, so unrelated background reads cannot consume the selected case.",
+      "files": {
+        "apps/ios/Sources/EasyWorkSession.swift": "5b74ff01cbedd873e51402a0ed07025dc5f4de0e6add316cb643131a51d73329",
+        "scripts/easywork-operation-recovery.test.mjs": "651c3b749506b0819b72b3f53e6979d1085183d81db4c55588a345b9b2e5d74b",
+        "packages/protocol/fixtures/mobile/operation-recovery-v1.json": "7aabfe601f0765bebe4f5729cd157519e7bc0abdedbc517cc5f1ff5f3d8cc995"
       }
     }
   ]

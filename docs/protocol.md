@@ -231,3 +231,9 @@ iOS 本地会话增加可选 `firstMessageCreations` 与 `detachedFirstMessageCr
 本地上传记录新增可选 `capturedFile`；旧记录缺字段按原上传路径读取。首条消息的原文件 ID 及准备、分块、完成命令 ID 和原参数保持，字节/目标/清单不符即拒绝。准备前读取原传输；未找到时再查原准备命令，已有回执但缺传输记录则有界结束并保留原件，不新发准备。普通上传的分块摘要 ID、20 MiB 限制与现有续传保持；没有新增远端方法或放宽身份校验。EasyWork 命令命名适配仍留在适配层，公共存储只保存领域文件清单。
 
 新状态存在未决创建或捕获上传时，回退到不理解这些字段的旧 App 可能丢失恢复上下文；须先核清原记录并保留当前加密状态与附件，不能让旧版覆盖后再重发。没有执行旧版回退或宣称任意未来版本可用。iOS 与 Android 及旧/新桌面组合分别按实际实现和证据核对，当前状态只见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+
+## EasyWork 异步问题集合与回答确认（2026-11-20）
+
+iOS 适配读取 questionStates 中全部 pending 异步请求；旧端未提供集合时保留 pendingQuestion 回退，阻塞问题继续使用原等待语义。异步请求不把真实 running、paused 或已结束状态改成等待审批。领域 Approval 承载原 threadId/runId/sessionId/toolCallId 和问题内容，身份排除可变回答及状态元数据；命令审批仍使用独立原身份与权限回执规则。
+
+回答沿用具名 serverRequest/resolve 和原 kind/action/请求引用，校验原身份、问题键、选项、多选与自定义限制。answer 只认 accepted=true，skip/deny 只认 abandoned=true；未确认不报告成功，不由此重放原操作。桌面已实现的同步／异步服务及严格身份处置保持；公共协议、传输和登录不新增方法或参数。本次源码、辅助检查与原限定真实证据分别记录于[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。

@@ -813,23 +813,18 @@ struct EasyWorkAgentClient: AgentClient {
     guard thread["id"] as? String == threadId else { throw HostServiceError.wrongHost }
     let active = snapshot["activeRun"] as? [String: Any]
     let pendingApproval = snapshot["pendingPermissionConfirmation"] as? [String: Any]
-    let pendingQuestion = snapshot["pendingQuestion"] as? [String: Any]
+    let questions = try EasyWorkQuestionProjection.approvals(snapshot: snapshot, threadId: threadId)
     let control = snapshot["runControl"] as? [String: Any]
     let latest = snapshot["latestRun"] as? [String: Any]
     let terminalStatus = latest?["status"] as? String
-    let state = pendingApproval != nil || pendingQuestion != nil ? "waiting-for-approval" : control?["phase"] as? String == "paused" ? "paused" : active != nil ? runState(active) : ["failed", "cancelled", "interrupted"].contains(terminalStatus ?? "") ? terminalStatus! : "idle"
+    let state = pendingApproval != nil || questions.contains(where: { $0.interactionMode != "async" }) ? "waiting-for-approval" : control?["phase"] as? String == "paused" ? "paused" : active != nil ? runState(active) : ["failed", "cancelled", "interrupted"].contains(terminalStatus ?? "") ? terminalStatus! : "idle"
     var approvals: [Approval] = []
     if let request = pendingApproval {
       let context = try object(await channel.request("runtime/context", [:]))
       approvals.append(try permissionApproval(request, threadId: threadId,
         capabilities: context["capabilities"] as? [String] ?? []))
     }
-    if let request = pendingQuestion {
-      let questions = (request["questions"] as? [[String: Any]] ?? []).map { question in
-        ApprovalQuestion(id: question["header"] as? String ?? L10n.tr("问题"), question: question["question"] as? String ?? "", options: (question["options"] as? [[String: Any]])?.map { QuestionOption(label: $0["label"] as? String ?? "", description: $0["description"] as? String ?? "") }, isSecret: question["isSecret"] as? Bool, multiple: question["multiple"] as? Bool, custom: question["custom"] as? Bool)
-      }
-      approvals.append(Approval(id: "question." + (try easyWorkJSON(request)).base64URL, threadId: threadId, turnId: request["runId"] as? String ?? "", kind: "question", title: L10n.tr("需要你的回答"), detail: "", questions: questions, decisions: ["answer", "deny"], notificationRequestId: request["toolCallId"] as? String))
-    }
+    approvals.append(contentsOf: questions)
     var messages = try await projectMessages(value["messages"] as? [[String: Any]] ?? [],
       client: client, threadId: threadId, channel: channel)
     if cursor == nil {
@@ -1111,22 +1106,8 @@ struct EasyWorkAgentClient: AgentClient {
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult {
     let channel = try await session(client)
     let result: [String: Any]
-    if approval.id.hasPrefix("question."), let data = Data(base64URL: String(approval.id.dropFirst(9))) {
-      let question = try object(easyWorkObject(data))
-      var params: [String: Any] = ["threadId": approval.threadId, "kind": "question", "action": decision == "deny" ? "abandon" : "answer", "serverRequestId": question["toolCallId"] ?? "", "sessionId": question["sessionId"] ?? "", "runId": approval.turnId]
-      if decision != "deny" {
-        params["answer"] = ["questions": try approval.questions.map { item -> [String: Any] in
-          let values = (answers[item.id] ?? []).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-          let labels = Set((item.options ?? []).map(\.label))
-          let selected = values.filter { labels.contains($0) }
-          let custom = values.filter { !labels.contains($0) }.joined(separator: "\n")
-          guard !values.isEmpty, item.multiple == true || selected.count <= 1, custom.isEmpty || item.custom != false else { throw HostServiceError.message(L10n.tr("回答不符合此问题的选项规则")) }
-          var answer: [String: Any] = ["header": item.id]
-          if !selected.isEmpty { answer["selectedOptions"] = selected }
-          if !custom.isEmpty { answer["customAnswer"] = custom }
-          return answer
-        }]
-      }
+    if approval.id.hasPrefix("question.") {
+      let params = try EasyWorkQuestionProjection.resolution(approval: approval, decision: decision, answers: answers)
       result = try object(await channel.request("serverRequest/resolve", params))
     } else {
       guard approval.kind == "command", approval.decisions.contains(decision),
@@ -1151,7 +1132,7 @@ struct EasyWorkAgentClient: AgentClient {
       return try permissionDecisionResult(result, identity: identity, decision: decision,
         receiptRequired: capabilities.contains("approvals:decision-receipt:v1"))
     }
-    return CommandResult(ok: result["accepted"] as? Bool == true || result["denied"] as? Bool == true)
+    return CommandResult(ok: EasyWorkQuestionProjection.resolutionSucceeded(result, decision: decision))
   }
   private func independentFile(_ client: Client, _ value: [String: Any], directory: String) throws -> ComputerFileReceipt {
     guard value["purpose"] as? String == "transfer", value["direction"] as? String == "mobile-to-desktop",

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,8 +28,14 @@ test(
   'production EasyWork approval decisions preserve identity and gate session grants',
   { skip: process.platform !== 'darwin' },
   async () => {
-    const paths = ['EasyWorkAgentClient', 'Models', 'NotificationModels', 'EasyWorkTransport'];
-    const [source, models, targets, transport] = await Promise.all(
+    const paths = [
+      'EasyWorkAgentClient',
+      'Models',
+      'NotificationModels',
+      'EasyWorkTransport',
+      'EasyWorkQuestions',
+    ];
+    const [source, models, targets, transport, questionsSource] = await Promise.all(
       paths.map((name) =>
         readFile(join(repository, 'apps/ios/Sources/' + name + '.swift'), 'utf8'),
       ),
@@ -47,9 +54,11 @@ test(
         declaration(transport, 'extension Data {'),
         declaration(transport, 'func easyWorkJSON('),
         declaration(transport, 'func easyWorkObject('),
+        declaration(questionsSource, 'enum EasyWorkQuestionProjection {'),
       ].join('\n');
       const methods = [
         declaration(source, 'private func object(_ value: Any)'),
+        declaration(source, 'private func runState('),
         declaration(source, 'private func readingTarget(_ target: EasyWorkTarget)'),
         declaration(source, 'private func permissionDecisionResult(').replace(
           'private func',
@@ -85,7 +94,7 @@ final class ScriptedSession {
   func request(_ method: String, _ params: [String: Any]) async throws -> Data {
     calls.append((method, params))
     if method == "runtime/context" { return try easyWorkJSON(["capabilities": capabilities]) }
-    guard method == "approval/respond" else { throw HostServiceError.invalidResponse }
+    guard method == "approval/respond" || method == "serverRequest/resolve" else { throw HostServiceError.invalidResponse }
     return try easyWorkJSON(response)
   }
 }
@@ -93,6 +102,10 @@ struct ActualClient {
   let channel: ScriptedSession
   func session(_ client: Client) async throws -> ScriptedSession { channel }
   ${methods}
+  func state(_ snapshot: [String: Any], threadId: String) throws -> String {
+    ${source.slice(source.indexOf('    let active = snapshot["activeRun"]'), source.indexOf('    var approvals: [Approval] = []', source.indexOf('    let active = snapshot["activeRun"]')))}
+    return state
+  }
 }
 @main struct ApprovalPolicySmoke {
   static func main() async throws {
@@ -222,13 +235,83 @@ struct ActualClient {
     // Legacy hosts can still acknowledge their original once-only action.
     channel.capabilities = ["approvals"]; channel.calls = []; channel.response = ["accepted": true]
     try expect(try await agent.approve(client(), approval: approval, decision: "approve", answers: [:]).ok, "legacy once acknowledgement")
-    print("passed \(checks) production approval policy checks")
+    try expect(checks == 141, "original 141 approval checks retained")
+    print("passed 141 original production approval policy checks")
+    let oldChecks = checks
+    func question(_ run: String, _ call: String, _ async: Bool = true, _ status: String = "pending") -> [String: Any] {
+      ["threadId": thread, "runId": run, "sessionId": "session", "toolCallId": call, "async": async, "status": status,
+       "questions": [["header": "q", "question": "Choose", "multiple": false, "custom": false,
+                      "options": [["label": "A", "description": "a"], ["label": "B", "description": "b"]]]]]
+    }
+    let one = question("done", "call1"), two = question("running", "call2")
+    let snapshot: [String: Any] = ["questionStates": [one, two, question("r", "answered", true, "answered"), question("r", "abandoned", true, "abandoned")], "activeRun": ["status": "running"]]
+    let projected = try EasyWorkQuestionProjection.approvals(snapshot: snapshot, threadId: thread)
+    try expect(projected.count == 2 && projected.allSatisfy { $0.interactionMode == "async" }, "all pending async projected including completed run")
+    try expect(try agent.state(snapshot, threadId: thread) == "running", "async does not block running")
+    var ended = snapshot; ended["activeRun"] = nil
+    try expect(try agent.state(ended, threadId: thread) == "idle", "old async does not block ended run")
+    let blocking = question("run", "blocking", false)
+    try expect(try agent.state(["pendingQuestion": blocking, "activeRun": ["status": "running"]], threadId: thread) == "waiting-for-approval", "blocking waits")
+    try expect(try EasyWorkQuestionProjection.approvals(snapshot: ["pendingQuestion": one], threadId: thread).count == 1, "legacy async fallback")
+    var changed = one; changed["status"] = "pending"; changed["answer"] = ["arbitrary": "metadata"]
+    try expect(try EasyWorkQuestionProjection.approvals(snapshot: ["questionStates": [changed]], threadId: thread)[0].id == projected[0].id, "mutable metadata does not change identity")
+    func rejects(_ snapshot: [String: Any]) throws {
+      do { _ = try EasyWorkQuestionProjection.approvals(snapshot: snapshot, threadId: thread); throw NSError(domain: "invalid projection accepted", code: 1) }
+      catch HostServiceError.invalidResponse { checks += 1 }
+    }
+    try rejects(["questionStates": [one, one]])
+    for key in ["threadId", "runId", "sessionId", "toolCallId"] {
+      var bad = one; bad[key] = key == "threadId" ? "other" : ""
+      try rejects(["questionStates": [bad]])
+    }
+    for badItems: Any in [[], [["header": "", "question": "Q"]], [["header": "q", "question": "Q", "options": [["label": "", "description": "d"]]]], [["header": "q", "question": "Q"], ["header": "q", "question": "Q2"]]] {
+      var bad = one; bad["questions"] = badItems; try rejects(["questionStates": [bad]])
+    }
+    let qchannel = ScriptedSession(), qagent = ActualClient(channel: qchannel), approvalQ = projected[0]
+    qchannel.response = ["accepted": true]
+    try expect(try await qagent.approve(client(), approval: approvalQ, decision: "answer", answers: ["q": ["A"]]).ok, "answer accepted")
+    let params = qchannel.calls.last!.1
+    let answer = params["answer"] as! [String: Any], rows = answer["questions"] as! [[String: Any]]
+    try expect(params["threadId"] as? String == thread && params["runId"] as? String == "done" && params["sessionId"] as? String == "session" && params["serverRequestId"] as? String == "call1" && params["action"] as? String == "answer" && rows[0]["selectedOptions"] as? [String] == ["A"] && Set(rows[0].keys) == Set(["header", "selectedOptions"]), "exact answer identity and keys")
+    for decision in ["skip", "deny"] {
+      qchannel.response = ["abandoned": true]
+      try expect(try await qagent.approve(client(), approval: approvalQ, decision: decision, answers: [:]).ok, "abandon acknowledged")
+      qchannel.response = ["accepted": true]
+      try expect(try await !qagent.approve(client(), approval: approvalQ, decision: decision, answers: [:]).ok, "opposite acknowledgement rejected")
+    }
+    qchannel.response = ["abandoned": true]
+    try expect(try await !qagent.approve(client(), approval: approvalQ, decision: "answer", answers: ["q": ["A"]]).ok, "answer requires accepted")
+    for (decision, answers) in [("bad", ["q": ["A"]]), ("answer", ["wrong": ["A"]]), ("answer", ["q": ["A", "B"]]), ("answer", ["q": ["custom"]])] {
+      qchannel.calls = []; var refused = false
+      do { _ = try await qagent.approve(client(), approval: approvalQ, decision: decision, answers: answers) } catch { refused = true }
+      try expect(refused && qchannel.calls.isEmpty, "invalid resolution makes zero writes")
+    }
+    for key in ["threadId", "runId", "sessionId", "toolCallId"] {
+      var forgedIdentity = try easyWorkObject(Data(base64URL: String(approvalQ.id.dropFirst(9)))!)
+      forgedIdentity[key] = key == "threadId" || key == "runId" ? "other" : ""
+      let forged = Approval(id: "question." + (try easyWorkJSON(forgedIdentity)).base64URL,
+        threadId: approvalQ.threadId, turnId: approvalQ.turnId, kind: "question", title: "fixture", detail: "",
+        questions: approvalQ.questions, decisions: [], interactionMode: "async")
+      qchannel.calls = []; var refused = false
+      do { _ = try await qagent.approve(client(), approval: forged, decision: "answer", answers: ["q": ["A"]]) } catch { refused = true }
+      try expect(refused && qchannel.calls.isEmpty, "forged identity makes zero writes")
+    }
+    var multi = one
+    multi["questions"] = [["header": "q", "question": "Choose", "multiple": true, "custom": true, "options": [["label": "A", "description": "a"], ["label": "B", "description": "b"]]]]
+    let multiApproval = try EasyWorkQuestionProjection.approvals(snapshot: ["questionStates": [multi]], threadId: thread)[0]
+    let multiParams = try EasyWorkQuestionProjection.resolution(approval: multiApproval, decision: "answer", answers: ["q": ["A", "B", "custom"]])
+    let multiRows = (multiParams["answer"] as! [String: Any])["questions"] as! [[String: Any]]
+    try expect(multiRows[0]["selectedOptions"] as? [String] == ["A", "B"] && multiRows[0]["customAnswer"] as? String == "custom" && Set(multiRows[0].keys) == Set(["header", "selectedOptions", "customAnswer"]), "multi and custom keys")
+    print("passed \(checks - oldChecks) additional question projection checks")
   }
 }
 `;
       const file = join(directory, 'ApprovalPolicy.swift');
       const binary = join(directory, 'approval-policy');
       await writeFile(file, swift, { mode: 0o600 });
+      process.stdout.write(
+        'Swift input SHA-256: ' + createHash('sha256').update(swift).digest('hex') + '\n',
+      );
       await run(
         'xcrun',
         [
@@ -247,7 +330,7 @@ struct ActualClient {
         [join(repository, 'packages/protocol/fixtures/mobile/easywork-approval-decisions-v1.json')],
         { timeout: 10000 },
       );
-      assert.match(result.stdout, /passed \d+ production approval policy checks/);
+      assert.match(result.stdout, /passed 141 original production approval policy checks/);
       process.stdout.write(result.stdout);
       passed = true;
     } finally {

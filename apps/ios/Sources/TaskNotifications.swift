@@ -43,6 +43,7 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   #if DEBUG
   private var easyWorkObservationTask: Task<Void, Never>?
   private var easyWorkActualNotificationResponse: [String: Any]?
+  private var easyWorkFeedObservations: [[String: Any]] = []
   #endif
   private var deviceId: String
   private var revoking = false
@@ -227,7 +228,8 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       }
       if status.state == "ready" || status.delivery == "foreground-only" { synced[host.id] = signature }
     }
-    let feed = try await provider.notificationEvents(host, deviceId: deviceId, after: cursors[host.id] ?? "")
+    let requestedCursor = cursors[host.id] ?? ""
+    let feed = try await provider.notificationEvents(host, deviceId: deviceId, after: requestedCursor)
     try await store?.waitForSidebarInteraction()
     try Task.checkCancellation()
     guard generation == currentGeneration, store?.saved.clients.contains(where: { $0.id == host.id && target($0) == expected }) == true else { return }
@@ -252,6 +254,29 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     }
     try Task.checkCancellation()
     guard generation == currentGeneration, store?.saved.clients.contains(where: { $0.id == host.id && target($0) == expected }) == true else { return }
+    #if DEBUG
+    if allowsEasyWorkNotificationObservation {
+      // Observe only an authenticated feed already processed for the current target.
+      // Bounded identifiers/cursors distinguish an actual repeated event from an OS count.
+      let activeIds = feed.activeIds ?? []
+      easyWorkFeedObservations.append([
+        "capturedAt": Date().timeIntervalSince1970,
+        "processId": ProcessInfo.processInfo.processIdentifier,
+        "clientId": host.id,
+        "requestCursor": String(requestedCursor.prefix(160)),
+        "responseCursor": String(feed.cursor.prefix(160)),
+        "eventCount": feed.events.count,
+        "events": feed.events.prefix(32).map { ["id": String($0.id.prefix(160)), "kind": $0.kind.rawValue] },
+        "activeIdCount": feed.activeIds?.count as Any? ?? NSNull(),
+        "activeIds": activeIds.prefix(32).map { String($0.prefix(160)) },
+        "localRevision": revision,
+        "remoteRevision": feed.status?.revision as Any? ?? NSNull(),
+        "delivery": feed.status?.delivery as Any? ?? NSNull(),
+        "truncated": requestedCursor.count > 160 || feed.cursor.count > 160 || feed.events.count > 32 || activeIds.count > 32,
+      ])
+      if easyWorkFeedObservations.count > 8 { easyWorkFeedObservations.removeFirst(easyWorkFeedObservations.count - 8) }
+    }
+    #endif
     cursors[host.id] = feed.cursor
     if let activeIds = feed.activeIds {
       if expected.agentId == "easywork", feed.status?.revision == revision { try EasyWorkNoticePresentationLedger.resolve(expected, activeIds: activeIds) }
@@ -410,6 +435,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
               "authorizationStatus": settings.authorizationStatus.rawValue, "delivered": notices, "selectedEasyWork": selected,
               "testNotices": actual.filter { $0.request.identifier == "notification-test" }.map { ["identifier": $0.request.identifier, "title": $0.request.content.title, "subtitle": $0.request.content.subtitle, "body": $0.request.content.body] },
               "actualNotificationResponse": self.easyWorkActualNotificationResponse as Any? ?? NSNull(),
+              "processId": ProcessInfo.processInfo.processIdentifier,
+              "isUITesting": ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+              "feedObservations": self.easyWorkFeedObservations,
               "originalProtectedComponentMatches": IndependentAcceptanceLifecycle.protectedComponentMatches(),
               "hasLocalNotificationKey": TaskNotificationShared.secret("device-key") != nil,
               "notificationDeviceIdHash": SHA256.hash(data: Data(self.deviceId.utf8)).map { String(format: "%02x", $0) }.joined()]

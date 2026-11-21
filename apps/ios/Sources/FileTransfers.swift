@@ -190,10 +190,9 @@ private struct PendingComputerFile: Codable, Sendable, Identifiable {
     var imported: [String] = []
     for url in urls {
       do {
-        // The legacy EasyWork upload path still buffers data. Its streaming upgrade
-        // is separate from independent receiving; do not offer unbounded imports.
-        let hostId = client.id, directory = directory
-        let limit = client.agentConnection?.target.agentId == "easywork" ? min(catalog.maxFileBytes ?? Int.max, 20 * 1024 * 1024) : catalog.maxFileBytes
+        // Catalog limits are negotiated in the adapter; the shared uploader
+        // stages a URL and sends bounded chunks without buffering the file.
+        let hostId = client.id, directory = directory, limit = catalog.maxFileBytes
         activity = L10n.tr("正在读取 \(url.lastPathComponent)…")
         let file = try await Task.detached { () throws -> ComputerFileManifest in
           let scoped = url.startAccessingSecurityScopedResource()

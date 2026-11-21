@@ -65,6 +65,8 @@ ${target}
 ${declarations}
 struct Client { let id: String }
 struct DesktopCreationFile { let id: String; let name: String; let mediaType: String; let sizeBytes: Int; let sha256: String }
+struct ComputerFileManifest { let hostId: String; let id: String; let name: String; let mediaType: String; let sizeBytes: Int; let sha256: String }
+struct EasyWorkFileLimits { static let wireMaximum = 9_007_199_254_740_991; let chunk: Int }
 enum UploadRequestContext { @TaskLocal static var capturedFile: DesktopCreationFile? = nil }
 enum EasyWorkAttachmentUpload { static func displayName(_ value: String) -> String { value } }
 enum EasyWorkReading {
@@ -116,6 +118,8 @@ actor Channel {
 struct EasyWorkAgentClient {
   let channel: Channel
   func session(_ client: Client) async throws -> Channel { channel }
+  func independentFileLimits(_ channel: Channel) async throws -> EasyWorkFileLimits { fatalError("unexpected independent transfer limits") }
+  func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws { fatalError("unexpected independent transfer prepare") }
 ${request}
 }
 struct StopController {

@@ -1,0 +1,17 @@
+import Foundation
+enum HostServiceError: Error { case invalidResponse, wrongHost }
+@@declarations@@
+@@fileDeclarations@@
+struct Client { let id: String }
+protocol AgentClient { func uploadTransferFile(_ client: Client, file: ComputerFileManifest, source: URL) async throws -> ComputerFileReceipt; func uploadFileTransfer(_ client: Client, file: ComputerFileManifest, data: Data) async throws -> ComputerFileReceipt }
+extension AgentClient {
+@@defaultMethod@@
+}
+actor UploadCenter { static let shared = UploadCenter(); var source: URL?; var manifest: UploadManifest?; func transfer(_ c: Client, manifest m: UploadManifest, source u: URL) async throws -> UploadReceipt { source=u; manifest=m; return UploadReceipt(version:1,manifest:m,phase:"completed",committedBytes:m.sizeBytes,maxChunkBytes:1,createdAt:"now",updatedAt:"now",result:UploadResult(hostId:m.hostId,id:m.id,name:m.name,mediaType:m.mediaType,sizeBytes:m.sizeBytes,sha256:m.sha256,phase:"completed",destinationPath:"/out",createdAt:"now")) } }
+struct EasyWorkAgentClient: AgentClient {
+@@urlMethod@@
+func uploadFileTransfer(_ client:Client,file:ComputerFileManifest,data:Data) async throws -> ComputerFileReceipt { fatalError("old Data method called") }
+}
+actor Probe { var data: Data?; func put(_ d: Data) { data=d } }
+struct Old: AgentClient { let probe: Probe; func uploadFileTransfer(_ c:Client,file:ComputerFileManifest,data:Data) async throws -> ComputerFileReceipt { await probe.put(data); return ComputerFileReceipt(hostId:c.id,id:file.id,name:file.name,mediaType:file.mediaType,sizeBytes:file.sizeBytes,sha256:file.sha256,phase:"completed",destinationPath:"/out",createdAt:"now") } }
+@main struct Main { static func main() async throws { let url=URL(fileURLWithPath:CommandLine.arguments[1]); let bytes=Data("synthetic bytes".utf8); try bytes.write(to:url); defer { try? FileManager.default.removeItem(at:url) }; let client=Client(id:"host"); let file=ComputerFileManifest(hostId:"host",id:"F1617651-3173-4A18-A2E5-15775DE40DC1",name:"file",mediaType:"text/plain",sizeBytes:bytes.count,sha256:String(repeating:"a",count:64)); let agent:any AgentClient=EasyWorkAgentClient(); _ = try await agent.uploadTransferFile(client,file:file,source:url); let actual=await UploadCenter.shared.source; let manifest=await UploadCenter.shared.manifest; precondition(actual==url && manifest?.purpose=="file-transfer" && manifest?.threadId==nil && manifest?.id==file.id); print("PASS new protocol dispatch to UploadCenter URL and manifest"); let probe=Probe(); let old:any AgentClient=Old(probe:probe); _ = try await old.uploadTransferFile(client,file:file,source:url); let captured=await probe.data; precondition(captured==bytes); print("PASS old default protocol dispatch reads whole file into Data") } }

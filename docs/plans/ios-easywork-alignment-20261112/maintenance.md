@@ -1,7 +1,3 @@
-> Historical evidence only. Current iOS/Android implementation and acceptance are maintained exclusively in the [single complete feature list](../android-ios-alignment-20261107/progress.md). This imported snapshot and its JSON/rendering sources are frozen; do not update them as current progress.
-
-> 历史档案（2026-11-19冻结）：本目录只保留此前的规格、来源和验收证据，不再维护当前状态。全项目当前功能、双端实现和验收统一见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。以下状态、数量及下一步仅代表原记录时点。
-
 # 唯一事实来源与状态维护规则
 
 生效：2026-11-12。依据用户明确要求：本计划为 iOS 对接 EasyWork 的唯一事实来源，后续进度更新均以此为准。
@@ -9,6 +5,8 @@
 ## 权威范围与文件职责
 
 **当前任务状态只有一个可编辑事实源：[status.json](status.json)。** [核心使用验收](core-acceptance.md)、[进度总表](progress.md) 与 [功能清单](checklist.md) 都从它生成。[README.md](README.md) 只作入口。[development.md](development.md) 与 [acceptance.md](acceptance.md) 维护目标设计、工作拆分和验收断言。
+
+项目双端完整功能清单是全项目索引。本轮 iOS × EasyWork 扩展与恢复事项的当前事实仍只由本台账维护，索引引用其对应范围；不能把既有普通功能的用户确认推广为新增扩展或失败项通过，也不以本任务状态覆盖 Android 结论。上游 `77892b19` 的 R326 冻结档案保留在 Git 历史中，不替代本轮当前事实。向交付分支同步时，由主协调会话保存一次一致快照并生成视图；执行方不独立改写另一份进度。
 
 `executionFocus` 记录当前执行优先级。每个开放对接父项分配到一个阶段，父项的普通操作和工程断言可以分期。阶段变更不改原有通过、失败与正式交付状态。
 

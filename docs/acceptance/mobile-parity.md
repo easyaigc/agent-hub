@@ -2431,3 +2431,13 @@ F31 远端取消候选：生产 UploadCenter.stop 和 EasyWork uploadRequest 受
 ### 2026-11-21：原生按钮辅助输入回归
 
 F29/F39、UI05：独立原生窗口挂载实际 NativeContentButton，覆盖空输入禁用、输入后可用、权限撤回再禁用和恢复；核 UIKit isEnabled、notEnabled/selected/button traits 及原动作门禁。独立 XCUI 对照另核系统 isEnabled 与正常一次点击，禁止绕过禁用。旧源行为失败、新源结果和真实聊天首次单次发送分列，受控窗口不冒充实际 EasyWork/模型验收；进度只回填唯一台账。Android/A6 无新增通过。
+
+2026-11-21 F59：F59 候选的有限断言包括：旧端 20 MiB、新端有限/null 容量、较小分块协商、21/64 MiB 普通文件 SHA-256 与路径、URL 分块内存、原 ID/偏移的重开恢复、降低额度后原结果可读，以及不新增聊天/模型。受控边界与真实模拟器/桌面分别记证据；尚未发生的场景不计通过。具体进度以唯一 iOS × EasyWork 计划为准。
+
+F47 桌面独有候选修复：启动时同 scope 的迟到快照不得覆盖非空草稿，保留模型、推理、权限、plan 和 budget；空草稿默认值与用户主动选择保持。iOS／Android 草稿路径未改；桌面真实冷启动验收待唯一台账。
+
+F59 哈希内存修复：iOS/macOS 共用的 UploadCenter 对每个 256 KiB 读取、摘要更新与计数使用自动释放池；wire、摘要、操作 ID、偏移及旧续传语义不变。Android 逻辑未改；macOS 辅助内存检查不代表 iOS 真实内存验收。
+
+### F47/F59 模拟器覆盖升级与旧凭据
+
+以已保存真实客户端、草稿及未知操作的原模拟器覆盖安装当前同 bundle 包，核旧缓存能够正常读取、原完整目标/设备身份及上传日志保留，且没有新配对、密钥导出、数据重置或输入重放。按每个 Mach-O 架构核内嵌旧/新 Keychain 组兼容，同时独立核代码签名槽、App Groups 和四个 bundle 身份。实体/R2/Android 不由此补签。实际失败、修复和复验只回填 [唯一台账](../plans/ios-easywork-alignment-20261112/status.json)。

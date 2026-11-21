@@ -258,7 +258,16 @@ struct UploadJob: Codable, Identifiable, Sendable {
   nonisolated static func fileHash(_ source: URL) throws -> (Int, String) {
     let file = try FileHandle(forReadingFrom: source); defer { try? file.close() }
     var hash = SHA256(), count = 0
-    while let data = try file.read(upToCount: 256 * 1024), !data.isEmpty { hash.update(data: data); count += data.count }
+    while true {
+      // FileHandle may autorelease bridged buffers until the detached task exits.
+      // Drain after hashing each chunk so temporary bytes do not grow with a file.
+      let eof = try autoreleasepool { () throws -> Bool in
+        guard let data = try file.read(upToCount: 256 * 1024), !data.isEmpty else { return true }
+        hash.update(data: data); count += data.count
+        return false
+      }
+      if eof { break }
+    }
     return (count, hash.finalize().map { String(format: "%02x", $0) }.joined())
   }
   nonisolated static func identifier(_ client: Client, purpose: String, parent: String, fileId: String) -> String {
@@ -664,10 +673,15 @@ enum EasyWorkUploadValidation {
     guard let record = response["transfer"] as? [String: Any], !deviceId.isEmpty,
       record["transferId"] as? String == m.id, record["threadId"] as? String == m.threadId,
       record["mobileDeviceId"] as? String == deviceId, record["direction"] as? String == "mobile-to-desktop",
-      record["purpose"] as? String == "attachment", record["name"] as? String == m.name,
+      ["attachment", "file-transfer"].contains(m.purpose),
+      record["purpose"] as? String == (m.purpose == "file-transfer" ? "transfer" : "attachment"), record["name"] as? String == m.name,
       record["contentType"] as? String == m.mediaType, try EasyWorkReading.integer(record["size"]) == m.sizeBytes,
       !completed || (record["status"] as? String == "completed" && record["sha256"] as? String == m.sha256)
     else { throw HostServiceError.invalidResponse }
+    if m.purpose == "file-transfer" {
+      guard m.threadId == nil, m.creationId == nil, m.attachmentId == nil,
+        record["threadId"] == nil || record["threadId"] is NSNull else { throw HostServiceError.invalidResponse }
+    }
     let offset = try EasyWorkReading.integer(record["transferredBytes"])
     guard (0...m.sizeBytes).contains(offset), !completed || offset == m.sizeBytes else { throw HostServiceError.invalidResponse }
     if let expected = record["expectedSha256"], !(expected is NSNull) {
@@ -682,6 +696,12 @@ enum EasyWorkUploadValidation {
   }
   static func completion(_ response: [String: Any], manifest m: UploadManifest, deviceId: String) throws -> UploadResult {
     let record = try transfer(response, manifest: m, deviceId: deviceId, completed: true)
+    if m.purpose == "file-transfer" {
+      guard let path = record["absolutePath"] as? String, !path.isEmpty, !path.contains("\0"),
+        let createdAt = record["createdAt"] as? String, !createdAt.isEmpty else { throw HostServiceError.invalidResponse }
+      return UploadResult(hostId: m.hostId, id: m.id, name: m.name, mediaType: m.mediaType,
+        sizeBytes: m.sizeBytes, sha256: m.sha256, phase: "completed", destinationPath: path, createdAt: createdAt)
+    }
     guard let a = response["attachment"] as? [String: Any], a["id"] as? String == m.id,
       let resourceId = a["resourceId"] as? String, !resourceId.isEmpty, record["resourceId"] as? String == resourceId,
       a["name"] as? String == m.name, a["contentType"] as? String == m.mediaType,
@@ -701,15 +721,38 @@ extension EasyWorkAgentClient {
       result.name == manifest.name, result.mediaType == manifest.mediaType else { throw HostServiceError.wrongHost }
     return result
   }
+  func uploadTransferFile(_ client: Client, file: ComputerFileManifest, source: URL) async throws -> ComputerFileReceipt {
+    guard file.hostId == client.id else { throw HostServiceError.wrongHost }
+    let manifest = UploadManifest(hostId: client.id, id: file.id, name: file.name, mediaType: file.mediaType,
+      sizeBytes: file.sizeBytes, sha256: file.sha256, purpose: "file-transfer", threadId: nil, creationId: nil, attachmentId: nil)
+    let receipt = try await UploadCenter.shared.transfer(client, manifest: manifest, source: source)
+    let result = try receipt.value(ComputerFileReceipt.self); try result.validate(file); return result
+  }
   func uploadRequest(_ client: Client, manifest m: UploadManifest, action: UploadAction, bytes: Data?, sent: (@Sendable (Int64) -> Void)?) async throws -> UploadReceipt {
-    guard m.purpose == "attachment", let threadId = m.threadId else { throw HostServiceError.unavailable }
+    let independent = m.purpose == "file-transfer"
+    guard independent ? (m.threadId == nil && m.creationId == nil && m.attachmentId == nil)
+      : (m.purpose == "attachment" && m.threadId?.isEmpty == false) else { throw HostServiceError.unavailable }
+    let threadId = m.threadId
     let captured = UploadRequestContext.capturedFile
-    guard m.sizeBytes > 0, m.sizeBytes <= 20 * 1024 * 1024 else {
+    guard m.sizeBytes > 0, m.sizeBytes <= (independent ? EasyWorkFileLimits.wireMaximum : 20 * 1024 * 1024) else {
       if captured != nil { throw HostServiceError.message(L10n.tr("此连接暂不能继续该大小的附件，原文件和原记录已保留。")) }
       throw HostServiceError.message(L10n.tr("原附件内容已改变，未提交"))
     }
     try EasyWorkCapturedUploadIdentity.validate(captured, manifest: m)
     let channel = try await session(client), deviceId = await channel.mobileDeviceId
+    var chunkBytes = 192 * 1024
+    if independent {
+      switch action {
+      case .status:
+        do { chunkBytes = try await independentFileLimits(channel).chunk }
+        catch HostServiceError.invalidResponse {
+          // Keep the original status readable; a subsequent chunk still requires
+          // a valid negotiation. Never suppress a wrong-target or network error.
+        }
+      case .chunk: chunkBytes = try await independentFileLimits(channel).chunk
+      case .prepare, .complete, .cancel: break
+      }
+    }
     func object(_ data: Data) throws -> [String: Any] {
       guard let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw HostServiceError.invalidResponse }; return value
     }
@@ -717,7 +760,19 @@ extension EasyWorkAgentClient {
     var knownStatus: [String: Any]?
     switch action {
     case .prepare:
-      if captured != nil {
+      if independent {
+        do {
+          let status = try object(await channel.request("resource/upload-status", ["transferId": m.id]))
+          _ = try EasyWorkUploadValidation.transfer(status, manifest: m, deviceId: deviceId)
+          knownStatus = status
+        } catch HostServiceError.rejected(404, _) {
+          let file = ComputerFileManifest(hostId: m.hostId, id: m.id, name: m.name,
+            mediaType: m.mediaType, sizeBytes: m.sizeBytes, sha256: m.sha256)
+          _ = try await prepareFileTransfer(client, file: file)
+        }
+        chunkBytes = try await independentFileLimits(channel).chunk
+      }
+      if !independent, captured != nil {
         do {
           let status = try object(await channel.request("resource/upload-status", ["transferId": m.id]))
           _ = try EasyWorkUploadValidation.transfer(status, manifest: m, deviceId: deviceId)
@@ -729,18 +784,19 @@ extension EasyWorkAgentClient {
           }
         }
       }
-      if knownStatus == nil {
-        let response = try object(await channel.request("resource/upload", ["transferId": m.id, "name": captured?.name ?? m.name, "mediaType": m.mediaType, "size": m.sizeBytes, "expectedSha256": m.sha256, "purpose": "attachment", "threadId": threadId], id: "upload-" + m.id))
+      if !independent, knownStatus == nil {
+        let response = try object(await channel.request("resource/upload", ["transferId": m.id, "name": captured?.name ?? m.name, "mediaType": m.mediaType, "size": m.sizeBytes, "expectedSha256": m.sha256, "purpose": "attachment", "threadId": threadId!], id: "upload-" + m.id))
         _ = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
       }
     case .status: break
     case .chunk(let position):
-      guard let bytes, bytes.count <= 192 * 1024 else { throw HostServiceError.invalidResponse }
-      let response = try object(await channel.request("resource/upload-chunk", ["transferId": m.id, "offset": position, "dataBase64": bytes.base64URL], id: EasyWorkCapturedUploadIdentity.chunkId(m, offset: position, bytes: bytes, captured: captured)))
+      guard let bytes, !bytes.isEmpty, bytes.count <= chunkBytes else { throw HostServiceError.invalidResponse }
+      let id = independent ? "file-chunk-\(m.id)-\(position)" : EasyWorkCapturedUploadIdentity.chunkId(m, offset: position, bytes: bytes, captured: captured)
+      let response = try object(await channel.request("resource/upload-chunk", ["transferId": m.id, "offset": position, "dataBase64": bytes.base64URL], id: id))
       try EasyWorkUploadValidation.chunk(response, end: position + bytes.count, size: m.sizeBytes)
       sent?(Int64(bytes.count))
     case .complete:
-      let response = try object(await channel.request("resource/upload-complete", ["transferId": m.id], id: "complete-" + m.id))
+      let response = try object(await channel.request("resource/upload-complete", ["transferId": m.id], id: (independent ? "file-complete-" : "complete-") + m.id))
       result = try EasyWorkUploadValidation.completion(response, manifest: m, deviceId: deviceId)
       phase = "completed"; offset = m.sizeBytes
     case .cancel:
@@ -775,11 +831,11 @@ extension EasyWorkAgentClient {
         return try await uploadRequest(client, manifest: m, action: .complete, bytes: nil, sent: nil)
       }
       guard phase == "cancelled" || ["transferring", "verifying"].contains(transfer["status"] as? String ?? "")
-        || (captured != nil && transfer["status"] as? String == "waiting") else { throw HostServiceError.invalidResponse }
+        || ((independent || captured != nil) && transfer["status"] as? String == "waiting") else { throw HostServiceError.invalidResponse }
     }
     let now = ISO8601DateFormatter().string(from: Date())
     return UploadReceipt(version: 1, manifest: m, phase: phase, committedBytes: offset,
-      maxChunkBytes: 192 * 1024, createdAt: now, updatedAt: now, result: result)
+      maxChunkBytes: chunkBytes, createdAt: now, updatedAt: now, result: result)
   }
 }
 

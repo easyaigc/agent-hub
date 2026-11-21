@@ -1,4 +1,4 @@
-"""Render the frozen historical ledger; current status lives in the shared feature checklist."""
+"""Validate the canonical plan ledger and render views with the repo's Prettier."""
 
 import argparse
 from collections import Counter
@@ -279,7 +279,7 @@ def render(data):
     features = data["features"]
     label = lambda dimension, state: definitions[dimension][state]
     fingerprint = hashlib.sha256((ROOT / "status.json").read_bytes()).hexdigest()
-    banner = f"> 历史档案，非当前状态；当前功能见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。历史来源：[status.json](status.json)，修订 {data['revision']}，更新 {data['updatedAt']}。台账 SHA-256：`{fingerprint}`。\n"
+    banner = f"> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 {data['revision']}，更新 {data['updatedAt']}。台账 SHA-256：`{fingerprint}`。\n"
     counts = []
     for dimension in ("development", "acceptance", "delivery", "execution"):
         counter = Counter(f[dimension]["state"] for f in features)
@@ -289,7 +289,7 @@ def render(data):
     unmatched = sum(f["acceptance"]["state"] == "historical-scope-unmatched" for f in active)
     closed = sum(f["acceptance"]["state"] in {"current-passed", "matched-reuse"} for f in active)
     open_count = len(active) - matched - unmatched - closed
-    progress = ["# 历史进度总表", "", banner,
+    progress = ["# 当前唯一进度总表", "", banner,
         "本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。", "",
         f"当前共 {len(features)} 个父功能：{len(active)} 个对接、{sum(f['plannedScope']=='phone-only' for f in features)} 个手机共用、{sum(f['plannedScope']=='excluded' for f in features)} 个范围外。对接范围有 {open_count} 个开放父项、{matched + unmatched} 个历史限定通过未复用（待匹配 {matched}，本次匹配未成立 {unmatched}）、{closed} 个按当前范围关闭。开放数不等于未开发数。", ""]
     if "executionFocus" in data:

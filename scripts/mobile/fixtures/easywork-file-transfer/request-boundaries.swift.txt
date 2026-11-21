@@ -1,0 +1,42 @@
+import Foundation
+import CoreFoundation
+import CryptoKit
+enum HostServiceError: Error { case invalidResponse,wrongHost,unavailable,message(String),rejected(Int,String) }
+struct EasyWorkRemoteRejection: Error { let code: String?; let message: String }
+enum L10n { static func tr(_ s:String)->String { s } }
+enum HostService { static func hash(_ d:Data)->String { SHA256.hash(data:d).map { String(format:"%02x",$0) }.joined() } }
+func easyWorkJSON(_ x:Any) throws -> Data { try JSONSerialization.data(withJSONObject:x, options:[.sortedKeys,.fragmentsAllowed,.withoutEscapingSlashes]) }
+@@account@@
+@@target@@
+@@declarations@@
+@@fileDeclarations@@
+enum EasyWorkReading {
+@@integer@@}
+@@limits@@
+@@validation@@
+struct Client { let id:String }
+struct Catalog { let maxFileBytes:Int? }
+struct EasyWorkRemoteSession {
+@@verified@@
+}
+
+struct DesktopCreationFile { let id:String; let name:String; let mediaType:String; let sizeBytes:Int; let sha256:String }
+enum EasyWorkAttachmentUpload { static func displayName(_ s:String)->String { s } }
+enum UploadRequestContext { @TaskLocal static var capturedFile: DesktopCreationFile? = nil }
+extension Data { var base64URL:String { base64EncodedString().replacingOccurrences(of:"+",with:"-").replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"=",with:"") } }
+@@identity@@
+actor Channel {
+ let target=EasyWorkTarget(account:AgentAccount(authority:"https://test.invalid",subject:"synthetic"),desktopDeviceId:"desktop",workspaceId:"workspace",runtimeId:"local"); let mobileDeviceId="mobile"; var exists=true; var calls:[String]=[]; var ids:[String]=[]; var offset=0; var state="waiting"; let mode:String; init(_ mode:String="normal") { self.mode=mode }; func establish() { exists=true }; func trace()->[String] { calls }; func writeIDs()->[String] { ids }
+ func record()->[String:Any] { var r:[String:Any] = ["transferId":manifest.id,"mobileDeviceId":"mobile","direction":"mobile-to-desktop","purpose":"transfer","name":manifest.name,"contentType":manifest.mediaType,"size":manifest.sizeBytes,"expectedSha256":manifest.sha256,"transferredBytes":offset,"status":state]; if mode == "wrong-device" { r["mobileDeviceId"]="other" }; if mode == "wrong-digest" { r["expectedSha256"]=String(repeating:"b",count:64) }; if mode == "wrong-purpose" { r["purpose"]="attachment" }; if mode == "wrong-thread" { r["threadId"]="other" }; if mode == "wrong-id" { r["transferId"]="other" }; if mode == "bad-offset" { r["transferredBytes"]=manifest.sizeBytes+1 }; if state == "completed" { r["sha256"]=manifest.sha256; r["absolutePath"]="/out/original"; r["createdAt"]="now" }; return r }
+ func request(_ method:String,_ params:[String:Any],id:String=UUID().uuidString) async throws -> Data { calls.append(method); if method == "runtime/context" { var t=target.dictionary; if mode == "wrong-target" { t["workspaceId"]="bad" }; return try easyWorkJSON(["target":t,"capabilities":["file-transfers"]]) }; if method == "resource/upload-status" { return try easyWorkJSON(["transfer":record()]) }; ids.append(id); if method == "resource/upload-chunk" { guard let pos=params["offset"] as? Int, let encoded=params["dataBase64"] as? String else { fatalError("bad chunk") }; precondition(pos == offset); let pad=encoded.replacingOccurrences(of:"-",with:"+").replacingOccurrences(of:"_",with:"/"); let data=Data(base64Encoded:pad+String(repeating:"=",count:(4-pad.count%4)%4))!; offset += data.count; state="transferring"; return try easyWorkJSON(["nextOffset":offset,"complete":offset == manifest.sizeBytes]) }; if method == "resource/upload-complete" { offset=manifest.sizeBytes; state="completed"; return try easyWorkJSON(["transfer":record()]) }; if method == "resource/transfer-cancel" { state="cancelled"; return try easyWorkJSON(["transfer":record()]) }; fatalError(method) }
+}
+struct EasyWorkAgentClient { let channel:Channel; func session(_ c:Client) async throws -> Channel { channel }; func independentFileLimits(_ c:Channel) async throws -> EasyWorkFileLimits { EasyWorkFileLimits(independent:64*1024*1024,chunk:32768,negotiated:true) }; func prepareFileTransfer(_ c:Client,file:ComputerFileManifest) async throws -> ComputerFileReceipt { await channel.establish(); return ComputerFileReceipt(hostId:c.id,id:file.id,name:file.name,mediaType:file.mediaType,sizeBytes:file.sizeBytes,sha256:file.sha256,phase:"prepared",destinationPath:"/out/file",createdAt:"now") }
+@@request@@
+}
+let manifest=UploadManifest(hostId:"host",id:"F1617651-3173-4A18-A2E5-15775DE40DC1",name:"file",mediaType:"application/octet-stream",sizeBytes:21*1024*1024,sha256:String(repeating:"a",count:64),purpose:"file-transfer",threadId:nil,creationId:nil,attachmentId:nil)
+@main struct Main { static func main() async throws {
+ let c=Client(id:"host"); let ch=Channel(); let a=EasyWorkAgentClient(channel:ch); let r=try await a.uploadRequest(c,manifest:manifest,action:.chunk(0),bytes:Data(repeating:7,count:32768),sent:nil); precondition(r.committedBytes==32768 && r.maxChunkBytes==32768); let ids=await ch.writeIDs(); precondition(ids == ["file-chunk-"+manifest.id+"-0"]); print("PASS negotiated chunk, offset and stable ID"); do { _=try await a.uploadRequest(c,manifest:manifest,action:.chunk(32768),bytes:Data(repeating:1,count:32769),sent:nil); fatalError("oversized chunk accepted") } catch HostServiceError.invalidResponse { print("PASS oversized chunk rejected") }
+ let completion=Channel(); let done=try await EasyWorkAgentClient(channel:completion).uploadRequest(c,manifest:manifest,action:.complete,bytes:nil,sent:nil); let receipt=try done.value(ComputerFileReceipt.self); precondition(receipt.destinationPath=="/out/original" && receipt.sha256==manifest.sha256); let completeIDs=await completion.writeIDs(); precondition(completeIDs == ["file-complete-"+manifest.id]); print("PASS complete receipt path/hash and stable ID");
+ let cancelling=Channel(); let cancelled=try await EasyWorkAgentClient(channel:cancelling).uploadRequest(c,manifest:manifest,action:.cancel,bytes:nil,sent:nil); precondition(cancelled.phase=="cancelled"); let cancelIDs=await cancelling.writeIDs(); precondition(cancelIDs == ["cancel-"+manifest.id]); print("PASS cancel stable ID");
+ for mode in ["wrong-device","wrong-digest","wrong-purpose","wrong-thread","wrong-id","bad-offset"] { let channel=Channel(mode); do { _=try await EasyWorkAgentClient(channel:channel).uploadRequest(c,manifest:manifest,action:.status,bytes:nil,sent:nil); fatalError("accepted "+mode) } catch HostServiceError.invalidResponse { print("PASS reject "+mode) } }; let wrong=Channel("wrong-target"); do { _=try await EasyWorkAgentClient(channel:wrong).uploadRequest(c,manifest:manifest,action:.cancel,bytes:nil,sent:nil); fatalError("accepted wrong target") } catch HostServiceError.wrongHost { let writes=await wrong.writeIDs(); precondition(writes.isEmpty); print("PASS wrong target zero cancel writes") }
+} }

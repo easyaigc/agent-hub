@@ -1,0 +1,33 @@
+import Foundation
+import CoreFoundation
+import CryptoKit
+enum HostServiceError: Error { case invalidResponse,wrongHost,unavailable,message(String),rejected(Int,String) }
+struct EasyWorkRemoteRejection: Error { let code: String?; let message: String }
+enum L10n { static func tr(_ s:String)->String { s } }
+enum HostService { static func hash(_ d:Data)->String { SHA256.hash(data:d).map { String(format:"%02x",$0) }.joined() } }
+func easyWorkJSON(_ x:Any) throws -> Data { try JSONSerialization.data(withJSONObject:x, options:[.sortedKeys,.fragmentsAllowed,.withoutEscapingSlashes]) }
+@@account@@
+@@target@@
+@@declarations@@
+@@fileDeclarations@@
+enum EasyWorkReading {
+@@integer@@}
+@@limits@@
+@@validation@@
+struct Client { let id:String }
+struct Catalog { let maxFileBytes:Int? }
+struct EasyWorkRemoteSession {
+@@verified@@
+}
+
+struct DesktopCreationFile { let id:String; let name:String; let mediaType:String; let sizeBytes:Int; let sha256:String }
+enum EasyWorkAttachmentUpload { static func displayName(_ s:String)->String { s } }
+enum UploadRequestContext { @TaskLocal static var capturedFile: DesktopCreationFile? = nil }
+extension Data { var base64URL:String { base64EncodedString().replacingOccurrences(of:"+",with:"-").replacingOccurrences(of:"/",with:"_").replacingOccurrences(of:"=",with:"") } }
+@@identity@@
+actor Channel { let target=EasyWorkTarget(account:AgentAccount(authority:"https://test.invalid",subject:"synthetic"),desktopDeviceId:"desktop",workspaceId:"workspace",runtimeId:"local"); let mobileDeviceId="mobile"; var exists=false; var calls:[String]=[]; func establish() { exists=true }; func request(_ method:String,_ params:[String:Any],id:String=UUID().uuidString) async throws -> Data { calls.append(method); if method == "resource/upload-status" { if !exists { throw HostServiceError.rejected(404,"missing") }; return try easyWorkJSON(["transfer":["transferId":manifest.id,"mobileDeviceId":"mobile","direction":"mobile-to-desktop","purpose":"transfer","name":manifest.name,"contentType":manifest.mediaType,"size":manifest.sizeBytes,"expectedSha256":manifest.sha256,"transferredBytes":0,"status":"waiting"]]) }; fatalError(method) } }
+struct EasyWorkAgentClient { let channel:Channel; func session(_ c:Client) async throws -> Channel { channel }; func independentFileLimits(_ c:Channel) async throws -> EasyWorkFileLimits { EasyWorkFileLimits(independent:64*1024*1024,chunk:32768,negotiated:true) }; func prepareFileTransfer(_ c:Client,file:ComputerFileManifest) async throws -> ComputerFileReceipt { await channel.establish(); return ComputerFileReceipt(hostId:c.id,id:file.id,name:file.name,mediaType:file.mediaType,sizeBytes:file.sizeBytes,sha256:file.sha256,phase:"prepared",destinationPath:"/out/file",createdAt:"now") }
+@@request@@
+}
+let manifest=UploadManifest(hostId:"host",id:"F1617651-3173-4A18-A2E5-15775DE40DC1",name:"file",mediaType:"application/octet-stream",sizeBytes:21*1024*1024,sha256:String(repeating:"a",count:64),purpose:"file-transfer",threadId:nil,creationId:nil,attachmentId:nil)
+@main struct Main { static func main() async throws { let a=EasyWorkAgentClient(channel:Channel()); let c=Client(id:"host"); do { _=try await a.uploadRequest(c,manifest:manifest,action:.status,bytes:nil,sent:nil); fatalError("expected status 404") } catch HostServiceError.rejected(404,_) { print("PASS initial status 404") }; let result=try await a.uploadRequest(c,manifest:manifest,action:.prepare,bytes:nil,sent:nil); print("observed prepare maxChunkBytes=\(result.maxChunkBytes), negotiated=32768"); if result.maxChunkBytes != 32768 { print("FAIL prepare returns oversized chunk"); exit(1) }; print("PASS negotiated initial prepare") } }

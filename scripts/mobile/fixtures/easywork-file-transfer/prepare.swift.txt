@@ -1,0 +1,27 @@
+import Foundation
+import CoreFoundation
+import CryptoKit
+enum HostServiceError: Error { case invalidResponse,wrongHost,unavailable,message(String),rejected(Int,String) }
+struct EasyWorkRemoteRejection: Error { let code: String?; let message: String }
+enum L10n { static func tr(_ s:String)->String { s } }
+enum HostService { static func hash(_ d:Data)->String { SHA256.hash(data:d).map { String(format:"%02x",$0) }.joined() } }
+func easyWorkJSON(_ x:Any) throws -> Data { try JSONSerialization.data(withJSONObject:x, options:[.sortedKeys,.fragmentsAllowed,.withoutEscapingSlashes]) }
+@@account@@
+@@target@@
+@@declarations@@
+@@fileDeclarations@@
+enum EasyWorkReading {
+@@integer@@}
+@@limits@@
+@@validation@@
+struct Client { let id:String }
+struct Catalog { let maxFileBytes:Int? }
+struct EasyWorkRemoteSession {
+@@verified@@
+}
+actor Channel { let target=EasyWorkTarget(account:AgentAccount(authority:"https://test.invalid",subject:"synthetic"),desktopDeviceId:"desktop",workspaceId:"workspace",runtimeId:"local"); let mobileDeviceId="mobile"; var calls:[String]=[]; var exists:Bool; let hasReceipt:Bool; let budget:Int?; let wrongTarget:Bool; init(exists:Bool=false, receipt:Bool=false,budget:Int?=20*1024*1024,wrong:Bool=false) { self.exists=exists;hasReceipt=receipt;self.budget=budget;wrongTarget=wrong }; func request(_ method:String,_ params:[String:Any],id:String=UUID().uuidString) async throws -> Data { calls.append(method); switch method { case "resource/upload-status": if !exists { throw HostServiceError.rejected(404,"missing") }; return try easyWorkJSON(["transfer":record()]); case "command/status": if !hasReceipt { return Data("null".utf8) }; exists=true; let p:[String:Any]=["transferId":file.id,"name":file.name,"mediaType":file.mediaType,"size":file.sizeBytes,"expectedSha256":file.sha256,"purpose":"transfer"]; let hash=HostService.hash(try easyWorkJSON(["target":target.dictionary,"method":"resource/upload","params":p])); var t=target.dictionary; if wrongTarget { t["workspaceId"]="wrong" }; return try easyWorkJSON(["state":"completed","operationId":"file-prepare-"+file.id,"method":"resource/upload","deviceId":"mobile","requestHash":hash,"target":t,"response":["protocolVersion":2,"kind":"response","ok":true,"result":[:]]]); case "resource/upload": precondition(id=="file-prepare-"+file.id); exists=true; return try easyWorkJSON([:]); default: fatalError(method) } }; func record()->[String:Any] { ["transferId":file.id,"mobileDeviceId":"mobile","direction":"mobile-to-desktop","purpose":"transfer","name":file.name,"contentType":file.mediaType,"size":file.sizeBytes,"expectedSha256":file.sha256,"transferredBytes":0,"status":"waiting"] }; func trace()->[String] { calls } }
+struct EasyWorkAgentClient { let channel:Channel; func session(_ c:Client) async throws -> Channel { channel }; func object(_ d:Data)throws->[String:Any] { guard let o=try JSONSerialization.jsonObject(with:d) as? [String:Any] else { throw HostServiceError.invalidResponse }; return o }; func fileTransfers(_ c:Client) async throws -> Catalog { Catalog(maxFileBytes:await channel.budget) }; func fileTransfer(_ c:Client,id:String) async throws -> ComputerFileReceipt { _ = try await channel.request("resource/upload-status",["transferId":id]); return ComputerFileReceipt(hostId:c.id,id:id,name:file.name,mediaType:file.mediaType,sizeBytes:file.sizeBytes,sha256:file.sha256,phase:"prepared",destinationPath:"/out/file",createdAt:"now") }
+@@prepare@@
+}
+let file=ComputerFileManifest(hostId:"host",id:"F1617651-3173-4A18-A2E5-15775DE40DC1",name:"file",mediaType:"text/plain",sizeBytes:21*1024*1024,sha256:String(repeating:"a",count:64)); let client=Client(id:"host")
+@main struct Main { static func main() async throws { for (name,receipt,budget,shouldWrite) in [("legacy",false,20*1024*1024,false),("finite64",false,64*1024*1024,true),("unknown original",true,20*1024*1024,false)] { let c=Channel(receipt:receipt,budget:budget); let a=EasyWorkAgentClient(channel:c); do { _=try await a.prepareFileTransfer(client,file:file); precondition(name != "legacy") } catch { precondition(name == "legacy") }; let calls=await c.trace(); precondition(calls.prefix(2).elementsEqual(["resource/upload-status","command/status"])); precondition(calls.contains("resource/upload")==shouldWrite); print("PASS " + name + " " + calls.joined(separator:",")) }; let unlimited=Channel(budget:nil); _=try await EasyWorkAgentClient(channel:unlimited).prepareFileTransfer(client,file:file); let ut=await unlimited.trace(); precondition(ut.contains("resource/upload")); print("PASS null quota new prepare"); let existing=Channel(exists:true,budget:1); _=try await EasyWorkAgentClient(channel:existing).prepareFileTransfer(client,file:file); let et=await existing.trace(); precondition(!et.contains("resource/upload")); print("PASS existing transfer under lower quota"); let c=Channel(receipt:true,wrong:true); do { _=try await EasyWorkAgentClient(channel:c).prepareFileTransfer(client,file:file); fatalError("wrong target accepted") } catch HostServiceError.invalidResponse { }; let calls=await c.trace(); precondition(!calls.contains("resource/upload")); print("PASS wrong receipt target zero write") } }

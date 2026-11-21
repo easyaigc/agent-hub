@@ -1653,3 +1653,7 @@ Keep the typed-parent-tool Adapter path unchanged. A separate explicit capabilit
 2026-11-21 F44 候选：EasyWork 适配层在发布前建立单调时钟请求期限，覆盖发送与回执等待，并以原请求和连接 epoch 限定到期释放。提前到达的认证原回复保留；未知写入继续既有原操作查询，不扩大重发权。连接建立与通道选择维持各自预算，公共领域契约和 Host API 不变。DEBUG 准确目标的回调故障门及正常通知只读观察只服务独立模拟器验收，不伪造业务数据；实际结果见唯一 iOS × EasyWork 计划。
 
 2026-11-21 F31 源码候选：取消上传继续使用共同 UploadCenter 的持久取消意图、原清单及状态恢复。Codex Adapter 映射既有 v1/uploads/cancel，EasyWork Adapter 映射协议 v2 的 resource/transfer-cancel；后者自 file-transfers 能力引入时即属于严格命名契约，无需再造桌面接口。调用前核当前 runtime/context 完整目标和能力，回执核原传输、设备、用途、线程、清单和已提交偏移；已完成竞争保留原完成结果，未知结果继续查询原 ID，不重发文件字节。旧端不能同步取消时保留取消等待、原件和明确原因，不把本机停止假称电脑已取消。桌面既有服务按完整绑定目标取消其自身暂存；源码、模拟器双端结果和正式合并分别记录。
+
+2026-11-21 F59：EasyWork 独立文件继续由共同 UploadCenter 管理本地 URL 与持久状态，Adapter 仅映射具名 resource 方法及认证 context 的可选 v1 容量。新准备受协商额度，既有操作优先查询原传输和不可变写回执；不为切换额度或重启重新提交。桌面容量与暂存/发布空间准入由其文件服务负责。公共领域接口及 Codex 路径保持，Android 未改；候选、辅助与实际验收分列唯一计划。
+
+F59 哈希内存修复：iOS/macOS 共用的 UploadCenter 对每个 256 KiB 读取、摘要更新与计数使用自动释放池；wire、摘要、操作 ID、偏移及旧续传语义不变。Android 逻辑未改；macOS 辅助内存检查不代表 iOS 真实内存验收。

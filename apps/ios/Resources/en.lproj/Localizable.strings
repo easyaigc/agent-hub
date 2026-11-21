@@ -1880,3 +1880,7 @@
 "正在准备视频…" = "Preparing video…";
 "正在缓冲…" = "Buffering…";
 "读取电脑资源失败，请重试。" = "Unable to read the computer resource. Try again.";
+"本次传输超过电脑支持的文件大小；原文件和原记录已保留。" = "This transfer exceeds the computer’s file size limit. The original file and record have been kept.";
+"取消结果以电脑回执为准；消息和原附件保留。" = "The cancellation result is determined by the computer receipt. The message and original attachments are kept.";
+"手机发送已停止；当前电脑不支持同步取消，请在电脑端处理暂存。" = "Sending from the phone has stopped. This computer does not support synchronized cancellation; manage the staged file on the computer.";
+"刷新" = "Refresh";

@@ -1,0 +1,19 @@
+import Foundation
+import CryptoKit
+import Darwin
+struct Probe {
+@@fileHash@@
+}
+@main struct Main {
+  static func main() async throws {
+    let path = CommandLine.arguments[1]
+    if path == "--missing" {
+      do { _ = try await Task.detached { try Probe.fileHash(URL(fileURLWithPath: CommandLine.arguments[2])) }.value; fatalError("missing file accepted") }
+      catch { print("PASS missing file rejected"); return }
+    }
+    let result = try await Task.detached { try Probe.fileHash(URL(fileURLWithPath: path)) }.value
+    var usage = rusage()
+    precondition(getrusage(RUSAGE_SELF, &usage) == 0)
+    print("\(result.0) \(result.1) \(usage.ru_maxrss)")
+  }
+}

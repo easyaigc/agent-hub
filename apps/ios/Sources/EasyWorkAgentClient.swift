@@ -83,6 +83,52 @@ actor EasyWorkForkDeliveryFault {
 }
 #endif
 
+/// Resource limits are opt-in, authenticated runtime metadata, independent of
+/// App rendering budgets. Older peers retain the former 20 MiB upload ceiling.
+struct EasyWorkFileLimits {
+  static let capability = "resources:transfer-limits:v1"
+  static let wireMaximum = 9_007_199_254_740_991
+  static let legacyMaximum = 20 * 1024 * 1024
+  static let chunkMaximum = 192 * 1024
+  let independent: Int?
+  let chunk: Int
+  let negotiated: Bool
+  static func decode(_ context: [String: Any]) throws -> EasyWorkFileLimits {
+    guard (context["capabilities"] as? [String] ?? []).contains(capability) else {
+      return EasyWorkFileLimits(independent: legacyMaximum, chunk: chunkMaximum, negotiated: false)
+    }
+    guard let limits = context["resourceTransferLimits"] as? [String: Any],
+      try EasyWorkReading.integer(limits["version"]) == 1 else { throw HostServiceError.invalidResponse }
+    func maximum(_ key: String) throws -> Int? {
+      guard let value = limits[key] else { throw HostServiceError.invalidResponse }
+      if value is NSNull { return nil }
+      let size = try EasyWorkReading.integer(value)
+      guard size > 0, size <= wireMaximum else { throw HostServiceError.invalidResponse }; return size
+    }
+    // Validate the entire advertised v1 contract, while only consuming the
+    // independent transfer limit here. Chat attachments keep their old limit.
+    _ = try maximum("uploadMaxBytes"); _ = try maximum("downloadMaxBytes")
+    let limit = try maximum("transferMaxBytes"), chunk = try EasyWorkReading.integer(limits["maxChunkBytes"])
+    guard chunk > 0, chunk <= wireMaximum else { throw HostServiceError.invalidResponse }
+    return EasyWorkFileLimits(independent: limit, chunk: min(chunk, chunkMaximum), negotiated: true)
+  }
+  func catalogMaximum(_ raw: Any?) throws -> Int? {
+    guard let raw else { throw HostServiceError.invalidResponse }
+    if raw is NSNull {
+      guard !negotiated || independent == nil else { throw HostServiceError.invalidResponse }
+      return negotiated ? nil : Self.legacyMaximum
+    }
+    let size = try EasyWorkReading.integer(raw)
+    guard size > 0, size <= Self.wireMaximum, !negotiated || independent == size else { throw HostServiceError.invalidResponse }
+    return negotiated ? size : min(size, Self.legacyMaximum)
+  }
+  func validate(_ size: Int) throws {
+    guard size > 0, size <= Self.wireMaximum, independent.map({ size <= $0 }) ?? true else {
+      throw HostServiceError.message(L10n.tr("本次传输超过电脑支持的文件大小；原文件和原记录已保留。"))
+    }
+  }
+}
+
 /// The authenticated Host must confirm this exact attachment before it can enter a reply.
 enum EasyWorkAttachmentUpload {
   static func displayName(_ value: String) -> String {
@@ -1159,6 +1205,12 @@ struct EasyWorkAgentClient: AgentClient {
     }
     return CommandResult(ok: EasyWorkQuestionProjection.resolutionSucceeded(result, decision: decision))
   }
+  func independentFileLimits(_ channel: EasyWorkRemoteSession) async throws -> EasyWorkFileLimits {
+    let context = try object(await channel.request("runtime/context", [:]))
+    let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+    guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+    return try EasyWorkFileLimits.decode(context)
+  }
   private func independentFile(_ client: Client, _ value: [String: Any], directory: String) throws -> ComputerFileReceipt {
     guard value["purpose"] as? String == "transfer", value["direction"] as? String == "mobile-to-desktop",
       value["threadId"] == nil, let id = value["transferId"] as? String, UUID(uuidString: id) != nil,
@@ -1175,13 +1227,11 @@ struct EasyWorkAgentClient: AgentClient {
       sha256: expected, phase: completed ? "completed" : "prepared", destinationPath: path, createdAt: createdAt)
   }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog {
-    let channel = try await session(client)
+    let channel = try await session(client), limits = try await independentFileLimits(channel)
     let value = try object(await channel.request("resource/transfer-list", [:]))
     guard let directory = value["destinationDirectory"] as? String, !directory.isEmpty,
       let records = value["transfers"] as? [[String: Any]] else { throw HostServiceError.message(L10n.tr("请更新电脑连接程序以使用文件互传。")) }
-    let limit: Int?
-    if value["maxFileBytes"] is NSNull { limit = nil }
-    else { let finite = try EasyWorkReading.integer(value["maxFileBytes"]); guard finite > 0 else { throw HostServiceError.invalidResponse }; limit = finite }
+    let limit = try limits.catalogMaximum(value["maxFileBytes"])
     let independent = records.filter { $0["purpose"] as? String == "transfer" && $0["direction"] as? String == "mobile-to-desktop" && $0["threadId"] == nil && ["waiting", "transferring", "completed"].contains($0["status"] as? String ?? "") }
     let offered = records.filter { $0["purpose"] as? String == "transfer" && $0["direction"] as? String == "desktop-to-mobile" && $0["threadId"] == nil }
     let deviceId = await channel.mobileDeviceId
@@ -1231,32 +1281,43 @@ struct EasyWorkAgentClient: AgentClient {
   }
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt {
     guard file.hostId == client.id, UUID(uuidString: file.id) != nil, file.sizeBytes > 0,
-      file.sizeBytes <= 20 * 1024 * 1024, !file.name.isEmpty, file.name == file.name.trimmingCharacters(in: .whitespacesAndNewlines),
+      file.sizeBytes <= EasyWorkFileLimits.wireMaximum, !file.name.isEmpty, file.name == file.name.trimmingCharacters(in: .whitespacesAndNewlines),
       file.name.count <= 255, !file.name.contains("/"), !file.name.contains("\\"), !file.name.contains("\0"),
       file.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else { throw HostServiceError.invalidResponse }
-    _ = try await session(client).request("resource/upload", ["transferId": file.id, "name": file.name, "mediaType": file.mediaType,
-      "size": file.sizeBytes, "expectedSha256": file.sha256, "purpose": "transfer"], id: "file-prepare-" + file.id)
+    let channel = try await session(client)
+    do {
+      let status = try object(await channel.request("resource/upload-status", ["transferId": file.id]))
+      let manifest = UploadManifest(hostId: file.hostId, id: file.id, name: file.name, mediaType: file.mediaType,
+        sizeBytes: file.sizeBytes, sha256: file.sha256, purpose: "file-transfer", threadId: nil, creationId: nil, attachmentId: nil)
+      _ = try EasyWorkUploadValidation.transfer(status, manifest: manifest, deviceId: await channel.mobileDeviceId)
+      let receipt = try await fileTransfer(client, id: file.id); try receipt.validate(file); return receipt
+    } catch HostServiceError.rejected(404, _) {
+      // Current quotas constrain new preparation, never hide an existing transfer.
+    }
+    let params: [String: Any] = ["transferId": file.id, "name": file.name, "mediaType": file.mediaType,
+      "size": file.sizeBytes, "expectedSha256": file.sha256, "purpose": "transfer"]
+    let id = "file-prepare-" + file.id
+    let original = try await channel.request("command/status", ["commandId": id])
+    let raw = try JSONSerialization.jsonObject(with: original, options: [.fragmentsAllowed])
+    if let record = raw as? [String: Any] {
+      _ = try EasyWorkRemoteSession.verifiedWriteResult(record, target: channel.target,
+        mobileDeviceId: await channel.mobileDeviceId, operationId: id, method: "resource/upload", params: params)
+    } else {
+      guard raw is NSNull else { throw HostServiceError.invalidResponse }
+      let catalog = try await fileTransfers(client)
+      guard catalog.maxFileBytes.map({ file.sizeBytes <= $0 }) ?? true else {
+        throw HostServiceError.message(L10n.tr("本次传输超过电脑支持的文件大小；原文件和原记录已保留。"))
+      }
+      _ = try await channel.request("resource/upload", params, id: id)
+    }
     let receipt = try await fileTransfer(client, id: file.id); try receipt.validate(file); return receipt
   }
   func uploadFileTransfer(_ client: Client, file: ComputerFileManifest, data: Data) async throws -> ComputerFileReceipt {
     guard file.hostId == client.id, data.count == file.sizeBytes, HostService.hash(data) == file.sha256 else { throw HostServiceError.invalidResponse }
-    let channel = try await session(client)
-    let current = try await fileTransfer(client, id: file.id); try current.validate(file)
-    if current.phase == "completed" { return current }
-    let value = try object(await channel.request("resource/upload-status", ["transferId": file.id]))
-    let record = try object(value["transfer"] ?? [:])
-    guard let offsetValue = record["transferredBytes"] as? Int, offsetValue >= 0, offsetValue <= data.count else { throw HostServiceError.invalidResponse }
-    var offset = offsetValue
-    while offset < data.count {
-      try Task.checkCancellation()
-      let end = min(offset + 192 * 1024, data.count)
-      let response = try object(await channel.request("resource/upload-chunk", ["transferId": file.id, "offset": offset,
-        "dataBase64": data.subdata(in: offset..<end).base64URL], id: "file-chunk-\(file.id)-\(offset)"))
-      guard response["nextOffset"] as? Int == end else { throw HostServiceError.invalidResponse }; offset = end
-    }
-    _ = try await channel.request("resource/upload-complete", ["transferId": file.id], id: "file-complete-" + file.id)
-    let receipt = try await fileTransfer(client, id: file.id); try receipt.validate(file)
-    guard receipt.phase == "completed" else { throw HostServiceError.invalidResponse }; return receipt
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    defer { try? FileManager.default.removeItem(at: url) }
+    return try await uploadTransferFile(client, file: file, source: url)
   }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment {
     let channel = try await session(client)

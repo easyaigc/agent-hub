@@ -1,0 +1,21 @@
+import Foundation
+import CoreFoundation
+enum HostServiceError: Error { case invalidResponse, message(String) }
+enum L10n { static func tr(_ s: String) -> String { s } }
+enum EasyWorkReading {
+@@integer@@
+}
+@@limits@@
+
+func check(_ b: Bool, _ name: String) { if !b { fatalError(name) }; print("PASS " + name) }
+func rejected(_ name: String, _ f: () throws -> Void) { do { try f(); fatalError("accepted " + name) } catch { print("PASS reject " + name) } }
+@main struct Main { static func main() throws {
+let capability = EasyWorkFileLimits.capability
+func context(_ transfer: Any, _ chunk: Any = 32768) -> [String: Any] { ["capabilities": [capability], "resourceTransferLimits": ["version": 1, "uploadMaxBytes": NSNull(), "downloadMaxBytes": NSNull(), "transferMaxBytes": transfer, "maxChunkBytes": chunk]] }
+let old = try EasyWorkFileLimits.decode([:]); check(old.independent == 20*1024*1024 && !old.negotiated, "legacy 20MiB"); rejected("legacy 21MiB") { try old.validate(21*1024*1024) }
+let finite = try EasyWorkFileLimits.decode(context(64*1024*1024)); try finite.validate(64*1024*1024); check(finite.chunk == 32768, "finite and chunk"); rejected("finite overflow") { try finite.validate(65*1024*1024) }
+let unlimited = try EasyWorkFileLimits.decode(context(NSNull(), 999999)); check(unlimited.independent == nil && unlimited.chunk == 192*1024, "null and bounded chunk")
+for (name, value) in [("bool", true as Any), ("fraction", 1.5 as Any), ("huge", 9007199254740992 as Any), ("zero", 0 as Any)] { rejected(name) { _ = try EasyWorkFileLimits.decode(context(value)) } }
+rejected("chunk bool") { _ = try EasyWorkFileLimits.decode(context(100, true)) }; rejected("chunk zero") { _ = try EasyWorkFileLimits.decode(context(100, 0)) }
+rejected("missing") { _ = try EasyWorkFileLimits.decode(["capabilities": [capability]]) }; rejected("catalog mismatch") { _ = try finite.catalogMaximum(20*1024*1024) }; rejected("catalog null mismatch") { _ = try finite.catalogMaximum(NSNull()) }; check(try unlimited.catalogMaximum(NSNull()) == nil, "catalog null")
+} }

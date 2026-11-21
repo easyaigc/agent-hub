@@ -6,7 +6,13 @@ enum HostServiceError: Error { case invalidResponse, wrongHost, unavailable, rej
 enum L10n { static func tr(_ s: String) -> String { s } }
 struct Client: Codable, Sendable { var id: String }
 extension Data { var base64URL: String { base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "") } }
-struct EasyWorkAgentClient { func session(_ client: Client) async throws -> FakeChannel { channel } }
+struct ComputerFileManifest { let hostId: String; let id: String; let name: String; let mediaType: String; let sizeBytes: Int; let sha256: String }
+struct EasyWorkFileLimits { static let wireMaximum = 9_007_199_254_740_991; let chunk: Int }
+struct EasyWorkAgentClient {
+  func session(_ client: Client) async throws -> FakeChannel { channel }
+  func independentFileLimits(_ channel: FakeChannel) async throws -> EasyWorkFileLimits { fatalError("unexpected independent transfer limits") }
+  func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws { fatalError("unexpected independent transfer prepare") }
+}
 // PRODUCTION_DECLARATIONS
 final class FakeChannel {
  let mobileDeviceId = "device"

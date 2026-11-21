@@ -1880,6 +1880,10 @@
     <string name="product_e5ca0c5fc31ada319a3761d2" formatted="false">"正在准备视频…"</string>
     <string name="product_1686103b719242501920b3de" formatted="false">"正在缓冲…"</string>
     <string name="product_441027138450f80ec7cda971" formatted="false">"读取电脑资源失败，请重试。"</string>
+    <string name="product_e556845fdf20a6b579850e88" formatted="false">"本次传输超过电脑支持的文件大小；原文件和原记录已保留。"</string>
+    <string name="product_ce768940050caa4fd8ca27ac" formatted="false">"取消结果以电脑回执为准；消息和原附件保留。"</string>
+    <string name="product_942c2bffef65ee1266f669e0" formatted="false">"手机发送已停止；当前电脑不支持同步取消，请在电脑端处理暂存。"</string>
+    <string name="product_aee88743413144a2ec6c48e3" formatted="false">"刷新"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>
@@ -1900,7 +1904,6 @@
     <string name="product_55c9e43dd2a28800d03c745a" formatted="false">"搜索对话"</string>
     <string name="product_6b6ad1bbb7b85cde65fe5d47" formatted="false">"没有找到相关对话"</string>
     <string name="product_2458e973be0b6f204303ab1a" formatted="false">"暂无发送记录"</string>
-    <string name="product_aee88743413144a2ec6c48e3" formatted="false">"刷新"</string>
     <string name="product_a542ecfcff49cc2518a59e64" formatted="false">"批量归档对话"</string>
     <string name="product_9cca11ae452e6980386adeba" formatted="false">"打开侧栏"</string>
     <string name="product_1c59875d3a151bffb0ae295e" formatted="false">"回到最新"</string>

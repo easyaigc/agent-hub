@@ -1880,6 +1880,10 @@
     <string name="product_e5ca0c5fc31ada319a3761d2" formatted="false">"Preparing video…"</string>
     <string name="product_1686103b719242501920b3de" formatted="false">"Buffering…"</string>
     <string name="product_441027138450f80ec7cda971" formatted="false">"Unable to read the computer resource. Try again."</string>
+    <string name="product_e556845fdf20a6b579850e88" formatted="false">"This transfer exceeds the computer’s file size limit. The original file and record have been kept."</string>
+    <string name="product_ce768940050caa4fd8ca27ac" formatted="false">"The cancellation result is determined by the computer receipt. The message and original attachments are kept."</string>
+    <string name="product_942c2bffef65ee1266f669e0" formatted="false">"Sending from the phone has stopped. This computer does not support synchronized cancellation; manage the staged file on the computer."</string>
+    <string name="product_aee88743413144a2ec6c48e3" formatted="false">"Refresh"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>
@@ -1900,7 +1904,6 @@
     <string name="product_55c9e43dd2a28800d03c745a" formatted="false">"Search conversations"</string>
     <string name="product_6b6ad1bbb7b85cde65fe5d47" formatted="false">"No matching conversations"</string>
     <string name="product_2458e973be0b6f204303ab1a" formatted="false">"No send receipts"</string>
-    <string name="product_aee88743413144a2ec6c48e3" formatted="false">"Refresh"</string>
     <string name="product_a542ecfcff49cc2518a59e64" formatted="false">"Batch archive conversations"</string>
     <string name="product_9cca11ae452e6980386adeba" formatted="false">"Open sidebar"</string>
     <string name="product_1c59875d3a151bffb0ae295e" formatted="false">"Jump to latest"</string>

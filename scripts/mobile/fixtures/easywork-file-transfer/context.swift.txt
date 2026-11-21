@@ -1,0 +1,36 @@
+import Foundation
+import CoreFoundation
+enum HostServiceError: Error { case invalidResponse, wrongHost, message(String) }
+enum L10n { static func tr(_ s:String)->String { s } }
+@@account@@
+@@target@@
+enum EasyWorkReading {
+@@integer@@
+}
+@@limits@@
+func easyWorkJSON(_ x:Any) throws -> Data { try JSONSerialization.data(withJSONObject:x,options:[.sortedKeys,.fragmentsAllowed]) }
+actor EasyWorkRemoteSession {
+ let target: EasyWorkTarget
+ let response: [String:Any]
+ init(_ response:[String:Any], _ target:EasyWorkTarget) { self.response=response;self.target=target }
+ func request(_ method:String,_ params:[String:Any]) async throws -> Data { precondition(method == "runtime/context" && params.isEmpty); return try easyWorkJSON(response) }
+}
+struct Client {
+ func object(_ data:Data) throws -> [String:Any] { guard let o=try JSONSerialization.jsonObject(with:data) as? [String:Any] else { throw HostServiceError.invalidResponse }; return o }
+@@independentFileLimits@@
+}
+@main struct Main { static func main() async throws {
+ let target=EasyWorkTarget(account:AgentAccount(authority:"https://test.invalid",subject:"synthetic"),desktopDeviceId:"desktop",workspaceId:"workspace",runtimeId:"local")
+ func context(_ transfer:Any, _ chunk:Any = 32768) -> [String:Any] { ["target":target.dictionary,"capabilities":[EasyWorkFileLimits.capability],"resourceTransferLimits":["version":1,"uploadMaxBytes":NSNull(),"downloadMaxBytes":NSNull(),"transferMaxBytes":transfer,"maxChunkBytes":chunk]] }
+ func run(_ value:[String:Any]) async throws -> EasyWorkFileLimits { try await Client().independentFileLimits(EasyWorkRemoteSession(value,target)) }
+ let finite=try await run(context(67108864)); precondition(finite.independent==67108864 && finite.chunk==32768 && finite.negotiated)
+ let unlimited=try await run(context(NSNull(),999999)); precondition(unlimited.independent==nil && unlimited.chunk==192*1024)
+ let legacy=try await run(["target":target.dictionary]); precondition(legacy.independent==20*1024*1024 && !legacy.negotiated)
+ for bad:Any in [true, 1.5, 0, 9007199254740992] { do { _ = try await run(context(bad)); fatalError("invalid number accepted") } catch HostServiceError.invalidResponse {} }
+ do { _ = try await run(["target":target.dictionary,"capabilities":[EasyWorkFileLimits.capability]]); fatalError("missing limits accepted") } catch HostServiceError.invalidResponse {}
+ var wrong=context(100); var altered=target.dictionary; altered["workspaceId"]="wrong"; wrong["target"]=altered
+ do { _ = try await run(wrong); fatalError("wrong target accepted") } catch HostServiceError.wrongHost {}
+ var missing=context(100); var partial=target.dictionary; partial.removeValue(forKey:"runtimeId"); missing["target"]=partial
+ do { _ = try await run(missing); fatalError("incomplete target accepted") } catch is DecodingError {}
+ print("PASS actual runtime/context target, finite, null, legacy, invalid and clamped limits")
+} }

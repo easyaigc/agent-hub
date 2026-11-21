@@ -6035,8 +6035,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 505,
-  "updatedAt": "2026-11-22",
+  "revision": 508,
+  "updatedAt": "2026-11-21T19:27:20.242739+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -17526,6 +17526,106 @@
       "path": "private office-discovery-20261121/automatic-20261122/local-ui/stop-boundary/summary.json",
       "sha256": "a49c102ba77b7e68f53e77ed5da5f55194d0c32f4cc4cabab58792160887615b",
       "scope": "Targeted new cancellation UI test1/1passed: real progress8/508, stop settles in1.73s, stop button disappears/retry appears, count unchanged through four subsequent seconds. Production unchanged; prior discovered-row retained/clickable and cold discovery evidence reused rather than full rescan. Not physical cellular/VPN."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "738a9a51c8789af43e7e4862fc37767c2d2a983f31713e5f061115af8facfbbf",
+      "mobileEnvironment": "not-required",
+      "environment": "Actual Gitea PR/status, independent fetch/ls-remote and Git objects",
+      "path": "private office-discovery-20261121/automatic-20261122/final-merge/verification.json",
+      "sha256": "738a9a51c8789af43e7e4862fc37767c2d2a983f31713e5f061115af8facfbbf",
+      "scope": "Gitea PR238 merged to main6f65e484; both required contexts CI13478 success at head3ccae13d. Complete merge/head tree5092512d equal and head ancestor; source118 production459 inputs and frozen Host package can be reused without rebuilding. Shared main worktree remains protected at98841a6 due prior concrete WIP overlap refusal; remote/main integration uses isolated task worktree."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-SIX-RUNTIME-FROZEN": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "757ba722234f682295a1e61cdcba30464d1b7a09f87ca02ed25bd9699305f36b",
+      "mobileEnvironment": "not-required",
+      "environment": "Frozen main-equivalent source, pnpm frozen lockfile, Node24; no source-machine deployment",
+      "path": "private office-discovery-20261121/automatic-20261122/host-package-v2/result.json",
+      "sha256": "b90843f7293bd8fc3b85668ba83c49ac5b1bdb2ab2400097edd71641dfb4b154",
+      "scope": "Seven initially absent dist builds succeeded; complete package65253664B/SHA757ba722234f682295a1e61cdcba30464d1b7a09f87ca02ed25bd9699305f36b. Actual six-component ESM closure and nested preview matched; preview equals source actual bytes. Original failed six-component attempt preserved. Official GitHub release and source deployment still pending."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL118-PREPARED": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "e45891f29784ed311a172573ac53f506644d1ef2c9109e8952eb3ed7a327dfb8",
+      "mobileEnvironment": "physical",
+      "environment": "Physical iPhone15 Pro Max; signed separate acceptance bundle; devicectl receipts and redacted normal store. Terra medium/full-access verified; tier null.",
+      "path": "private office-discovery-20261121/automatic-20261122/physical118/normal-store-before-learning.redacted.json",
+      "sha256": "60518c8b0eb959673ce58984ac514e21b77a1ba141697f080a86520d4853570c",
+      "scope": "Specified independent15 USB wired/paired/DDI verified, same OfficeTest bundle118 installed in place, root entitlements match115 and before/after preferences byte-equal. Normal state still exactly one original source record/full target/original pin; discoveryNetworks absent before first118 launch. Legacy manual key remains but new product never reads it. App not launched, no claim/scan/network change; automatic learning, physical VPN/cold recovery and original user phone5records remain pending."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-OFFICIAL-HOST-FREEZE": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "757ba722234f682295a1e61cdcba30464d1b7a09f87ca02ed25bd9699305f36b",
+      "mobileEnvironment": "not-required",
+      "environment": "Existing Gitea main sync to GitHub; frozen scoped prerelease, not latest/global push",
+      "path": "private office-discovery-20261121/automatic-20261122/release-verified.json",
+      "sha256": "b6b6b16f490736fda4de1190c47599e8a141c2e319f5833b139c614733de4253",
+      "scope": "PR238 merge6f65e484 and public54d2876d have tree5092512d; official tag host-connect-20261122-automatic-discovery-6f65e484 anchors public source. Eight release assets have exact remote byte counts/SHA256 matching frozen files. Source machine program/state upgrade and phone acceptance remain independent; source exclusively deploys118 HTTPS before Mini pointer update."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-STAGE-CLEANUP": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "4badfc6c759fcc031e16f5333d26fcd411c263f1c2eb07c40c22ca29489378ac",
+      "mobileEnvironment": "not-required",
+      "environment": "Owned local generated artifacts; nonblocking shared cleanup lock, exact paths and no-open-file checks",
+      "path": "private office-discovery-20261121/automatic-20261122/accepted-stage-generated-cleanup.json",
+      "sha256": "4badfc6c759fcc031e16f5333d26fcd411c263f1c2eb07c40c22ca29489378ac",
+      "scope": "After source review acceptance, removed formal118 xcarchive and three simulator xcresults; original relevant logs/screens/ZIPs/IPA/source retained. Previous failed freeze source archive116285440B removed separately after new seven-component freeze success. Physical118 candidate/runner retained for named upcoming test, task worktree retained for delivery ledger. Prior automatic-review rejection for local-ui/derived remains respected and that exact path retained; no bypass. Volume free-before/after are observations, not exclusive recovered bytes."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-HOST-DEPLOYED": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "757ba722234f682295a1e61cdcba30464d1b7a09f87ca02ed25bd9699305f36b",
+      "mobileEnvironment": "not-required",
+      "environment": "Source physical Mac deployment receipt and fixed program closure",
+      "path": "private office-discovery-20261121/automatic-20261122/source-host-deployment-receipt.json",
+      "sha256": "d6de1882b2b3a334e77d0470ed96e5915fdf7d10ace28b92a367f65c8355fb25",
+      "scope": "Source independently verified official GitHub commit/tree and ZIP757ba722; six actual runtime components matched, original16bindings/5authorizations loaded read-only without mutation;22 program-file delta plus new verifier deployed. Only the specified Host label received lifecycle commands, Host PID76821→76146; original service config/Host Key/certificate/keys/bindings bytes unchanged. The original receipt PID-set-equality boolean came from two empty pgrep matches and is not continuity evidence; corrected by OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-PROCESS-CORRECTION. Actual HOST_AGENT_STATE_DIR preserved after initial path assumption rejected before mutation. Health/workspace200, networks201/192.168.8.0/24, unauthorized401 and wrong-target400. Owner credential read is not phone device credential acceptance."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL-UI-AUTOMATION-BLOCKER": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "e45891f29784ed311a172573ac53f506644d1ef2c9109e8952eb3ed7a327dfb8",
+      "mobileEnvironment": "physical",
+      "environment": "Physical15 XCTest initialization failure, retained log/screenshot/redacted normal store; Terra medium/full-access verified, tier null.",
+      "path": "private office-discovery-20261121/automatic-20261122/physical118-ui-automation-blocker.zip",
+      "sha256": "cc67ec47dac078ebe23936a9f9c6084ba0a0abf93734abb142ba7cc6a835664c",
+      "scope": "Specified independent15 USB/DDI and installed118 confirmed. First cold-read XCTest did not enter its test method: UI Automation initialization timed out, screenshot explicitly requests the user's iPhone passcode for XCTest. No assertion of lock screen or Host401. Original1record/fulltarget/pin/201/draft/outbox unchanged; discoveryNetworks still null. Screenshot shows5G; WiFi setting/Tailscale Connected/IP remain unconfirmed. Source coordinates required on-device passcode entry; no passcode sent, no bypass, claim, scan, data clearing or network switch."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-HTTPS-DEPLOYED": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "163004a41a60721c69c00c2670c0cee9c472faac046154ac28da559417d31433",
+      "mobileEnvironment": "not-required",
+      "environment": "Existing formal iOS HTTPS and private Tailscale install pointer; installation distinct from reachability",
+      "path": "private office-discovery-20261121/automatic-20261122/entry118/source-https-receipt.json",
+      "sha256": "137acd74d0284953a0e3358dde4aa0f8e0691b4feae3f5cea2926dd768b01407",
+      "scope": "Source uniquely published formal118 through existing trusted HTTPS. nginx test/reload0, master unchanged. Page1363B/4b0a3483, manifest781B/1af1d001, IPA10257630B/163004a4 full bytes matched reviewed material with200/no-store/no redirects; old117 unchanged. Existing HTTPS asset hosting is not all-Tailscale-only and is not proof of phone installation."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-TAIL118-ENTRY": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "163004a41a60721c69c00c2670c0cee9c472faac046154ac28da559417d31433",
+      "mobileEnvironment": "not-required",
+      "environment": "Existing formal iOS HTTPS and private Tailscale install pointer; installation distinct from reachability",
+      "path": "private office-discovery-20261121/automatic-20261122/entry118/cutover-result.json",
+      "sha256": "5f1f1370896f0ebb02ee34843fb3d0da7ed2a74f169d030529f8d51921f17f71",
+      "scope": "Only the original Tail8088 install page file atomically updated. Actual MagicDNS GET200/no-store,1363B SHA4b0a34830de796b85a0ff619df3a53893403d12df0338a45e7fa32bfc4f9f90e; system-trusted manifest200/build118/formal bundle/IPA URL matched. All Serve fields/routes/ports unchanged, before/after SHA288367f0db0b7d154725b8ad4c08696799be435d54c08300fc95d9d357b21716. Source full IPA verification reused; no new whole download/listener. Original117 page retained for rollback; original phone five-record authorization still unverified."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-PROCESS-CORRECTION": {
+      "kind": "exact-match-review",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "packageSha256": "757ba722234f682295a1e61cdcba30464d1b7a09f87ca02ed25bd9699305f36b",
+      "mobileEnvironment": "not-required",
+      "environment": "Source independent process observation correction; deployment/raw original receipt unchanged",
+      "path": "private office-discovery-20261121/automatic-20261122/source-host-process-observation-correction.json",
+      "sha256": "36d3af693b2be376df046f843fe570f281e9c60fff74017ce9be0b8f08c53778",
+      "scope": "Original pgrep -x Codex returned empty sets, so originalCodexPidSetUnchanged=true is not independent before/after PID continuity evidence. Actual app embeds Codex (Aperitif) in ChatGPT; five currently observed UI processes started before Host activation. Deployment commands targeted only the specified Host label and did not restart original App. Current observation does not reconstruct the complete historical process set or prove full PID-set equality. Original raw1603B receipt and deployment operation immutable; Host identity/state/components/API and formal118 evidence unchanged; no repeat deployment/test."
     }
   },
   "openItems": [
@@ -28398,6 +28498,44 @@
         "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-SIGNED-CANDIDATE",
         "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED"
       ]
+    },
+    {
+      "revision": 506,
+      "date": "2026-11-22",
+      "kind": "office-automatic-discovery-formal-integration",
+      "scope": "PR238 actual merged with both exact-head contexts successful; six-component actual runtime closure frozen, separate15 installed118 preserving observed normal record. No new physical automatic or original-phone acceptance pass. Existing main sync and official frozen prerelease now independently verified; source deployment still pending.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SIX-RUNTIME-FROZEN",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL118-PREPARED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-OFFICIAL-HOST-FREEZE",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-STAGE-CLEANUP"
+      ]
+    },
+    {
+      "revision": 507,
+      "date": "2026-11-22",
+      "kind": "office-source-host-formal118-deployed-physical-system-auth-pending",
+      "scope": "Official Source Host and formal118 existing HTTPS delivery deployed; original Tail install pointer now118 with all Serve fields unchanged. Independent15 test initialization awaits on-device XCTest UI Automation passcode; no new automatic learning/scan/cold recovery test entered. Original phone installation/five records/old authorization/drafts remain unverified. Zero new product acceptance passes.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-HOST-DEPLOYED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL-UI-AUTOMATION-BLOCKER",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-HTTPS-DEPLOYED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-TAIL118-ENTRY"
+      ]
+    },
+    {
+      "revision": 508,
+      "date": "2026-11-22",
+      "kind": "office-source-process-evidence-correction",
+      "scope": "Corrected source empty-pgrep PID equality claim while preserving original immutable deployment receipt. New current-process observation predates activation and supports no original App lifecycle commands; full before/after PID-set equality remains unproven. Pure metadata correction; product/118 inputs and previous effective validation unchanged. Independent15 and original phone acceptance remain pending.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-PROCESS-CORRECTION"]
     }
   ],
   "maintenanceValidation": {
@@ -31360,6 +31498,17 @@
       "sourceCommit": "74e95baff9f82148c8f5932c4ca92dac933f9b53",
       "verification": "Owner-scoped source PR235 and signed117/HTTPS entry receipt preserved from main docs237; original-phone installation/data/VPN recovery still pending with its owner. No new execution by remaining11 coordinator.",
       "evidenceRefs": ["OFFICE-MAIN235-AND-REMAINING11-ROOT-DOCS-RECONCILIATION-R501"]
+    },
+    {
+      "component": "Automatic routed discovery PR238",
+      "baseCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "verification": "Exact merged tree equals reviewed frozen source; physical automatic learning/old credentials and original-phone preservation still pending.",
+      "evidenceRefs": [
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SIX-RUNTIME-FROZEN",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL118-PREPARED"
+      ]
     }
   ],
   "sourcePinHistory": [
@@ -39647,9 +39796,9 @@
       "phase": "extensions",
       "behavior": "正常自动发现页从实际局域网和原已配对电脑自动学习的网络中找到Host，无需维护CIDR；电脑退出Tailscale后沿原记录/授权经批准子网重连",
       "acceptanceCriteria": "正常连接即可自动学习完整target/pin归属的范围；不读取117手填种子、不推测第三方VPN路由；原已知地址优先且全范围不截断/可取消。网络故障与真实认证拒绝分离。相关电脑Tailscale退出、Host运行时原手机从办公室外自动发现、旧记录/凭据/草稿和冷恢复须分别实测。",
-      "state": "developing",
+      "state": "merged",
       "owner": "办公室子网发现专用会话",
-      "acceptanceBasis": "source-review",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
         "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
@@ -39680,28 +39829,38 @@
         "OFFICE-AUTOMATIC-DISCOVERY-20261122-INSTALLED-CLOSURE-REVIEW",
         "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-AUTOMATIC-LAN",
         "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-SIGNED-CANDIDATE",
-        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED"
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SIX-RUNTIME-FROZEN",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL118-PREPARED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-OFFICIAL-HOST-FREEZE",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-STAGE-CLEANUP",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-HOST-DEPLOYED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-PHYSICAL-UI-AUTOMATION-BLOCKER",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-HTTPS-DEPLOYED",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-TAIL118-ENTRY",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-PROCESS-CORRECTION"
       ],
-      "pullRequests": ["BCAI/agent-hub-app#235"],
-      "nextAction": "提交本次已审差异到Gitea PR并核准确CI/合并SHA；沿主线同步冻结统一Host程序和118。同App签名包来源已私有核验，待合并等价证明和官方Host闭包后部署。再协调正常可信连接学习、电脑TS关闭及原手机自动发现/原凭据重连。",
-      "updatedAt": "2026-11-22",
+      "pullRequests": ["BCAI/agent-hub-app#235", "BCAI/agent-hub-app#238"],
+      "nextAction": "本人仅在15本机完成XCTest系统提示，来源确认后恢复原只读测试。先核正常连接自动学习和手机蜂窝/VPN，再由来源开新的TS-off窗口验证自动发现/原凭据同记录冷恢复；原手机从118正式入口原位升级后的5记录/授权/草稿由来源独立核验。",
+      "updatedAt": "2026-11-21T19:27:20.242739+00:00",
       "development": {
-        "state": "pending-integration",
-        "scope": "本次清洁候选在7325883e上增加独立已鉴权networks接口、真实接口掩码与原记录归属保存，正常前台自动学习、地址优先/多范围完整调度及网络/认证错误区分。117显式范围版本仍保留原合入事实；本候选未合入/部署。"
+        "state": "implemented-scoped",
+        "scope": "PR238/main6f65e484已合：原可信连接自动学习独立已鉴权networks并按完整target/pin持久保存，实际局域网自动范围、地址优先与完整公平扫描、网络/认证错误分离；旧Host404兼容。"
       },
       "acceptance": {
         "state": "historical-partial",
-        "scope": "自动来源修正：原生模拟器无CIDR真实LAN发现来源201、空授权页、冷后再发现通过；首轮停止后来源行保留可点击，独立短取消1/1通过且计数稳定。真实TLS2048范围原记录学习、中文网卡/虚接口、错误分类和组合根门禁为辅助通过。117独立15历史验收仅原手填实现；原手机自动学习/旧凭据/草稿/跨网及新物理场景仍未验。"
+        "scope": "自动来源修正：原生模拟器无CIDR真实LAN发现来源201、空授权页、冷后再发现通过；首轮停止后来源行保留可点击，独立短取消1/1通过且计数稳定。真实TLS2048范围原记录学习、中文网卡/虚接口、错误分类和组合根门禁为辅助通过。117独立15历史验收仅原手填实现；原手机自动学习/旧凭据/草稿/跨网及新物理场景仍未验。 独立15本轮首个XCTest在方法进入前被系统UI Automation密码验证挡住，原记录/草稿/outbox保持但新学习仍null，不能算自动发现失败或通过。"
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "scope": "正式117与回退保持；本次auto01/02及118私有包已由来源审收；当前待提交/PR。118四组件权限与117一致、459构建输入相等；源Host须按真实解析闭包及只读原绑定预检升级，尚未部署或切安装入口。"
+        "state": "deployed",
+        "scope": "PR238/main6f65e484已合，CI13478双context成功；GitHub原同步54d2876d与合入tree等价，官方Host冻结包757ba722已发布。来源Host差异部署完成并核原身份/证书/16绑定及新networks，仅owner读取不冒充手机凭据。正式118 IPA163004a4/459输入等价复用，来源既有可信HTTPS三文件已发布；Mini原Tail8088安装入口已切118且Serve全部字段不变。独立15同bundle118已安装并保留原1记录，但学习受系统UI Automation验证阻塞；原用户手机安装/5记录授权仍未核实。"
       },
       "execution": {
-        "state": "in-progress",
-        "scope": "Mini负责本次产品/协议/台账及受影响检查；来源负责Host统一部署、原手机和最终服务器发布/停TS观测窗口。原手机当前网络与停用哪台电脑TS由来源等待真人答复，本机独立工作不阻塞。"
+        "state": "blocked",
+        "scope": "正式Host与118分发入口已交付，Mini仅做文档事实收尾。独立15本人系统XCTest验证待来源确认，无自动重试或常驻观察；候选/runner/原1绑定保留，学习仍null。原手机5记录升级/旧授权/草稿/自动跨网独立待验。Source TS当前Running，无新采样/停用窗口；正常连接学习及手机网络明确后再由来源开窗。"
       },
-      "mergedScope": "PR235/正式117仅显式CIDR发现；2026-11-22真人反馈后本功能自动化修正重新开放，原PR/验收证据全部保留。"
+      "mergedScope": "PR235/117显式CIDR历史交付保留；PR238增加无需维护CIDR的自动来源和连接错误分类。代码合并不替代物理学习/旧授权/原手机升级验收。"
     }
   ],
   "mergedPullRequests": {
@@ -40553,6 +40712,28 @@
         "sha256": "c62524f5fd69049d91adb3f83400fc3108e7c8c5cf0f004f1c3891def51a9d32",
         "localAndRemoteDeleted": true
       }
+    },
+    "BCAI/agent-hub-app#238": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 238,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/238",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "3ccae13d331de401bf5a5bfa005bbe2c3391de82",
+      "mergeCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "checkedMainCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "mergedAt": "2026-11-22T02:29:23+08:00",
+      "checkedAt": "2026-11-21T18:33:10.875327+00:00",
+      "tree": "5092512d2940ea7913dc58a7a248748d922f962c",
+      "sourceDeleted": false,
+      "premergeCI": {
+        "workspace": "success",
+        "ios": "success",
+        "head": "3ccae13d331de401bf5a5bfa005bbe2c3391de82",
+        "run": 13478
+      },
+      "scope": "Automatic trusted network learning and routed discovery; original target, pins, device authorization and immutable operations retained. Physical automatic and original-phone upgrade acceptance pending.",
+      "evidenceRef": "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED"
     }
   },
   "deliveryWorkflow": {

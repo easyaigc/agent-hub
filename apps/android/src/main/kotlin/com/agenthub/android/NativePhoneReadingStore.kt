@@ -14,6 +14,10 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
     private val changed: ()->Unit) {
     var beforeNoticeRead: ()->Unit = {}
     val ledger=storage?.let(::NativeReadingLedger)
+    // The existing Q04-owned permit narrows reconciliation inputs; ordinary stores accept all real rows.
+    private val allowedReading: (TargetScope,String)->Boolean={target,thread->storage?.allowsExistingOwnedReading(target,thread) ?: true}
+    private val allowedScope: (TargetScope)->Boolean={target->storage?.allowsExistingOwnedReadingScope(target) ?: true}
+    internal fun allowsPendingRead(request: NativePendingRead)=allowedReading(request.target,request.threadId)
     val lifecycle=NativeReadingLifecycle()
     var snapshot by mutableStateOf(NativeUnreadSnapshot(0,emptySet(),emptyMap()));private set
     var ready by mutableStateOf(false);private set
@@ -119,18 +123,18 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
         val ledger=ledger ?: return
         // Coalesce small metadata, not old pages/bodies. Switching chats before the writer runs must not lose a head.
         val rows=linkedMapOf<String,NativeReadingSnapshot>()
-        for(value in pending?.values.orEmpty()+values) {
+        for(value in pending?.values.orEmpty()+values.filter {allowedReading(it.target,it.threadId)}) {
             val key=ThreadReadingIdentity.key(value.target,value.threadId);val old=rows[key]
             val prior=old?.latest ?: old?.state?.latest;val next=value.latest ?: value.state?.latest
             val preferred=if(prior!=null && (next==null || prior.revision>next.revision || prior.revision==next.revision && prior!=next))old!! else value
             rows[key]=preferred.copy(sourceUnread=(old?.sourceUnread==true || value.sourceUnread))
         }
         val oldHosts=linkedMapOf<String,NativeLegacyReading>()
-        for(value in pending?.legacy.orEmpty()+legacy) {
+        for(value in pending?.legacy.orEmpty()+legacy.filter {allowedReading(it.target,it.threadId)}) {
             val key=ThreadReadingIdentity.key(value.target,value.threadId)
             oldHosts[key]=value.copy(sourceUnread=oldHosts[key]?.sourceUnread==true || value.sourceUnread)
         }
-        pending=Input(scopes.toList(),rows.values.toList(),oldHosts.values.toList())
+        pending=Input(scopes.filter(allowedScope),rows.values.toList(),oldHosts.values.toList())
         if(worker?.isActive==true)return
         val epoch=generation;val ownership=reconciliationOwner.capture();busy=true
         worker=tasks.launch {
@@ -179,6 +183,10 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
         val threadId=content.threadId;val epoch=generation
         return tasks.launch {
             try {
+                // The visible page may arrive before its queued head is persisted. Wait for that
+                // writer, but keep the original view lease: a cover/background/target change
+                // during the wait must not authorize a fresh reading attempt.
+                awaitReconciliation()
                 val value=withContext(Dispatchers.IO) { ledger.readVisible(target,threadId,readerId,lifecycle,lease) }
                 if(value!=null && epoch==generation) { publish(value);failure=null;changed() }
             }catch(cancel: CancellationException) { throw cancel }

@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
     }
     fun size(value: Long)=Formatter.formatFileSize(context,value)
     val completed=model.completed
-    LazyColumn(Modifier.fillMaxSize().testTag("file-transfers"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize()) {
+    NativeUploadJobs(model.uploads,model.client,setOf("file-transfer"))
+    LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("file-transfers"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item("computer") {
             Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Row {ProductIcon("laptop");Spacer(Modifier.width(8.dp));Text(model.client.name,style=MaterialTheme.typography.titleMedium)}
@@ -48,7 +50,8 @@ import androidx.compose.ui.unit.dp
                 OutlinedButton(onClick={model.refresh()},enabled=current&&!model.busy,modifier=Modifier.testTag("refresh-transfer-files")) {
                     ProductIcon("refresh");Spacer(Modifier.width(8.dp));Text(t.tr("刷新传输记录"))
                 }
-                if(model.busy) {
+                val resumableVisible=model.uploads?.rows?.values?.any { !it.legacy&&!it.terminal&&it.manifest.purpose=="file-transfer"&&it.target.matches(model.client) }==true
+                if(model.busy&&!resumableVisible) {
                     LinearProgressIndicator(modifier=Modifier.fillMaxWidth().testTag("file-transfer-progress"))
                     model.activity?.let {Text(t.tr(it,model.activityFile.orEmpty()),style=MaterialTheme.typography.bodySmall)}
                     if(model.total>0)Text("${size(model.progress)} / ${size(model.total)}",style=MaterialTheme.typography.bodySmall)
@@ -102,5 +105,6 @@ import androidx.compose.ui.unit.dp
                 HorizontalDivider()
             }
         }
+    }
     }
 }

@@ -8,9 +8,17 @@ struct CodexManageApp: App {
     @UIApplicationDelegateAdaptor(TaskNotificationAppDelegate.self) private var notificationDelegate
     @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
     @Environment(\.scenePhase) private var scenePhase
+    #if R2_REAL_DEV_ACCEPTANCE
+    private let r2AdmissionFailure: String?
+    #endif
     init() {
+        #if R2_REAL_DEV_ACCEPTANCE
+        // Fail before startup stores or any product restoration exist.
+        do { try R2Admission.start(); r2AdmissionFailure = nil }
+        catch { r2AdmissionFailure = error.localizedDescription; return }
+        #endif
         SessionBackgroundSave.installUnreadTransactionLifetime()
-        #if DEBUG
+        #if DEBUG && !R2_REAL_DEV_ACCEPTANCE
         QuickAttachmentAcceptance.resetOwnedInboxIfRequested()
         NativeNetworkAcceptanceProbe.start()
         NativeThermalAcceptanceProbe.start()
@@ -18,6 +26,13 @@ struct CodexManageApp: App {
     }
     var body: some Scene {
         WindowGroup {
+            #if R2_REAL_DEV_ACCEPTANCE
+            if let failure = r2AdmissionFailure {
+                Text(failure).accessibilityIdentifier("r2-admission-denied")
+            } else {
+                AppStartupView().environment(\.locale, L10n.locale)
+            }
+            #else
             Group {
                 #if DEBUG
                 if EasyWorkDevPreviewAcceptanceView.enabled { EasyWorkDevPreviewAcceptanceView() } else if DevPreviewAcceptanceView.enabled { DevPreviewAcceptanceView() } else if UploadAcceptanceView.enabled { UploadAcceptanceView() } else { AppStartupView() }
@@ -31,6 +46,7 @@ struct CodexManageApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { L10n.syncNotificationLanguage() }
                 }
+            #endif
         }
     }
 }

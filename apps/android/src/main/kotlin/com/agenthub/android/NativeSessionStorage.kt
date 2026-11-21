@@ -20,10 +20,48 @@ import javax.crypto.spec.GCMParameterSpec
 /** Local secrets and cached reads are bound to this installation's Android Keystore key. */
 class NativeSessionStorage private constructor(context: Context, private val namespace: String, private val keyAlias: String,
     private val existingKeyOnly: Boolean, private val existingNamespaceOnly: Boolean, private val existingReadOnly: Boolean,
-    private val migrationReadOnly: Boolean,private val migrationKeys: ConcurrentHashMap<String,SecretKey>?=null) {
+    private val migrationReadOnly: Boolean,private val migrationKeys: ConcurrentHashMap<String,SecretKey>?=null,
+    private val ownedPolicy: ExistingOwnedPolicy?=null) {
     constructor(context: Context,namespace: String="mobile-v1",keyAlias: String="agent-hub-mobile-v1",
         existingKeyOnly: Boolean=false,existingNamespaceOnly: Boolean=false,existingReadOnly: Boolean=false):
         this(context,namespace,keyAlias,existingKeyOnly,existingNamespaceOnly,existingReadOnly,false)
+    /** Internal permit, used only by the fixed existing-owned factory. Defaults never install this policy. */
+    internal class ExistingOwnedPolicy(protected: Map<String,String>,mutable: Set<String>,val targetKey: String,
+        private val live: ()->Unit,private val validate: (String,String)->Unit,
+        private val reading: NativeExistingOwnedReadingScope?=null) {
+        private val original=protected.toMap()
+        private val allowed=mutable.toSet()
+        private val history="history:$targetKey"
+        init {
+            require(original.keys==setOf("easywork-device-identity","codex-private-connections-v1","q02-new-binding-attempt-v1"))
+            require(targetKey.isNotBlank()&&allowed.all {it in setOf("metadata","operations:$targetKey",history,"$history:parts","ai-sharing-v1","submission:q04-remaining",NativeReadingLedger.STORAGE_NAME)})
+            require("metadata" in allowed&&"operations:$targetKey" in allowed)
+            require((NativeReadingLedger.STORAGE_NAME in allowed)==(reading!=null))
+            require(reading==null||reading.targetKey==targetKey)
+        }
+        fun allowsReading(target: com.agenthub.core.TargetScope,thread: String)=reading?.allows(target,thread)==true
+        fun allowsReadingScope(target: com.agenthub.core.TargetScope)=reading?.allowsTarget(target)==true
+        fun reconcileReadingScopes(previous: Set<String>,proposed: Set<String>)=reading?.reconcileScopes(previous,proposed) ?: previous
+        fun requireLive()=live()
+        private fun part(name: String): Boolean {
+            if("$history:parts" !in allowed||!name.startsWith("$history:part:"))return false
+            val suffix=name.removePrefix("$history:part:").split(':')
+            return suffix.size==2&&runCatching {java.util.UUID.fromString(suffix[0]).toString()==suffix[0]}.getOrDefault(false)&&
+                suffix[1].toIntOrNull()?.let {it in 0..1023&&it.toString()==suffix[1]}==true
+        }
+        fun beforeText(name: String,text: String,previous: (()->String?)?=null): Boolean {
+            requireLive()
+            original[name]?.let {require(it==text) {"Original identity/grant/binding is immutable"};return false}
+            val submission="submission:q04-remaining" in allowed&&name.startsWith("submission:")&&
+                runCatching {java.util.UUID.fromString(name.removePrefix("submission:")).toString()==name.removePrefix("submission:")}.getOrDefault(false)
+            require(name in allowed&&name !in setOf("$history:parts","submission:q04-remaining")||part(name)||submission) {"Unapproved owned record"}
+            if(name==NativeReadingLedger.STORAGE_NAME)checkNotNull(reading).validate(checkNotNull(previous).invoke(),text)
+            validate(name,text);return true
+        }
+        fun beforeRemove(name: String) {requireLive();require(part(name)) {"Only an explicitly allowed obsolete owned cache fragment may be removed"}}
+        fun beforeSnapshot(name: String) {requireLive();require(name in allowed&&name !in setOf("$history:parts","submission:q04-remaining",NativeReadingLedger.STORAGE_NAME)) {"Unapproved queued snapshot"}}
+        fun rejectExtension(): Nothing=error("Existing Q04 owner forbids child/binary/migration/raw writer extensions")
+    }
     private var migrationPolicy: NativeMigrationExistingPolicy?=null
     private var migrationRoot: NativeSessionStorage?=null
     private var migrationChildPath: String?=null
@@ -115,6 +153,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         check(writableGeneration.getOrThrow()==activeGeneration()) { "旧安装的保存不能覆盖迁入数据" }
     }
     private fun requireWritable() {
+        ownedPolicy?.requireLive()
         rejectInspectionMutation()
         check(!retiredWriter) { "旧迁移会话已停止保存，请使用恢复后的会话" }
         requireCurrentGeneration()
@@ -122,6 +161,18 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         check(recovery.queuedGeneration.get()?.let { it==recovery.generation }!=false) { "旧的保存已被本地恢复替代" }
     }
     companion object {
+        /** Finite cold reopen of an already admitted Q02-owned root. Never creates a namespace/key. */
+        internal fun existingQ04Owned(context: Context,ownerRun: String,policy: ExistingOwnedPolicy): NativeSessionStorage {
+            require(BuildConfig.DEBUG&&context.packageName=="com.easyai.agenthub.android.acceptance")
+            require(java.util.UUID.fromString(ownerRun).toString()==ownerRun)
+            val base=context.noBackupFilesDir.canonicalFile.parentFile!!
+            require(base.name==ownerRun&&base.parentFile?.name=="q02-real-dev-profiles-v1")
+            policy.requireLive()
+            return NativeSessionStorage(context,"q02-session","q02-real-$ownerRun",true,true,false,false,null,policy).also {
+                try {it.key;require(it.activeGeneration()==null);policy.requireLive()}
+                catch(error: Throwable){it.retireWriter();throw error}
+            }
+        }
         /** Source snapshot decoder only. Existing namespace/key, no ordinary pointer path. */
         internal fun existingComputerFileSourceDecoder(context: Context,namespace: String,keyAlias: String): NativeSessionStorage {
             check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
@@ -159,7 +210,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         } finally {clear.fill(0)}
     }
     private fun decodeAtomic(atomic: AtomicFile,name: String): String? {
-        if(strictMigration) {
+        if(strictMigration||ownedPolicy!=null) {
             val file=atomic.baseFile;requireSettledMigrationFile(file)
             if(java.nio.file.Files.notExists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))return null
             val ref=NativeMigrationReadOnlyFile(requireNotNull(file.parentFile),file,NativeMigrationTextFrames.MAX_RECORD_BYTES+65_569,migrationReads)
@@ -170,6 +221,11 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         return decodeRecord(bytes,name).second
     }
     private fun encodeAtomic(atomic: AtomicFile,name: String,text: String) {
+        ownedPolicy?.let {
+            it.requireLive()
+            require(atomic.baseFile.parentFile!!.canonicalFile==root.canonicalFile)
+            if(!it.beforeText(name,text) {decodeAtomic(atomic,name)})return // Before UTF-8 allocation, encryption or AtomicFile, including queued writes.
+        }
         val nameBytes=strictBytes(name);require(name.isNotEmpty()&&name.length<=16384&&nameBytes.size<=65536)
         val textBytes=strictBytes(text)
         val header=java.nio.ByteBuffer.allocate(4+nameBytes.size).putInt(nameBytes.size).put(nameBytes).array()
@@ -181,6 +237,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     private fun activeGeneration(): String? {
         check(!existingReadOnly) { "Read-only views never resolve generations through AtomicFile" }
+        if(ownedPolicy!=null){ownedPolicy.requireLive();return null}
         val raw=decodeAtomic(atomic(root,migrationPointerName),migrationPointerName) ?: return null
         return generationFromRaw(raw)
     }
@@ -197,7 +254,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     // The read-only constructor must not enter any ordinary pointer/AtomicFile path, even
     // when another process creates a backup after a previous inventory was captured.
-    private val writableGeneration: Result<String?> = if(existingReadOnly||migrationReadOnly) Result.success(null)
+    private val writableGeneration: Result<String?> = if(existingReadOnly||migrationReadOnly||ownedPolicy!=null) Result.success(null)
         else ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
     init {
         if(existingReadOnly) {
@@ -383,6 +440,9 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     private fun dataRoot(): File=activeGeneration()?.let {File(root,"migration-generation-$it")} ?: root
     private fun file(name: String): AtomicFile {require(name!=migrationPointerName);return atomic(dataRoot(),name)}
+    internal fun allowsExistingOwnedReading(target: com.agenthub.core.TargetScope,thread: String)=ownedPolicy?.allowsReading(target,thread) ?: true
+    internal fun allowsExistingOwnedReadingScope(target: com.agenthub.core.TargetScope)=ownedPolicy?.allowsReadingScope(target) ?: true
+    internal fun reconcileReadingScopes(previous: Set<String>,proposed: Set<String>)=ownedPolicy?.reconcileReadingScopes(previous,proposed) ?: proposed
     fun read(name: String): String? = ioLock.withLock {if(existingReadOnly) existingText(name,1_048_576,true) else {checkMigrationAccess();decodeAtomic(file(name),name)}}
     fun write(name: String,text: String)=ioLock.withLock {
         migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
@@ -409,6 +469,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     private fun migrationFileExists(file: File)=java.nio.file.Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)
     private fun requireSettledMigrationFile(file: File) {
+        if(ownedPolicy!=null&&file.name==digest(migrationPointerName)+".bin")ownedPolicy.rejectExtension()
         require(!migrationFileExists(File(file.path+".bak"))&&!migrationFileExists(File(file.path+".new"))) {"Pending migration audit record; originals preserved"}
         if(migrationFileExists(file))require(file.isFile&&file.canonicalFile==File(requireNotNull(file.parentFile).canonicalFile,file.name))
     }
@@ -524,7 +585,17 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     private fun computerFilesPort(): NativeComputerFileDurableFiles {
         requireComputerFileWritable()
-        return computerFilesDurable?:NativeComputerFileDurableFiles(root,::requireComputerFileWritable).also {computerFilesDurable=it}
+        return computerFilesDurable?:run {
+            val parent=requireNotNull(root.parentFile).canonicalFile
+            val folder=File(parent,root.name)
+            val authority={
+                requireComputerFileWritable()
+                require(!java.nio.file.Files.isSymbolicLink(root.toPath())&&root.canonicalFile==folder&&
+                    root.parentFile!!.canonicalFile==parent)
+            }
+            authority()
+            NativeComputerFileDurableFiles(folder,authority).also {computerFilesDurable=it}
+        }
     }
     internal fun <T> computerFileTransaction(work: ()->T): T=ioLock.withLock {computerFilesPort().transaction(work)}
     internal fun computerFileRead(name: String): String?=ioLock.withLock {
@@ -813,6 +884,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
 
     private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,actualRecordCount: Int,checkpoint: (Int)->Unit,publicationObserver: PublicationObserver?=null,write: (File)->Unit): String {
+        ownedPolicy?.rejectExtension()
         val identity=publicationObserver?.let {
             check(migrationPolicy!=null) {"Publication observation requires the strict existing writer"}
             val receipt=NativeMigrationCandidateStore.Receipt(candidateId,sha256,recordCount)
@@ -887,6 +959,18 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         }
         fun optionalText(name: String,maximumBytes: Int): String?=source.ioLock.withLock {
             check(!closed);source.existingText(name,maximumBytes,true)
+        }
+        /** Opaque preservation only: a matching digest is not format/authenticity or replay approval.
+         * Keeps the exact existing-cipher FD, ownership, sidecar, byte-limit and EOF fences;
+         * unlike optionalText it also snapshots legacy v1 without interpreting old intents.
+         */
+        internal fun opaqueTextDigest(name: String,maximumBytes: Int): String?=source.ioLock.withLock {
+            check(!closed);require(maximumBytes in 1..1_048_576)
+            val raw=source.existingCipher(name,maximumBytes+65_569,true) ?: return@withLock null
+            try {
+                require(raw[0] in listOf(1.toByte(),3.toByte()))
+                MessageDigest.getInstance("SHA-256").digest(raw).joinToString("") { "%02x".format(it) }
+            } finally { raw.fill(0) }
         }
         fun binary(name: String,expectedSize: Int): ByteArray=source.ioLock.withLock {
             check(!closed);source.existingBinary(name,expectedSize,12*1024*1024)
@@ -1202,6 +1286,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
      * Global snapshot then root IO ordering matches export/activation. One AtomicFile is the receipt.
      */
     internal fun persistSelectionReturn(context: Context,event: NativeSelectionReturnAudit.Event): Boolean = snapshotTransaction {ioLock.withLock {
+        ownedPolicy?.rejectExtension()
         check(!existingReadOnly)
         require(root.canonicalPath==canonicalRoot&&!java.nio.file.Files.isSymbolicLink(root.toPath()))
         val stat=android.system.Os.lstat(root.path)
@@ -1229,6 +1314,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         }finally {current.retireWriter()}
     }}
     internal fun reopen(context: Context): NativeSessionStorage {
+        ownedPolicy?.rejectExtension()
         rejectInspectionMutation()
         return NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly,existingNamespaceOnly,existingReadOnly,false,migrationKeys?:migrationRoot?.migrationKeys).also {
             it.migrationPolicy=migrationPolicy;it.migrationRoot=migrationRoot;it.migrationChildPath=migrationChildPath;it.migrationScope=migrationScope;it.migrationAccess=migrationAccess
@@ -1272,6 +1358,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         out.writeInt(4);out.writeInt(encrypted.size);out.write(cipher.iv);out.write(encrypted);return cipher.iv
     }
     private fun encodeBinaryAtomic(atomic: AtomicFile,name: String,input: java.io.InputStream,size: Int) {
+        ownedPolicy?.rejectExtension()
         require(size in 1..21*1024*1024);binaryName(name);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);val stream=atomic.startWrite()
         try {
             val out=java.io.DataOutputStream(stream);val nonce=writeBinaryHeader(out,name,size)
@@ -1286,12 +1373,14 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         }catch(error: Throwable){atomic.failWrite(stream);throw error}
     }
     internal fun writeBinary(name: String,source: File,maximumBytes: Int=12*1024*1024)=ioLock.withLock {
+        ownedPolicy?.rejectExtension()
         migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);requireWritable();binaryName(name);require(maximumBytes in 1..21*1024*1024)
         val size=source.length();require(size in 1..maximumBytes.toLong())
         source.inputStream().use {encodeBinaryAtomic(file(name),name,it,size.toInt())}
     }
     /** Bounded caller-owned bytes; no plaintext scratch file or text/base64 Keystore envelope. */
     internal fun writeBinaryBytes(name: String,bytes: ByteArray,maximumBytes: Int)=ioLock.withLock {
+        ownedPolicy?.rejectExtension()
         migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);requireWritable();binaryName(name);require(maximumBytes in 1..21*1024*1024&&bytes.size in 1..maximumBytes)
         encodeBinaryAtomic(file(name),name,java.io.ByteArrayInputStream(bytes),bytes.size)
     }
@@ -1344,6 +1433,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         val output=java.io.ByteArrayOutputStream(expectedSize);migrationCopyBinaryTo(name,expectedSize,output);return output.toByteArray()
     }
     private fun encodeBinaryStream(atomic: AtomicFile, name: String, size: Int, produce: (java.io.OutputStream) -> Unit) {
+        ownedPolicy?.rejectExtension()
         require(size in 1..21 * 1024 * 1024); migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);val stream = atomic.startWrite(); val buffer = ByteArray(65536)
         try {
             val out = java.io.DataOutputStream(stream); val nonce = writeBinaryHeader(out, name, size)
@@ -1368,6 +1458,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
         } catch (error: Throwable) { atomic.failWrite(stream); throw error } finally { buffer.fill(0) }
     }
     internal fun writeBinaryStream(name: String, size: Int, produce: (java.io.OutputStream) -> Unit) = ioLock.withLock {
+        ownedPolicy?.rejectExtension()
         migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);requireWritable(); encodeBinaryStream(file(name), name, size, produce);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name)
     }
     /** Discovery, verification and export share one generation lock. No whole binary or Base64 value. */
@@ -1477,6 +1568,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     // immutable snapshot per target and serialize on the storage worker.
     // Submission intent persistence continues to use the synchronous write.
     fun enqueueSnapshot(name: String, save: ()->Unit, failed: (Exception)->Unit) {
+        ownedPolicy?.beforeSnapshot(name)
         rejectInspectionMutation()
         val generation=recovery.generation
         val guardedSave: ()->Unit = {
@@ -1499,13 +1591,15 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     internal fun <T> operationTransaction(block: ()->T): T = ioLock.withLock(block)
     internal val coordinationKey get()=canonicalRoot
     /** Memory-only ownership admission; strict views and retired writers cannot create raw coordination files. */
-    internal fun requireRawWriterOwner(){check(!retiredWriter);checkMigrationAccess()}
+    internal fun requireRawWriterOwner(){ownedPolicy?.rejectExtension();check(!retiredWriter);checkMigrationAccess()}
     /** IO prepares only named native runtime children. A later publication invalidates the cache. */
     internal fun prepareChild(context: Context,suffix: String): NativeSessionStorage = ioLock.withLock {
+        ownedPolicy?.rejectExtension()
         requireCurrentGeneration();check(!retiredWriter)
         child(context,suffix).also {preparedChildren[suffix]=PreparedChild(recovery.publicationEpoch,it);migrationPolicy?.childPrepared(migrationAccess,listOfNotNull(migrationChildPath,suffix).joinToString("/"))}
     }
     internal fun child(context: Context,suffix: String): NativeSessionStorage {
+        ownedPolicy?.rejectExtension()
         rejectInspectionMutation()
         check(!existingReadOnly) { "Read-only views cannot create child storage" }
         require(suffix.matches(Regex("[a-z0-9-]{1,32}")))
@@ -1527,7 +1621,7 @@ class NativeSessionStorage private constructor(context: Context, private val nam
             else Result.failure(IllegalStateException("本机仍有保存失败的资料，原内容已保留。"))) }
     }
     internal fun storedBytes(name: String): Long = ioLock.withLock { checkMigrationAccess();file(name).baseFile.length() }
-    fun remove(name: String) = ioLock.withLock { migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);requireWritable();file(name).delete() }
+    fun remove(name: String) = ioLock.withLock { ownedPolicy?.beforeRemove(name);migrationPolicy?.requireWrite(migrationAccess,migrationChildPath,name);requireWritable();file(name).delete() }
     fun token(id: String) = CodexConnectionVault(this).token(id) ?: read("token:$id").orEmpty()
     fun setToken(id: String, value: String) = operationTransaction {
         if (value.isEmpty()) remove("token:$id") else write("token:$id", value)

@@ -290,8 +290,8 @@ private struct EasyWorkReceiptGateProvider: AgentClient {
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
     try await base.history(client, threadId: threadId, cursor: cursor)
   }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
-    let receipt = try await base.receipt(client, id: id)
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt {
+    let receipt = try await base.receipt(client, id: id, threadId: threadId)
     if id == originalID {
       guard receipt.hostId == client.id, receipt.clientMessageId == originalID,
         receipt.threadId == originalThread, receipt.turnId == originalRoot,
@@ -456,7 +456,7 @@ private struct EasyWorkLateEventProvider: AgentClient {
   }
   func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt { throw HostServiceError.unavailable }
   func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt { throw HostServiceError.unavailable }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt { try await base.receipt(client, id: id) }
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt { try await base.receipt(client, id: id, threadId: threadId) }
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot { try await base.workspace(client, projectCursor: projectCursor, threadCursor: threadCursor) }
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot { try await base.history(client, threadId: threadId, cursor: cursor) }
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {
@@ -619,11 +619,11 @@ private struct EasyWorkLateMissingReceiptProvider: AgentClient {
     guard client.id == clientID, let actual = client.agentConnection?.target,
       actual.matchesCapturedPayload(target) else { throw HostServiceError.wrongHost }
   }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
-    guard await gate.isOriginal(id) else { return try await base.receipt(client, id: id) }
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt {
+    guard await gate.isOriginal(id) else { return try await base.receipt(client, id: id, threadId: threadId) }
     try validate(client)
     try await gate.beginOriginal(clientID: client.id, id: id)
-    do { return try await base.receipt(client, id: id) }
+    do { return try await base.receipt(client, id: id, threadId: threadId) }
     catch let error as HostServiceError {
       guard case .message(let message) = error,
         message == L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。") else { throw error }
@@ -911,8 +911,8 @@ private struct EasyWorkSendWaitProvider: AgentClient {
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot {
     try await base.history(client, threadId: threadId, cursor: cursor)
   }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
-    let receipt = try await base.receipt(client, id: id)
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt {
+    let receipt = try await base.receipt(client, id: id, threadId: threadId)
     let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
     try await gate.observeOriginalReceiptQuery(encoder.encode(receipt))
     return receipt
@@ -10020,7 +10020,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
           }
           guard store.saved.replyRecovery?[operation]?.fingerprint == captured.fingerprint,
             store.draft.text == next, !store.canRetryPending else { throw HostServiceError.invalidResponse }
-          let receipt = try await provider.receipt(client, id: operation)
+          let receipt = try await provider.receipt(client, id: operation, threadId: thread.id)
           let root = try XCTUnwrap(receipt.turnId)
           guard receipt.threadId == thread.id, receipt.clientMessageId == operation else { throw HostServiceError.invalidResponse }
           report["rootRunId"] = root; report["doubleTapDidNotReleaseSecondRetryAuthority"] = true
@@ -10725,7 +10725,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["firstPending"] = try JSONSerialization.jsonObject(with: firstData)
       report["firstOperationId"] = actualFirstID; report["rootRunId"] = root
       report["verifiedFirstReceiptSHA256"] = HostService.hash(receiptData)
-      let current = try await base.receipt(client, id: actualFirstID)
+      let current = try await base.receipt(client, id: actualFirstID, threadId: thread.id)
       guard current.clientMessageId == actualFirstID, current.threadId == thread.id,
         current.turnId == root, current.state == "submitted", current.error == nil else { throw HostServiceError.wrongHost }
       if store.saved.outbox?[key]?.clientMessageId == actualFirstID {
@@ -11219,7 +11219,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         } catch let refusal as EasyWorkRemoteRejection {
           guard refusal.code == "invalid_generation_settings" else { throw refusal }
         }
-        let receipt = try await provider.receipt(client, id: operation)
+        let receipt = try await provider.receipt(client, id: operation, threadId: threadID)
         guard receipt.hostId == client.id, receipt.threadId == threadID,
           receipt.clientMessageId == operation, receipt.state == "failed", receipt.turnId == nil else { throw HostServiceError.invalidResponse }
         rejected.append(label); report["rejectedControls"] = rejected; try save()
@@ -12799,7 +12799,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     let selectedClient = store.saved.selectedClientId, selectedThread = store.selectedThreadId
     let fingerprints = store.saved.replyRecovery?.mapValues(\.fingerprint)
     let provider = try AgentClients.resolve(client)
-    let receipt = try await provider.receipt(client, id: original)
+    let receipt = try await provider.receipt(client, id: original, threadId: expectedThread)
     XCTAssertEqual(receipt.clientMessageId, original)
     XCTAssertEqual(receipt.hostId, client.id)
     XCTAssertEqual(receipt.threadId, expectedThread)
@@ -12807,7 +12807,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     XCTAssertEqual(receipt.state, expectedState)
     XCTAssertNil(receipt.error)
     var absentWasNotAccepted = false
-    do { _ = try await provider.receipt(client, id: missing) }
+    do { _ = try await provider.receipt(client, id: missing, threadId: expectedThread) }
     catch {
       guard error.localizedDescription == L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。") else { throw error }
       absentWasNotAccepted = true
@@ -13602,7 +13602,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     XCTAssertEqual(sent.clientMessageId, operation); XCTAssertEqual(sent.threadId, thread)
     XCTAssertEqual(sent.state, "failed"); XCTAssertNil(sent.turnId); XCTAssertNotNil(sent.error)
     report["sendState"] = sent.state; report["sendHasExecutedTurn"] = sent.turnId != nil; try save()
-    let queried = try await provider.receipt(client, id: operation)
+    let queried = try await provider.receipt(client, id: operation, threadId: thread)
     XCTAssertEqual(try encoder.encode(sent), try encoder.encode(queried))
     let after = try await provider.history(client, threadId: thread, cursor: nil)
     XCTAssertEqual(after.runtime?.state, "idle")
@@ -13711,7 +13711,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["queueCancelAttempted"] = true; try save()
       let cancelledQueue = try await provider.cancelQueue(client, threadId: thread.id, messageId: queuedID)
       XCTAssertTrue(cancelledQueue.ok)
-      let queueStatus = try await provider.receipt(client, id: queuedID)
+      let queueStatus = try await provider.receipt(client, id: queuedID, threadId: thread.id)
       XCTAssertEqual(queueStatus.state, "cancelled")
       report["queueCancelled"] = true; try save()
       let guidanceID = try field("guidanceOperationId")
@@ -13720,7 +13720,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       report["guidanceAttempted"] = true; try save()
       let guided = try await provider.send(client, reply: guidance)
       XCTAssertEqual(guided.state, "submitted"); XCTAssertEqual(guided.turnId, root)
-      let guidanceStatus = try await provider.receipt(client, id: guidanceID)
+      let guidanceStatus = try await provider.receipt(client, id: guidanceID, threadId: thread.id)
       XCTAssertEqual(guidanceStatus.state, "submitted")
       report["guidanceAccepted"] = guided.state == "submitted"; try save()
       let question = try XCTUnwrap(first.questions.first), choice = try field("answerChoice")
@@ -14351,6 +14351,8 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       let foreignCommand = c["foreignCommandOperationId"] as? String, UUID(uuidString: foreignCommand) != nil,
       let foreignVoice = c["foreignVoiceOperationId"] as? String, UUID(uuidString: foreignVoice) != nil,
       let ownCommand = c["ownRejectedGuidanceOperationId"] as? String, UUID(uuidString: ownCommand) != nil,
+      let ownThread = c["ownRejectedGuidanceThreadId"] as? String, !ownThread.isEmpty,
+      let foreignThread = c["foreignCommandThreadId"] as? String, !foreignThread.isEmpty,
       let bindings = c["allowedBindingIds"] as? [String] else { throw HostServiceError.invalidResponse }
     let target = try JSONDecoder().decode(AgentRuntimeTarget.self,
       from: JSONSerialization.data(withJSONObject: try XCTUnwrap(c["target"])))
@@ -14384,7 +14386,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
     do {
       report["status"] = "reading-own-and-foreign-device-status"; try save()
       let provider = try AgentClients.resolve(client)
-      let own = try await provider.receipt(client, id: ownCommand)
+      let own = try await provider.receipt(client, id: ownCommand, threadId: ownThread)
       guard own.clientMessageId == ownCommand, own.hostId == client.id, own.state == "failed", own.turnId == nil else {
         throw HostServiceError.invalidResponse
       }
@@ -14394,7 +14396,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         throw HostServiceError.invalidResponse
       }
       do {
-        _ = try await provider.receipt(client, id: foreignCommand)
+        _ = try await provider.receipt(client, id: foreignCommand, threadId: foreignThread)
         throw NSError(domain: "EasyWorkSimulatorDeviceIsolation", code: 1)
       } catch let error as HostServiceError {
         guard case let .message(text) = error,
@@ -14627,11 +14629,11 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         guard history.runtime?.state == "idle", history.messages.allSatisfy({ $0.runId == nil || allowedRoots.contains($0.runId!) }) else { throw HostServiceError.invalidResponse }
         var cancelled: [String] = []
         for id in ids {
-          let before = try await provider.receipt(client, id: id)
+          let before = try await provider.receipt(client, id: id, threadId: thread)
           guard before.threadId == thread, before.state == "queued", before.queueSource == "native", before.queuePresent == true, before.turnId == nil else { throw HostServiceError.invalidResponse }
           report["nextOwnedQueueCancellation"] = id; try save()
           guard try await provider.cancelQueue(client, threadId: thread, messageId: id).ok else { throw HostServiceError.invalidResponse }
-          let after = try await provider.receipt(client, id: id)
+          let after = try await provider.receipt(client, id: id, threadId: thread)
           guard after.threadId == thread, after.state == "cancelled", after.queueSource == "native", after.queuePresent != true, after.turnId == nil else { throw HostServiceError.invalidResponse }
           cancelled.append(id)
         }
@@ -14645,7 +14647,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
           c["originalAcceptedOwnerLossIndependentlyVerified"] as? Bool == true else { throw HostServiceError.invalidResponse }
         let thread = try field("threadId"), root = try field("rootRunId"), id = try field("queueId")
         guard UUID(uuidString: thread) != nil, UUID(uuidString: root) != nil else { throw HostServiceError.invalidResponse }
-        let receipt = try await provider.receipt(client, id: id)
+        let receipt = try await provider.receipt(client, id: id, threadId: thread)
         guard receipt.threadId == thread, receipt.turnId == root, receipt.state == "submitted",
           receipt.queueSource == "native" else { throw HostServiceError.invalidResponse }
         let before = try await provider.history(client, threadId: thread, cursor: nil)
@@ -14808,7 +14810,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
           expectedState != "submitted" || root.flatMap(UUID.init(uuidString:)) != nil,
           action != "cleanup" || expectedState == "submitted" else { throw HostServiceError.invalidResponse }
         let expectedRoot: String? = expectedState == "submitted" ? root : nil
-        let first = try await provider.receipt(client, id: id), second = try await provider.receipt(client, id: id)
+        let first = try await provider.receipt(client, id: id, threadId: thread), second = try await provider.receipt(client, id: id, threadId: thread)
         guard first.threadId == thread, first.state == expectedState, first.turnId == expectedRoot,
           first.queueSource == "native", second.clientMessageId == first.clientMessageId,
           second.threadId == thread, second.turnId == expectedRoot, second.state == first.state else { throw HostServiceError.invalidResponse }
@@ -14905,7 +14907,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         guard store.queueActionPending(first) else { throw HostServiceError.invalidResponse }
         store.cancelQueue(first, expectedTargetKey: key)
         try await wait("one original Store cancellation completes", seconds: 55) { !store.queueActionPending(first) }
-        let cancelled = try await provider.receipt(client, id: first.clientMessageId)
+        let cancelled = try await provider.receipt(client, id: first.clientMessageId, threadId: thread.id)
         _ = await store.loadHistory(threadId: thread.id)
         guard cancelled.state == "cancelled", cancelled.threadId == thread.id, cancelled.queueSource == "native",
           cancelled.turnId == nil, cancelled.queuePresent != true,
@@ -14945,10 +14947,10 @@ final class EasyWorkHostedNativeTests: XCTestCase {
           unknown["threadId"] as? String == thread.id, UUID(uuidString: acceptedRoot) != nil, acceptedRoot != root,
           unknown["originalRuntimeReceiptMatched"] as? Bool == true,
           unknown["originalUnknownAdmissionDurablyObserved"] as? Bool == true else { throw HostServiceError.invalidResponse }
-        var first = try await provider.receipt(client, id: receipt.clientMessageId)
+        var first = try await provider.receipt(client, id: receipt.clientMessageId, threadId: thread.id)
         let settlementEnd = Date().addingTimeInterval(55)
         while first.queuePresent == true, Date() < settlementEnd {
-          try await Task.sleep(for: .milliseconds(200)); first = try await provider.receipt(client, id: receipt.clientMessageId)
+          try await Task.sleep(for: .milliseconds(200)); first = try await provider.receipt(client, id: receipt.clientMessageId, threadId: thread.id)
         }
         guard first.state == "submitted", first.queueSource == "native", first.threadId == thread.id,
           first.turnId == acceptedRoot, first.queuePresent != true else { throw HostServiceError.invalidResponse }
@@ -14956,7 +14958,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
         report["automaticFirstRootRunId"] = acceptedRoot
         report["originalIdleSendRecoveredBySameIdWithoutExecuteOrReplay"] = true; try save()
         let secondID = try XCTUnwrap(report["secondQueueId"] as? String)
-        var second = try await provider.receipt(client, id: secondID)
+        var second = try await provider.receipt(client, id: secondID, threadId: thread.id)
         var final = try await provider.history(client, threadId: thread.id, cursor: nil)
         let end = Date().addingTimeInterval(180)
         while Date() < end {
@@ -14974,7 +14976,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
             }
           }
           try await Task.sleep(for: .milliseconds(250))
-          second = try await provider.receipt(client, id: secondID)
+          second = try await provider.receipt(client, id: secondID, threadId: thread.id)
           final = try await provider.history(client, threadId: thread.id, cursor: nil)
         }
         guard report["threeOriginalModelOutputsMatchedFrozenMarkers"] as? Bool == true else { throw HostServiceError.invalidResponse }
@@ -15033,7 +15035,7 @@ final class EasyWorkHostedNativeTests: XCTestCase {
           unknown["originalUnknownAdmissionDurablyObserved"] as? Bool == true else { throw HostServiceError.invalidResponse }
         report["independentAcceptedRuntimeAndDurableUnknownWitnessMatched"] = true; try save()
       }
-      let submitted = try await provider.receipt(client, id: receipt.clientMessageId)
+      let submitted = try await provider.receipt(client, id: receipt.clientMessageId, threadId: thread.id)
       guard submitted.state == "submitted", submitted.turnId == root, submitted.threadId == thread.id else { throw HostServiceError.invalidResponse }
       if expectsRecovery {
         _ = await store.loadHistory(threadId: thread.id)
@@ -15788,7 +15790,10 @@ private actor C2EncryptedPeer: AgentTransport {
       var result: Any = [:]
       switch method {
       case "queue/execute": result = ["state":mode == "false" ? "uncertain" : "submitted"]
-      case "queue/cancel": result = ["cancelled":mode != "false"]
+      case "queue/cancel", "turn/cancel":
+        if mode == "numeric-cancellation" { result = ["cancelled": 1] }
+        else if mode == "string-cancellation" { result = ["cancelled": "true"] }
+        else { result = ["cancelled":mode != "false"] }
       case "command/status":
         let params = req["params"] as? [String:Any] ?? [:]
         if params["commandId"] as? String == "lost-operation" {
@@ -15797,6 +15802,9 @@ private actor C2EncryptedPeer: AgentTransport {
         } else if mode == "missing" { result = NSNull() }
         else if mode == "wrong-id" { result = ["operationId":"other"] }
         else if mode == "wrong-target" { result = ["hostId":"other"] }
+        else if mode == "wrong-command-thread" { result = ["method":"turn/start","state":"uncertain","threadId":"other-thread"] }
+        else if mode == "wrong-result-thread" { result = ["state":"completed","response":["result":["state":"queued","threadId":"other-thread"]]] }
+        else if mode == "both-wrong-thread" { result = ["threadId":"other-thread","state":"completed","response":["result":["state":"queued","threadId":"other-thread"]]] }
         else { result = ["method":"turn/start","state":"uncertain","threadId":"thread-one"] }
       case "queue/status":
         let params = req["params"] as? [String:Any] ?? [:]
@@ -15849,20 +15857,33 @@ extension EasyWorkHostedNativeTests {
     let notCancelled = try await provider.cancelQueue(client,threadId:"thread-one",messageId:"message-one")
     XCTAssertFalse(notExecuted.ok); XCTAssertFalse(notCancelled.ok)
     await peer.setMode("normal")
-    let recovered = try await provider.receipt(client,id:"operation-one")
+    let recovered = try await provider.receipt(client,id:"operation-one", threadId: "thread-one")
     XCTAssertEqual(recovered.clientMessageId,"operation-one"); XCTAssertEqual(recovered.threadId,"thread-one")
     await peer.setMode("missing-queue")
-    let missingQueue = try await provider.receipt(client,id:"operation-one")
+    let missingQueue = try await provider.receipt(client,id:"operation-one", threadId: "thread-one")
     XCTAssertEqual(missingQueue.state,"uncertain")
     for mode in ["missing","wrong-id","wrong-target","wrong-queue-id"] {
       await peer.setMode(mode)
-      do { _ = try await provider.receipt(client,id:"operation-one"); XCTFail("accepted \(mode)") } catch {}
+      do { _ = try await provider.receipt(client,id:"operation-one", threadId: "thread-one"); XCTFail("accepted \(mode)") } catch {}
+    }
+    for mode in ["wrong-command-thread", "wrong-result-thread", "both-wrong-thread"] {
+      await peer.setMode(mode)
+      let before = await peer.trace().count
+      do { _ = try await provider.receipt(client, id:"operation-one", threadId:"thread-one"); XCTFail("accepted \(mode)") } catch {}
+      let newReads = Array((await peer.trace()).dropFirst(before))
+      XCTAssertEqual(newReads.compactMap { $0["method"] as? String }, ["command/status"])
+    }
+    for mode in ["numeric-cancellation", "string-cancellation"] {
+      await peer.setMode(mode)
+      let cancelled = try await provider.cancelQueue(client, threadId:"thread-one", messageId:"message-one")
+      let stopped = try await provider.stop(client, threadId:"thread-one", turnId:"run-one")
+      XCTAssertFalse(cancelled.ok); XCTAssertFalse(stopped.ok)
     }
     let beforeLoss = await peer.trace().count
     await peer.setMode("drop-ack")
     let original = PendingReply(hostId:client.id,threadId:"lost-thread",clientMessageId:"lost-operation",text:"synthetic body",attachmentIds:[],mode:"queue",expectedTurnId:nil,model:nil,effort:nil)
     do { _ = try await provider.send(client,reply:original); XCTFail("lost ACK must remain uncertain") } catch {}
-    let afterLoss = try await provider.receipt(client,id:"lost-operation")
+    let afterLoss = try await provider.receipt(client,id:"lost-operation", threadId: "lost-thread")
     XCTAssertEqual(afterLoss.clientMessageId,"lost-operation"); XCTAssertEqual(afterLoss.threadId,"lost-thread"); XCTAssertEqual(afterLoss.state,"queued"); XCTAssertEqual(afterLoss.text,"synthetic body")
     let trace = await peer.trace()
     for request in trace.dropFirst(beforeLoss) {
@@ -15871,7 +15892,7 @@ extension EasyWorkHostedNativeTests {
       if method == "queue/status" { XCTAssertEqual(params["messageId"] as? String,"lost-operation"); XCTAssertEqual(params["threadId"] as? String,"lost-thread") }
     }
     let writes = trace.filter { ["queue/execute","queue/cancel","turn/start"].contains($0["method"] as? String ?? "") }
-    XCTAssertEqual(writes.count,5)
+    XCTAssertEqual(writes.count,7)
     let starts = writes.filter { $0["method"] as? String == "turn/start" }
     XCTAssertEqual(starts.count,1)
     let submitted = try XCTUnwrap(starts.first?["params"] as? [String:Any])

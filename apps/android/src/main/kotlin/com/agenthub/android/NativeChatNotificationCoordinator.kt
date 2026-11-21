@@ -13,18 +13,26 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     private val locator: NativeChatNotificationThreadLocator = NativeChatNotificationThreadLocator(),
     private val now: () -> Long = System::currentTimeMillis, private val pollMillis: Long = 10_000,
     private val applicationId: String, migrationEnrollmentCheck: Boolean=false,
-    private val navigationClaimPersisted: suspend (NativeChatNoticeReceipt, Job) -> Unit = { _, _ -> }) {
+    private val navigationClaimPersisted: suspend (NativeChatNoticeReceipt, Job) -> Unit = { _, _ -> },
+    private val push: NativeChatNotificationPushController? = null, private val easyWorkContext: Context? = null,
+    private val easyWorkNavigation: NativeEasyWorkNavigationObservation = NativeEasyWorkNavigationObservation()) {
     companion object {
         fun create(context: Context, scope: CoroutineScope, session: NativeChatNotificationSessionPort, language: String): NativeChatNotificationCoordinator {
             val app = context.applicationContext
             val system = NativeChatNotificationPlatform(app, NativeL10n(app, language), NativeChatNotificationSoundLibrary(app, session.storage))
-            return NativeChatNotificationCoordinator(scope, session, system, applicationId = app.packageName, migrationEnrollmentCheck=true)
+            NativeChatNotificationPushJobs.resume(app, scope, session.storage)
+            return NativeChatNotificationCoordinator(scope, session, system, applicationId = app.packageName, migrationEnrollmentCheck=true,
+                push = NativeChatNotificationPushController(app, session.storage, system, NativeChatNotificationHttp()), easyWorkContext = app)
         }
     }
     private val ownerJob=SupervisorJob(parentScope.coroutineContext[Job])
     private val migrationIo=NativeMigrationIoWork()
     private val scope=CoroutineScope(parentScope.coroutineContext+ownerJob+migrationIo)
     val store = NativeChatNotificationStore(session.storage)
+    private val easyWork = easyWorkContext?.let { context -> session.easyWork?.let { NativeEasyWorkNotificationCoordinator(context, scope, session.storage, it, easyWorkNavigation) } }
+    val easyWorkReports get() = easyWork?.reports
+    fun endEasyWorkWaiting(key: String, operationId: String) { main(); easyWork?.endWaiting(key, operationId) }
+    fun queryEasyWorkOriginal(key: String) { main(); easyWork?.queryOriginal(key) }
     private val legacy = NativeChatNotificationForegroundStore(session.storage)
     private val recovery = NativeChatNotificationRecoveryStore(session.storage)
     private val authorities = NativeChatNotificationAuthorizations(session.storage)
@@ -41,6 +49,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     val originalReports = mutableStateMapOf<NativeChatNoticeTarget, NativeChatNotificationMonitorReport>()
     val querying = mutableStateListOf<NativeChatNoticeTarget>()
     var computers by mutableStateOf<List<NativeChatNotificationComputer>>(emptyList()); private set
+    internal var codexComputerTargets by mutableStateOf<List<NativeChatNoticeTarget>>(emptyList()); private set
     var unavailable by mutableStateOf(false); private set
     var opening by mutableStateOf(false); private set
     var canRetryOpen by mutableStateOf(false); private set
@@ -83,14 +92,23 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
         return value
     }
     /** Called synchronously BEFORE navigation/reading visibility/credentials/preferences/foreground/migration mutation. */
-    fun invalidateBeforeChange() { main(); presentation.invalidate(); store.invalidatePresentation() }
+    fun invalidateBeforeChange() { main(); easyWork?.invalidate(); presentation.invalidate(); store.invalidatePresentation() }
     fun navigationWillChange() { main(); invalidateBeforeChange(); navigation.invalidate() }
     /** Stop captured-authority workers BEFORE a token/certificate/target/storage generation changes. */
     fun connectionsWillChange() { main(); navigationWillChange(); stopWorkers() }
     /** Repeated ordinary workspace/history publications do not restart workers or shorten their poll interval. */
     fun reconcile() {
-        main(); if (blocked) return
+        main()
+        if (blocked) {
+            if (BuildConfig.DEBUG) NativeChatNotificationPushDiagnostic.record("enrollment-gate",
+                org.json.JSONObject().put("stage", "enrollment-gate").put("blocked", true).toString())
+            return
+        }
         val value = observeState()
+        if (BuildConfig.DEBUG) NativeChatNotificationPushDiagnostic.record("enrollment-gate",
+            org.json.JSONObject().put("stage", "enrollment-gate").put("blocked", false)
+                .put("ready", value.ready).put("foreground", value.foreground).put("readingReady", value.readingReady).toString())
+        easyWork?.reconcile(available() && value.readingReady)
         if(value.ready&&value.foreground&&migrationEnrollment!=null&&!migrationEnrollmentStarted){
             migrationEnrollmentStarted=true;migrationEnrollment.refresh {if(!blocked)reconcile()}
         }
@@ -117,7 +135,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
                     val lease = presentation.capture()
                     attempt = lease
                     val preferences = io { store.preferences() }
-                    val history = io { legacy.exists() || recovery.exists() }
+                    val history = io { legacy.exists() || recovery.exists() || session.storage.read(NativeChatNotificationPushState.RECORD) != null }
                     if (!lease.current() || !originalsAvailable()) continue
                     if (history) refreshOriginalInventory(lease)
                     // Closed enrollment still permits local original inventory; never captures a new connection or starts a worker.
@@ -125,11 +143,14 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
                     // No token/identity/journal/registration work for an untouched disabled installation.
                     if (!preferences.enabled && !history) { stopWorkers(); unavailable = false; continue }
                     val saved = session.savedConnections()
+                    val unavailableTargets = session.unavailableConnectionTargets.toSet()
                     require(saved.size <= 64 && saved.map { it.target }.distinct().size == saved.size)
+                    require(saved.size + unavailableTargets.size <= 64 && saved.none { it.target in unavailableTargets })
                     if (!lease.current() || !available()) continue
-                    computers = saved.map { NativeChatNotificationComputer(it.target, it.client.name) }
+                    // This is a Codex authority inventory, not the all-provider metadata settings list.
+                    // In particular, an IO refresh must not erase EasyWork, rename or deletion publications.
                     if (!session.state().readingReady) { stopWorkers(); unavailable = false; continue }
-                    applyConnections(saved) { lease.current() && available() }
+                    applyConnections(saved, unavailableTargets) { lease.current() && available() }
                     if (!lease.current() || !available()) continue
                     unavailable = false
                 }
@@ -149,10 +170,17 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     }
     /** Metadata-only settings list; supplied from actual realClients without reading credentials or making an identity. */
     fun updateComputers(clients: List<MobileClient>) {
-        main(); computers = clients.filter { !it.isDemo && it.scope?.agentId == "codex" && it.agentConnection == null }
-            .map { NativeChatNotificationComputer(NativeChatNoticeTarget.from(requireNotNull(it.scope)), it.name) }.distinctBy { it.target }
+        main()
+        val real = clients.filterNot { it.isDemo }
+        computers = real.mapNotNull { client ->
+            val target = client.agentConnection?.target ?: client.migrationEasyWork?.target ?: client.scope ?: client.codexDirect?.target
+            target?.hostId?.let { NativeChatNotificationComputer(it, client.name) }
+        }.distinctBy { it.hostId }
+        // Retained Codex query/revoke UI still needs complete Codex targets, never fabricated EW targets.
+        codexComputerTargets = real.filter { it.scope?.agentId == "codex" && it.agentConnection == null && it.migrationEasyWork == null }
+            .map { NativeChatNoticeTarget.from(requireNotNull(it.scope)) }.distinct()
     }
-    private fun monitor() = NativeChatNotificationForegroundMonitor(scope, session.storage, store, legacy, commands, delivery, now)
+    private fun monitor() = NativeChatNotificationForegroundMonitor(scope, session.storage, store, legacy, commands, delivery, push = push, now = now)
     private suspend fun refreshOriginalInventory(lease: NativeChatNotificationPresentationFence.Lease) {
         val inventory = io {
             val old = legacy.pendingByTarget(); val modern = recovery.pendingByTarget()
@@ -169,13 +197,19 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     private suspend fun recoveryConnections(): List<NativeChatNotificationSavedConnection> = try { session.savedConnections() }
         catch (cancel: CancellationException) { throw cancel }
         catch (_: Exception) { emptyList() } // A missing current credential never substitutes for an original retained one.
-    private suspend fun applyConnections(saved: List<NativeChatNotificationSavedConnection>, current: () -> Boolean) {
+    private suspend fun applyConnections(saved: List<NativeChatNotificationSavedConnection>, unavailableTargets: Set<NativeChatNoticeTarget>, current: () -> Boolean) {
         if (!current()) return
         val next = saved.associateBy { it.target }
         val changed = workers.filter { (target, worker) -> next[target]?.workerKey != worker.connection.workerKey }.keys
-        if (changed.isNotEmpty()) {
-            connectionsWillChange(); changed.forEach(system::cancelOwned); refreshWanted = true; return
+        for (target in changed.toList()) {
+            // The monitor's own generation fences its late callbacks. Other targets keep their original in-flight owner.
+            workers.remove(target)?.let { worker ->
+                worker.monitor.stop(); worker.job?.cancel(); worker.wake.close()
+            }
+            reports.remove(target)
+            system.cancelOwned(target)
         }
+        for (target in unavailableTargets) reports[target] = NativeChatNotificationMonitorReport("original-credential-recovery-required", target)
         for (connection in saved) {
             if (!current()) return
             val existing = workers[connection.target]
@@ -230,7 +264,9 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
                 }
                 for (authorization in required) {
                     if (!lease.current() || !originalsAvailable()) return@launch
-                    val value = monitor().queryOriginals(requireNotNull(sources[authorization]).snapshot, lease)
+                    val source = requireNotNull(sources[authorization]).snapshot
+                    val value = push?.synchronize(source, { lease.current() && originalsAvailable() }, queryOnly = true)
+                        ?: monitor().queryOriginals(source, lease)
                     if (lease.current() && originalsAvailable()) originalReports[target] = value
                 }
                 if (required.isEmpty() && lease.current()) originalReports[target] = NativeChatNotificationMonitorReport("original-query-complete", target)
@@ -239,12 +275,22 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
             finally { querying.remove(target) }
         }
     }
+    fun endPushWaiting(target: NativeChatNoticeTarget, operationId: String) {
+        main()
+        action(java.util.UUID.randomUUID().toString(), enrollment = false) { lease ->
+            push?.endWaiting(target, operationId)
+            if (lease.current() && originalsAvailable()) {
+                reports[target] = NativeChatNotificationMonitorReport("push-wait-ended-original-retained", target, operationId)
+            }
+        }
+    }
     private suspend fun originalAuthorizations(target: NativeChatNoticeTarget): Set<String> {
-        if (!io { legacy.exists() || recovery.exists() }) return emptySet()
+        if (!io { legacy.exists() || recovery.exists() || session.storage.read(NativeChatNotificationPushState.RECORD) != null }) return emptySet()
         val identity = NativeChatNotificationIdentity.load(session.storage)
         return io {
             legacy.view(identity, target).unknown?.authorization?.let(::setOf).orEmpty() +
-                recovery.view(identity, target).operations.filter { it.state in setOf("unknown", "reserved") }.map { it.authorization }
+                recovery.view(identity, target).operations.filter { it.state in setOf("unknown", "reserved") }.map { it.authorization } +
+                NativeChatNotificationPushState(session.storage).row(target)?.optString("authorization")?.takeIf { it.isNotEmpty() }?.let(::setOf).orEmpty()
         }
     }
     private fun action(id: String, enrollment: Boolean = true, body: suspend (NativeChatNotificationPresentationFence.Lease) -> Unit) {
@@ -275,7 +321,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
             val preferences = io { store.preferences() }
             require(preferences.revision == savedRevision && (!preferences.enabled || hostId in preferences.excludedHosts))
             val sources = io { authorities.all() } + recoveryConnections()
-            val targets = (sources.map { it.target } + originalReports.keys + computers.map { it.target }).distinct().filter { hostId == null || it.hostId == hostId }
+            val targets = (sources.map { it.target } + originalReports.keys + codexComputerTargets).distinct().filter { hostId == null || it.hostId == hostId }
             for (target in targets) {
                 val choices = sources.filter { it.target == target }
                 if (!lease.current() || !available()) return
@@ -289,7 +335,8 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
                     originalReports[target] = NativeChatNotificationMonitorReport("original-credential-recovery-required", target, id, unconfirmedOperations = 1); continue
                 }
                 io { authorities.retain(connection) }
-                val value = monitor().explicitDisable(connection.snapshot, savedRevision, id, lease)
+                val value = push?.synchronize(connection.snapshot, { lease.current() && available() }, disableId = id)
+                    ?: monitor().explicitDisable(connection.snapshot, savedRevision, id, lease)
                 if (lease.current() && available()) reports[target] = value
             }
             if (lease.current()) reconcile()
@@ -378,21 +425,25 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
         // their encrypted write begins; a pending original tap cannot outlive that user intent.
         val configuration = store.configurationLease()
         val current = { available() && lease.current() && configuration() }
-        val receipt = io { if (current()) store.navigationTicket(ticket, now()) else null } ?: return OpenOutcome(false)
+        val receipt = io { if (current()) store.navigationTicket(ticket, now()) else null }
+            ?: return easyWork?.let { OpenOutcome(it.open(ticket, current), it.receiptPending) } ?: OpenOutcome(false)
+        // The target's presentation epoch is separate from navigation/preferences (e.g. token rotation).
+        val presentation = store.presentationLease(receipt.event.target)
+        val routeCurrent = { current() && presentation() }
         val source = session.savedConnections().singleOrNull { it.target == receipt.event.target && it.snapshot.credentialEpoch == receipt.lease.credentialEpoch } ?: return OpenOutcome(false)
-        if (!current()) return OpenOutcome(false)
-        val location = locator.locate(source, receipt.event, current) ?: return OpenOutcome(false)
+        if (!routeCurrent()) return OpenOutcome(false)
+        val location = locator.locate(source, receipt.event, routeCurrent) ?: return OpenOutcome(false)
         val originalOpenOwner = requireNotNull(currentCoroutineContext()[Job])
         val original = withContext(Dispatchers.IO) {
-            if (!current() || !store.preferences().permits(receipt.event)) return@withContext null
-            val claimed = store.claimNavigation(ticket, now(), current) ?: return@withContext null
+            if (!routeCurrent() || !store.preferences().permits(receipt.event)) return@withContext null
+            val claimed = store.claimNavigation(ticket, now(), routeCurrent) ?: return@withContext null
             // Checkpoint is inside the original IO call, after durable save but before return.
             navigationClaimPersisted(claimed, originalOpenOwner)
             claimed
         } ?: return OpenOutcome(false)
         val opened = withContext(Dispatchers.Main.immediate) {
-            current() && original.event == receipt.event && original.lease == receipt.lease &&
-                session.openExistingThread(location, current)
+            routeCurrent() && original.event == receipt.event && original.lease == receipt.lease &&
+                session.openExistingThread(location, routeCurrent)
         }
         if (!opened) return OpenOutcome(false)
         // Keep a known successful local route distinct from an unknown receipt write. The outer
@@ -407,7 +458,7 @@ internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, pr
     /** Joins every owned worker/query/action and its actual IO completion; cancellation alone is not completion. */
     internal suspend fun stopAndJoinForMigration(){main();dispose();ownerJob.join();migrationIo.awaitIdle()}
     fun dispose() {
-        main(); blocked = true;migrationEnrollment?.dispose(); navigationWillChange(); stopWorkers(); refreshJob?.cancel(); openJob?.cancel()
+        main(); easyWork?.dispose(); blocked = true;migrationEnrollment?.dispose(); navigationWillChange(); stopWorkers(); refreshJob?.cancel(); openJob?.cancel()
         originalReads.invalidate()
         actionJobs.values.toList().forEach { it.cancel() }; actionJobs.clear(); pendingTickets.clear();migrationIo.close();ownerJob.cancel()
     }

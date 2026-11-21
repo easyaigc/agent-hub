@@ -72,11 +72,16 @@ private fun display(resource: MobileSession.PreparedMessageResource): ResourceDi
     return ResourceDisplay()
 }
 
+internal typealias NativeDocumentResourceResolver = suspend (MobileSession.PreparedMessageResource,String,String,ResourceDownloadProgressHandler?) -> MobileSession.PreparedMessageResource
+
 /** Native read-only preview. Unsupported/large formats retain explicit system open/share. */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun NativeResourcePreview(resource: MobileSession.PreparedMessageResource,close: ()->Unit,current: ()->Boolean,retry: (() -> Unit)?=null,refreshing: Boolean=false) {
+@Composable internal fun NativeResourcePreview(resource: MobileSession.PreparedMessageResource,close: ()->Unit,current: ()->Boolean,retry: (() -> Unit)?=null,refreshing: Boolean=false,resolveDocument: NativeDocumentResourceResolver?=null,documentDepth: Int=0) {
+    if(HtmlPreviewPolicy.accepts(resource.name,resource.mediaType)) {
+        key(resource) { NativeHtmlFilePreview(resource,current,close) };return
+    }
     if(FilePreviewRegistry.find(resource.name,resource.mediaType)!=null) {
-        key(resource) { NativeMarkdownFilePreview(resource,current,close,retry,refreshing) };return
+        key(resource) { NativeMarkdownFilePreview(resource,current,close,retry,refreshing,resolveDocument,documentDepth) };return
     }
     val context=LocalContext.current
     val shareTitle=productText("保存或分享文件")

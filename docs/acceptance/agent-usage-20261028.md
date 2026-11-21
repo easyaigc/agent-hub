@@ -60,3 +60,58 @@ EasyWork 增量补丁已在准确当前现场通过反向 apply --check，证明
 系统联网拒绝解除后，配对的物理 iPhone 15 Pro Max 上独立原生 App 的应用内 XCTest 实际执行并通过（1 项）。手机返回的 snapshotId 与原 Electron 独立记录的 `usage/read` 回执准确匹配，精确余额逐值匹配；额度页、余额组件及客户端列表均在真实设备渲染并保存截图。该证据覆盖生产原生读取、共享投影及视图，触控流程由已通过的原生模拟器 LAN／Relay 场景单列覆盖；不把历史 XCUI 初始化失败改记为真机触控通过。整个额度验收没有提交模型任务。
 
 两个仓库已分别保存额度功能提交，并整合远程当前主线。合并保留最新 Host 诊断、Android 和语音实现，不覆盖原工作区的其他未提交内容。Agent Hub 合并后的类型、构建、额度测试及全量 `pnpm check` 通过；KMP JVM 95 项、Android debug、iOS 模拟器及实体设备构建通过，LAN／Relay 点击与实体 iPhone 应用内读取在整合后再次通过。此后仅为本地联调启动器补充原 Electron ABI 准备，针对该脚本的格式、lint 和真实启动通过。EasyWork 完整推送门禁继续按交付输入核对。
+
+## 2026-11-12 W5 源码核实与轻量回归
+
+候选基线 `276bf420b8545b9c1389fac857586c469bc8eff9`，分支 `codex/android-parallel-20261112-w5-usage`。本记录是具名证据，不是当前进度总表；唯一当前计划仍由主会话维护。
+
+Codex 的 `account/read`、`account/rateLimits/read` → `GET /v1/usage`，EasyWork 原桌面认证账户摘要 → 固定 `usage/read`，以及共享 KMP、Android 两处原生展示均已有生产路径。读取没有新增模型输入。来源实现以 `packages/codex-adapter/src/usage.ts`、`packages/easywork-adapter/src/index.ts` 为准，本线未修改 Host、Adapter 或正式配置。
+
+### 本次修复
+
+- 共享投影不再将合法的 bucket/metric ID 用 `/` 拼接：`a/b` + `c` 和 `a` + `b/c` 原会撞成同一个详情行 ID。改为 JSON 字符串对编码，两端共同受益；wire ID 和数量原值不变。
+- 共享投影直接限制 `observedAt <= now + 120s`，避免 sampledAt 与 observedAt 的两次时钟容差叠加，让未来约四分钟的值显示成当前数据。原 observed/sample、valid/observed 检查仍保留。
+- Android 详情同时保留精确余额与 `entitlement=unlimited` 的“无限额”说明；原先只显示余额。iOS 已有相同权益说明，本次无需修改 iOS 视图。
+- Android 缺省 bucket 标签使用指标标签，不再输出字面量 `null`。
+
+### 辅助验证
+
+使用已缓存 Kotlin 2.4.21/JDK17/JUnit4/serialization 1.11.0，直接编译实际 `DomainContract.kt`、`UsageRules.kt` 和实际测试，未运行 Gradle、完整 Android/Xcode 构建、模拟器、服务或真机。
+
+新增共享测试在修复前运行 7 项、失败 2 项，分别精确复现 ID 冲突和叠加时钟容差；修复后 7 项通过。最终加上 Android 纯展示回归共 10 项通过（编译和执行约 4 秒）。Android 三项只抽取生产文件中的原样纯函数并使用 JVM org.json 20250517，不证明 Compose、Android Framework 或真机通过。测试源码保存在 `UsageRulesTest.kt` 和 `MobileUsagePresentationTest.kt`。
+
+共同回归保留跨语言 9 向量、60/24 位精度域内的字符串原值、零/微小/负/大额、超额百分比、零分母、未知子类型、多个单位与窗口、首个真实窗口选择、过期/已越重置时刻仍不本地重置。全部是辅助证据。
+
+### 历史证据与未关闭项
+
+历史来源见 [2026-10-28/29 记录](agent-usage-20261028.md)及[结构化证据](mobile-evidence/agent-usage-20261028.json)。Codex Adapter、usage Schema 与共享向量当前仍匹配历史 sourceFiles 指纹；当前 KMP/双端视图已变化，历史构建和 iOS/来源实测不能替代当前 Android 原生或真实 DEV 验收。原 iPhone 自动化初始化失败、后续 App 内读取通过及物理触控未覆盖仍分别保留。
+
+代码覆盖仍有明确差异，不能据本次小修认定 F73 全部已实现或整项关闭：Android 详情没有手动刷新及不可用原因，双端未完整显示来源 scope/plan 和负余额“欠额”，Android 读取并发没有可见行最多 2 的总闸。另需专项核对读取异常时缓存来源连续性与认证失败撤下旧值，现有 catch-all 会保留旧样本；此线未改身份或传输策略。
+
+后续由总控分配独占原生时段：Android 运行本次三项原生方法，并覆盖真实 Codex/EasyWork 只读读适配、客户端列表/侧栏/详情、切目标、断网缓存、过期/未知、长数值/多窗多单位、浅深/大字号/TalkBack及独立按钮。真实 DEV 只读核对准确目标、snapshotId 与原桌面同次响应；不得为验用量新增模型任务。共享规则变化还需对应 iOS 构建及具名辅助/原生复验；不恢复 A6。
+
+本次未运行 `pnpm check`、完整原生构建和设备验收，原因是明确的磁盘与独占时段限制，不记产品失败，也不记通过。产品/设计共享文档的 F73/UI02/UI03/UI12 更新由总控合并，避免跨线整文件采用；W5 交付附精确建议。
+
+## 2026-11-12 R2：补齐具名缺口的源码候选
+
+在本轮冻结基线`0e3b1ccc61bdbfd7ed27b9a6fe4cd547ce3d7867`补Android详情只读手动刷新/不可用原因、双端来源scope/plan/精确负余额“欠额”。共同KMP投影增加本地debt标志和失败/节流规则；保留原ID、时间容差、数值+无限权益及null桶标签回归。没有修改usage v1 wire、Host或实际设备授权。
+
+Android与iOS均由Store提供进程级两槽；同目标summary/footer/details合并，最后一个消费者离开才取消，隐藏的排队请求不会进入transport。完成仍检查原读取代际，取消后迟到的旧返回不能覆盖新样本。Android另修TargetScope对象字符串不稳定导致的相同机器重复读取；只作用usage键，不扩展Codex账号拒绝条件。
+
+严格区分HTTP401/403与200内某指标forbidden。当前失败wire没有source，Store不把同endpoint或历史scopeRef当作来源连续性证明，撤下旧数值并显示连续性及实际失败原因；合法partial快照保留兄弟指标。已有有效样本过期仍按原时刻标缓存，不归零、不本地重置。
+
+定向检查直接执行实际KMP和Android Store控制流、宿主Swift Store并调用真实编译KMP策略。旧Swift源码复现force越过5秒、HTTP401旧值留存、缺两槽及隐藏排队读取四条失败断言；修复后同类反例、同目标合并/一消费者取消、旧回调、来源/目标变化、过期和单指标forbidden均作具名辅助验证。它们不是手机Framework/Compose/XCTest或真实DEV通过；具体方法数、源码指纹、原失败与恢复日志以本task W5/r2-f73交付记录为准。
+
+当前暂不提交/推送；产品和设计关联已同步，唯一progress由总控更新。全量Gradle/Xcode、安装/设备与真实来源场景待总控独占时段；本线没有发模型或操作真实grant、登录/Host配置。已完成源码不得据此升级为整项或实际部署通过。
+
+R2原生方法准备：`EasyWorkUsageStoreNativeTests`的6个`testF73*`直接调用App生产`UsageStore`，仅注入读取边界与测试时钟，已登记到`EasyWorkNativeTests`；未复制Store。Android `MobileUsageUITest.footerDetailsRefreshReasonsSourcePlanAndDebt`渲染实际生产footer/dialog并调用实际Store，准备刷新/来源/套餐/精确欠额/HTTP401/单指标forbidden与缓存断言。原生执行结果以冻结候选的后续具名证据为准。
+
+R2 Android本次结果：完整JVM/assembleDebug/assembleDebugAndroidTest正式构建通过，29 suite/138 JVM测试零失败/错误/跳过。专用空白API33 AVD首轮12方法中11通过、1 UI驱动因从App上下文读取test-only fixture而在业务断言前失败，原失败保留；仅改测试资源上下文，产品断言不变。后续完整同12方法（Store7/展示4/实际Compose1）12/12、零失败/跳过，核原始AndroidJUnitRunner方法集合与OK输出；3张原始系统截图已读回，覆盖来源/套餐/精确欠额、HTTP401撤下及partial合法兄弟项。该结果是原生辅助/合成读取，不是真实Electron或模型，也未触碰实体手机/原grant。iOS6方法仅准备/语法和target登记，正式iOS构建及实际运行由总控合成后另验。
+
+总控限定本页UI返修：在已通过12/12后，原英文图仍含F73页的固定中文标签；现将summary/footer/详情及AX标签（包括all-of/any-of、缓存/部分/Unavailable、完成）接通原双语资源，新增“用量/Usage”回退键，provider标签/原始值/单位不翻译。保留前两次冻结/原输出和旧包证据，最终英文UI的完整12方法另记；KMP源码不变时138项按准确指纹复用。
+
+英文最终复验：冻结3的App/runner正式构建通过，同一API33独占空白AVD完整12方法通过，包含英文title/Updated/Applies/All models/Provider rules/Observed/Resets/百分比说明、Any-of/All-of、Cached usage和Done的实际查找/点击/刷新。第一次英文12方法虽通过，原图被该AVD Bluetooth进程崩溃弹窗遮挡，未计无遮挡视觉通过；原图和系统失败保留。仅在该空白AVD用svc关闭未用蓝牙并关闭其崩溃弹窗，不全局隐藏错误；同一冻结3、同一App/runner、同12方法再次12/12零失败/跳过，3张原图读回确认无浮层且固定标签为英文，源数值/单位/provider标签保持。源KMP与此前正式138项逐文件SHA匹配复用，不因文字改动重跑JVM。iOS6生产Store方法仍待总控合成后的正式构建与运行；未操作实体、真实grant或模型。
+
+稳定身份追加反例与最终候选：旧真实Android Store对非空Codex配对及从持久JSON重建的EasyWork连接各新增1方法，均原生失败（期望1读取，实际2），原源码/hash/runner日志保留。修正连接确定性编码与生产副作用key后，同独占API33 AVD完整15方法15/15、零失败/跳过（Store9/展示4/Compose2，runner 6.45秒）；新增生产summary/footer/details真实重组在3次metadata重建期间保持1flight、0取消并正常发布。pin/routes/systemEndpoints及EasyWork credentialRef/account/peer变化隔离仍通过。新App/runner独立读取已安装包核对SHA，三张新原图已读回无遮挡，旧12项结果与原失败不替代新候选证据。JVM138仅按KMP准确源码匹配复用。
+
+iOS新增第7个生产Store原生方法，非空Codex配对的legacy account变化仍合并/保缓存/遵5秒、真实fingerprint变化隔离且原Client不变。宿主实际Store抽取加KMP桥接13辅助断言通过、7方法宿主严格类型检查通过，仅为辅助；iOS正式NativeTests执行由总控合成后交W4，不冒称本次XCTest通过。实体手机、真实Electron/来源/DEV四格、原生主题/字体/AX完整验收继续未验；未操作真实grant/model。冻结4及最终交付source/package指纹以本task W5/r2-f73外部证据为准。

@@ -37,8 +37,8 @@ class MobileEasyWorkSubagentTest {
         val requests=CopyOnWriteArrayList<String>()
         val peer=NativeEasyWorkProtocolPeer(credential,vector.getString("confirmation")) { request->
             val method=request.getString("method");requests+=method
-            require(method in listOf("thread/sync","thread/history","runtime/context")) { "A display read must not execute a command" }
-            if(method=="runtime/context")JSONObject() else JSONObject(wire.toString())
+            require(method in listOf("thread/sync","thread/history","runtime/context","thread/subscribe","thread/unsubscribe")) { "A display read must not execute a command" }
+            if(method in listOf("runtime/context","thread/subscribe","thread/unsubscribe"))JSONObject() else JSONObject(wire.toString())
         }
         val transports=AgentTransportRegistry().apply { register("relay-http") { _,_,_,_->peer } }
         val remote=EasyWorkRemoteSession(connection,credential,{ "synthetic" },transports)
@@ -66,6 +66,52 @@ class MobileEasyWorkSubagentTest {
     @Test fun foreignBranchChildIsExcludedByTheProductionHistoryPath()=runBlocking {
         fixture(frame(snapshot("foreign",childRevision=2))) { adapter,client,_,_,_->
             assertTrue(adapter.history(client,"thread",null).messages.none { it.kind=="subAgent" })
+        }
+    }
+    @Test fun authenticatedEventRefreshReplacesGrowingChildWithoutCommands()=runBlocking {
+        val first=snapshot("first checkpoint")
+        val run=first.getJSONArray("subagentRunTrees").getJSONObject(0).getJSONArray("runs").getJSONObject(0)
+        run.put("status","running").put("checkpoint",JSONObject().put("subagentTranscript",run.getJSONObject("result")))
+        run.remove("result")
+        val wire=frame(first)
+        fixture(wire) { adapter,client,remote,peer,requests->
+            val before=adapter.history(client,"thread",null).messages.single { it.kind=="subAgent" }
+            assertEquals("inProgress",before.status);assertEquals("Original task\n\nfirst checkpoint",before.detail)
+            val final="HEAD"+"正文🧭".repeat(20000)+"MIDDLE"+"tail ".repeat(12000)+"TAIL"
+            wire.put("snapshot",snapshot(final))
+            peer.emitThreadEvent(JSONObject().put("threadId","thread").put("threadSeq",2).put("payload",JSONObject().put("branchRevision",1)
+                .put("event",JSONObject().put("type","subagent_run_event").put("event",JSONObject().put("childRunId","child")
+                    .put("rootRunId","root").put("phase","completed")))))
+            remote.request("runtime/context")
+            val batch=adapter.events(client,"thread",remote.target.runtimeId+":"+remote.epoch,0)
+            assertTrue(batch.cursor>0)
+            val messages=batch.snapshots.single().messages
+            val after=messages.single { it.kind=="subAgent" }
+            assertEquals(before.id,after.id);assertEquals("root",after.runId);assertEquals("completed",after.status)
+            assertEquals("Original task\n\n$final",after.detail)
+            assertEquals("Parent output remains separate",messages.single { it.role=="assistant" }.text)
+            assertTrue(requests.all { it in listOf("thread/sync","runtime/context","thread/subscribe") })
+        }
+    }
+    @Test fun authenticatedConflictingEventCannotMoveSnapshotChildToAnotherVisibleRoot()=runBlocking {
+        val original=snapshot("original child")
+        original.getJSONArray("subagentRunTrees").put(JSONObject().put("root",JSONObject().put("id","other-root")
+            .put("threadId","thread").put("branchRevision",1)).put("runs",JSONArray()))
+        fixture(frame(original)) { adapter,client,remote,peer,_->
+            val before=adapter.history(client,"thread",null).messages
+            val parent=before.single { it.role=="assistant" }
+            remote.request("runtime/context")
+            peer.emitThreadEvent(JSONObject().put("threadId","thread").put("threadSeq",1).put("payload",JSONObject().put("branchRevision",1)
+                .put("event",JSONObject().put("type","subagent_run_event").put("event",JSONObject().put("childRunId","child")
+                    .put("rootRunId","other-root").put("phase","failed")))))
+            remote.request("runtime/context")
+            val after=adapter.history(client,"thread",null).messages
+            val child=after.single { it.kind=="subAgent" }
+            assertEquals(before.single { it.kind=="subAgent" }.id,child.id)
+            assertEquals(parent,after.single { it.role=="assistant" })
+            assertEquals(1,after.count { it.kind=="subAgent" })
+            assertEquals("root",child.runId);assertEquals("completed",child.status)
+            assertEquals("Original task\n\noriginal child",child.detail)
         }
     }
     @Test fun authenticatedChildEventsAreSessionLocalAndCloseRetiresThem()=runBlocking {

@@ -8,7 +8,54 @@ import java.io.File
 import java.util.UUID
 
 /** Only this adapter knows EasyWork protocol v2 method names and provider content parts. */
-class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,AgentCommands {
+class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,AgentCommands,AgentTaskNotifications {
+    private val pushRegistrationCapabilities=object:LinkedHashMap<String,Boolean>(16,.75f,true) {
+        override fun removeEldestEntry(eldest:MutableMap.MutableEntry<String,Boolean>?)=size>32
+    }
+    private suspend fun supportsTaskPushRegistration(channel:EasyWorkRemoteSession):Boolean {
+        val key=easyHash(easyCanonical(channel.target.json()).toByteArray())+":"+channel.epoch
+        synchronized(pushRegistrationCapabilities) { pushRegistrationCapabilities[key] }?.let { return it }
+        val context=channel.request("runtime/context")
+        require(EasyWorkTarget.decode(context.getJSONObject("target"))==channel.target)
+        val supported="notifications:registration:fcm:v1" in context.getJSONArray("capabilities").strings()
+        if(key!=easyHash(easyCanonical(channel.target.json()).toByteArray())+":"+channel.epoch)return false
+        synchronized(pushRegistrationCapabilities) { pushRegistrationCapabilities[key]=supported };return supported
+    }
+    override suspend fun supportsTaskPushRegistration(client:MobileClient)=supportsTaskPushRegistration(channel(client))
+    private val generatedCapabilities=object: LinkedHashMap<String,Boolean>(16,.75f,true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String,Boolean>?)=size>32
+    }
+    override suspend fun registerTaskNotifications(client: MobileClient,registration: NativeTaskNotificationRegistration): NativeTaskNotificationStatus {
+        require(registration.deviceId.matches(Regex("[A-Za-z0-9._-]{1,128}")) && registration.deviceId !in setOf("__proto__","constructor","prototype"))
+        require(registration.publicKey.matches(Regex("[A-Za-z0-9+/]{43}=")))
+        val channel=channel(client);val target=channel.target.scope();val preferences=NativeTaskNotificationCodec.preferences(registration.preferences.json())
+        val value=JSONObject().put("version",1).put("deviceId",registration.deviceId).put("target",CodexCommandCodec.target(target))
+            .put("publicKey",registration.publicKey).put("preferences",preferences.json())
+        registration.push?.let { push->
+            require(supportsTaskPushRegistration(channel)) { "此电脑版本暂未支持后台提醒。" }
+            value.put("pushProvider","fcm").put("deviceToken",push.token)
+        }
+        return NativeTaskNotificationCodec.status(channel.request("notification/register",JSONObject().put("registration",value)),target)
+    }
+    override suspend fun updateTaskNotificationPreferences(client: MobileClient,deviceId: String,preferences: NativeTaskNotificationPreferences): NativeTaskNotificationStatus {
+        require(deviceId.matches(Regex("[A-Za-z0-9._-]{1,128}")))
+        val channel=channel(client);val target=channel.target.scope();val checked=NativeTaskNotificationCodec.preferences(preferences.json())
+        return NativeTaskNotificationCodec.status(channel.request("notification/preferences",JSONObject().put("deviceId",deviceId).put("target",CodexCommandCodec.target(target)).put("preferences",checked.json())),target)
+    }
+    override suspend fun taskNotificationEvents(client: MobileClient,deviceId: String,after: String): NativeTaskNotificationFeed {
+        require(deviceId.matches(Regex("[A-Za-z0-9._-]{1,128}")) && (after.isEmpty() || com.agenthub.core.TaskNotificationRules.eventId(after)))
+        val channel=channel(client)
+        return NativeTaskNotificationCodec.feed(channel.request("notification/events",JSONObject().put("deviceId",deviceId).put("after",after)),channel.target.scope())
+    }
+    override suspend fun unregisterTaskNotifications(client: MobileClient,deviceId: String) {
+        require(deviceId.matches(Regex("[A-Za-z0-9._-]{1,128}")))
+        channel(client).request("notification/unregister",JSONObject().put("deviceId",deviceId))
+    }
+    override suspend fun taskNotificationStatus(client: MobileClient,deviceId: String): NativeTaskNotificationStatus {
+        require(deviceId.matches(Regex("[A-Za-z0-9._-]{1,128}")))
+        val channel=channel(client)
+        return NativeTaskNotificationCodec.status(channel.request("notification/status",JSONObject().put("deviceId",deviceId)),channel.target.scope())
+    }
     override suspend fun nextTurnSuggestion(client: MobileClient,scope: com.agenthub.core.SuggestionScope): MobileDesktopSuggestionResponse = boundedDesktopSuggestionRead {
         require(scope.target.agentId=="easywork"&&sameScope(client.scope,scope.target)) { "桌面建议目标不匹配" }
         val c=channel(client)
@@ -61,6 +108,8 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
     override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?): MobileWorkspace {
         val c=channel(client);val context=c.request("runtime/context")
         require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target)
+        val learned=client.agentConnection?.let { EasyWorkAuthenticatedCandidates.read(context,c.target,it) }
+        learned?.let { c.candidates=it.candidates }
         val projects=c.request("project/list").getJSONArray("projects").objects().map { MobileProject(it.getString("id"),client.id,it.optional("name")?:"项目",listOfNotNull(it.optional("workspacePath"))) }
         val listed=c.request("thread/list",JSONObject().put("limit",100).apply { threadCursor?.let { put("cursor",it) } })
         val threads=listed.getJSONArray("threads").objects().map { conversation(client,it) }
@@ -68,7 +117,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         // This handshake has verified the full runtime target, independent of its path.
         if(observed.optBoolean("runtimeConnected"))caps.add("commands:target-bound:v1")
         val wire=MobileSnapshotCodec.header(client).put("name",client.name).put("connectionMode","easywork-runtime").put("projects",JSONArray(projects.map { JSONObject().put("id",it.id).put("hostId",client.id).put("name",it.name).put("roots",JSONArray(it.roots)) })).put("threads",JSONArray(threads.map(::encodeThread))).put("nextThreadCursor",listed.optional("nextCursor")).put("capabilities",JSONArray(caps.distinct())).put("runtimeConnected",observed.getBoolean("runtimeConnected"))
-        return MobileSnapshotCodec.workspace(wire.toString())
+        return MobileSnapshotCodec.workspace(wire.toString()).copy(authenticatedConnection=learned)
     }
     override suspend fun usage(client: MobileClient):String {
         val id=java.util.UUID.randomUUID().toString()
@@ -157,15 +206,16 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
                 }.toList();if(files.isEmpty())m else m.copy(attachments=(m.attachments+files).distinctBy { it.id })
             }
         }
-        val plan=snapshot.optJSONObject("currentPlan");val preferences=JSONObject(thread.optJSONObject("generationPreferences")?.toString()?:"{}")
-        latest?.optJSONObject("settings")?.let { p->p.keys().forEach { preferences.put(it,p.get(it)) } }
-        val recordedSpeed=if(latest==null)preferences.optional("speed") else latest.optJSONObject("settings")?.optional("speed")
-        val model=preferences.optJSONObject("modelRef");val settings=JSONObject().put("model",model?.let { it.getString("providerId")+"/"+it.getString("modelId") }).put("effort",preferences.optJSONObject("reasoning")?.optional("effort")).put("permissionMode",preferences.optional("permissionMode")).put("speed",recordedSpeed)
+        val plan=snapshot.optJSONObject("currentPlan")
+        // A recorded run is authoritative for every field. Missing legacy values stay
+        // unknown rather than inheriting today's model, effort, permission or speed.
+        val preferences=latest?.optJSONObject("settings") ?: if(latest==null) thread.optJSONObject("generationPreferences") else null
+        val model=preferences?.optJSONObject("modelRef");val settings=JSONObject().put("model",model?.let { it.getString("providerId")+"/"+it.getString("modelId") }).put("effort",preferences?.optJSONObject("reasoning")?.optional("effort")).put("permissionMode",preferences?.optional("permissionMode")).put("speed",preferences?.optional("speed"))
         val receipts=snapshot.optJSONArray("queueReceipts")?.objects()?.map { q->
             encodeReceipt(easyWorkQueueReceipt(client.id,threadId,q))
         }?.toMutableList()?:mutableListOf()
         if(active==null&&latest?.optString("status") in listOf("failed","cancelled","interrupted")) receipts.add(encodeReceipt(DeliveryReceipt(client.id,threadId,latest!!.getString("id"),latest.getString("status"),latest.getString("id"),latest.optional("error"),null,null,emptyList())))
-        val runtime=if(cursor!=null)null else JSONObject().put("state",state).put("suggestionSourceTurnId",if(state=="idle")snapshot.optional("suggestionSourceTurnId")else null).put("turnId",active?.optional("runId")?:active?.optional("id")?:control?.optional("runId")?.takeIf { control.optString("phase") in listOf("paused","pausing","resuming") }).put("plan",JSONArray(plan?.optJSONArray("steps")?.objects()?.map { JSONObject().put("step",it.optString("title")).put("status",if(it.optString("status")=="in_progress")"inProgress" else it.optString("status","pending")) }.orEmpty())).put("error",if(active==null)latest?.optional("error") else null).put("approvals",approvals).put("receipts",JSONArray(receipts)).put("canControl",true).put("collaborationMode",if((active?.optional("agentRunMode")?:preferences.optional("agentRunMode"))=="plan")"plan" else "default").put("generationSettings",settings).apply {
+        val runtime=if(cursor!=null)null else JSONObject().put("state",state).put("suggestionSourceTurnId",if(state=="idle")snapshot.optional("suggestionSourceTurnId")else null).put("turnId",active?.optional("runId")?:active?.optional("id")?:control?.optional("runId")?.takeIf { control.optString("phase") in listOf("paused","pausing","resuming") }).put("plan",JSONArray(plan?.optJSONArray("steps")?.objects()?.map { JSONObject().put("step",it.optString("title")).put("status",if(it.optString("status")=="in_progress")"inProgress" else it.optString("status","pending")) }.orEmpty())).put("error",if(active==null)latest?.optional("error") else null).put("approvals",approvals).put("receipts",JSONArray(receipts)).put("canControl",true).put("collaborationMode",if((active?.optional("agentRunMode")?:preferences?.optional("agentRunMode"))=="plan")"plan" else "default").put("generationSettings",settings).apply {
             if(plan!=null&&plan.optString("status") in listOf("ready","saved"))put("proposedPlan",JSONObject().put("id","easywork-plan."+easyBase64(easyCanonical(JSONObject().put("id",plan.getString("planId")).put("version",plan.getInt("version"))).toByteArray())).put("turnId",plan.optString("createdRunId")).put("text",plan.optString("markdown")))
         }
         val wire=MobileSnapshotCodec.header(client).put("threadId",threadId).put("messages",JSONArray(messages.map(::encodeMessage))).put("nextCursor",if(value.optBoolean("hasEarlier"))value.optional("before") else null).put("runtime",runtime).put("epoch",c.epoch).put("historyWindow",true).put("historyRevision",revision)
@@ -268,7 +318,11 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return EasyWorkReceiptNormalization.decode(result ?: JSONObject(),operationId,client.id,threadId,fallback,
             fallbackError=response?.optJSONObject("error")?.opt("message") as? String)
     }
-    override suspend fun stop(client: MobileClient,threadId: String,turnId: String) { require(channel(client).request("turn/cancel",JSONObject().put("threadId",threadId).put("turnId",turnId)).getBoolean("cancelled")) }
+    override suspend fun stop(client: MobileClient,threadId: String,turnId: String) {
+        require(threadId.isNotBlank() && turnId.isNotBlank())
+        // Only a JSON boolean confirms cancellation; JSONObject.getBoolean also coerces strings.
+        require(channel(client).request("turn/cancel",JSONObject().put("threadId",threadId).put("turnId",turnId)).opt("cancelled")==true)
+    }
     override suspend fun executeQueue(client: MobileClient,threadId: String,operationId: String,expectedTurnId: String?) {
         require(threadId.isNotBlank() && operationId.isNotBlank() && (expectedTurnId==null || expectedTurnId.isNotBlank()))
         val result=channel(client).request("queue/execute",JSONObject().put("threadId",threadId).put("messageId",operationId)
@@ -295,6 +349,62 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         }
         require(result.optBoolean("accepted")||result.optBoolean("denied"))
     }
+    override suspend fun uploadCapability(client:MobileClient,manifest:NativeUploadManifest):NativeUploadCapability? {
+        if(manifest.purpose!="attachment"||manifest.file.sizeBytes==0L)return null // Preserve original zero-byte path without inventing resume support.
+        val c=channel(client);val context=c.request("runtime/context")
+        require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target&&sameScope(c.target.scope(),client.scope))
+        // Registered v2 adapter implements status/offset/chunk/complete, but no remote abort.
+        // Unsupported remote methods fail closed; no fallback after a mutating attempt.
+        return NativeUploadCapability(192*1024,false,"easywork-attachment-v1")
+    }
+    override suspend fun uploadRequest(client:MobileClient,m:NativeUploadManifest,action:NativeUploadAction,offset:Long,bytes:ByteArray?):NativeUploadReceipt {
+        m.validate();require(m.purpose=="attachment"&&m.file.hostId==client.id&&m.file.sizeBytes<=20*1024*1024)
+        val c=channel(client);require(sameScope(c.target.scope(),client.scope));val device=c.uploadMobileDeviceId
+        fun transfer(value:JSONObject,completed:Boolean=false):JSONObject {
+            val t=value.getJSONObject("transfer")
+            require(t.getString("transferId")==m.id&&t.getString("threadId")==m.threadId&&t.getString("mobileDeviceId")==device&&
+                t.getString("direction")=="mobile-to-desktop"&&t.getString("purpose")=="attachment"&&t.getString("name")==m.file.name&&
+                t.getString("contentType")==m.file.mediaType&&uploadLong(t.get("size"))==m.file.sizeBytes)
+            val n=uploadLong(t.get("transferredBytes"));require(n in 0..m.file.sizeBytes)
+            if(completed)require(t.getString("status")=="completed"&&t.getString("sha256")==m.file.sha256&&n==m.file.sizeBytes)
+            else require(t.getString("status") in setOf("transferring","verifying","completed"))
+            return t
+        }
+        var final:JSONObject?=null
+        when(action) {
+            NativeUploadAction.PREPARE->{
+                val value=c.request("resource/upload",JSONObject().put("transferId",m.id).put("name",m.file.name).put("mediaType",m.file.mediaType)
+                    .put("size",m.file.sizeBytes).put("expectedSha256",m.file.sha256).put("purpose","attachment").put("threadId",m.threadId),"upload-${m.id}")
+                transfer(value)
+            }
+            NativeUploadAction.CHUNK->{
+                require(bytes!=null&&bytes.isNotEmpty()&&bytes.size<=192*1024&&offset>=0&&offset+bytes.size<=m.file.sizeBytes)
+                val value=c.request("resource/upload-chunk",JSONObject().put("transferId",m.id).put("offset",offset).put("dataBase64",easyBase64(bytes)),
+                    "chunk-${m.id}-$offset-${easyHash(bytes).take(12)}")
+                require(uploadLong(value.get("nextOffset"))==offset+bytes.size&&value.get("complete") is Boolean&&value.getBoolean("complete")== (offset+bytes.size==m.file.sizeBytes))
+            }
+            NativeUploadAction.COMPLETE->{final=c.request("resource/upload-complete",JSONObject().put("transferId",m.id),"complete-${m.id}");transfer(final!!,true)}
+            NativeUploadAction.CANCEL->error("此 Agent 不支持远端取消；只能停止手机本地上传。")
+            NativeUploadAction.STATUS->Unit
+        }
+        val value=final?:c.request("resource/upload-status",JSONObject().put("transferId",m.id))
+        val t=transfer(value);val completed=t.getString("status")=="completed"
+        val result=if(completed) {
+            transfer(value,true)
+            val id=t.getString("resourceId");require(id.isNotBlank())
+            final?.getJSONObject("attachment")?.let {a->
+                require(a.getString("id")==m.id&&a.getString("resourceId")==id&&a.getString("name")==m.file.name&&a.getString("contentType")==m.file.mediaType&&
+                    uploadLong(a.get("size"))==m.file.sizeBytes&&a.getString("sha256")==m.file.sha256)
+            }
+            JSONObject().put("hostId",client.id).put("threadId",m.threadId).put("id",id).put("name",m.file.name).put("mediaType",m.file.mediaType)
+                .put("sizeBytes",m.file.sizeBytes).put("sha256",m.file.sha256)
+        } else null
+        val now=java.time.Instant.now().toString() // Local adapter observation time, not server throughput.
+        return NativeUploadReceipt.decode(JSONObject().put("version",1).put("manifest",m.json())
+            .put("phase",if(completed)"completed" else if(t.getString("status")=="verifying")"verifying" else "uploading")
+            .put("committedBytes",uploadLong(t.get("transferredBytes"))).put("maxChunkBytes",192*1024)
+            .put("createdAt",now).put("updatedAt",now).put("result",result?:JSONObject.NULL),m)
+    }
     override suspend fun upload(client: MobileClient,threadId: String,file: CreationFile,bytes: ByteArray): MobileFile {
         require(bytes.size<=20*1024*1024&&bytes.size.toLong()==file.sizeBytes&&easyHash(bytes)==file.sha256)
         val c=channel(client);c.request("resource/upload",JSONObject().put("transferId",file.id).put("name",file.name).put("mediaType",file.mediaType).put("size",bytes.size).put("expectedSha256",file.sha256).put("purpose","attachment").put("threadId",threadId),"upload-${file.id}")
@@ -304,23 +414,49 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         val completed=c.request("resource/upload-complete",JSONObject().put("transferId",file.id),"complete-${file.id}")
         return (resource(client,threadId,completed.getJSONObject("attachment"))?:error("电脑未确认附件")).also { require(it.sha256==file.sha256&&it.sizeBytes==file.sizeBytes) }
     }
-    override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: File): File {
+    override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: File): File = downloadResourceWithProgress(client,file,cache,null).local
+    override suspend fun downloadResourceWithProgress(client: MobileClient,file: MobileFile,cache: File,
+        progress: ResourceDownloadProgressHandler?): ResourceDownloadSnapshot {
         require(file.hostId==client.id&&file.sizeBytes in 0..20L*1024*1024)
+        progress?.invoke(ResourceDownloadProgress(ResourceDownloadPhase.Preparing))
         val scope=easyHash(easyCanonical(JSONArray(listOf(CodexCommandCodec.target(client.scope!!),file.threadId))).toByteArray());val root=File(cache,"agent-$scope/${easyHash(file.id.toByteArray())}").apply { mkdirs() }
         val destination=File(root,File(file.name).name.also { require(it.isNotBlank()&&it !in listOf(".","..")) })
-        if(destination.isFile&&destination.length()==file.sizeBytes&&withContext(Dispatchers.IO) { easyHash(destination.readBytes()) }==file.sha256)return destination
+        if(destination.isFile&&destination.length()==file.sizeBytes&&withContext(Dispatchers.IO) { easyHash(destination.readBytes()) }==file.sha256) {
+            progress?.invoke(ResourceDownloadProgress(ResourceDownloadPhase.Cached,file.sizeBytes,file.sizeBytes))
+            return ResourceDownloadSnapshot(file,destination)
+        }
+        val report=ResourceDownloadReporter(file.sizeBytes,progress);report.downloading(0,force=true)
         val c=channel(client);val record=c.request("resource/read",JSONObject().put("resourceId",file.id)).getJSONObject("transfer");require(record.getString("threadId")==file.threadId)
         val transfer=record.getString("transferId");val bytes=java.io.ByteArrayOutputStream()
-        while(bytes.size().toLong()<file.sizeBytes) { val response=c.request("resource/download",JSONObject().put("resourceId",file.id).put("transferId",transfer).put("offset",bytes.size()).put("length",minOf(192*1024L,file.sizeBytes-bytes.size()).toInt()));val chunk=easyBytes(response.getString("dataBase64"));require(response.getInt("offset")==bytes.size()&&chunk.isNotEmpty()&&bytes.size()+chunk.size<=file.sizeBytes);bytes.write(chunk) }
-        val data=bytes.toByteArray();require(easyHash(data)==file.sha256) { "文件完整性校验失败" }
+        while(bytes.size().toLong()<file.sizeBytes) { val response=c.request("resource/download",JSONObject().put("resourceId",file.id).put("transferId",transfer).put("offset",bytes.size()).put("length",minOf(192*1024L,file.sizeBytes-bytes.size()).toInt()));val chunk=easyBytes(response.getString("dataBase64"));require(response.getInt("offset")==bytes.size()&&chunk.isNotEmpty()&&bytes.size()+chunk.size<=file.sizeBytes);bytes.write(chunk);report.downloading(bytes.size().toLong()) }
+        val data=bytes.toByteArray();report.verifying(data.size.toLong());require(easyHash(data)==file.sha256) { "文件完整性校验失败" }
         withContext(Dispatchers.IO) { val temp=File(root,".${UUID.randomUUID()}.tmp");try { temp.writeBytes(data);require(temp.renameTo(destination)) } finally { temp.delete() } }
-        c.request("resource/download-complete",JSONObject().put("resourceId",file.id).put("transferId",transfer),"download-complete-$transfer");return destination
+        c.request("resource/download-complete",JSONObject().put("resourceId",file.id).put("transferId",transfer),"download-complete-$transfer");return ResourceDownloadSnapshot(file,destination)
     }
     override suspend fun prepareCreation(client: MobileClient,intent: CreationIntent): DesktopCreation=error("此电脑不使用分阶段桌面创建")
     override suspend fun creation(client: MobileClient,operationId: String,inspectOnly: Boolean): DesktopCreation=error("此电脑不使用分阶段桌面创建")
     override suspend fun submitCreation(client: MobileClient,operationId: String): DesktopCreation=error("此电脑不使用分阶段桌面创建")
     override suspend fun detachCreation(client: MobileClient,operationId: String): DesktopCreation=error("此电脑不使用分阶段桌面创建")
-    override suspend fun open(client: MobileClient,threadId: String,operationId: String,queryOnly: Boolean): DesktopOpen=error("此电脑未开放主动打开")
+    override fun requiresConfirmedDesktopOpenReceipt(client: MobileClient) = true
+    override suspend fun open(client: MobileClient,threadId: String,operationId: String,queryOnly: Boolean): DesktopOpen {
+        require(threadId.isNotEmpty() && operationId.isNotEmpty())
+        val c=channel(client)
+        require(sameScope(c.target.scope(),client.scope)) { "打开请求完整目标不匹配" }
+        if(!queryOnly) {
+            val context=c.request("runtime/context")
+            require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target &&
+                "desktop:open" in context.getJSONArray("capabilities").strings()) { "此电脑未开放主动打开" }
+        }
+        val value=c.request(if(queryOnly)"thread/open-status" else "thread/open",
+            JSONObject().put("threadId",threadId).put("clientOperationId",operationId),
+            if(queryOnly)UUID.randomUUID().toString() else operationId)
+        require(value.getString("hostId")==c.target.desktopDeviceId && value.getString("threadId")==threadId &&
+            value.getString("clientOperationId")==operationId && value.getString("phase") in listOf("opened","outcome-unknown","rejected")) { "打开回执原目标或操作不匹配" }
+        require(!value.has("error") || value.isNull("error") || value.get("error") is String) { "打开回执错误字段无效" }
+        return CodexCommandCodec.open(JSONObject().put("hostId",client.id).put("threadId",threadId)
+            .put("clientOperationId",operationId).put("phase",value.getString("phase"))
+            .put("error",if(value.has("error"))value.get("error") else JSONObject.NULL))
+    }
     override suspend fun uploadCreation(client: MobileClient,operationId: String,file: CreationFile,bytes: ByteArray): Unit=error("此电脑不使用分阶段桌面创建")
 }
 private object UriReference { fun decode(value: String): String=android.net.Uri.decode(value) }

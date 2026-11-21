@@ -1,3 +1,9 @@
+<!-- authority-status-source:20261112 -->
+
+> 当前状态和调度统一以[权威状态和计划](progress.md)为准。本文件保留需求、历史状态或原始证据；其中旧状态不独立决定当前完成率。
+
+<!-- /authority-status-source:20261112 -->
+
 # 待验与暂停
 
 更新：2026-11-09。以下项独立登记，只阻塞依赖它的验收。优先级见[计划](plan.md)，产品状态见[进度](progress.md)。旧[待验档案](../android-alignment-20261022/pending-acceptance.md)及[阶段记录](../android-alignment-20261022/records/README.md)保留每次失败、原意图和 UNKNOWN，不因新清单改写。

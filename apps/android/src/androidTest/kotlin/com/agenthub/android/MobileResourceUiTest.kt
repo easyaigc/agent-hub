@@ -399,6 +399,11 @@ internal class ResourceUiFixture: java.io.Closeable {
     @Volatile var rawError="owned resource error"
     @Volatile var binaryGate: (()->Unit)?=null
     @Volatile var includeAttachment=true
+    @Volatile var messageStatus: String?=null
+    @Volatile var documentFiles: Map<String,ResourceUiDocument> = emptyMap()
+    @Volatile var documentResolveGate: (()->Unit)?=null
+    private fun responseFile(id: String?)=documentFiles.values.firstOrNull {it.id==id}?.wire() ?: file()
+    private fun responseBytes(id: String?)=documentFiles.values.firstOrNull {it.id==id}?.bytes ?: bytes
     lateinit var client: MobileClient
     val reference get()="codex-attachment://ui-"+version
     private fun hash()=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -411,13 +416,31 @@ internal class ResourceUiFixture: java.io.Closeable {
         when(request.path) {
             "/v1/attachments/resolve" -> if(status!=200)WireResponse(status,JSONObject().put("error",rawError).toString())
                 else WireResponse(body=JSONObject().put("hostId","fixture-host").put("threadId","fixture-thread").put("sourceAttachmentId",query.getValue("id"))
-                    .put("readTarget",CodexCommandCodec.target(client.scope!!)).put("attachment",file()).toString())
-            "/v1/attachments" -> WireResponse(raw=bytes,beforeBody=binaryGate)
+                    .put("readTarget",CodexCommandCodec.target(client.scope!!)).put("attachment",responseFile(query["id"])).toString())
+            "/v1/attachments" -> WireResponse(raw=responseBytes(query["id"]),beforeBody=binaryGate)
+            "/v1/attachments/resolve-document-link" -> {
+                val reference=query["reference"].orEmpty()
+                val source=responseFile(query["sourceAttachmentId"])
+                val child=documentFiles[reference.substringBefore('#')]
+                when {
+                    request.method!="GET" || query["threadId"]!="fixture-thread" -> WireResponse(400)
+                    query["sourceSha256"]!=source.getString("sha256") -> WireResponse(409,JSONObject().put("error","owned source changed").toString())
+                    child==null -> WireResponse(404,JSONObject().put("error","owned document absent").toString())
+                    else -> {
+                        documentResolveGate?.invoke()
+                        WireResponse(body=JSONObject().put("hostId","fixture-host").put("threadId","fixture-thread")
+                            .put("readTarget",CodexCommandCodec.target(client.scope!!))
+                            .put("sourceAttachmentId",query.getValue("sourceAttachmentId")).put("reference",reference)
+                            .put("attachment",child.wire()).toString())
+                    }
+                }
+            }
             else -> execution.resourceUiResponse(request).let { response->
                 if(request.path!="/v1/history")response else {
                     val body=JSONObject(response.body)
                     body.getJSONArray("messages").objects().first { it.getString("id")=="old-assistant" }.put("attachments",if(includeAttachment)JSONArray().put(file()) else JSONArray())
                         .put("files",if(includeAttachment)JSONArray() else JSONArray().put(name))
+                    messageStatus?.let {body.getJSONArray("messages").objects().first {row->row.getString("id")=="old-assistant"}.put("status",it)}
                     response.copy(body=body.toString())
                 }
             }
@@ -426,4 +449,12 @@ internal class ResourceUiFixture: java.io.Closeable {
     fun binaries()=server.requests.count { it.path=="/v1/attachments" }
     fun resourceReads()=server.requests.count { it.path.startsWith("/v1/attachments") }
     override fun close() { server.close();execution.close() }
+}
+
+/** Synthetic document metadata only; no production target or credential is accepted. */
+internal data class ResourceUiDocument(val id: String,val name: String,val bytes: ByteArray) {
+    fun wire()=JSONObject().put("id",id).put("hostId","fixture-host").put("threadId","fixture-thread")
+        .put("name",name).put("mediaType","text/markdown").put("sizeBytes",bytes.size)
+        .put("sha256",MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") {"%02x".format(it)})
+        .put("resourceId","owned-document-"+id)
 }

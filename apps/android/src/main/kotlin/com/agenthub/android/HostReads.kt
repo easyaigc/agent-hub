@@ -40,7 +40,9 @@ data class MobileWorkspace(val hostId: String, val name: String, val mode: Strin
     val projects: List<MobileProject>, val threads: List<MobileThread>,
     val nextProjectCursor: String?, val nextThreadCursor: String?, val scope: TargetScope?,
     val capabilities: List<String>, val wire: String, val runtimeConnected: Boolean? = null,
-    val pinnedThreadIds: List<String>? = null, val sidebar: MobileWorkspaceSidebar? = null)
+    val pinnedThreadIds: List<String>? = null, val sidebar: MobileWorkspaceSidebar? = null,
+    // Adapter observation only: not a wire field or cached authority. Session accepts it under its read owner.
+    val authenticatedConnection: AgentConnection? = null)
 data class MobileHistory(val hostId: String, val threadId: String, val messages: List<MobileMessage>,
     val nextCursor: String?, val scope: TargetScope?, val state: String, val turnId: String?, val wire: String,
     val runtimePresent: Boolean = false, val runtime: MobileRuntime? = null, val epoch: String? = null, val cursor: Long? = null,
@@ -137,12 +139,14 @@ interface AgentReads {
     suspend fun workspace(client: MobileClient, projectCursor: String? = null, threadCursor: String? = null): MobileWorkspace
     suspend fun history(client: MobileClient, threadId: String, cursor: String? = null): MobileHistory
     suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String? = null): MobileHistory = history(client,threadId,cursor)
+    suspend fun subagentHistory(client: MobileClient,request: MobileSubagentHistoryRequest): MobileSubagentHistory =
+        throw HostReadError("此客户端暂不支持完整子 Agent 过程")
     suspend fun nextTurnSuggestion(client: MobileClient,scope: SuggestionScope): MobileDesktopSuggestionResponse =
         throw HostReadError("电脑尚未提供桌面建议读取")
 }
 typealias HostReads = AgentReads
 
-class HostReadError(message: String, cause: Throwable? = null, val transient: Boolean = false): Exception(message, cause)
+class HostReadError(message: String, cause: Throwable? = null, val transient: Boolean = false, val status: Int? = null): Exception(message, cause)
 class NativeHostReads(private val token: (String) -> String) : HostReads {
     companion object {
         private val executor = Executors.newFixedThreadPool(4)
@@ -153,7 +157,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
             return uri
         }
         fun url(endpoint: String, path: String, query: Map<String, String>): URI {
-            require(path in listOf("v1/workspace", "v1/history", "v1/threads/search-history", "v1/threads/next-turn-suggestion", "host"))
+            require(path in listOf("v1/workspace", "v1/history", "v1/threads/search-history", "v1/threads/next-turn-suggestion", "v1/subagents/history", "host"))
             val base = baseAddress(endpoint).toString().trimEnd('/')
             val encoded = query.entries.joinToString("&") { (k, v) -> URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") }
             return URI("$base/$path" + if (encoded.isEmpty()) "" else "?$encoded")
@@ -187,7 +191,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
                     401, 403 -> "客户端密钥无效或未获得读取权限"
                     in 300..399 -> "连接地址发生重定向，请核对电脑地址"
                     else -> "电脑请求失败（$status）"
-                }, transient = status in listOf(502,503,504))
+                }, transient = status in listOf(502,503,504), status = status)
                 val value = connection.inputStream.use { input -> decode(input) { continuation.isActive } }
                 if (continuation.isActive) continuation.resume(value)
             } catch (error: Exception) {
@@ -206,6 +210,22 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         if (client.id.isNotEmpty() && result.hostId != client.id) throw HostReadError("电脑身份不匹配，未保存连接")
         if (client.requiresReadTarget && result.scope == null || client.scope != null && result.scope != null && !sameScope(client.scope, result.scope)) throw HostReadError("电脑运行时身份已改变，请重新连接")
         return result
+    }
+    override suspend fun subagentHistory(client: MobileClient,request: MobileSubagentHistoryRequest): MobileSubagentHistory {
+        require(client.scope?.agentId=="codex" && client.agentConnection==null)
+        val query=buildMap {
+            put("hostId",client.id);put("threadId",request.parentThreadId);put("messageId",request.messageId)
+            request.childId?.let {put("childId",it)};request.cursor?.let {put("cursor",it)}
+            request.association?.let {
+                put("association",it);put("target",CodexCommandCodec.target(checkNotNull(client.scope)).toString())
+            }
+        }
+        return readResponse(client,"v1/subagents/history",query) {input,active ->
+            val wire=NativeWireReader.read(input,if(request.association=="parent-thread-lineage")2*1024*1024 else 16*1024*1024,active)
+            try {NativeSubagentHistoryWire.decode(wire,client,request)}
+            catch(cancel: kotlinx.coroutines.CancellationException) {throw cancel}
+            catch(_: Exception) {throw HostReadError("电脑返回的数据格式无效")}
+        }
     }
     override suspend fun nextTurnSuggestion(client: MobileClient,scope: SuggestionScope): MobileDesktopSuggestionResponse = boundedDesktopSuggestionRead {
         require(scope.target.agentId=="codex"&&client.id==scope.target.hostId&&sameScope(client.scope,scope.target)&&

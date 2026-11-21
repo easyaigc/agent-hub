@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build:ios": "xcodebuild -project CodexManage.xcodeproj -scheme CodexManage -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ../../.build/ios CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build"
+    "build:ios": "xcodebuild -project CodexManage.xcodeproj -scheme CodexManage -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ../../.build/ios CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build",
+    "build:native:simulator": "xcodebuild -project CodexManage.xcodeproj -scheme EasyWorkNative -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ../../.build/ios -jobs 1 CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- NOTIFICATION_APP_BUNDLE_ID=com.easyai.agenthub.easyworkacceptance build-for-testing",
+    "build:r2:native:simulator": "xcodebuild -project CodexManage.xcodeproj -scheme R2RealDEV -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ../../.build/ios -jobs 1 CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build-for-testing",
+    "check:r2-admission": "node --test ../../scripts/mobile/ios-r2-admission.test.mjs"
   }
 }

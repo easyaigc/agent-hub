@@ -61,6 +61,21 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
         private const val MAX_NOTICES = 256
         /** Migration validation uses the production parser without opening or mutating a store. */
         fun validateEncoded(text: String) { decode(text) }
+        /** The same parser and encoder as save(), without opening or mutating any store. */
+        internal fun canonicalEncodedForInspection(text: String): String = encode(decode(text))
+        private fun encode(value: Ledger): String {
+            require(value.rows.size <= MAX_ROWS && value.scopes.size <= MAX_ROWS)
+            val rows = JSONArray(value.rows.values.map { row ->
+                JSONObject().put("target", CodexCommandCodec.target(row.target)).put("threadId", row.threadId)
+                    .put("replyUnread", row.replyUnread).put("notices", JSONObject(row.notices.mapValues { it.value.json() })).also {
+                        row.latest?.let { p -> it.put("latest", p.json()) }; row.read?.let { p -> it.put("read", p.json()) }
+                        row.pendingReader?.let { reader -> it.put("pendingReader", reader) }
+                    }
+            })
+            val text = JSONObject().put("version", 1).put("revision", value.revision).put("scopes", JSONArray(value.scopes.toList())).put("rows", rows).toString()
+            require(text.toByteArray(Charsets.UTF_8).size <= 8 * 1024 * 1024)
+            return text
+        }
         private fun bool(value: JSONObject, key: String) = (value.get(key) as? Boolean) ?: error("Invalid reading boolean: $key")
         private fun decode(saved: String): Ledger {
             require(saved.length <= 8 * 1024 * 1024)
@@ -100,17 +115,7 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
     }
     private fun load(): Ledger = storage.read(STORAGE_NAME)?.let { decode(it) } ?: Ledger()
     private fun save(value: Ledger) {
-        require(value.rows.size <= MAX_ROWS && value.scopes.size <= MAX_ROWS)
-        val rows = JSONArray(value.rows.values.map { row ->
-            JSONObject().put("target", CodexCommandCodec.target(row.target)).put("threadId", row.threadId)
-                .put("replyUnread", row.replyUnread).put("notices", JSONObject(row.notices.mapValues { it.value.json() })).also {
-                    row.latest?.let { p -> it.put("latest", p.json()) }; row.read?.let { p -> it.put("read", p.json()) }
-                    row.pendingReader?.let { reader -> it.put("pendingReader", reader) }
-                }
-        })
-        val text = JSONObject().put("version", 1).put("revision", value.revision).put("scopes", JSONArray(value.scopes.toList())).put("rows", rows).toString()
-        require(text.toByteArray(Charsets.UTF_8).size <= 8 * 1024 * 1024)
-        storage.write(STORAGE_NAME, text)
+        storage.write(STORAGE_NAME, encode(value))
     }
     private fun projection(value: Ledger): NativeUnreadSnapshot {
         val rows = value.rows.filterValues { ThreadReadingIdentity.scopeKey(it.target) in value.scopes && it.unread }
@@ -141,7 +146,7 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
     /** A queued pre-restore Session may finish IO, but cannot mutate the restored ledger. */
     internal fun reconcileOwned(scopes: List<TargetScope>,values: List<NativeReadingSnapshot>,owner: NativeReadingWriteFence.Lease): NativeUnreadSnapshot = reconcile(scopes,values,owner)
     private fun reconcile(scopes: List<TargetScope>,values: List<NativeReadingSnapshot>,owner: NativeReadingWriteFence.Lease?): NativeUnreadSnapshot = transaction(owner) { ledger ->
-        ledger.scopes = scopes.map(ThreadReadingIdentity::scopeKey).toSet()
+        ledger.scopes = storage.reconcileReadingScopes(ledger.scopes,scopes.map(ThreadReadingIdentity::scopeKey).toSet())
         values.forEach { value ->
             if (ThreadReadingIdentity.scopeKey(value.target) !in ledger.scopes) return@forEach
             val key = ThreadReadingIdentity.key(value.target, value.threadId)

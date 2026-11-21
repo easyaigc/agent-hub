@@ -51,6 +51,7 @@ class MobileExternalReceiverTest {
         val sourcePackage=InstrumentationRegistry.getInstrumentation().context.packageName
         val intent=Intent().setComponent(ComponentName(sourcePackage,"com.agenthub.android.OwnedExternalSourceActivity"))
             .putExtra("nonce",nonce).putExtra("mode",mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if(mode=="cleanup")intent.putExtra("targetPid",Process.myPid()).putExtra("cleanupOperation",UUID.randomUUID().toString())
         main { activity.startActivity(intent) }
     }
     @After fun finish() {

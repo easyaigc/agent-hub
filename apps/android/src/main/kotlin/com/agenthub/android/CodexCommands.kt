@@ -98,6 +98,10 @@ object CodexCommandCodec {
 
 /** Commands have specific names and immutable target arguments; no arbitrary route or method API. */
 interface AgentCommands {
+    /** null is explicit lack of resumable support; transport/schema/auth failures must throw. */
+    suspend fun uploadCapability(client:MobileClient,manifest:NativeUploadManifest):NativeUploadCapability? = null
+    suspend fun uploadRequest(client:MobileClient,manifest:NativeUploadManifest,action:NativeUploadAction,
+        offset:Long=0,bytes:ByteArray?=null):NativeUploadReceipt = error("此连接未开放续传协议")
     suspend fun computerFiles(client: MobileClient): ComputerFileCatalog = error("此连接尚未支持文件互传，请更新电脑连接程序。")
     suspend fun prepareComputerFile(client: MobileClient,file: ComputerFileManifest): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
     suspend fun computerFile(client: MobileClient,id: String): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
@@ -131,6 +135,7 @@ interface AgentCommands {
     suspend fun creation(client: MobileClient, operationId: String, inspectOnly: Boolean = false): DesktopCreation
     suspend fun submitCreation(client: MobileClient, operationId: String): DesktopCreation
     suspend fun detachCreation(client: MobileClient, operationId: String): DesktopCreation
+    fun requiresConfirmedDesktopOpenReceipt(client: MobileClient): Boolean = false
     suspend fun open(client: MobileClient, threadId: String, operationId: String, queryOnly: Boolean = false): DesktopOpen
     suspend fun stop(client: MobileClient, threadId: String, turnId: String)
     suspend fun executeQueue(client: MobileClient, threadId: String, operationId: String, expectedTurnId: String?): Unit = error("此客户端未开放立即执行队列")
@@ -139,6 +144,10 @@ interface AgentCommands {
     suspend fun upload(client: MobileClient, threadId: String, file: CreationFile, bytes: ByteArray): MobileFile
     suspend fun resolveMessageFile(client: MobileClient,threadId: String,messageId: String,reference: String): MobileFile = throw CodexCommandError("此电脑未提供逻辑资源下载",appOwnedCopy=true)
     suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File): java.io.File = throw CodexCommandError("此电脑未提供逻辑资源下载",appOwnedCopy=true)
+    suspend fun downloadResourceWithProgress(client: MobileClient,file: MobileFile,cache: java.io.File,
+        progress: ResourceDownloadProgressHandler?): ResourceDownloadSnapshot = ResourceDownloadSnapshot(file,downloadResource(client,file,cache))
+    suspend fun resolveDocumentFile(client: MobileClient,file: MobileFile,reference: String,sourceSha256: String): MobileFile =
+        throw CodexCommandError("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。",appOwnedCopy=true)
     suspend fun uploadCreation(client: MobileClient, operationId: String, file: CreationFile, bytes: ByteArray)
 }
 typealias CodexCommands = AgentCommands

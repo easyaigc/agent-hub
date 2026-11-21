@@ -20,7 +20,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     companion object { private val executor=Executors.newFixedThreadPool(4) }
     private suspend fun request(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null): JSONObject =
-        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path=="v1/usage") 262144 else if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
+        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path.startsWith("v1/uploads")) 1024*1024 else if(path=="v1/usage") 262144 else if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
     private suspend fun <T> exchange(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,transfer: ComputerFileUpload? = null,progress: (Long)->Unit = {},decode: (java.io.InputStream,()->Boolean)->T): T {
         require(!client.isDemo && client.id.isNotBlank() && client.scope?.hostId==client.id) { "未绑定真实电脑目标" }
@@ -31,7 +31,8 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         if(body!=null) {
             require(body.getString("hostId")==client.id) { "操作电脑身份不匹配" }
             require(definition!=null)
-            if(path=="v1/file-transfers") {require(definition=="computerFileManifest");ComputerFileCodec.manifest(body)}
+            if(path=="v1/uploads") {require(definition=="nativeUploadManifest");NativeUploadManifest.decode(body)}
+            else if(path=="v1/file-transfers") {require(definition=="computerFileManifest");ComputerFileCodec.manifest(body)}
             else if(path=="v1/threads/read") { require(definition=="phoneReadRequest");NativeThreadReadingWire.validateRequest(body) }
             else CodexCommandCodec.validate(body,definition)
         }
@@ -220,6 +221,34 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     private fun bytes(file: CreationFile,bytes: ByteArray) {
         CodexCommandCodec.validate(file.body(),"creationFile"); require(bytes.size.toLong()==file.sizeBytes && hash(bytes)==file.sha256) { "附件内容已改变，未上传" }
     }
+    override suspend fun uploadCapability(client:MobileClient,manifest:NativeUploadManifest):NativeUploadCapability? {
+        require(manifest.file.hostId==client.id)
+        // Keep the original attachment contract (including empty/legacy file names).
+        // This is local input representability, not treating auth/schema/network errors as404.
+        if(manifest.purpose!="file-transfer"&&runCatching {ComputerFileCodec.manifest(manifest.file.json())}.isFailure)return null
+        return try {
+            val v=request(client,"v1/uploads/capabilities")
+            require(v.keys().asSequence().toSet()==setOf("version","target","maxChunkBytes")&&v.get("version")==1)
+            require(com.agenthub.core.RuntimeIdentity.matches(requireNotNull(client.scope),checkNotNull(HostReadCodec.target(v.getJSONObject("target")))))
+            val n=uploadLong(v.get("maxChunkBytes"));require(n in 1..1024*1024)
+            // F59's original prepared/unknown ledger has no remote-cancel terminal yet.
+            // Keep its existing local-stop contract rather than claim both journals were cancelled.
+            NativeUploadCapability(n.toInt(),manifest.purpose!="file-transfer","codex-upload-v1")
+        } catch(failure:CodexCommandError) {if(failure.status==404)null else throw failure}
+    }
+    override suspend fun uploadRequest(client:MobileClient,manifest:NativeUploadManifest,action:NativeUploadAction,offset:Long,bytes:ByteArray?):NativeUploadReceipt {
+        manifest.validate();require(manifest.file.hostId==client.id)
+        val query=mutableMapOf("id" to manifest.id)
+        val result=when(action) {
+            NativeUploadAction.PREPARE->request(client,"v1/uploads",query,manifest.json(),"nativeUploadManifest")
+            NativeUploadAction.STATUS->request(client,"v1/uploads",query)
+            NativeUploadAction.CHUNK->{require(offset>=0&&bytes!=null&&bytes.isNotEmpty()&&bytes.size<=1024*1024);query["offset"]=offset.toString()
+                request(client,"v1/uploads/chunk",query,bytes=bytes,mediaType="application/octet-stream")}
+            NativeUploadAction.COMPLETE->request(client,"v1/uploads/complete",query,bytes=ByteArray(0))
+            NativeUploadAction.CANCEL->request(client,"v1/uploads/cancel",query,bytes=ByteArray(0))
+        }
+        return NativeUploadReceipt.decode(result,manifest)
+    }
     override suspend fun upload(client: MobileClient,threadId: String,file: CreationFile,bytes: ByteArray): MobileFile {
         bytes(file,bytes)
         val v=CodexCommandCodec.validate(request(client,"v1/attachments",mapOf("threadId" to threadId,"name" to file.name),bytes=bytes,mediaType=file.mediaType),"attachment")
@@ -231,13 +260,28 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         return CodexResources.fromMessage(client,threadId,messageId,reference,request(client,"v1/attachments/resolve-link",
             mapOf("threadId" to threadId,"messageId" to messageId,"reference" to reference)))
     }
+    override suspend fun resolveDocumentFile(client: MobileClient,file: MobileFile,reference: String,sourceSha256: String): MobileFile {
+        CodexResources.validate(client,file)
+        require(reference.toByteArray(Charsets.UTF_8).size in 1..8192 && sourceSha256==file.sha256 &&
+            MessageLinkDestination.resolve(reference.replace(" ","%20")).kind=="computerFile") { "不是有效的文档文件链接" }
+        val value=try { request(client,"v1/attachments/resolve-document-link",mapOf("threadId" to file.threadId,
+            "sourceAttachmentId" to file.id,"reference" to reference,"sourceSha256" to sourceSha256)) }
+            catch(error: CodexCommandError) {
+                if(error.status==404)throw CodexCommandError("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。",appOwnedCopy=true)
+                throw error
+            }
+        return CodexResources.fromDocument(client,file,reference,sourceSha256,value)
+    }
     override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File): java.io.File =
-        CodexResources.download(client,file,cache,resolve={
+        downloadResourceWithProgress(client,file,cache,null).local
+    override suspend fun downloadResourceWithProgress(client: MobileClient,file: MobileFile,cache: java.io.File,
+        progress: ResourceDownloadProgressHandler?): ResourceDownloadSnapshot =
+        CodexResources.downloadSnapshot(client,file,cache,progress,resolve={
             try { CodexResources.current(client,file,request(client,"v1/attachments/resolve",mapOf("threadId" to file.threadId,"id" to file.id))) }
             catch(error: CodexCommandError) { if(error.status==404)null else throw error }
         },fetch={ current,destination->
             exchange(client,"v1/attachments",mapOf("threadId" to current.threadId,"id" to current.id)) { input,active->
-                CodexResources.write(input,active,current,destination)
+                CodexResources.write(input,active,current,destination,progress)
             }
         })
     override suspend fun uploadCreation(client: MobileClient,operationId: String,file: CreationFile,bytes: ByteArray) {
@@ -249,7 +293,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
 
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-private val POST_ROUTES=setOf("v1/file-transfers","v1/file-transfers/content","v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
-private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link")
-private val RESOURCE_READ_ROUTES=setOf("v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link")
+private val POST_ROUTES=setOf("v1/uploads","v1/uploads/chunk","v1/uploads/complete","v1/uploads/cancel","v1/file-transfers","v1/file-transfers/content","v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
+private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link","v1/attachments/resolve-document-link")
+private val RESOURCE_READ_ROUTES=setOf("v1/uploads","v1/uploads/capabilities","v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link","v1/attachments/resolve-document-link")
 private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/usage","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

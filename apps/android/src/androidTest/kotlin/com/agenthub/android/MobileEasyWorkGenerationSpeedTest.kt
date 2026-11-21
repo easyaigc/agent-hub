@@ -67,6 +67,36 @@ class MobileEasyWorkGenerationSpeedTest {
         }
     }
 
+    @Test fun runtimeGenerationFieldsNeverBorrowChangedThreadDefaults() = runBlocking {
+        val defaults=JSONObject().put("modelRef",JSONObject().put("providerId","today").put("modelId","model"))
+            .put("reasoning",JSONObject().put("effort","high")).put("permissionMode","allow_all").put("speed","ultrafast")
+        val cases=listOf(
+            null to GenerationSettings("today/model","high","allow_all","ultrafast"),
+            JSONObject().put("id","legacy").put("status","completed") to GenerationSettings(),
+            JSONObject().put("id","empty").put("status","completed").put("settings",JSONObject()) to GenerationSettings(),
+            JSONObject().put("id","partial").put("status","completed").put("settings",JSONObject().put("speed","fast")) to GenerationSettings(speed="fast"),
+            JSONObject().put("id","model-only").put("status","completed").put("settings",JSONObject()
+                .put("modelRef",JSONObject().put("providerId","original").put("modelId","model"))) to GenerationSettings(model="original/model"),
+            JSONObject().put("id","effort-only").put("status","completed").put("settings",JSONObject()
+                .put("reasoning",JSONObject().put("effort","low"))) to GenerationSettings(effort="low"),
+            JSONObject().put("id","permission-only").put("status","completed").put("settings",JSONObject()
+                .put("permissionMode","confirm_high_risk")) to GenerationSettings(permissionMode="confirm_high_risk"),
+            JSONObject().put("id","recorded").put("status","completed").put("settings",JSONObject()
+                .put("modelRef",JSONObject().put("providerId","original").put("modelId","model"))
+                .put("reasoning",JSONObject().put("effort","low")).put("permissionMode","confirm_high_risk").put("speed","standard")) to GenerationSettings("original/model","low","confirm_high_risk","standard"),
+            JSONObject().put("id","nulls").put("status","completed").put("settings",JSONObject()
+                .put("modelRef",JSONObject.NULL).put("reasoning",JSONObject.NULL).put("permissionMode",JSONObject.NULL).put("speed",JSONObject.NULL)) to GenerationSettings(),
+        )
+        for((latest,expected) in cases) {
+            val snapshot=JSONObject().put("thread",JSONObject().put("id","thread").put("generationPreferences",defaults))
+            latest?.let { snapshot.put("latestRun",it) }
+            fixture({ JSONObject().put("snapshot",snapshot).put("branchRevision",1).put("messages",JSONArray()) }) { adapter,client,requests ->
+                assertEquals(expected,adapter.history(client,"thread",null).runtime?.settings)
+                assertEquals(listOf("thread/sync"),requests.map { it.getString("method") })
+            }
+        }
+    }
+
     @Test fun nextTurnQueueAndPlanKeepExplicitSpeedWhileSteerOmitsGenerationSettings() = runBlocking {
         fixture({ request -> JSONObject().put("state", "submitted").put("clientMessageId", request.getString("requestId"))
             .put("threadId", "thread").put("turnId", "run") }) { adapter, client, requests ->
@@ -96,6 +126,16 @@ class MobileEasyWorkGenerationSpeedTest {
         }
     }
 
+    @Test fun followComputerDoesNotSerializeImplicitModelEffortPermissionOrSpeed() = runBlocking {
+        fixture({ request -> JSONObject().put("state","submitted").put("clientMessageId",request.getString("requestId"))
+            .put("threadId","thread").put("turnId","run") }) { adapter,client,requests ->
+            adapter.send(client,ReplyIntent(client.id,"thread","follow-computer","fixture",emptyList(),"next-turn"))
+            assertEquals(listOf("turn/start"),requests.map { it.getString("method") })
+            val settings=requests.single().getJSONObject("params").getJSONObject("settings")
+            for(key in listOf("model","effort","permissionMode","speed")) assertFalse(settings.has(key))
+        }
+    }
+
     @Test fun unsupportedSpeedIsRejectedBeforeAnyProtocolRequest() = runBlocking {
         fixture({ error("Invalid speed must not reach peer") }) { adapter, client, requests ->
             val intent = ReplyIntent(client.id, "thread", "invalid-speed", "fixture", emptyList(), "next-turn",
@@ -104,4 +144,52 @@ class MobileEasyWorkGenerationSpeedTest {
             assertTrue(requests.isEmpty())
         }
     }
+    @Test fun finishedPlansNeverReappearAsActionableReviewWhileReadyAndSavedKeepIdentity() = runBlocking {
+        for(status in listOf("ready","saved","completed","approved","cancelled","rejected","superseded")) {
+            val snapshot=JSONObject().put("thread",JSONObject().put("id","thread"))
+                .put("latestRun",JSONObject().put("id","original-run").put("status","completed"))
+                .put("currentPlan",JSONObject().put("planId","original-plan").put("version",7)
+                    .put("createdRunId","original-run").put("status",status).put("markdown","Original plan body"))
+            fixture({ JSONObject().put("snapshot",snapshot).put("branchRevision",1).put("messages",JSONArray()) }) { adapter,client,requests ->
+                val plan=adapter.history(client,"thread",null).runtime?.proposedPlan
+                if(status in listOf("ready","saved")) {
+                    val actual=checkNotNull(plan)
+                    val identity=JSONObject(String(easyBytes(actual.id.removePrefix("easywork-plan."))))
+                    assertEquals("original-plan",identity.getString("id"));assertEquals(7,identity.getInt("version"))
+                    assertEquals("original-run",actual.turnId);assertEquals("Original plan body",actual.text)
+                } else assertNull("Finished plan status $status must not resurrect review",plan)
+                assertEquals(listOf("thread/sync"),requests.map { it.getString("method") })
+            }
+        }
+    }
+
+    @Test fun planApprovalAndRevisionPreserveOriginalIdentityAndEveryExplicitParameter() = runBlocking {
+        val plan="easywork-plan."+easyBase64(JSONObject().put("id","original-plan").put("version",7).toString().toByteArray())
+        val settings=GenerationSettings("original/model","low","confirm_high_risk","ultrafast")
+        fixture({ request -> JSONObject().put("state","submitted").put("clientMessageId",request.getString("requestId"))
+            .put("threadId","thread").put("turnId","run") }) { adapter,client,requests ->
+            for(revise in listOf(false,true)) {
+                val id=if(revise) "original-revision" else "original-approval"
+                adapter.send(client,ReplyIntent(client.id,"thread",id,"Original feedback",emptyList(),"next-turn",
+                    expectedPlanId=plan,settings=if(revise) settings.copy(collaborationMode="plan") else settings))
+                val request=requests.last();val params=request.getJSONObject("params")
+                assertEquals(id,request.getString("requestId"));assertEquals(id,params.getString("clientRequestId"))
+                assertEquals("thread",params.getString("threadId"))
+                val actual=params.getJSONObject("settings")
+                assertEquals("original/model",actual.getString("model"));assertEquals("low",actual.getString("effort"))
+                assertEquals("confirm_high_risk",actual.getString("permissionMode"));assertEquals("ultrafast",actual.getString("speed"))
+                if(revise) {
+                    assertEquals("turn/start",request.getString("method"));assertEquals("original-plan",params.getString("revisionOfPlanId"))
+                    assertEquals(7,params.getInt("expectedPlanVersion"));assertEquals("plan",actual.getString("mode"))
+                    assertEquals("Original feedback",params.getJSONArray("parts").getJSONObject(0).getJSONObject("data").getString("text"))
+                } else {
+                    assertEquals("plan/action",request.getString("method"));assertEquals("original-plan",params.getString("planId"))
+                    assertEquals(7,params.getInt("expectedVersion"));assertEquals("approve-current",params.getString("action"))
+                    assertFalse(actual.has("mode"))
+                }
+            }
+            assertEquals(2,requests.size)
+        }
+    }
+
 }

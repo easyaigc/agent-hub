@@ -128,9 +128,30 @@ internal class NativeChatNotificationPlatform private constructor(private val co
     override fun post(receipt: NativeChatNoticeReceipt, preferences: NativeChatNotificationPreferences, computer: String, unread: Int, channel: String) {
         if (acceptance != null) require(channel.startsWith(prefix))
         val event = receipt.event
-        val intent = openIntent(context, receipt.ticket)
+        postPrepared(receipt.ticket, tagPrefix(event.target) + event.id,
+            NativeChatNoticePresentation.create(event, computer, preferences.showThreadTitle) { text.tr(it) }, preferences, unread, channel)
+    }
+    internal fun postEasyWork(ticket: String, event: NativeTaskNotice, computer: String,
+        preferences: NativeChatNotificationPreferences, unread: Int, channel: String) {
+        require(event.target.agentId == "easywork")
+        fun visible(value: String) = value.filterNot { Character.getType(it) in listOf(Character.CONTROL.toInt(), Character.FORMAT.toInt()) }.trim().take(100)
+        val kind = text.tr(NativeChatNoticeKind.from(event.kind).title)
+        val title = if (preferences.showThreadTitle) event.threadTitle?.let(::visible)?.takeIf { it.isNotBlank() }
+            ?: (text.tr("对话") + " · " + event.threadId.orEmpty().take(8)) else kind
+        val summary = if (preferences.showThreadTitle) event.taskSummary ?: text.tr(NativeChatNoticeKind.from(event.kind).fallback) else ""
+        postPrepared(ticket, easyWorkTag(event.target) + event.id,
+            NativeChatNoticePresentation(title, summary, visible(computer) + " · " + kind, kind), preferences, unread, channel)
+    }
+    private fun easyWorkTag(target: com.agenthub.core.TargetScope) = prefix + "easywork." + NativeEasyWorkNotificationStore.key(target) + "."
+    internal fun cancelEasyWork(target: com.agenthub.core.TargetScope) {
+        val tag = easyWorkTag(target)
+        manager.activeNotifications.filter { it.tag?.startsWith(tag) == true }.forEach { manager.cancel(it.tag, it.id) }
+    }
+    private fun postPrepared(ticket: String, tag: String, presentation: NativeChatNoticePresentation,
+        preferences: NativeChatNotificationPreferences, unread: Int, channel: String) {
+        if (acceptance != null) require(channel.startsWith(prefix))
+        val intent = openIntent(context, ticket)
         val tap = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val presentation = NativeChatNoticePresentation.create(event, computer, preferences.showThreadTitle) { text.tr(it) }
         val public = Notification.Builder(context, channel).setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(presentation.publicTitle).setContentText(presentation.metadata).build()
         val notice = Notification.Builder(context, channel).setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -138,7 +159,7 @@ internal class NativeChatNotificationPlatform private constructor(private val co
             .setStyle(Notification.BigTextStyle().bigText(presentation.summary)).setPublicVersion(public)
             .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(tap).setAutoCancel(true).setOnlyAlertOnce(true)
             .setCategory(Notification.CATEGORY_STATUS).setNumber(if (preferences.badgeEnabled) unread else 0).build()
-        manager.notify(tagPrefix(event.target) + event.id, 1, notice)
+        manager.notify(tag, 1, notice)
     }
     /** Explicit settings action only; it has no target, route, unread mutation or remote submission. */
     fun test(preferences: NativeChatNotificationPreferences): Boolean {

@@ -326,8 +326,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     }
     val async=approval.interactionMode=="async"
     val answers=approval.questions.associate { question ->
-        val extra=questionText(question).trim()
-        question.id to if(async && extra.isNotEmpty()) listOf(extra) else selected[question.id].orEmpty()+if(extra.isEmpty()) emptyList() else listOf(extra)
+        question.id to approvalQuestionAnswers(selected[question.id].orEmpty(),questionText(question),async)
     }
     ExecutionCard(if(async) "" else productText(if(approval.kind=="question") "需要回复" else "需要审批"),"approval-${approval.id}",compact=compact) {
         if(async) Text(productText(if(session.runtime?.turnId==approval.turnId) "任务仍在继续，可随时回答或跳过" else "任务已结束，回答将继续此对话"),fontSize=12.sp,modifier=Modifier.testTag("async-question-status"))
@@ -430,13 +429,15 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
             Row(Modifier.fillMaxWidth().testTag("generation-toolbar"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                 if(session.supportsGeneration) ToolbarChip(if(compact && session.permissionOptions.firstOrNull { it.id==session.selectedPermission }?.appOwnedCopy!=false) permissionDisplayLabel(session).replace("权限","") else permissionDisplayLabel(session),"permission-settings",session.canConfigureGeneration,"shield",if(session.permissionOptions.any { it.id==session.selectedPermission&&it.highPrivilege }) Color(0xFFFF9500) else colors.onSurfaceVariant,accessibilityLabel=productText("权限模式，")+permissionDisplayLabel(session),modifier=if(showPlan&&showPermissionLabel)Modifier.weight(1f,fill=false) else Modifier,showLabel=showPermissionLabel,click=onSettings)
                 if(showPlan) PlanModeToggle(session,showLabel=effectiveWidth>=220f)
-                if(!showPlan||!showModelLabel) Spacer(Modifier.weight(1f))
+                if(!session.supportsGeneration) Spacer(Modifier.weight(1f))
                 if(session.supportsGeneration) {
                     val actualModel=actualModelDisplayLabel(session)
                     val actualEffort=if(session.displayedEffort!=null) effortLabel(session.displayedEffort) else productText("跟随电脑")
-                    val fullLabel=productText("模型，%@，推理强度，%@，速度，%@",actualModel,actualEffort,speedLabel(session.selectedSpeed))
+                    val followsComputer=session.generationSettings.speed==null
+                    val speedDescription=if(followsComputer && session.selectedSpeed!=null) productText("跟随电脑")+" · "+speedLabel(session.selectedSpeed) else speedLabel(session.selectedSpeed)
+                    val fullLabel=productText("模型，%@，推理强度，%@，速度，%@",actualModel,actualEffort,speedDescription)
                     val label=if(compact) actualModel.removePrefix("GPT-").take(10) else actualModel
-                    ToolbarChip(label+" "+actualEffort,"generation-settings",session.canConfigureGeneration,"bolt",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,accessibilityLabel=fullLabel,modifier=if(showPlan&&showModelLabel)Modifier.weight(1f,fill=false) else Modifier,showLabel=showModelLabel,click=onSettings)
+                    ToolbarChip(label+" "+actualEffort,"generation-settings",session.canConfigureGeneration,"settings",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,accessibilityLabel=fullLabel,modifier=Modifier.weight(1f,fill=false),showLabel=showModelLabel,leading={ GenerationSpeedIndicator(session.selectedSpeed,if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,session.canConfigureGeneration,compact=!showModelLabel) },click=onSettings)
                 }
                 if(singleRow && showMode) ReplyModeControls(session,Modifier.width(260.dp))
             }
@@ -479,12 +480,12 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     }
 }
 
-@Composable private fun ToolbarChip(label: String,tag: String,enabled: Boolean,icon: String,color: Color=MaterialTheme.colorScheme.onSurfaceVariant,accessibilityLabel: String=label,modifier: Modifier=Modifier,showLabel: Boolean=true,click: ()->Unit) {
+@Composable private fun ToolbarChip(label: String,tag: String,enabled: Boolean,icon: String,color: Color=MaterialTheme.colorScheme.onSurfaceVariant,accessibilityLabel: String=label,modifier: Modifier=Modifier,showLabel: Boolean=true,leading: (@Composable ()->Unit)?=null,click: ()->Unit) {
     Box(modifier.heightIn(min=44.dp).widthIn(min=44.dp).testTag(tag).semantics { contentDescription=accessibilityLabel; role=Role.Button }.clickable(enabled=enabled,onClick=click),contentAlignment=Alignment.Center) {
         Row(Modifier.heightIn(min=34.dp).floatingProduct(20f).padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-            ProductIcon(icon,Modifier.size(14.dp),color.copy(alpha=if(enabled) 1f else .5f))
+            if(leading!=null) leading() else ProductIcon(icon,Modifier.size(14.dp),color.copy(alpha=if(enabled) 1f else .5f))
             if(showLabel) {
-                Text(label,fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis,color=color.copy(alpha=if(enabled) 1f else .5f),modifier=Modifier.weight(1f,fill=false).widthIn(max=150.dp))
+                Text(label,fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis,color=color.copy(alpha=if(enabled) 1f else .5f),modifier=Modifier.weight(1f,fill=false).widthIn(max=150.dp).testTag("$tag-label"))
                 ProductIcon("down",Modifier.size(9.dp),color)
             }
         }
@@ -535,13 +536,14 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
             if("ultrafast" in speeds || ("fast" in speeds && "standard" !in speeds)) {
                 GenerationMenu(productText("速度模式"),speedLabel(session.selectedSpeed),"speed-picker",target,session.selectedSpeed ?: "",session.canConfigureGeneration,
                     listOf(GenerationMenuChoice("",productText("跟随电脑"),"reset-speed-choice"))+speeds.map { GenerationMenuChoice(it,speedLabel(it),"speed-$it") }) { choice ->
-                    session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && (choice.isEmpty() || choice in session.selectedModel?.supportedSpeeds.orEmpty())) current.copy(speed=choice.takeIf(String::isNotEmpty)) else null }
+                    session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && SessionPolicies.generationSpeedAllowed(choice.takeIf(String::isNotEmpty),session.selectedModel?.supportedSpeeds.orEmpty())) current.copy(speed=choice.takeIf(String::isNotEmpty)) else null }
                 }
             } else {
                 val enabled=session.canConfigureGeneration && "fast" in speeds
                 Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("fast-mode-toggle").semantics(mergeDescendants=true) {}
                     .toggleable(session.selectedSpeed=="fast",enabled=enabled,role=Role.Switch) { on ->
-                        session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && "fast" in session.selectedModel?.supportedSpeeds.orEmpty()) current.copy(speed=if(on) "fast" else "standard") else null }
+                        val choice=if(on) "fast" else "standard"
+                        session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && SessionPolicies.generationSpeedAllowed(choice,session.selectedModel?.supportedSpeeds.orEmpty())) current.copy(speed=choice) else null }
                     }.padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text(productText("快速模式"),Modifier.weight(1f),fontSize=16.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(enabled) 1f else .5f))
                     Switch(session.selectedSpeed=="fast",onCheckedChange=null,enabled=enabled,modifier=Modifier.clearAndSetSemantics {},

@@ -25,7 +25,7 @@ internal data class NativeChatNotificationSubscription(val target: NativeChatNot
 /** IO-only, authenticated journal. This is processing/transport state, never a second unread ledger. */
 internal class NativeChatNotificationForegroundStore(private val storage: NativeSessionStorage) {
     companion object {
-        const val RECORD = "native-chat-notification-foreground-v1"
+        const val RECORD = NativeChatNotificationIdentity.FOREGROUND_RECORD
         private const val MAX_BYTES = 4 * 1024 * 1024
         private val states = setOf("pending", "processing", "suppressed", "system-unavailable", "submitted-to-system", "unknown-no-replay",
             "unknown-interrupted-no-replay", "stale-target-or-generation", "expired-or-future", "duplicate-expired-or-read")

@@ -24,6 +24,7 @@ internal data class NativeChatNotificationMonitorReport(val state: String, val t
 internal class NativeChatNotificationForegroundMonitor(private val scope: CoroutineScope, private val storage: NativeSessionStorage,
     private val notices: NativeChatNotificationStore, private val journal: NativeChatNotificationForegroundStore,
     private val commands: NativeChatNotificationCommands, private val delivery: NativeChatNotificationForegroundPort,
+    private val push: NativeChatNotificationPushController? = null,
     private val now: () -> Long = System::currentTimeMillis) {
     private val mutex = Mutex()
     private val recovery = (commands as? NativeChatNotificationRecoveryCommands)?.let {
@@ -61,6 +62,7 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
             if (current()) state else "stale-target-or-generation", snapshot.target, operation, cursor)
         if (!current()) return result("stale-target-or-generation")
         if (recovery == null && withContext(Dispatchers.IO) { NativeChatNotificationRecoveryStore(storage).exists() }) return result("recovery-unavailable")
+        push?.synchronize(snapshot, current)?.let { return it }
         recovery?.synchronize(snapshot, current)?.let { return it }
         val preferences = withContext(Dispatchers.IO) { notices.preferences() }
         if (!current()) return result("stale-target-or-generation")

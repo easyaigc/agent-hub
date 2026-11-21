@@ -29,7 +29,10 @@ const object = (properties, required = Object.keys(properties)) => ({
   properties,
 });
 const ref = (name) => ({ $ref: '#/definitions/' + name });
-const key = { type: 'string', pattern: '^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=(?![\\s\\S])' };
+const key = {
+  type: 'string',
+  pattern: '^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=(?![\\s\\S])',
+};
 const intent = object(
   {
     version: { const: 2 },
@@ -41,6 +44,13 @@ const intent = object(
     preferences: v1('Preferences'),
     generation: { ...number, minimum: 1 },
     kind: { enum: ['register', 'preferences', 'revoke', 'feed-reset'] },
+    pushProvider: { const: 'fcm' },
+    deviceToken: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 4096,
+      pattern: '^[\\x21-\\x7e]+(?![\\s\\S])',
+    },
     gap: object({
       epoch: uuid,
       after: number,
@@ -65,13 +75,29 @@ const intent = object(
 );
 intent.allOf = [
   {
+    if: {
+      anyOf: [{ required: ['pushProvider'] }, { required: ['deviceToken'] }],
+    },
+    then: {
+      required: ['pushProvider', 'deviceToken'],
+      properties: {
+        kind: { const: 'register' },
+        preferences: { properties: { enabled: { const: true } } },
+      },
+    },
+  },
+  {
     if: { properties: { kind: { const: 'feed-reset' } } },
     then: { required: ['gap'] },
     else: { not: { required: ['gap'] } },
   },
   {
     if: { properties: { kind: { const: 'revoke' } } },
-    then: { properties: { preferences: { properties: { enabled: { const: false } } } } },
+    then: {
+      properties: {
+        preferences: { properties: { enabled: { const: false } } },
+      },
+    },
   },
 ];
 const snapshot = object({
@@ -85,7 +111,9 @@ const status = object(
   {
     version: { const: 1 },
     target: v1('Target'),
-    delivery: { enum: ['foreground-only', 'apns'] },
+    delivery: { enum: ['foreground-only', 'apns', 'fcm'] },
+    pushProvider: { const: 'fcm' },
+    deviceTokenSha256: hash,
     state: { enum: ['disabled', 'ready', 'pending', 'unavailable'] },
     revision: { type: 'string', minLength: 1, maxLength: 256 },
     reason: { type: 'string', maxLength: 4096 },
@@ -153,7 +181,11 @@ page.allOf = [
   {
     if: { properties: { mode: { const: 'reset' } } },
     then: { required: ['resetId', 'snapshotHash'] },
-    else: { not: { anyOf: [{ required: ['resetId'] }, { required: ['snapshotHash'] }] } },
+    else: {
+      not: {
+        anyOf: [{ required: ['resetId'] }, { required: ['snapshotHash'] }],
+      },
+    },
   },
 ];
 const schema = {
@@ -222,26 +254,35 @@ const schema = {
         }),
       ],
     },
-    Capabilities: object({
-      version: { const: 2 },
-      epoch: uuid,
-      target: v1('Target'),
-      operations: {
-        type: 'array',
-        minItems: 4,
-        maxItems: 4,
-        uniqueItems: true,
-        items: { enum: ['register', 'preferences', 'revoke', 'feed-reset'] },
-      },
-      limits: object(
-        Object.fromEntries(
-          Object.entries(notificationRecoveryLimits).map(([name, value]) => [
-            name,
-            { const: value },
-          ]),
+    Capabilities: object(
+      {
+        pushProviders: {
+          type: 'array',
+          items: { const: 'fcm' },
+          maxItems: 1,
+          uniqueItems: true,
+        },
+        version: { const: 2 },
+        epoch: uuid,
+        target: v1('Target'),
+        operations: {
+          type: 'array',
+          minItems: 4,
+          maxItems: 4,
+          uniqueItems: true,
+          items: { enum: ['register', 'preferences', 'revoke', 'feed-reset'] },
+        },
+        limits: object(
+          Object.fromEntries(
+            Object.entries(notificationRecoveryLimits).map(([name, value]) => [
+              name,
+              { const: value },
+            ]),
+          ),
         ),
-      ),
-    }),
+      },
+      ['version', 'epoch', 'target', 'operations', 'limits'],
+    ),
   },
 };
 const base = {

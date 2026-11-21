@@ -97,14 +97,17 @@ private object PreviewReadingPositions {
 
 private class PreviewSurfaceLease(var active: Boolean=true)
 private class NativeSourcePosition(var offset: Int=0)
+private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null }
 
 /** Receives one already authorized immutable copy; renderers never read Host state or credentials. */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable internal fun NativeMarkdownFilePreview(resource: MobileSession.PreparedMessageResource,current: ()->Boolean,onDismiss: ()->Unit,onRetry: (() -> Unit)?,refreshing: Boolean=false) {
+@Composable internal fun NativeMarkdownFilePreview(resource: MobileSession.PreparedMessageResource,current: ()->Boolean,onDismiss: ()->Unit,onRetry: (() -> Unit)?,refreshing: Boolean=false,resolveDocument: NativeDocumentResourceResolver?=null,documentDepth: Int=0) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val t=currentProductText()
     val isCurrent by rememberUpdatedState(current)
     val lease=remember(resource) { PreviewSurfaceLease() }
-    DisposableEffect(lease) { onDispose { lease.active=false } }
+    val linkRead=remember(resource) { PreviewDocumentLinkRead() }
+    DisposableEffect(lease) { onDispose { lease.active=false;linkRead.owner=null;linkRead.job?.cancel() } }
+    val resolver by rememberUpdatedState(resolveDocument)
     fun alive()=lease.active&&runCatching { isCurrent() }.getOrDefault(false)
     val readingScope=remember(resource) { resource.local.canonicalPath }
     var failure by remember(resource) { mutableStateOf<String?>(null) }
@@ -113,13 +116,20 @@ private class NativeSourcePosition(var offset: Int=0)
     var searching by remember(resource) { mutableStateOf(false) };var query by remember(resource) { mutableStateOf("") }
     var matches by remember(resource) { mutableStateOf<List<Int>>(emptyList()) };var hit by remember(resource) { mutableIntStateOf(0) }
     var linkError by remember(resource) { mutableStateOf<String?>(null) }
+    var selectedLink by remember(resource) { mutableStateOf(resource.initialReference) }
+    var linkedFile by remember(resource) { mutableStateOf<MobileSession.PreparedMessageResource?>(null) }
+    var linkLoading by remember(resource) { mutableStateOf(false) }
+    var linkProgress by remember(resource) { mutableStateOf<ResourceDownloadProgress?>(null) }
     val clipboard=LocalClipboardManager.current
     val sourceColor=MaterialTheme.colorScheme.onBackground.toArgb()
     LaunchedEffect(resource) {
         try {
             if(!alive()) { failure="目标已变化，请重新打开预览。";return@LaunchedEffect }
             val loaded=withContext(Dispatchers.IO) { FilePreviewRegistry.find(resource.name,resource.mediaType)?.load?.invoke(resource.local) ?: error("Unsupported renderer") }
-            currentCoroutineContext().ensureActive();if(alive())document=loaded
+            currentCoroutineContext().ensureActive()
+            if(resource.sourceFile?.let { it.sha256!=loaded.digest||it.sizeBytes!=resource.local.length() }==true)
+                throw IllegalArgumentException("下载文件完整性校验失败")
+            if(alive())document=loaded
         } catch(cancel: CancellationException) { throw cancel }
           catch(error: Exception) {
             failure=error.message?.takeIf { it in setOf("文件较大，请使用其他应用打开或分享原文件。","暂不支持此文件的文本编码，请使用其他应用打开或分享原文件。","文档结构较复杂，请使用其他应用打开或分享原文件。","表格较大，请使用其他应用打开或分享原文件。") } ?: "暂时无法预览文件，请重试。"
@@ -129,6 +139,15 @@ private class NativeSourcePosition(var offset: Int=0)
     val saved=remember(readingKey) { PreviewReadingPositions.get(readingKey) }
     val list=remember(readingKey) { LazyListState(saved.first,saved.second) }
     val sourcePosition=remember(readingKey) { NativeSourcePosition() }
+    LaunchedEffect(document,resource.initialAnchor) {
+        val value=document ?: return@LaunchedEffect
+        val anchor=resource.initialAnchor ?: return@LaunchedEffect
+        val heading=value.headings.firstOrNull { it.anchor==anchor }
+        if(alive()&&document===value) {
+            if(heading==null)linkError="文档中没有找到此章节。"
+            else { source=false;list.scrollToItem(heading.block) }
+        }
+    }
     val persistable=document!=null
     DisposableEffect(readingKey,list) { onDispose { if(persistable)PreviewReadingPositions.save(readingKey,list.firstVisibleItemIndex,list.firstVisibleItemScrollOffset) } }
     LaunchedEffect(query,document) {
@@ -140,13 +159,16 @@ private class NativeSourcePosition(var offset: Int=0)
     }
     fun externalFile(share: Boolean) {
         if(!alive())return
+        selectedLink=null
         try { NativeResourceIntents.launch(context,resource,share,t.tr("保存或分享文件")) }
         catch(_: android.content.ActivityNotFoundException) { linkError="手机上没有可打开此链接的应用。" }
         catch(_: SecurityException) { linkError="手机上没有可打开此链接的应用。" }
         catch(_: IllegalArgumentException) { linkError="手机上没有可打开此链接的应用。" }
     }
     val openLink: (String)->Unit=remember(document,list,lease) { { reference ->
-        if(alive())when(FilePreviewRules.linkKind(reference)) {
+        if(alive()&&!linkLoading) {
+        selectedLink=reference;linkError=null
+        when(FilePreviewRules.linkKind(reference)) {
             "anchor" -> {
                 val anchor=Uri.decode(reference.drop(1));val value=document;val heading=value?.headings?.firstOrNull { it.anchor==anchor }
                 if(heading!=null)scope.launch { if(alive()&&document===value) { source=false;list.scrollToItem(heading.block) } } else linkError="文档中没有找到此章节。"
@@ -160,7 +182,41 @@ private class NativeSourcePosition(var offset: Int=0)
             } catch(_: android.content.ActivityNotFoundException) { linkError="手机上没有可打开此链接的应用。" }
               catch(_: SecurityException) { linkError="手机上没有可打开此链接的应用。" }
               catch(_: IllegalArgumentException) { linkError="手机上没有可打开此链接的应用。" }
-            else -> linkError="此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。"
+            else -> {
+                val load=resolver
+                val value=document
+                when {
+                    MessageLinkDestination.resolve(reference.replace(" ","%20")).kind!="computerFile" -> linkError="此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。"
+                    load==null||resource.sourceFile==null -> linkError="当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"
+                    value==null -> linkError="暂时无法预览文件，请重试。"
+                    documentDepth>=16 -> linkError="文档结构较复杂，请使用其他应用打开或分享原文件。"
+                    else -> {
+                        val owner=Any();linkRead.owner=owner;linkLoading=true;linkProgress=ResourceDownloadProgress()
+                        linkRead.job=scope.launch(Dispatchers.Main.immediate) {
+                            try {
+                                val next=load(resource,reference,value.digest) { progress ->
+                                    scope.launch(Dispatchers.Main.immediate) {
+                                        if(alive()&&document===value&&linkRead.owner===owner)linkProgress=progress
+                                    }
+                                }
+                                ensureActive()
+                                if(alive()&&document===value&&linkRead.owner===owner)linkedFile=next
+                            } catch(cancel: CancellationException) { throw cancel }
+                              catch(error: Exception) {
+                                if(alive()&&document===value&&linkRead.owner===owner) {
+                                    val native=error as? CodexCommandError
+                                    linkError=if(native?.appOwnedCopy==true)native.message ?: "暂时无法预览文件，请重试。"
+                                        else if(native?.status!=null)t.tr("电脑请求失败（%@）",native.status)
+                                        else "暂时无法预览文件，请重试。"
+                                }
+                            } finally {
+                                if(linkRead.owner===owner) { linkRead.owner=null;linkRead.job=null;linkLoading=false;linkProgress=null }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         }
     } }
     Dialog(onDismissRequest=onDismiss,properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
@@ -182,6 +238,10 @@ private class NativeSourcePosition(var offset: Int=0)
                     .semantics {liveRegion=LiveRegionMode.Polite},verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                     CircularProgressIndicator(Modifier.size(16.dp),strokeWidth=2.dp)
                     Text(t.tr("正在准备文件…"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if(linkLoading)Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp).testTag("file-preview-link-loading"),verticalAlignment=Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { NativeResourceDownloadProgress(linkProgress,"file-preview-link-progress") }
+                    TextButton(onClick={ linkRead.owner=null;linkRead.job?.cancel();linkRead.job=null;linkLoading=false;linkProgress=null },modifier=Modifier.testTag("file-preview-link-cancel")) { Text(t.tr("取消")) }
                 }
                 val value=document
                 if(value!=null) {
@@ -227,8 +287,14 @@ private class NativeSourcePosition(var offset: Int=0)
                 TextButton(onClick={if(alive()) {outline=false;source=false;scope.launch {if(alive())list.scrollToItem(heading.block)}}},modifier=Modifier.padding(start=((heading.level-1)*8).dp).testTag("file-preview-heading-${heading.anchor}")) {Text(heading.title)}
             }}
         },confirmButton={TextButton(onClick={outline=false}){Text(t.tr("完成"))}})
-        if(linkError!=null)AlertDialog(modifier=Modifier.testTag("file-preview-link-error"),onDismissRequest={linkError=null},title={Text(t.tr("无法打开链接"))},text={Text(t.tr(linkError!!))},confirmButton={TextButton(onClick={linkError=null}){Text(t.tr("好"))}})
+        if(linkError!=null)AlertDialog(modifier=Modifier.testTag("file-preview-link-error"),onDismissRequest={linkError=null},title={Text(t.tr("无法打开链接"))},text={Text(t.tr(linkError!!))},
+            confirmButton={TextButton(onClick={linkError=null}){Text(t.tr("好"))}},
+            dismissButton={if(selectedLink!=null)TextButton(onClick={ if(alive())selectedLink?.let { clipboard.setText(AnnotatedString(it)) };linkError=null },modifier=Modifier.testTag("file-preview-link-copy")){Text(t.tr("复制链接"))}})
     }
+    linkedFile?.let { next -> key(next) {
+        NativeResourcePreview(next,close={if(linkedFile===next)linkedFile=null},current={alive()&&linkedFile===next},
+            resolveDocument=resolver,documentDepth=documentDepth+1)
+    } }
 }
 
 @Composable private fun PreviewNativeTable(table: TableBlock,index: Int) {

@@ -1,3 +1,7 @@
+> Historical evidence only. Current iOS/Android implementation and acceptance are maintained exclusively in the [single complete feature list](../android-ios-alignment-20261107/progress.md). This imported snapshot and its JSON/rendering sources are frozen; do not update them as current progress.
+
+> 历史档案（2026-11-19冻结）：本目录只保留此前的规格、来源和验收证据，不再维护当前状态。全项目当前功能、双端实现和验收统一见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。以下状态、数量及下一步仅代表原记录时点。
+
 # 开发、验收与收尾流程
 
 依据用户 2026-11-12 后续授权。此文件只定义流程；当前运行、阻塞、结果和清理情况只编辑 [status.json](status.json)，阅读 [进度表](progress.md)。

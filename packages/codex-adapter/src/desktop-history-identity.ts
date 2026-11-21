@@ -125,6 +125,20 @@ function reconciliationIdentity(
   return key === null ? null : 'resource:' + key;
 }
 
+function completedOrdinalAlias(
+  row: HistoryRow,
+  key: string,
+  completedTurns: ReadonlySet<string>,
+): string | null {
+  if (!key.startsWith('dialog:') || row.status !== 'completed' || !completedTurns.has(row.runId!))
+    return null;
+  const prefix = `history-fallback:${row.runId}:`;
+  const ordinal = row.id.startsWith(prefix) ? row.id.slice(prefix.length) : row.id;
+  return /^item-\d+$/.test(ordinal)
+    ? JSON.stringify([key, ordinal, row.detail ?? null, row.replyMessageId ?? null])
+    : null;
+}
+
 /** Preserve missing history while reconciling matched provisional dialog identities one for one. */
 export function retainedDesktopHistory<T extends HistoryRow>(
   previous: readonly T[],
@@ -136,15 +150,22 @@ export function retainedDesktopHistory<T extends HistoryRow>(
   // by their known Turn before comparing, including legacy cached raw aliases.
   // This is exact item identity, not text deduplication.
   const visible = new Set(incoming.map((row) => historyIdentity(row.id, row.runId)));
+  const representation = (row: HistoryRow) => JSON.stringify([row.runId ?? null, row.id]);
+  const incomingRepresentations = new Set(incoming.map(representation));
+  const initialized = (row: HistoryRow) =>
+    initializationIds.has(row.id) || initializationIds.has(historyIdentity(row.id, row.runId));
   const priorStableIds = new Set(
     previous.filter((row) => !provisional(row.id)).map((row) => row.id),
   );
   const replacements = new Map<string, number>();
   const restartedOwnerReplacements = new Map<string, number>();
+  const ordinalAliases = new Map<string, number>();
   for (const row of incoming) {
     const key = reconciliationIdentity(row, completedTurns);
     if (key === null) continue;
     if (provisional(row.id)) {
+      const alias = completedOrdinalAlias(row, key, completedTurns);
+      if (alias !== null) ordinalAliases.set(alias, (ordinalAliases.get(alias) ?? 0) + 1);
       // After a desktop restart the completed owner may reconstruct ordinal
       // IDs for previously stable dialog. Require positive completed-Turn
       // evidence and consume each replacement only once, preserving true
@@ -159,16 +180,46 @@ export function retainedDesktopHistory<T extends HistoryRow>(
     if (priorStableIds.has(row.id) && !completedTurns.has(row.runId!)) continue;
     replacements.set(key, (replacements.get(key) ?? 0) + 1);
   }
+  const reservedOrdinalAliases = new Map<string, number>();
+  for (const row of previous) {
+    // A repeated identical representation can repair a persisted stable+ordinal
+    // duplicate. A different raw/qualified representation consumes its exact
+    // ordinal correspondence first, so it cannot also retire a distinct stable row.
+    if (
+      incomingRepresentations.has(representation(row)) ||
+      initialized(row) ||
+      row.kind === 'planImplementation'
+    )
+      continue;
+    const key = reconciliationIdentity(row, completedTurns);
+    if (key === null) continue;
+    const alias = completedOrdinalAlias(row, key, completedTurns);
+    if (alias === null) continue;
+    const reserved = reservedOrdinalAliases.get(alias) ?? 0;
+    const remaining = restartedOwnerReplacements.get(key) ?? 0;
+    if (reserved < (ordinalAliases.get(alias) ?? 0) && remaining > 0) {
+      // Prefer the exact ordinal correspondence before a possible stable-ID
+      // reconstruction. One incoming row cannot retire both historical rows.
+      reservedOrdinalAliases.set(alias, reserved + 1);
+      restartedOwnerReplacements.set(key, remaining - 1);
+    }
+  }
   return previous
     .filter((row) => {
       if (
         visible.has(historyIdentity(row.id, row.runId)) ||
-        initializationIds.has(historyIdentity(row.id, row.runId)) ||
+        initialized(row) ||
         row.kind === 'planImplementation'
       )
         return false;
       const key = reconciliationIdentity(row, completedTurns);
       if (key === null) return true;
+      const alias = completedOrdinalAlias(row, key, completedTurns);
+      const aliases = alias === null ? 0 : (reservedOrdinalAliases.get(alias) ?? 0);
+      if (aliases && alias !== null) {
+        reservedOrdinalAliases.set(alias, aliases - 1);
+        return false;
+      }
       const candidates = provisional(row.id) ? replacements : restartedOwnerReplacements;
       const remaining = candidates.get(key) ?? 0;
       if (!remaining) return true;

@@ -75,7 +75,6 @@
     <string name="product_bddc29ad011a93a6b759956e" formatted="false">"Context compaction"</string>
     <string name="product_3dfee69118fbc2b8d314e5fb" formatted="false">"Context compaction failed"</string>
     <string name="product_f0ad74d0525702ce8c3074a5" formatted="false">"Context compaction stopped"</string>
-    <string name="product_72d4a45b350a1b86f8d8fb4a" formatted="false">"Context compaction skipped"</string>
     <string name="product_bb8452788aa92d5bf9d9f483" formatted="false">"Waiting to sync context compaction"</string>
     <string name="product_7491bf2bfc7b361c24c5189d" formatted="false">"Context compacted"</string>
     <string name="product_ce1c9d61565f624b209c48f9" formatted="false">"Uploading…"</string>
@@ -1820,6 +1819,35 @@
     <string name="product_eb861bd98327b9276bfc7566" formatted="false">"Preview network permission"</string>
     <string name="product_66d76cddae5ad1f06af88582" formatted="false">"The computer connector does not support links inside documents. Update the connector and try again."</string>
     <string name="product_1e4125d224073a40f12051e0" formatted="false">"View full history"</string>
+    <string name="product_755ee3de69da18350028e0a8" formatted="false">"Amount owed"</string>
+    <string name="product_5c2c5d7d725a8a727af73157" formatted="false">"Usage source"</string>
+    <string name="product_c1cfa1340c62d3da906375d0" formatted="false">"Plan"</string>
+    <string name="product_637a0d380aecea8ec64563d8" formatted="false">"Refresh usage"</string>
+    <string name="product_12251d9ec7c867c158568152" formatted="false">"The source has not provided this usage metric"</string>
+    <string name="product_b7fd7c47c003144a20df5979" formatted="false">"This source does not support usage reads"</string>
+    <string name="product_1e0df493b854ccb4fe50c161" formatted="false">"The usage source is not signed in"</string>
+    <string name="product_8308ced556f20c58b923f147" formatted="false">"The usage source denied this read"</string>
+    <string name="product_60b8711ec6bc2a32661fa6ef" formatted="false">"Usage read authentication failed (HTTP 401)"</string>
+    <string name="product_b88f2f91f397f71e8f4eb794" formatted="false">"The computer denied usage access (HTTP 403)"</string>
+    <string name="product_11c217b0a1b489a705d51626" formatted="false">"The usage runtime target changed"</string>
+    <string name="product_7cc39ddebf03baaebf6686b3" formatted="false">"The network is offline; usage is unavailable"</string>
+    <string name="product_cad87dd1aaa3e118e785c5de" formatted="false">"The usage read timed out"</string>
+    <string name="product_6bedcc6281f6b1d0f55be694" formatted="false">"The usage source is temporarily unavailable"</string>
+    <string name="product_d2eb80f77aa113d08d6f1a03" formatted="false">"The usage response is invalid"</string>
+    <string name="product_8362e309ba32f4db0398d60d" formatted="false">"This usage response version is not supported"</string>
+    <string name="product_f658df896dbedc4607833142" formatted="false">"Usage source continuity could not be confirmed"</string>
+    <string name="product_e902ee7703fc12289b9e4b0e" formatted="false">"The usage connection identity could not be verified"</string>
+    <string name="product_1b3d7057c7fbd25b2f317004" formatted="false">"The usage read request was rejected"</string>
+    <string name="product_09269d5ae2621b090d4a0fd3" formatted="false">"The usage read did not complete"</string>
+    <string name="product_42723e8b498c601c149705e4" formatted="false">"Usage"</string>
+    <string name="product_7655ba497b0c68de4a60eaf2" formatted="false">"View this chat’s subtasks"</string>
+    <string name="product_12bc613b75f4a12e8aa0c252" formatted="false">"Subtasks of this chat · Saved history"</string>
+    <string name="product_c763cf9a571fbe185be08887" formatted="false">"The computer did not allow this subtask read. Refresh the connection and try again."</string>
+    <string name="product_550ec0f03c27d9d7577fff09" formatted="false">"No subtasks of this chat are currently available to read."</string>
+    <string name="product_5dc295d36bab923f14b7113f" formatted="false">"Subtask records for this chat are unavailable or have changed. Refresh and try again."</string>
+    <string name="product_c882722b51340ed59c4c1852" formatted="false">"Unable to read this chat’s subtasks. Check the connection or refresh and try again."</string>
+    <string name="product_5bf022e70399aeb6e6b6b664" formatted="false">"This computer does not support viewing subtasks by parent chat. You can return to the original tool summary."</string>
+    <string name="product_72d4a45b350a1b86f8d8fb4a" formatted="false">"Context compaction skipped"</string>
     <string name="product_6af87f7e618fa33c9f4ccf00" formatted="false">"Your last upload attempt was interrupted. The file and message are retained."</string>
     <string name="product_4f61994973c9e50d08d48d39" formatted="false">"The computer could not find this upload record."</string>
     <string name="product_0946b12dd470ca4d4c5b8faa" formatted="false">"The file size limit for this transfer is %@."</string>
@@ -2165,4 +2193,79 @@
     <string name="product_2e9235e3d808b66a6c2826b5" formatted="false">"This project is no longer available. Choose another destination."</string>
     <string name="product_c24a3d11cadc1dad439c5475" formatted="false">"Choose a project or folder for this conversation first."</string>
     <string name="product_69a1f63136392c5c45a9e744" formatted="false">"The conversation is created when you send the first message."</string>
+    <string name="product_01d22dc17613f034977e03e1" formatted="false">"Background notifications are enabled."</string>
+    <string name="product_1a719a0c42ba5a132319c82e" formatted="false">"Enabling background notifications. Please wait."</string>
+    <string name="product_5948a98912be49059226a338" formatted="false">"The previous notification setup is still pending. Your changes have not been submitted."</string>
+    <string name="product_8ea495a7efa9e763e115ed11" formatted="false">"The background notification configuration is invalid."</string>
+    <string name="product_7f5961f00e93902a441a9bbf" formatted="false">"Background notifications have not been configured."</string>
+    <string name="product_7372e347295a09b8623fd4e5" formatted="false">"System notification permission is off."</string>
+    <string name="product_a7f84c0c074df8f812f8e3b3" formatted="false">"Google Play services or notification setup is temporarily unavailable."</string>
+    <string name="product_efd6b73ac8dd20a05a5fe457" formatted="false">"Update the desktop app to restore background notifications. Your notification records are preserved."</string>
+    <string name="product_e39ec9165db7a7dbaa0c333a" formatted="false">"The previous notification settings are still unconfirmed. Check the current status or turn off notifications for this computer."</string>
+    <string name="product_9d79d05a4ad77d3be8513800" formatted="false">"Background notification setup has expired. Check your notification settings."</string>
+    <string name="product_2a0335be921624c329de740b" formatted="false">"The computer has not confirmed background notification setup. The operation will not be submitted again."</string>
+    <string name="product_915ac873fab0464e1ddb74a7" formatted="false">"The previous notification setup is unconfirmed. It will not be submitted again."</string>
+    <string name="product_0981582a17bb3c4457263de5" formatted="false">"Background notifications are waiting to sync. Your records are preserved."</string>
+    <string name="product_d2a2be6fb3e48f5acda3e0cc" formatted="false">"Check current notification status"</string>
+    <string name="product_9bd29e4faba7feb0974ac592" formatted="false">"Waiting has ended and the notification settings record is preserved. The computer may still complete the change."</string>
+    <string name="product_9b4f3f53e86404046e553100" formatted="false">"End waiting and keep the record"</string>
+    <string name="product_0398102ba4df9d79aacf0019" formatted="false">"This is not a valid document file link"</string>
+    <string name="product_310a877635ce113d235c9eae" formatted="false">"The computer has not confirmed control of this chat"</string>
+    <string name="product_6da4181e7a18160de83f3fad" formatted="false">"The original open record does not belong to this target"</string>
+    <string name="product_eb4d410059ce51b809a44a0b" formatted="false">"Several original open records exist. Check them separately; no new operation will be submitted."</string>
+    <string name="product_ad7cf52f5a751edaf9f04eb3" formatted="false">"The preflight check failed. Your draft and attachments are preserved."</string>
+    <string name="product_5ab402ad46484fb38c18dc5f" formatted="false">"The runtime target after opening does not match"</string>
+    <string name="product_91e37b1f259c8cb1d4707258" formatted="false">"The open receipt does not match the original target or operation"</string>
+    <string name="product_81bb58f600e0cc9a9a5d61e0" formatted="false">"The open receipt has an invalid error field"</string>
+    <string name="product_d8ea509c88c964f6619a53e7" formatted="false">"The open target changed. The original operation is preserved."</string>
+    <string name="product_2a6de93c999ea67ac88efa9a" formatted="false">"The open result is still unconfirmed. Check the original record; your draft and attachments are preserved."</string>
+    <string name="product_e043f9dd7808edc88cc72c08" formatted="false">"The open result is unconfirmed. The original record, draft and attachments are preserved."</string>
+    <string name="product_aee7728739e97ecaad6df783" formatted="false">"The complete target of the open request does not match"</string>
+    <string name="product_63c0cf272db83731e5d81a0a" formatted="false">"Checking the original open record…"</string>
+    <string name="product_01463597ef1902802b28e591" formatted="false">"Opening on the computer…"</string>
+    <string name="product_056e9c2cd6939822dff25d76" formatted="false">"This chat is opening. Do not submit again."</string>
+    <string name="product_ae05f150811c7a5975e0400f" formatted="false">"This computer does not currently support opening a chat from the phone"</string>
+    <string name="product_2f8718565567646e3a1c3405" formatted="false">"This computer does not support opening a chat from the phone"</string>
+    <string name="product_6ac00c64654ce97daea97062" formatted="false">"The computer has not confirmed opening this chat. Your draft and attachments are preserved; check the original record."</string>
+    <string name="product_4c7b94edcdb5cde73e884a2a" formatted="false">"The computer returned data in an invalid format"</string>
+    <string name="product_22023c3fbf1a138b38acb81a" formatted="false">"The target or draft changed. Nothing was submitted."</string>
+    <string name="product_25d5715557b77bf2ebdf93c8" formatted="false">"Couldn’t confirm the upload action. Your files and upload details are kept. Check the upload status."</string>
+    <string name="product_19aacb223b14a8e23d22512f" formatted="false">"The upload result is still unconfirmed. Check it in the original task; this computer doesn’t support resuming uploads."</string>
+    <string name="product_dd2247bd12951e31f9882de6" formatted="false">"Upload details are unavailable."</string>
+    <string name="product_6cb435251d600f23e3ac1ddb" formatted="false">"Couldn’t confirm that the upload details were saved. Your files are kept. Check the saved upload details on this phone."</string>
+    <string name="product_832e3cb33472c96d4c95118e" formatted="false">"Couldn’t read the upload details. Your files are kept, and no uploads were created or replaced."</string>
+    <string name="product_01055976e283c21f35ea397c" formatted="false">"Progress for the other files is currently unavailable."</string>
+    <string name="product_9c2b616e12fb3ca93d3e3c08" formatted="false">"The other files aren’t ready yet, so the total size is unavailable."</string>
+    <string name="product_d6822b04178d6929a0cc4d5c" formatted="false">"Remaining"</string>
+    <string name="product_07a1bc9e5513f05f546ea67e" formatted="false">"Check the earlier upload before continuing. The file hasn’t been sent again."</string>
+    <string name="product_16fa79b30c607599731c529e" formatted="false">"The file or destination has changed. The upload wasn’t resumed."</string>
+    <string name="product_145b24824077b3aa8683b46f" formatted="false">"Upload result unconfirmed"</string>
+    <string name="product_07035955f45c5b8c2687afae" formatted="false">"The file or upload result needs checking. Your task and draft are kept."</string>
+    <string name="product_1f17145f8dba338b34194be2" formatted="false">"This file can’t be read for a resumed upload. No new upload was started."</string>
+    <string name="product_f6f65fa17ba102d1409930b6" formatted="false">"Uploading. Pausing and resuming aren’t supported on this computer."</string>
+    <string name="product_0cacab3633c5c11ef3afc92d" formatted="false">"The earlier result is unconfirmed. Only its status will be checked; the upload won’t be repeated."</string>
+    <string name="product_34be27e64aeee9e2bbc44d4e" formatted="false">"The destination, connection, or draft has changed. The earlier upload is kept."</string>
+    <string name="product_809b9f492fc6ba8b8982aed2" formatted="false">"Cancel upload on computer"</string>
+    <string name="product_80bc78a8bd21304beea3bffc" formatted="false">"Cancellation is unconfirmed. Check the upload status."</string>
+    <string name="product_c94a5d7713baaf00c64fefba" formatted="false">"Waiting has stopped on this phone. The operation on the computer hasn’t been cancelled."</string>
+    <string name="product_6f0d38083e3e610f1d35b973" formatted="false">"Couldn’t confirm that the completed upload was dismissed. Your files and the original result are kept."</string>
+    <string name="product_32fdbb97f04b1ea990bd76f7" formatted="false">"The upload has been checked. You can resume from the confirmed point."</string>
+    <string name="product_8f32deab83b6f99aaebd45af" formatted="false">"The upload result is unconfirmed, and resuming isn’t supported. Check the result in the original task."</string>
+    <string name="product_620b02181d03522f7c1cb9f0" formatted="false">"The earlier upload result can’t be restored. Check the result in the original task."</string>
+    <string name="product_2bc870da5751f9b87567dd4d" formatted="false">"Check result"</string>
+    <string name="product_0211a9ee09e566baff248f55" formatted="false">"Uploading. This computer doesn’t support pausing or resuming uploads."</string>
+    <string name="product_de99e87c87bf9a7f1c698e87" formatted="false">"Preparing upload…"</string>
+    <string name="product_5e32a14f22c88b0295b19b7a" formatted="false">"Checking and saving the file…"</string>
+    <string name="product_9dc4c5d708f25284079ee443" formatted="false">"This computer can’t cancel the upload. Stopping only affects uploading on this phone."</string>
+    <string name="product_0fc5f7eedce017e4eb3da882" formatted="false">"This computer can’t cancel the upload. You can only stop uploading on this phone."</string>
+    <string name="product_5f9970eabf68db9e6885daa4" formatted="false">"Cancelling on the computer isn’t available for this type of upload. Stopping the wait only affects this phone."</string>
+    <string name="product_3b36daf917cdde8e5727f225" formatted="false">"This connection doesn’t support resuming uploads."</string>
+    <string name="product_be8d7f2e568940557f58a775" formatted="false">"The computer confirmed cancellation. The original file is kept on this phone."</string>
+    <string name="product_42b8799173e075d1146208cb" formatted="false">"The computer confirmed cancellation. Your draft is kept, and no new upload will start automatically."</string>
+    <string name="product_5f4b1611f64651c35207d42c" formatted="false">"The computer confirmed cancellation. Your draft and attachments are kept; the upload won’t restart automatically."</string>
+    <string name="product_67df13e82cefd70bf66842c7" formatted="false">"Dismiss completed upload"</string>
+    <string name="product_546e3620cfadddf84f6e0405" formatted="false">"Dismiss"</string>
+    <string name="product_7c9691192f1b73408bbe4c0c" formatted="false">"Continue"</string>
+    <string name="product_88fea643d3c2ce9312865d96" formatted="false">"To upload again, remove the attachment and add it again."</string>
+    <string name="product_b1e8f61afbdc131e67633a6f" formatted="false">"Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing."</string>
 </resources>

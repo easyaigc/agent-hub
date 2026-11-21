@@ -156,6 +156,8 @@ Thread ID 是 Host 返回的不透明稳定标识。托管模式恢复从未提�
 
 `GET /v1/events` 可额外指定已登记的 threadId，仅返回该对话的事件和 reset 快照，未知目标返回 404。cursor 仍是 Host 事件序号，其他对话产生事件时可返回空 events 并推进 cursor。iOS 切换对话会取消旧请求、以空 epoch 重新订阅，从权威快照恢复；不把旧订阅游标直接用于新的目标。省略 threadId 保留完整 Host 批次兼容性。
 
+2026-11-13 F18 客户端处理澄清：同目标、同 epoch、`reset=false` 的有效空批次是线程过滤后的心跳，前进的全局 cursor 本身不表示当前聊天丢失快照。客户端应用该游标，不因此清除已验证历史就绪或重载 workspace/history。明确 reset、已建立订阅的 epoch 变化仍请求权威修复；`ready=false`、目标／鉴权／解析失败仍按原规则拒绝控制。EasyWork 现有适配在其游标变化时先取完整历史并返回 snapshot，粗粒度 `eventNeedsHistory` 不改。共享修复与双端实际结果按唯一 Android 对齐计划记录。 Host候选返回前再次按当前epoch、保留窗口和cursor越界复核reset，避免长轮询/合并等待前的布尔值失效；原反例及部署状态在唯一计划分列。
+
 工作区与历史／事件快照的 `thread.hasUnreadTurn` 保留原桌面 owner 的可选布尔标记。已读广播只提示已有 owner 刷新，不采信其他账户 context 的广播值、不建立 owner，也不授予控制权限。手机浏览历史不导航原桌面；前台在线侧栏每 3 秒刷新工作区，运行中与待审批图标优先。
 
 `threads:read-state` 表示本产品已实现独立手机阅读记录。工作区、历史与事件返回 `readTarget`（Agent、Host、工作区、运行时、账户）和可选 `thread.readState`：`version: 1`、`latest: { revision, messageId, contentVersion }`、当前请求的 `readerId` 及该阅读者的 `read`。`contentVersion` 是最终回复 ID、文字与状态按 UTF-8 字节长度 framing 生成的 SHA-256；同 ID 的内容变化仍推进持久 revision，事件 epoch／游标和时间戳不充当阅读版本。Codex 本地账户仅返回稳定身份的摘要，不返回登录凭据。

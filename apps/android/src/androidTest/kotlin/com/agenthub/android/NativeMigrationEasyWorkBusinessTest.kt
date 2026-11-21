@@ -23,6 +23,22 @@ class NativeMigrationEasyWorkBusinessTest {
     private fun envelope(storage: NativeSessionStorage)=File(owned.folder,"business-"+UUID.randomUUID()+".encrypted").also {NativeMigrationExport(ui.activity,storage).sealFile(it,password)}
     private fun stage(storage: NativeSessionStorage,destination: NativeSessionStorage=owned.storage)=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),envelope(storage),password)
     private fun activate(receipt: NativeMigrationCandidateStore.Receipt,destination: NativeSessionStorage=owned.storage)=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
+    @Test fun projectedEasyWorkGraphCannotAcquireRawCodexCredential() {
+        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source)
+        val receipt=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates")
+        val before=MigrationActivationFixtures.tree(candidate);val rootBefore=MigrationActivationFixtures.tree(owned.storage)
+        NativeMigrationStreamCandidate(ui.activity,owned.storage).read(receipt) {records->
+            NativeMigrationArchiveValidation.stream(records)
+            val meta=JSONObject(records.text.getValue("metadata"));NativeMigrationMetadata.validate(meta)
+            val client=decodeClient(meta.getJSONArray("clients").getJSONObject(0))
+            assertEquals(seed.client.id,client.id);assertEquals("easywork",client.scope!!.agentId);assertNotNull(client.migrationEasyWork)
+            val changed=NativeMigrationTextMap.copy(records.text)
+            changed["token:${client.id}"]="synthetic-legacy-credential-100%-raw"
+            assertTrue(runCatching {NativeMigrationArchiveValidation.stream(records.copy(text=changed))}.isFailure)
+            NativeMigrationArchiveValidation.stream(records)
+        }
+        assertEquals(before,MigrationActivationFixtures.tree(candidate));assertEquals(rootBefore,MigrationActivationFixtures.tree(owned.storage))
+    }
     @Test fun activeSourceBecomesExplicitUnpairedCacheAndOriginalImmutableGraph()=runBlocking {
         val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);val before=MigrationActivationFixtures.tree(source);val originals=NativeMigrationEasyWorkBusinessFixtures.operationRows(seed)
         val receipt=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates");val candidateBefore=MigrationActivationFixtures.tree(candidate)

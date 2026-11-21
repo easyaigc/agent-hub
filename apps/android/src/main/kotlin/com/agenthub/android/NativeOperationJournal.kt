@@ -147,10 +147,11 @@ class NativeOperationJournal private constructor(private val backing: ()->Native
         // A preparation read may finish after the first write boundary. It cannot
         // retire the original query observer or replace evidence of that attempt.
         if(it.kind=="creation" && it.submissionAttempted && phase=="prepared" ||
+            it.kind=="open" && it.phase=="rejected" ||
             preservesReplyReceipt(it,phase) || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted") && it.phase!=phase) it
         else it.copy(phase=phase,result=result.toString(),error=error)
     }
-    suspend fun uncertain(target: String,id: String,error: String?): SavedOperation = change(target,id) { if(preservesReplyReceipt(it,"uncertain") || it.kind in listOf("fork","chat-action") && it.phase=="rejected" || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted")) it else it.copy(phase="uncertain",error=error) }
+    suspend fun uncertain(target: String,id: String,error: String?): SavedOperation = change(target,id) { if(preservesReplyReceipt(it,"uncertain") || it.kind in listOf("fork","chat-action","open") && it.phase=="rejected" || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted")) it else it.copy(phase="uncertain",error=error) }
     suspend fun replyNotSubmitted(target: String,id: String,error: String?): SavedOperation = change(target,id) {
         require(it.kind=="reply" && !it.submissionAttempted && it.phase=="ready") { "仅首个回复提交前的本地失败可确认未提交" }
         it.copy(phase="failed",error=error)

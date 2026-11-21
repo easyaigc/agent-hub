@@ -37,21 +37,22 @@ internal data class NativeChatRecoveryGap(val epoch: String, val after: Long, va
 }
 internal class NativeChatRecoveryIntent private constructor(private val wire: String, val operationId: String, val epoch: String,
     val deviceId: String, val target: NativeChatNoticeTarget, val publicKey: String, val preferences: NativeChatNotificationPreferences,
-    val generation: Long, val kind: String, val fingerprint: String, val gap: NativeChatRecoveryGap?) {
+    val generation: Long, val kind: String, val fingerprint: String, val gap: NativeChatRecoveryGap?, val deviceToken: String?) {
     fun json() = JSONObject(wire)
     fun encoded() = wire
     override fun toString() = "NativeChatRecoveryIntent(redacted)"
     companion object {
         fun create(identity: NativeChatNotificationIdentity, target: NativeChatNoticeTarget, preferences: NativeChatNotificationPreferences,
-            epoch: String, generation: Long, kind: String, operationId: String = java.util.UUID.randomUUID().toString(), gap: NativeChatRecoveryGap? = null): NativeChatRecoveryIntent {
+            epoch: String, generation: Long, kind: String, operationId: String = java.util.UUID.randomUUID().toString(), gap: NativeChatRecoveryGap? = null, deviceToken: String? = null): NativeChatRecoveryIntent {
             val raw = JSONObject().put("version", 2).put("operationId", operationId).put("epoch", epoch).put("deviceId", identity.deviceId)
                 .put("target", NativeChatNotificationCodec.target(target)).put("publicKey", identity.publicKey).put("preferences", NativeChatNotificationCodec.preferences(preferences))
                 .put("generation", generation).put("kind", kind).put("gap", gap?.json())
+            deviceToken?.let { raw.put("pushProvider", "fcm").put("deviceToken", it) }
             raw.put("fingerprint", NativeChatRecoveryCanonical.hash(raw))
             return parse(raw)
         }
         fun parse(raw: JSONObject): NativeChatRecoveryIntent {
-            NativeChatNotificationWire.keys(raw, setOf("version", "operationId", "epoch", "deviceId", "target", "publicKey", "preferences", "generation", "kind", "fingerprint"), setOf("gap"))
+            NativeChatNotificationWire.keys(raw, setOf("version", "operationId", "epoch", "deviceId", "target", "publicKey", "preferences", "generation", "kind", "fingerprint"), setOf("gap", "pushProvider", "deviceToken"))
             require(NativeChatNotificationWire.long(raw, "version") == 2L)
             val operationId = NativeChatNotificationWire.uuid(NativeChatNotificationWire.text(raw, "operationId"))
             val epoch = NativeChatNotificationWire.uuid(NativeChatNotificationWire.text(raw, "epoch"))
@@ -69,14 +70,18 @@ internal class NativeChatRecoveryIntent private constructor(private val wire: St
                     .also { g -> require(g.floor >= 1 && g.head >= g.floor - 1) }
             } else null
             require((kind == "feed-reset") == (gap != null))
+            val token = if (raw.has("deviceToken")) NativeChatNotificationWire.text(raw, "deviceToken", 4096).also {
+                require(it.all { c -> c.code in 33..126 } && raw.optString("pushProvider") == "fcm" && kind == "register" && preferences.enabled)
+            } else null
+            require(raw.has("pushProvider") == (token != null))
             val fingerprint = NativeChatNotificationWire.text(raw, "fingerprint"); require(chatNoticeHash(fingerprint))
             val content = JSONObject(raw.toString()).apply { remove("fingerprint") }
             require(fingerprint == NativeChatRecoveryCanonical.hash(content))
-            return NativeChatRecoveryIntent(NativeChatRecoveryCanonical.value(raw), operationId, epoch, deviceId, target, key, preferences, generation, kind, fingerprint, gap)
+            return NativeChatRecoveryIntent(NativeChatRecoveryCanonical.value(raw), operationId, epoch, deviceId, target, key, preferences, generation, kind, fingerprint, gap, token)
         }
     }
 }
-internal data class NativeChatRecoveryCapabilities(val epoch: String)
+internal data class NativeChatRecoveryCapabilities(val epoch: String, val pushProviders: Set<String> = emptySet())
 internal class NativeChatRecoveryReceipt(val intent: NativeChatRecoveryIntent, val stage: String, val reason: String?,
     val snapshot: NativeChatRecoverySnapshot?, private val wire: String) {
     fun json() = JSONObject(wire)
@@ -107,13 +112,20 @@ internal object NativeChatRecoveryWire {
         require(NativeChatNotificationCodec.target(raw.getJSONObject("target")) == target)
         return NativeChatNotificationWire.uuid(NativeChatNotificationWire.text(raw, "epoch"))
     }
-    fun capabilities(raw: JSONObject, target: NativeChatNoticeTarget): NativeChatRecoveryCapabilities {
-        NativeChatNotificationWire.keys(raw, setOf("version", "epoch", "target", "operations", "limits"))
+    fun capabilities(raw: JSONObject, target: NativeChatNoticeTarget, pushProviders: Boolean = false): NativeChatRecoveryCapabilities {
+        NativeChatNotificationWire.keys(raw, setOf("version", "epoch", "target", "operations", "limits"), if (pushProviders) setOf("pushProviders") else emptySet())
         val epoch = common(raw, target); val operations = raw.getJSONArray("operations")
         require(operations.length() == 4 && (0 until 4).map { operations.get(it) as? String ?: error("Invalid operation") }.toSet() == setOf("register", "preferences", "revoke", "feed-reset"))
         val bounds = raw.getJSONObject("limits"); NativeChatNotificationWire.keys(bounds, limits.keys)
         require(limits.all { (key, value) -> NativeChatNotificationWire.long(bounds, key) == value })
-        return NativeChatRecoveryCapabilities(epoch)
+        val providers = raw.optJSONArray("pushProviders")?.let { values ->
+            require(values.length() <= 2)
+            (0 until values.length()).map { values.getString(it).also { p -> require(p in setOf("fcm", "apns")) } }.also {
+                require(it.distinct().size == it.size)
+            }.toSet()
+        }.orEmpty()
+        require(!raw.has("pushProviders") || raw.opt("pushProviders") is JSONArray)
+        return NativeChatRecoveryCapabilities(epoch, providers)
     }
     fun receipt(raw: JSONObject, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt {
         NativeChatNotificationWire.keys(raw, setOf("version", "epoch", "intent", "stage"), setOf("reason", "status", "snapshot"))
@@ -128,9 +140,13 @@ internal object NativeChatRecoveryWire {
             require(stage == "applied" && original.kind != "feed-reset")
             val status = NativeChatNotificationWire.status(raw.getJSONObject("status"), original.target)
             require(status.revision == original.preferences.revision)
-            NativeChatNotificationWire.optional(raw.getJSONObject("status"), "publicKey", 64)?.let { require(it == original.publicKey) }
+            if (original.deviceToken == null) NativeChatNotificationWire.optional(raw.getJSONObject("status"), "publicKey", 64)?.let { require(it == original.publicKey) }
             if (original.kind == "revoke") require(status.state == "disabled")
-            if (stage == "applied" && original.kind in setOf("register", "preferences") && original.preferences.enabled) require(status.foreground(original.preferences.revision))
+            if (original.kind in setOf("register", "preferences") && original.preferences.enabled) {
+                if (original.deviceToken == null) require(status.foreground(original.preferences.revision))
+                else require(status.pushProvider == "fcm" && status.tokenSha256 == NativeChatNotificationWire.hash(original.deviceToken) &&
+                    status.state in setOf("ready", "pending", "unavailable"))
+            }
         }
         if (stage == "applied" && original.kind != "feed-reset") require(raw.has("status"))
         val snapshot = if (raw.has("snapshot")) raw.getJSONObject("snapshot").let {

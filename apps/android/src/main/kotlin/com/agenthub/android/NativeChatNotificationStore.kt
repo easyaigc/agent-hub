@@ -71,6 +71,10 @@ internal class NativeChatNotificationStore(private val storage: NativeSessionSto
         val requested = change(old.preferences).copy(revision = UUID.randomUUID().toString(), generation = old.preferences.generation + 1)
         val next = NativeChatNotificationCodec.preferences(NativeChatNotificationCodec.preferences(requested))
         // Preference changes invalidate all captured deliveries and taps. Reading data is owned by P7 and untouched.
+        // A delivery can capture a new epoch while this update waits for the snapshot lock.
+        // Fence again under that lock before writing; it must not post with the old preferences
+        // after this commit, even before the settings callback reaches Main.
+        invalidatePreferences()
         save(State(next, emptyList(), old.receipts)); next
     } }
     fun bind(target: NativeChatNoticeTarget, credentialEpoch: String): NativeChatNoticeLease = storage.snapshotTransaction {

@@ -59,6 +59,7 @@ internal fun MobileMessage.timelineMessage() = TimelineMessage(id,role,text,kind
             Text(title,Modifier.weight(1f).padding(start=8.dp),fontSize=16.sp,maxLines=1,overflow=TextOverflow.Ellipsis,fontWeight=if(single || emphasized) FontWeight.SemiBold else FontWeight.Normal,color=if(emphasized) colors.onSurface else colors.onSurfaceVariant)
             if(single || expanded) ProductIcon(if(expanded) "down" else "chevron",Modifier.size(11.dp),colors.onSurfaceVariant)
         }
+        SubagentHistoryAction(message)
         if(expanded) Column(Modifier.fillMaxWidth().padding(bottom=8.dp).clip(RoundedCornerShape(12.dp)).background(MobileDesign.toolDetail(dark)).border(1.dp,colors.onSurface.copy(alpha=.1f),RoundedCornerShape(12.dp)).padding(12.dp).testTag("tool-detail-${message.id}"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text(productText(style.detailTitle),fontSize=15.sp,color=colors.onSurfaceVariant)
             Row(Modifier.padding(end=LocalMessageActionEndInset.current),verticalAlignment=Alignment.Top) {

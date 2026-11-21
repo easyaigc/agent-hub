@@ -89,8 +89,10 @@ class SubagentProjection {
         }
         for((id,live) in threads[threadId].orEmpty()) {
             if(live.root !in roots || (revision!=null && live.revision!=revision))continue
-            val old=activities[id]
-            activities[id]=SubagentActivity("subagent:$id",old?.title ?: live.title.ifEmpty { id },old?.status ?: live.status,old?.detail.orEmpty(),live.root)
+            // A snapshot owns the whole child identity, not only its text/status.
+            // A late event for another observed root must never reparent its body.
+            if(id in activities)continue
+            activities[id]=SubagentActivity("subagent:$id",live.title.ifEmpty { id },live.status,"",live.root)
         }
         return activities.values.toList()
     }

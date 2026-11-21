@@ -1,5 +1,11 @@
 # 开发指南
 
+## R2 固定独立原生 DEV target（源码候选）
+
+`R2RealDEV` scheme 只构建新的 Debug `R2RealDEVApp` / `R2RealDEVNativeTests`，固定 bundle 为 `com.easyai.agenthub.easyworkacceptance.r2task20261112`，模块与旧 Acceptance 分开。真实 App/Store/provider/UI 沿用；只有该 target 定义 `R2_REAL_DEV_ACCEPTANCE`。不采用旧 AppGroup/APNS/time-sensitive/扩展或旧容器/凭据，默认 Keychain 组归自己的新 bundle。
+
+先运行 `pnpm --filter @codex-manage/ios check:r2-admission` 轻量辅助。控制方源码 review 并分配 slot 后，才可使用 `build:r2:native:simulator` 或官方物理 `build-for-testing`；此处没有宣称新 target 编译/链接/签名/安装通过。启动必须由私有环境提供固定 manifest 和限时 lease；首次须独立核 bundle 未安装/容器为空，运行时再核产品根、preferences、自己的 Keychain。不 reset 或复制 phone grant，旧 UNKNOWN 只查询原 ID。每轮仅选择一个明确 native 方法，禁止默认扩成全 suite。额度验收额外要求私有 R2_USAGE_SOURCE_PROOF_BASE64（独立桌面观察 SHA、完整 target、adapter/scope 与 manifest/case 绑定）；不自举来源，不把合法 unavailable、陈旧或全缺失额度记通过。原响应/投影只保留精确摘要和脱敏状态到专用 attachment/本容器文件。具体输入、隔离反例、原 C2/W5 同候选复验及系统覆盖排除见[来源记录](plans/android-ios-alignment-20261107/records/w4-r2-native-dev-isolation-20261113.md)。旧 Q11 的二进制两段摘要仅证明旧 bundle 的 SDK/runtime/构建参数，不外推为新配置已验证。
+
 已发布交互合入新主线时，按原用户动作核对生产入口、状态、原测试及当前验收结果；行为只恢复一部分时不能称为已保留。子 Agent 状态行、按需详情与共用工具组已加入默认 iOS 原生基线的 `subagents` 组；单独执行入口和本轮回退根因见[已发布交互回退核对](acceptance/released-workflow-regressions-20261119.md)。编译、Node 边界测试及旧包验收不替代当前原生交互通过。
 
 2026-10-29 Host 诊断与只读恢复的字段、轮转、抑制、私有权限、关闭屏障及逐平台故障验收见[专项指南](host-reconnect-diagnostics.md)。先保存具体 503 分类／诊断 ID，未知写入查原回执；不得以增加 timeout、反复重启原 Codex 或重新发送输入代替诊断。
@@ -122,6 +128,10 @@ pnpm --filter @codex-manage/relay start
 ## 验证命令
 
 Swift 状态回归使用生产声明和随源码版本化的旧算法参考，不依赖内部 Git 历史。先运行 `pnpm build:ios`，再为本任务专用的已启动模拟器设置 `IOS_SIMULATOR_ID=<simulator-id>` 并运行 `pnpm check:ios-state`；结果属于原生辅助边界检查，真机与真实模型验收分别记录。
+
+EasyWork 合成原生测试的 Simulator target 使用 `pnpm --filter @codex-manage/ios build:native:simulator` 构建独立 bundle `com.easyai.agenthub.easyworkacceptance`，保留 `CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-`。本次 Xcode27.1／SDK27.1 产物中，Xcode 把模拟权限写入 `__TEXT/__entitlements`／`__ents_der`，实际代码签名权限为空；旧 `CODE_SIGNING_ALLOWED=NO` 对照包没有这两段。独立双架构产物的两段 SHA256 分别为 `4c1b186b54d9b129f729fb4aedf27a79377f32a90e333b4447e500fe8da4b0fc` 和 `19a414a7e282155bc7daca5df174b45be583e81b8b301a6c353a743a894ebd1a`。这只描述本次参数和二进制，其他工具链应重新读回；完整命令、段长度、原生 OSStatus 和执行范围见[来源记录](plans/android-ios-alignment-20261107/records/w4-q11-native-simulator-20261112.md)。`CodexManage-Simulator.entitlements` 按实际 `PRODUCT_BUNDLE_IDENTIFIER` 展开应用标识与默认 Keychain 组。不要用只读代码签名权限代替 Simulator 段检查，也不要把 iOS 权限直接补入宿主 macOS ad hoc 代码签名；本次反例由 AMFI 明确拒绝。
+
+构建后仅对本任务新建的空白 Simulator，使用生成的 xctestrun 与 `-only-testing:EasyWorkNativeTests/EasyWorkHostedNativeTests/testC2SyntheticEncryptedQueueAndReceipt` 执行官方 `test-without-building`；保存原始输出及 xcresult，核实际方法 ID／数量／失败／skip。该方法的合成加密对端不访问真实 Host；其通过仅证明所选原生协议边界，真实 DEV、其他方法、手机 UI 和物理设备另行验收。构建命令本身不启动设备或执行 XCTest。
 
 Git 跟踪核心源码、构建配置、可复用测试与必要设计文档。单次运行日志、验收报告、设备截图、商店审核记录和设计预览留在本地，由 `.gitignore` 排除；`docs/acceptance` 仅保留通用远程接入检查清单。文档中的本地验收路径用于定位当前电脑的证据，不随源码分发，也不代表其他环境已通过。
 

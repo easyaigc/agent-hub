@@ -1534,7 +1534,13 @@ struct RootView: View {
   }
 
   @ViewBuilder var body: some View {
-    #if DEBUG
+    #if R2_REAL_DEV_ACCEPTANCE
+    if SessionStore.hostedEasyWorkProductUIEnabled {
+      normalBody.task { store.attachHostedEasyWorkAcceptance(voice: voice) }
+    } else {
+      Color.clear.task { store.attachHostedEasyWorkAcceptance(voice: voice) }
+    }
+    #elseif DEBUG
     if SessionStore.hostedEasyWorkProductUIEnabled && store.hostedEasyWorkProductUIPresented {
       normalBody.task { store.attachHostedEasyWorkAcceptance(voice: voice) }
     } else if SessionStore.hostedEasyWorkAcceptanceEnabled {
@@ -1637,7 +1643,11 @@ struct RootView: View {
       if store.localRecoveryRequired { store.retryLocalRecovery() }
     }
     .modifier(SubagentHistoryPresentation(targetKey: store.targetKey, client: store.devPreviewClient,
-      threadId: store.selectedThreadId, supportsHistory: store.supportsSubagentHistory))
+      threadId: store.selectedThreadId, supportsHistory: store.supportsSubagentHistory,
+      lineageEnabled: store.supportsParentLineageHistory, lineageContext: store.subagentHistoryReadContext,
+      anchorCurrent: { expectedTargetKey, expectedContext, message in
+        store.supportsParentLineageHistory && store.subagentHistoryReadContext == expectedContext && store.targetKey == expectedTargetKey && store.messages.filter { $0.id == message.id && $0.kind == "subAgent" }.count == 1 && store.messages.contains(message)
+      }))
     .preferredColorScheme(store.colorScheme)
     .task {
       guard !hostedExaminerOwnsRefresh else { return }

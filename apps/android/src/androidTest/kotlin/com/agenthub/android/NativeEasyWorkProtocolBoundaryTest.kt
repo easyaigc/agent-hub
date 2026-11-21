@@ -125,7 +125,7 @@ class NativeEasyWorkProtocolBoundaryTest {
             .put("requestHash",easyHash(easyCanonical(JSONObject().put("target",target.json()).put("method",request.getString("method")).put("params",params)).toByteArray()))
             .put("response",JSONObject().put("ok",true).put("result",JSONObject().put("receipt","original"))).also(mutate)
     }
-    private suspend fun recovery(status: (JSONObject)->JSONObject): Pair<List<JSONObject>,Result<JSONObject>> {
+    private suspend fun recovery(method: String="turn/start",status: (JSONObject)->JSONObject): Pair<List<JSONObject>,Result<JSONObject>> {
         val requests=CopyOnWriteArrayList<JSONObject>();var original: JSONObject?=null
         val c=credential
         val routes=registry(c) { candidate,binding->Peer(c.copy(binding=binding)) { request->
@@ -135,7 +135,7 @@ class NativeEasyWorkProtocolBoundaryTest {
         } }
         val session=EasyWorkRemoteSession(connection(),c,{ error("Injected transports must not request an account token") },routes)
         return try {
-            val result=runCatching { withTimeout(4000) { session.request("turn/start",JSONObject().put("threadId","synthetic-thread").put("clientRequestId","stable-operation").put("text","immutable synthetic input"),"stable-request") } }
+            val result=runCatching { withTimeout(4000) { session.request(method,JSONObject().put("threadId","synthetic-thread").put("clientRequestId","stable-operation").put("text","immutable synthetic input"),"stable-request") } }
             requests.toList() to result
         } finally { session.close() }
     }
@@ -151,6 +151,42 @@ class NativeEasyWorkProtocolBoundaryTest {
             val (requests,result)=recovery { if(state=="missing")JSONObject() else JSONObject().put("state",state) }
             assertTrue(result.exceptionOrNull() is EasyWorkRejection)
             assertEquals(listOf("turn/start","command/status"),requests.map { it.getString("method") })
+        }
+    }
+    @Test(timeout=12_000) fun notificationMethodsReachTheAuthenticatedPeerAndOtherMethodsStayBlocked()=runBlocking {
+        val requests=CopyOnWriteArrayList<JSONObject>();val c=credential
+        val routes=registry(c) { _,binding->Peer(c.copy(binding=binding)) { request->
+            requests.add(request);JSONObject().put("acceptedMethod",request.getString("method"))
+        } }
+        val session=EasyWorkRemoteSession(connection(),c,{error("No account token")},routes)
+        val methods=listOf("notification/register","notification/preferences","notification/unregister","notification/status","notification/events")
+        try {
+            for(method in methods) {
+                val params=JSONObject().put("deviceId","synthetic-device")
+                assertEquals(method,withTimeout(2000) { session.request(method,params,"fixture-"+method.substringAfter('/')) }.getString("acceptedMethod"))
+                assertEquals(target,EasyWorkTarget.decode(requests.last().getJSONObject("target")))
+                assertEquals(easyCanonical(params),easyCanonical(requests.last().getJSONObject("params")))
+            }
+            for(method in listOf("notification/unknown","notification/register/extra","shell/execute")) {
+                val failure=runCatching { session.request(method) }.exceptionOrNull()
+                assertTrue("Unregistered method must fail locally",failure is IllegalArgumentException)
+            }
+            assertEquals(methods,requests.map {it.getString("method")})
+        } finally { session.close() }
+    }
+    @Test(timeout=12_000) fun notificationMutationsRecoverOnlyTheirOriginalReceiptWithoutReplay()=runBlocking {
+        for(method in listOf("notification/register","notification/preferences","notification/unregister")) {
+            val (requests,result)=recovery(method) {receipt(it)}
+            assertEquals("original",result.getOrThrow().getString("receipt"))
+            assertEquals(listOf(method,"command/status"),requests.map {it.getString("method")})
+            assertEquals("stable-request",requests.first().getString("requestId"))
+        }
+    }
+    @Test(timeout=12_000) fun unknownNotificationMutationsRemainUnknownWithoutReplay()=runBlocking {
+        for(method in listOf("notification/register","notification/preferences","notification/unregister")) {
+            val (requests,result)=recovery(method) {JSONObject().put("state","uncertain")}
+            assertTrue(result.exceptionOrNull() is EasyWorkRejection)
+            assertEquals(listOf(method,"command/status"),requests.map {it.getString("method")})
         }
     }
     private suspend fun rejectsChangedReceiptField(field: String) {
@@ -265,6 +301,62 @@ class NativeEasyWorkProtocolBoundaryTest {
         for(field in listOf("sequence","version")) {
             val frame=JSONObject(base).apply { remove(field) }
             assertTrue(runCatching { crypto.open(frame.toString().toByteArray()) }.exceptionOrNull() is IllegalArgumentException)
+        }
+    }
+
+    /** F08/F09/F68: pause the real commit at its monitor, then invalidate the route.
+     * Reflection only observes/locks the existing private boundary and invokes disconnect;
+     * no production method is replaced and no network/model operation is performed. */
+    @Test(timeout=12_000) fun disconnectAtSyncCommitCannotRefillClearedCache()=runBlocking {
+        val requests=CopyOnWriteArrayList<JSONObject>()
+        val ready=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>()
+        val workerThread=java.util.concurrent.atomic.AtomicReference<Thread>()
+        val executor=java.util.concurrent.Executors.newSingleThreadExecutor { task ->
+            Thread(task,"p5-sync-commit").also {workerThread.set(it)}
+        }
+        val dispatcher=executor.asCoroutineDispatcher()
+        val c=credential
+        val routes=registry(c) { _,binding -> Peer(c.copy(binding=binding)) { request ->
+            assertEquals("thread/sync",request.getString("method"))
+            requests.add(JSONObject(request.getJSONObject("params").toString()))
+            if(requests.size==2) {ready.complete(Unit);release.await()}
+            val id="message-${requests.size}"
+            JSONObject().put("snapshot",JSONObject().put("thread",JSONObject().put("id","thread")))
+                .put("messages",JSONArray().put(JSONObject().put("id",id).put("role","assistant")
+                    .put("content",JSONArray().put(JSONObject().put("type","text").put("text",id)))))
+                .put("head",JSONArray().put(JSONObject().put("id",id).put("hash","version-$id")))
+                .put("branchRevision",1).put("reset",true).put("patches",JSONArray())
+        } }
+        val session=EasyWorkRemoteSession(connection("lan-only"),c,{error("No account token")},routes)
+        val monitor=EasyWorkRemoteSession::class.java.getDeclaredField("routeLock").apply {isAccessible=true}.get(session)
+        val disconnect=EasyWorkRemoteSession::class.java.getDeclaredMethod("disconnect").apply {isAccessible=true}
+        var late:Deferred<Result<JSONObject>>?=null
+        try {
+            withContext(dispatcher) {session.synchronizedThread("thread")}
+            late=async(dispatcher) {runCatching {session.synchronizedThread("thread")}}
+            withTimeout(3000) {ready.await()}
+            assertEquals(1,requests[1].getJSONArray("known").length())
+            synchronized(monitor) {
+                release.complete(Unit)
+                val cutoff=System.nanoTime()+2_000_000_000L
+                while(workerThread.get().state!=Thread.State.BLOCKED && System.nanoTime()<cutoff)Thread.sleep(1)
+                val worker=workerThread.get()
+                assertEquals("Must reach the contended commit before disconnect",Thread.State.BLOCKED,worker.state)
+                assertTrue(worker.stackTrace.any {it.className.startsWith(EasyWorkRemoteSession::class.java.name)&&it.methodName.startsWith("synchronizedThread")})
+                disconnect.invoke(session)
+            }
+            // async failure is observed without cancelling the enclosing test scope.
+            val failure=checkNotNull(late).await().exceptionOrNull()
+            assertTrue("Invalidated response must fail, not refill history",failure is HostReadError)
+            assertEquals("电脑连接已更新，请重新读取历史",failure?.message)
+            val recovered=withContext(dispatcher) {session.synchronizedThread("thread")}
+            assertEquals(3,requests.size)
+            assertEquals("Reconnect must send no old versions",0,requests[2].getJSONArray("known").length())
+            assertFalse(requests[2].has("branchRevision"))
+            assertEquals("message-3",recovered.getJSONArray("messages").getJSONObject(0).getString("id"))
+        } finally {
+            release.complete(Unit);session.close();late?.cancelAndJoin();dispatcher.close()
+            check(executor.awaitTermination(2,java.util.concurrent.TimeUnit.SECONDS)) {"Owned sync worker did not terminate"}
         }
     }
 

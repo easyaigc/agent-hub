@@ -112,6 +112,12 @@ object SessionPolicies {
         text: String, attachmentCount: Int, operationId: String?): Boolean =
         !threadSelected && !replyPending && !creationPending && text.isEmpty() && attachmentCount == 0 && operationId == null
 
+    /** Recheck the current catalogue when a retained native callback edits the draft.
+     * null means follow the computer, never an implicit standard override.
+     */
+    fun generationSpeedAllowed(speed: String?, supportedSpeeds: List<String>): Boolean =
+        speed == null || speed in supportedSpeeds
+
     fun changeModel(priorEffort: String?, draftSpeed: String?, supportedEfforts: List<String>,
         defaultEffort: String?, supportedSpeeds: List<String>): GenerationChoice =
         GenerationChoice(if (priorEffort in supportedEfforts) priorEffort else defaultEffort,

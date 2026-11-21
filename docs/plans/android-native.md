@@ -1,5 +1,11 @@
 # Android 原生完整版本开发计划
 
+<!-- android-current-status-source:20261112 -->
+
+> 当前 Android 对齐 iOS、对接 Codex/EasyWork 的开发、验收、交付、阻塞和剩余项，唯一以[权威状态和计划](android-ios-alignment-20261107/progress.md)为准。本页保留原日期/原任务的需求与证据；其中“当前”“未开发”“暂停”不直接代表最新状态。后续进度必须登记到权威计划，不在本页另立当前总表。
+
+<!-- /android-current-status-source:20261112 -->
+
 **当前入口（2026-11-07）：**[最新 iOS 对齐计划](android-ios-alignment-20261107/README.md)分别维护完整功能、逐提交账本、优先级、验收和[实时进度](android-ios-alignment-20261107/progress.md)；[分阶段档案](android-alignment-20261022/records/README.md)保存过程与限定结果。下文 A0–A8 以及旧 P0–P10 调度保留为原日期历史，不作为当前进度。Task Hub 业务任务/项目、原生项目 Git 管理和 iOS A6 暂缓；Android 完整迁移继续纳入新 N1。
 
 ## 历史计划与调度

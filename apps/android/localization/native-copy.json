@@ -1595,6 +1595,381 @@
       "key": "发送第一条消息后创建对话。",
       "en": "The conversation is created when you send the first message.",
       "zhHans": "发送第一条消息后创建对话。"
+    },
+    {
+      "key": "后台通知已开启。",
+      "en": "Background notifications are enabled.",
+      "zhHans": "后台通知已开启。"
+    },
+    {
+      "key": "正在启用后台通知，请稍候。",
+      "en": "Enabling background notifications. Please wait.",
+      "zhHans": "正在启用后台通知，请稍候。"
+    },
+    {
+      "key": "原推送登记仍在处理中，设置变更尚未提交。",
+      "en": "The previous notification setup is still pending. Your changes have not been submitted.",
+      "zhHans": "原推送登记仍在处理中，设置变更尚未提交。"
+    },
+    {
+      "key": "后台通知配置无效。",
+      "en": "The background notification configuration is invalid.",
+      "zhHans": "后台通知配置无效。"
+    },
+    {
+      "key": "后台通知尚未配置。",
+      "en": "Background notifications have not been configured.",
+      "zhHans": "后台通知尚未配置。"
+    },
+    {
+      "key": "系统通知权限已关闭。",
+      "en": "System notification permission is off.",
+      "zhHans": "系统通知权限已关闭。"
+    },
+    {
+      "key": "Google Play 服务或推送登记暂不可用。",
+      "en": "Google Play services or notification setup is temporarily unavailable.",
+      "zhHans": "Google Play 服务或推送登记暂不可用。"
+    },
+    {
+      "key": "请先升级电脑端以恢复后台通知，原通知记录已保留。",
+      "en": "Update the desktop app to restore background notifications. Your notification records are preserved.",
+      "zhHans": "请先升级电脑端以恢复后台通知，原通知记录已保留。"
+    },
+    {
+      "key": "旧通知设置结果仍待确认，可核对当前状态或关闭这台电脑的通知。",
+      "en": "The previous notification settings are still unconfirmed. Check the current status or turn off notifications for this computer.",
+      "zhHans": "旧通知设置结果仍待确认，可核对当前状态或关闭这台电脑的通知。"
+    },
+    {
+      "key": "本机后台通知登记已失效，请核对通知设置。",
+      "en": "Background notification setup has expired. Check your notification settings.",
+      "zhHans": "本机后台通知登记已失效，请核对通知设置。"
+    },
+    {
+      "key": "电脑未确认后台推送登记，原操作不会重复提交。",
+      "en": "The computer has not confirmed background notification setup. The operation will not be submitted again.",
+      "zhHans": "电脑未确认后台推送登记，原操作不会重复提交。"
+    },
+    {
+      "key": "原通知登记结果待确认，不会重复提交。",
+      "en": "The previous notification setup is unconfirmed. It will not be submitted again.",
+      "zhHans": "原通知登记结果待确认，不会重复提交。"
+    },
+    {
+      "key": "后台通知待同步，原记录已保留。",
+      "en": "Background notifications are waiting to sync. Your records are preserved.",
+      "zhHans": "后台通知待同步，原记录已保留。"
+    },
+    {
+      "key": "核对当前通知状态",
+      "en": "Check current notification status",
+      "zhHans": "核对当前通知状态"
+    },
+    {
+      "key": "已结束等待，通知设置记录已保留；电脑端操作仍可能完成。",
+      "zhHans": "已结束等待，通知设置记录已保留；电脑端操作仍可能完成。",
+      "en": "Waiting has ended and the notification settings record is preserved. The computer may still complete the change."
+    },
+    {
+      "key": "结束等待并保留记录",
+      "zhHans": "结束等待并保留记录",
+      "en": "End waiting and keep the record"
+    },
+    {
+      "key": "不是有效的文档文件链接",
+      "en": "This is not a valid document file link",
+      "zhHans": "不是有效的文档文件链接"
+    },
+    {
+      "key": "原 owner 尚未确认控制权",
+      "en": "The computer has not confirmed control of this chat",
+      "zhHans": "原 owner 尚未确认控制权"
+    },
+    {
+      "key": "原打开记录不属于此目标",
+      "en": "The original open record does not belong to this target",
+      "zhHans": "原打开记录不属于此目标"
+    },
+    {
+      "key": "存在多个原打开记录，请分别查询；不会提交新操作",
+      "en": "Several original open records exist. Check them separately; no new operation will be submitted.",
+      "zhHans": "存在多个原打开记录，请分别查询；不会提交新操作"
+    },
+    {
+      "key": "打开前检查未通过，草稿和附件已保留",
+      "en": "The preflight check failed. Your draft and attachments are preserved.",
+      "zhHans": "打开前检查未通过，草稿和附件已保留"
+    },
+    {
+      "key": "打开后的运行时目标不匹配",
+      "en": "The runtime target after opening does not match",
+      "zhHans": "打开后的运行时目标不匹配"
+    },
+    {
+      "key": "打开回执原目标或操作不匹配",
+      "en": "The open receipt does not match the original target or operation",
+      "zhHans": "打开回执原目标或操作不匹配"
+    },
+    {
+      "key": "打开回执错误字段无效",
+      "en": "The open receipt has an invalid error field",
+      "zhHans": "打开回执错误字段无效"
+    },
+    {
+      "key": "打开目标已改变，原操作保留",
+      "en": "The open target changed. The original operation is preserved.",
+      "zhHans": "打开目标已改变，原操作保留"
+    },
+    {
+      "key": "打开结果仍待确认，请查询原记录；草稿和附件已保留",
+      "en": "The open result is still unconfirmed. Check the original record; your draft and attachments are preserved.",
+      "zhHans": "打开结果仍待确认，请查询原记录；草稿和附件已保留"
+    },
+    {
+      "key": "打开结果尚未确认，原记录、草稿和附件已保留",
+      "en": "The open result is unconfirmed. The original record, draft and attachments are preserved.",
+      "zhHans": "打开结果尚未确认，原记录、草稿和附件已保留"
+    },
+    {
+      "key": "打开请求完整目标不匹配",
+      "en": "The complete target of the open request does not match",
+      "zhHans": "打开请求完整目标不匹配"
+    },
+    {
+      "key": "查询原打开记录…",
+      "en": "Checking the original open record…",
+      "zhHans": "查询原打开记录…"
+    },
+    {
+      "key": "正在原桌面打开…",
+      "en": "Opening on the computer…",
+      "zhHans": "正在原桌面打开…"
+    },
+    {
+      "key": "正在打开此对话，请勿重复提交",
+      "en": "This chat is opening. Do not submit again.",
+      "zhHans": "正在打开此对话，请勿重复提交"
+    },
+    {
+      "key": "此电脑尚未提供已连接的主动打开能力",
+      "en": "This computer does not currently support opening a chat from the phone",
+      "zhHans": "此电脑尚未提供已连接的主动打开能力"
+    },
+    {
+      "key": "此电脑未开放主动打开",
+      "en": "This computer does not support opening a chat from the phone",
+      "zhHans": "此电脑未开放主动打开"
+    },
+    {
+      "key": "电脑尚未确认打开此对话，草稿和附件已保留；请查询原记录",
+      "en": "The computer has not confirmed opening this chat. Your draft and attachments are preserved; check the original record.",
+      "zhHans": "电脑尚未确认打开此对话，草稿和附件已保留；请查询原记录"
+    },
+    {
+      "key": "电脑返回的数据格式无效",
+      "en": "The computer returned data in an invalid format",
+      "zhHans": "电脑返回的数据格式无效"
+    },
+    {
+      "key": "目标或草稿已改变，未提交",
+      "en": "The target or draft changed. Nothing was submitted.",
+      "zhHans": "目标或草稿已改变，未提交"
+    },
+    {
+      "key": "上传控制未确认，原记录及文件已保留；请重新核对。",
+      "en": "Couldn’t confirm the upload action. Your files and upload details are kept. Check the upload status.",
+      "zhHans": "上传控制未确认，原记录及文件已保留；请重新核对。"
+    },
+    {
+      "key": "上传结果待确认，请在原任务中查看；此电脑暂不支持继续上传。",
+      "en": "The upload result is still unconfirmed. Check it in the original task; this computer doesn’t support resuming uploads.",
+      "zhHans": "上传结果待确认，请在原任务中查看；此电脑暂不支持继续上传。"
+    },
+    {
+      "key": "上传记录不可用",
+      "en": "Upload details are unavailable.",
+      "zhHans": "上传记录不可用"
+    },
+    {
+      "key": "上传记录保存未确认，原件及原意图保留；请核对本机记录。",
+      "en": "Couldn’t confirm that the upload details were saved. Your files are kept. Check the saved upload details on this phone.",
+      "zhHans": "上传记录保存未确认，原件及原意图保留；请核对本机记录。"
+    },
+    {
+      "key": "上传记录无法读取，原文件已保留；未新建或覆盖任务。",
+      "en": "Couldn’t read the upload details. Your files are kept, and no uploads were created or replaced.",
+      "zhHans": "上传记录无法读取，原文件已保留；未新建或覆盖任务。"
+    },
+    {
+      "key": "其他文件的进度暂不可用。",
+      "en": "Progress for the other files is currently unavailable.",
+      "zhHans": "其他文件的进度暂不可用。"
+    },
+    {
+      "key": "其余文件尚未封存，总字节数未确定。",
+      "en": "The other files aren’t ready yet, so the total size is unavailable.",
+      "zhHans": "其余文件尚未封存，总字节数未确定。"
+    },
+    {
+      "key": "剩余",
+      "en": "Remaining",
+      "zhHans": "剩余"
+    },
+    {
+      "key": "原上传仍需核对；不降级重传旧文件。",
+      "en": "Check the earlier upload before continuing. The file hasn’t been sent again.",
+      "zhHans": "原上传仍需核对；不降级重传旧文件。"
+    },
+    {
+      "key": "原上传内容或目标已改变，未继续上传。",
+      "en": "The file or destination has changed. The upload wasn’t resumed.",
+      "zhHans": "原上传内容或目标已改变，未继续上传。"
+    },
+    {
+      "key": "原上传结果待核对",
+      "en": "Upload result unconfirmed",
+      "zhHans": "原上传结果待核对"
+    },
+    {
+      "key": "原件或上传结果待核对，任务及原输入已保留。",
+      "en": "The file or upload result needs checking. Your task and draft are kept.",
+      "zhHans": "原件或上传结果待核对，任务及原输入已保留。"
+    },
+    {
+      "key": "原件读取接口不支持有界续传；未改用新上传。",
+      "en": "This file can’t be read for a resumed upload. No new upload was started.",
+      "zhHans": "原件读取接口不支持有界续传；未改用新上传。"
+    },
+    {
+      "key": "原接口整文件上传；不支持暂停或续传。",
+      "en": "Uploading. Pausing and resuming aren’t supported on this computer.",
+      "zhHans": "原接口整文件上传；不支持暂停或续传。"
+    },
+    {
+      "key": "原操作结果待核对；仅查询原上传，不重放。",
+      "en": "The earlier result is unconfirmed. Only its status will be checked; the upload won’t be repeated.",
+      "zhHans": "原操作结果待核对；仅查询原上传，不重放。"
+    },
+    {
+      "key": "原目标、连接或输入已变化；原上传已保留。",
+      "en": "The destination, connection, or draft has changed. The earlier upload is kept.",
+      "zhHans": "原目标、连接或输入已变化；原上传已保留。"
+    },
+    {
+      "key": "取消电脑上传",
+      "en": "Cancel upload on computer",
+      "zhHans": "取消电脑上传"
+    },
+    {
+      "key": "取消结果待确认，请查询原上传。",
+      "en": "Cancellation is unconfirmed. Check the upload status.",
+      "zhHans": "取消结果待确认，请查询原上传。"
+    },
+    {
+      "key": "已停止本地等待；远端操作未取消。",
+      "en": "Waiting has stopped on this phone. The operation on the computer hasn’t been cancelled.",
+      "zhHans": "已停止本地等待；远端操作未取消。"
+    },
+    {
+      "key": "已完成任务卡清理未确认；原文件和业务回执保留。",
+      "en": "Couldn’t confirm that the completed upload was dismissed. Your files and the original result are kept.",
+      "zhHans": "已完成任务卡清理未确认；原文件和业务回执保留。"
+    },
+    {
+      "key": "已核对原上传；可从确认位置继续。",
+      "en": "The upload has been checked. You can resume from the confirmed point.",
+      "zhHans": "已核对原上传；可从确认位置继续。"
+    },
+    {
+      "key": "旧接口结果待核对，不支持续传；请查询原业务回执。",
+      "en": "The upload result is unconfirmed, and resuming isn’t supported. Check the result in the original task.",
+      "zhHans": "旧接口结果待核对，不支持续传；请查询原业务回执。"
+    },
+    {
+      "key": "旧整文件回执不能恢复，请核对原业务记录。",
+      "en": "The earlier upload result can’t be restored. Check the result in the original task.",
+      "zhHans": "旧整文件回执不能恢复，请核对原业务记录。"
+    },
+    {
+      "key": "查询原结果",
+      "en": "Check result",
+      "zhHans": "查询原结果"
+    },
+    {
+      "key": "正在上传；此电脑暂不支持暂停或继续上传。",
+      "en": "Uploading. This computer doesn’t support pausing or resuming uploads.",
+      "zhHans": "正在上传；此电脑暂不支持暂停或继续上传。"
+    },
+    {
+      "key": "正在准备上传…",
+      "en": "Preparing upload…",
+      "zhHans": "正在准备上传…"
+    },
+    {
+      "key": "正在校验和发布文件…",
+      "en": "Checking and saving the file…",
+      "zhHans": "正在校验和发布文件…"
+    },
+    {
+      "key": "此 Agent 不支持远端取消；停止仅影响手机本地上传。",
+      "en": "This computer can’t cancel the upload. Stopping only affects uploading on this phone.",
+      "zhHans": "此 Agent 不支持远端取消；停止仅影响手机本地上传。"
+    },
+    {
+      "key": "此 Agent 不支持远端取消；只能停止手机本地上传。",
+      "en": "This computer can’t cancel the upload. You can only stop uploading on this phone.",
+      "zhHans": "此 Agent 不支持远端取消；只能停止手机本地上传。"
+    },
+    {
+      "key": "此类上传暂不支持取消电脑操作；结束等待仅影响手机。",
+      "en": "Cancelling on the computer isn’t available for this type of upload. Stopping the wait only affects this phone.",
+      "zhHans": "此类上传暂不支持取消电脑操作；结束等待仅影响手机。"
+    },
+    {
+      "key": "此连接未开放续传协议",
+      "en": "This connection doesn’t support resuming uploads.",
+      "zhHans": "此连接未开放续传协议"
+    },
+    {
+      "key": "电脑已确认取消，手机原件保留。",
+      "en": "The computer confirmed cancellation. The original file is kept on this phone.",
+      "zhHans": "电脑已确认取消，手机原件保留。"
+    },
+    {
+      "key": "电脑已确认取消；原输入保留，不自动新建上传。",
+      "en": "The computer confirmed cancellation. Your draft is kept, and no new upload will start automatically.",
+      "zhHans": "电脑已确认取消；原输入保留，不自动新建上传。"
+    },
+    {
+      "key": "电脑已确认取消；原输入和附件保留，不能自动重建旧上传。",
+      "en": "The computer confirmed cancellation. Your draft and attachments are kept; the upload won’t restart automatically.",
+      "zhHans": "电脑已确认取消；原输入和附件保留，不能自动重建旧上传。"
+    },
+    {
+      "key": "移除已完成任务卡",
+      "en": "Dismiss completed upload",
+      "zhHans": "移除已完成任务卡"
+    },
+    {
+      "key": "移除已结束任务卡",
+      "en": "Dismiss",
+      "zhHans": "移除已结束任务卡"
+    },
+    {
+      "key": "继续",
+      "en": "Continue",
+      "zhHans": "继续"
+    },
+    {
+      "key": "要重新上传，请移除后重新添加附件。",
+      "en": "To upload again, remove the attachment and add it again.",
+      "zhHans": "要重新上传，请移除后重新添加附件。"
+    },
+    {
+      "key": "连接或原回执待确认；保留原ID和文件，继续前先查询。",
+      "en": "Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing.",
+      "zhHans": "连接或原回执待确认；保留原ID和文件，继续前先查询。"
     }
   ]
 }

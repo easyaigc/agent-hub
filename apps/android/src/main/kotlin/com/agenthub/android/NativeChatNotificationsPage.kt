@@ -34,15 +34,29 @@ internal fun chatNotificationTargetTag(target: NativeChatNoticeTarget) =
             if(coordinator.migrationEnrollmentFailed)TextButton(onClick=coordinator::retryMigrationEnrollment,modifier=Modifier.testTag("chat-notification-migration-retry")){Text(productText("重试"))}
             if(coordinator.migrationNeedsSetup) Text(productText("迁移后需明确开启通知，原记录已保留。"),Modifier.testTag("chat-notification-migration-setup"))
             if (coordinator.unavailable) Text(productText("暂时无法同步通知，原记录已保留。"), Modifier.testTag("chat-notification-coordinator-unavailable"))
-            val targets = (coordinator.computers.map { it.target } + coordinator.reports.keys + coordinator.originalReports.keys).distinct()
+            coordinator.easyWorkReports?.forEach { (key, value) ->
+                Text(value.first + " · " + productText(when (value.second) {
+                    "push-registered" -> "后台通知已开启。"
+                    "disabled" -> "这台电脑的通知已关闭。"
+                    "push-not-configured" -> "后台通知尚未配置。"
+                    "easywork-wait-ended-original-retained" -> "已结束等待，通知设置记录已保留；电脑端操作仍可能完成。"
+                    "easywork-original-unconfirmed-no-replay" -> "原通知登记结果待确认，不会重复提交。"
+                    else -> "后台通知待同步，原记录已保留。"
+                }))
+                if (value.second in setOf("easywork-original-unconfirmed-no-replay", "easywork-wait-ended-original-retained")) {
+                    TextButton(onClick = { coordinator.queryEasyWorkOriginal(key) }) { Text(productText("核对当前通知状态")) }
+                    if (value.second != "easywork-wait-ended-original-retained" && value.operationId != null) TextButton(onClick = { coordinator.endEasyWorkWaiting(key, value.operationId) }) { Text(productText("结束等待并保留记录")) }
+                }
+            }
+            val targets = (coordinator.codexComputerTargets + coordinator.reports.keys + coordinator.originalReports.keys).distinct()
             for (target in targets) {
                 Column(Modifier.fillMaxWidth().testTag("chat-notification-computer-status-" + chatNotificationTargetTag(target))) {
-                    val current = coordinator.computers.firstOrNull { it.target == target }
+                    val current = coordinator.computers.firstOrNull { target in coordinator.codexComputerTargets && it.hostId == target.hostId }
                     Text((current?.name ?: target.hostId) + " · " + productText(if (current != null) "当前连接" else "原连接记录"))
                     coordinator.reports[target]?.let { report -> NativeChatNotificationRecoveryStatus(report,
-                        { offer, id -> coordinator.acceptGap(target, offer, id) }, { id -> coordinator.disableComputer(target, id) }) }
+                        { offer, id -> coordinator.acceptGap(target, offer, id) }, { id -> coordinator.disableComputer(target, id) }, { id -> coordinator.endPushWaiting(target, id) }) }
                     coordinator.originalReports[target]?.let { report -> NativeChatNotificationRecoveryStatus(report,
-                        { offer, id -> coordinator.acceptGap(target, offer, id) }, { id -> coordinator.disableComputer(target, id) }) }
+                        { offer, id -> coordinator.acceptGap(target, offer, id) }, { id -> coordinator.disableComputer(target, id) }, { id -> coordinator.endPushWaiting(target, id) }) }
                     TextButton(onClick = { coordinator.queryOriginals(target) }, enabled = target !in coordinator.querying,
                         modifier = Modifier.testTag("chat-notification-query-original-" + chatNotificationTargetTag(target))) { Text(productText("核对原通知记录")) }
                 }

@@ -64,10 +64,10 @@ class NativeMigrationCandidateTest {
     private fun stage(body: JSONObject, id: String = UUID.randomUUID().toString(), replacing: NativeMigrationCandidateStore.Receipt? = null) = store.stage(id, encrypted(body), password, replacing)
     private fun cipher() = File(parent.child(context, "migration-candidates").coordinationKey, sha("candidate-v1".toByteArray()) + ".bin").readBytes()
     private fun reject(body: JSONObject, replacing: NativeMigrationCandidateStore.Receipt) {
-        val prior = cipher()
+        val prior = cipher(); val priorRecords = store.read(replacing)
         try { stage(body, replacing = replacing); fail("Invalid candidate accepted") }
         catch (_: NativeMigrationCandidateStore.InvalidCandidate) { }
-        assertArrayEquals(prior, cipher()); store.read(replacing)
+        assertArrayEquals(prior, cipher()); assertEquals(priorRecords, store.read(replacing))
     }
 
     @Test fun validCandidateColdObjectReadKeepsOriginalTextsIdsAndUnknownOperation() {
@@ -77,6 +77,60 @@ class NativeMigrationCandidateTest {
         val row = JSONObject(records.getValue("operations:$target")).getJSONArray("operations").getJSONObject(0)
         assertEquals(operationId, row.getString("id")); assertEquals("uncertain", row.getString("phase")); assertTrue(row.getBoolean("submissionAttempted"))
         assertEquals("original active metadata remains untouched", parent.read("metadata"))
+    }
+
+    @Test fun legacyCredentialIsOpaqueThroughLegacyAndStreamGraphValidation() {
+        var previous: NativeMigrationCandidateStore.Receipt?=null
+        for(secret in listOf("synthetic-legacy-credential-100%-raw", "7".repeat(43), "x".repeat(512))) {
+            val body=syntheticPayload();body.getJSONObject("records").put("token:${client.id}",secret)
+            val clear=body.toString().toByteArray(Charsets.UTF_8)
+            val archive=NativeMigrationArchiveValidation.archive(clear,context.packageName)
+            NativeMigrationArchiveValidation.stream(archive.stream())
+            assertEquals(secret,archive.text.getValue("token:${client.id}"))
+            val receipt=stage(body,replacing=previous);previous=receipt
+            val cold=NativeMigrationCandidateStore(context,NativeSessionStorage(context,namespace)).read(receipt)
+            for(name in body.getJSONObject("records").keys())assertEquals(body.getJSONObject("records").getString(name),cold[name])
+        }
+    }
+
+    @Test fun orphanAndMalformedLegacyCredentialsCannotReplaceAuthenticatedCandidate() {
+        val first=stage(syntheticPayload())
+        for((name,secret)in listOf<Pair<String,Any>>(
+            "token:unknown-client" to "x".repeat(43),
+            "token:" to "x".repeat(43),
+            "token:${client.id}" to "",
+            "token:${client.id}" to "x".repeat(31),
+            "token:${client.id}" to "x".repeat(513),
+            "token:${client.id}" to ("x".repeat(42)+"\n"),
+            "token:${client.id}" to JSONObject().put("token","x".repeat(43)),
+            "token:${client.id}" to JSONArray().put("x".repeat(43)),
+            "token:${client.id}" to JSONObject.NULL
+        )) {
+            val body=syntheticPayload();body.getJSONObject("records").put(name,secret)
+            reject(body,first)
+        }
+    }
+
+    @Test fun legacyCredentialCannotBelongToAnotherAgentOrDemoClient() {
+        val first=stage(syntheticPayload())
+        val secret="synthetic-legacy-credential-100%-raw"
+        // Exercise the credential ownership rule directly, so another graph failure cannot mask it.
+        val prior=cipher();val priorRecords=store.read(first)
+        val originalScope=checkNotNull(client.scope)
+        val wrongAgent=TargetScope("easywork",originalScope.accountAuthority,originalScope.accountSubject,
+            originalScope.hostId,originalScope.workspaceId,originalScope.runtimeId)
+        for(owner in listOf(client.copy(isDemo=true),client.copy(scope=wrongAgent))) {
+            assertThrows(IllegalArgumentException::class.java) {
+                NativeMigrationLegacyCredentials.validate(mapOf("token:${client.id}" to secret),listOf(owner))
+            }
+        }
+        assertArrayEquals(prior,cipher());assertEquals(priorRecords,store.read(first))
+        // Also reject at the authenticated candidate boundary, keeping the prior candidate readable.
+        val body=syntheticPayload();val records=body.getJSONObject("records")
+        val metadata=JSONObject(records.getString("metadata"))
+        metadata.getJSONArray("clients").getJSONObject(0).getJSONObject("scope").put("agentId","easywork")
+        records.put("metadata",metadata.toString()).put("token:${client.id}",secret)
+        reject(body,first)
     }
 
     private fun photoPayload(): JSONObject {

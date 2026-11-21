@@ -20,7 +20,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
-internal data class NativeChatNotificationComputer(val target: NativeChatNoticeTarget, val name: String)
+/** Display and local host preference only; a provider's execution target is not a UI row identity. */
+internal data class NativeChatNotificationComputer(val hostId: String, val name: String)
 
 /** Independent ordinary-chat settings page; navigation/manifest registration belongs to the integrator. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -80,7 +81,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
             }
         }
         Text(productText(if (state.permission?.canPost == true) "已开启" else "已关闭"), Modifier.testTag("chat-notification-permission"))
-        Text(productText("后台推送尚未就绪"), Modifier.testTag("chat-notification-push-unavailable"))
+        if (status == null) Text(productText("后台推送尚未就绪"), Modifier.testTag("chat-notification-push-unavailable"))
         TextButton(onClick = { settings() }) { Text(productText("打开系统通知设置")) }
         HorizontalDivider()
         Text(productText("通知类型"), style = MaterialTheme.typography.titleMedium)
@@ -93,12 +94,12 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
         }
         HorizontalDivider()
         Text(productText("电脑"), style = MaterialTheme.typography.titleMedium)
-        computers.distinctBy { it.target.hostId }.forEach { computer ->
-            ChatNoticeToggle(computer.name, computer.target.hostId !in preferences.excludedHosts,
-                "chat-notification-host-" + computer.target.hostId, literal = true, enabled = writable) { enabled ->
+        computers.distinctBy { it.hostId }.forEach { computer ->
+            ChatNoticeToggle(computer.name, computer.hostId !in preferences.excludedHosts,
+                "chat-notification-host-" + computer.hostId, literal = true, enabled = writable) { enabled ->
                 val actionId = java.util.UUID.randomUUID().toString()
-                state.update({ it.copy(excludedHosts = if (enabled) it.excludedHosts - computer.target.hostId else it.excludedHosts + computer.target.hostId) }) { saved ->
-                    if (!enabled && onExplicitDisable != null) onExplicitDisable(computer.target.hostId, saved.revision, actionId) else onChanged()
+                state.update({ it.copy(excludedHosts = if (enabled) it.excludedHosts - computer.hostId else it.excludedHosts + computer.hostId) }) { saved ->
+                    if (!enabled && onExplicitDisable != null) onExplicitDisable(computer.hostId, saved.revision, actionId) else onChanged()
                 }
             }
         }

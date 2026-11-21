@@ -35,6 +35,10 @@ import { startDirectDiscovery } from './direct-discovery.js';
 import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
 import { VPNPeerDirectory } from './direct-endpoints.js';
 import { PrivateConnections } from './private-connections.js';
+import {
+  privateConnectionHostKeyAuthorized,
+  privateConnectionManagementRoute,
+} from './private-connection-routes.js';
 import { FileTransfers } from './file-transfers.js';
 import { ResumableUploads } from './resumable-uploads.js';
 import { receivingDeadline } from './upload-timeouts.js';
@@ -148,13 +152,19 @@ export async function startRuntimeServer() {
       ? { sharedWebsocketUrl: process.env.CODEX_SHARED_SERVER_URL }
       : {}),
     ...(process.env.CODEX_DESKTOP_WINDOWS_CONFIG
-      ? { windowsDesktopConfig: resolve(process.env.CODEX_DESKTOP_WINDOWS_CONFIG) }
+      ? {
+          windowsDesktopConfig: resolve(process.env.CODEX_DESKTOP_WINDOWS_CONFIG),
+        }
       : {}),
     ...(process.env.CODEX_DESKTOP_CONTROLLER_CONFIG
-      ? { desktopController: resolve(process.env.CODEX_DESKTOP_CONTROLLER_CONFIG) }
+      ? {
+          desktopController: resolve(process.env.CODEX_DESKTOP_CONTROLLER_CONFIG),
+        }
       : {}),
     ...(process.env.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG
-      ? { desktopPreparedBridge: resolve(process.env.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG) }
+      ? {
+          desktopPreparedBridge: resolve(process.env.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG),
+        }
       : {}),
     ...(process.env.CODEX_DESKTOP_CREATION_HELPER &&
     process.env.CODEX_DESKTOP_CREATION_PROFILE &&
@@ -169,7 +179,9 @@ export async function startRuntimeServer() {
       : {}),
     directory,
     ...(process.env.HOST_AGENT_REPLY_CHECKPOINT_FILE
-      ? { replyCheckpointFile: resolve(process.env.HOST_AGENT_REPLY_CHECKPOINT_FILE) }
+      ? {
+          replyCheckpointFile: resolve(process.env.HOST_AGENT_REPLY_CHECKPOINT_FILE),
+        }
       : {}),
     root: resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()),
     name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
@@ -192,7 +204,9 @@ export async function startRuntimeServer() {
     enabled: mode === 'desktop-runtime' && process.env.CODEX_DESKTOP_SUGGESTION_OBSERVER === '1',
     traceRetention: process.env.CODEX_DESKTOP_TRACE_RETENTION === '1',
     ...(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG
-      ? { nativeSuggestionsConfig: resolve(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG) }
+      ? {
+          nativeSuggestionsConfig: resolve(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG),
+        }
       : {}),
     ...(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT
       ? { traceRoot: resolve(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT) }
@@ -200,7 +214,9 @@ export async function startRuntimeServer() {
     ...(mode === 'desktop-runtime' &&
     process.platform === 'darwin' &&
     process.env.CODEX_SHARED_SERVER_URL
-      ? { sharedDesktopState: join(homedir(), '.config/agent-hub/shared-desktop') }
+      ? {
+          sharedDesktopState: join(homedir(), '.config/agent-hub/shared-desktop'),
+        }
       : {}),
     codexHome:
       process.env.CODEX_HOME ??
@@ -463,7 +479,9 @@ export async function startRuntimeServer() {
     baselines: gitBaselines,
     ...(mode === 'desktop-runtime'
       ? {}
-      : { allowedRoots: [resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()), directory] }),
+      : {
+          allowedRoots: [resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()), directory],
+        }),
   });
   const httpsEndpoints = parseCodexSystemEndpoints(process.env.HOST_AGENT_HTTPS_ENDPOINTS);
   // Every response that replaces the client's capabilities must include current
@@ -504,10 +522,11 @@ export async function startRuntimeServer() {
       if (request.headers.origin) throw new RuntimeError(403, '不接受浏览器跨域请求');
       const supplied = Buffer.from((request.headers.authorization ?? '').replace(/^Bearer /, ''));
       const expected = Buffer.from(token);
+      const hostAccessKeyAuthenticated = privateConnectionHostKeyAuthorized(supplied, expected);
       if (
         !request.headers.authorization?.startsWith('Bearer ') ||
         !(
-          (supplied.length === expected.length && timingSafeEqual(supplied, expected)) ||
+          hostAccessKeyAuthenticated ||
           privateConnections.accepts(supplied, session.readingTarget())
         )
       )
@@ -518,6 +537,17 @@ export async function startRuntimeServer() {
         throw new RuntimeError(400, '无效请求地址', 'INVALID_REQUEST_TARGET');
       }
       const url = requestURL;
+      if (
+        (url.pathname === '/v1/private-connections/status' ||
+          url.pathname === '/v1/private-connections/revoke') &&
+        (await privateConnectionManagementRoute(request, response, url, {
+          hostAccessKeyAuthenticated,
+          connections: privateConnections,
+          target: session.readingTarget(),
+          body,
+        }))
+      )
+        return;
       if (await devPreviews.control(request, response, url)) return;
       if (url.pathname === '/v1/project-git' || url.pathname === '/v1/project-git/files') {
         if (request.method !== 'GET') {
@@ -1061,7 +1091,9 @@ export async function startRuntimeServer() {
             let rejectAbort: () => void = () => {};
             const stopped = new Promise<never>((_resolve, reject) => {
               rejectAbort = () => reject(timeoutError());
-              lifetime.signal.addEventListener('abort', rejectAbort, { once: true });
+              lifetime.signal.addEventListener('abort', rejectAbort, {
+                once: true,
+              });
             });
             try {
               const value = await Promise.race([operation(), stopped]);
@@ -1149,7 +1181,10 @@ export async function startRuntimeServer() {
                 : (error as { status?: number })?.status === 409
                   ? 'source_changed'
                   : 'native_rejected',
-              { request: diagnosticRequest, remainingMs: deadlineAt - performance.now() },
+              {
+                request: diagnosticRequest,
+                remainingMs: deadlineAt - performance.now(),
+              },
             );
             throw error;
           } finally {
@@ -1176,7 +1211,10 @@ export async function startRuntimeServer() {
           );
         } catch (error) {
           if (!(error instanceof DesktopDomBridgeError)) throw error;
-          json(response, error.status, { error: error.message, code: error.code });
+          json(response, error.status, {
+            error: error.message,
+            code: error.code,
+          });
         }
         return;
       }
@@ -1221,7 +1259,10 @@ export async function startRuntimeServer() {
           );
         } catch (error) {
           if (!(error instanceof DesktopDomBridgeError)) throw error;
-          json(response, error.status, { error: error.message, code: error.code });
+          json(response, error.status, {
+            error: error.message,
+            code: error.code,
+          });
         }
         return;
       }
@@ -1359,11 +1400,26 @@ export async function startRuntimeServer() {
             url.searchParams.get('cursor') ?? undefined,
           );
         } else if (url.pathname === '/v1/subagents/history') {
+          const association = url.searchParams.get('association') ?? undefined;
+          if (association !== undefined && association !== 'parent-thread-lineage')
+            throw new RuntimeError(400, '无效子任务关联方式');
+          if (
+            association &&
+            (!commandTarget ||
+              !session.capabilities.includes('subagents:history:parent-lineage:v1'))
+          )
+            throw new RuntimeError(409, '父聊天子任务读取需要完整目标及电脑能力');
           if (
             [...url.searchParams.keys()].some(
               (key) =>
-                !['hostId', 'threadId', 'messageId', 'childId', 'cursor'].includes(key) ||
-                url.searchParams.getAll(key).length !== 1,
+                ![
+                  'hostId',
+                  'threadId',
+                  'messageId',
+                  'childId',
+                  'cursor',
+                  ...(association ? ['association', 'target'] : []),
+                ].includes(key) || url.searchParams.getAll(key).length !== 1,
             )
           )
             throw new RuntimeError(400, '无效子 Agent 历史请求');
@@ -1380,7 +1436,9 @@ export async function startRuntimeServer() {
             messageId,
             url.searchParams.get('childId') ?? undefined,
             url.searchParams.get('cursor') ?? undefined,
+            association,
           );
+          verifyCommandTarget();
         } else if (url.pathname === '/v1/history')
           result = await session.refreshHistory(
             threadId,

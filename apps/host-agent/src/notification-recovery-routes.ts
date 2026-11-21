@@ -26,6 +26,7 @@ export function notificationRecoveryRoute(
     'hostId',
     'target',
     'deviceId',
+    ...(route === 'capabilities' && method === 'GET' ? ['pushProviders'] : []),
     ...(route === 'operations' && method === 'GET'
       ? ['operationId', 'epoch']
       : route === 'feed'
@@ -52,7 +53,11 @@ export function notificationRecoveryRoute(
     throw new NotificationRecoveryError(409, '通知运行目标已变化');
   const deviceId = url.searchParams.get('deviceId') ?? '';
   if (!notificationV2Device(deviceId)) invalid('无效通知设备');
-  if (route === 'capabilities' && method === 'GET') return notifications.recoveryCapabilities();
+  if (route === 'capabilities' && method === 'GET') {
+    const pushProviders = url.searchParams.get('pushProviders');
+    if (pushProviders !== null && pushProviders !== '1') invalid('Invalid push provider opt-in');
+    return notifications.recoveryCapabilities(pushProviders === '1');
+  }
   if (route === 'operations' && method === 'POST') {
     if (
       Object.keys(data).some((key) => !['hostId', 'intent'].includes(key)) ||

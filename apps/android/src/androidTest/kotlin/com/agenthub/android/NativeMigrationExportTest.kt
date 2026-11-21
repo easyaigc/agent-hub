@@ -37,6 +37,41 @@ class NativeMigrationExportTest {
         for((name,text)in records)if(name.startsWith("history:"))assertEquals(text,reopened.read(name))
         val operations=JSONObject(reopened.read("operations:$key")!!).getJSONArray("operations");assertTrue(operations.getJSONObject(0).getBoolean("migrationReadOnly"));assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
     }
+    @Test fun legacyRawTokenSurvivesBothExportFormatsAndColdActivation() {
+        // Manual connect and QR offer adoption both persist through setToken, not private claims.
+        // This checks that shared storage seam, not camera/form UI or a live authenticated request.
+        val secret="synthetic-manual-qr-legacy-100%-raw"
+        owned.storage.remove("codex-private-connections-v1")
+        owned.storage.setToken(client.id,secret)
+        assertTrue(CodexConnectionVault(owned.storage).clients().isEmpty())
+        assertEquals(secret,owned.storage.token(client.id))
+        val before=MigrationActivationFixtures.tree(owned.storage)
+        val password="owned legacy token export password"
+        val exporter=NativeMigrationExport(ui.activity,owned.storage)
+        val legacy=exporter.seal(password)
+        val envelope=File(owned.folder,"legacy-token-framed.ahe")
+        exporter.sealFile(envelope,password)
+        assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
+        for(framed in listOf(false,true)) {
+            val destination=owned.storage.child(ui.activity,if(framed)"legacy-token-framed"else"legacy-token-v1")
+            val store=NativeMigrationCandidateStore(ui.activity,destination)
+            val receipt=if(framed)store.stageFile(UUID.randomUUID().toString(),envelope,password)
+                else store.stage(UUID.randomUUID().toString(),legacy,password)
+            if(framed)NativeMigrationStreamCandidate(ui.activity,destination).read(receipt) {
+                assertEquals(secret,it.text["token:${client.id}"])
+            } else assertEquals(secret,store.read(receipt)["token:${client.id}"])
+            NativeMigrationActivation(ui.activity,destination).activate(receipt)
+            val cold=destination.reopen(ui.activity)
+            assertEquals(secret,cold.read("token:${client.id}"));assertEquals(secret,cold.token(client.id))
+            assertTrue(CodexConnectionVault(cold).clients().isEmpty())
+            val metadata=cold.metadata()!!
+            assertEquals(client.id,metadata.getString("selected"))
+            val imported=decodeClient(metadata.getJSONArray("clients").getJSONObject(0))
+            assertEquals(client.id,imported.id);assertTrue(sameScope(client.scope,imported.scope))
+            assertEquals("new local draft",metadata.getJSONObject("drafts").getString(key))
+            assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
+        }
+    }
     @Test fun exactLegacyMetadataReferencesRecoverOldHashedRecordsWithoutRewritingThem(){
         history();val records=owned.storage.migrationSnapshot(owned.storage.migrationNames())
         val secret=KeyStore.getInstance("AndroidKeyStore").apply{load(null)}.getKey("agent-hub-mobile-v1",null) as SecretKey

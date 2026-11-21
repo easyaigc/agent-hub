@@ -42,6 +42,8 @@ export interface NotificationIntentV2 {
   preferences: NotificationPreferences;
   generation: number;
   kind: 'register' | 'preferences' | 'revoke' | 'feed-reset';
+  pushProvider?: 'fcm';
+  deviceToken?: string;
   gap?: NotificationGapV2;
   fingerprint: string;
 }
@@ -52,7 +54,13 @@ export interface NotificationReceiptV2 {
   stage: 'reserved' | 'applied' | 'rejected';
   reason?: string;
   status?: NotificationStatus;
-  snapshot?: { id: string; hash: string; count: number; baseline: number; expiresAt: number };
+  snapshot?: {
+    id: string;
+    hash: string;
+    count: number;
+    baseline: number;
+    expiresAt: number;
+  };
 }
 export interface NotificationFeedQueryV2 {
   version: 2;
@@ -163,6 +171,8 @@ export function parseNotificationIntentV2(value: unknown): NotificationIntentV2 
     'generation',
     'kind',
     'gap',
+    'pushProvider',
+    'deviceToken',
     'fingerprint',
   ]);
   if (
@@ -177,12 +187,22 @@ export function parseNotificationIntentV2(value: unknown): NotificationIntentV2 
     !['register', 'preferences', 'revoke', 'feed-reset'].includes(row.kind)
   )
     throw new Error('无效通知恢复意图');
+  const hasPush = row.pushProvider !== undefined || row.deviceToken !== undefined;
+  if (
+    hasPush &&
+    (row.kind !== 'register' ||
+      row.pushProvider !== 'fcm' ||
+      row.deviceToken === undefined ||
+      (row.preferences as NotificationPreferences)?.enabled !== true)
+  )
+    throw new Error('Invalid v2 push registration pair');
   parseNotificationRegistration({
     version: 1,
     deviceId: row.deviceId,
     target: row.target,
     publicKey: row.publicKey,
     preferences: row.preferences,
+    ...(hasPush ? { pushProvider: row.pushProvider, deviceToken: row.deviceToken } : {}),
   });
   if (
     typeof row.publicKey !== 'string' ||
@@ -240,7 +260,11 @@ export function validateNotificationV2Original(
   event: unknown,
   preferences: unknown,
   target: unknown,
-): { event: NotificationEvent; preferences: NotificationPreferences; target: RuntimeTarget } {
+): {
+  event: NotificationEvent;
+  preferences: NotificationPreferences;
+  target: RuntimeTarget;
+} {
   return {
     event: parseNotificationEvent(event),
     preferences: parseNotificationPreferences(preferences),

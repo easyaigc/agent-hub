@@ -1,18 +1,20 @@
 # iOS / Android 功能与一致性清单
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 2026-11-21 F52/F54（UI11，S15/S16）：iOS 独立验收包的 DEBUG 只读观察增加最近八次实际通知 feed 的有界事件 ID、游标、代次和 activeIds，仍限定准确 bundle、完整目标及显式验收环境。只记录已认证且通过现有目标检查的真实读取，不生成事件或改变消费结果；用于区分重复事件去重与单次系统展示。产品页面、生产默认路径和 Android 实现不变；真实模拟器重复 feed、保留通知后处理撤回与交付状态只回填唯一计划，尚未执行的场景不记通过。
 
 2026-11-20 F17／F18／F28／F47（UI04／UI05，S03／S11）：共同断言为原 owner 接收确认不因断线、重启或迟到请求失败退回未知；原操作、正文与附件不变；最新窗口对旧轮有界只读对账，不加载完整工具正文或重发输入。legacy 按实际方法能力查询，null／省略 items 的摘要只核对已接收轮次。当前候选七项辅助回归和真实 Electron／模型／原生模拟器 1/1 通过；iOS／Android 共用 Host，既有协议与页面兼容；正式部署另记，不提升整项功能或 Android 原生状态。
 
 2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：iOS 消息媒体在文本 Markdown 前保留图片语法的目的地址，呈现按需打开的图片／视频／音频卡片，复用原消息鉴权、下载和系统预览；打开后的图片只生成有界本地缩略图，不在聊天加载时下载视频。Codex Host 补媒体 MIME，当前完整下载回退与尚未实现的流式方案分别见[消息媒体设计](../design/message-media.md)及[专项验收](../acceptance/message-media-20261120.md)。iOS 26 原生模拟器的图片、视频及原样片播放场景已通过，初始解析／下载为零。Android 原有图片链接入口保持，媒体卡片与缩略图待独立对齐；不新增 Android／EasyWork 通过，A6 暂停保持。
 
-2026-11-20 F09／F72：补齐 EasyWork 两项既有 Git 查询的读取恢复分类，桌面文档链接读取保持相同分类；共同向量核对 Swift 与真实桌面命令入口。完整目标、来源授权、写入只查原回执及旧端兼容保持。Android 产品实现未变、未新增通过；实现和结果只读[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)，映射见[读取恢复设计](../design/host-read-recovery.md)。
+2026-11-20 F09／F72：补齐 EasyWork 两项既有 Git 查询的读取恢复分类，桌面文档链接读取保持相同分类；共同向量核对 Swift 与真实桌面命令入口。完整目标、来源授权、写入只查原回执及旧端兼容保持。Android 产品实现未变、未新增通过；实现和结果只读[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)，映射见[读取恢复设计](../design/host-read-recovery.md)。
 
-2026-11-20 F35/F41：iOS命令审批补齐原请求身份、目标、能力和实际决策回执校验；会话允许依赖桌面明确声明，旧端保留单次操作。问题回答保持当前主线。Android对应记忆许可/回执仍单独跟进；原范围验收、辅助检查和交付分列[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F35/F41：iOS命令审批补齐原请求身份、目标、能力和实际决策回执校验；会话允许依赖桌面明确声明，旧端保留单次操作。问题回答保持当前主线。Android对应记忆许可/回执仍单独跟进；原范围验收、辅助检查和交付分列[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-20 F72：iOS EasyWork补齐文档链接适配，来源授权与阅读身份分离，无原消息来源的旧附件保留阅读键。桌面来源和最终发布组件已合PR73。Android内部导航仍待对齐；实现、原验匹配、辅助检查和部署分别回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)，冷启位置及完整矩阵继续保留。
+2026-11-20 F72：iOS EasyWork补齐文档链接适配，来源授权与阅读身份分离，无原消息来源的旧附件保留阅读键。桌面来源和最终发布组件已合PR73。Android内部导航仍待对齐；实现、原验匹配、辅助检查和部署分别回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)，冷启位置及完整矩阵继续保留。
 
-F59 独立接收沿用现有桌面发送与领域文件协议，新增 iOS 接收列表、分块校验和系统打开入口；旧 Host 缺少可选接收目录时保持原上传。Android 对应实现及原生验收继续跟进，具体交付和后续动作统一维护在 iOS × EasyWork 唯一计划中。
+F59 独立接收沿用现有桌面发送与领域文件协议，新增 iOS 接收列表、分块校验和系统打开入口；旧 Host 缺少可选接收目录时保持原上传。Android 对应实现及原生验收继续跟进，具体交付和后续动作统一维护在 iOS × EasyWork 历史计划中。
 
 2026-11-19 F32／F72 CI 辅助：下载取消回归改为观察真实未完成字节进度后取消，并核对 HTTP 提前关闭；首字节 0／1500／5000 ms 延迟的本机原生模拟器夹具通过，取消未传播、缺少进度及普通网络错误均拒绝。产品、双端 UI 与既有验收状态保持；Android、实体手机和真实桌面不新增通过。完整检查与公开 CI 按新组合另验，见[CI 指南](../ci.md)。
 
@@ -24,19 +26,21 @@ F59 独立接收沿用现有桌面发送与领域文件协议，新增 iOS 接�
 
 2026-11-19 F71（UI07／UI12，S04／S18）：iOS 附件序号、选中描边及添加按钮统一配对主题前景／填充，明确禁用和导入中状态；深色图片预览独立使用深色控件环境。Android 既有 primary/onPrimary 配对不变，原生验收独立记录，不改变 A6 暂停和 EasyWork 父项状态。源码、模拟器交互及交付见[专项记录](../acceptance/attachment-dark-20261119.md)。
 
-2026-11-19 F42：EasyWork 桌面补齐运行结束后待答异步问题的完整来源匹配及当前目录页待答数读取；另一端先处置后的迟到回答显示不可重试的原问题失效，保留原答案、投递与操作。iOS／Android 共用原 serverRequest/resolve 契约和目标校验，不新增方法或输入自动重放；Android 实际结果仍独立验收。源码、既有模拟器与真实桌面证据复用、辅助检查和主线交付统一见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F42：EasyWork 桌面补齐运行结束后待答异步问题的完整来源匹配及当前目录页待答数读取；另一端先处置后的迟到回答显示不可重试的原问题失效，保留原答案、投递与操作。iOS／Android 共用原 serverRequest/resolve 契约和目标校验，不新增方法或输入自动重放；Android 实际结果仍独立验收。源码、既有模拟器与真实桌面证据复用、辅助检查和主线交付统一见[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-19 F01／F47（UI01／UI10，S01／S11／S18，修订2）：启动阶段复用现有 Agent Hub Logo；按用户反馈将 Logo 缩至 80 pt、标题改为 17 pt 正文 medium，收弱光晕与阴影，本地恢复页保留轻微呼吸及真实恢复提示；恢复完成直接进入主界面，不为动画设置最短等待。减少动态效果时静态显示，非活跃时停止装饰动画。iOS 系统启动屏使用同款静态 Logo，恢复、配对链接及文件收件行为沿用原路径。Android 对应品牌启动与动态效果待对齐，不新增 Android 通过；此项为共用启动外观，不改变 EasyWork 对齐父项与 A6 暂停状态。源码、原生验收和部署分别见[专项记录](../acceptance/startup-brand-20261119.md)。
 
-2026-11-19 F15：iOS同名项目选择完整换行显示长目录，保留可见末级目录；稳定ID、完整路径和原草稿不变。Android原实现及新增可读性验收单列，A6暂停保持；结果统一见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F15：iOS同名项目选择完整换行显示长目录，保留可见末级目录；稳定ID、完整路径和原草稿不变。Android原实现及新增可读性验收单列，A6暂停保持；结果统一见[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F20：交付原已验结构化工具详情的视口软换行，保留原JSON文本及命令/补丁的横向阅读。iOS普通工具文本阅读路径与原通过源匹配，主线新增子代理历史入口保留并独立验收；Android维持原实现和独立验收边界；源码、模拟器真实Diff/长工具证据和PR统一关联[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F20：交付原已验结构化工具详情的视口软换行，保留原JSON文本及命令/补丁的横向阅读。iOS普通工具文本阅读路径与原通过源匹配，主线新增子代理历史入口保留并独立验收；Android维持原实现和独立验收边界；源码、模拟器真实Diff/长工具证据和PR统一关联[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F08：iOS交付原已验认证直连候选的取得和保存；正常偏好控件、旧通道和草稿保持。移植保留主线并发/快照/管理修订保护，Android独立验收边界不补签。原真实证据与当前源码/检查/交付统一见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F20：交付原已验结构化工具详情的视口软换行，保留原JSON文本及命令/补丁的横向阅读。iOS普通工具文本阅读路径与原通过源匹配，主线新增子代理历史入口保留并独立验收；Android维持原实现和独立验收边界；源码、模拟器真实Diff/长工具证据和PR统一关联[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F09：iOS交付原已验EasyWork信封与订阅游标的安全整数修复，旧信封兼容、同会话恢复和原操作去重按原范围复用。Android既有实现及验收边界保持，双方状态统一关联[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+> 本文件仅维护功能规范、共同断言、来源及验收关联。全项目当前实现和验收统一见 [唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)；[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)仅为冻结档案。
 
-2026-11-18 F28 增加普通聊天菜单的在电脑上打开入口。EasyWork 通过 thread/open 与 thread/open-status 对接同一具名打开及原回执语义。Android 对应增强待实现。开发、验收和 PR 状态统一见 [iOS × EasyWork 唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F09：iOS交付原已验EasyWork信封与订阅游标的安全整数修复，旧信封兼容、同会话恢复和原操作去重按原范围复用。Android既有实现及验收边界保持，双方状态统一关联[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)。
+
+> 本文件仅维护功能规范、共同断言、来源及验收关联。全项目当前实现和验收统一见 [唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)；[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)仅为冻结档案。
 
 2026-11-16 F64（UI06／UI21，S04／S18）：iOS 主输入区未聚焦时长按 0.5 秒启动语音；已聚焦时停用父层语音长按识别，交由系统处理粘贴、选择与光标操作。短按仍编辑，麦克风按钮及无障碍语音动作继续显式启动语音，原草稿与转写回填规则保持。Android 本次不改，其同等长按与编辑手势规则待对齐，不新增 Android 通过；实现、构建和原生手势验证分列于[专项记录](../acceptance/composer-focus-longpress-20261116.md)。本次为共用输入区交互修复，不变更 EasyWork 对齐父项状态及 A6 暂停范围。
 
@@ -50,7 +54,7 @@ F59 独立接收沿用现有桌面发送与领域文件协议，新增 iOS 接�
 
 2026-11-13 F17／F31／UI05 补充：双端已接入共享快照排序规则，避免旧历史和旧事件覆盖新任务状态；较早前缀页保留当前运行时。共享 JVM 139 项通过，Android 应用及测试 Kotlin 编译通过；原生执行、真机视觉和 iOS 构建未验收，见[专项记录](../acceptance/thread-filtered-events-20261113.md#additional-active-task-investigation)。
 
-> iOS × EasyWork 当前开发、验收与交付状态唯一维护于 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md)。本文件继续定义全局F与共同断言；下方既有状态叙述保留为对应时点的历史证据，不另行维护该任务当前完成数。
+> 本文件仅维护功能规范、共同断言、来源及验收关联。全项目当前实现和验收统一见 [唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)；[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)仅为冻结档案。
 
 2026-11-13 F17／F31／UI05：双端按会话过滤的事件订阅允许全局游标随其他会话前进，空批次不再撤销当前历史新鲜度或触发重复重载；重置、epoch 变化、未就绪和独立有界补读继续保留。Android 较早消息入口仅在用户翻页时忙碌，本地展开不等待后台刷新，远端翻页等待原读取并核对导航及连接代次。实现与共享核心回归已完成，原生设备验证另计，见[专项记录](../acceptance/thread-filtered-events-20261113.md)。
 
@@ -63,6 +67,51 @@ F59 独立接收沿用现有桌面发送与领域文件协议，新增 iOS 接�
 2026-11-09 F17（UI05，S02／S11）追加：原 MacBook 隔离 DEV 发现共享缓存已被其他读者扩展后，旧上游游标的窗口会误返空页。Host 现以本次上游页的实际消息边界返回有界窗口；成功较早页更新历史可用时间，最新页的观察连续性与实时控制权限独立核对。iOS 验收增加可见正文断言与原生截图；Android 共用 Host 分页行为，原生双端和物理设备的实际通过分别记录，未借用 iPhone 结果。
 
 2026-11-09 F01／F47（UI01／UI10／S01／S11／S18）：iOS 冷启动先绘制本地恢复进度页，聊天状态／历史与任务 SQLite 的读取、解密和解析在后台执行，完整快照就绪后才创建主界面；缓存缺页回退每次恢复最多读取一次旧版整库。启动期间配对链接暂存，外部文件立即进入原收件箱，仍由用户选择草稿；失败沿用原数据保护与重试，不重放未知输入。同轮减少逐页 Keychain 调用：每次恢复仅在局部读取器中复用历史页解密密钥，每页仍独立认证，退出恢复即释放，不跨启动缓存密钥。 Android 的现有恢复路径不改，本次未新增 Android 通过；iOS 构建、恢复回归、交互和真机结果分别记录，A6 继续暂停。
+
+2026-11-18 F51/F52 共同断言补充：逐电脑通知设置包含已保存的非示例 Codex 与 EasyWork 电脑，标识来自各自真实连接元数据；刷新、改名、恢复与删除后列表保持一致。关闭一台电脑只影响该电脑，不能改变其他电脑或通知类型。单台电脑缺少可用连接授权时，保留其资料并单独提示，不阻塞其他已授权电脑的通知登记；存储损坏及目标不匹配仍走原恢复边界，不借用其他电脑的凭据。后台就绪状态来自准确目标的实际登记报告，不能同时显示与其矛盾的固定未就绪提示。此处规定行为，iOS 既有验收沿用，Android 新增场景及当前结果只记于唯一功能清单；验收关联为 UI11、S15/S16。
+
+2026-11-18 对齐约束：F32（S04/S18，UI05/UI07/UI12）HTML 预览默认离线，单文件本次打开可临时允许限定 HTTPS 资源，撤销或关闭后失效；脚本仅在隔离页面执行。F36（UI07/UI08）标准无闪电、快速一个、极速两个，紧凑入口保持可见；F42/F58 自填回答仅用空白判断决定是否提交，非空正文逐字保留。Android 对应生产路径已补入本地集成候选，iOS 行为不变。F52/F54（S15/S16，UI11）Android 以单一 FCM 入口按保存的完整 Codex/EasyWork 目标投递；通知偏好、登记代次、原操作回执、去重和点击草稿保护均不得绕过。Codex 使用显式协商的 v2 推送登记；EasyWork v1 结果不明时只保留原件和只读诊断，不以当前状态追认旧提交。配置、编译、模拟器与真实供应商送达分别核验；当前实施及验收结论仅见[唯一功能清单](../plans/android-ios-alignment-20261107/progress.md)。
+
+2026-11-17 M287补充：最终runner f715已按1188/cf350033正式runner-only编译75.559秒exit0，Root全源/完整ZIP/DEX/签名/XML独核；App c85独立复用原完整构建，4个test-only差异不冒同次App重建。通知实际冻结源为545846a4，前稿36仅两个局部变量名不同，Root实际采纳和编译一致，原文案口径另证。原/新三runner的AXML逐字相同，完整声明为5provider/5总process，运行quiet门仍原3/3；instrumentation从实际XML核，badging无此字段。元数据reader版本差异不得靠改原raw消除。新包未安装/Native，完整98check v4待执行；其它平台和全部真实DEV门不因此升级。
+2026-11-17 M286补充：通知新增偏好测试的默认alias依赖已以单文件独占UUID fixture替代，仅新方法变更并保留原4模式断言；实际线程/原storage executor退出、先保存合成原件后精确清理与unknown保留分别取证，尚未SDK/Native执行。自原c85 App编译图起累计仅4个androidTest文件变化，后续runner-only实际结果须独立关联，不伪称重建App。98check v3因Root遗漏标准附件测试的专用Simulator范围而中断，前34完成/35未决/后63未达，非完整通过；该唯一Simulator及6fixture已精确回收，下一轮保留原标准门。iOS233生产源未变、物理iPhone继续延期。当前状态和数量仍只见权威计划。
+2026-11-17 Root M285补充（F73，S01/S11/S14/S18，UI02/UI03/UI12）：固定第三profile的两test-only cleanup源与Live观测补丁已具名合成；原67宿主向量7失败/修后0、独审17+50通过及20个JS时序标量反例均仅辅助。真实JSONObject nullable字段省略、普通LAN第三记录和原QUERY/DELETE守卫分别核；无AndroidKeyStore/Native执行。未采到完整loading帧、普通poll跨入口ID前进时对应门明确false，其余断言继续，JUnit0不等于这些格通过；Source/精确数值/coverage/TTL/lease不放宽。此三测试源尚未runner补编，原c85/077及iOS SDK编译不能转签新版本。98check前两轮分别lint及源摘要关联拒绝，原件保留，完整新轮待执行；当前数量与排程只由权威计划决定。
+2026-11-17 Root第二批源码边界记录（M283）：F18/F37/F51/F54/F68/F71及F73 Live有限修改已合成，原候选反例与修正分开保留；50项阅读、47项通知、32/17项缓存和16项队列均为宿主辅助。Android1188源实际完整编译81.661秒exit0，Appc85da8df/runner07778ae9已逐源/ZIP/签名独核，未安装；iOS233源App/双架构测试包57.400/314.325秒编译通过，未运行；完整新pnpm check待执行。Live实际两入口和有界生命周期已编译未运行，固定第三资料清理适配尚未进该runner。这里只记来源与有限实现/验证边界，当前开发/验收/数量/排程唯一见权威计划。
+
+2026-11-16 Root首批检查点（M279）：F40/F49/F50/F55/F73有限修改及F04来源核实已通过完整pnpm check 97顺序阶段（713.040秒），F40永久生产函数回归14/14实际纳入该链。Android App/runner完整1184输入、82任务编译通过（sourceSet 2c381f13，App35de7602/runner5a77b3b7，fc12签名）；iOS App和EasyWorkNative测试包在233输入图上双架构编译通过（83.279/303.027秒），新增共享loading观察方法已真实编译。以上为辅助/完整类型和链接证据，新包未安装、新增Native方法及64格均未运行，真实Provider/功能交互像素和整项通过不增加。后续F18/F71/F51/F68候选仍独立、未混入这些指纹；当前状态仅由权威计划维护。
+
+2026-11-16 Root第二切片（F04/F40/F49/F50/F55/F73）：原grant/完整target/旧namespace主链已核，F04开发状态在唯一计划细化为部分实现。迁移新增8个完整生产图测试入口和额度64格前台/超时候选均待Native；iOS额度pending共享可观察、详情loading与partial读屏同步补齐，双端身份/来源/五秒/两槽/消费者规则不变。iOS阅读链路仅源码/宿主证据未证同类缺口，无额外生产修改；真实Provider、交互、像素及物理格不新增通过。模板与manifest是本页生成源，当前进度仍仅由权威计划维护。
+
+2026-11-16 首批集成候选：F40/S08/UI09共享Host的desktopProposedPlan兼容分支在最新同thread/Turn请求completed=true时停止投影，不回退更旧未完成项；原ID/正文/合成计划优先级不变，Android/iOS Codex共同受益，EasyWork无代码影响。F49/F50/S12/S16/UI02/UI11 Android可见正文在原lease/epoch下等待最新协调任务完成，再由原ledger事务核精确版本，遮挡/后台/目标换代不续租，问题通知/旧ACK/新版本不误清。iOS对应时序待本批源码复核。两修复已由Root采用到候选，辅助14/14与5场景不等真实DEV；功能/交互/UI及Provider矩阵仍按权威计划开放。
+
+2026-11-16 P5／F73（S01／S11／S14／S18，UI02／UI03／UI12）：Android 两个额度展示入口及详情共用同一 Store，进行中（含排队）读取必须可观察；手动刷新按钮随共享读取禁用并显示加载，partial 在底部无障碍描述中保留。五秒限频、来源连续性、精确数值、零与未知、合法兄弟指标不变。本次仅 Android 展示和 Store 修复，不改 Provider 协议或 KMP／iOS 源码；Codex／EasyWork 均受影响，iOS 共同断言仍适用但未新增通过。保存真实来源的离线 JVM 回归 18/18；新增默认关闭的原生视口源码候选，64 组合均待 Root 编译和调度，不能升级当前包真实 DEV 或整 F73。当前状态仍由权威计划维护。
+
+2026-11-16 P3 有限候选，F55/N1.1–N1.2（S18/UI12）：Android 的手动/二维码连接原始 `token:<clientId>` 在迁移时按已验证 Codex 客户端与现有32–512字符、无空白边界校验，避免误作 JSON 拒绝合法凭据；原bytes、操作intent/result和惰性claim原件不改，不新增执行或重放能力。22项仅轻量 JVM 凭据边界辅助通过（DTO stub）；3个候选/发布失败重试/冷读 Native 用例已补、未编译执行。iOS源码与迁移格式不改，Codex账号字段不作新拒绝条件；EasyWork凭据继续原惰性archive边界，不接入此原始token通道。完整24域、双端/Provider功能交互界面及真实DEV均未关闭，当前状态由权威计划维护。
+
+2026-11-15 F17／F24（UI05）：已完成原轮次的阅读缓存从 `history-fallback:<turn>:item-N` 衔接到原 owner 的同一 `item-N` 时，同一正文只展示一次。只在完成证据、准确轮次及序号、role/kind/回复阶段、完整正文与detail/replyMessageId均一致时逐项消费；同文不同序号、另一轮次、未知/活动状态、工具及附件仍保留。共享Host Adapter影响iOS与Android，两端原生布局、token、文案和原输入协议不改。实际macOS DEV已观察到6条Host用户投影对应5条权威输入的失败，源码窄修与辅助/部署/真实复验分列；未新增任何整项或iOS/Windows通过，当前状态与退出条件以[权威计划M235](../plans/android-ios-alignment-20261107/progress.md)为准。
+
+2026-11-13 Q02／F18／F19／F20：Codex × Android API 33 实体的独立 DEV 生产卡片场景已实际通过并释放执行权（run `c4e9d1f7-9d28-43d0-8ab6-bc8c65b8dfce`）。真实 Session/provider 与原卡片完成折叠、展开、再次读取和刷新；同一已完成真实 child 的父子身份及 8225 字节详情与独立来源一致。共同断言继续要求全文不被预览截断、刷新保留展开、原生跨行选择与系统 Copy 精确对应原文，菜单和同父聊天搜索页往返保持展开及视口。本轮 302 布局行／16 帧覆盖、156 字节复制及用例收尾恢复空剪贴板已核对；空基线和清理是验收资料保护，不是产品复制后自动清空的规则。详见[本轮验收及指纹](../acceptance/mobile-parity.md#q02-codex-android-20261113-c4e9d1f7)。
+
+本次只细化 F18/F19/F20 的局部通过：按具名 MIUI 临时启动前置执行后恢复原模式，0 新增模型／child／队列／停止操作，独立桌面再次核原父 owner；未新增当前 child owner、进行中输出增长或自然迟到事件证明。iOS、EasyWork、ordinary 主安装／原 grant 恢复和系统集成均不新增通过；F24 的广范围窗口恢复／返回最新不在本例。生产规则、传输上限、设计 token 和文案未改变，旧失败保留，当前状态与退出条件仍由[权威计划 M109–M111](../plans/android-ios-alignment-20261107/progress.md)维护；代码未合主线、未发布。
+
+2026-11-13 W2（F18/F19/F20/F60）：新增debug限定的独立原生DEV资料入口，使用真实MainActivity、Session、provider、卡片和菜单；控制电脑Host与Provider完整目标分别核准。资料根/alias/新设备身份与授权归本任务，原资料不挂载、不复制原grant；系统集成不装配且单列未覆盖。这里只登记源码候选和语法/工具辅助，完整Android编译、实体卡片/实时owner和真实DEV仍待验，不升级整项。来源与退出条件见[权威计划M25](../plans/android-ios-alignment-20261107/progress.md)。
+
+> 当前开发、验收、剩余项及调度只维护在[权威状态和计划](../plans/android-ios-alignment-20261107/progress.md)。本页日期段落和表格保留各提交的需求与来源快照；后续结果以权威计划为准。
+
+2026-11-13 W4 R2（F01/F02/F04/F37/F38/F39/F43/F44/F61/F73，Q01–Q04）：新增固定独立 iOS 原生 DEV target，真实 App/SessionStore/AgentClients/UI 仅在新 bundle 的启动准入后装配；先核新容器/自己的默认 Keychain 组、完整本机 EasyWork target/pin/lease，恢复前核全体 clients，UNKNOWN 保留且只查原 ID。正式/原 DEV/旧 Acceptance 与原 C2/W5 断言不改；Android 无变化。新 target 省略 AppGroup/APNS/time-sensitive/扩展，Codex/Relay/Task Hub 与系统整合不计覆盖；45 个实际 Swift 策略反例、19 个脱敏 usage 来源验收 helper 场景及项目结构为辅助证据；usage 必须经 v1/KMP 验证并匹配独立桌面完整 target/adapter/scope 证据，合法 unavailable 明确未通过且不 skip，新 target 完整编译、签名、原生/真实 DEV 尚未执行。共同断言、双端影响和验收入口见[来源记录](../plans/android-ios-alignment-20261107/records/w4-r2-native-dev-isolation-20261113.md)，当前状态仍由唯一计划维护。
+
+2026-11-13 W3／Q03-Q04（F34/F35/F36/F37/F38/F39/F43/F44）：新增全新任务隔离 profile 的真实 MainActivity/Session/production provider 原生 UI 用例、离线冻结校验与原桌面只读 witness。模型/强度及显式原生速度、原队列/Turn/操作 ID、未知只查询和单次输入均要求具名租约与独立证明；不注入 Host 速度，不改生产语义。最初源码交付时尚未 Android 编译；后续统一App/runner typing由总控另核，本线手机或真实模型仍未执行；iOS 契约未改，其验收仍另列。后续只读witness增加独立child proof联结与精确原进程展示外壳核对，按W5 v2固定官方history契约保留child历史可读/owner未证/控制未知，parent仍须原owner；combined另核同一child执行Turn的零主动工具verified事实；未知poll单列，不升级真实DEV。预算/接口/未验边界见[来源记录](../plans/android-ios-alignment-20261107/records/w3-q03-q04-native-harness-r2-20261113.md)，不升级整项状态。
+
+2026-11-12 F04／F60（Q01）：Android 增加无 Activity 的既有目标元数据准入 helper，仅经 ExistingReader 读取完整目标、保存路由、证书 pin、公钥摘要及原 grant 的 pending／expiry；不恢复普通 session、不导出凭据、不发网络或模型请求。DPoP 新增 internal existing-only 加载入口：缺少原 alias、类型／曲线或系统 KeyStore 不可导出条件不符时拒绝，不创建或替换 key；普通配对和产品正常刷新流程保持原行为。iOS 本轮不受影响。源码与边界辅助、原生反例、实际安装和真实 DEV 分别留证；helper 存在不代表原 grant、runtime 可控或 Q01 已通过。
+
+2026-11-12 W4（F34/F36）：iOS速度回调按当前目录调用KMP generationSpeedAllowed，fast-only拒绝旧standard值，空值继续跟随电脑。Android既有准入保持；14个实际setter抽取场景及真实KMP策略辅助通过，完整App/UI/真实DEV待验。见[来源记录](../plans/android-alignment-20261022/records/w4-ios-speed-setter-20261112.md)。
+
+2026-11-12 W3/W5合成候选：F34/F35/F36已有EasyWork轮次的生成字段仅取原轮settings，缺失保持未知，零轮次才用聊天默认；Android速度旧回调按当前目录具体档位复核。F73共享投影避免桶/指标ID碰撞与叠加时钟容差，Android详情保留数值和无限权益、缺省桶标签使用指标标签。iOS共享投影受影响，Android专属展示与iOS既有语义对齐；只登记源码/轻量辅助，当前原生、完整UI和真实DEV仍待验。当前状态由唯一对齐计划维护，精确源提交见本轮W3记录及合成manifest。
+
+2026-11-12 F18／F19／F20（UI05／UI06，S04／S05）：EasyWork 共享子代理投影以权威快照中的 child、root、branch 和正文为同一整体；迟到事件即使指向同线程内另一个可见 root，也不能重挂已有 child。事件仅为快照尚未包含的 child 提供等待状态。iOS／Android 共用此修复，Codex 适配及传输上限不变；JVM 辅助与未执行的原生门槛见[专项记录](../acceptance/subagent-identity-20261112.md)，当前状态仍以唯一对齐计划为准。
+
+2026-11-12 W4（F37/F38/F39/F43/F44/F61）：iOS 原回执协议显式捕获原 threadId，在任何原队列查询前拒绝错线程；待核对与结束等待查询沿用原 ID/不可变意图。Android 停止与 iOS 停止/取消仅接受 JSON 布尔 true 确认，保持新草稿独立。开发为本轮源码候选；轻量辅助与未验原生/真实 DEV 分列于[专项记录](../plans/android-alignment-20261022/records/w4-original-thread-and-ack-20261112.md)，不关闭整项。
+
+2026-11-12 W4／Q11（F37/F38/F39/F43/F44/F61）：iOS 独立 Simulator 验收宿主的应用标识／默认 Keychain 组按实际 bundle 展开，使用 Xcode 正常签名与模拟权限链接段，保持生产方法和原业务断言。原 `testC2SyntheticEncryptedQueueAndReceipt` 在 SDK27.1／iOS27.0 下实际 1 方法、1 通过、0 失败、0 skip，覆盖错线程提前拒绝、严格布尔 ACK、入账丢 ACK 原 ID 核对与单次发送；这里只升级该合成原生子场景，旧失败与中断仍保留。Android 代码／既有结果不变；原 owner 的真实队列、追加、停止、丢 ACK、新草稿 UI 及完整真实 DEV 仍待各自验收，A6 保持暂停。构建参数、真实二进制两段摘要及验收关联见[来源记录](../plans/android-ios-alignment-20261107/records/w4-q11-native-simulator-20261112.md)，当前状态仍由唯一计划维护。
 
 2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](../acceptance/host-lifecycle-cpu-20261109.md)。
 
@@ -181,7 +230,7 @@ Windows 自动重连更新的可信 CLI 选择同时供新建、分叉、队列�
 
 2026-10-24 F69 跨项目建议读取（初始实现，后续由上方目录策略简化取代静态根目录依赖）：Host 从准确原 owner 的最新完成轮取得来源 cwd、规范路径及目录身份，在读取前、中、后同时核对目标、轮次和目录，再把该来源目录传入 Trace 读取。静态 HOST_AGENT_ROOT 继续用于原 Host 范围及未绑定观察记录，不再误拒绝桌面已授权的其他项目建议；不接受客户端目录参数，不扩大文件或命令权限。macOS 与 Windows 共用此内部范围，iOS 展示和 Android 尚未实现的建议 UI 状态不变。辅助检查、Mac 部署、实体手机及 Windows 结果分别登记，未验收项不升级为通过。
 
-2026-10-22 当前执行入口为 [Android 分步进度](../plans/android-alignment-20261022/progress.md)。217 条审计及 70 功能/21 页面/18 场景保留完整覆盖；X01–X09 是既有功能的细分核对项，登记在 UI 规格，不改变功能 ID。Task Hub 业务任务/项目、业务通知和新增项目记录管理暂缓，A6 继续暂停。历史“仅基础示例”等状态按原日期保留，不作为当前源码结论。
+2026-10-22历史执行入口为 [Android 分步进度](../plans/android-alignment-20261022/progress.md)；2026-11-12起当前状态与调度统一转至[权威状态和计划](../plans/android-ios-alignment-20261107/progress.md)。217 条审计及 70 功能/21 页面/18 场景保留完整覆盖；X01–X09 是既有功能的细分核对项，登记在 UI 规格，不改变功能 ID。Task Hub 业务任务/项目、业务通知和新增项目记录管理暂缓，A6 继续暂停。历史“仅基础示例”等状态按原日期保留，不作为当前源码结论。
 
 版本：3。更新时间：2026-10-12。A0 起始时读取远端 `main` 的 `e80e5a2911fa4aa0a3daafae73d261aed12853ac`，并在独立开发工作树合并用户已有变更，输入快照及合并提交见[阶段实施记录](../acceptance/android-stages.md)。A0 的 14 组／48 次原生合成基线验收已通过；对应范围及未覆盖状态见阶段记录，不能把源码存在或合成回归记为真实 DEV 通过。
 
@@ -198,7 +247,7 @@ A3 推送前已合并最新 main 提交 7d1e62f，新增连接方式、阅读／
 - 每项按 Agent／接入模式／手机平台／设备环境细分。Provider 不声明的能力两端均隐藏或拒绝；“未支持速度”“原桌面不能添加项目”等不能变成 Android 独有缺失或伪造成功。
 - 每次任一端新增、优化、修复或调整 UI／协议，先更新对应 F 行的断言、影响端、S／UI 关联和基线，再实现与验收。共用规则同时回归两端；平台改动解释另一端是否受影响。
 - 新功能使用新 ID，已有 ID 不改作另一功能、不删除失败记录。删除功能须注明版本与原因；阶段性交付保留所有未完成项。
-- `mobile-parity.manifest.json` 是功能定义的唯一入口；本页表格由 `pnpm generate:mobile-parity` 生成。共同断言、来源、UI／S 关联和实现／验证状态均在 manifest 维护，`pnpm check:mobile-parity` 检查完整性及生成内容。
+- `mobile-parity.manifest.json` 是功能定义和来源关联入口；本页表格由 `pnpm generate:mobile-parity` 生成，`pnpm check:mobile-parity` 检查完整性及生成内容。manifest 中的实现／验证字段保留为来源快照；Android 对齐的当前状态、数量和调度只由[权威状态和计划](../plans/android-ios-alignment-20261107/progress.md)维护。
 
 现有真实结果入口：[iOS 本机](../acceptance/ios-local.md)、[EasyWork](../acceptance/easywork-dev.md)、[独立桥接](../acceptance/desktop-prepared-current.md)、[通知](../acceptance/task-notifications.md)、[未读](../acceptance/unread-state.md)、[角标](../acceptance/unread-badge.md)、[权限](../acceptance/permissions.md)、[发送性能](../acceptance/send-performance.md)、[失败提示](../acceptance/receipt-notices.md)、[最终回复操作](../acceptance/run-reply-actions.md)。引用历史结果不自动将本表某项标为通过。
 
@@ -344,25 +393,149 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 
 2026-11-15 F69 PR3后续CI修正仅影响Worker测试夹具：真实1800ms总预算、发送前过期零帧/零Native等待与退休、以及原在途未知失败/750ms批次/300ms跨帧断言分别留证。双端生产代码和验收状态保持，1250源匹配复用Android冷会话，后续完整CI按准确候选回执核对。
 
+2026-11-13：Android独立DEV资料入口以公开SDK的ApplicationInfo.dataDir与Context.getDataDir共同指向自有目录，设备保护路径仍拒绝；删除不存在的credentialProtectedDataDir字段以修复实际编译错误。关联F18/F19/F20/F60，iOS不受影响，原失败证据保留，修后统一原生编译和真实DEV结果见权威计划。
+
+2026-11-13：F73 iOS将同一额度指标Section及共享原因字符串拆出类型边界，修复实际Swift类型推断失败，显示/顺序/规则和原测试断言不变。F18/F19/F20/F34/F60 Android独立验收入口分别冻结控制电脑与Provider完整机器身份，新DEV Host不要求沿用控制HostID；iOS固定新target完整EasyWork准入不变。实际编译、实机与来源结果见权威计划。
+
+2026-11-13 F73：iOS将KMP返回的原因字符串显式接入既有LocalizedText翻译入口，修复真实原生编译定位出的类型错误；沿用原文案、视图和Store断言，Android不受影响，原失败和续验分列于权威计划。
+
+2026-11-13 Q02：实际原生读取用例与独立资料入口同时区分控制Host和Provider完整机器目标；不以相同HostID代替本机映射，保留新包/证书/设备/来源/lease验证。iOS不受影响，真实子代理读取仍待验。
+
+2026-11-13 F04/F60：Android验收增加独立、无Activity的安装指纹方法，仅从准确acceptance包的targetContext取得ANDROID_ID SHA，并经instrumentation status返回API、UID、包名、实际App SHA及该hash。Android 8+的App/签名/用户作用域不能由adb shell值代替；该hash仅服务独立DEV Permit的安装身份校验，不改变Codex机器目标或账号策略。方法不读写App资料、不访问KeyStore/网络，原metadata断言保持；iOS不受影响，本轮尚未原生运行或取得实测hash。
+
+2026-11-13 F04/F60/F73：上述Android installation fingerprint方法仅追加实际targetContext configuration的languageTag、orientation、fontScale，总八字段一次返回安装身份与F73视口输入；原flags/App SHA/UID/包名校验和原metadata方法保持，AndroidID仍只输出SHA。无Activity/系统设置修改/App资料读写/KeyStore/网络；iOS不受影响，源码辅助检查不代替实体配置或真实UI验收。
+
+2026-11-13 F73：Android新增独立资料真实usage UI只读用例候选，复用已审Q02私有profile与正式新绑定、Main UI和production Store；启动前冻结设备/包/完整Provider target与控制电脑映射、真实桌面来源及指标摘要，实际footer/详情/手动刷新和目标窗口截图分步记证。保持Store五秒节流，不直接调用provider凑刷新；来源变化/过期/不可用按失败或未核保留，瞬时loading与wire请求归属不自动升级。仅测试来源登记，尚未编译/上机；iOS与生产业务规则不变，真实验收见唯一计划。
+
+2026-11-13 Q03/Q04原生驱动：显式速度时只用既有native selector一次选择模型、强度、速度与许可，删除此前手动选择后重复开菜单的步骤；保留全部最终设置、原ID和预算断言。原effort-xhigh节点缺失失败及模型0证据保留，新runner和真实DEV另验；生产UI及iOS均不变。
+
+2026-11-13 Q03：增加默认关闭的selector观察回调及九阶段公开readiness/实际设置/原ID/自有窗口诊断；无法确认图片owner时跳过，无全屏回退。不改变生产、UI动作、原断言、Gate或模型预算，不增加等待/刷新/Sender；iOS不受影响，实际编译/运行另列权威计划。
+
+2026-11-13 Q03/Q04：仅原生验收同步，每次原点击前以单调30秒有界等待唯一enabled真实控件，滚动后确认可见，仍保留原enabled断言、一次点击与所有最终设置/目标/预算门槛；超时仍失败。九阶段诊断不变，无生产/iOS变更、直接赋值或发送重试。当前readiness波动原失败保持，正式typing及真实DEV以权威计划为准。
+
+2026-11-13 独立真实DEV入口：API33实际系统UI_MODE配置变化512触发Q02 Activity重建，原有限lease拒绝导致崩溃。仅debug manifest声明uiMode由该Activity处理，沿用原生ComponentActivity/Compose配置更新；不固定主题/方向，不吞其他配置，不开放再次claim或saved/retained恢复。生产Main、原Session/输入边界和iOS/A6不变；新包及实际结果见唯一权威计划。
+
+2026-11-13 F18/F34–F36：Codex事件cursor是Host全局序号，threadId过滤可产生同epoch、ready且非reset的空批次。该批次只推进游标，不应使已验证聊天菜单/输入配置失去就绪并重载历史；明确reset或epoch改变仍走权威修复，ready=false仍拒绝。双端共享回归先取旧规则反例，实施和实际验收见唯一计划；EasyWork既有适配不变。
+
+2026-11-13 Q02：仅补Android真实DEV原生交互验收，保留卡片完整正文与刷新断言，逐屏记录完整可见行，实际跨行拖选并点系统Copy核Clipboard，验证菜单Back及同一父聊天查找页面返回后的展开/视口。复制范围仅来自独立冻结的本task96行marker；既有未知剪贴板不读取/覆盖，Copy前复核变化与空状态，仅确认属于本次的复制项才清理。原空保持和实际清理分别记录，原生toolbar允许归属已核的同App APPLICATION独立窗口。生产App/iOS不改，无fixture/新child/第二模型；新runner及实际原生结果另验。
+
+2026-11-13 Q03/Q04验收时钟：仅Android真实DEV测试驱动采用Native单调请求挑战及传输clock侧证。原Host观察和proof保持，30秒新鲜度、45秒原工具窗口及lease预算不扩。主App、iOS、产品UI均不改；新runner与真实原Turn另验。选完Sol/xhigh/fast/full-access仅为当前视口实际交互证据。
+
+2026-11-13 Q04 terminal budget evidence (F37/F38/F39/F43/F44; S07/S10/S11; UI07/UI04/UI10): canonical witness binds the complete final stopOrigin Turn to the original native operation ID/body SHA, requires one original bounded command and observed zero child across the two new Q04 Turns, and excludes the completed baseline Q03/its existing child. Unknown/incomplete/conflicting facts stay null. The one-origin queue-completed stage is unaffected. Controller admission stays strictly below40seconds; Native/outer45seconds remains the final fence, with no refreshed tool start or expanded five-body budget. Existing production App/UI and iOS/EasyWork semantics do not change. Pure canonical regressions and private stageReady checks are auxiliary only; new runner and real Q04 results stay separate under the sole current plan. See the [acceptance contract](../acceptance/mobile-parity.md#2026-11-13-q04-terminal-budget-facts-auxiliary-only).
+
+2026-11-13 Q02 exact-tag layout synchronization (F18/F19/F20): after a single SDK toggle touch, the AndroidTest relocates only the same original message tag in the same message-list, then asserts the unchanged expected StateDescription. Wrong/missing cards still fail; no second or semantics click, changed body/expectation or budget increase. New failure-only diagnostics preserve the original Throwable and use exact-tag facts/target-draft-original-intent hashes plus bounded own main-Window AX/PixelCopy, never a whole-display fallback; missing main focus records capture unavailable. Existing successful shot guards/actual popup-menu-toolbar coverage remain byte-identical, with no new main-focus gate. Original084b7.361s failure remains. Production App/iOS/EasyWork and profile/zero-model guards are unchanged; typing and future Native/DEV results stay separate. See the [acceptance contract](../acceptance/mobile-parity.md#2026-11-13-q02-exact-tag-layout-synchronization-auxiliary-source-only).
+
+2026-11-13 Q02 Copy observer (F18/F19/F20): preserve direct matching and additionally prove the exact native Copy label's nearest clickable parent within the same already-owned application window, with exact description, contained bounds and no competing subtree. Ownership/uniqueness, fresh observation, SDK touch, frozen original bytes, empty-only clipboard and5000ms wait remain. Enable/restore AX observer flags around selection creation; bounded owned-window rejection metadata preserves the original failure. Actual7adac Copy identification failure is not rewritten; its exact MIUI rejection cause remains unproved. Production App/UI, iOS and EasyWork are unchanged. See the [acceptance contract](../acceptance/mobile-parity.md#2026-11-13-q02-owned-copy-label-and-parent-observer-source-only).
+
+2026-11-13 Q02 clipboard epoch observer (F18/F19/F20): after the unchanged last empty fence and real Copy touch, bind callbacks, direct checkpoints and returned payload descriptions to one fresh stable epoch with a supported classification trajectory. Notification count is diagnostic. Original447..603/156-byte equality remains mandatory; unique original marker slices establish cleanup-only ownership. A single rechecked own clear and focused empty observations at observer close are separate facts; unknown/new epochs, lost focus or failed close cannot claim restored. Original8538 failure and its existing unverified clipboard remain preserved. AndroidTest only; production App/UI, iOS and EasyWork unchanged. See the [acceptance contract](../acceptance/mobile-parity.md#2026-11-13-q02-clipboard-epoch-and-closed-observation-source-only).
+
+2026-11-13 Q02 auxiliary evidence correction: preserve the original60-vector output but do not count its four payload negatives or unknown-clear precondition as complete rejection coverage because self-assertion exceptions could be swallowed. Credit corrected source and unsafe mutation rejection only from actual new SHA/raw results; original8538 failure and unknown clipboard remain unchanged.
+
+2026-11-13 F19 Clipboard metadata-only AndroidTest: a separately leased default-Application/blank-ComponentActivity diagnostic reads public presence/description metadata only after combined foreground, focus, AppOp and own-window checks. API33 unsafeCheck is not sufficient alone. No body getter, clipboard write/clear, Main/Session, profile/grant or model action; inconsistent observations or failed observer/scenario close remain unknown. This does not prove Copy or restoration. Production App/UI, iOS and EasyWork are unchanged. See the [acceptance contract](../acceptance/mobile-parity.md#2026-11-13-clipboard-metadata-only-diagnosis-source-only).
+
+2026-11-13 corrected auxiliary evidence: private probe `58404862943faacac6b4d44161aebfe95a6ef21df76b94a50745260a56b7e7f3` independently passes the original60 vectors on the actual guard. The old probe still falsely reports60 under the combined unsafe payload mutation; the corrected combined mutation, four individual payload mutations and reversed unknown-clear precondition each fail with exit1 and the exact expected assertion marker. The original swallowed-assertion outputs/failures remain preserved and are not complete boundary proof. Test-only mutants are excluded from formal source/APK. This is auxiliary sensitivity evidence, not actual clipboard/Native/DEV acceptance.
+
+2026-11-13 Q04 role 等待与原资料有限续验（F37/F38/F39/F43/F44/F61；UI07/UI04/UI10）：验收器应按真实 `role=tool`、`status=inProgress` 与准确当前 Turn/Run 等待原工具，不将 `kind=commandExecution` 误判为不是工具；原窗口、意图、正文 SHA、操作／队列 ID 及实际 UI 断言不变。原 Q04/3c8688a7 的 197.422 秒 Native 失败保留，独立来源已确认首条 origin 实际完成，不能因验收器超时重发。
+
+续验仅限本任务原独立 profile 的 test-only existing-owned 入口：新具名租约下先核原完整目标、资料／身份／alias／grant 和原意图，所有权不符或资料缺失在写入前拒绝，不回落创建、不重配对或申请新 grant。仅余四份冻结正文／slot，只有 `stopOrigin` 可占最后一个新增 Turn；原 claim、已消费输入与旧失败保留，40／45 秒围栏及原工具起点不因恢复或刷新证明而重置。入口源码与最终来源须另行冻结，不能把准备材料或局部 typing 当作已执行。
+
+上述 role 等待与原 profile 接线是 Android debug/androidTest 的受控验收接线，不新增普通产品的恢复按钮或保证，不提升 F37/F38/F39/F43/F44/F61 的实现／验证状态；iOS 无受影响代码，EasyWork 仍需独立真实验收。共同断言及反例见[有限续验合同](../acceptance/mobile-parity.md#q04-existing-owned-remaining-contract-20261113)，当前调度仍只由权威计划维护。
+
+2026-11-13 原队列立即执行的显式 Turn 前置条件（主关联 F37，邻接 F38/F43/F44；UI07/UI10、S07/S10/S11）：`expectedTurnId` 已显式指定时，在移除原队列项并 follow 原 owner 后、真正追加前，原 Turn 变为 `null` 或换为另一 Turn 均须拒绝，不能将原输入自动降级为 `next-turn`。追加 wire 保持原 expected Turn；已确认接受的原回执仍只核原结果，已移除但未确认的 detached/uncertain 仍仅查原 ID，不再移除或重新投递。未提供 `expectedTurnId` 的原普通行为保持；这不是禁止所有空闲立即执行。
+
+该项是 Codex Adapter/Host 的生产修复，区别于上述 debug/androidTest 资料恢复。iOS 与 Android 通过同一修复后 Codex Host 均受该前置条件影响，两端本地代码本次不改；EasyWork 独立 Provider 路径未改、须独立实测。当前运行的 Node249 未部署该修复；W3 的有限 fixture/构建、新产物、实际部署和真实 Q04 需分别留证，不把旧249记为新通过。原3c只读证明尚未到队列动作，不能将其失败归因为本竞态。详见[显式 Turn 队列合同](../acceptance/mobile-parity.md#q04-queue-expected-turn-fence-20261113)。
+
+2026-11-13 Q04 existing-owned 来源后续（F37/F38/F39/F43/F44/F61，test-only）：此前 v2 阶段四源按 Root v2 adoption 冻结，Native 采用 `8b2c7f82` 而非旧 `44371a60`。`prepareExistingQ04`／`existingQ04Owned` 仅供 Root 完整准入后的内部 debug 验收调用，要求既有 namespace/key、原目标／身份／grant 及 live owned policy，缺失即拒绝、不回落新建。普通公开构造默认不安装 owned policy，普通路径不变；这不是新增产品恢复模式或普通原 grant 恢复通过。
+
+原 profile 的 rootDecision 只绑定历史不可变旧 lease release，当前 authority 独立引用该 release 与 existing-profile，避免 SHA 自引用；旧 release 的已释放／已消费一份输入／未授权续验字段必须核实，不能据旧回执取得新执行权限。当前 v2 仅源冻结，W4 源审与正式 typing／双包分别留证，未新增真实 Native 或剩余四 slot 执行；来源及边界见[验收补充](../acceptance/mobile-parity.md#q04-existing-owned-v2-source-20261113)。
+
+2026-11-13 Q04 Root v3 写前时窗后续（F37/F38/F39/F43/F44/F61，test-only）：当前四源改为 Native `0cd947f1`／profile helper `f01575ba`，另两源 `2c0256f9`／`f11ce30e` 不变；v2 的来源及 e3bd 通过仅保留原指纹，不转签 v3。每个 slot 的原 proof 只登记一次，在原回复首次同步持久化（含 ready）及新转 submitting 时，重用原 `businessBoundary` 同步核原 proof 30 秒、lease、同一目标／Turn 与原工具 45 秒，跨 Flow 等待超窗即拒绝，不刷新原 proof 或工具 start。
+
+权威／courier 的 v2 合同、默认普通存储路径与原剩余预算不变。三项无模型 Native auxiliary（含实际 Clock 回调 44→46 秒写前拒绝反例）仅已声明、尚未运行，不计 Native 或真实 remaining 通过。最终来源记录及边界见[v3 验收补充](../acceptance/mobile-parity.md#q04-original-proof-write-fence-v3-20261113)。
+
+2026-11-13 Q04 startup v4（test-only）：当前 Native 来源为 `7994abb7`，其余三份 Native/debug/storage 与两份 Node 来源不变。`launchExistingQ04` 仅在既有首个 `ui.waitUntil(30000)` 内，同时等待恢复／加载结束和列表只含原 `old.id`，随后仍核唯一原记录及原 intent SHA；不新增等待窗口，不刷新 proof／工具 start，不改变 v3 同步写前时窗与剩余预算。旧完整整门 728.424 秒／96段退出0保留其原指纹，不能转称 v4 新整门执行；v4 runner／三项辅助与真实 remaining 仍分别待核。见[v4 来源补充](../acceptance/mobile-parity.md#q04-existing-origin-startup-v4-20261113)。
+
+2026-11-14 Q04 首次 Native 前阻塞与显式恢复合同（F37/F38/F39/F43/F44/F61，AndroidTest-only）：本批7078的 controller active/history 来源角色混用，在启动源守卫退出，Native Popen=0、无JNI；这是验收启动受阻，不能记为产品 Native 实际失败或通过。Root已核同reservation的零新正文／新Turn／新child／控制动作事实（证据 `r2-root-confirmed-zero-before-first-native`，ac7b10d0），但固定child已reserved、9份JSON曾暂存并清理、owner锁保留，不能写成零副作用。原3c的197.422秒Native失败与已消费origin另行保留。
+
+Root v5已采用显式pre-Native恢复入口源码，尚未实机／未验收：原833B once继续引用旧authority，原claim／authority／plan不可覆写、删建或重新绑定；须由新的独立RootRecoveryAuthority链接同一reservation、Root已核零事实及新鲜源，原授权到期不得沿用。未知、任何Native Popen或已提交输入均只查原ID，不进入此恢复分支。仅余四份冻结正文、最后一新增Turn／0新child／40秒process／45秒terminal／原session最多一次poll及原proof时钟保护不变。此为Android验收基础设施变化，不新增产品恢复按钮，不改App与三生产源或iOS逻辑；A6继续暂停，EasyWork另验，不提升F计数。见[显式恢复验收边界](../acceptance/mobile-parity.md#q04-pre-native-explicit-recovery-20261114)。
+
+Root v5只改AndroidTest单文件（Native `fa1c66e3`）；恢复必须同时具备 `w3ConfirmedPreNativeRecovery=1` 和 `root-q04-confirmed-pre-native-recovery-authority-v1`，flag本身不授执行。`Q04PreNativeRecoveryAdmission`核同一run／lease／reservation、原不可变引用、known-zero和独立currentAdmission；普通分支保持。新plan仅允许11项时间／runner／来源SHA元数据变化，原oldPlan其余54项及原settings／显式speed／controlHostId从原预算严格核对。courier固定11JSON，即原9份加 `original-root-authority.json`、`original-plan.json`，不传管理key/config/pair材料。App b5b与三生产源不变，当前安装仍a5be旧runner；v5构建中，新增方法／helper未实机。完整来源由本次manifest change登记，旧7994仅从101776 Git／树外快照核，不再把原可变源码路径当作旧指纹证据。
+
+2026-11-14 Q04 Root v6：已知 Native 准入失败后的显式后继与独立只读诊断（F37/F38/F39/F43/F44/F61；UI07/UI10、UI03、S07/S10/S11）。M160/M161 已确认同一7078首次Native确实Popen1、1方法失败（[1,-2]/final-1），但余四正文／新Turn／child／控制动作0；旧3575B“首次Native前零”只属历史，不能再准入该分支。原833B once、新1131B recovery-intent及2026B firstNative marker和旧授权／plan／失败永久保留；新事实 `r2-root-confirmed-native-failed-before-profile-open-no-business`（ef67a1ae）自身也不授后继执行权。
+
+V6 源冻结5b35533b：可信Context根统一canonical的debug helper `0304d5d0`、完整Native `5830710d`（known-failure helper片段33466750）、独立readonly test `52a42c75`；另两源2c0256f9/f11ce30e保持。新的known-failed flag／authority kind须同时成立，原pre-first／ordinary分支不放宽；完整原失败／释放／首marker与原预算、独立fresh／currentAdmission均须核，Unknown不可恢复。只有Root具名审过的canonical修复AppSHA新增第12项元数据例外，余53项plan字段和13项稳定authority冻结，五正文／最后一Turn／0child／40与45秒／原proof不刷新不变。
+
+独立 `inspectExistingOwnedProfileAdmissionAndCloseWithoutActivityOrWrites` 仅用设备elapsed-realtime不倒退、最长60秒的只读lease；不借旧业务lease／ready字段，不装配Activity／Session或新授权，不改原密文／alias／永久marker。73只是有界路径／准入诊断，必须另读原JNI和异常。旧b5b与新canonical App的A/B须分别绑定实际App／runner／source／签名和原资料证据，实际admit→inspect→release／重入拒绝／释放后重获原锁与11bin保持逐项核；未实测不能把源码差异或shell同inode当唯一实物根因，也不能宣称原KeyStore可用。
+
+本条仅Android DEV准入设施源采用，正式Gradle尚未完成、新包未交付／安装，实装仍b5b/a238；新增无模型guard方法及A/B均未验，不新增产品UI或75F状态。iOS产品规则／A6暂停不变，EasyWork、ordinary安装和真实业务控制仍独立验收。详见[known-failed与只读验收边界](../acceptance/mobile-parity.md#q04-known-native-failure-and-readonly-v6-20261114)，当前状态仍只由权威计划维护；上文v5当时包／未启动描述保留历史指纹。
+
+2026-11-14 Root V7 的原锁非创建打开后续（F37/F38/F39/F43/F44/F61；仅Android DEV准入）：debug helper改为 `e74a5cf1`，adoption97d55dcc。原V6来源／构建／五文档检查按其原指纹保留，但未安装的V6包已被替代、禁止用于实机；V7正式包仍待构建／验签，实际安装仍b5b/a238。Native5830710d、readonly52a42c75及另两源保持；不由本次源审／文档检查新增任何75F或真实通过。
+
+单一 `Os.open(O_RDWR|O_NOFOLLOW)` 不CREATE/TRUNCATE；Android借用FD的 `FileOutputStream(fd)` 只供真实channel.tryLock，私有包装器关闭stream/channel后finally关闭原FD。规范锁路径在额外open前同步reserve，重复直接抛原OverlappingFileLockException，不关闭原holder的FD或删除其reserve；自己的reserve保持到全部关闭完成，真实OS锁仍必须取得。原fd/path/inode/dev、regular/uid/mode/size/nlink、子路径拒绝、原key和11bin断言保持。旧rw可能创建、额外同inode FD关闭可能撤锁是条件性源码缺口，不是本次实体已写或已证唯一根因。iOS产品规则／A6暂停与EasyWork独立门槛不变。
+
+A/B仍须独立Root只读准入：旧App A不能继承V7 reserve的安全证明；若旧admit意外成功，进入旧额外open的重入路径需先收窄，不能仅凭最终红／绿继续。73、设备elapsed lease和原异常边界沿V6，V7源采用不授安装、A/B或第二business Native。详见[V7原锁合同](../acceptance/mobile-parity.md#q04-existing-lock-no-create-v7-20261114)。
+
+2026-11-14 Root V8 readonly A/B收窄（F37/F38/F39/F43/F44/F61；AndroidTest-only）：adoption f9e31e31采用只读测试 `a5922622`／27245B，新增 `runtime-source-binding.admissionExpectation`。A为 `known-old-directory-rejection-only`：实际73观测中，两组oldRawContext父路径须abs!=canonical、非symlink、dir／当前UID／0700，且各自canonical等于当前规范父路径、device相同；缺失／不符在旧admit前拒绝，不能记为已验证旧拒绝。旧admit意外成功则立即release并报inconclusive，绝不inspect或再次admit。B为 `current-profile-read-and-lock`，原decode／锁／release／重入拒绝／释放后重获与11bin断言不变。
+
+包与来源分列：A旧App为f015／b5b；B复用实际V7 e74a／App2e234a35及其自己的V7输入／构建来源，新runner单独使用V8 a592测试来源，最终runner manifest待Root复核，不由新test构建冒称App来源。上文V6/V7未构建／待收窄描述保留采用时事实；V7 App现已构建，A/B与第二business Native仍未执行。V7单FD/no-create/open前reserve、原真实失败／三永久记录、73与JNI分离、原预算和75F状态保持；iOS产品规则／A6暂停／EasyWork独立验收不变。见[V8只读分支合同](../acceptance/mobile-parity.md#q04-readonly-old-admission-fence-v8-20261114)。
+
+2026-11-14 Q04 readonly原生结果（F37/F38/F39/F43/F44/F61；UI07/UI10/UI03，S07/S10/S11）：checkpoint `7edf6a06`的实际A保留原1方法失败／JNI及driver inconclusive，Root独立确认精确旧目录拒绝；B实际1方法0fail，JNI `[1,73,73,0]`／final `-1`。B验证原key可用、11份生产解码／保护3记录／原completed操作、持锁重入拒绝、release后重获原锁、closed拒inspect及空锁／原资料前后不变；五份只读临时输入已归档／回收。原传输／Native失败不改写，73不作完成或成功计数。
+
+A旧b5b/f015与B实际V7 e74／App `2e234a35`各自绑定原来源，二者均用V8 a592／runner `2ca74ddd`，不把App归于新test构建。证据basename `actual-readonly-A-root-independent-review.json`／`actual-readonly-B-root-independent-review.json`只关联这个无模型既有profile的读取／锁准入；不是ordinary恢复、模型／队列／Stop或整功能通过。四份业务控制仍0，原1余Origin／0新child不变；75F状态／统计与整F关闭0不变，iOS、A6暂停、EasyWork认证和物理iPhone独立阻塞保持。详见[只读原生实际门槛](../acceptance/mobile-parity.md#q04-readonly-ab-native-result-20261114)；上文采用时未执行／未构建描述保持历史，当前状态仍只由权威计划维护。
+
+2026-11-14 test-only后续：Q04当前cache图使用新独立只读kind与精确当前库存，不把历史B旧库存当当前、不打开Session/writer。B的11项是密文完整性库存，实际解密仅保护3及原journal；新增诊断只认证metadata/index及所引分片，旧随机名UNKNOWN保留。F73的同一生产footer/dialog/刷新方法增加EasyWork受审target/公钥/TLS/LAN offer准入，原Q02工厂已支持该Provider，不替换真实生产链路。两项仅测试源码已准备，编译/Android实机另记；既有失败、预算、功能状态/统计、iOS及A6暂停不变。详见[测试和真实门槛](../acceptance/mobile-parity.md)。
+
+2026-11-14 M182实际：current-cache独立真机只读1/1通过，当前11密文保持，认证3个cache记录/12消息/新增分片；未知和已删旧逻辑名不关闭，非控制/普通恢复通过。F73新增实际getter来源kind与6输入联结，完整grant账户/公钥/TLS与4-field usage wire分别验证，真实partial保留；新runner/手机结果另验，当前不提升功能状态。
+
+2026-11-14 M184：实际新鲜主preload来源经精确生产reader离线期望与真实KMP投影通过；Android×EasyWork唯一Native在真实配对后因debug验收入口误将哈希clientId比作hostId失败，额度页尚未通过。两处入口已按Provider真实ID规则修复，完整target断言保持，生产main/iOS与UI设计不变；新App/runner构建及复验另记。唯一新绑定已正常撤销并独立核persisted revoked，原失败/closed profile与key保留待具名清理，当前状态只见权威计划M184/Q12。
+
+2026-11-14 M186–M187：Android×EasyWork当前真实DEV格已通过：App ce27/runner8d、中文竖屏字号1浅色，指定1方法12.569秒零失败；生产footer/详情/精确单余额/手动刷新/真实加载与新snapshot通过。Root独核3份实际投影与真实桌面来源/语义，实际查看3原PNG；真实partial/缺失指标不冒零。原M184入口失败保留，修复仅debug Provider clientId准入。唯一新绑定已正常一次撤销，旧墓碑保持；原资料/37-25模式/12bindings/5marker完整后置与六输入精确清理另据Root复核。此有限结果不关闭wire请求关联、普通安装/完整视口与双端Provider矩阵；iOS/A6状态不变，唯一当前状态仍见权威计划。
+
+2026-11-14 M188：已审采用两个androidTest专用清理源，仅限本任务两次新F73资料与根alias；原Q04和其他UUID拒绝。完整库存与树外归档、原closed证明、普通LAN唯一绑定撤销、独立进程退出及descriptor只读预检先过；signed allowedMode=query不能被参数升级delete，未知只查原once。只删除选定root key，公共API缺失观察不冒硬件全局擦除。17辅助/SDK编译已过，正式runner及真实query/delete/原资料后置尚未验，iOS和产品UI无变化。
+
+2026-11-14 F73清理检查点（M188后继）：测试源`c48c10c5`单独核应用files可信基础的实际0771，任务子目录0700/文件0600及descriptor约束保持；策略源`7c635c97`不变，旧`6ca86e74`历史记录保留。正式Gradle退出0/90.613秒；新runner `f3db00eb`已唯一实装，App `ce27a87e`、原15份profile元数据/106密文摘要保持。首轮只查记录`query-e6e3eb25`真实Native 1方法0失败/0.207秒：无删除intent、五文件/root alias仍在，DPoP及12个限定派生alias在公共API观察中缺失；该检查点的实际delete和保护后置尚未验。只更新F73测试资源回收证据及源码追踪，不新增生产行为、UI、iOS或整F通过；当前状态继续只由唯一对齐计划维护。
+
+2026-11-14 F73首次有限删除：首份新profile另签`delete-c7999454`并真实Native 1方法0失败/0.365秒，intent存在、profile缺失、remaining为空，root/DPoP/12个限定派生alias在公共API观察中均缺失；不等于硬件或所有未具名key擦除。原十密文树外归档保持，第二份profile与完整其他资料保护后置仍待Root独核；只证明本份测试资源有限清理，不关闭整体回收或产品F73。
+
+2026-11-14 M189–M190有限清理完成：第二份`query-2bdb3a5b`/`delete-e5208b67`真实各1方法0失败（0.216/0.413秒）；与首份结果合核，仅两份新profile/有限root alias清理通过，各14个限定alias在公共API观察中缺失，不推导硬件或全部key擦除。Root恢复前43引用、最终102引用独核确认其他13份profile/96密文/100文件4451245B及原Q04、37/25模式、12bindings/5markers、21份Native证据保持。24份staging输入/四空目录已精确回收，26member归档逐字节核原输入及两份65B once，原once stat/SHA保留。业务runner `8d5e420b`单次正常恢复并实读，App `ce27a87e`不变；首次P7三连接/保护false原件保留，后自然同组件/UID换PID归零，无force-stop或活动App writer/instrumentation。F73仅登记测试资源回收闭环，生产行为/UI、iOS/A6、统计及整F验收不升级，唯一当前状态仍由权威计划维护。
+
+2026-11-14 关联更正：前四条F73清理sourceChange仅关联F73；F60属于Codex机器身份迁移，资源回收不扩展其验收。原`f43c70b4`提交、历史指纹与实际清理证据仍可读取，本次只纠正功能归属。
+
+2026-11-14 M191–M192/F49/F50：已采用Q04阅读ledger六源v2（Root source review `79e29f5d`、综合补丁`8b3b26d4`）。显式文件名+payload permit在锁内按settled previous核delta，foreign rows/scopes保留，仅合并准确QA完整机器目标；pending read在HTTP前按完整target+thread过滤、即发前与finally均重核。普通存储返回原proposed scopes且predicate为true，iOS/UI/KMP wire不变。旧`97d`候选两P1保留且未采用，本次新增11组合辅助及三删门mutant，不重报旧63/3。正式Gradle 82任务含App/AndroidTest Kotlin实际编译，97.176秒退出0；Root逐摘要核1169输入/50份制品工具引用，新App `8c42aa85`/67143603B、runner `a2eca189`/9058076B均唯一fc12签名，两manifest不变且只有各自一份dex内容不同，真实App含scope/dispatch guard。候选未安装，设备Appce27/runner8d保持；当前真实ledger schema兼容及KeyStore/加密/AtomicFile运行、真机/真实HTTP/Host控制未验。F49/F50保持partial/unverified，原失败/marker/UNKNOWN及控制暂停不变，当前状态只见唯一计划。
+
+2026-11-14 M195（F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：用户已明确批准独立QA产品验收例外，仅原四动作、剩余1 Origin/0新child，开发聊天Host禁投递保持。Root采用统一八源（adoption248de1cf，base c592dad0）：独立post-second-known-zero kind、固定新子目录、sealed Ref/原始UTF-8证据与单QA ledger typed permit；历史manifest六名及旧三kind准入保持。当前11份记录只读诊断逐项经实际生产validator，claim只按生产模板派生一个准确名称；ledger仅内存运行真实save serializer、foreign canonical守卫和pending读取，不装配Session/网络/writer。生产Ledger save编码体无行为抽取已与旧生产save逐字节比较，14辅助通过；Native20辅助及控制器98/25辅助分别保留来源，均不替代新完整构建、安装、真实只读Native及剩余控制。原两次业务失败、旧marker及已删旧名UNKNOWN保持；iOS/产品UI/KMP wire未变，A6暂停。当前状态仅由权威计划决定。
+
+2026-11-14 M198–M200真实结果（F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：e221/fe6f+a374的全11生产语义与ledger内存兼容真实只读通过；随后业务Native真实失败，首条排队输入已接受并在原任务完成后自动续轮，第二条未发送。取消/执行/即时追加/停止均未通过，原断连异常仍未知，不能以只读兼容升级产品写入或整F。后置当前13/413516及其他12资料/原保护子集已独核，新增逻辑UNKNOWN和共同files时间差保留。余Origin0/新child0，不重放旧case；新正向验收需独立case及额度。产品UI/iOS/KMP wire共同断言保持，具体原始证据见[真实只读与业务失败边界](../acceptance/mobile-parity.md#q04-readonly-pass-and-business-failure-20261114)，当前状态只见唯一计划。
+
+2026-11-14 M201（F03/F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：Root采用独审通过的两源v2（adoption1779d3a5，base e221c1db，MobileSession78517327/testd224178c）。连接读取仅增加进程内stage/exception-class-chain/transient/新成功抑制来源，保留原fail-closed与恢复策略，不记录异常正文、URL或响应。测试在claim前有界等待原Turn/原操作集合/唯一enabled模式控件，原lease/40与45秒/原proof时效保持，只选择/发送一次；结束、替换、漂移或过期拒绝。失败诊断删除raw ax，完整机器目标及原QA重核后才投影/查询，错scope只身份；两个launch逐项收尾并安全suppressed，原Throwable身份保持，无primary仍抛首cleanup错误，live资源不强释放/不冒已关闭。26项提取方法JVM仿真和静态门通过，仅辅助；正式App+AndroidTest完整编译101.064秒退出0、82任务全部实际执行，Root核1172输入/28refs及新App442b0bc2/runner ced22164双fc12签名，manifest不变且仅App classes4/runner classes3和5改变；构建中间物已回收，尚未安装或新真实DEV。不会取消已接受队列，也不证明原FAILED根因已修；0余Origin/0child，不重放旧case。iOS/产品UI/KMP wire和功能状态不升级，见[诊断及就绪边界](../acceptance/mobile-parity.md#q04-ready-diagnostics-source-20261114)，当前状态只见唯一计划。
+
+2026-11-14 F03/F61（UI01/UI10，S01/S11）Host 私有设备绑定管理草案：新增仅 Host admin 的具名 status/revoke/原 operation 查询候选；投影只含完整机器目标/keySHA/revoked/hostKeyAuthorized。额外字段、目标漂移、不唯一及同ID异输入拒绝；bindings/回执共同原子持久化，未知不重放，设备鉴权临时503保留凭据。iOS/Android App UI均未接入、不变更移动端KMP wire/普通执行权限、不升级整项；辅助与未验边界见[验收草案](../acceptance/mobile-parity.md#host-private-binding-admin-candidate-20261114)，当前状态只见唯一计划。
+
+2026-11-15 Native-v2 采用准备（F03/F37–F39/F43–F44/F61；UI05/UI06/UI07/UI10；S01/S07/S10/S11）：Android fresh-only 独立资料沿原 Session/provider 配对与真实 UI，默认 null 的原始 reply gate 只在具名新 case 安装；真实 journal prepare 后核完整scope/原ID/intent/proof/lease/abort，最后 checker 与原 send 同IO上下文，retry和重复dispatch拒绝。单Origin依次queueCancel→取消并独立核销→queueExecute同Turn执行→steer→保留未发draft的长按Stop，最多4次文本提交，正向要求恰1新Turn/0自动续轮/0child且controller未开始cleanup；最多2Turn只是失败容差。pair前持久化公开intent、正常pair返回后公开proof，均不含凭据且须Host管理员status独立核唯一binding。有限QUERY/独立DELETE只覆盖已paired/closed/revoked且完整归档的准确新profile，pair前失败/Host not_found/空profile不覆盖并保留。此为代码采用准备，提取JVM/静态/HTTP辅助不是Android全编译或真实DEV；iOS与双端产品UI/共同断言不变，整项/统计不升级。 既有UI05正文及UI06工具/计划的完整阅读、折叠和视口矩阵仍各自待验，不能由该控制链升级。详见[Native采用边界](../acceptance/mobile-parity.md#fresh-q04-native-host-adoption-preparation-20261115)；当前状态仍只见唯一计划。
+
+2026-11-15 M239（F37/F38/F39/F60/F61；S07/S10/S11；UI07/UI04/UI10）：已确认上一独立case在Native参数校验阶段失败，尚未启动Activity或配对；原Native once、冻结输入和单向后继边保留。Android debug permit与AndroidTest新增一个具名有限后继身份，原case分支保持；plan与authority必须同一run/lease/nonce，恢复证明必须指向对应前一case，同一模型预算、准确目标、30秒新鲜度及40/45秒工具界限不变。原Native工作目录三条件不放宽；生成端须在签发前校验正文、slot.toolWorkdir与计划目录一致。此为验收基础设施，不增加产品UI或任意恢复入口，iOS无代码影响；正式构建、安装、真实控制及资料保护按权威计划分别取证，不提升整F统计。
+
+2026-11-17 F73 (UI02/UI03/UI12; S01/S11/S14/S18): the common product assertions and decimal/source rules are unchanged. Android adds a separately named joint-evidence test for real balances that may advance after admission, paired with a default-off task-only desktop response witness. Collection, same-snapshot source agreement, UI review and whole-feature acceptance are separate gates; the frozen-source test and its failures remain intact. This changes acceptance tooling, not product UI, iOS behavior or provider semantics. See the [joint evidence contract](../acceptance/mobile-parity.md#f73-joint-snapshot-evidence-20261117); all current status remains in the authoritative plan. F49/F50 reading-fixture changes likewise affect test cleanup only and do not establish real reading/badge acceptance.
+
 ### F38：迟到追加的具体原因（2026-11-19）
 
-F38：已完成任务拒绝立即追加时，iOS 在当前目标显示明确原因，并在发送记录保留此原因；后续查询错误优先显示，清除后仍可读取原拒绝原因。新草稿与下一轮模型设置、原操作 ID 和回执保持。共享协议已经返回该原因，此次补齐 iOS 呈现，Android 须按原生实现另验，不新增通过。 当前进度与证据只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。
+F38：已完成任务拒绝立即追加时，iOS 在当前目标显示明确原因，并在发送记录保留此原因；后续查询错误优先显示，清除后仍可读取原拒绝原因。新草稿与下一轮模型设置、原操作 ID 和回执保持。共享协议已经返回该原因，此次补齐 iOS 呈现，Android 须按原生实现另验，不新增通过。 当前进度与证据只在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)维护。
 
 ### F31：上传中断提示与重开后保留原因（2026-11-20）
 
-F31/F59：上传失败、暂停或等待时保留可读原因，重开后仍可查看。旧取消诊断及已知的“未找到传输记录”只转换展示文案，原诊断、目标、传输 ID 和回执保持；继续上传仍先查询原 ID，停止后保留消息，不据此认定远端取消或完成。iOS 补齐呈现，Android 仅同步共用词条，不新增原生通过。当前证据和进度只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。
+F31/F59：上传失败、暂停或等待时保留可读原因，重开后仍可查看。旧取消诊断及已知的“未找到传输记录”只转换展示文案，原诊断、目标、传输 ID 和回执保持；继续上传仍先查询原 ID，停止后保留消息，不据此认定远端取消或完成。iOS 补齐呈现，Android 仅同步共用词条，不新增原生通过。当前证据和进度只在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)维护。
 
 ### F45/F46：首条消息的创建记录与显式恢复（2026-11-20）
 
-iOS 对 EasyWork 首条消息先保存完整目标、原创建和消息 ID、正文、附件清单及显式生成偏好，再创建空聊天；未指定的偏好仍跟随电脑默认。结果未知时只查询原创建 ID。结束等待保留原记录和附件，回到可编辑草稿；查询确认后可显式恢复到原聊天，发送仍是独立动作。恢复不会覆盖目标聊天已有草稿，旧返回也不能推进新发送。附件沿用原准备、分块和完成操作标识，并在准备前查询原状态与回执。普通上传继续使用既有进度、续传和大小限制。Android 对应状态与操作身份须独立对齐，不新增通过；当前进度与证据只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。
+iOS 对 EasyWork 首条消息先保存完整目标、原创建和消息 ID、正文、附件清单及显式生成偏好，再创建空聊天；未指定的偏好仍跟随电脑默认。结果未知时只查询原创建 ID。结束等待保留原记录和附件，回到可编辑草稿；查询确认后可显式恢复到原聊天，发送仍是独立动作。恢复不会覆盖目标聊天已有草稿，旧返回也不能推进新发送。附件沿用原准备、分块和完成操作标识，并在准备前查询原状态与回执。普通上传继续使用既有进度、续传和大小限制。Android 对应状态与操作身份须独立对齐，不新增通过；当前进度与证据只在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)维护。
 
 ### F58/F42：非阻塞问题的完整列表与回答确认（2026-11-20）
 
-iOS 将电脑返回的全部待处理异步问题交给现有分页面板；异步问题保留时，聊天继续显示实际运行或结束状态。阻塞问题仍显示等待回答。回答、跳过和拒绝始终绑定原聊天、Run、会话及工具调用；回答核对 accepted，跳过或拒绝核对 abandoned，再推进面板。原选项、自定义内容与收起重开的草稿沿用既有规则。桌面复用同一领域契约的既有问题服务；Android 对应实现和验收独立记录，状态不因本次移植改变。进度与原验收匹配只见[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。
+iOS 将电脑返回的全部待处理异步问题交给现有分页面板；异步问题保留时，聊天继续显示实际运行或结束状态。阻塞问题仍显示等待回答。回答、跳过和拒绝始终绑定原聊天、Run、会话及工具调用；回答核对 accepted，跳过或拒绝核对 abandoned，再推进面板。原选项、自定义内容与收起重开的草稿沿用既有规则。桌面复用同一领域契约的既有问题服务；Android 对应实现和验收独立记录，状态不因本次移植改变。进度与原验收匹配只见[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 ### F22：EasyWork 权威压缩状态（2026-11-20）
 
-iOS 源码候选从桌面 canonical snapshot 的可选压缩状态显示进行中和终态，绑定原聊天、Run、分支及压缩操作；多个操作分别呈现，空 pending 水位不因保留 started 事件重新转圈。只有已安装检查点报告完成，失败、取消、跳过与未知分开显示。旧端未提供该字段时继续读取既有历史诊断，错误的可选元数据不影响普通聊天读取；不新增压缩执行接口。共享 KMP 文案补齐“已跳过”，Android 仅同步此词条及共享呈现规则，EasyWork 实时适配和原生验收仍独立记录。当前源码、辅助检查、真实模拟器及实际运行包分别见[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。
+iOS 源码候选从桌面 canonical snapshot 的可选压缩状态显示进行中和终态，绑定原聊天、Run、分支及压缩操作；多个操作分别呈现，空 pending 水位不因保留 started 事件重新转圈。只有已安装检查点报告完成，失败、取消、跳过与未知分开显示。旧端未提供该字段时继续读取既有历史诊断，错误的可选元数据不影响普通聊天读取；不新增压缩执行接口。共享 KMP 文案补齐“已跳过”，Android 仅同步此词条及共享呈现规则，EasyWork 实时适配和原生验收仍独立记录。当前源码、辅助检查、真实模拟器及实际运行包分别见[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 ### F36 请求速度与实际结果（新增反馈范围）
 

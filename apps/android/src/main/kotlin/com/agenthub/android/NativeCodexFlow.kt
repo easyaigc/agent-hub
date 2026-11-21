@@ -210,11 +210,35 @@ class NativeDraftFiles(private val storage: NativeSessionStorage) {
     }
 }
 
+/** Exact immutable original journal evidence. A checker may only reject this dispatch. */
+internal data class NativeOriginalReplyDispatch(val client: MobileClient,val reply: ReplyIntent,
+    val operationId: String,val intentJson: String,val intentSha256: String,val stage: String)
+
 /** Executes one explicitly requested operation. Queries never replay a model input. */
 class NativeCodexFlow(private val storage: NativeSessionStorage,private val reads: HostReads,
     private val commands: CodexCommands) {
     val journal=NativeOperationJournal(storage)
     val files=NativeDraftFiles(storage)
+    private val desktopOpen=NativeDesktopOpenFlow(journal,reads,commands) { client,record -> queryOpen(client,record).record }
+    internal suspend fun openOnDesktop(client: MobileClient,thread: String,sourceKey: String,
+        guard: ()->Boolean,progress: (String)->Unit): NativeDesktopOpenResult =
+        desktopOpen.open(client,thread,guard,progress,sourceKey=sourceKey)
+    private var freshQ04ReplyDispatchFence: ((NativeOriginalReplyDispatch)->Unit)?=null
+    internal fun bindFreshQ04ReplyDispatchFence(checker: (NativeOriginalReplyDispatch)->Unit) {
+        check(BuildConfig.DEBUG && freshQ04ReplyDispatchFence==null)
+        freshQ04ReplyDispatchFence=checker
+    }
+    private suspend fun originalReplyDispatch(client: MobileClient,reply: ReplyIntent,record: SavedOperation,stage: String) {
+        val checker=freshQ04ReplyDispatchFence ?: return // Ordinary paths keep their original policy.
+        val captured=NativeOriginalReplyDispatch(client,reply,record.id,record.intent,record.intentSha256,stage)
+        withContext(Dispatchers.IO) {checker(captured)} // A checker cannot wait on Compose/Main.
+    }
+    private suspend fun sendOriginalReply(client: MobileClient,reply: ReplyIntent,record: SavedOperation,stage: String): DeliveryReceipt {
+        val checker=freshQ04ReplyDispatchFence ?: return commands.send(client,reply)
+        val captured=NativeOriginalReplyDispatch(client,reply,record.id,record.intent,record.intentSha256,stage)
+        // The final fence and entry to the original transport share one IO context. No Main resume in between.
+        return withContext(Dispatchers.IO) {checker(captured);commands.send(client,reply)}
+    }
     // Only the foreground session can supply a current, generation-bound owner
     // observation. Persisted history and standalone flow callers cannot do so.
     internal var confirmedReplyReads: ((MobileClient,String)->Pair<MobileWorkspace,MobileHistory>?)?=null
@@ -283,31 +307,22 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
             } catch(failure: Exception) { return CodexFlowResult(journal.uncertain(record.target,createId,failure.message)) }
         }
         val exactThread=thread!!
-        if("runtime:control-required" in workspace.capabilities && history?.runtime?.canControl!=true) {
+        val pendingDesktopOpen=desktopOpen.hasPending(client,exactThread)
+        if(pendingDesktopOpen || "runtime:control-required" in workspace.capabilities && history?.runtime?.canControl!=true ||
+            commands.requiresConfirmedDesktopOpenReceipt(client) && "desktop:open" in workspace.capabilities) {
             require(SessionPolicies.desktop(policy,"desktop:open")) { "原桌面尚未开放主动打开" }
-            val openId=UUID.randomUUID().toString()
-            var opening=journal.prepare(client,exactThread,"open",JSONObject().put("hostId",client.id).put("threadId",exactThread).put("clientOperationId",openId),origin.key,origin.version,id)
-            try {
-                check(guard()); opening=journal.markSubmitting(opening.target,openId); progress("正在原桌面打开…")
-                var result=commands.open(client,exactThread,openId)
-                opening=journal.observed(opening.target,openId,result.phase,encodeOpen(result),result.error)
-                // Opening is an accepted asynchronous command. Observe that same
-                // receipt without another POST; uncertain results remain query-only.
-                val deadline=System.nanoTime()+35_000_000_000L
-                while(result.phase=="opening" && guard() && System.nanoTime()<deadline) {
-                    delay(350)
-                    opening=queryOpen(client,opening).record
-                    result=CodexCommandCodec.open(JSONObject(opening.result!!))
-                }
-                if(result.phase!="opened") return CodexFlowResult(opening,created)
-                val fresh=authority(client,exactThread,projectId,guard,reuseConfirmed=true); workspace=fresh.first; history=fresh.second
-                require(history?.runtime?.canControl==true && SessionPolicies.writable(access(client,workspace,history,projectId))) { "原 owner 尚未确认控制权" }
-            } catch(failure: Exception) { return CodexFlowResult(journal.uncertain(opening.target,openId,failure.message),created) }
+            val opened=desktopOpen.open(client,exactThread,guard,progress,origin.key,origin.version,id,preflight=workspace)
+            if(!opened.ownerConfirmed)return CodexFlowResult(opened.record,created)
+            workspace=checkNotNull(opened.workspace);history=checkNotNull(opened.history)
+            check(guard()) { "目标或草稿已改变，未提交" }
+            require(SessionPolicies.writable(access(client,workspace,history,projectId))) { "原 owner 尚未确认控制权" }
         }
         require(SessionPolicies.writable(access(client,workspace,history,projectId))) { "当前聊天不能执行" }
         val attachmentIds=content.files.mapIndexed { index,file ->
             check(guard()) { "目标或草稿已改变，未提交" }; progress("上传附件 ${index+1}/${content.files.size} · ${file.manifest.name}")
-            commands.upload(client,exactThread,file.manifest,files.bytes(file.manifest)).id
+            withContext(NativeUploadOrigin(id,index,content.files.size,content.files.sumOf {it.manifest.sizeBytes},guard)) {
+                commands.upload(client,exactThread,file.manifest,files.bytes(file.manifest)).id
+            }
         }
         // The final request is immutable, including the returned IDs of the exact source bytes.
         val reply=ReplyIntent(client.id,exactThread,id,content.text,attachmentIds,mode,expectedTurnId,expectedPlanId,content.settings)
@@ -317,8 +332,9 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
             val fresh=authority(client,exactThread,projectId,guard,reuseConfirmed=true)
             require(SessionPolicies.writable(access(client,fresh.first,fresh.second,projectId))) { "控制权已变化，未提交" }
             validateReplyAuthority(fresh.first,fresh.second,mode,expectedTurnId,expectedPlanId)
+            originalReplyDispatch(client,reply,record,"before-mark-submitting")
             record=journal.markSubmitting(record.target,id); progress("提交给 ${client.name}…")
-            val receipt=commands.send(client,reply)
+            val receipt=sendOriginalReply(client,reply,record,"before-send")
             return CodexFlowResult(journal.observed(record.target,id,receipt.state,encodeReceipt(receipt),receipt.error),created)
         } catch(failure: Exception) {
             val failed=if(record.submissionAttempted) journal.uncertain(record.target,id,failure.message)
@@ -339,9 +355,12 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         try {
             creationAuthority(client,record,guard)
             val uploaded=record.result?.let { CodexCommandCodec.creation(JSONObject(it)).uploaded }.orEmpty()
-            sourceFiles.filter { it.manifest.id !in uploaded }.forEachIndexed { index,file ->
+            sourceFiles.forEachIndexed { index,file ->
+                if(file.manifest.id in uploaded)return@forEachIndexed
                 check(guard()); progress("上传首条附件 ${index+1}/${sourceFiles.size} · ${file.manifest.name}")
-                commands.uploadCreation(client,record.id,file.manifest,files.bytes(file.manifest))
+                withContext(NativeUploadOrigin(record.id,index,sourceFiles.size,sourceFiles.sumOf {it.manifest.sizeBytes},guard)) {
+                    commands.uploadCreation(client,record.id,file.manifest,files.bytes(file.manifest))
+                }
             }
             // Preparation and upload can outlive a capability or project change.
             // Recheck the complete target before making the first input attempt.
@@ -387,7 +406,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         return try { gate.mutex.withLock {
             val current=journal.records(record.target).single { it.id==record.id }
             require(current.kind=="open" && current.intentSha256==record.intentSha256) { "原打开意图不匹配，只能查询原记录" }
-            if(current.phase=="opened" && current.result!=null) CodexFlowResult(current)
+            if(current.phase in setOf("opened","rejected") && current.result!=null) CodexFlowResult(current)
             else {
                 val result=commands.open(client,JSONObject(current.intent).getString("threadId"),current.id,queryOnly=true)
                 CodexFlowResult(journal.observed(current.target,current.id,result.phase,encodeOpen(result),result.error))
@@ -453,7 +472,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         progress("提交原消息…")
         try {
             check(guard()) { "当前目标已变化，仅查询原消息" }
-            val receipt=commands.send(captured,intent)
+            val receipt=sendOriginalReply(captured,intent,current,"before-retry-send")
             return CodexFlowResult(journal.observed(current.target,current.id,receipt.state,encodeReceipt(receipt),receipt.error))
         } catch(cancel: CancellationException) { journal.uncertain(current.target,current.id,"原消息提交结果待核对");throw cancel }
         catch(failure: Exception) { return CodexFlowResult(journal.uncertain(current.target,current.id,failure.message)) }

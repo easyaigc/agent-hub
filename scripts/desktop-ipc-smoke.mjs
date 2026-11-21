@@ -2226,7 +2226,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       const values = new Map();
       let adds = 0,
         deletes = 0,
-        loseDelete = false;
+        loseDelete = false,
+        turnChangeDuringRemove = null;
       session.nativeQueueThread = () => true;
       session.nativeQueue = {
         available: true,
@@ -2243,6 +2244,15 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
           deletes++;
           const removed = values.delete(id);
           if (loseDelete) throw new Error('delete response lost');
+          if (turnChangeDuringRemove) {
+            fixtureTurns = [{ turnId: 'native-active', status: 'completed', items: [] }];
+            if (turnChangeDuringRemove === 'replacement')
+              fixtureTurns.push({ turnId: 'native-replacement', status: 'inProgress', items: [] });
+            running = turnChangeDuringRemove === 'replacement';
+            revision++;
+            snapshot();
+            await settle();
+          }
           return removed;
         },
         close() {},
@@ -2326,6 +2336,46 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         session.nativeQueueReadAt.clear();
         await session.refreshNativeQueue('thread');
         assert.equal(session.receipt('native-sync-failure').queueSyncError, undefined);
+        // The original turn may end during native removal. An explicit same-turn
+        // promotion must never turn into a new independent request or a retry.
+        loseDelete = false;
+        for (const change of ['completed', 'replacement']) {
+          turnChangeDuringRemove = null;
+          fixtureTurns = [{ turnId: 'native-active', status: 'inProgress', items: [] }];
+          running = true;
+          revision++;
+          snapshot();
+          await settle();
+          const id = 'native-promotion-' + change;
+          assert.equal((await session.submit(message(id))).state, 'queued');
+          const beforePromotion = commands.length;
+          turnChangeDuringRemove = change;
+          await assert.rejects(
+            session.executeQueue('thread', id, 'native-active'),
+            /当前任务已变化，已移除队列项但未追加输入/,
+          );
+          assert.equal(
+            commands.length,
+            beforePromotion,
+            'No input after the original turn changed',
+          );
+          assert(!values.has('native-' + id));
+          assert.equal(session.receipt(id).state, 'uncertain');
+          const afterRemoval = deletes;
+          assert.equal((await session.executeQueue('thread', id, 'native-active')).ok, false);
+          assert.equal(deletes, afterRemoval, 'Detached uncertain promotion is query-only');
+          assert.equal(
+            commands.length,
+            beforePromotion,
+            'No retry dispatch after uncertain removal',
+          );
+        }
+        turnChangeDuringRemove = null;
+        fixtureTurns = [{ turnId: 'native-active', status: 'inProgress', items: [] }];
+        running = true;
+        revision++;
+        snapshot();
+        await settle();
       } finally {
         session.nativeQueue = originalQueue;
         session.nativeQueueThread = originalValidation;

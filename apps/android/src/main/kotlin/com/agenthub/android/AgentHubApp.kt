@@ -149,7 +149,7 @@ import com.agenthub.core.*
                             }
                         }
                         if ((session.selectedThread.isEmpty() || session.isNewChatDraft) && session.pendingCreationMessage==null && session.messages.isEmpty()) NewChatDestination(session,openNewChat,Modifier.weight(1f))
-                        else ChatMessages(session,dark,Modifier.weight(1f),inlineToolApprovals)
+                        else NativeSubagentHistoryHost(session) {ChatMessages(session,dark,Modifier.weight(1f),inlineToolApprovals)}
                         val bottomScroll=rememberScrollState()
                         LaunchedEffect(session.targetKey) { bottomScroll.scrollTo(0) }
                         // Keep natural control heights when the IME leaves a short
@@ -260,6 +260,7 @@ import com.agenthub.core.*
                 IconAction("more",productText("对话选项"),"chat-menu") { menu=true }
             }
             DropdownMenu(expanded=menu,onDismissRequest={ menu=false }) {
+                DesktopOpenMenuItem(session) { menu=false;dismissKeyboard() }
                 session.currentChat?.let { thread ->
                     Text(session.chatLifecycleStatus(thread,t),Modifier.padding(horizontal=16.dp,vertical=8.dp).widthIn(max=300.dp).testTag("chat-lifecycle-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
                     if(session.supportsChatManagement) {
@@ -436,6 +437,7 @@ import com.agenthub.core.*
     val actionLabel=productText(label)
     val tag=when(decision.action) { "stop"->"stop-turn"; "resume"->"resume-task"; "busy"->"composer-busy"; else->"send-message" }
     Column {
+    NativeUploadJobs(session.uploadJobs,session.selectedClient,setOf("attachment","creation-attachment"))
     NativeDocumentRecoveryNotice(session,interactive)
     if(interactive && session.canUseVoice && session.voice?.active==false)TextButton(onClick={session.beginVoice(recoverSavedFile=true)},modifier=Modifier.heightIn(min=48.dp).testTag("voice-restore-saved")) {Text(productText("恢复原录音"))}
     if(interactive&&attachmentPanel==null&&attachmentAction==null&&preview==null&&actions==null&&attachmentFlowIdle()&&session.canCompose) {
@@ -471,7 +473,7 @@ import com.agenthub.core.*
         if(ghost) Text(suggestion!!.text,color=colors.onSurfaceVariant,fontSize=16.sp,lineHeight=22.sp,maxLines=2,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(horizontal=14.dp,vertical=10.dp).testTag("suggestion-text"))
         key(editor) {
         NativeComposerVoiceInput(editor,inputNavigation,interactive && session.canUseVoice && session.voice?.active==false,
-            {editor.value.selection},voiceHint,voiceAction,::startVoiceInput) { voiceInput ->
+            {editor.value.selection},voiceHint,voiceAction,::startVoiceInput,focused=focused) { voiceInput ->
         BasicTextField(field,{ next ->
             if(textOwner===editor)editor.input(next,session.suggestionDraft,session.suggestionNavigation) { changed ->
                 if(session.text!=changed)session.text=changed
@@ -487,7 +489,7 @@ import com.agenthub.core.*
             }.testTag("message-input"),enabled=interactive,maxLines=6,minLines=if(ghost)2 else 1,
             textStyle=TextStyle(color=colors.onSurface,fontSize=16.sp,lineHeight=22.sp),decorationBox={ inner ->
                 Box {
-                    if(!ghost&&session.text.isEmpty())Text(productText("输入消息，长按语音输入"),color=colors.onSurfaceVariant.copy(alpha=.6f),fontSize=16.sp)
+                    if(!ghost&&session.text.isEmpty())Text(productText(if(focused)"发送消息" else "输入消息，长按语音输入"),color=colors.onSurfaceVariant.copy(alpha=.6f),fontSize=16.sp)
                     inner()
                 }
             })
@@ -663,7 +665,7 @@ import com.agenthub.core.*
             Text(productText("任务失败记录"),fontSize=12.sp,color=colors.onSurfaceVariant)
             SelectionContainer { Text(message.text,fontSize=12.sp,color=colors.onSurfaceVariant) }
         }
-        else if(message.kind=="subAgent") EasyWorkSubagentContent(message,targetKey,dark)
+        else if(message.kind=="subAgent") Column {EasyWorkSubagentContent(message,targetKey,dark);SubagentHistoryAction(message)}
         else if(message.kind=="plan") ProposedPlanMessage(message,targetKey,session.panelNoticeBinding,session.runtime?.proposedPlan)
         else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(productText(if(message.kind=="plan") "执行计划" else "正在执行计划"),fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")

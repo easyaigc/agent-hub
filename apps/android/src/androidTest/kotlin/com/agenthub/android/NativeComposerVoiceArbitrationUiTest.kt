@@ -16,6 +16,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -57,7 +58,9 @@ class NativeComposerVoiceArbitrationUiTest {
     private var recording=false
     private var nativeRangeChanges=0
     private var parentClaims=0
-    private var focused=false
+    private var focused by mutableStateOf(false)
+    private var focusedAtAcceptedStart=false
+    private lateinit var focusManager: androidx.compose.ui.focus.FocusManager
     private var nativeTimeout=0L
     private var fieldTimeout=0L
     private lateinit var layout: TextLayoutResult
@@ -83,9 +86,11 @@ class NativeComposerVoiceArbitrationUiTest {
             .put("voiceStarts",starts).put("nativeRangeChanges",nativeRangeChanges).put("parentClaims",parentClaims)
             .put("outcome",if(complete)"NATIVE_GESTURE_COMPONENT_PASSED_COMPOSER_AND_REAL_DEV_SEPARATE"else"FAILED_OR_UNKNOWN"))
     }
-    private fun content() {
+    private fun content(focusAware: Boolean=false) {
+        proof.put("focusAwareHarness",focusAware)
         ui.runOnIdle {ui.activity.setContent {
             val native=LocalViewConfiguration.current;SideEffect {nativeTimeout=native.longPressTimeoutMillis}
+            val manager=LocalFocusManager.current;SideEffect {focusManager=manager}
             val scroller=rememberScrollState();SideEffect {scroll=scroller}
             val focus=remember {FocusRequester()}
             Column(Modifier.width(320.dp).height(220.dp).verticalScroll(scroller).pointerInput(initialClaim,laterClaim) {
@@ -100,8 +105,8 @@ class NativeComposerVoiceArbitrationUiTest {
             }.testTag("arbitration-scroll")) {
                 key(owner,navigation) {
                     NativeComposerVoiceInput(owner,navigation,enabled,{value.selection},"Hold for voice","Voice input",{
-                        if(!enabled||recording)false else {starts++;recording=true;true}
-                    }) { input ->
+                        if(!enabled||recording)false else {focusedAtAcceptedStart=focused;starts++;recording=true;true}
+                    },focused=focusAware&&focused) { input ->
                         val configuration=LocalViewConfiguration.current
                         SideEffect {fieldTimeout=configuration.longPressTimeoutMillis}
                         BasicTextField(value,{next->
@@ -179,5 +184,58 @@ class NativeComposerVoiceArbitrationUiTest {
             row(if(changeOwner)"editor-replaced"else"navigation-replaced")
         }
         assertEquals(original,value.text);complete=true
+    }
+
+    // The inherited four tests intentionally retain the old arbitration-only mode.
+    // These cases use the real BasicTextField focus callback as production does.
+    @Test fun focusedCollapsedHoldSelectsNativeTextWithoutVoice() {
+        content(focusAware=true)
+        ui.onNodeWithTag("arbitration-field").performTouchInput {click(word(2))}
+        ui.waitForIdle();assertTrue(focused);assertTrue(value.selection.collapsed)
+        assertEquals(nativeTimeout,fieldTimeout);val ranges=nativeRangeChanges
+        ui.onNodeWithTag("arbitration-field").performTouchInput {advanceEventTime(600);longClick(word(7),650)}
+        ui.waitForIdle();assertEquals(0,starts);assertFalse(recording)
+        assertFalse("Native word selection must actually occur",value.selection.collapsed)
+        assertTrue(nativeRangeChanges>ranges);assertEquals(original,value.text)
+        row("focused-collapsed-native-selection");complete=true
+    }
+    @Test fun unfocusedShortTapFocusesButHoldKeepsSingle500msVoiceOwner() {
+        content(focusAware=true);assertFalse(focused);assertEquals(Long.MAX_VALUE,fieldTimeout)
+        ui.onNodeWithTag("arbitration-field").performTouchInput {down(word(7));advanceEventTime(450);up()}
+        ui.waitForIdle();assertEquals(0,starts);assertTrue(focused)
+        ui.runOnIdle {focusManager.clearFocus(force=true)}
+        ui.waitForIdle();assertFalse(focused);assertEquals(Long.MAX_VALUE,fieldTimeout)
+        val ranges=nativeRangeChanges
+        ui.onNodeWithTag("arbitration-field").performTouchInput {advanceEventTime(600);down(word(7));advanceEventTime(650);up()}
+        ui.waitForIdle();assertEquals(1,starts);assertTrue(recording)
+        // A completed short tap focuses the field; an intercepted hold need not do so before voice.
+        proof.put("fieldFocusedAtAcceptedStart",focusedAtAcceptedStart)
+        assertTrue(value.selection.collapsed);assertEquals(ranges,nativeRangeChanges);assertEquals(original,value.text)
+        row("unfocused-short-tap-and-single-voice-hold");complete=true
+    }
+    @Test fun focusedExplicitVoiceCustomActionStillUsesProtectedCallback() {
+        content(focusAware=true)
+        ui.onNodeWithTag("arbitration-field").performTouchInput {click(word(2))}
+        ui.waitForIdle();assertTrue(focused);assertTrue(value.selection.collapsed)
+        val actions=ui.onNodeWithTag("arbitration-field").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        ui.runOnIdle {
+            assertTrue(actions.single {it.label=="Voice input"}.action())
+            assertFalse(actions.single {it.label=="Voice input"}.action())
+            assertEquals(1,starts);assertTrue(focusedAtAcceptedStart)
+        }
+        assertEquals(original,value.text);row("focused-explicit-action-single-callback");complete=true
+    }
+    @Test fun clearingFocusDuringYieldedGestureCannotAcquireVoiceOwner() {
+        content(focusAware=true)
+        ui.onNodeWithTag("arbitration-field").performTouchInput {click(word(2))}
+        ui.waitForIdle();assertTrue(focused);assertTrue(value.selection.collapsed)
+        val originalOwner=owner;val originalNavigation=navigation
+        ui.onNodeWithTag("arbitration-field").performTouchInput {advanceEventTime(600);down(word(7));advanceEventTime(100)}
+        ui.runOnIdle {focusManager.clearFocus(force=true)}
+        ui.waitForIdle();assertFalse(focused);assertEquals(nativeTimeout,fieldTimeout)
+        ui.onNodeWithTag("arbitration-field").performTouchInput {advanceEventTime(650);up()}
+        ui.waitForIdle();assertEquals(0,starts);assertFalse(recording)
+        assertSame(originalOwner,owner);assertEquals(originalNavigation,navigation);assertEquals(original,value.text)
+        row("yielded-gesture-keeps-owner-after-focus-clear");complete=true
     }
 }

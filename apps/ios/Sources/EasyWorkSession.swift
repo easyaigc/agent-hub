@@ -240,6 +240,11 @@ actor EasyWorkRemoteSession {
     #endif
   }
   init(connection: AgentConnection, credential: EasyWorkCredential) throws {
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.connection(connection)
+    try R2Admission.peer(target: credential.binding.target, fingerprint: connection.candidates.first?.peerFingerprint,
+      publicKey: credential.binding.desktopPublicKey, endpoints: connection.candidates.map(\.endpoint))
+    #endif
     let target = credential.binding.target
     guard target.desktopDeviceId == connection.target.hostId, target.workspaceId == connection.target.workspaceId, target.runtimeId == connection.target.runtimeId, target.account == connection.target.account else { throw HostServiceError.wrongHost }
     guard credential.binding.deviceAuthorization == nil || credential.grantRef != nil else { throw HostServiceError.message("设备授权凭据缺失，请重新配对") }
@@ -277,6 +282,9 @@ actor EasyWorkRemoteSession {
     await previous?.close()
   }
   private func connect(excluding: String? = nil) async throws {
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.connection(connection)
+    #endif
     while connecting { try await Task.sleep(for: .milliseconds(25)) }
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
@@ -453,6 +461,9 @@ actor EasyWorkRemoteSession {
     return try easyWorkJSON(response["result"] ?? NSNull())
   }
   private func requestData(_ method: String, params: Data, id: String) async throws -> Data {
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.request(method, id: id, params: params, connection: connection)
+    #endif
     diagnostic("request", method)
     guard pendingRequestIds.insert(id).inserted else { throw HostServiceError.message(L10n.tr("同一操作正在等待 Host 回执")) }
     responses.removeValue(forKey: id)
@@ -476,6 +487,9 @@ actor EasyWorkRemoteSession {
       }
       defer { requestDeadline.cancel() }
       do {
+        #if R2_REAL_DEV_ACCEPTANCE
+        try R2Admission.request(method, id: id, params: params, connection: connection)
+        #endif
         do { try await publish(["kind": "protocol", "envelope": request]) }
         catch {
           // A verified response may precede send's completion callback. Closing
@@ -608,7 +622,8 @@ actor EasyWorkRemoteSession {
     }
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
-    guard readEpoch == epoch else { throw HostServiceError.unavailable }
+    // No await between live-connection validation and cache publication on this actor.
+    guard readEpoch == epoch, transport != nil, keyConfirmed else { throw HostServiceError.unavailable }
     threadSyncs[threadId] = next.0
     threadSyncOrder.removeAll { $0 == threadId }; threadSyncOrder.append(threadId)
     while threadSyncOrder.count > 4 { threadSyncs.removeValue(forKey: threadSyncOrder.removeFirst()) }

@@ -194,10 +194,12 @@ class MobileFilePreviewUiTest {
     }
     @Test fun relativeAndActiveReferencesCannotReadAnotherResourceOrLaunchAnActivity() {
         fixture("[Relative](../private.txt)\n\n[Active](javascript:synthetic())\n").use { f ->
-            connect(f);open();val reads=f.resourceReads()
+            connect(f);open();val binaries=f.binaries();val resolves=f.server.requests.count {it.path=="/v1/attachments/resolve-document-link"}
             tapLink(0);ui.onNodeWithTag("file-preview-link-error").assertExists();ui.onNodeWithText(text.tr("好")).performClick()
             tapLink(1);ui.onNodeWithTag("file-preview-link-error").assertExists()
-            assertEquals(reads,f.resourceReads());assertTrue(external.isEmpty());assertTrue(shared.isEmpty());verify(f)
+            // An unsupported Host may receive one source-bound resolver GET, never arbitrary file bytes.
+            assertEquals(resolves+1,f.server.requests.count {it.path=="/v1/attachments/resolve-document-link"})
+            assertEquals(binaries,f.binaries());assertTrue(external.isEmpty());assertTrue(shared.isEmpty());verify(f)
         }
     }
     @Test fun activeShareUsesExactPinnedBytesAndOnlyReadPermission() {

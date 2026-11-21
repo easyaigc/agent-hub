@@ -1,14 +1,18 @@
 # 技术可行性与 PoC 验收
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 2026-11-20 Codex 接收回执恢复候选：针对同一旧轮一条普通消息加七条追加消息，在断线／重启、手机只读最新窗口和后续新轮并存的工况，保留已确认接收并异步核对原轮终态。真正未知仍按唯一原 ID 和正文摘要核实，附件不能凭正文推定接收；已有原 owner 接收证据的附件消息可按准确原轮核对状态。追加消息的已接受输入补齐正文摘要。辅助回归、真实 Electron／模型、原生模拟器与正式部署分别登记，本段实现描述不等于验收通过。 真实 DEV 随后确认 legacy 线程仍支持既有 `thread/turns/list` 且返回无工具正文的两轮摘要；已修正按存储模式提前返回的门禁，修复后的当前候选已重新通过七项辅助回归及真实原桌面／原模型／原生模拟器 1/1：准确旧轮八项由 submitted 收敛 completed，原九个输入无重放，草稿与进程恢复通过；具体运行件、失败和未验平台分别记录。
 
 统一 Host 对接的验收门槛见 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)。公共接口、Schema 和辅助检查分别留证；协议统一须核实际分派、回执／恢复及对应原生／桌面场景，不能由规范写入推定完成。iOS × EasyWork 的当前状态继续维护在唯一计划。
 
-2026-11-20 F72：桌面Docv1来源授权、版本校验和最终发布已通过PR73进入master；iOS适配、取消保护和阅读身份从已验组件移植。原生边界检查仅证明契约及本机身份兼容，完整GUI、冷启阅读和Android导航按各自范围验收。合并、原真实证据匹配和当前部署分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F72：桌面Docv1来源授权、版本校验和最终发布已通过PR73进入master；iOS适配、取消保护和阅读身份从已验组件移植。原生边界检查仅证明契约及本机身份兼容，完整GUI、冷启阅读和Android导航按各自范围验收。合并、原真实证据匹配和当前部署分别见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F08：原已验候选的认证直连地址获取与保存按局部差异移植，保留主线新增快照、代次与管理修订保护。缺少新可选字段的旧桌面仍可连接；地址、证书和目标校验继续严格执行。旧包真实偏好/冷恢复证据与本次主线辅助检查分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)，不把源码合并冒充新组合运行。
+2026-11-19 F08：原已验候选的认证直连地址获取与保存按局部差异移植，保留主线新增快照、代次与管理修订保护。缺少新可选字段的旧桌面仍可连接；地址、证书和目标校验继续严格执行。旧包真实偏好/冷恢复证据与本次主线辅助检查分别见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)，不把源码合并冒充新组合运行。
 
-2026-11-19 F09：交付已有模拟器与真实EasyWork桌面通过的安全整数修复，合法旧信封和安全整数上限保持兼容；既有同会话恢复、原操作查询与去重证据按源码范围复用。源码、辅助检查、真实验收和部署分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)，不扩展为完整授权生命周期通过。
+2026-11-19 F08：原已验候选的认证直连地址获取与保存按局部差异移植，保留主线新增快照、代次与管理修订保护。缺少新可选字段的旧桌面仍可连接；地址、证书和目标校验继续严格执行。旧包真实偏好/冷恢复证据与本次主线辅助检查分别见[历史iOS对齐记录](plans/ios-easywork-alignment-20261112/README.md)，不把源码合并冒充新组合运行。
+
+2026-11-19 F09：交付已有模拟器与真实EasyWork桌面通过的安全整数修复，合法旧信封和安全整数上限保持兼容；既有同会话恢复、原操作查询与去重证据按源码范围复用。源码、辅助检查、真实验收和部署分别见[历史iOS对齐记录](plans/ios-easywork-alignment-20261112/README.md)，不扩展为完整授权生命周期通过。
 
 2026-11-16 F18/F26/F28/F29（UI05／UI07，S03／S05／S11）状态流兼容候选：桌面 IPC 以准确 owner、完整目标、快照结构及连续修订为契约，支持 v11、v13 及结构相同的新增状态流，不因流版本数字变化撤销控制。保留未知增量字段；跨流版本的 patches 必须先重新取得完整基线，执行命令仍使用各自已实现的方法版本。真实结构不兼容时结束前台连接检查并返回具体错误，原创建／连接操作、消息和附件保持，结果未知不重放。iOS 结束有错误的本次连接等待，后续发送先查同一操作；Android 共用 Host 兼容修复，原生等待呈现另验。源码、辅助、真实桌面／原生及正式部署分列于[专项记录](acceptance/desktop-stream-compatibility-20261116.md)。
 
@@ -23,6 +27,8 @@
 2026-11-09 F17／F19／F32（UI05／UI12，S04／S11／S18）：Codex Host 将普通 Markdown 本地文件引用与上游结构化附件分开。显示、刷新和分页只登记原助手消息的准确引用，不查询文件元数据、不读取或计算摘要，也不按文件大小或扩展名猜测附件；用户点击后才具名解析并校验新鲜字节。显式原生图片／文件字段继续原处理，其他运行模式保持兼容；并发快照仍合并且保留子过程变化，首次／在途投影不误报 live 保持。此根治方案取代前一轮 8 MiB 防卡门槛。iOS／Android 共用 Host；iOS 沿用原文本链接入口，Android 原消息本地链接入口尚未补齐，正式推广保持兼容门禁；辅助及原 MacBook／物理 iPhone 结果分列于[专项记录](acceptance/history-large-link-20261109.md)，A6 保持暂停。
 
 2026-11-09 F17（UI05，S02／S11）追加：原 MacBook 隔离 DEV 发现共享缓存已被其他读者扩展后，旧上游游标的窗口会误返空页。Host 现以本次上游页的实际消息边界返回有界窗口；成功较早页更新历史可用时间，最新页的观察连续性与实时控制权限独立核对。iOS 验收增加可见正文断言与原生截图；Android 共用 Host 分页行为，原生双端和物理设备的实际通过分别记录，未借用 iPhone 结果。
+
+2026-11-17 M283：双端阅读以本地阅读代次和已接受的新鲜publication隔离迟到响应，unready/unavailable不能取代真实latest，quiet全局cursor与内容checkpoint分开；完整原目标先于过期成功判断。EasyWork cache在原连接仍有效时原子提交，Android沿disconnect锁序，iOS沿actor无await提交并核live transport/confirmation。普通通知在最终Main偏好和当前完整目标下决定展示，未知原add结果只重查当前原件，不重放或盲删旧ID。原队列仍桌面唯一执行、共享当前owner设置优先级。无新增wire字段、UI入口或业务TaskHub权限，源码/宿主/编译与真实系统和Provider分别取证。
 
 2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](acceptance/host-lifecycle-cpu-20261109.md)。
 
@@ -215,6 +221,8 @@ Host 源码已实现 `GET /v1/threads/next-turn-suggestion` 与 `desktop:suggest
 本机 EasyWork 真实 DEV 已验证 macOS Electron、iOS 专用模拟器与实际默认模型下的局域网和本地中继两条路径：三条排队输入在双端可见、手机提升进入原 Run、电脑取消同步、FIFO 后续执行及 App 重启恢复；独立 canonical 输入无重复，中继限流与防重放拒绝为零。Windows、实体手机、公网中继和其他电脑未验收。
 
 Codex 已按用户确认的短时延迟同步要求接入原生持久队列：活动任务的 Host 排队输入交给官方队列，Host 不再自行再次执行；手机提升先删除原项，再经原 owner 的 steer／next-turn 执行。原生列表可用后声明 `queue:native`，不支持的版本保留 Host FIFO；未知添加／删除只核对，不重放。该方式不提供双端同时操作时的跨端原子保证，不替换官方整队列状态，不修改官方安装或既有历史文件。当前实现的真实 DEV 另行记录，早期 Host FIFO 通过不能替代新版本。详见 [研究与当前边界](research/native-queue-boundary-20261017.md)。
+
+2026-11-13 对显式 `expectedTurnId` 的提升补齐 await 后拒绝：原队列移除期间原 Turn 完成或更换，均不能变成新独立 Turn；已移除但未确认的原操作仅查询，不再次移除或发送。旧实现已在自然完成反例失败，新实现通过构建及包含两种竞态的完整 IPC fixture；这些是辅助证据，准确新 Host 部署和原生手机／桌面核对仍另验。未指定 Turn 条件的既有行为保持，双端 Codex 共用该修复，EasyWork 不由此取得通过，见[权威计划 M133/M135](plans/android-ios-alignment-20261107/progress.md)。
 
 本机新一轮原生 iOS、原生队列接口与原 owner 真实 DEV 通过：三项入队、Host 重启保留、电脑侧删除分别在 1190 ms 和冻结补验的 1062 ms 内同步到手机、手机提升进入原 Turn、FIFO 原桌面自然执行、最终队列为空、重复操作无额外输入，App 重启状态保留。实际 gpt-6.1-sol／xhigh、两个完成 Turn，三条有效输入各一次、取消为零。屏幕视觉未独立验收；界面仅有只读绑定代码核对，不扩展为 Windows、实体手机或其他电脑通过。
 
@@ -641,6 +649,12 @@ The subsequent Windows P2 launch failed its non-administrator prerequisite on a 
 阶段104 F59 family：实际root与全部受限retained generation按代严格只读/独立graph，保留UNKNOWN/原receipt，目录存在不授予lineage或激活权。仅新增内部source入口，旧整包F59拒绝和Host/传输边界不变；新SDK/15项Native、认证容器/目的端/iOS仍待验。见docs/plans/android-alignment-20261022/records/stage104-f59-family-source.md。
 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。
+
+## 私有设备绑定管理的验证边界（2026-11-14，候选）
+
+2026-11-14 F03/F61 私有设备绑定管理源码候选：仅原 Host access-key 管理接口；手机设备凭据即使 hostKeyAuthorized=true 也无管理权。iOS/Android 连接、移除及撤销 UI 均未接入，不提升整项功能或真实验收状态；当前状态仍由唯一完整功能清单维护。
+
+已在任务私有目录对真实类和具名路由做有限持久化/重启/同ID异输入/跨目标/重复key/保存前失败/rename已生效后异常/目录同步失败/有界回执与字节/Host管理员对普通device的loopback HTTP检查。只证明这些辅助边界；无正式服务、TLS、Windows私有辅助器原生、真实12绑定、手机或模型动作。正式采用后仍需 pnpm check、同源接入包构建及具名私有Host部署/原ID读回，不得以合成临时资料升级真实撤销验收。
 
 2026-11-19 已发布交互回退修复：EasyWork专用子历史与共用呈现恢复，含完整目标/归属/分支校验、有界分页和父子同投影；现存record的空checkpoint不能单独证明过程丢失，result.content亦是原始持久来源。生产Swift边界与默认原生基线8项纳入Gitea CI；本地合成UI、真实Electron/持久数据及原生交互、正式CI和主线交付分别记于[本轮记录](acceptance/released-workflow-regressions-20261119.md)。配置或编译通过不代替真实验收，F20剩余矩阵、Android及F75/A6暂停边界保持。
 

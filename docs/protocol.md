@@ -1,12 +1,14 @@
 # 应用协议与领域契约
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 跨 Codex／EasyWork 的统一要求见 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)。已有能力以实际运行时契约和对应已实现解析器为基准，统一操作、完整目标、能力、错误、回执及恢复语义；认证和 wire 差异限制在适配边界。早期领域草案或相同 Schema 摘要不等于生产调用统一，不为接入草案类型另造并行协议。
 
-2026-11-20 F22 源码候选：EasyWork 适配层读取现有 thread/sync canonical snapshot 的可选 contextCompressionState，不新增方法或执行命令。验证其 threadId、runId、branchRevision 与当前 thread/activeRun，cursor 使用既有安全整数和来源契约；pending 按原 compressionOperationId／generationId 区分，空集合保留终态水位，不从旧 started 或通用 item/delta 状态猜测仍在压缩。block_created 仅在检查点已安装且未报告持久化失败时显示完成，rejected 保留取消／跳过／失败；未知或错误可选状态不妨碍旧历史读取。缺字段的旧端继续使用既有诊断投影，目标、事件游标、分页、缓存和原输入去重规则保持。真实结果只见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F22 源码候选：EasyWork 适配层读取现有 thread/sync canonical snapshot 的可选 contextCompressionState，不新增方法或执行命令。验证其 threadId、runId、branchRevision 与当前 thread/activeRun，cursor 使用既有安全整数和来源契约；pending 按原 compressionOperationId／generationId 区分，空集合保留终态水位，不从旧 started 或通用 item/delta 状态猜测仍在压缩。block_created 仅在检查点已安装且未报告持久化失败时显示完成，rejected 保留取消／跳过／失败；未知或错误可选状态不妨碍旧历史读取。缺字段的旧端继续使用既有诊断投影，目标、事件游标、分页、缓存和原输入去重规则保持。真实结果只见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-20 F35/F41：通用审批仍由原Host执行并约束作用域。EasyWork适配使用既有approval/respond：threadId、serverRequestId承载原threadId/runId/toolCallId/operationId/requestHash身份，decision为approve/deny，只有acceptForSession映射remember=true。会话动作要求approvals、approvals:remember:session:v1与approvals:decision-receipt:v1；收到v1决策回执须核对完整原身份、决定和once/session作用域，冲突/过期/禁止会话不冒充成功。旧端缺少可选回执能力时保留单次布尔确认。桌面会话许可/settled状态属进程内确认服务，独立持久command journal不表示会话许可跨重启。问题回答继续使用serverRequest/resolve，不引入任意wire透传。
 
-2026-11-20 F72：通用文档解析接口不变。EasyWork仅在attachments:resolve-document-link:v1存在时发送resource/resolve-document-link，参数version=1、完整target、threadId、source(resourceId/grantId/version/messageId/sha256)与reference。校验响应版本、完整目标、线程、引用、完整来源回显及子文件安全元数据和原消息授权。缺失能力明确结束本次等待。普通上传下载保持既有边界；可选documentSource承载授权，本机documentMessageSource仅用于重新授权。实现、旧证据匹配与合并进度见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F72：通用文档解析接口不变。EasyWork仅在attachments:resolve-document-link:v1存在时发送resource/resolve-document-link，参数version=1、完整target、threadId、source(resourceId/grantId/version/messageId/sha256)与reference。校验响应版本、完整目标、线程、引用、完整来源回显及子文件安全元数据和原消息授权。缺失能力明确结束本次等待。普通上传下载保持既有边界；可选documentSource承载授权，本机documentMessageSource仅用于重新授权。实现、旧证据匹配与合并进度见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
 F28 的 EasyWork v2 适配新增具名 thread/open 与只读 thread/open-status，参数仅 threadId 和 clientOperationId，完整目标来自加密信封。原操作按目标、设备、方法和不可变参数持久保存。打开使用原桌面窗口通道，原窗口确认后返回 opened，等待超时返回 outcome-unknown。状态查询先校验原操作，继而只读核窗口状态；原操作 ID 再次提交复用原回执。desktop:open 随已装配的原窗口通道就绪声明。iOS 映射到通用 DesktopOpenOperation；打开回执的确认策略由 Agent 适配器声明，公共状态机不按客户端名称分支，保留既有 Host 行为和旧端独立能力协商。
 
@@ -19,6 +21,8 @@ F28 的 EasyWork v2 适配新增具名 thread/open 与只读 thread/open-status�
 清单固定 version、hostId、UUID id、文件名/类型/长度/SHA-256、purpose 及 threadId/creationId/attachmentId；未使用的归属字段显式 null。purpose 只允许 file-transfer、attachment、creation-attachment。回执包含 uploading/verifying/completed/cancelled、committedBytes、maxChunkBytes 和完成资源。分块使用二进制正文、offset、X-Content-SHA256，不接受任意文件路径、shell 或方法透传。
 
 确认位置只代表已持久化的连续字节，手机发送计数不能代替它。完整摘要失败不发布；complete 幂等，未知结果先查询。取消与完成竞争由原状态决定，已经交付的文件不能通过取消撤回。重启不更换目标、上传 ID 或清单，暂存文件长度不构成已确认进度。失效暂存保留 cancelled/expired 回执，不触发新的自动上传。EasyWork resource/upload 系列留在对应适配层，本协议不宣称实现 tus 或 Apple 原生续传草案。
+
+2026-11-18 F52/F54：`GET /v1/notifications/recovery-v2/capabilities` 仅在调用方显式附带唯一 `pushProviders=1` 时返回推送 provider 投影；默认 JSON 保持原结构，旧 iOS/Android 解码器无需变化。v2 登记意图可成对携带 `pushProvider: "fcm"` 与 `deviceToken`，只允许启用的 register；两者纳入原意图摘要、持久回执和代次围栏。收到原提交回执与确认外部绑定可用是两步，状态读取不能确认旧 v1 unknown；已采用 v2 的设备不能用旧 v1 写入覆盖代次。令牌及发送凭据不进入诊断或共享报告。EasyWork 继续使用适配器内既有 v1 通知协议，其未知写入保留原件且不自动重放；F67 业务通知不在此次范围。
 
 2026-11-04 F69：Windows 原桌面 Responses 采集沿用建议只读契约 `source=native-trace` 与 `validity=native-version`，可附 `provenance:{kind:"responses-forwarder",responseId,desktopDisplay:"unobserved"}`。这是原生成网络记录的来源标识，不能等同于当前桌面显示或原安全判定。来源仍绑定完整机器目标、原 owner 和准确最新完成轮，读取不生成；旧客户端可忽略新增可选字段。macOS 原安全后 native-sample 契约未修改，详见[专项记录](acceptance/windows-response-suggestions-20261104.md)。
 
@@ -147,6 +151,8 @@ stateDiagram-v2
 
 `steer` 必须带 `expectedTurnId`；只有当前 Turn 与前置条件一致时才能执行。`queue` 和 `steer` 根据目标电脑能力开放，不能假定所有版本都支持。
 
+原队列立即执行若显式携带 `expectedTurnId`，该条件持续约束原生队列移除和 owner 刷新后的实际投递。原 Turn 已结束或被替换时拒绝追加，不能转为 `next-turn`；追加 wire 仍固定原 expected Turn。未提供该条件时保留原有空闲执行语义。原项已移除但追加结果未确认时保留同一操作 ID 的 `uncertain` 回执，不重复移除、重建队列项或发送；已确认接受的原结果仍只查询。这项源码修正的辅助与真实部署分别见[权威计划 M133/M135](plans/android-ios-alignment-20261107/progress.md)。
+
 ## 草案：事件恢复与错误
 
 - Host Agent 为输出事件持久化本机递增序号。每台 Host 独立管理恢复位置，多个订阅者收到同一事件标识。
@@ -228,16 +234,42 @@ HTTP 建议领域契约保持 schemaVersion=1，原生 Trace schema 1/2 的差�
 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。
 
+## Host 私有设备绑定管理候选（2026-11-14，F03/F61）
+
+本节是尚未采用/部署的 Host 管理 API 候选，不属于通知域、Codex JSON-RPC 或移动端 KMP wire；不新增普通聊天执行 capability。必须以原 Host access-key 认证；普通有效 phone token 返回403，binding.hostKeyAuthorized 只说明设备最初经过 Host Key 授权，不能授予管理员角色。原其他路由鉴权保持。
+
+- `GET /v1/private-connections/status?target=<JSON>&publicKeySha256=<hex64>`：两个且仅两个 query 字段，每个恰一次。target 恰 agentId/hostId/workspaceId/runtimeId 四字段，agentId=codex；不含 account。keySHA 是原始32字节设备公钥的 SHA-256，非 base64 文本摘要。返回恰 `{target, publicKeySha256, revoked, hostKeyAuthorized}`，无 token/tokenHash、公钥原文或列表。
+- `POST /v1/private-connections/revoke`：无 query，封闭 JSON body `{target,publicKeySha256,clientOperationId}`，operation 为小写规范 UUID。成功返回 `{clientOperationId,inputSha256,state:"confirmed",binding:<上述四字段投影>}`。同 ID/同输入返回原回执且不重写；同 ID/不同输入409。目标漂移、不唯一409，不存在404；任何额外字段/无效输入400。
+- 原 ID 查询复用 `GET /v1/private-connections/status?target=<JSON>&clientOperationId=<UUID>`，与 keySHA 模式互斥。未知持久记录404不能作为重发授权。`inputSha256` 为 UTF-8 `JSON.stringify({kind:"codex-private-connection-revoke-v1",target:<上述四字段依序>,publicKeySha256,clientOperationId})` 的 SHA-256；不包含凭据或其摘要。
+
+v1 私有文件仍使用原 bindings，旧 account 元数据逐值保持且不参与 Codex 机器身份门槛，旧文件 load 不主动重写。成功撤销把 bindings+confirmed operations 同一私有原子文件保存后才应答，后续 claim 保存保留全部旧回执。最多128 bindings/1024 operations/总1MiB，超限在任何变更前拒绝，不轮转删除旧/未知操作。临时文件独占创建、0600、同步、原私有 rename；POSIX 同步 parent directory，Windows 沿现有 User-owner/DACL writer 和文件 flush/rename 合同，不虚称本轮 Windows 原生验收。
+
+保存/rename/同步异常可发生在已发布之后：实例阻断私有设备鉴权、claim、新 revoke 和普通 status，返回 `503 PRIVATE_CONNECTION_STATE_UNCERTAIN`，不是让凭据失效的401。实际 Host key 仍可短路鉴权查询原操作。仅从同一原子文件重读原 input 的 confirmed 回执并重新同步成功后恢复；否则原 ID 查询为 `{clientOperationId,inputSha256,state:"unknown"}`，不含 binding durable 投影。写前失败的未知只能保留在当前实例；重启后若磁盘无原记录可能404，仍不能推断为未执行或重放。该失败策略可能暂时拒绝其他私有设备请求，未修改其持久绑定。
+
+有限辅助使用实际 PrivateConnections/新路由、合成临时私有状态及 loopback HTTP；不是正式 Host/TLS、Windows、原桌面、手机、模型或撤销 UI 通过。
+
+### F20 optional parent-chat association (private candidate specification)
+
+The default `GET /v1/subagents/history` and `subagents:history:read:v1` remain strict typed-parent-tool reads. The additional capability `subagents:history:parent-lineage:v1` permits an explicit `association=parent-thread-lineage` on that same named endpoint, with the complete machine `target`, existing parent thread and exact existing `kind=subAgent` anchor. It does not establish the anchor's old tool alias. No input, owner/control, follower, resume or execution capability is granted.
+
+After the normal typed read returns unavailable (HTTP 404), capable Android/iOS clients may show **View this chat’s subtasks**. No automatic fallback, text UUID extraction or extra choice before the normal read occurs. The existing child picker/paging is reused. The opt-in response is version 2, `association: parent-thread-lineage`, with separate `source: saved-history`; the caption says **Subtasks of this chat · Saved history**. Clients without the capability send no new query. Old clients and old Hosts retain their existing default behavior; prior iOS acceptance is unaffected by this optional increment.
+
+Every request reads the official first metadata catalog page using `parentThreadId`, `sourceKinds: [subAgentThreadSpawn]`, `limit: 100`, `modelProviders: []`, `useStateDbOnly: true` (non-archived official state DB catalog, no rollout repair/scan). Any next cursor or more than 32 rows is explicitly incomplete/unavailable, never truncated or reported as no children. Every row must have a unique structured ID and exact `source.subAgent.thread_spawn.parent_thread_id`. Discovery is not body authorization: only the selected candidate's fresh official `thread/read(includeTurns: false)` may authorize its body after strict child/parent verification. Omitted child chooses the first official catalog candidate. Every earlier page repeats catalog and selected-child proof; unavailable/malformed metadata rejects the read.
+
+Continuation is closed to the complete machine target, parent, anchor ID/content hash, selected child, association mode, saved source and actual backend cursor/history mode. Typed-v1 and lineage cursors cannot cross modes. Real reader subprocess/lifecycle and request-context/card fences reject late results; ordinary unchanged catalog refreshes do not invalidate paging by a clock. Paginated reads request one upstream item per page (no unconsumed tail); nonpaginated responses use a checked complete-snapshot continuation with at most 80 messages/1 MiB per page. Oversized items reject explicitly. No all-page body loop or fake upstream cursor is introduced. Source/Turn IDs and order remain intact.
+
+This is a proposed private patch specification, not evidence of compilation, deployment, native interaction or successful real child-body reading. Root owns adoption and the unique feature checklist. The old 404 and unproven tool-alias evidence remain valid historical observations.
+
 ## 首条消息创建记录的兼容恢复（2026-11-20）
 
 iOS 本地会话增加可选 `firstMessageCreations` 与 `detachedFirstMessageCreations`，旧会话缺省仍可读取。记录完整领域目标、项目、独立元数据操作 ID 与首条消息 ID、原正文、附件摘要及可选请求偏好；缺省偏好保持跟随电脑语义。旧记录缺少 `sourceDraft` 时继续保留其空值，不在恢复后补成新快照并触发原意图冲突。原元数据请求可能已提交时，仅允许查询原操作，不由缺失回执推导重发权限；结束等待不撤销远端。原记录确认后显式恢复草稿，实际发送仍须独立授权动作及当前目标检查。
 
 本地上传记录新增可选 `capturedFile`；旧记录缺字段按原上传路径读取。首条消息的原文件 ID 及准备、分块、完成命令 ID 和原参数保持，字节/目标/清单不符即拒绝。准备前读取原传输；未找到时再查原准备命令，已有回执但缺传输记录则有界结束并保留原件，不新发准备。普通上传的分块摘要 ID、20 MiB 限制与现有续传保持；没有新增远端方法或放宽身份校验。EasyWork 命令命名适配仍留在适配层，公共存储只保存领域文件清单。
 
-新状态存在未决创建或捕获上传时，回退到不理解这些字段的旧 App 可能丢失恢复上下文；须先核清原记录并保留当前加密状态与附件，不能让旧版覆盖后再重发。没有执行旧版回退或宣称任意未来版本可用。iOS 与 Android 及旧/新桌面组合分别按实际实现和证据核对，当前状态只见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+新状态存在未决创建或捕获上传时，回退到不理解这些字段的旧 App 可能丢失恢复上下文；须先核清原记录并保留当前加密状态与附件，不能让旧版覆盖后再重发。没有执行旧版回退或宣称任意未来版本可用。iOS 与 Android 及旧/新桌面组合分别按实际实现和证据核对，当前状态只见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
 ## EasyWork 异步问题集合与回答确认（2026-11-20）
 
 iOS 适配读取 questionStates 中全部 pending 异步请求；旧端未提供集合时保留 pendingQuestion 回退，阻塞问题继续使用原等待语义。异步请求不把真实 running、paused 或已结束状态改成等待审批。领域 Approval 承载原 threadId/runId/sessionId/toolCallId 和问题内容，身份排除可变回答及状态元数据；命令审批仍使用独立原身份与权限回执规则。
 
-回答沿用具名 serverRequest/resolve 和原 kind/action/请求引用，校验原身份、问题键、选项、多选与自定义限制。answer 只认 accepted=true，skip/deny 只认 abandoned=true；未确认不报告成功，不由此重放原操作。桌面已实现的同步／异步服务及严格身份处置保持；公共协议、传输和登录不新增方法或参数。本次源码、辅助检查与原限定真实证据分别记录于[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+回答沿用具名 serverRequest/resolve 和原 kind/action/请求引用，校验原身份、问题键、选项、多选与自定义限制。answer 只认 accepted=true，skip/deny 只认 abandoned=true；未确认不报告成功，不由此重放原操作。桌面已实现的同步／异步服务及严格身份处置保持；公共协议、传输和登录不新增方法或参数。本次源码、辅助检查与原限定真实证据分别记录于[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。

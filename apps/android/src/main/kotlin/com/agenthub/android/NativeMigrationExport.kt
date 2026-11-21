@@ -23,7 +23,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
             requireSupportedScopes(records.text,allowProvisional=true,allowInbox=true,allowSelections=true)
             owner?.let {it.requireCurrent();check(it.storage===storage);it.requireRawWriters()}
             val projected=NativeMigrationProvisionalVoice.project(context,storage,originals,owner)
-            val portable=projected.records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(projected.records.text)),projected.records.text))
+            val portable=projected.records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(projected.records.text))),projected.records.text))
             NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
             try {
@@ -45,7 +45,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
         requireSupportedScopes(original.text)
         NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.text.keys+original.binary.keys,null)
-        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)),original.text))
+        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(original.text))),original.text))
         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
         try {
             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)

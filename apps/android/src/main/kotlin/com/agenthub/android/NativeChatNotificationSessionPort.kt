@@ -17,6 +17,26 @@ internal class NativeChatNotificationSavedConnection private constructor(val cli
         .put("epoch", snapshot.credentialEpoch).put("authorization", snapshot.authorizationFingerprint)
     override fun toString() = "NativeChatNotificationSavedConnection(redacted)"
     companion object {
+        internal data class Inventory(
+            val connections: List<NativeChatNotificationSavedConnection>,
+            val unavailableTargets: Set<NativeChatNoticeTarget>,
+        )
+        /** Missing/invalid saved authority is local to its computer. Storage/codec failures still propagate. */
+        internal fun inventory(clients: List<MobileClient>, credential: (String) -> String): Inventory {
+            require(clients.size <= 64)
+            val saved = mutableListOf<NativeChatNotificationSavedConnection>()
+            val unavailable = linkedSetOf<NativeChatNoticeTarget>()
+            val targets = mutableSetOf<NativeChatNoticeTarget>()
+            for (client in clients) {
+                require(!client.isDemo && client.scope?.agentId == "codex" && client.agentConnection == null)
+                val target = NativeChatNoticeTarget.from(requireNotNull(client.scope))
+                require(client.id == target.hostId && targets.add(target))
+                val token = credential(client.id)
+                if (NativeChatNotificationSnapshot.acceptsCredential(token)) saved += capture(client, token)
+                else unavailable += target
+            }
+            return Inventory(saved.toList(), unavailable.toSet())
+        }
         /** Call on IO with a client and token captured from the same saved Session/storage generation. */
         fun capture(client: MobileClient, credential: String): NativeChatNotificationSavedConnection {
             require(!client.isDemo && client.scope?.agentId == "codex" && client.agentConnection == null)
@@ -45,10 +65,13 @@ internal data class NativeChatNotificationSessionState(val ready: Boolean, val f
 /** Session-owned Main boundary. Production must use the same storage and phoneReading.ledger, never a second ledger. */
 internal interface NativeChatNotificationSessionPort {
     val storage: NativeSessionStorage
+    val easyWork: NativeEasyWorkNotificationSessionPort? get() = null
     val reading: NativeChatNotificationReading
     fun state(): NativeChatNotificationSessionState
     /** Capture realClients on Main, read their tokens on IO, and recheck metadata + Session generation on Main. */
     suspend fun savedConnections(): List<NativeChatNotificationSavedConnection>
+    /** Targets rejected by the latest completed savedConnections capture; published on Main with that same generation. */
+    val unavailableConnectionTargets: Set<NativeChatNoticeTarget> get() = emptySet()
     /** Exact active set from the Host, applied to this Session's existing P7 ledger on IO, published on Main. */
     suspend fun reconcileActive(target: NativeChatNoticeTarget, ids: Set<String>, current: () -> Boolean)
     /** Main-only, no suspension: validate the saved connection and adopt the actual read result, preserving all draft maps. */

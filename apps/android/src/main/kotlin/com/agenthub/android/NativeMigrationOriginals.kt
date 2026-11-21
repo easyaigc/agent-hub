@@ -48,6 +48,7 @@ internal object NativeMigrationOriginals {
     /** Exact legacy archive aliases only. Unknown destination legacy files still reject the inventory. */
     private fun legacyNames(read: (String)->String?): Set<String> = buildSet {
         add("metadata");add(NativeVoicePreferenceRecord.RECORD);add(NativeSelectionReturnAudit.RECORD)
+        addAll(NativeMigrationUploadArchives.SOURCE_NAMES)
         add(NativeMigrationInbox.RECORD);read(NativeMigrationInbox.RECORD)?.let {addAll(NativeMigrationInbox.legacyNames(it))}
         addAll(NativeMigrationSelections.legacyNames(read));addAll(NativeMigrationPhotoLocals.legacyNames(read))
         addAll(NativeMigrationPrivateClaims.legacyNames(read))

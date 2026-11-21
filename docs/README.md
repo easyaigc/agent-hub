@@ -1,18 +1,22 @@
 # 文档索引
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 跨客户端接入必须遵守 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)：复用现有 App 与实际 Host 契约，差异留在 Host／Adapter，操作分类、回执与恢复按共同语义审查。
 
 持续适用的升级原则见 [全局设计规范：版本演进与兼容](design/compatibility.md)：默认保留已有功能，独立协商新能力；不兼容例外须说明影响并提供迁移、回退与回归安排。
 
 iOS 对接 EasyWork 的唯一计划入口为 [对齐总览](plans/ios-easywork-alignment-20261112/README.md)，当前状态见 [自动生成进度表](plans/ios-easywork-alignment-20261112/progress.md)。后续开发、验收、交付和阻塞统一更新该计划的 `status.json`，旧计划与矩阵仅保留历史证据；不在其他文档独立维护本任务完成数。规则见 [维护约定](plans/ios-easywork-alignment-20261112/maintenance.md)。
 
+Android / iOS × Codex / EasyWork 的当前开发、验收、剩余项与调度以[权威状态和计划](plans/android-ios-alignment-20261107/progress.md)为唯一来源；本页及其他历史资料不独立发布完成率。
+
 额度与余额的新需求见[实施计划](plans/agent-usage-20261028.md)、[类型与约束](design/agent-usage-contract.md)及[手机 UI](design/agent-usage.md)：F73 已按确认的修订 6 落地协议、Codex／EasyWork 适配及双端原生入口；真实与辅助结果见[验收记录](acceptance/agent-usage-20261028.md)。
 
-Android 的当前范围、已完成/未完成、优先级与待验项统一见[开发计划与进度总表](plans/android-alignment-20261022/progress.md)；详细过程按主题保存在[分阶段档案](plans/android-alignment-20261022/records/README.md)，总表不再追加运行流水。
+Android 的当前范围、已完成/未完成、优先级与待验项统一见[开发计划与进度总表](plans/android-ios-alignment-20261107/progress.md)；详细过程按主题保存在[分阶段档案](plans/android-alignment-20261022/records/README.md)，总表不再追加运行流水。
 
 手机附件快捷入口见 [详细执行计划](plans/mobile-quick-attachments-20261024.md)：iOS 首批已接入最近图片轻提示、加号快选、拍照、选图、文件与系统粘贴，均先加入本地草稿，点击发送后才上传。辅助检查与真实 DEV 分别记录；外部分享为后续批次，Android A6 暂停要求保持。
 
-Android 已获准按计划分阶段实施，当前专用分支、验收门槛与提交记录见[分步进度](plans/android-alignment-20261022/progress.md)。
+Android 已获准按计划分阶段实施，当前专用分支、验收门槛与提交记录见[分步进度](plans/android-ios-alignment-20261107/progress.md)。
 Windows 已有对话的本轮恢复与独立真机结果见 [Windows 同步复核](windows-conversation-sync.md)，正式原连接验收与独立安装的结果分别登记。
 
 Android 的原始依据见[217 条逐提交对照](plans/android-alignment-20261022/commits.md)和[冻结功能/UI/场景矩阵](plans/android-alignment-20261022/parity.md)。业务项目/任务管理暂缓，A6 保持暂停。[更换后的 Android 真机环境结果](acceptance/android-environment-20261021.md)保留为当时的环境证据，当前阶段结果以总表和对应档案为准。

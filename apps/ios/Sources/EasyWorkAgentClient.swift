@@ -155,6 +155,11 @@ enum EasyWorkPlanArtifactProjection {
 }
 
 enum EasyWorkReceiptNormalization {
+  // Foundation also bridges numeric 1 to Bool. A cancellation ACK must be a JSON boolean.
+  static func confirmedCancellation(_ value: Any?) -> Bool {
+    guard let flag = value as? NSNumber, String(cString: flag.objCType) == "c" else { return false }
+    return flag.boolValue
+  }
   static func decode(_ result: [String: Any], clientMessageId: String, hostId: String,
     threadId: String, defaultState: String, fallbackTurnId: String? = nil,
     fallbackError: String? = nil) throws -> DeliveryReceipt {
@@ -521,7 +526,7 @@ struct EasyWorkAgentClient: AgentClient {
   }
   func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult {
     let result = try object(await session(client).request("queue/cancel", ["threadId": threadId, "messageId": messageId]))
-    return CommandResult(ok: result["cancelled"] as? Bool == true)
+    return CommandResult(ok: EasyWorkReceiptNormalization.confirmedCancellation(result["cancelled"]))
   }
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot {
     let channel = try await session(client)
@@ -804,7 +809,7 @@ struct EasyWorkAgentClient: AgentClient {
     return SubagentHistorySnapshot(version: 1, hostId: client.id, readTarget: readingTarget(channel.target),
       parentThreadId: parentThreadId, messageId: messageId,
       children: [.init(id: selected.childId, title: title, status: selected.status)],
-      childId: selected.childId, threadId: parentThreadId, source: "saved-history",
+      childId: selected.childId, threadId: parentThreadId, association: nil, source: "saved-history",
       messages: window.messages, nextCursor: window.nextCursor)
   }
 
@@ -971,7 +976,9 @@ struct EasyWorkAgentClient: AgentClient {
       hostId: client.id, threadId: reply.threadId, defaultState: "submitted",
       fallbackTurnId: reply.expectedTurnId)
   }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt {
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt {
+    guard !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+      !threadId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw HostServiceError.wrongHost }
     let channel = try await session(client)
     let originalTarget = channel.target
     guard client.agentConnection?.target == readingTarget(originalTarget) else { throw HostServiceError.wrongHost }
@@ -986,10 +993,14 @@ struct EasyWorkAgentClient: AgentClient {
       if let raw = value["hostId"], !(raw is NSNull),
         raw as? String != originalTarget.desktopDeviceId { throw HostServiceError.wrongHost }
     }
+    func verifyThread(_ value: [String: Any]) throws {
+      if let raw = value["threadId"], !(raw is NSNull), raw as? String != threadId { throw HostServiceError.wrongHost }
+    }
     let bytes = try await channel.request("command/status", ["commandId": id])
     guard !bytes.elementsEqual(Data("null".utf8)) else { throw HostServiceError.message(L10n.tr("Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。")) }
     let value = try object(bytes)
     try verifyTarget(value)
+    try verifyThread(value)
     for key in ["operationId", "clientMessageId"] {
       if let observed = value[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
     }
@@ -999,33 +1010,33 @@ struct EasyWorkAgentClient: AgentClient {
     let result = response?["result"] as? [String: Any]
     if let result {
       try verifyTarget(result)
+      try verifyThread(result)
       for key in ["operationId", "clientMessageId"] {
         if let observed = result[key], !(observed is NSNull), observed as? String != id { throw HostServiceError.wrongHost }
       }
-      if let recorded = value["threadId"] as? String, let reported = result["threadId"] as? String, recorded != reported { throw HostServiceError.wrongHost }
     }
-    func originalQueueReceipt(_ thread: String) async throws -> DeliveryReceipt? {
-      let queued = try await channel.request("queue/status", ["threadId": thread, "messageId": id])
+    func originalQueueReceipt() async throws -> DeliveryReceipt? {
+      let queued = try await channel.request("queue/status", ["threadId": threadId, "messageId": id])
       if queued.elementsEqual(Data("null".utf8)) { return nil }
       let value = try object(queued)
       try verifyTarget(value)
       guard value["clientMessageId"] as? String == id,
-        value["threadId"] as? String == thread else { throw HostServiceError.wrongHost }
+        value["threadId"] as? String == threadId else { throw HostServiceError.wrongHost }
       return try EasyWorkReceiptNormalization.decode(value, clientMessageId: id,
-        hostId: client.id, threadId: thread, defaultState: "uncertain")
+        hostId: client.id, threadId: threadId, defaultState: "uncertain")
     }
     if result?["state"] as? String == "queued" || result?["queueSource"] as? String != nil {
-      guard let thread = result?["threadId"] as? String else { throw HostServiceError.invalidResponse }
-      guard let receipt = try await originalQueueReceipt(thread) else { throw HostServiceError.invalidResponse }
+      guard result?["threadId"] as? String == threadId else { throw HostServiceError.wrongHost }
+      guard let receipt = try await originalQueueReceipt() else { throw HostServiceError.invalidResponse }
       return receipt
     }
     // The queue may have durably accepted this input before its command acknowledgement was saved.
     // Query the original admission; its absence never grants permission to resend the input.
     if result == nil, value["method"] as? String == "turn/start",
       ["submitting", "uncertain"].contains(value["state"] as? String ?? ""),
-      let thread = value["threadId"] as? String, !thread.isEmpty {
+      value["threadId"] as? String == threadId {
       do {
-        if let receipt = try await originalQueueReceipt(thread) { return receipt }
+        if let receipt = try await originalQueueReceipt() { return receipt }
       } catch let error as EasyWorkRemoteRejection
         where ["method_unavailable", "queue_unavailable"].contains(error.code ?? "") {
         // Older hosts can still report the original unknown command without a queue query port.
@@ -1041,7 +1052,7 @@ struct EasyWorkAgentClient: AgentClient {
     let submitted = value["state"] as? String == "completed" && hasRun
       && ["turn/start", "plan/action"].contains(value["method"] as? String ?? "")
     return try EasyWorkReceiptNormalization.decode(result ?? [:], clientMessageId: id,
-      hostId: client.id, threadId: result?["threadId"] as? String ?? value["threadId"] as? String ?? "",
+      hostId: client.id, threadId: threadId,
       defaultState: rejected ? "failed" : submitted ? "submitted" : "uncertain",
       fallbackError: (response?["error"] as? [String: Any])?["message"] as? String)
   }
@@ -1060,7 +1071,7 @@ struct EasyWorkAgentClient: AgentClient {
   }
   func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult {
     let response = try object(await session(client).request("turn/cancel", ["threadId": threadId, "turnId": turnId]))
-    return CommandResult(ok: response["cancelled"] as? Bool == true)
+    return CommandResult(ok: EasyWorkReceiptNormalization.confirmedCancellation(response["cancelled"]))
   }
   private func permissionApproval(_ request: [String: Any], threadId: String, capabilities: [String]) throws -> Approval {
     let keys = ["threadId", "runId", "toolCallId", "operationId", "requestHash"]

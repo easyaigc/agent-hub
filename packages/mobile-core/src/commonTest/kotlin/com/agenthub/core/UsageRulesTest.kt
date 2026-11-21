@@ -107,4 +107,82 @@ class UsageRulesTest {
         assertEquals(0.0,actual.getValue("metrics").jsonArray.first().jsonObject.getValue("remainingPercent").jsonPrimitive.double)
     }
 
+    private fun projection(metrics: List<JsonObject>, now: Long? = null): JsonObject {
+        val root = vectors
+        val response = root.getValue("cases").jsonArray.first().jsonObject.getValue("response").jsonObject
+        val snapshot = response.getValue("snapshot").jsonObject
+        val bucket = snapshot.getValue("buckets").jsonArray.first().jsonObject
+        val changed = JsonObject(response + ("snapshot" to JsonObject(snapshot + ("buckets" to JsonArray(listOf(
+            JsonObject(bucket + ("metrics" to JsonArray(metrics)))
+        ))))))
+        return Json.parseToJsonElement(UsageRules.project(changed.toString(), root.getValue("target").toString(),
+            now ?: root.getValue("nowMillis").jsonPrimitive.long)).jsonObject
+    }
+    private fun originalMetrics(): List<JsonObject> = vectors.getValue("cases").jsonArray.first().jsonObject
+        .getValue("response").jsonObject.getValue("snapshot").jsonObject.getValue("buckets").jsonArray.first()
+        .jsonObject.getValue("metrics").jsonArray.map { it.jsonObject }
+
+    @Test fun observedTimeCannotAccumulateTwoClockSkewAllowances() {
+        // sampledAt +2 min and observedAt +4 min used to pass two independent +2 min checks.
+        val root = vectors
+        val response = root.getValue("cases").jsonArray.first().jsonObject.getValue("response").toString()
+            .replace("2026-10-28T01:00:00.000Z", "2026-10-28T01:02:00.000Z")
+            .replace("2026-10-28T01:01:00.000Z", "2026-10-28T01:05:00.000Z")
+            .replace("\"observedAt\":\"2026-10-28T01:02:00.000Z\"", "\"observedAt\":\"2026-10-28T01:04:00.000Z\"")
+        assertFails { UsageRules.project(response, root.getValue("target").toString(), 1793149200000) }
+        val onBoundary = response.replace("2026-10-28T01:04:00.000Z", "2026-10-28T01:02:00.000Z")
+        val valid = Json.parseToJsonElement(UsageRules.project(onBoundary, root.getValue("target").toString(),
+            1793149200000)).jsonObject
+        assertEquals(77.0, valid.getValue("percent").jsonPrimitive.double)
+        assertEquals(23.0, valid.getValue("metrics").jsonArray.first().jsonObject.getValue("percent").jsonPrimitive.double)
+    }
+
+    @Test fun bucketAndMetricIdsRemainDistinctWhenIdsContainSeparators() {
+        val root = vectors
+        val response = root.getValue("cases").jsonArray.first().jsonObject.getValue("response").jsonObject
+        val snapshot = response.getValue("snapshot").jsonObject
+        val bucket = snapshot.getValue("buckets").jsonArray.first().jsonObject
+        val balance = originalMetrics().last()
+        fun bucket(id: String, metric: String) = JsonObject(bucket + mapOf("id" to JsonPrimitive(id),
+            "metrics" to JsonArray(listOf(JsonObject(balance + ("id" to JsonPrimitive(metric)))))))
+        val changed = JsonObject(response + ("snapshot" to JsonObject(snapshot + ("buckets" to
+            JsonArray(listOf(bucket("a/b", "c"), bucket("a", "b/c")))))))
+        val actual = Json.parseToJsonElement(UsageRules.project(changed.toString(), root.getValue("target").toString(),
+            root.getValue("nowMillis").jsonPrimitive.long)).jsonObject
+        val metrics = actual.getValue("metrics").jsonArray
+        assertEquals(2, metrics.map { it.jsonObject.getValue("id") }.distinct().size)
+        assertEquals(1, actual.getValue("extraBalances").jsonPrimitive.int)
+    }
+
+    @Test fun multipleWindowsAndUnitsStaySeparateAndKeepExactAmounts() {
+        val (window, balance) = originalMetrics()
+        val secondWindow = JsonObject(window + mapOf("id" to JsonPrimitive("short"), "label" to JsonPrimitive("5h"),
+            "window" to buildJsonObject { put("durationSeconds",18000); put("resetsAt",JsonNull); put("resetPolicy","rolling") },
+            "reading" to buildJsonObject { put("state","measured"); put("usage",buildJsonObject { put("kind","percentage"); put("usedPercent",99) }) }))
+        val money = JsonObject(balance + mapOf("id" to JsonPrimitive("money"),
+            "unit" to buildJsonObject { put("kind","currency"); put("code","USD"); put("label","USD") },
+            "reading" to buildJsonObject { put("state","amount"); put("amount","-0.000000000000000000000001"); put("entitlement","unlimited") }))
+        val actual = projection(listOf(window, balance, secondWindow, money))
+        val metrics = actual.getValue("metrics").jsonArray
+        assertEquals(4, metrics.size)
+        assertEquals(77.0, actual.getValue("percent").jsonPrimitive.double)
+        assertEquals(23.0, actual.getValue("metrics").jsonArray.first().jsonObject.getValue("percent").jsonPrimitive.double)
+        assertEquals("9,007,199,254,740,993.12", actual.getValue("balance").jsonPrimitive.content)
+        assertEquals(1, actual.getValue("extraBalances").jsonPrimitive.int)
+        assertEquals("-0.000000000000000000000001", metrics.last().jsonObject.getValue("value").jsonPrimitive.content)
+        assertEquals("USD", metrics.last().jsonObject.getValue("unit").jsonPrimitive.content)
+        assertEquals("unlimited", metrics.last().jsonObject.getValue("entitlement").jsonPrimitive.content)
+        assertEquals(JsonNull, metrics[2].jsonObject["resetAt"])
+    }
+
+    @Test fun expiredSampleKeepsOriginalValuesAndDoesNotLocallyResetWindow() {
+        val metrics = originalMetrics()
+        val actual = projection(metrics, 1794000000000)
+        assertEquals(JsonPrimitive(true), actual["stale"])
+        assertEquals(77.0, actual.getValue("percent").jsonPrimitive.double)
+        assertEquals(23.0, actual.getValue("metrics").jsonArray.first().jsonObject.getValue("percent").jsonPrimitive.double)
+        assertEquals(metrics.last().getValue("reading").jsonObject.getValue("amount"),
+            actual.getValue("metrics").jsonArray.last().jsonObject["value"])
+    }
+
 }

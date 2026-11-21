@@ -8,7 +8,7 @@ iOS 根视图使用 `.tint(.primary)`；照片选中圆圈使用主题强调色�
 
 附件选择统一使用系统 label 作为填充、systemBackground 作为文字与加载指示颜色，保持浅色黑底白字、暗色白底黑字。最近图片及相册网格复用相同序号、描边和添加按钮；禁用、按下与导入中状态由共享按钮样式呈现。全屏图片预览沿用深色画布并显式设置深色环境，避免浅色来源页面影响内部语义色；已添加勾选采用灰底白色图标。触控高度、选择顺序、取消、原草稿、五个附件上限及仅发送时上传的行为沿用原规则。
 
-Android 照片选择已使用 MaterialTheme 的 primary/onPrimary 配对；本次无 Android 代码变更或新增验收，不改变 A6 暂停范围。此为双 Agent 共用附件外观修复，不提升 iOS × EasyWork 唯一计划父项状态。
+Android 照片选择已使用 MaterialTheme 的 primary/onPrimary 配对；本次无 Android 代码变更或新增验收，不改变 A6 暂停范围。此为双 Agent 共用附件外观修复，不提升 iOS × EasyWork 历史计划父项状态。
 
 ## 验证与交付
 

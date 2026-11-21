@@ -19,7 +19,7 @@ internal class NativeChatRecoveryLocalView(val operations: List<NativeChatRecove
 /** IO-only original operation/event journal. It does not own unread rules or portable identities. */
 internal class NativeChatNotificationRecoveryStore(private val storage: NativeSessionStorage) {
     companion object {
-        const val RECORD = "native-chat-notification-recovery-v2"
+        const val RECORD = NativeChatNotificationIdentity.RECOVERY_RECORD
         private const val MAX_BYTES = 4 * 1024 * 1024
         private val results = setOf("pending", "waiting-host", "processing", "suppressed", "system-unavailable", "submitted-to-system", "unknown-no-replay",
             "unknown-interrupted-no-replay", "stale-target-or-generation", "expired-or-future", "duplicate-expired-or-read", "host-inactive", "host-expired")
@@ -131,7 +131,7 @@ internal class NativeChatNotificationRecoveryStore(private val storage: NativeSe
     /** Persists attempted/unknown and complete raw original before any HTTP write. Explicit revoke can coexist with older unknown. */
     fun reserve(identity: NativeChatNotificationIdentity, snapshot: NativeChatNotificationSnapshot, epoch: String,
         preferences: NativeChatNotificationPreferences, kind: String, current: () -> Boolean, explicit: Boolean = false,
-        gap: NativeChatRecoveryGap? = null, operationId: String = UUID.randomUUID().toString()): NativeChatRecoveryIntent = transaction(identity, snapshot.target, true) { _, row ->
+        gap: NativeChatRecoveryGap? = null, operationId: String = UUID.randomUUID().toString(), deviceToken: String? = null): NativeChatRecoveryIntent = transaction(identity, snapshot.target, true) { _, row ->
         val view = view(row); check(current())
         require(view.operations.none { it.original.operationId == operationId }) { "Original action already saved; query it" }
         val floor = view.applied?.takeIf { it.original.epoch == epoch }?.original?.generation ?: 0L
@@ -140,7 +140,7 @@ internal class NativeChatNotificationRecoveryStore(private val storage: NativeSe
         require(!explicit || kind in setOf("revoke", "feed-reset"))
         val generation = if (kind == "feed-reset") requireNotNull(view.applied).original.generation else (view.operations.filter { it.original.kind != "feed-reset" }.maxOfOrNull { it.original.generation } ?: 0) + 1
         require(generation in 1..9_007_199_254_740_991L)
-        val original = NativeChatRecoveryIntent.create(identity, snapshot.target, preferences, epoch, generation, kind, operationId, gap)
+        val original = NativeChatRecoveryIntent.create(identity, snapshot.target, preferences, epoch, generation, kind, operationId, gap, deviceToken)
         row.getJSONArray("operations").put(JSONObject().put("original", original.json()).put("authorization", snapshot.authorizationFingerprint).put("state", "unknown").put("receipt", JSONObject.NULL))
         if (gap != null) row.getJSONArray("gaps").put(gap.json().put("operationId", original.operationId))
         original

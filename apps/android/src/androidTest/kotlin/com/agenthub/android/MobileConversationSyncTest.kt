@@ -31,12 +31,12 @@ class MobileConversationSyncTest {
         if(target!=null)value.put("readTarget",CodexCommandCodec.target(target))
         return HostReadCodec.workspace(value.toString())
     }
-    private fun history(thread: String,state: String="live",count: Int=1,host: String="sync-fixture",unknownRuntime: Boolean=false,events: Boolean=false,target: TargetScope?=null,nextCursor: String?=null): MobileHistory {
+    private fun history(thread: String,state: String="live",count: Int=1,host: String="sync-fixture",unknownRuntime: Boolean=false,events: Boolean=false,target: TargetScope?=null,nextCursor: String?=null,eventEpoch: String="sync-epoch",eventCursor: Long=0): MobileHistory {
         val value=JSONObject().put("hostId",host).put("threadId",thread)
             .put("messages",JSONArray((0 until count).map { JSONObject().put("id","$thread-$it").put("role","assistant").put("text","$thread $state row $it").put("status","completed") }))
             .put("synchronization",JSONObject().put("state",state).put("checkedAt","2026-10-22T00:00:00Z"))
         if(unknownRuntime)value.put("runtime",JSONObject().put("state","unknown").put("turnId",JSONObject.NULL).put("plan",JSONArray()).put("error",JSONObject.NULL).put("approvals",JSONArray()).put("receipts",JSONArray()).put("canControl",false))
-        if(events)value.put("readTarget",CodexCommandCodec.target(eventScope)).put("epoch","sync-epoch").put("cursor",0)
+        if(events)value.put("readTarget",CodexCommandCodec.target(eventScope)).put("epoch",eventEpoch).put("cursor",eventCursor)
         if(target!=null)value.put("readTarget",CodexCommandCodec.target(target))
         if(nextCursor!=null)value.put("nextCursor",nextCursor)
         return HostReadCodec.history(value.toString())
@@ -176,12 +176,16 @@ class MobileConversationSyncTest {
         ui.onNodeWithTag("conversation-sync-failure").assertTextEquals("对话同步失败");assertEquals("原工作区草稿",session.text)
     }
     private val eventScope get()=TargetScope("codex",null,null,"sync-fixture","sync-workspace","desktop-runtime")
-    private fun slowHistoryAfterFreshEvent(failClosed: Boolean,unknownRuntime: Boolean=false) {
+    private fun slowHistoryAfterFreshEvent(failClosed: Boolean,unknownRuntime: Boolean=false,lateSuccess: Boolean=false) {
         var hold=false;val started=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>();val eventRelease=CompletableDeferred<Unit>();var delivered=false
         val reader=object: HostReads {
             override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=workspace(mode="desktop-runtime",events=true)
             override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
-                if(hold) { started.complete(Unit);release.await();throw if(failClosed)HostReadError("认证失败",null,false) else HostReadError("late timeout",SocketTimeoutException(),true) }
+                if(hold) {
+                    started.complete(Unit);release.await()
+                    if(lateSuccess)return history(threadId,"history",count=120,events=true)
+                    throw if(failClosed)HostReadError("认证失败",null,false) else HostReadError("late timeout",SocketTimeoutException(),true)
+                }
                 return history(threadId,events=true)
             }
         }
@@ -199,12 +203,85 @@ class MobileConversationSyncTest {
             release.complete(Unit);ui.waitUntil(10_000) { !session.historyLoading }
             if(failClosed) { assertFalse(session.selectedClient.online);assertTrue(session.error?.contains("认证失败")==true) }
             else { ui.onNodeWithTag("conversation-sync-failure").assertTextEquals("实时进度已同步");assertTrue(session.selectedClient.online);assertNull(session.error) }
+            if(lateSuccess)assertEquals(listOf("old live-window row 0"),session.messages.map { it.text })
             assertEquals("事件后保留草稿",session.text)
         } finally { release.complete(Unit);eventRelease.complete(Unit) }
     }
+    @Test fun freshEventSnapshotRejectsLateLongHistorySuccess()=slowHistoryAfterFreshEvent(false,lateSuccess=true)
     @Test fun newerSameConversationEventSupersedesOldTransientBannerInference()=slowHistoryAfterFreshEvent(false)
     @Test fun newerConversationSnapshotNeverMasksAuthenticationFailure()=slowHistoryAfterFreshEvent(true)
     @Test fun freshHistoryFallbackSurvivesSlowTimeoutWhenDesktopStateIsUnknown()=slowHistoryAfterFreshEvent(false,true)
+    @Test fun freshHistoryCheckpointRejectsAnOlderLongPollSnapshotAndCursor() {
+        val started=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>()
+        val repolled=CompletableDeferred<Pair<String,Long>>();val calls=AtomicInteger();var fresh=false
+        val reader=object: HostReads {
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=workspace(mode="desktop-runtime",events=true)
+            override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=
+                history(threadId,if(fresh)"history" else "live-window",events=true,eventCursor=if(fresh)7 else 0)
+        }
+        val commands=object: CodexCommands by NativeCodexCommands({""}) {
+            override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
+                if(calls.incrementAndGet()>1) { repolled.complete(epoch to cursor);awaitCancellation() }
+                withContext(NonCancellable) { started.complete(Unit);release.await() }
+                return EventBatch(client.id,"sync-epoch",50,false,true,null,listOf(history(threadId,"live-window",events=true,eventCursor=50)))
+            }
+        }
+        try {
+            connect(reader,commands);runBlocking { withTimeout(5_000) { started.await() } }
+            ui.runOnIdle { fresh=true;session.text="new checkpoint draft";session.loadHistory() }
+            ui.waitUntil(5_000) { !session.historyLoading&&session.messages.singleOrNull()?.text=="old history row 0" }
+            release.complete(Unit)
+            val checkpoint=runBlocking { withTimeout(5_000) { repolled.await() } }
+            assertEquals("sync-epoch" to 7L,checkpoint)
+            assertEquals(listOf("old history row 0"),session.messages.map { it.text })
+            assertEquals("new checkpoint draft",session.text);assertNull(session.error)
+        } finally { release.complete(Unit) }
+    }
+    @Test fun emptyGlobalCursorAdvanceKeepsTheSnapshotAndDoesNotTriggerGapReload() {
+        val quiet=CompletableDeferred<Long>();val requests=AtomicInteger();val histories=AtomicInteger()
+        val reader=object: HostReads {
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=workspace(mode="desktop-runtime",events=true)
+            override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
+                histories.incrementAndGet();return history(threadId,"live-window",events=true)
+            }
+        }
+        val commands=object: CodexCommands by NativeCodexCommands({""}) {
+            override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
+                if(requests.incrementAndGet()>=3) { quiet.complete(cursor);awaitCancellation() }
+                return EventBatch(client.id,"sync-epoch",cursor+10,false,true,null,emptyList())
+            }
+        }
+        connect(reader,commands)
+        val cursor=runBlocking { withTimeout(5_000) { quiet.await() } }
+        ui.runOnIdle { session.leaveForeground() }
+        assertEquals(20L,cursor);assertEquals("Empty thread-filtered advances are not missing history",1,histories.get())
+        assertEquals(listOf("old live-window row 0"),session.messages.map { it.text });assertNull(session.error)
+    }
+    private fun emptyRepairReloadsOnce(changedEpoch: Boolean) {
+        val repaired=CompletableDeferred<Pair<String,Long>>();val requests=AtomicInteger();val histories=AtomicInteger()
+        val reader=object: HostReads {
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=workspace(mode="desktop-runtime",events=true)
+            override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
+                val call=histories.incrementAndGet()
+                return history(threadId,if(call==1)"history" else "live-window",events=true,
+                    eventEpoch=if(call>1&&changedEpoch)"repaired-epoch" else "sync-epoch",eventCursor=if(call==1)0 else 5)
+            }
+        }
+        val commands=object: CodexCommands by NativeCodexCommands({""}) {
+            override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
+                if(requests.incrementAndGet()>1) { repaired.complete(epoch to cursor);awaitCancellation() }
+                return EventBatch(client.id,if(changedEpoch)"repaired-epoch" else "sync-epoch",5,!changedEpoch,true,null,emptyList())
+            }
+        }
+        connect(reader,commands)
+        ui.waitUntil(5_000) { histories.get()>=2&&!session.historyLoading&&session.messages.singleOrNull()?.text=="old live-window row 0" }
+        val checkpoint=runBlocking { withTimeout(5_000) { repaired.await() } }
+        ui.runOnIdle { session.leaveForeground() }
+        assertEquals((if(changedEpoch)"repaired-epoch" else "sync-epoch") to 5L,checkpoint)
+        assertEquals(2,histories.get());assertNull(session.error)
+    }
+    @Test fun explicitResetWithoutSnapshotRepairsFromHistory()=emptyRepairReloadsOnce(false)
+    @Test fun changedEpochWithoutSnapshotRepairsFromHistory()=emptyRepairReloadsOnce(true)
     @Test fun earlierPageFailureDoesNotReplaceLatestSynchronizationStatus() {
         connect(object: HostReads {
             override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=workspace()

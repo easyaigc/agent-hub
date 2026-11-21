@@ -16,15 +16,18 @@ struct SubagentHistoryPresentation: ViewModifier {
   let client: Client?
   let threadId: String?
   var supportsHistory = true
+  var lineageEnabled = false
+  var lineageContext = ""
+  var anchorCurrent: (String, String, ChatMessage) -> Bool = { _, _, _ in false }
   @State private var selection: Selection?
-  private struct Selection: Identifiable { let id: String; let message: ChatMessage }
+  private struct Selection: Identifiable { let id: String; let targetKey: String; let lineageContext: String; let message: ChatMessage }
   func body(content: Content) -> some View {
     let open: @MainActor @Sendable (ChatMessage) -> Void = { message in
-      selection = Selection(id: targetKey + "|" + message.id, message: message)
+      selection = Selection(id: targetKey + "|" + message.id, targetKey: targetKey, lineageContext: lineageContext, message: message)
     }
     return content.environment(\.openSubagentHistory, open)
     .sheet(item: $selection) { value in
-      SubagentDetailView(message: value.message, client: client, threadId: threadId, supportsHistory: supportsHistory).id(value.id)
+      SubagentDetailView(message: value.message, client: client, threadId: threadId, supportsHistory: supportsHistory, lineageEnabled: lineageEnabled, anchorCurrent: { anchorCurrent(value.targetKey, value.lineageContext, $0) }).id(value.id)
     }
     .onChange(of: targetKey) { _, _ in selection = nil }
   }
@@ -124,6 +127,12 @@ private struct SubagentDetailView: View {
   var client: Client?
   var threadId: String?
   var supportsHistory = true
+  var lineageEnabled = false
+  var anchorCurrent: (ChatMessage) -> Bool = { _ in false }
+  @State private var lineage = false
+  @State private var typedUnavailable = false
+  @State private var lineageRequest = UUID()
+  @State private var lineageLoading = false
   @Environment(\.dismiss) private var dismiss
   @Environment(\.scenePhase) private var scenePhase
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
@@ -138,7 +147,7 @@ private struct SubagentDetailView: View {
   @State private var retry = 0
   @State private var timelineCache = ChatTimelineCache()
 
-  private var key: String { (client?.id ?? "") + "|" + (threadId ?? "") + "|" + message.id + "|" + selectedChild }
+  private var key: String { (client?.id ?? "") + "|" + (threadId ?? "") + "|" + message.id + "|" + selectedChild + (lineage ? "|parent-thread-lineage" : "|typed-tool") }
   private var running: Bool { messages.contains { $0.status == "inProgress" } }
   private var loadingEarlier: Bool { earlierRequest != nil }
   private var statusLabel: String {
@@ -166,23 +175,43 @@ private struct SubagentDetailView: View {
         }
     }.presentationDetents([.large]).presentationDragIndicator(.visible)
       .task(id: refreshKey) { await observe() }
-      .onDisappear { earlierTask?.cancel(); earlierTask = nil }
+      .onDisappear { lineageRequest = UUID(); earlierTask?.cancel(); earlierTask = nil }
+      .onChange(of: lineage && (!lineageEnabled || !anchorCurrent(message))) { _, invalid in
+        if invalid { dismiss() }
+      }
       .onChange(of: scenePhase) { _, phase in if phase != .active { earlierTask?.cancel() } }
       .modifier(SubagentHistoryPresentation(targetKey: key, client: client, threadId: snapshot?.threadId, supportsHistory: supportsHistory))
   }
 
   private var content: some View {
     VStack(alignment: .leading, spacing: 18) {
-      if !supportsHistory {
+      if lineage && (!lineageEnabled || !anchorCurrent(message)) {
+        Text(L10n.tr("本聊天的子任务记录不可用或已变化，请刷新后重试"))
+      } else if !supportsHistory && !lineage {
         Text(L10n.tr("此客户端暂不支持完整子 Agent 过程")).font(.caption).foregroundStyle(Palette.secondary)
         Text(verbatim: message.detail ?? "").textSelection(.enabled)
           .accessibilityIdentifier("subagent-legacy-detail")
       } else if let snapshot { historyContent(snapshot) }
-      else if error == nil { ProgressView().accessibilityIdentifier("subagent-history-loading") }
+      else if error == nil && !lineage { ProgressView().accessibilityIdentifier("subagent-history-loading") }
+      if lineage {
+        Button(L10n.tr("刷新")) { retry += 1 }.disabled(lineageLoading)
+          .accessibilityIdentifier("subagent-history-refresh")
+        if lineageLoading { ProgressView().accessibilityIdentifier("subagent-history-loading") }
+      }
       if let error {
         Text(error).font(.callout).foregroundStyle(Palette.secondary).textSelection(.enabled)
           .accessibilityIdentifier("subagent-history-error")
         Button(L10n.tr("重试")) { retry += 1 }
+        if !lineage && typedUnavailable && !lineageEnabled {
+          Text(L10n.tr("这台电脑尚不支持按父聊天查看子任务，可返回查看原工具摘要。"))
+            .accessibilityIdentifier("subagent-parent-lineage-unsupported")
+        }
+        if !lineage && typedUnavailable && lineageEnabled && anchorCurrent(message) {
+          Button(L10n.tr("查看本聊天的子任务")) {
+            earlierTask?.cancel(); earlierRequest = nil
+            selectedChild = ""; lineage = true
+          }.accessibilityIdentifier("subagent-parent-lineage")
+        }
       }
     }.font(.body).frame(maxWidth: .infinity, alignment: .leading)
   }
@@ -193,11 +222,11 @@ private struct SubagentDetailView: View {
       Text(child.title).font(.headline).lineLimit(2).textSelection(.enabled)
         .accessibilityIdentifier("subagent-detail-title-\(message.id)")
     }
-    Text(value.source == "saved-history" ? L10n.tr("最近保存的记录") : L10n.tr("实时记录"))
+    Text(value.association == "parent-thread-lineage" ? L10n.tr("本聊天的子任务 · 最近保存的记录") : value.source == "saved-history" ? L10n.tr("最近保存的记录") : L10n.tr("实时记录"))
       .font(.caption).foregroundStyle(Palette.secondary)
     Text(statusLabel).font(.callout).foregroundStyle(Palette.secondary)
       .accessibilityIdentifier("subagent-detail-status-\(message.id)")
-    if nextCursor != nil {
+    if nextCursor != nil && !lineageLoading {
       Button(L10n.tr("显示更早消息")) { earlierTask = Task { await loadEarlier() } }
         .disabled(loadingEarlier).accessibilityIdentifier("subagent-history-more")
     }
@@ -207,7 +236,14 @@ private struct SubagentDetailView: View {
   private func childPicker(_ value: SubagentHistorySnapshot) -> some View {
     Picker(L10n.tr("子 Agent"), selection: Binding<String>(get: {
       selectedChild.isEmpty ? value.childId : selectedChild
-    }, set: { selectedChild = $0 })) {
+    }, set: {
+      guard selectedChild != $0 else { return }
+      if lineage {
+        lineageRequest = UUID(); earlierTask?.cancel(); earlierRequest = nil
+        messages = []; nextCursor = nil
+      }
+      selectedChild = $0
+    })) {
       ForEach(value.children) { child in Text(child.title).tag(child.id) }
     }.pickerStyle(.menu)
   }
@@ -225,24 +261,80 @@ private struct SubagentDetailView: View {
   }
 
   @MainActor private func observe() async {
-    guard supportsHistory, scenePhase == .active else { return }
+    guard scenePhase == .active else { return }
+    if lineage { await refreshParentLineage(); return }
+    guard supportsHistory else {
+      snapshot = nil; messages = []; nextCursor = nil
+      typedUnavailable = true
+      error = L10n.tr("此客户端暂不支持完整子 Agent 过程")
+      return
+    }
     if loadedKey != key {
       earlierTask?.cancel()
       earlierRequest = nil
-      snapshot = nil; messages = []; nextCursor = nil; loadedKey = key
+      // A failed child choice retains the authorized parent catalog, never its old body.
+      if !lineage || snapshot?.association != "parent-thread-lineage" || !anchorCurrent(message) { snapshot = nil }
+      messages = []; nextCursor = nil; loadedKey = key
     }
-    error = nil
+    error = nil; typedUnavailable = false
     do {
       while !Task.isCancelled {
         try await refresh()
         try await Task.sleep(for: .seconds(2))
       }
     } catch is CancellationError {
-    } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+    } catch {
+      if !Task.isCancelled {
+        self.error = error.localizedDescription
+        if case HostServiceError.rejected(404, _) = error, !lineage { typedUnavailable = true }
+      }
+    }
+  }
+
+  // Saved parent-chat association is an explicit bounded read, not a live-owner polling loop.
+  @MainActor private func refreshParentLineage() async {
+    let request = UUID(), captured = key
+    lineageRequest = request; earlierTask?.cancel(); earlierRequest = nil
+    if snapshot?.association != "parent-thread-lineage" { snapshot = nil }
+    messages = []; nextCursor = nil; error = nil; typedUnavailable = false; lineageLoading = true
+    defer { if lineageRequest == request { lineageLoading = false } }
+    do {
+      let value = try await page()
+      try Task.checkCancellation()
+      guard lineageRequest == request, key == captured, anchorCurrent(message) else { return }
+      snapshot = value; messages = value.messages; nextCursor = value.nextCursor
+    } catch is CancellationError {
+    } catch {
+      if !Task.isCancelled && lineageRequest == request && key == captured && anchorCurrent(message) {
+        self.error = parentLineageError(error)
+      }
+    }
+  }
+  private func parentLineageError(_ error: Error) -> String {
+    switch error {
+    case HostServiceError.rejected(401, _), HostServiceError.rejected(403, _):
+      return L10n.tr("电脑未允许读取所选子任务，请刷新连接后重试")
+    case HostServiceError.rejected(404, _):
+      return L10n.tr("电脑当前没有可读取的本聊天子任务")
+    case HostServiceError.rejected(400, _), HostServiceError.rejected(409, _), HostServiceError.invalidResponse, HostServiceError.wrongHost:
+      return L10n.tr("本聊天的子任务记录不可用或已变化，请刷新后重试")
+    default:
+      return L10n.tr("无法读取本聊天的子任务，请核对连接或刷新后重试")
+    }
   }
 
   @MainActor private func page(cursor: String? = nil) async throws -> SubagentHistorySnapshot {
     guard let client, let threadId else { throw HostServiceError.invalidResponse }
+    let child = selectedChild.isEmpty ? (cursor == nil ? nil : snapshot?.childId) : selectedChild
+    if lineage {
+      guard lineageEnabled && anchorCurrent(message) else { throw HostServiceError.invalidResponse }
+      let value = try await AgentClients.resolve(client).subagentHistory(client, parentThreadId: threadId,
+        messageId: message.id, childId: child, cursor: cursor, association: "parent-thread-lineage")
+      try Task.checkCancellation()
+      guard lineageEnabled && anchorCurrent(message), value.association == "parent-thread-lineage" else { throw HostServiceError.invalidResponse }
+      return value
+    }
+    guard supportsHistory else { throw HostServiceError.invalidResponse }
     #if DEBUG && targetEnvironment(simulator)
     if client.isDemo, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
       ProcessInfo.processInfo.arguments.contains("-subagent-timeline-fixture") {
@@ -261,11 +353,11 @@ private struct SubagentDetailView: View {
         readTarget: AgentRuntimeTarget(agentId: "codex", hostId: client.id, workspaceId: "demo", runtimeId: "demo"),
         parentThreadId: threadId, messageId: message.id,
         children: [.init(id: childId, title: "C2 original child", status: "completed")],
-        childId: childId, threadId: childId, source: "saved-history", messages: records, nextCursor: nil)
+        childId: childId, threadId: childId, association: nil, source: "saved-history", messages: records, nextCursor: nil)
     }
     #endif
     return try await AgentClients.resolve(client).subagentHistory(client, parentThreadId: threadId,
-      messageId: message.id, childId: selectedChild.isEmpty ? (cursor == nil ? nil : snapshot?.childId) : selectedChild, cursor: cursor)
+      messageId: message.id, childId: child, cursor: cursor)
   }
   @MainActor private func refresh() async throws {
     let captured = key
@@ -279,17 +371,22 @@ private struct SubagentDetailView: View {
   }
   @MainActor private func loadEarlier() async {
     guard let cursor = nextCursor, !loadingEarlier else { return }
-    let captured = key
+    let captured = key, parentRead = lineageRequest
     let request = UUID()
     earlierRequest = request
     defer { if earlierRequest == request { earlierRequest = nil } }
     do {
       let value = try await page(cursor: cursor)
       try Task.checkCancellation()
-      guard key == captured, value.childId == snapshot?.childId else { return }
+      guard key == captured, value.childId == snapshot?.childId, value.source == snapshot?.source, value.association == snapshot?.association,
+        !lineage || (lineageRequest == parentRead && earlierRequest == request && !lineageLoading && anchorCurrent(message)) else { return }
       let ids = Set(messages.map(\.id))
       messages = value.messages.filter { !ids.contains($0.id) } + messages
       nextCursor = value.nextCursor
-    } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
+    } catch {
+      if !Task.isCancelled && (!lineage || (lineageRequest == parentRead && earlierRequest == request && key == captured && anchorCurrent(message))) {
+        self.error = lineage ? parentLineageError(error) : error.localizedDescription
+      }
+    }
   }
 }

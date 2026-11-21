@@ -11,7 +11,18 @@ import java.util.concurrent.ConcurrentHashMap
 /** SAF streams only encrypted envelopes. No plaintext export/attachment scratch or source-URI deletion. */
 internal class NativeMigrationDocuments(context: Context) {
     private val context=context.applicationContext
-    private val directory=File(context.cacheDir,"migration-ui-v1").apply {check(mkdirs()||isDirectory);require(canonicalFile==File(context.cacheDir.canonicalFile,name));android.system.Os.chmod(path,0x1c0)}
+    private val directory=File(context.cacheDir,"migration-ui-v1").apply {
+        check(mkdirs() || isDirectory)
+        require(canonicalFile==File(context.cacheDir.canonicalFile,name))
+        val before=android.system.Os.lstat(path)
+        check(android.system.OsConstants.S_ISDIR(before.st_mode) && before.st_uid==android.os.Process.myUid())
+        // Keep an already-private directory untouched; redundant chmod changes its ctime.
+        if((before.st_mode and 0xfff) != 0x1c0) android.system.Os.chmod(path,0x1c0)
+        val after=android.system.Os.lstat(path)
+        check(android.system.OsConstants.S_ISDIR(after.st_mode) && after.st_uid==before.st_uid &&
+            after.st_gid==before.st_gid && after.st_dev==before.st_dev && after.st_ino==before.st_ino &&
+            (after.st_mode and 0xfff) == 0x1c0)
+    }
     private val cancellations=ConcurrentHashMap<String,CancellationSignal>()
     private val descriptors=ConcurrentHashMap<String,ParcelFileDescriptor>()
     fun file(id: String,kind: String): File {

@@ -26,6 +26,9 @@ struct EasyWorkLANOffer: Decodable {
 enum EasyWorkPairing {
   static func lan(_ text: String, name: String) async throws -> (EasyWorkBinding, [AgentConnectionCandidate]) {
     let offer = try EasyWorkLANOffer.parse(text)
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.offer(offer)
+    #endif
     let identity = try EasyWorkIdentity.load()
     var lastError: Error = HostServiceError.unavailable
     for endpoint in offer.endpoints {
@@ -55,6 +58,9 @@ enum EasyWorkPairing {
     throw lastError
   }
   static func relay(endpoint: String, code: String, token: String) async throws -> EasyWorkBinding {
+    #if R2_REAL_DEV_ACCEPTANCE
+    throw R2AdmissionPolicy.Denied(reason: "Relay is outside this local task")
+    #endif
     let identity = try EasyWorkIdentity.load()
     let api = try RelayAgentTransport(candidate: AgentConnectionCandidate(id: "relay", transportId: "relay-http", endpoint: endpoint), token: token)
     let claimed = try easyWorkObject(await api.api("/pairing/claim", method: "POST", body: ["pairingCode": code]))
@@ -91,6 +97,9 @@ struct EasyWorkOIDCSession: Codable {
     UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first(where: \.isKeyWindow) ?? ASPresentationAnchor()
   }
   func login(issuer: String, clientId: String, audience: String) async throws -> String {
+    #if R2_REAL_DEV_ACCEPTANCE
+    throw R2AdmissionPolicy.Denied(reason: "OIDC is outside this local task")
+    #endif
     guard let issuerURL = URL(string: issuer), issuerURL.scheme == "https" else { throw HostServiceError.invalidAddress }
     let (data, response) = try await URLSession.shared.data(from: issuerURL.appendingPathComponent(".well-known/openid-configuration"))
     guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw HostServiceError.unavailable }
@@ -187,6 +196,13 @@ enum AgentCache {
 extension SessionStore {
   private func bindingPin(_ candidates: [AgentConnectionCandidate]) -> String? { candidates.first(where: { $0.transportId == "lan-wss" })?.peerFingerprint }
   func saveEasyWork(name: String, binding: EasyWorkBinding, candidates: [AgentConnectionCandidate], token: String? = nil, grantRef: String? = nil) async throws {
+    #if R2_REAL_DEV_ACCEPTANCE
+    let admission = try R2Admission.require()
+    try R2AdmissionPolicy.require(admission.lease.mode == "enroll" && saved.clients.isEmpty, "fresh enrollment only")
+    try R2Admission.peer(target: binding.target, fingerprint: candidates.first?.peerFingerprint,
+      publicKey: binding.desktopPublicKey, endpoints: candidates.map(\.endpoint))
+    try R2AdmissionPolicy.require(token == nil && grantRef == nil, "no imported token/grant reference")
+    #endif
     let identity = try EasyWorkIdentity.load()
     let target = AgentRuntimeTarget(agentId: "easywork", hostId: binding.desktopDeviceId, workspaceId: binding.target.workspaceId, runtimeId: binding.target.runtimeId, account: binding.account)
     // Full identity is the cache/draft/receipt scope; endpoint changes cannot change it.

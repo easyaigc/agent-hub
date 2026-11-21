@@ -656,7 +656,41 @@ class MobileApprovalUiTest {
             ui.waitUntil(10_000) { androidx.core.view.ViewCompat.getRootWindowInsets(ui.activity.window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime())!=true }
             ui.onNodeWithTag("answer-question").performScrollTo().assertIsEnabled().performClick();ui.waitUntil(10_000) { approvals(f).size==1 }
             val body=JSONObject(String(approvals(f).single().body));assertEquals("fixture-host",body.getString("hostId"));assertEquals("fixture-thread",body.getString("threadId"));assertEquals("approval-turn",body.getString("turnId"));assertEquals("approval-id",body.getString("approvalId"))
-            assertEquals(listOf("Two","One","synthetic-only-private-answer"),body.getJSONObject("answers").getJSONArray("q").strings())
+            assertEquals(listOf("Two","One","  synthetic-only-private-answer  "),body.getJSONObject("answers").getJSONArray("q").strings())
+        }
+    }
+
+    @Test fun blockingPlainAnswersPreserveRawText()=rawCustomAnswer(false,false)
+    @Test fun blockingSecretAnswersPreserveRawText()=rawCustomAnswer(false,true)
+    @Test fun asyncPlainAnswersPreserveRawText()=rawCustomAnswer(true,false)
+    @Test fun asyncSecretAnswersPreserveRawText()=rawCustomAnswer(true,true)
+    private fun rawCustomAnswer(async: Boolean,secret: Boolean) {
+        ExecutionFixture().use { f ->
+            val original=question()
+            if(async)original.put("interactionMode","async")
+            original.getJSONArray("questions").getJSONObject(0).put("isSecret",secret)
+            f.approvals=JSONArray().put(original);connect(f)
+            val field=ui.onNodeWithTag("question-custom-q")
+            if(secret)field.assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Password))
+            field.performScrollTo().performTextReplacement(" \t\n ")
+            ui.onNodeWithTag("answer-question").performScrollTo().assertIsNotEnabled()
+            assertTrue(approvals(f).isEmpty())
+            ui.onNodeWithTag("question-option-q-One").performScrollTo().performClick()
+            // Whitespace cannot override the chosen option, including async questions.
+            field.performScrollTo().performTextReplacement(" \t\n ")
+            ui.onNodeWithTag("answer-question").performScrollTo().assertIsEnabled()
+            val raw="\n  synthetic original reply\t\nsecond line  \n"
+            field.performScrollTo().performTextReplacement(raw)
+            assertEquals(raw,field.fetchSemanticsNode().config[SemanticsProperties.InputText].text)
+            val window=if(async)questionWindow()else ui.activity.window
+            ui.runOnUiThread { androidx.core.view.WindowInsetsControllerCompat(window,window.decorView).hide(androidx.core.view.WindowInsetsCompat.Type.ime()) }
+            ui.waitUntil(10_000) { androidx.core.view.ViewCompat.getRootWindowInsets(window.decorView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime())!=true }
+            ui.onNodeWithTag("answer-question").performScrollTo().performClick()
+            ui.waitUntil(10_000) { approvals(f).size==1 }
+            val body=JSONObject(String(approvals(f).single().body))
+            assertEquals(if(async)listOf(raw)else listOf("One",raw),body.getJSONObject("answers").getJSONArray("q").strings())
+            assertEquals("fixture-host",body.getString("hostId"));assertEquals("fixture-thread",body.getString("threadId"))
+            assertEquals("approval-turn",body.getString("turnId"));assertEquals("approval-id",body.getString("approvalId"))
         }
     }
 

@@ -23,6 +23,7 @@ data class ComputerFileReceipt(val file: ComputerFileManifest,val phase: String,
 data class ComputerFileCatalog(val hostId: String,val destinationDirectory: String,
     val maxFileBytes: Long?,val files: List<ComputerFileReceipt>)
 class ComputerFileUpload(val file: ComputerFileManifest,private val reader: (OutputStream,()->Boolean,(Long)->Unit)->Unit) {
+    internal var uploadRange:((Long,Int)->ByteArray)?=null
     fun copyTo(output: OutputStream,active: ()->Boolean,progress: (Long)->Unit) = reader(output,active,progress)
 }
 internal object ComputerFileCodec {

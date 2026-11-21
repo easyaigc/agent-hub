@@ -1,5 +1,11 @@
 # Android 开发计划入口
 
+<!-- android-current-status-source:20261112 -->
+
+> 当前 Android 对齐 iOS、对接 Codex/EasyWork 的开发、验收、交付、阻塞和剩余项，唯一以[权威状态和计划](android-ios-alignment-20261107/progress.md)为准。本页保留原日期/原任务的需求与证据；其中“当前”“未开发”“暂停”不直接代表最新状态。后续进度必须登记到权威计划，不在本页另立当前总表。
+
+<!-- /android-current-status-source:20261112 -->
+
 当前计划、完成/未完成、优先级与待验项统一维护在 **[Android 开发计划与进度](android-alignment-20261022/progress.md)**（2026-10-25 重整）。本文件保留为原链接入口，不再追加进度流水。
 
 - [当前计划与进度总表](android-alignment-20261022/progress.md)：完整 P0–P10、70 个功能的状态、下一步、暂停项及代码交付状态。

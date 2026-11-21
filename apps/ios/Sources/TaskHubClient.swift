@@ -7,6 +7,9 @@ final class TaskHubClient: @unchecked Sendable {
   private let token: String
   private let deviceId: String
   init(binding: TaskHubBinding, token: String = "", deviceId: String) throws {
+    #if R2_REAL_DEV_ACCEPTANCE
+    throw R2AdmissionPolicy.Denied(reason: "Task Hub is outside this task target")
+    #endif
     _ = try EasyWorkPairing.localEndpoint(binding.endpoint)
     guard binding.fingerprint.range(of: "^[a-fA-F0-9]{64}$", options: .regularExpression) != nil else { throw TaskHubError.changedIdentity }
     self.binding = binding; self.token = token; self.deviceId = deviceId
@@ -17,6 +20,9 @@ final class TaskHubClient: @unchecked Sendable {
   }
   deinit { session.invalidateAndCancel() }
   static func probe(endpoint: String, pin: String? = nil) async throws -> TaskHubBinding {
+    #if R2_REAL_DEV_ACCEPTANCE
+    throw R2AdmissionPolicy.Denied(reason: "Task Hub is outside this task target")
+    #endif
     let url = try EasyWorkPairing.localEndpoint(endpoint)
     let discovered = DiscoveredHostTrust(endpoint: url)
     let delegate: any URLSessionDelegate = pin.map { PairedHostTrust(endpoint: url.absoluteString, fingerprint: $0) } ?? discovered

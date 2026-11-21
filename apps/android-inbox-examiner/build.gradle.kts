@@ -16,3 +16,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+
+// Fixed self-target F59 caller only; no AndroidX MonitoringInstrumentation.
+dependencies { implementation("junit:junit:4.13.2") }

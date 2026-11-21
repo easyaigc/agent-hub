@@ -115,4 +115,39 @@ class MobileQueueCommandTest {
             assertTrue(requests.isEmpty())
         }
     }
+    @Test fun encryptedStopRequiresBooleanConfirmationAndExactOriginalTurn()=runBlocking {
+        for(cancelled in listOf<Any?>(true,false,"true","false",1,0,JSONObject.NULL,null))encrypted({ request ->
+            assertEquals("turn/cancel",request.getString("method"))
+            JSONObject().apply { if(cancelled!=null) put("cancelled",cancelled) }
+        }) { adapter,host,requests ->
+            assertEquals(cancelled==true,runCatching { adapter.stop(host,"original-thread","original-run") }.isSuccess)
+            val params=requests.single().getJSONObject("params")
+            assertEquals(setOf("threadId","turnId"),params.keys().asSequence().toSet())
+            assertEquals("original-thread",params.getString("threadId"));assertEquals("original-run",params.getString("turnId"))
+        }
+    }
+    @Test fun invalidEncryptedStopIdentityNeverReachesPeer()=runBlocking {
+        encrypted({ error("Invalid original turn must not dispatch") }) { adapter,host,requests ->
+            rejected { adapter.stop(host," ","original-run") }
+            rejected { adapter.stop(host,"original-thread","") }
+            assertTrue(requests.isEmpty())
+        }
+    }
+    @Test fun lostEncryptedStopQueriesItsOriginalCommandWithoutAnotherCancellation()=runBlocking {
+        var original: JSONObject?=null
+        encrypted({ request ->
+            if(request.getString("method")=="turn/cancel") {original=JSONObject(request.toString());throw java.io.IOException("Owned lost stop ACK")}
+            assertEquals("command/status",request.getString("method"))
+            val captured=checkNotNull(original)
+            assertEquals(captured.getString("requestId"),request.getJSONObject("params").getString("commandId"))
+            val hash=easyHash(easyCanonical(JSONObject().put("target",captured.getJSONObject("target")).put("method",captured.getString("method")).put("params",captured.getJSONObject("params"))).toByteArray())
+            JSONObject().put("state","completed").put("operationId",captured.getString("requestId")).put("method","turn/cancel")
+                .put("target",captured.getJSONObject("target")).put("requestHash",hash)
+                .put("response",JSONObject().put("ok",true).put("result",JSONObject().put("cancelled",true)))
+        }) {adapter,host,requests ->
+            adapter.stop(host,"original-thread","original-run")
+            assertEquals(listOf("turn/cancel","command/status"),requests.map {it.getString("method")})
+        }
+    }
+
 }

@@ -55,6 +55,22 @@ class EasyWorkDPoP private constructor(private val key: PrivateKey, private val 
             val bytes = value.toByteArray().let { if(it.size == 33 && it[0].toInt() == 0) it.copyOfRange(1, 33) else it }
             return ByteArray(32 - bytes.size) + bytes
         }
+        /** Admission/read-only tools must never provision a missing original proof key. */
+        internal fun loadExisting(identity: EasyWorkIdentity): EasyWorkDPoP = synchronized(keyCreation) {
+            val alias = "agent-hub-easywork-dpop-" + easyHash(identity.deviceId.toByteArray(Charsets.UTF_8))
+            val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            require(store.containsAlias(alias)) { "既有设备签名密钥不可用" }
+            val entry = store.getEntry(alias, null) as? KeyStore.PrivateKeyEntry
+                ?: error("既有设备签名密钥类型无效")
+            require(entry.privateKey.algorithm == "EC" && entry.privateKey.encoded == null) { "设备签名密钥必须由系统安全存储保管" }
+            decodeEntry(entry)
+        }
+        private fun decodeEntry(entry: KeyStore.PrivateKeyEntry): EasyWorkDPoP {
+            require(entry.privateKey.encoded == null) { "设备签名密钥必须由系统安全存储保管" }
+            val publicKey = entry.certificate.publicKey as ECPublicKey
+            require(publicKey.params.curve.field.fieldSize == 256)
+            return EasyWorkDPoP(entry.privateKey, publicKey)
+        }
         fun load(identity: EasyWorkIdentity): EasyWorkDPoP = synchronized(keyCreation) {
             val alias = "agent-hub-easywork-dpop-" + easyHash(identity.deviceId.toByteArray(Charsets.UTF_8))
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -66,10 +82,7 @@ class EasyWorkDPoP private constructor(private val key: PrivateKey, private val 
                 }.generateKeyPair()
             }
             val entry = store.getEntry(alias, null) as KeyStore.PrivateKeyEntry
-            require(entry.privateKey.encoded == null) { "设备签名密钥必须由系统安全存储保管" }
-            val publicKey = entry.certificate.publicKey as ECPublicKey
-            require(publicKey.params.curve.field.fieldSize == 256)
-            EasyWorkDPoP(entry.privateKey, publicKey)
+            decodeEntry(entry)
         }
     }
 }

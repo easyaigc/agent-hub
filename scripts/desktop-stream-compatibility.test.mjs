@@ -6,15 +6,35 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DesktopFrameDecoder } from '../packages/codex-adapter/dist/desktop-framing.js';
 import {
-  DesktopIpc,
-  DesktopStreamCompatibilityError,
-  desktopTurns,
-} from '../packages/codex-adapter/dist/desktop-ipc.js';
-import {
   desktopFixtureEndpoint,
   listenDesktopFixture,
   prepareDesktopFixtureIpc,
 } from './fixtures/desktop-ipc-transport.mjs';
+import { setTimeout as delay } from 'node:timers/promises';
+
+// The Windows fixture registers its transport hook before Adapter evaluation.
+const { DesktopIpc, DesktopStreamCompatibilityError, desktopTurns } =
+  await import('../packages/codex-adapter/dist/desktop-ipc.js');
+
+async function until(predicate, message) {
+  const end = Date.now() + 1000;
+  while (!predicate() && Date.now() < end) await delay(5);
+  assert(predicate(), message);
+}
+
+async function within(promise) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Bounded fixture event unavailable')), 1000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 const id = '11111111-1111-4111-8111-111111111111';
 const state = () => ({
@@ -146,7 +166,7 @@ for (const version of [11, 13, 14]) {
           },
         ],
       });
-      assert.equal(desktopTurns(await completed)[0].status, 'completed');
+      assert.equal(desktopTurns(await within(completed))[0].status, 'completed');
       f.revision = 2;
       f.native = f.ipc.state(id);
       await f.ipc.command(id, 'thread-follower-start-turn', {
@@ -201,7 +221,7 @@ test('wire version change requires a fresh snapshot before new patches can chang
       revision: 2,
       patches: [{ op: 'replace', path: ['threadRuntimeStatus'], value: { type: 'systemError' } }],
     });
-    assert.equal((await refreshed).threadRuntimeStatus.type, 'idle');
+    assert.equal((await within(refreshed)).threadRuntimeStatus.type, 'idle');
     assert.equal(f.following, following + 1);
     assert.equal(f.commands.length, 0);
   }));
@@ -217,7 +237,124 @@ test('wrong-target snapshots and malformed patches never grant control or execut
       f.ipc.onUnavailable = done;
     });
     f.broadcast({ type: 'patches', baseRevision: 1, revision: 2, patches: null });
-    await invalidated;
+    await within(invalidated);
     assert.equal(f.ipc.hasOwner(id), false);
+    assert.equal(f.commands.length, 0);
+  }));
+
+test('snapshot-first version reset adopts revision1 and observes its completion without input', () =>
+  fixture(async (f) => {
+    f.version = 11;
+    f.revision = 100;
+    await f.ipc.follow(id, 1000, true);
+    f.version = 13;
+    f.revision = 1;
+    let received = false;
+    f.ipc.onSnapshot = () => {
+      received = true;
+    };
+    f.snapshot();
+    await until(() => received, 'New full snapshot must own its revision baseline');
+    f.broadcast({
+      type: 'patches',
+      baseRevision: 1,
+      revision: 2,
+      patches: [
+        { op: 'replace', path: ['threadRuntimeStatus'], value: { type: 'idle' } },
+        {
+          op: 'replace',
+          path: ['turnHistory', 'history', 'entitiesByKey', 'tip', 'status'],
+          value: 'completed',
+        },
+      ],
+    });
+    await until(
+      () => desktopTurns(f.ipc.state(id) ?? {})[0]?.status === 'completed',
+      'Completion follows the new-version revision1 baseline',
+    );
+    assert.equal(f.ipc.hasOwner(id), true);
+    assert.equal(f.commands.length, 0);
+    const current = f.ipc.state(id);
+    const stale = state();
+    f.broadcast({ type: 'snapshot', revision: 101, conversationState: stale }, 11);
+    await delay(20);
+    assert.equal(f.ipc.state(id), current, 'Retired-version cached frame cannot revive running');
+    assert.equal(f.commands.length, 0);
+  }));
+
+test('patch-first version reset requests its own revision1 baseline without applying foreign patches', () =>
+  fixture(async (f) => {
+    f.version = 11;
+    f.revision = 100;
+    await f.ipc.follow(id, 1000, true);
+    const following = f.following;
+    f.version = 13;
+    f.revision = 1;
+    let received = false;
+    f.ipc.onSnapshot = () => {
+      received = true;
+    };
+    f.broadcast({
+      type: 'patches',
+      baseRevision: 1,
+      revision: 2,
+      patches: [{ op: 'replace', path: ['threadRuntimeStatus'], value: { type: 'systemError' } }],
+    });
+    await until(
+      () => f.following === following + 1 && received,
+      'Version change must obtain a full revision1 baseline once',
+    );
+    assert.equal(f.ipc.state(id).threadRuntimeStatus.type, 'active');
+    f.broadcast({
+      type: 'patches',
+      baseRevision: 1,
+      revision: 2,
+      patches: [{ op: 'replace', path: ['threadRuntimeStatus'], value: { type: 'idle' } }],
+    });
+    await until(
+      () => f.ipc.state(id)?.threadRuntimeStatus.type === 'idle',
+      'New baseline accepts its own patch',
+    );
+    assert.equal(f.commands.length, 0);
+  }));
+
+test('malformed new-version full snapshot does not retire the last usable contract', () =>
+  fixture(async (f) => {
+    f.version = 11;
+    f.revision = 100;
+    await f.ipc.follow(id, 1000, true);
+    f.broadcast(
+      { type: 'snapshot', revision: 1, conversationState: { ...state(), id: 'wrong-thread' } },
+      13,
+    );
+    await until(() => !f.ipc.hasOwner(id), 'Wrong-target new contract is unavailable');
+    await f.ipc.follow(id, 1000, true);
+    assert.equal(f.ipc.hasOwner(id), true);
+    assert.equal(desktopTurns(f.ipc.state(id))[0].status, 'inProgress');
+    assert.equal(f.commands.length, 0);
+  }));
+
+test('same-instance immediate close reconnect resets contracts before reusing the same owner', () =>
+  fixture(async (f) => {
+    f.version = 11;
+    f.revision = 100;
+    await f.ipc.follow(id, 1000, true);
+    f.version = 13;
+    f.revision = 1;
+    let received = false;
+    f.ipc.onSnapshot = () => {
+      received = true;
+    };
+    f.snapshot();
+    await until(() => received, 'Version13 baseline observed');
+    f.ipc.close();
+    const connecting = f.ipc.connect(); // Deliberately no intermediate tick.
+    f.version = 11;
+    f.revision = 1;
+    await within(connecting);
+    assert.equal(f.ipc.hasOwner(id), false, 'A new connection has no cached owner authority');
+    const next = await f.ipc.follow(id, 1000, true);
+    assert.equal(f.ipc.hasOwner(id), true);
+    assert.equal(desktopTurns(next)[0].status, 'inProgress');
     assert.equal(f.commands.length, 0);
   }));

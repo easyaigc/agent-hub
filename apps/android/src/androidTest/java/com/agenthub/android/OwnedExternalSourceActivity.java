@@ -41,8 +41,56 @@ public final class OwnedExternalSourceActivity extends Activity {
             JSONArray old=readCases(),rows=new JSONArray();
             for(int i=0;i<old.length();i++) { JSONObject row=old.getJSONObject(i);if(!row.getString("fileName").startsWith(prefix))rows.put(row); }
             if(mode.equals("cleanup")) {
+                // Cleanup is one exact recorded nonce; the caller supplies its actual recipient PID.
+                // The parent binds the fresh PID/UID/package identity before and after this call.
+                if(!nonce.matches("[a-f0-9]{32}"))throw new IOException("Invalid cleanup nonce");
+                int targetPid=getIntent().getIntExtra("targetPid",-1);
+                String cleanupOperation=getIntent().getStringExtra("cleanupOperation");
+                if(targetPid<=0||cleanupOperation==null||!UUID.fromString(cleanupOperation).toString().equals(cleanupOperation))
+                    throw new IOException("Invalid cleanup identity");
+                File proofPath=new File(getFilesDir(),prefix+"cleanup-proof.json");
+                for(String name:Arrays.asList(prefix+"cleanup-proof.json",prefix+"cleanup-proof.json.bak",prefix+"cleanup-proof.json.new",prefix+"failure.txt")) {
+                    try {
+                        java.nio.file.Files.readAttributes(new File(getFilesDir(),name).toPath(),java.nio.file.attribute.BasicFileAttributes.class,java.nio.file.LinkOption.NOFOLLOW_LINKS);
+                        throw new IOException("Prior cleanup evidence exists");
+                    } catch(java.nio.file.NoSuchFileException absent) { /* Exact absence only. */ }
+                }
+                // Only this unpredictable synthetic nonce and exact acceptance recipient.
+                // Revoke both possible file grants plus the explicitly granted report URI.
+                int targetUid=getPackageManager().getApplicationInfo(TARGET,0).uid;
+                ArrayList<String> names=new ArrayList<>(Arrays.asList(prefix+"1.txt",prefix+"2.txt",reportName));
+                for(String name:names) {
+                    Uri uri=DocumentsContract.buildDocumentUri(getPackageName()+".owned-documents",name);
+                    if(name.equals(reportName))revokeUriPermission(TARGET,uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    else revokeUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION); // Exact synthetic file leaf also covers Intent grants.
+                    if(checkUriPermission(uri,targetPid,targetUid,Intent.FLAG_GRANT_READ_URI_PERMISSION)!=android.content.pm.PackageManager.PERMISSION_DENIED)
+                        throw new IOException("Owned URI cleanup unconfirmed");
+                }
                 writeCases(rows);
-                File[] files=getCacheDir().listFiles();if(files!=null)for(File file:files)if(file.getName().startsWith(prefix)&&!file.delete())throw new IOException("Owned cleanup failed");
+                File[] files=getCacheDir().listFiles();if(files==null)throw new IOException("Cache enumeration unknown");
+                for(File file:files)if(file.getName().startsWith(prefix)) {
+                    if(java.nio.file.Files.isSymbolicLink(file.toPath())||!file.isFile()||!file.delete())throw new IOException("Owned cleanup failed");
+                }
+                File[] remaining=getCacheDir().listFiles();if(remaining==null)throw new IOException("Cache verification unknown");
+                for(File file:remaining)if(file.getName().startsWith(prefix))throw new IOException("Owned cache remains");
+                if(!hash(rows.toString().getBytes(StandardCharsets.UTF_8)).equals(hash(readCases().toString().getBytes(StandardCharsets.UTF_8))))
+                    throw new IOException("Unrelated source rows changed");
+                JSONObject proof=new JSONObject().put("version",1).put("nonce",nonce).put("sourcePackage",getPackageName())
+                    .put("cleanupOperation",cleanupOperation).put("queryTargetPid",targetPid)
+                    .put("sourceUid",Process.myUid()).put("sourcePid",Process.myPid()).put("targetPackage",TARGET).put("targetUid",targetUid)
+                    .put("exactReadGrantsDenied",3).put("nonceRowsRemoved",true).put("nonceCacheRemoved",true)
+                    .put("otherRowsSha256",hash(rows.toString().getBytes(StandardCharsets.UTF_8)));
+                AtomicFile evidence=new AtomicFile(proofPath);
+                FileOutputStream stream=evidence.startWrite();
+                try {
+                    android.system.Os.fchmod(stream.getFD(),0600);
+                    android.system.StructStat identity=android.system.Os.fstat(stream.getFD());
+                    if(!android.system.OsConstants.S_ISREG(identity.st_mode)||identity.st_uid!=Process.myUid()||(identity.st_mode&0777)!=0600||identity.st_nlink!=1)
+                        throw new IOException("Private proof identity invalid");
+                    stream.write(proof.toString().getBytes(StandardCharsets.UTF_8));stream.getFD().sync();
+                    evidence.finishWrite(stream);
+                }
+                catch(Exception failure) { evidence.failWrite(stream);throw failure; }
                 finish();return;
             }
             ArrayList<Uri> uris=new ArrayList<>();JSONArray expected=new JSONArray();int count=mode.equals("multiple")?2:1;
@@ -63,7 +111,11 @@ public final class OwnedExternalSourceActivity extends Activity {
             outgoing.setClipData(clip);outgoing.setPackage(TARGET).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(outgoing);
         } catch(Exception failure) {
-            try { java.nio.file.Files.write(new File(getFilesDir(),prefix+"failure.txt").toPath(),failure.getClass().getName().getBytes(StandardCharsets.UTF_8)); }catch(Exception ignored) { }
+            try {
+                java.io.FileDescriptor fd=android.system.Os.open(new File(getFilesDir(),prefix+"failure.txt").getAbsolutePath(),
+                    android.system.OsConstants.O_WRONLY|android.system.OsConstants.O_CREAT|android.system.OsConstants.O_EXCL|android.system.OsConstants.O_NOFOLLOW,0600);
+                try(FileOutputStream stream=new FileOutputStream(fd)) { stream.write(failure.getClass().getName().getBytes(StandardCharsets.UTF_8));stream.getFD().sync(); }
+            }catch(Exception ignored) { /* Retain any original failure evidence. */ }
         } finally { finish(); }
     }
 }

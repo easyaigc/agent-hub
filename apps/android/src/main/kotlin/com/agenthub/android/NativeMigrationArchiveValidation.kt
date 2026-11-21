@@ -35,11 +35,13 @@ internal object NativeMigrationArchiveValidation {
         val inbox=NativeMigrationInbox.validate(records,streams?.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}))
         val selectionBinaries=streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {name->NativeMigrationSelectionJournal.Kind.values().any {name.startsWith(NativeMigrationSelections.binaryPrefix(it))}})
         val selections=NativeMigrationSelections.validate(records,selectionBinaries)
-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)+NativeMigrationPrivateClaims.validatePortable(records,streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationPrivateClaims.BINARY)||it.startsWith(NativeMigrationPrivateClaims.ACTIVE_PREFIX)}))
+        val foregroundNames=NativeMigrationUploadArchives.validatePortable(records)+NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)+NativeMigrationPrivateClaims.validatePortable(records,streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationPrivateClaims.BINARY)||it.startsWith(NativeMigrationPrivateClaims.ACTIVE_PREFIX)}))
         require("metadata" in records)
         // Frozen archive readers already checked their claimed records. Parse each other value once
         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
-        val names=records.keys-foregroundNames
+        // token:<client> is stored verbatim by setToken(), including non-JSON secrets.
+        // Claim only its namespace here; validate every credential against metadata below.
+        val names=records.keys-foregroundNames-records.keys.filter {it.startsWith(NativeMigrationLegacyCredentials.PREFIX)}.toSet()
         fun value(name: String)=StrictMigrationJson.value(records.getValue(name).toByteArray(Charsets.UTF_8))
         val objects=names.filter {value(it) is JSONObject}.toSet()
         val allValues=NativeMigrationValueMap(names,::value)
@@ -53,6 +55,7 @@ internal object NativeMigrationArchiveValidation {
         metadata.getJSONObject("expanded"); metadata.getJSONObject("workspaces")
         val clients = metadata.getJSONArray("clients").objects().map(::decodeClient)
         require(clients.size <= 128 && clients.map { it.id }.distinct().size == clients.size)
+        NativeMigrationLegacyCredentials.validate(records,clients)
         NativeMigrationEasyWorkBusiness.validateMetadataGraph(metadata,clients)
         val historyNames = NativeMigrationHistory.validate(allValues,clients)
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)

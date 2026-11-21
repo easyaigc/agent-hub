@@ -75,7 +75,6 @@
     <string name="product_bddc29ad011a93a6b759956e" formatted="false">"上下文压缩"</string>
     <string name="product_3dfee69118fbc2b8d314e5fb" formatted="false">"上下文压缩失败"</string>
     <string name="product_f0ad74d0525702ce8c3074a5" formatted="false">"上下文压缩已停止"</string>
-    <string name="product_72d4a45b350a1b86f8d8fb4a" formatted="false">"上下文压缩已跳过"</string>
     <string name="product_bb8452788aa92d5bf9d9f483" formatted="false">"上下文压缩状态待同步"</string>
     <string name="product_7491bf2bfc7b361c24c5189d" formatted="false">"上下文已压缩"</string>
     <string name="product_ce1c9d61565f624b209c48f9" formatted="false">"上传中…"</string>
@@ -1820,6 +1819,35 @@
     <string name="product_eb861bd98327b9276bfc7566" formatted="false">"预览联网许可"</string>
     <string name="product_66d76cddae5ad1f06af88582" formatted="false">"当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"</string>
     <string name="product_1e4125d224073a40f12051e0" formatted="false">"查看完整过程"</string>
+    <string name="product_755ee3de69da18350028e0a8" formatted="false">"欠额"</string>
+    <string name="product_5c2c5d7d725a8a727af73157" formatted="false">"额度来源"</string>
+    <string name="product_c1cfa1340c62d3da906375d0" formatted="false">"套餐"</string>
+    <string name="product_637a0d380aecea8ec64563d8" formatted="false">"刷新额度"</string>
+    <string name="product_12251d9ec7c867c158568152" formatted="false">"来源暂未提供此项额度"</string>
+    <string name="product_b7fd7c47c003144a20df5979" formatted="false">"此来源暂不支持额度读取"</string>
+    <string name="product_1e0df493b854ccb4fe50c161" formatted="false">"额度来源尚未登录"</string>
+    <string name="product_8308ced556f20c58b923f147" formatted="false">"额度来源不允许读取"</string>
+    <string name="product_60b8711ec6bc2a32661fa6ef" formatted="false">"电脑额度读取认证失败（HTTP 401）"</string>
+    <string name="product_b88f2f91f397f71e8f4eb794" formatted="false">"电脑禁止读取额度（HTTP 403）"</string>
+    <string name="product_11c217b0a1b489a705d51626" formatted="false">"额度运行目标已变化"</string>
+    <string name="product_7cc39ddebf03baaebf6686b3" formatted="false">"网络离线，暂时无法读取额度"</string>
+    <string name="product_cad87dd1aaa3e118e785c5de" formatted="false">"读取额度超时"</string>
+    <string name="product_6bedcc6281f6b1d0f55be694" formatted="false">"额度来源暂时不可用"</string>
+    <string name="product_d2eb80f77aa113d08d6f1a03" formatted="false">"额度响应无效"</string>
+    <string name="product_8362e309ba32f4db0398d60d" formatted="false">"额度响应版本暂不支持"</string>
+    <string name="product_f658df896dbedc4607833142" formatted="false">"额度来源连续性未确认"</string>
+    <string name="product_e902ee7703fc12289b9e4b0e" formatted="false">"额度连接身份无法确认"</string>
+    <string name="product_1b3d7057c7fbd25b2f317004" formatted="false">"额度读取请求被拒绝"</string>
+    <string name="product_09269d5ae2621b090d4a0fd3" formatted="false">"额度读取未完成"</string>
+    <string name="product_42723e8b498c601c149705e4" formatted="false">"用量"</string>
+    <string name="product_7655ba497b0c68de4a60eaf2" formatted="false">"查看本聊天的子任务"</string>
+    <string name="product_12bc613b75f4a12e8aa0c252" formatted="false">"本聊天的子任务 · 最近保存的记录"</string>
+    <string name="product_c763cf9a571fbe185be08887" formatted="false">"电脑未允许读取所选子任务，请刷新连接后重试"</string>
+    <string name="product_550ec0f03c27d9d7577fff09" formatted="false">"电脑当前没有可读取的本聊天子任务"</string>
+    <string name="product_5dc295d36bab923f14b7113f" formatted="false">"本聊天的子任务记录不可用或已变化，请刷新后重试"</string>
+    <string name="product_c882722b51340ed59c4c1852" formatted="false">"无法读取本聊天的子任务，请核对连接或刷新后重试"</string>
+    <string name="product_5bf022e70399aeb6e6b6b664" formatted="false">"这台电脑尚不支持按父聊天查看子任务，可返回查看原工具摘要。"</string>
+    <string name="product_72d4a45b350a1b86f8d8fb4a" formatted="false">"上下文压缩已跳过"</string>
     <string name="product_6af87f7e618fa33c9f4ccf00" formatted="false">"上次上传过程已中断，文件和消息已保留。"</string>
     <string name="product_4f61994973c9e50d08d48d39" formatted="false">"电脑端未找到这次上传记录。"</string>
     <string name="product_0946b12dd470ca4d4c5b8faa" formatted="false">"本次传输的文件大小上限为 %@。"</string>
@@ -2165,4 +2193,79 @@
     <string name="product_2e9235e3d808b66a6c2826b5" formatted="false">"项目已不可用，请重新选择。"</string>
     <string name="product_c24a3d11cadc1dad439c5475" formatted="false">"请先选择对话所属的项目或文件夹。"</string>
     <string name="product_69a1f63136392c5c45a9e744" formatted="false">"发送第一条消息后创建对话。"</string>
+    <string name="product_01d22dc17613f034977e03e1" formatted="false">"后台通知已开启。"</string>
+    <string name="product_1a719a0c42ba5a132319c82e" formatted="false">"正在启用后台通知，请稍候。"</string>
+    <string name="product_5948a98912be49059226a338" formatted="false">"原推送登记仍在处理中，设置变更尚未提交。"</string>
+    <string name="product_8ea495a7efa9e763e115ed11" formatted="false">"后台通知配置无效。"</string>
+    <string name="product_7f5961f00e93902a441a9bbf" formatted="false">"后台通知尚未配置。"</string>
+    <string name="product_7372e347295a09b8623fd4e5" formatted="false">"系统通知权限已关闭。"</string>
+    <string name="product_a7f84c0c074df8f812f8e3b3" formatted="false">"Google Play 服务或推送登记暂不可用。"</string>
+    <string name="product_efd6b73ac8dd20a05a5fe457" formatted="false">"请先升级电脑端以恢复后台通知，原通知记录已保留。"</string>
+    <string name="product_e39ec9165db7a7dbaa0c333a" formatted="false">"旧通知设置结果仍待确认，可核对当前状态或关闭这台电脑的通知。"</string>
+    <string name="product_9d79d05a4ad77d3be8513800" formatted="false">"本机后台通知登记已失效，请核对通知设置。"</string>
+    <string name="product_2a0335be921624c329de740b" formatted="false">"电脑未确认后台推送登记，原操作不会重复提交。"</string>
+    <string name="product_915ac873fab0464e1ddb74a7" formatted="false">"原通知登记结果待确认，不会重复提交。"</string>
+    <string name="product_0981582a17bb3c4457263de5" formatted="false">"后台通知待同步，原记录已保留。"</string>
+    <string name="product_d2a2be6fb3e48f5acda3e0cc" formatted="false">"核对当前通知状态"</string>
+    <string name="product_9bd29e4faba7feb0974ac592" formatted="false">"已结束等待，通知设置记录已保留；电脑端操作仍可能完成。"</string>
+    <string name="product_9b4f3f53e86404046e553100" formatted="false">"结束等待并保留记录"</string>
+    <string name="product_0398102ba4df9d79aacf0019" formatted="false">"不是有效的文档文件链接"</string>
+    <string name="product_310a877635ce113d235c9eae" formatted="false">"原 owner 尚未确认控制权"</string>
+    <string name="product_6da4181e7a18160de83f3fad" formatted="false">"原打开记录不属于此目标"</string>
+    <string name="product_eb4d410059ce51b809a44a0b" formatted="false">"存在多个原打开记录，请分别查询；不会提交新操作"</string>
+    <string name="product_ad7cf52f5a751edaf9f04eb3" formatted="false">"打开前检查未通过，草稿和附件已保留"</string>
+    <string name="product_5ab402ad46484fb38c18dc5f" formatted="false">"打开后的运行时目标不匹配"</string>
+    <string name="product_91e37b1f259c8cb1d4707258" formatted="false">"打开回执原目标或操作不匹配"</string>
+    <string name="product_81bb58f600e0cc9a9a5d61e0" formatted="false">"打开回执错误字段无效"</string>
+    <string name="product_d8ea509c88c964f6619a53e7" formatted="false">"打开目标已改变，原操作保留"</string>
+    <string name="product_2a6de93c999ea67ac88efa9a" formatted="false">"打开结果仍待确认，请查询原记录；草稿和附件已保留"</string>
+    <string name="product_e043f9dd7808edc88cc72c08" formatted="false">"打开结果尚未确认，原记录、草稿和附件已保留"</string>
+    <string name="product_aee7728739e97ecaad6df783" formatted="false">"打开请求完整目标不匹配"</string>
+    <string name="product_63c0cf272db83731e5d81a0a" formatted="false">"查询原打开记录…"</string>
+    <string name="product_01463597ef1902802b28e591" formatted="false">"正在原桌面打开…"</string>
+    <string name="product_056e9c2cd6939822dff25d76" formatted="false">"正在打开此对话，请勿重复提交"</string>
+    <string name="product_ae05f150811c7a5975e0400f" formatted="false">"此电脑尚未提供已连接的主动打开能力"</string>
+    <string name="product_2f8718565567646e3a1c3405" formatted="false">"此电脑未开放主动打开"</string>
+    <string name="product_6ac00c64654ce97daea97062" formatted="false">"电脑尚未确认打开此对话，草稿和附件已保留；请查询原记录"</string>
+    <string name="product_4c7b94edcdb5cde73e884a2a" formatted="false">"电脑返回的数据格式无效"</string>
+    <string name="product_22023c3fbf1a138b38acb81a" formatted="false">"目标或草稿已改变，未提交"</string>
+    <string name="product_25d5715557b77bf2ebdf93c8" formatted="false">"上传控制未确认，原记录及文件已保留；请重新核对。"</string>
+    <string name="product_19aacb223b14a8e23d22512f" formatted="false">"上传结果待确认，请在原任务中查看；此电脑暂不支持继续上传。"</string>
+    <string name="product_dd2247bd12951e31f9882de6" formatted="false">"上传记录不可用"</string>
+    <string name="product_6cb435251d600f23e3ac1ddb" formatted="false">"上传记录保存未确认，原件及原意图保留；请核对本机记录。"</string>
+    <string name="product_832e3cb33472c96d4c95118e" formatted="false">"上传记录无法读取，原文件已保留；未新建或覆盖任务。"</string>
+    <string name="product_01055976e283c21f35ea397c" formatted="false">"其他文件的进度暂不可用。"</string>
+    <string name="product_9c2b616e12fb3ca93d3e3c08" formatted="false">"其余文件尚未封存，总字节数未确定。"</string>
+    <string name="product_d6822b04178d6929a0cc4d5c" formatted="false">"剩余"</string>
+    <string name="product_07a1bc9e5513f05f546ea67e" formatted="false">"原上传仍需核对；不降级重传旧文件。"</string>
+    <string name="product_16fa79b30c607599731c529e" formatted="false">"原上传内容或目标已改变，未继续上传。"</string>
+    <string name="product_145b24824077b3aa8683b46f" formatted="false">"原上传结果待核对"</string>
+    <string name="product_07035955f45c5b8c2687afae" formatted="false">"原件或上传结果待核对，任务及原输入已保留。"</string>
+    <string name="product_1f17145f8dba338b34194be2" formatted="false">"原件读取接口不支持有界续传；未改用新上传。"</string>
+    <string name="product_f6f65fa17ba102d1409930b6" formatted="false">"原接口整文件上传；不支持暂停或续传。"</string>
+    <string name="product_0cacab3633c5c11ef3afc92d" formatted="false">"原操作结果待核对；仅查询原上传，不重放。"</string>
+    <string name="product_34be27e64aeee9e2bbc44d4e" formatted="false">"原目标、连接或输入已变化；原上传已保留。"</string>
+    <string name="product_809b9f492fc6ba8b8982aed2" formatted="false">"取消电脑上传"</string>
+    <string name="product_80bc78a8bd21304beea3bffc" formatted="false">"取消结果待确认，请查询原上传。"</string>
+    <string name="product_c94a5d7713baaf00c64fefba" formatted="false">"已停止本地等待；远端操作未取消。"</string>
+    <string name="product_6f0d38083e3e610f1d35b973" formatted="false">"已完成任务卡清理未确认；原文件和业务回执保留。"</string>
+    <string name="product_32fdbb97f04b1ea990bd76f7" formatted="false">"已核对原上传；可从确认位置继续。"</string>
+    <string name="product_8f32deab83b6f99aaebd45af" formatted="false">"旧接口结果待核对，不支持续传；请查询原业务回执。"</string>
+    <string name="product_620b02181d03522f7c1cb9f0" formatted="false">"旧整文件回执不能恢复，请核对原业务记录。"</string>
+    <string name="product_2bc870da5751f9b87567dd4d" formatted="false">"查询原结果"</string>
+    <string name="product_0211a9ee09e566baff248f55" formatted="false">"正在上传；此电脑暂不支持暂停或继续上传。"</string>
+    <string name="product_de99e87c87bf9a7f1c698e87" formatted="false">"正在准备上传…"</string>
+    <string name="product_5e32a14f22c88b0295b19b7a" formatted="false">"正在校验和发布文件…"</string>
+    <string name="product_9dc4c5d708f25284079ee443" formatted="false">"此 Agent 不支持远端取消；停止仅影响手机本地上传。"</string>
+    <string name="product_0fc5f7eedce017e4eb3da882" formatted="false">"此 Agent 不支持远端取消；只能停止手机本地上传。"</string>
+    <string name="product_5f9970eabf68db9e6885daa4" formatted="false">"此类上传暂不支持取消电脑操作；结束等待仅影响手机。"</string>
+    <string name="product_3b36daf917cdde8e5727f225" formatted="false">"此连接未开放续传协议"</string>
+    <string name="product_be8d7f2e568940557f58a775" formatted="false">"电脑已确认取消，手机原件保留。"</string>
+    <string name="product_42b8799173e075d1146208cb" formatted="false">"电脑已确认取消；原输入保留，不自动新建上传。"</string>
+    <string name="product_5f4b1611f64651c35207d42c" formatted="false">"电脑已确认取消；原输入和附件保留，不能自动重建旧上传。"</string>
+    <string name="product_67df13e82cefd70bf66842c7" formatted="false">"移除已完成任务卡"</string>
+    <string name="product_546e3620cfadddf84f6e0405" formatted="false">"移除已结束任务卡"</string>
+    <string name="product_7c9691192f1b73408bbe4c0c" formatted="false">"继续"</string>
+    <string name="product_88fea643d3c2ce9312865d96" formatted="false">"要重新上传，请移除后重新添加附件。"</string>
+    <string name="product_b1e8f61afbdc131e67633a6f" formatted="false">"连接或原回执待确认；保留原ID和文件，继续前先查询。"</string>
 </resources>

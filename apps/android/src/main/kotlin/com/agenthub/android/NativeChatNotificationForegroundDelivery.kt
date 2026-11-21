@@ -14,7 +14,7 @@ internal interface NativeChatNotificationForegroundPort {
 internal class NativeChatNotificationForegroundDelivery(private val store: NativeChatNotificationStore,
     private val platform: NativeChatNotificationSystem, private val reading: NativeChatNotificationReading,
     private val reconcile: suspend (NativeChatNoticeTarget, Set<String>, () -> Boolean) -> Unit,
-    private val now: () -> Long = System::currentTimeMillis) : NativeChatNotificationForegroundPort {
+    private val now: () -> Long = System::currentTimeMillis, private val background: Boolean = false) : NativeChatNotificationForegroundPort {
     override suspend fun receive(event: NativeChatNotificationEvent, lease: NativeChatNoticeLease, computer: String, current: () -> Boolean): String {
         val presentation = store.presentationLease(lease.target)
         val valid = { current() && presentation() }
@@ -26,7 +26,7 @@ internal class NativeChatNotificationForegroundDelivery(private val store: Nativ
         // Even a muted kind may be a Host-provided badge event. P7 receives the exact original first.
         val decision = withContext(Dispatchers.IO) { if (valid()) reading.receive(event) else null } ?: return "stale-target-or-generation"
         if (!valid()) return "stale-target-or-generation"
-        if (!preferences.permits(event) || !decision.shouldAlert || !preferences.foregroundBanner) return "suppressed"
+        if (!preferences.permits(event) || !decision.shouldAlert || !background && !preferences.foregroundBanner) return "suppressed"
         val channel = platform.prepareAsync(event.kind, preferences.soundFor(event.kind), preferences.badgeEnabled, valid) ?: return "system-unavailable"
         val receipt = withContext(Dispatchers.IO) {
             if (!valid()) null else store.claim(event, lease, now()) { valid() && reading.mayPresent(event) }

@@ -9,6 +9,7 @@ internal object NativeMigrationExistingAliases {
         val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationEasyWorkBusiness.RECORD,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
         fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));names.add(name);require(names.size<=1024)}
         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
+        NativeMigrationUploadArchives.SOURCE_NAMES.forEach(::add) // Exactly live journal + inert audit, no source traversal.
         NativeMigrationForeground.ACTIVE_NAMES.forEach(::add)
         add(NativeMigrationNotificationArchives.RECORD)
         read(NativeMigrationNotificationArchives.RECORD)?.let {NativeMigrationNotificationArchives.legacyNames(it).forEach(::add)}

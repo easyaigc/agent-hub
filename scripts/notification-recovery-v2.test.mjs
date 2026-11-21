@@ -49,7 +49,11 @@ async function fixture(t, overrides = {}) {
     key: publicKey(),
     publisher: null,
     open() {
-      this.publisher = new NotificationPublisher({ target: this.target, statePath, ...overrides });
+      this.publisher = new NotificationPublisher({
+        target: this.target,
+        statePath,
+        ...overrides,
+      });
       return this.publisher;
     },
     close() {
@@ -396,7 +400,11 @@ test('live feed is contiguous/paged with fixed high-water; new originals wait fo
   const result = [...first.items];
   let page = first;
   while (page.hasMore) {
-    page = ctx.publisher.recoveryFeed({ ...query, after: page.next, through: first.through });
+    page = ctx.publisher.recoveryFeed({
+      ...query,
+      after: page.next,
+      through: first.through,
+    });
     assert.equal(page.kind, 'page');
     result.push(...page.items);
   }
@@ -457,7 +465,11 @@ test('byte budget bounds valid large originals independently of the count limit'
   const events = Array.from({ length: 40 }, (_, i) =>
     event(i, scope, {
       readTarget: scope,
-      readPosition: { revision: 1, messageId: 'm'.repeat(512), contentVersion: 'a'.repeat(64) },
+      readPosition: {
+        revision: 1,
+        messageId: 'm'.repeat(512),
+        contentVersion: 'a'.repeat(64),
+      },
       threadTitle: '题'.repeat(100),
       taskSummary: '文'.repeat(160),
     }),
@@ -516,7 +528,10 @@ test('retention gap never silently jumps; explicit original reset produces durab
     ctx.publisher.recoveryReceipt(reset.deviceId, reset.operationId, reset.epoch).receipt,
     receipt,
   );
-  const page = ctx.publisher.recoveryFeed({ ...query, resetId: reset.operationId });
+  const page = ctx.publisher.recoveryFeed({
+    ...query,
+    resetId: reset.operationId,
+  });
   assert.equal(page.kind, 'page');
   assert.equal(page.mode, 'reset');
   assert.equal(page.items[0].event.id, event(1).id);
@@ -690,7 +705,10 @@ test('late v1 APNs reply cannot revive separately fenced v2 revoke (owned fake r
       response.end(
         JSON.stringify(
           request.url === '/v1/push/register'
-            ? { bindingId: 'fixture-binding', managementToken: 'fixture-management' }
+            ? {
+                bindingId: 'fixture-binding',
+                managementToken: 'fixture-management',
+              }
             : { ok: true },
         ),
       );
@@ -794,7 +812,10 @@ async function routeFixture(t, ctx) {
   const request = (address, body) =>
     fetch(address, {
       method: body ? 'POST' : 'GET',
-      headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+      headers: {
+        authorization: 'Bearer ' + token,
+        'content-type': 'application/json',
+      },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
   return { url, request };
@@ -806,12 +827,18 @@ test('actual fixed HTTP route dispatcher supports submit/query/feed with exact o
   const capability = await (await http.request(http.url('capabilities'))).json();
   assert.equal(capability.version, 2);
   const intent = ctx.intent();
-  const submission = await http.request(http.url('operations'), { hostId: target.hostId, intent });
+  const submission = await http.request(http.url('operations'), {
+    hostId: target.hostId,
+    intent,
+  });
   assert.equal(submission.status, 200);
   assert.equal((await submission.json()).stage, 'applied');
   const found = await (
     await http.request(
-      http.url('operations', { operationId: intent.operationId, epoch: intent.epoch }),
+      http.url('operations', {
+        operationId: intent.operationId,
+        epoch: intent.epoch,
+      }),
     )
   ).json();
   assert.equal(found.found, true);
@@ -831,7 +858,9 @@ test('fixed route rejects missing/foreign/duplicate target fields and arbitrary 
     [http.url('capabilities', { hostId: 'foreign' }), 400],
     [http.url('capabilities', { target: '{}' }), 400],
     [
-      http.url('capabilities', { target: JSON.stringify({ ...target, runtimeId: 'foreign' }) }),
+      http.url('capabilities', {
+        target: JSON.stringify({ ...target, runtimeId: 'foreign' }),
+      }),
       409,
     ],
     [http.url('capabilities') + '&deviceId=duplicate', 400],
@@ -866,10 +895,18 @@ test('account-only observation change retains the first raw event and original f
   const ctx = await fixture(t),
     intent = ctx.intent();
   ctx.publisher.recoverySubmit(intent);
-  const original = event(1, { ...target, account: { authority: 'old', subject: 'old' } });
+  const original = event(1, {
+    ...target,
+    account: { authority: 'old', subject: 'old' },
+  });
   ctx.publisher.observe([original], 'fixture-thread', [], true);
   ctx.publisher.observe(
-    [{ ...original, target: { ...target, account: { authority: 'new', subject: 'new' } } }],
+    [
+      {
+        ...original,
+        target: { ...target, account: { authority: 'new', subject: 'new' } },
+      },
+    ],
     'fixture-thread',
     [],
     true,
@@ -928,7 +965,10 @@ test('new v2 IDs cannot reuse consumed generations or regress restored preferenc
     },
   });
   assert.equal(ctx.publisher.recoverySubmit(reused).reason, 'stale-generation');
-  const current = ctx.intent({ generation: 4, preferences: reused.preferences });
+  const current = ctx.intent({
+    generation: 4,
+    preferences: reused.preferences,
+  });
   assert.equal(ctx.publisher.recoverySubmit(current).stage, 'applied');
 });
 
@@ -966,6 +1006,16 @@ test('v2 generated schema and canonical vectors validate actual receipts, pages 
     }),
   ])
     assert.equal(validate(response), true, JSON.stringify(validate.errors));
+  const push = ctx.intent({ generation: 2, pushProvider: 'fcm', deviceToken: 'schema:token' });
+  assert.equal(validate(push), true, JSON.stringify(validate.errors));
+  assert.equal(validate(ctx.publisher.recoverySubmit(push)), true, JSON.stringify(validate.errors));
+  for (const change of [
+    { deviceToken: undefined },
+    { pushProvider: undefined },
+    { kind: 'preferences' },
+    { preferences: { ...push.preferences, enabled: false } },
+  ])
+    assert.equal(validate({ ...push, ...change }), false);
   assert.equal(validate({ ...intent, kind: 'feed-reset' }), false);
   assert.equal(validate({ ...intent, kind: 'revoke' }), false);
   assert.equal(validate({ ...intent, unknown: true }), false);
@@ -993,7 +1043,10 @@ test('owner loss/restart preserves actionable active IDs; stale eligibility is n
   const ctx = await fixture(t),
     intent = ctx.intent();
   ctx.publisher.recoverySubmit(intent);
-  const original = event(77, target, { kind: 'approval', requestId: 'fixture-request' });
+  const original = event(77, target, {
+    kind: 'approval',
+    requestId: 'fixture-request',
+  });
   ctx.publisher.observe([original], 'fixture-thread', [original.id], true);
   ctx.close();
   ctx.open();
@@ -1043,8 +1096,13 @@ test('v2 authoritative pending IDs are independent of preference filtering and e
       },
     });
   ctx.publisher.recoverySubmit(intent);
-  const pending = event(88, target, { kind: 'question', requestId: 'fixture-question' }),
-    expired = event(89, target, { occurredAt: new Date(Date.now() - 601000).toISOString() });
+  const pending = event(88, target, {
+      kind: 'question',
+      requestId: 'fixture-question',
+    }),
+    expired = event(89, target, {
+      occurredAt: new Date(Date.now() - 601000).toISOString(),
+    });
   ctx.publisher.observe([pending, expired], 'fixture-thread', [pending.id], true);
   const query = {
     version: 2,
@@ -1061,4 +1119,374 @@ test('v2 authoritative pending IDs are independent of preference filtering and e
   const resolved = ctx.publisher.recoveryFeed(query);
   assert.deepEqual(resolved.activeIds, []);
   assert.equal(resolved.items[0].disposition, 'inactive');
+});
+
+test('FCM intent is paired enabled register only and legacy fingerprints remain exact', async (t) => {
+  const ctx = await fixture(t);
+  const old = ctx.intent();
+  const legacyBytes = notificationV2Canonical(
+    Object.fromEntries(Object.entries(old).filter(([key]) => key !== 'fingerprint')),
+  );
+  assert.equal(
+    intentHash(parseNotificationIntentV2(old)),
+    createHash('sha256').update(legacyBytes).digest('hex'),
+  );
+  const push = ctx.intent({
+    pushProvider: 'fcm',
+    deviceToken: 'fixture:token',
+  });
+  assert.equal(parseNotificationIntentV2(push).deviceToken, 'fixture:token');
+  for (const fields of [
+    { pushProvider: 'fcm' },
+    { deviceToken: 'fixture:token' },
+    { pushProvider: 'apns', deviceToken: 'a'.repeat(64) },
+    { pushProvider: 'fcm', deviceToken: '' },
+    { pushProvider: 'fcm', deviceToken: 'bad token' },
+    { pushProvider: 'fcm', deviceToken: 'token', environment: 'development' },
+    ...['preferences', 'revoke', 'feed-reset'].map((kind) => ({
+      pushProvider: 'fcm',
+      deviceToken: 'token',
+      kind,
+    })),
+    {
+      pushProvider: 'fcm',
+      deviceToken: 'token',
+      preferences: { ...push.preferences, enabled: false },
+    },
+  ])
+    assert.throws(() => parseNotificationIntentV2(ctx.intent(fields)));
+  assert.throws(() => ctx.publisher.recoverySubmit({ ...push, deviceToken: 'changed-token' }));
+  assert.equal(Object.hasOwn(ctx.publisher.recoveryCapabilities(), 'pushProviders'), false);
+  assert.deepEqual(ctx.publisher.recoveryCapabilities(true).pushProviders, ['fcm']);
+});
+
+const pause = () => new Promise((resolve) => setTimeout(resolve, 15));
+async function until(check) {
+  for (let i = 0; i < 150; i++) {
+    if (check()) return;
+    await pause();
+  }
+  assert.fail('Owned notification fixture timed out');
+}
+async function pushPeer(t, reply) {
+  const calls = [];
+  const server = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const row = {
+      path: request.url,
+      body: JSON.parse(Buffer.concat(chunks).toString()),
+    };
+    calls.push(row);
+    const result = await reply(row, request, response);
+    if (response.destroyed) return;
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify(result));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  });
+  return {
+    calls,
+    relayURL: 'http://127.0.0.1:' + server.address().port,
+    publisherToken: 'synthetic-publisher',
+  };
+}
+
+test('FCM applied receipt stays original across ready status, rotation, stale generation and restart', async (t) => {
+  const peer = await pushPeer(t, (row) =>
+    row.path.endsWith('/register')
+      ? {
+          bindingId: 'binding-' + row.body.generation,
+          managementToken: row.body.managementToken,
+        }
+      : { enabled: true, ok: true },
+  );
+  const ctx = await fixture(t, peer);
+  const first = ctx.intent({ pushProvider: 'fcm', deviceToken: 'first:token' });
+  const applied = ctx.publisher.recoverySubmit(first);
+  assert.equal(applied.stage, 'applied');
+  assert.equal(applied.status.pushProvider, 'fcm');
+  assert.equal(
+    applied.status.deviceTokenSha256,
+    createHash('sha256').update(first.deviceToken).digest('hex'),
+  );
+  assert.notEqual(applied.status.state, 'ready');
+  await until(() => ctx.publisher.status(first.deviceId).state === 'ready');
+  const ready = ctx.publisher.status(first.deviceId);
+  assert.equal(ready.delivery, 'fcm');
+  assert.ok(ready.bindingId);
+  assert.ok(ready.publicKey);
+  const second = ctx.intent({
+    generation: 2,
+    pushProvider: 'fcm',
+    deviceToken: 'second:token',
+  });
+  assert.equal(ctx.publisher.recoverySubmit(second).stage, 'applied');
+  assert.equal(ctx.publisher.status(first.deviceId).delivery, 'foreground-only');
+  await until(() => ctx.publisher.status(first.deviceId).state === 'ready');
+  assert.equal(
+    ctx.publisher.status(first.deviceId).deviceTokenSha256,
+    createHash('sha256').update(second.deviceToken).digest('hex'),
+  );
+  const stale = ctx.intent({
+    generation: 1,
+    pushProvider: 'fcm',
+    deviceToken: 'old:token',
+  });
+  assert.equal(ctx.publisher.recoverySubmit(stale).reason, 'stale-generation');
+  ctx.close();
+  ctx.open();
+  assert.deepEqual(
+    ctx.publisher.recoveryReceipt(first.deviceId, first.operationId, first.epoch).receipt,
+    applied,
+  );
+  assert.equal(
+    ctx.publisher.recoveryReceipt(first.deviceId, randomUUID(), first.epoch).found,
+    false,
+  );
+  assert.deepEqual(ctx.publisher.recoverySubmit(first), applied);
+  await pause();
+  assert.equal(peer.calls.filter((r) => r.path.endsWith('/register')).length, 2);
+});
+
+test('unknown FCM external outcome is durable and never replayed by submit, tick or restart', async (t) => {
+  const peer = await pushPeer(t, (row, request, response) => {
+    response.destroy();
+    return {};
+  });
+  const ctx = await fixture(t, peer);
+  const intent = ctx.intent({
+    pushProvider: 'fcm',
+    deviceToken: 'unknown:token',
+  });
+  const original = ctx.publisher.recoverySubmit(intent);
+  await until(() => ctx.publisher.status(intent.deviceId).state === 'unavailable');
+  ctx.close();
+  ctx.open();
+  assert.deepEqual(ctx.publisher.recoverySubmit(intent), original);
+  await ctx.publisher.flush();
+  assert.equal(peer.calls.length, 1);
+  assert.equal(ctx.publisher.status(intent.deviceId).delivery, 'foreground-only');
+  assert.deepEqual(
+    ctx.publisher.recoveryReceipt(intent.deviceId, intent.operationId, intent.epoch).receipt,
+    original,
+  );
+});
+
+test('new FCM generation and revoke fence held old registration replies', async (t) => {
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  t.after(() => release());
+  const peer = await pushPeer(t, async (row) => {
+    if (row.path.endsWith('/register') && row.body.deviceToken === 'old:token') await held;
+    return row.path.endsWith('/register')
+      ? {
+          bindingId: 'binding-' + row.body.generation,
+          managementToken: row.body.managementToken,
+        }
+      : { ok: true, enabled: true };
+  });
+  const ctx = await fixture(t, peer);
+  const first = ctx.intent({ pushProvider: 'fcm', deviceToken: 'old:token' });
+  ctx.publisher.recoverySubmit(first);
+  await until(() => peer.calls.length === 1);
+  const next = ctx.intent({
+    generation: 2,
+    pushProvider: 'fcm',
+    deviceToken: 'new:token',
+  });
+  ctx.publisher.recoverySubmit(next);
+  await until(() => ctx.publisher.status(first.deviceId).state === 'ready');
+  const off = ctx.intent({
+    generation: 3,
+    kind: 'revoke',
+    preferences: {
+      ...first.preferences,
+      enabled: false,
+      generation: 2,
+      revision: 'off',
+    },
+  });
+  ctx.publisher.recoverySubmit(off);
+  await until(() => peer.calls.some((row) => row.path.endsWith('/unregister')));
+  release();
+  await pause();
+  assert.equal(ctx.publisher.status(first.deviceId).state, 'disabled');
+  assert.notEqual(ctx.publisher.status(first.deviceId).delivery, 'fcm');
+  const [old, newer] = peer.calls.filter((row) => row.path.endsWith('/register'));
+  const revoked = peer.calls.find((row) => row.path.endsWith('/unregister'));
+  assert.ok(newer.body.generation > old.body.generation);
+  assert.ok(revoked.body.generation > newer.body.generation);
+});
+
+test('same-generation durable feed reset does not discard a valid in-flight FCM binding', async (t) => {
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  t.after(() => release());
+  const peer = await pushPeer(t, async (row) => {
+    if (row.path.endsWith('/register')) await held;
+    return {
+      bindingId: 'same-generation-binding',
+      managementToken: row.body.managementToken,
+      enabled: true,
+    };
+  });
+  const ctx = await fixture(t, peer);
+  const intent = ctx.intent({ pushProvider: 'fcm', deviceToken: 'same:token' });
+  ctx.publisher.recoverySubmit(intent);
+  await until(() => peer.calls.length === 1);
+  const reset = ctx.intent({
+    kind: 'feed-reset',
+    gap: { epoch: randomUUID(), after: 0, floor: 1, head: 0, acceptanceId: randomUUID() },
+  });
+  assert.equal(ctx.publisher.recoverySubmit(reset).stage, 'applied');
+  release();
+  await until(() => ctx.publisher.status(intent.deviceId).state === 'ready');
+  assert.equal(peer.calls.filter((row) => row.path.endsWith('/register')).length, 1);
+});
+
+test('unknown v2 revocation is never automatically replayed after durable restart', async (t) => {
+  const peer = await pushPeer(t, (row, request, response) => {
+    if (row.path.endsWith('/unregister')) {
+      response.destroy();
+      return {};
+    }
+    return {
+      bindingId: 'revocation-binding',
+      managementToken: row.body.managementToken,
+      enabled: true,
+    };
+  });
+  const ctx = await fixture(t, peer);
+  const intent = ctx.intent({ pushProvider: 'fcm', deviceToken: 'revoke:token' });
+  ctx.publisher.recoverySubmit(intent);
+  await until(() => ctx.publisher.status(intent.deviceId).state === 'ready');
+  const off = ctx.intent({
+    kind: 'revoke',
+    generation: 2,
+    preferences: { ...intent.preferences, enabled: false, generation: 2, revision: 'off' },
+  });
+  const receipt = ctx.publisher.recoverySubmit(off);
+  await until(() => peer.calls.some((row) => row.path.endsWith('/unregister')));
+  await pause();
+  ctx.close();
+  ctx.open();
+  await ctx.publisher.flush();
+  assert.deepEqual(ctx.publisher.recoverySubmit(off), receipt);
+  assert.equal(peer.calls.filter((row) => row.path.endsWith('/unregister')).length, 1);
+  assert.equal(ctx.publisher.status(intent.deviceId).state, 'disabled');
+});
+
+test('v2 disabled or excluded preferences revoke FCM without a new vendor registration', async (t) => {
+  const peer = await pushPeer(t, (row) => ({
+    bindingId: 'preference-binding',
+    managementToken: row.body.managementToken,
+    enabled: true,
+    ok: true,
+  }));
+  const ctx = await fixture(t, peer);
+  const intent = ctx.intent({ pushProvider: 'fcm', deviceToken: 'preference:token' });
+  ctx.publisher.recoverySubmit(intent);
+  await until(() => ctx.publisher.status(intent.deviceId).state === 'ready');
+  const changed = ctx.intent({
+    kind: 'preferences',
+    generation: 2,
+    preferences: { ...intent.preferences, enabled: false, generation: 2, revision: 'disabled' },
+  });
+  ctx.publisher.recoverySubmit(changed);
+  await until(() => peer.calls.some((row) => row.path.endsWith('/unregister')));
+  await pause();
+  assert.equal(ctx.publisher.status(intent.deviceId).state, 'disabled');
+  assert.equal(peer.calls.filter((row) => row.path.endsWith('/register')).length, 1);
+  const excluded = ctx.intent({
+    generation: 3,
+    pushProvider: 'fcm',
+    deviceToken: 'excluded:token',
+    preferences: {
+      ...intent.preferences,
+      generation: 3,
+      revision: 'excluded',
+      excludedHosts: [target.hostId],
+    },
+  });
+  assert.equal(ctx.publisher.recoverySubmit(excluded).status.state, 'disabled');
+  assert.equal(ctx.publisher.status(intent.deviceId).state, 'disabled');
+  await pause();
+  assert.equal(peer.calls.filter((row) => row.path.endsWith('/register')).length, 1);
+});
+
+test('capabilities preserve exact legacy shape unless the provider projection is explicitly selected', async (t) => {
+  const ctx = await fixture(t);
+  const old = ctx.publisher.recoveryCapabilities();
+  assert.deepEqual(Object.keys(old).sort(), ['epoch', 'limits', 'operations', 'target', 'version']);
+  assert.equal(Object.hasOwn(old, 'pushProviders'), false);
+  assert.deepEqual(ctx.publisher.recoveryCapabilities(false), old);
+  const selected = ctx.publisher.recoveryCapabilities(true);
+  assert.deepEqual(selected, { ...old, pushProviders: ['fcm'] });
+  assert.deepEqual(ctx.publisher.recoveryCapabilities(), old);
+  const http = await routeFixture(t, ctx);
+  const baseline = await http.request(http.url('capabilities'));
+  assert.equal(baseline.status, 200);
+  assert.deepEqual(await baseline.json(), old);
+  const response = await http.request(http.url('capabilities', { pushProviders: '1' }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), selected);
+  assert.deepEqual(await (await http.request(http.url('capabilities'))).json(), old);
+  assert.equal((await fetch(http.url('capabilities', { pushProviders: '1' }))).status, 401);
+  const state = JSON.parse(await readFile(ctx.statePath, 'utf8'));
+  assert.equal(state.recoveryV2.operations.length, 0);
+  assert.equal(state.recoveryV2.slots.length, 0);
+  assert.deepEqual(state.devices, {});
+});
+
+test('provider opt-in rejects wrong values, duplicates, methods and cross-route parameters without writes', async (t) => {
+  const ctx = await fixture(t),
+    http = await routeFixture(t, ctx),
+    intent = ctx.intent();
+  const before = await readFile(ctx.statePath, 'utf8');
+  for (const value of ['', '0', 'true', 'false', '01', '1 ', ' 1', '1\n', 'fcm', '2']) {
+    assert.equal(
+      (await http.request(http.url('capabilities', { pushProviders: value }))).status,
+      400,
+    );
+  }
+  for (const url of [
+    http.url('capabilities', { pushProviders: '1' }) + '&pushProviders=1',
+    http.url('capabilities', { pushProviders: '1' }) + '&pushProviders=0',
+    http.url('operations', {
+      pushProviders: '1',
+      operationId: intent.operationId,
+      epoch: intent.epoch,
+    }),
+    http.url('feed', { pushProviders: '1', epoch: intent.epoch, generation: '1', after: '0' }),
+    http.url('unknown', { pushProviders: '1' }),
+    http.url('capabilities', { pushProviders: '1', deviceId: 'bad device' }),
+    http.url('capabilities', { pushProviders: '1', hostId: 'foreign' }),
+    http.url('capabilities', { pushProviders: '1', unexpected: 'field' }),
+  ])
+    assert.equal((await http.request(url)).status, 400);
+  for (const route of ['capabilities', 'operations', 'feed']) {
+    assert.equal(
+      (
+        await http.request(http.url(route, { pushProviders: '1' }), {
+          hostId: target.hostId,
+          intent,
+        })
+      ).status,
+      400,
+    );
+  }
+  const foreign = http.url('capabilities', {
+    pushProviders: '1',
+    target: JSON.stringify({ ...target, runtimeId: 'foreign' }),
+  });
+  assert.equal((await http.request(foreign)).status, 409);
+  assert.equal(await readFile(ctx.statePath, 'utf8'), before);
 });

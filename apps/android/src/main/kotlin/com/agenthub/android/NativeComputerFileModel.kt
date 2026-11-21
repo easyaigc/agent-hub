@@ -10,11 +10,37 @@ import java.io.OutputStream
 
 internal data class ComputerFileLocalIssue(val receipt: ComputerFileReceipt,val key: String,val terminalSaveConfirmed: Boolean,val queryRequired: Boolean)
 
+/** Debug metadata only: never format an exception message, URI, file name or record. */
+internal object ComputerFileFailureDiagnostic {
+    private val sourceTypes=setOf("NativeSessionStorage","NativeComputerFileStore","NativeComputerFileDurableFiles","NativeComputerFileModel","NativeVoiceRawOwnership","NativeVoiceRawGate",
+        "NativeUploadCenter","NativeUploadRow","NativeUploadJournalCodec","NativeUploadContractKt","NativeCodexCommands")
+    fun projection(stage: String,failure: Throwable): String {
+        require(stage in setOf("journal-read","operation","capture","deliver",
+            "upload-status","upload-prepare","upload-cancel","upload-source","upload-chunk","upload-complete"))
+        return org.json.JSONObject().put("schema",1).put("stage",stage).put("causes",org.json.JSONArray(
+            generateSequence(failure) {it.cause}.take(4).map {cause->
+                val type=cause.javaClass.name.takeIf {it.length<=200&&it.matches(Regex("[A-Za-z0-9_.$]+"))}?:"OTHER"
+                org.json.JSONObject().put("class",type).put("source",org.json.JSONArray(cause.stackTrace.asSequence().mapNotNull {frame->
+                    val typeName=frame.className.removePrefix("com.agenthub.android.").substringBefore('$')
+                    if(frame.className.startsWith("com.agenthub.android.")&&typeName in sourceTypes&&frame.lineNumber>=0)
+                        org.json.JSONObject().put("class",typeName).put("line",frame.lineNumber) else null
+                }.take(4).toList())).also {
+                    if(cause is android.system.ErrnoException)it.put("errno",cause.errno)
+                    if(cause is CodexCommandError)cause.status?.takeIf {status->status in 100..599}?.let {status->it.put("httpStatus",status)}
+                }
+            }.toList())).toString()
+    }
+    fun record(stage: String,failure: Throwable) {
+        if(!BuildConfig.DEBUG||failure is CancellationException)return
+        runCatching {android.util.Log.w("AgentHubFileFailure",projection(stage,failure))}
+    }
+}
+
 /** One captured computer target. Remote confirmation, durable terminal receipt and
  * local retirement are separate. Ending local waiting never cancels the Host. */
 internal class NativeComputerFileModel(private val context: Context,val client: MobileClient,
     private val root: NativeSessionStorage,private val commands: AgentCommands,private val scope: CoroutineScope,
-    private val current: ()->Boolean) {
+    val uploads:NativeUploadCenter?=null,private val current: ()->Boolean) {
     val presentationId=java.util.UUID.randomUUID().toString()
     val target=ComputerFileTarget.capture(client)
     var catalog by mutableStateOf<ComputerFileCatalog?>(null);private set
@@ -51,7 +77,9 @@ internal class NativeComputerFileModel(private val context: Context,val client: 
         if(visible(ticket)){knownReceived[receipt.file.id]=receipt;publish(receipt)}
     }
     private suspend fun reload(store: NativeComputerFileStore,ticket: Long) {
-        val saved=withContext(Dispatchers.IO){store.load()}
+        if(visible(ticket))journalUsable=false
+        val saved=try {withContext(Dispatchers.IO){store.load()}}
+        catch(failure: Exception) {ComputerFileFailureDiagnostic.record("journal-read",failure);throw failure}
         if(visible(ticket)) {
             pending=saved;journalUsable=true
             saved.filter {it.phase==ComputerFilePhase.COMPLETED}.forEach {row->remember(requireNotNull(row.receipt),ticket)}
@@ -67,7 +95,7 @@ internal class NativeComputerFileModel(private val context: Context,val client: 
                 if(!journalUsable)reload(store,ticket)
                 work(store,ticket)
             }}catch(cancelled: CancellationException){throw cancelled}
-            catch(failure: Exception){if(visible(ticket)){error=message(failure);detail=(failure as? CodexCommandError)?.takeIf {!it.appOwnedCopy}?.message?.take(8192)}}
+            catch(failure: Exception){ComputerFileFailureDiagnostic.record("operation",failure);if(visible(ticket)){error=message(failure);detail=(failure as? CodexCommandError)?.takeIf {!it.appOwnedCopy}?.message?.take(8192)}}
             finally {if(epoch==ticket){busy=false;activity=null;activityFile=null;job=null}}
         }
     }
@@ -155,17 +183,27 @@ internal class NativeComputerFileModel(private val context: Context,val client: 
         if(!canChoose)return
         start {store,ticket->
             require(uris.size in 1..32) {"一次最多选择 32 个文件。"}
-            for(uri in uris) {
+            val batch=java.util.UUID.randomUUID().toString() // Local presentation group, never a wire operation ID.
+            for((index,uri) in uris.withIndex()) {
                 currentCoroutineContext().ensureActive();check(isCurrent)
                 var originalSealed=false
                 try {
                     progress=0;total=0;activityFile=null;activity="正在读取所选文件…"
                     val row=store.capture(uri,maximum,progress(ticket),describe(ticket));originalSealed=true
-                    reload(store,ticket);deliver(store,row.id,ticket)
+                    reload(store,ticket)
+                    withContext(NativeUploadOrigin(batch,index,uris.size,null,{isCurrent})) {deliver(store,row.id,ticket)}
                 }catch(cancelled: CancellationException){throw cancelled}
                 catch(failure: Exception) {
                     if(!isCurrent)return@start
-                    reload(store,ticket)
+                    ComputerFileFailureDiagnostic.record(if(originalSealed)"deliver" else "capture",failure)
+                    try {reload(store,ticket)}
+                    catch(cancelled: CancellationException){throw cancelled}
+                    catch(readFailure: Exception) {
+                        // Preserve the first capture failure when reconciliation also fails.
+                        // Do not turn a secondary read error into the original failure.
+                        if(readFailure!==failure)failure.addSuppressed(readFailure)
+                        throw failure
+                    }
                     val text=message(failure)
                     error=if(!originalSealed&&text==ComputerFileCopy.UNKNOWN)"原件读取未完成，已保存的内容保留在手机。" else text
                     detail=(failure as? CodexCommandError)?.takeIf {!it.appOwnedCopy}?.message?.take(8192)

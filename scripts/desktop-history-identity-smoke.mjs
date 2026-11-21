@@ -42,6 +42,11 @@ for (const kind of ['userMessage', 'agentMessage', 'commandExecution']) {
   ]);
   const noTurn = { ...bare, runId: undefined };
   assert.deepEqual(retained([noTurn], [qualified]), [noTurn]);
+  assert.deepEqual(
+    retained([bare], [{ ...bare, runId: 'other' }]),
+    [bare],
+    'Equal raw ordinal strings from different Turns are distinct exact item identities',
+  );
 }
 for (const provisional of ['item-1', historyIdentity('item-1', 'run')]) {
   assert.deepEqual(
@@ -148,6 +153,85 @@ for (const fallback of ['item-4', historyIdentity('item-4', 'run')]) {
     'Incoming attachment identity cannot be inferred from equal dialog text',
   );
 }
+const completedOrdinals = (before, after) =>
+  retainedDesktopHistory(before, after, new Set(), new Set(['run']));
+const fallbackOrdinal = historyIdentity('item-1', 'run');
+for (const [prior, current] of [
+  [fallbackOrdinal, 'item-1'],
+  ['item-1', fallbackOrdinal],
+]) {
+  assert.deepEqual(completedOrdinals([row(prior)], [row(current)]), []);
+  assert.deepEqual(
+    completedOrdinals([row(prior), row(current)], [row(current)]),
+    [],
+    'A completed owner repairs the persisted raw-ordinal and namespaced-ordinal duplicate',
+  );
+  assert.deepEqual(
+    retained([row(prior)], [row(current)]),
+    [],
+    'Raw and Turn-qualified forms are the same exact item without content-based inference',
+  );
+  // These guards concern inference between different items. Exact IDs may
+  // legitimately update their body, status and registered resource metadata.
+  const unmatched = current === 'item-1' ? 'item-2' : historyIdentity('item-2', 'run');
+  for (const changed of [
+    row('item-2'),
+    row(unmatched, 'other'),
+    row(unmatched, 'run', 'agentMessage', 'different body'),
+    row(unmatched, 'run', 'commandExecution'),
+    { ...row(unmatched), status: 'unknown' },
+    { ...row(unmatched), attachments: [{ id: 'unregistered' }] },
+    { ...row(unmatched), files: ['original.txt'] },
+    { ...row(unmatched), detail: 'different detail' },
+  ])
+    assert.deepEqual(completedOrdinals([row(prior)], [changed]), [row(prior)]);
+}
+assert.equal(
+  completedOrdinals([row(fallbackOrdinal), row(fallbackOrdinal)], [row('item-1')]).length,
+  0,
+  'Repeated copies of the same exact ordinal ID are repaired together, not treated as distinct messages',
+);
+assert.deepEqual(
+  completedOrdinals([row('history-fallback:other:item-1')], [row('item-1')]),
+  [row('history-fallback:other:item-1')],
+  'The encoded fallback Turn must agree with the row Turn',
+);
+for (const [alias, current] of [
+  [fallbackOrdinal, 'item-1'],
+  ['item-1', fallbackOrdinal],
+]) {
+  for (const previous of [
+    [row(alias), row('msg-real-2')],
+    [row('msg-real-2'), row(alias)],
+  ])
+    assert.deepEqual(
+      completedOrdinals(previous, [row(current)]),
+      [row('msg-real-2')],
+      'Exact ordinal matching consumes the incoming occurrence before stable reconstruction, regardless of history order',
+    );
+  assert.deepEqual(
+    completedOrdinals([row(alias), row('msg-real-2')], [row(current), row('item-2')]),
+    [],
+    'Two incoming occurrences can retire the ordinal alias and one stable occurrence',
+  );
+}
+// Another Turn must not affect exact-ordinal reservation.
+for (const priorRows of [
+  [row('item-1'), row('msg-real-2')],
+  [row('msg-real-2'), row('item-1')],
+]) {
+  for (const currentRows of [
+    [row(fallbackOrdinal), row('item-1', 'other')],
+    [row('item-1', 'other'), row(fallbackOrdinal)],
+  ]) {
+    assert.deepEqual(
+      completedOrdinals(priorRows, currentRows),
+      [row('msg-real-2')],
+      'An unrelated Turn raw ordinal cannot skip this Turn exact match and erase its distinct stable message',
+    );
+  }
+}
+
 assert.equal(
   retained([{ ...row('item-1'), files: ['historical file'] }], [row('msg-owner')]).length,
   1,
@@ -165,6 +249,17 @@ assert.deepEqual(
     new Set(['initialization']),
   ),
   [],
+);
+for (const initialization of ['item-1', historyIdentity('item-1', 'run')])
+  assert.deepEqual(
+    retainedDesktopHistory([row('item-1')], [], new Set([initialization])),
+    [],
+    'The original raw initialization ID and its known Turn-qualified form remain recognized',
+  );
+assert.deepEqual(
+  retainedDesktopHistory([row('item-1', 'other')], [], new Set([historyIdentity('item-1', 'run')])),
+  [row('item-1', 'other')],
+  'A qualified initialization ID cannot discard an item from another Turn',
 );
 console.log(
   'Desktop history identity boundaries passed: provisional adoption, legacy migration, Turn isolation, multiplicity, real IDs, reply phase, tools and retained prefixes.',

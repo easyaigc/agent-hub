@@ -169,6 +169,9 @@ extension EasyWorkPairing {
     }
   }
   private static func readHostWithinBudget(endpoint: String, fingerprint: String?, target: EasyWorkTarget?, publicKey: String?, timeout: TimeInterval) async throws -> EasyWorkHostDescriptor {
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.peer(target: target, fingerprint: fingerprint, publicKey: publicKey, endpoints: [endpoint])
+    #endif
     let url = try localEndpoint(endpoint)
     let discovered = DiscoveredHostTrust(endpoint: url)
     let delegate: any URLSessionDelegate

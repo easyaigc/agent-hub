@@ -1,6 +1,6 @@
 # Host 只读操作与恢复映射
 
-本审查依据[统一 Host 协议规范](unified-host-protocol.md)，覆盖 F09 连接恢复及 F72 文档链接读取。实现、模拟器与真实桌面结果和交付只记录在[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。F75、A6 的暂停范围保持；本次不展开 Git 页面开发或整项验收。
+本审查依据[统一 Host 协议规范](unified-host-protocol.md)，覆盖 F09 连接恢复及 F72 文档链接读取。实现、模拟器与真实桌面结果和交付只记录在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。F75、A6 的暂停范围保持；本次不展开 Git 页面开发或整项验收。
 
 ## 实际调用链
 

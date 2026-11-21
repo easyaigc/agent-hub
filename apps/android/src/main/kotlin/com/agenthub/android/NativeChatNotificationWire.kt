@@ -6,7 +6,8 @@ import java.util.Base64
 
 /** A notification status never proves an ambiguous mutation: Host v1 has no intent fingerprint. */
 internal class NativeChatNotificationStatus(val target: NativeChatNoticeTarget, val delivery: String,
-    val state: String, val revision: String?, val reason: String?, val hasBinding: Boolean) {
+    val state: String, val revision: String?, val reason: String?, val hasBinding: Boolean, val bindingId: String? = null, val peerPublicKey: String? = null,
+    val tokenSha256: String? = null, val pushProvider: String? = null) {
     fun foreground(revision: String) = this.revision == revision && delivery == "foreground-only" && !hasBinding && state != "disabled"
     override fun toString() = "NativeChatNotificationStatus($delivery,$state)"
 }
@@ -38,11 +39,11 @@ internal object NativeChatNotificationWire {
         return bytes
     }
     fun status(v: JSONObject, expected: NativeChatNoticeTarget): NativeChatNotificationStatus {
-        keys(v, setOf("version", "target", "delivery", "state"), setOf("reason", "revision", "bindingId", "publicKey", "relayURL", "managementToken", "lastDelivery"))
+        keys(v, setOf("version", "target", "delivery", "state"), setOf("reason", "revision", "bindingId", "publicKey", "relayURL", "managementToken", "lastDelivery", "pushProvider", "deviceTokenSha256"))
         require(long(v, "version") == 1L)
         val target = NativeChatNotificationCodec.target(v.getJSONObject("target")); require(target == expected)
         val delivery = text(v, "delivery"); val state = text(v, "state")
-        require(delivery in setOf("foreground-only", "apns") && state in setOf("disabled", "ready", "pending", "unavailable"))
+        require(delivery in setOf("foreground-only", "apns", "fcm") && state in setOf("disabled", "ready", "pending", "unavailable"))
         optional(v, "publicKey", 64)?.let { key(it).fill(0) }
         optional(v, "bindingId"); optional(v, "managementToken", 512)
         optional(v, "relayURL", 2048)?.let { require(java.net.URI(it).let { uri -> uri.scheme == "https" && uri.host != null && uri.rawUserInfo == null && uri.rawFragment == null }) }
@@ -51,7 +52,8 @@ internal object NativeChatNotificationWire {
             require(text(it, "state") in setOf("pending", "submitting", "accepted", "uncertain", "rejected"))
             Instant.parse(text(it, "occurredAt")); optional(it, "reason", 4096)
         }
-        return NativeChatNotificationStatus(target, delivery, state, optional(v, "revision"), optional(v, "reason", 4096), v.has("bindingId"))
+        return NativeChatNotificationStatus(target, delivery, state, optional(v, "revision"), optional(v, "reason", 4096), v.has("bindingId"), optional(v, "bindingId"), optional(v, "publicKey", 64),
+            optional(v, "deviceTokenSha256", 64)?.also { require(chatNoticeHash(it)) }, optional(v, "pushProvider")?.also { require(it in setOf("apns", "fcm")) })
     }
     fun feed(v: JSONObject, expected: NativeChatNoticeTarget, after: String): NativeChatNotificationFeed {
         keys(v, setOf("events", "cursor", "activeIds", "status"))

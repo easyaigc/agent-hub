@@ -44,6 +44,16 @@ internal object CodexResources {
         } catch(error: CodexCommandError) { throw error }
           catch(_: Exception) { invalid() }
     }
+    fun fromDocument(client: MobileClient,source: MobileFile,reference: String,sourceSha256: String,value: JSONObject): MobileFile {
+        validate(client,source)
+        if(source.sha256!=sourceSha256)invalid()
+        try {
+            claims(client,source.threadId,value)
+            if(value.opt("sourceAttachmentId")!=source.id||value.opt("reference")!=reference)invalid()
+            return file(client,source.threadId,value.getJSONObject("attachment"))
+        } catch(error: CodexCommandError) { throw error }
+          catch(_: Exception) { invalid() }
+    }
     fun current(client: MobileClient,original: MobileFile,value: JSONObject): MobileFile {
         try {
             claims(client,original.threadId,value)
@@ -66,12 +76,17 @@ internal object CodexResources {
         } }
         count==expected.sizeBytes&&digest.digest().joinToString("") { "%02x".format(it) }==expected.sha256
     }
+    suspend fun verifyLocalSnapshot(local: File,expected: MobileFile): Boolean = cached(local,expected)
     suspend fun download(client: MobileClient,original: MobileFile,cache: File,
-        resolve: suspend ()->MobileFile?,fetch: suspend (MobileFile,File)->File): File {
+        resolve: suspend ()->MobileFile?,fetch: suspend (MobileFile,File)->File): File =
+        downloadSnapshot(client,original,cache,null,resolve,fetch).local
+    suspend fun downloadSnapshot(client: MobileClient,original: MobileFile,cache: File,progress: ResourceDownloadProgressHandler?,
+        resolve: suspend ()->MobileFile?,fetch: suspend (MobileFile,File)->File): ResourceDownloadSnapshot {
         validate(client,original)
         for(attempt in 0..1) {
             coroutineContext.ensureActive()
             // A stale cached copy cannot hide a changed/removed current source.
+            progress?.invoke(ResourceDownloadProgress(ResourceDownloadPhase.Preparing))
             val current=resolve() ?: original
             validate(client,current)
             val scope=hash(RuntimeIdentity.readingKey(client.scope!!,current.threadId).toByteArray(Charsets.UTF_8))
@@ -81,33 +96,38 @@ internal object CodexResources {
             val filename=if(current.name.toByteArray(Charsets.UTF_8).size<=200)current.name else
                 "resource-"+hash(current.name.toByteArray(Charsets.UTF_8))+current.name.substringAfterLast('.',"").takeIf { it.matches(Regex("[A-Za-z0-9]{1,12}")) }?.let { ".$it" }.orEmpty()
             val destination=File(directory,filename)
-            if(cached(destination,current))return destination
-            try { return fetch(current,destination) }
+            if(cached(destination,current)) {
+                progress?.invoke(ResourceDownloadProgress(ResourceDownloadPhase.Cached,current.sizeBytes,current.sizeBytes))
+                return ResourceDownloadSnapshot(current,destination)
+            }
+            try { return ResourceDownloadSnapshot(current,fetch(current,destination)) }
             catch(error: CodexCommandError) { if(error.status!=409||attempt!=0)throw error }
         }
         throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
     }
     /** Stream to an unpublished sibling, verify bytes, then publish atomically. */
-    fun write(input: InputStream,active: ()->Boolean,file: MobileFile,destination: File): File {
+    fun write(input: InputStream,active: ()->Boolean,file: MobileFile,destination: File,progress: ResourceDownloadProgressHandler?=null): File {
         val directory=destination.parentFile!!
         check(directory.mkdirs()||directory.isDirectory)
         val temporary=File(directory,".resource-"+UUID.randomUUID()+".tmp")
         val digest=MessageDigest.getInstance("SHA-256")
+        val report=ResourceDownloadReporter(file.sizeBytes,progress)
         fun checkActive() { if(!active())throw kotlinx.coroutines.CancellationException("Resource read cancelled") }
         try {
-            var count=0L;val buffer=ByteArray(16_384)
+            var count=0L;val buffer=ByteArray(16_384);report.downloading(0,force=true)
             temporary.outputStream().use { output->
                 while(true) {
                     checkActive();val n=input.read(buffer);if(n<0)break
                     if(n.toLong()>file.sizeBytes-count)throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
                     count+=n
-                    output.write(buffer,0,n);digest.update(buffer,0,n)
+                    output.write(buffer,0,n);digest.update(buffer,0,n);report.downloading(count)
                 }
                 output.fd.sync()
             }
-            checkActive()
+            checkActive();report.verifying(count)
             if(count!=file.sizeBytes||digest.digest().joinToString("") { "%02x".format(it) }!=file.sha256)
                 throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
+            checkActive()
             Files.move(temporary.toPath(),destination.toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return destination
         } finally { temporary.delete() }

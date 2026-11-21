@@ -51,6 +51,13 @@
         },
         "generation": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
         "kind": { "enum": ["register", "preferences", "revoke", "feed-reset"] },
+        "pushProvider": { "const": "fcm" },
+        "deviceToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^[\\x21-\\x7e]+(?![\\s\\S])"
+        },
         "gap": {
           "type": "object",
           "additionalProperties": false,
@@ -72,6 +79,16 @@
         "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" }
       },
       "allOf": [
+        {
+          "if": { "anyOf": [{ "required": ["pushProvider"] }, { "required": ["deviceToken"] }] },
+          "then": {
+            "required": ["pushProvider", "deviceToken"],
+            "properties": {
+              "kind": { "const": "register" },
+              "preferences": { "properties": { "enabled": { "const": true } } }
+            }
+          }
+        },
         {
           "if": { "properties": { "kind": { "const": "feed-reset" } } },
           "then": { "required": ["gap"] },
@@ -107,7 +124,9 @@
             "target": {
               "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
             },
-            "delivery": { "enum": ["foreground-only", "apns"] },
+            "delivery": { "enum": ["foreground-only", "apns", "fcm"] },
+            "pushProvider": { "const": "fcm" },
+            "deviceTokenSha256": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" },
             "state": { "enum": ["disabled", "ready", "pending", "unavailable"] },
             "revision": { "type": "string", "minLength": 1, "maxLength": 256 },
             "reason": { "type": "string", "maxLength": 4096 }
@@ -349,6 +368,12 @@
       "additionalProperties": false,
       "required": ["version", "epoch", "target", "operations", "limits"],
       "properties": {
+        "pushProviders": {
+          "type": "array",
+          "items": { "const": "fcm" },
+          "maxItems": 1,
+          "uniqueItems": true
+        },
         "version": { "const": 2 },
         "epoch": {
           "type": "string",

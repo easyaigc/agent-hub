@@ -36,6 +36,26 @@ class NativeMigrationActivationTest {
     private fun stage(value: JSONObject)=MigrationActivationFixtures.stage(ui.activity,owned.storage,value)
     private fun activate(value: JSONObject): NativeSessionStorage {NativeMigrationActivation(ui.activity,owned.storage).activate(stage(value));return owned.storage.reopen(ui.activity)}
     private suspend fun row(storage: NativeSessionStorage,value: JSONObject): SavedOperation {val name=value.getJSONObject("records").keys().asSequence().single{it.startsWith("operations:")};return NativeOperationJournal(storage).records(name.removePrefix("operations:")).single()}
+    @Test fun legacyCredentialSurvivesFailedPublicationAndColdActivationWithoutOperationReplay()=runBlocking {
+        val value=MigrationActivationFixtures.payload();val records=value.getJSONObject("records")
+        records.remove("codex-private-connections-v1")
+        val client=MigrationActivationFixtures.client(value);val secret="synthetic-legacy-credential-100%-raw"
+        records.put("token:${client.id}",secret)
+        val operationName=records.keys().asSequence().single {it.startsWith("operations:")}
+        val original=JSONObject(records.getString(operationName)).getJSONArray("operations").getJSONObject(0)
+        val receipt=stage(value);val before=MigrationActivationFixtures.tree(owned.storage)
+        assertTrue(runCatching {NativeMigrationActivation(ui.activity,owned.storage).activate(receipt) {point->if(point==1)error("synthetic pre-publication failure")}}.isFailure)
+        assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
+        val generation=NativeMigrationActivation(ui.activity,owned.storage).activate(receipt)
+        val cold=owned.storage.reopen(ui.activity)
+        assertEquals(secret,cold.token(client.id));assertEquals(secret,cold.read("token:${client.id}"))
+        val imported=row(cold,value)
+        assertEquals(original.getString("intent"),imported.intent);assertEquals(original.getString("intentSha256"),imported.intentSha256)
+        assertEquals(original.getString("phase"),imported.phase);assertTrue(imported.migrationReadOnly)
+        val committed=MigrationActivationFixtures.tree(cold)
+        assertEquals(generation,NativeMigrationActivation(ui.activity,cold).activate(receipt))
+        assertEquals(committed,MigrationActivationFixtures.tree(cold))
+    }
     @Test fun activationRestoresOriginalFilesAndCreatesFreshInstallAuthority()=runBlocking {
         val value=MigrationActivationFixtures.payload();val original=value.getJSONObject("records");val beforeClient=MigrationActivationFixtures.client(value)
         owned.storage.write("ai-sharing-v1","original installation consent");owned.storage.child(ui.activity,"photo-permission").write("attempt-images","old OS grant")

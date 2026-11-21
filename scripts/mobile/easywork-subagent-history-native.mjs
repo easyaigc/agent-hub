@@ -48,6 +48,11 @@ const documentMessageSource = between(
   'struct DocumentMessageSource:',
   '\nstruct DocumentFileSource:',
 );
+const subagentSnapshot = between(
+  models,
+  'struct SubagentHistorySnapshot:',
+  '\nstruct HistorySnapshot:',
+);
 assert(
   agent.includes(
     '  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool',
@@ -82,7 +87,7 @@ const combined = join(dir, 'boundary.swift'),
   executable = join(dir, 'boundary');
 const program = fixture.replace(
   '// PRODUCTION_BOUNDARIES',
-  `${documentMessageSource}\nenum EasyWorkReading {\n${integer}\n}\n${attachment}\n${helper}\nextension AgentClient {\n${defaults}\n}\nstruct EasyWorkAgentClient: AgentClient {\n${projection}\n${provider}\n  func testProject(_ originals: [[String: Any]], client: Client, channel: EasyWorkRemoteSession) async throws -> [ChatMessage] { try await projectMessages(originals, client: client, threadId: "parent", channel: channel) }\n}`,
+  `${documentMessageSource}\n${subagentSnapshot}\nenum EasyWorkReading {\n${integer}\n}\n${attachment}\n${helper}\nextension AgentClient {\n${defaults}\n}\nstruct EasyWorkAgentClient: AgentClient {\n${projection}\n${provider}\n  func testProject(_ originals: [[String: Any]], client: Client, channel: EasyWorkRemoteSession) async throws -> [ChatMessage] { try await projectMessages(originals, client: client, threadId: "parent", channel: channel) }\n}`,
 );
 assert.notEqual(program, fixture);
 try {

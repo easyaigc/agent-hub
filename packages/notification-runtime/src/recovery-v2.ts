@@ -336,11 +336,12 @@ export class NotificationRecoveryV2 {
   adopted(deviceId: string): boolean {
     return this.hooks.read().slots.some((s) => s.deviceId === deviceId);
   }
-  capabilities() {
+  capabilities(includePushProviders = false) {
     return {
       version: 2 as const,
       epoch: this.hooks.read().epoch,
       target: this.hooks.target,
+      ...(includePushProviders ? { pushProviders: ['fcm'] } : {}),
       operations: ['register', 'preferences', 'revoke', 'feed-reset'],
       limits,
     };
@@ -447,6 +448,7 @@ export class NotificationRecoveryV2 {
       reason = 'not-registered';
     else if (
       intent.kind !== 'revoke' &&
+      !slot?.applied &&
       (device?.bindingId || device?.remoteRevocationPending || device?.registration.deviceToken)
     )
       reason = 'foreground-binding-conflict';
@@ -500,12 +502,18 @@ export class NotificationRecoveryV2 {
       next.snapshots = next.snapshots.filter((s) => s.expiresAt > this.now());
       const originals = new Map<string, { event: NotificationEvent; sequence: number }>();
       for (const source of this.hooks.sources())
-        originals.set(source.event.id, { event: source.event, sequence: source.sequenceV2! });
+        originals.set(source.event.id, {
+          event: source.event,
+          sequence: source.sequenceV2!,
+        });
       for (const source of next.log) {
         const previous = originals.get(source.event.id);
         if (previous && recoveryHash(previous.event) !== source.fingerprint)
           throw new Error('通知复位原事件冲突');
-        originals.set(source.event.id, { event: source.event, sequence: source.sequence });
+        originals.set(source.event.id, {
+          event: source.event,
+          sequence: source.sequence,
+        });
       }
       const events = [...originals.values()]
         .sort((a, b) => a.sequence - b.sequence)

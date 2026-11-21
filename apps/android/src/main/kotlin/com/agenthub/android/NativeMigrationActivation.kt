@@ -18,11 +18,11 @@ internal class NativeMigrationActivation(private val context: Context,private va
         val publication=NativeMigrationOriginals.Publication(storage,receipt)
         NativeMigrationOriginals.withDestination(context,storage,owner,publication) {originals,originalsUnchanged->
         val destination=NativeMigrationForeground.preserveDestination(storage)
-        val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)+storage.migrationReadTextRecords(setOf(NativeSelectionReturnAudit.RECORD))
+        val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)+storage.migrationReadTextRecords(setOf(NativeSelectionReturnAudit.RECORD))+NativeMigrationUploadArchives.captureDestination(storage)
         val easyWorkDestination=NativeMigrationEasyWorkArchives.captureDestination(storage)
         val easyWorkBusinessDestination=NativeMigrationEasyWorkBusiness.captureDestination(storage)
         fun guarded(original: Map<String,String>): (Int)->Unit {
-            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
+            val required=NativeMigrationUploadArchives.RECORD in original||NativeMigrationUploadArchives.SOURCE_NAMES.any {it in localRecords}||NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
             fun checkBoundary(){originalsUnchanged();NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.keys,owner);if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
             checkBoundary()
             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
@@ -69,7 +69,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         }
     }
     private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
-        val records=NativeMigrationTextMap.copy(NativeSelectionReturnAudit.merge(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),localRecords),persist);val metadata=JSONObject(records.getValue("metadata"))
+        val records=NativeMigrationTextMap.copy(NativeMigrationUploadArchives.mergeDestination(NativeSelectionReturnAudit.merge(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),localRecords),localRecords),persist);val metadata=JSONObject(records.getValue("metadata"))
         val clients=metadata.getJSONArray("clients").objects()
         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}
@@ -96,7 +96,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // OS/device callbacks are not accepted; generation-scoped children start empty.
         // Immutable intent/result strings stay exact.
         NativeMigrationDeviceState.prepare(receipt,original,records)
-        records.putAll(localRecords.filterKeys {it!=NativeSelectionReturnAudit.RECORD})
+        records.putAll(localRecords.filterKeys {it!=NativeSelectionReturnAudit.RECORD&&it !in NativeMigrationUploadArchives.SOURCE_NAMES})
         return records
     }
 }

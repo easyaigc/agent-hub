@@ -129,7 +129,7 @@ object UsageRules {
         val metrics=mutableListOf<JsonObject>();val balances=mutableListOf<JsonObject>();var ring:JsonObject?=null
         for(bucket in buckets) for(item in bucket.jsonObject.getValue("metrics").jsonArray) {
             val m=item.jsonObject;val observed=time(m.getValue("observedAt"));val valid=time(m.getValue("validUntil"))
-            require(valid>=observed && observed<=sampled+120000)
+            require(valid>=observed && observed<=sampled+120000 && observed<=nowMillis+120000)
             expires=minOf(expires,valid)
             if(m["expiresAt"]!=null && m["expiresAt"]!=JsonNull)time(m.getValue("expiresAt"))
             val window=m["window"]?.jsonObject
@@ -151,12 +151,14 @@ object UsageRules {
             }
             val unit=m["unit"]?.jsonObject ?: usage?.get("unit")?.jsonObject
             val projected=buildJsonObject {
-                put("id",bucket.jsonObject.text("id")+"/"+m.text("id"));put("label",m.getValue("label"));put("bucket",bucket.jsonObject["label"] ?: JsonNull)
+                // IDs are opaque; a slash may legally occur in either component.
+                put("id",JsonArray(listOf(bucket.jsonObject.getValue("id"),m.getValue("id"))).toString());put("label",m.getValue("label"));put("bucket",bucket.jsonObject["label"] ?: JsonNull)
                 put("kind",m.getValue("kind"));put("state",state ?: "extension");put("value",value)
                 put("unit",unit?.text("label") ?: "");put("validUntil",m.getValue("validUntil"));put("observedAt",m.getValue("observedAt"))
                 put("resetAt",window?.get("resetsAt") ?: JsonNull);put("expiresAt",m["expiresAt"] ?: JsonNull)
                 put("appliesTo",m.getValue("appliesTo"));put("combination",bucket.jsonObject.getValue("combination"))
                 put("entitlement",reading?.get("entitlement") ?: JsonNull)
+                put("debt",m.text("kind")=="balance" && state=="amount" && value.startsWith("-"))
                 put("note",m["note"] ?: JsonNull)
                 if(percent!=null)put("percent",percent)
                 if(percent!=null && percent.isFinite())put("remainingPercent",maxOf(0.0,100.0-percent))
@@ -174,7 +176,7 @@ object UsageRules {
             put("metrics",JsonArray(metrics));put("issues",snapshot.getValue("issues"))
             put("ringLabel",ring?.text("label") ?: "usage")
             ring?.let { put("ringMetricId",it.getValue("id"));put("percent",it.getValue("remainingPercent")) }
-            balances.firstOrNull()?.let { b -> put("balance",if(b.text("state")=="amount")displayAmount(b.text("value")!!)else "∞");put("balanceUnit",b.getValue("unit")) }
+            balances.firstOrNull()?.let { b -> put("balance",if(b.text("state")=="amount")displayAmount(b.text("value")!!)else "∞");put("balanceUnit",b.getValue("unit"));put("balanceDebt",b.getValue("debt")) }
             put("extraBalances",maxOf(0,balances.size-1))
         }.toString()
     }

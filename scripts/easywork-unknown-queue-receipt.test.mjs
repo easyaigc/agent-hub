@@ -85,7 +85,7 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
   func session(_ client: Client) async throws -> ScriptedSession { gateway }
   ${declaration(source, 'private func object(_ value: Any)')}
   ${declaration(source, 'private func readingTarget(_ target: EasyWorkTarget)')}
-  ${declaration(source, 'func receipt(_ client: Client, id: String)')}
+  ${declaration(source, 'func receipt(_ client: Client, id: String, threadId: String)')}
 }
 @main struct QueueReceiptFixture {
   @MainActor static func main() async throws {
@@ -113,6 +113,13 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     case "wrong-command": record["operationId"] = "another-original"
     case "wrong-result-operation": record["state"] = "completed"; record["response"] = ["result": ["threadId": "fixture-thread", "clientMessageId": "another-original", "state": "failed"]]
     case "queue-unavailable": rejection = "queue_unavailable"
+    case "wrong-outer-thread": record["threadId"] = "other-thread"
+    case "wrong-result-thread": record["response"] = ["result": ["threadId": "other-thread", "state": "queued"]]
+    case "both-wrong-thread": record["threadId"] = "other-thread"; record["response"] = ["result": ["threadId": "other-thread", "state": "queued"]]
+    case "typed-outer-thread": record["threadId"] = 7
+    case "typed-result-thread": record["response"] = ["result": ["threadId": 7, "state": "queued"]]
+    case "legacy-missing-thread": record.removeValue(forKey: "threadId")
+    case "legacy-null-thread": record["threadId"] = NSNull()
     case "wrong-thread": var q = queued as! [String: Any]; q["threadId"] = "other-thread"; queued = q
     case "wrong-operation": var q = queued as! [String: Any]; q["clientMessageId"] = "other-operation"; queued = q
     case "unavailable": rejection = "method_unavailable"
@@ -155,13 +162,14 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     let gateway = ScriptedSession(record: record, queued: queued, rejection: rejection)
     var result: DeliveryReceipt?, failure: Error?
     do { result = try await ActualClientMethod(gateway: gateway).receipt(
-      Client(id: "fixture-host", agentConnection: AgentConnection(target: clientTarget)), id: "fixture-operation") }
+      Client(id: "fixture-host", agentConnection: AgentConnection(target: clientTarget)), id: "fixture-operation", threadId: name == "blank-captured-thread" ? " " : "fixture-thread") }
     catch { failure = error }
     func require(_ condition: Bool, _ detail: String) throws {
       if !condition { throw NSError(domain: name + ": " + detail, code: 1) }
     }
+    let wrongCapturedThread = ["wrong-outer-thread", "wrong-result-thread", "both-wrong-thread", "typed-outer-thread", "typed-result-thread", "blank-captured-thread"].contains(name)
     let wrongIdentity = !phase.isEmpty && field != "valid" && field != "legacy-null"
-    if wrongIdentity || name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
+    if wrongCapturedThread || wrongIdentity || name == "wrong-thread" || name == "wrong-operation" || name == "wrong-command" || name == "empty-queue" || name == "wrong-result-operation" {
       guard let failure, case HostServiceError.wrongHost = failure else { throw NSError(domain: name + ": wrong target was not rejected", code: 2) }
     } else if name == "malformed-result" || name == "contradictory-rejection" {
       guard let failure, case HostServiceError.invalidResponse = failure else { throw NSError(domain: name + ": malformed value was adopted", code: 3) }
@@ -184,10 +192,9 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
         } else { try require(result.queueSource == nil && result.queuePresent == nil, "nonqueue unknown is not adopted") }
       }
     }
-    let expected = phase == "owner" ? [] :
-      (phase == "result" || phase == "outer" && wrongIdentity ||
-        ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation",
-         "known-rejection", "failed-no-response", "completed-empty-result", "noninput-completed-run", "contradictory-rejection"].contains(name)
+    let expected = phase == "owner" || name == "blank-captured-thread" ? [] :
+      (wrongCapturedThread || ["legacy-missing-thread", "legacy-null-thread"].contains(name) || phase == "result" || phase == "outer" && wrongIdentity ||
+        ["other-method", "completed", "null-completed", "wrong-command", "malformed-result", "wrong-result-operation", "known-rejection", "failed-no-response", "completed-empty-result", "noninput-completed-run", "contradictory-rejection"].contains(name)
         ? ["command/status"] : ["command/status", "queue/status"])
     try require(gateway.calls == expected, "only original status reads; no execute or resend")
     print("passed")
@@ -223,6 +230,14 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       'other-method',
       'completed',
       'wrong-thread',
+      'wrong-outer-thread',
+      'wrong-result-thread',
+      'both-wrong-thread',
+      'typed-outer-thread',
+      'typed-result-thread',
+      'blank-captured-thread',
+      'legacy-missing-thread',
+      'legacy-null-thread',
       'wrong-operation',
       'unavailable',
       'denied',

@@ -2,7 +2,7 @@ import Foundation
 import CoreFoundation
 import CryptoKit
 
-enum HostServiceError: Error { case invalidResponse, wrongHost, message(String) }
+enum HostServiceError: Error { case invalidResponse, unavailable, wrongHost, message(String) }
 struct Client { let id: String }
 struct WorkspaceSnapshot { var connectionMode: String?; var capabilities: [String]? }
 struct AgentAccount: Codable { var authority: String; var subject: String }
@@ -29,10 +29,8 @@ enum L10n { static func tr(_ text: String) -> String { text } }
 struct ChatMessage: Codable, Equatable {
   let id: String; let role: String; var text: String; var files: [String] = []; var kind: String?; var status: String?; var detail: String?; var attachments: [RemoteAttachment]?; var blocks: [AgentContentPart]? = nil; var runId: String? = nil; var replyMessageId: String? = nil; var planArtifact: PlanArtifactSnapshot? = nil
 }
-struct SubagentHistorySnapshot {
-  struct Child { let id: String; let title: String; let status: String }
-  let version: Int; let hostId: String; let readTarget: EasyWorkTarget; let parentThreadId: String; let messageId: String; let children: [Child]; let childId: String; let threadId: String; let source: String; let messages: [ChatMessage]; let nextCursor: String?
-}
+typealias AgentRuntimeTarget = EasyWorkTarget
+
 struct Activity { let id: String; let title: String }
 final class EasyWorkRemoteSession {
   var target: EasyWorkTarget; var page: [String: Any]; var calls: [String] = []
@@ -71,7 +69,7 @@ func page(_ messages: [[String: Any]], revision: Any = 7, root: String = "root",
   check(host.supportsSubagentHistory(client, workspace: .init(connectionMode: nil, capabilities: ["subagents:history:read:v1"])), "host capability")
   check(!host.supportsSubagentHistory(client, workspace: nil), "host missing capability")
   var all: [ChatMessage] = []; var cursor: String?; var count = 0
-  repeat { let result = try await provider.subagentHistory(client, parentThreadId: "parent", messageId: "subagent:child", childId: "child", cursor: cursor); all = result.messages + all; cursor = result.nextCursor; count += 1 } while cursor != nil
+  repeat { let result = try await provider.subagentHistory(client, parentThreadId: "parent", messageId: "subagent:child", childId: "child", cursor: cursor); check(result.association == nil, "typed child history must not claim parent lineage"); all = result.messages + all; cursor = result.nextCursor; count += 1 } while cursor != nil
   check(count == 3 && all.count == 174, "three ordered pages")
   check(all.prefix(173).map(\.id) == (0..<173).map { "m\($0):0" }, "order and uniqueness")
   check(all.last?.kind == "turnFailure", "failure")

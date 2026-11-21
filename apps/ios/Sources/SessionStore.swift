@@ -66,6 +66,11 @@ final class SessionStore: ObservableObject {
   }
   private static let hostedEasyWorkAcceptanceRun=ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_CASE"]
   static var hostedEasyWorkAcceptanceEnabled: Bool {
+    #if R2_REAL_DEV_ACCEPTANCE
+    // This target always owns refresh, including after lease expiry. Never
+    // fall through into ordinary discovery/notification/Task Hub startup.
+    return true
+    #else
     guard let run=hostedEasyWorkAcceptanceRun else { return false }
     let process=ProcessInfo.processInfo
     guard Bundle.main.bundleIdentifier=="com.easyai.agenthub.easyworkacceptance",
@@ -73,10 +78,15 @@ final class SessionStore: ObservableObject {
       UUID(uuidString:run)?.uuidString.lowercased()==run,
       NSClassFromString("XCTestCase") != nil else { return false }
     return true
+    #endif
   }
   static var hostedEasyWorkProductUIEnabled: Bool {
+    #if R2_REAL_DEV_ACCEPTANCE
+    ProcessInfo.processInfo.environment["R2_PRODUCT_UI"] == "1"
+    #else
     hostedEasyWorkAcceptanceEnabled
       && ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_PRODUCT_UI"] == "1"
+    #endif
   }
   func attachHostedEasyWorkAcceptance(voice: VoiceInputController? = nil) {
     guard Self.hostedEasyWorkAcceptanceEnabled else { return }
@@ -214,6 +224,16 @@ private var userRequestedWorkspaceGeneration: UUID?
   private var replyRecoveryGeneration: UUID?
   private var replyRecoveryHostId: String?
   private var lastSnapshotAt: [String: Double] = [:]
+  // Selected-view publication only; connection/navigation generations remain separate guards.
+  private struct AcceptedConversationSnapshot {
+    var key: String
+    var generation: UUID
+    var revision = UUID()
+    var epoch: String?
+    var cursor: Int?
+  }
+  private var acceptedConversationSnapshot: AcceptedConversationSnapshot?
+
   private struct ConversationSyncIssue: Equatable { var message: String; var historyFresh = false; var liveWindow = false }
   @Published private var conversationSyncFailures: [String: ConversationSyncIssue] = [:]
   private var historySyncChecks: [String: String] = [:]
@@ -317,14 +337,20 @@ private var userRequestedWorkspaceGeneration: UUID?
 
   init(deferRestoration: Bool = false) {
     MobileReadingAuthority.install(SharedMobileRules.mergeDeviceReading)
+    #if R2_REAL_DEV_ACCEPTANCE
+    testMode = false // Never enter a fixture/reset directory in this target.
+    #else
     testMode = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+    #endif
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       UserDefaults.standard.removeObject(forKey: VoiceTranscriptionPreference.storageKey)
     }
     let directory = FileManager.default.urls(
       for: .applicationSupportDirectory, in: .userDomainMask)[0]
       .appendingPathComponent(testMode ? (ProcessInfo.processInfo.arguments.contains("-composer-performance-fixture") ? "ComposerPerformance" : "Acceptance") : "CodexManage", isDirectory: true)
+    #if !R2_REAL_DEV_ACCEPTANCE
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    #endif
     let legacyURL = directory.appendingPathComponent("session.json")
     persistenceURL = legacyURL
     persistenceWriter = SessionPersistenceWriter(legacyURL: persistenceURL,
@@ -332,6 +358,12 @@ private var userRequestedWorkspaceGeneration: UUID?
       decodeState: { try AgentCache.decode($0) },
       encodePage: { page in try page.encrypted ? AgentCache.seal(page) : JSONEncoder().encode(page) },
       decodePage: { try AgentCache.open($0, as: SessionHistoryPage.self) })
+    #if R2_REAL_DEV_ACCEPTANCE
+    do {
+      try R2Admission.require()
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    } catch { localRecoveryRequired = true; return }
+    #endif
     if deferRestoration { return }
     restoreLocalSession()
   }
@@ -393,7 +425,13 @@ private var userRequestedWorkspaceGeneration: UUID?
   nonisolated private static func readLocalSession(writer persistenceWriter: SessionPersistenceWriter<SavedSession, SessionHistoryPage>,
     url persistenceURL: URL, applicationState: String, protectedDataAvailable: String) throws -> LocalRestoration {
     let started = ProcessInfo.processInfo.systemUptime
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.require()
+    #endif
     guard var loaded = try persistenceWriter.loadInitialState() else { return LocalRestoration(saved: SavedSession(), dirtyHistoryKeys: []) }
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.restored(loaded, initial: true)
+    #endif
     let stateLoaded = ProcessInfo.processInfo.systemUptime
     var dirtyHistoryKeys = Set<String>()
     // A missing page used to re-read and decode the entire legacy session for
@@ -577,6 +615,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     persistenceWriter.onHistoryFailure { [weak self] failure in
       Task { @MainActor in self?.recordPersistence(.failure(failure), onMainThread: false) }
     }
+    #if !R2_REAL_DEV_ACCEPTANCE
     for (key, pending) in saved.desktopCreations ?? [:] where ["submitted", "outcome-unknown"].contains(pending.phase) {
       if let host = saved.clients.first(where: { $0.id == pending.hostId }) {
         startObservingCreation(host, key: key, pending: pending, receiptOnly: true)
@@ -588,6 +627,7 @@ private var userRequestedWorkspaceGeneration: UUID?
         observeFork(host, pending: pending, navigation: nil)
       }
     }
+    #endif
     if repairedUnverifiedReading { persist() }
   }
 
@@ -1419,7 +1459,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     get { draft.speed ?? "" }
     set {
       guard canConfigureGeneration, supportsGenerationSpeed else { return }
-      drafts.values[targetKey, default: Draft()].speed = newValue.isEmpty ? nil : newValue
+      let explicitSpeed: String? = newValue.isEmpty ? nil : newValue
+      guard SessionPolicies.shared.generationSpeedAllowed(speed: explicitSpeed, supportedSpeeds: availableSpeeds) else { return }
+      drafts.values[targetKey, default: Draft()].speed = explicitSpeed
       rememberGeneration(.speed)
       persist()
     }
@@ -1761,6 +1803,11 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   var isProjectlessDraft: Bool { selectedThreadId == nil && saved.newProjects[client?.id ?? ""] == "__projectless__" }
   var runtime: ThreadRuntime? { saved.runtimes?[targetKey] }
+  // Real connection/navigation lifetime, including A→B→A; unrelated history refreshes do not advance it.
+  var subagentHistoryReadContext: String { clientGeneration.uuidString + ":" + historyGeneration.uuidString }
+  var supportsParentLineageHistory: Bool {
+    supportsSubagentHistory && (client.map { saved.workspaces[$0.id]?.capabilities?.contains("subagents:history:parent-lineage:v1") == true } ?? false)
+  }
   var supportsSubagentHistory: Bool {
     #if DEBUG && targetEnvironment(simulator)
     if client?.isDemo == true, testMode,
@@ -3487,6 +3534,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard !Task.isCancelled, historyGeneration == generation,
         client?.id == host.id, selectedThreadId == id, targetKey == key, historyCursor != nil else { return false }
     }
+    let snapshotAtStart = acceptedConversationSnapshot?.revision
     let startedAt = ProcessInfo.processInfo.systemUptime
     loadingHistoryRequests[key, default: 0] += 1
     let fence = currentSnapshotFence()
@@ -3501,8 +3549,10 @@ private var userRequestedWorkspaceGeneration: UUID?
       let timingNavigation = clientGeneration.uuidString + ":" + generation.uuidString
       DesktopSuggestionTiming.mark("historyRequest", navigation: timingNavigation)
       #endif
+      let requestClient = readingClient(host)
+      let expectedReadingTarget = requestClient.agentConnection?.target ?? requestClient.readingTarget
       let result = try await SharedMobileRules.history(
-        readingClient(host), targetKey: key, threadId: id, cursor: more ? historyCursor : nil)
+        requestClient, targetKey: key, threadId: id, cursor: more ? historyCursor : nil)
       #if DEBUG
       DesktopSuggestionTiming.mark("historyResponse", navigation: timingNavigation)
       #endif
@@ -3511,6 +3561,10 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard historyGeneration == generation, client?.id == host.id, selectedThreadId == id, !more || targetKey == key
       else { return false }
       guard result.hostId == host.id, result.threadId == id else { throw HostServiceError.wrongHost }
+      // Match the captured request, as NativeHistoryGateway does. Nil targets retain
+      // legacy compatibility; AgentRuntimeTarget equality keeps Codex account metadata nonbinding.
+      if let expected = expectedReadingTarget, let received = result.readTarget,
+        expected != received { throw HostServiceError.wrongHost }
       if !more, !fence.accepts(readRevision: snapshotReadRevision,
         incomingEpoch: result.epoch ?? "", incomingCursor: Int64(result.cursor ?? -1)) { return false }
       recordConnectionSuccess(host)
@@ -3574,6 +3628,9 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard !isReadCancellation(error), historyGeneration == generation,
         client?.id == host.id, selectedThreadId == id else { return false }
       recordConnectionFailure(error, host: host, startedAt: startedAt)
+      // Keep connection/authentication failure classification above this fence.
+      // An older automatic read must not replace a newer accepted snapshot's UI.
+      if !more, !userInitiated, acceptedConversationSnapshot?.revision != snapshotAtStart { return false }
       if !more {
         let message = (error as? URLError)?.code == .timedOut
           ? L10n.tr("读取对话超时，已有消息和草稿已保留。") : error.userFacingDescription
@@ -3660,6 +3717,8 @@ private var userRequestedWorkspaceGeneration: UUID?
       var epoch = ""
       var cursor = 0
       var activeThread: String?
+      var activeHistoryGeneration: UUID?
+      var observedSnapshotRevision: UUID?
       var delay = 1
       while !Task.isCancelled && clientGeneration == generation && client?.id == host.id {
         let startedAt = ProcessInfo.processInfo.systemUptime
@@ -3670,12 +3729,23 @@ private var userRequestedWorkspaceGeneration: UUID?
             try await Task.sleep(for: .seconds(1))
             continue
           }
-          if activeThread != threadId {
-            activeThread = threadId; epoch = ""; cursor = 0
+          if activeThread != threadId || activeHistoryGeneration != historyGeneration {
+            activeThread = threadId; activeHistoryGeneration = historyGeneration
+            observedSnapshotRevision = nil; epoch = ""; cursor = 0
             if let savedCursor = saved.agentEventCursors?[targetKey], savedCursor.target == mobileReadingTarget(host), savedCursor.threadId == threadId {
               epoch = savedCursor.epoch; cursor = savedCursor.sequence
             }
           }
+          let readingGeneration = historyGeneration
+          let key = cacheKey(host, threadId: threadId)
+          let checkpoint = acceptedConversationSnapshot.flatMap {
+            $0.key == key && $0.generation == readingGeneration ? $0 : nil
+          }
+          if checkpoint?.revision != observedSnapshotRevision {
+            epoch = checkpoint?.epoch ?? ""; cursor = checkpoint?.cursor ?? 0
+            observedSnapshotRevision = checkpoint?.revision
+          }
+          let snapshotAtStart = acceptedConversationSnapshot?.revision
           let currentHost = client ?? host
           let expectedReadingTarget = mobileReadingTarget(currentHost)
           let readGeneration = historyGeneration
@@ -3692,12 +3762,27 @@ private var userRequestedWorkspaceGeneration: UUID?
           let route = await (try AgentClients.resolve(host)).connectionTitle(host)
           try await waitForSidebarInteraction()
           try Task.checkCancellation()
-          guard clientGeneration == generation, client?.id == host.id, selectedThreadId == threadId, historyGeneration == readGeneration else { continue }
-          if connectionRoutes[host.id] != route { connectionRoutes[host.id] = route }
+          guard clientGeneration == generation, client?.id == host.id, selectedThreadId == threadId,
+            historyGeneration == readingGeneration else { continue }
           guard batch.hostId == host.id else { throw HostServiceError.wrongHost }
           guard batch.cursor >= 0 else { throw HostServiceError.invalidResponse }
-          if fence.accepts(readRevision: snapshotReadRevision, incomingEpoch: batch.epoch, incomingCursor: Int64(batch.cursor)),
-            let rawCapabilities = batch.capabilities {
+          for event in batch.events {
+            guard event.snapshot.hostId == host.id,
+              event.snapshot.threadId == event.threadId, event.threadId == threadId
+            else { throw HostServiceError.wrongHost }
+            if let received = event.snapshot.readTarget, received != expectedReadingTarget { throw HostServiceError.wrongHost }
+          }
+          // Validate every target before rejecting a stale success. Re-poll from
+          // the accepted publication rather than checkpointing a superseded batch.
+          guard fence.accepts(readRevision: snapshotReadRevision, incomingEpoch: batch.epoch, incomingCursor: Int64(batch.cursor)) else {
+            let latest = acceptedConversationSnapshot.flatMap { $0.key == key && $0.generation == readingGeneration ? $0 : nil }
+            epoch = latest?.epoch ?? ""; cursor = latest?.cursor ?? 0
+            observedSnapshotRevision = latest?.revision
+            try await Task.sleep(for: .milliseconds(50))
+            continue
+          }
+          if connectionRoutes[host.id] != route { connectionRoutes[host.id] = route }
+          if let rawCapabilities = batch.capabilities {
             let capabilities = try AgentClients.resolve(host).normalizedCapabilities(
               rawCapabilities, connectionMode: saved.workspaces[host.id]?.connectionMode)
             if saved.workspaces[host.id]?.capabilities != capabilities {
@@ -3713,7 +3798,7 @@ private var userRequestedWorkspaceGeneration: UUID?
             if let received = event.snapshot.readTarget, received != expectedReadingTarget { throw HostServiceError.wrongHost }
             if decision.apply, fence.accepts(readRevision: snapshotReadRevision,
               incomingEpoch: event.snapshot.epoch ?? "", incomingCursor: Int64(event.snapshot.cursor ?? -1)) {
-              apply(event.snapshot)
+              apply(event.snapshot, proofIsFresh: batch.ready != false)
               snapshotReadRevision = fence.beginRead()
             }
           }
@@ -3727,6 +3812,9 @@ private var userRequestedWorkspaceGeneration: UUID?
             // every streaming batch doubled metadata encode/decode and I/O.
             // Cursor-only batches have no apply task and still need a checkpoint.
             if batch.events.isEmpty { scheduleSnapshotPersistence() }
+          }
+          observedSnapshotRevision = acceptedConversationSnapshot.flatMap {
+            $0.key == key && $0.generation == readingGeneration ? $0.revision : nil
           }
           delay = 1
           recordConnectionSuccess(host)
@@ -3793,7 +3881,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   // END: history-state-publication
 
-  private func apply(_ snapshot: HistorySnapshot, historyPage: Bool = false,
+  private func apply(_ snapshot: HistorySnapshot, historyPage: Bool = false, proofIsFresh: Bool = true,
     beforePrepend: (@MainActor (Int) -> Void)? = nil) {
     #if DEBUG
     let workStart = HistoryScrollProbe.workStart()
@@ -3934,6 +4022,13 @@ private var userRequestedWorkspaceGeneration: UUID?
           updateDetachedReceipt(receipt, key: key, index: index)
         }
       }
+    }
+    // Unready or unavailable publications do not supersede a real latest read.
+    // Keep the same proof qualification as Android receivedConversationSnapshot.
+    if proofIsFresh && (historyFresh || !unavailable), !historyPage, snapshot.historyWindow?.kind != "earlier",
+      snapshot.hostId == client?.id, snapshot.threadId == selectedThreadId {
+      acceptedConversationSnapshot = AcceptedConversationSnapshot(key: key, generation: historyGeneration,
+        epoch: snapshot.epoch, cursor: snapshot.cursor)
     }
     scheduleSnapshotPersistence()
   }
@@ -4776,7 +4871,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           && codexStorageConflictMessage == nil && isDetachedReply(reply, key: target)
       }
       do {
-        let receipt = try await AgentClients.resolve(host).receipt(host, id: reply.clientMessageId)
+        let receipt = try await AgentClients.resolve(host).receipt(host, id: reply.clientMessageId, threadId: reply.threadId)
         guard stillCurrent() else { return }
         try accept(receipt, reply: reply, key: target)
       } catch {
@@ -4854,7 +4949,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       do {
         let provider = try AgentClients.resolve(host)
         do {
-          let receipt = try await provider.receipt(host, id: pending.clientMessageId)
+          let receipt = try await provider.receipt(host, id: pending.clientMessageId, threadId: pending.threadId)
           guard currentReplyRecovery(host, reply: pending, key: key, epoch: epoch) else { return }
           try accept(receipt, reply: pending, key: key, reportUnknown: !automatically)
         } catch {

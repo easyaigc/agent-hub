@@ -1,8 +1,12 @@
-# iOS 对接 EasyWork：唯一计划与进度入口
+> Historical evidence only. Current iOS/Android implementation and acceptance are maintained exclusively in the [single complete feature list](../android-ios-alignment-20261107/progress.md). This imported snapshot and its JSON/rendering sources are frozen; do not update them as current progress.
 
-生效：2026-11-12。按用户要求，本目录是 **iOS × EasyWork 对齐任务的唯一计划与进度事实来源**。
+> 历史档案（2026-11-19冻结）：本目录只保留此前的规格、来源和验收证据，不再维护当前状态。全项目当前功能、双端实现和验收统一见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。以下状态、数量及下一步仅代表原记录时点。
 
-当前状态只编辑 [status.json](status.json)。先看 [核心使用验收与剩余对接盘点](core-acceptance.md)，再按需查 [当前进度总表](progress.md) 和 [75项功能清单](checklist.md)。三个视图由同一台账生成。
+# iOS 对接 EasyWork：历史计划与验收档案
+
+原记录始于2026-11-12；本目录已冻结，不能再作为当前计划入口。
+
+[status.json](status.json) 仅保留原始历史，不再编辑当前状态。先看 [核心使用验收与剩余对接盘点](core-acceptance.md)，再按需查 [当前进度总表](progress.md) 和 [75项功能清单](checklist.md)。三个视图由同一台账生成。
 
 具体开发与交付使用 `functionalDeliverables` 中的稳定功能 ID，展示在核心清单的“具体功能开发与交付”。每项集中记录用户操作、完成条件、原验收、提交、PR 和下一步。已核实合入主分支的对应功能直接复用原交付，按功能依次开发、验收和合并。
 

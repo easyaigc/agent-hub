@@ -13,6 +13,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 class EasyWorkRemoteSession(val connection: AgentConnection,private val credential: EasyWorkCredential,private val token: suspend ()->String,
     private val transports: AgentTransportRegistry = AgentTransportRegistry(),private val authorize: EasyWorkRequestHeaders?=null,ownerContext: CoroutineContext=EmptyCoroutineContext) {
     val target=credential.binding.target
+    internal val uploadMobileDeviceId get()=credential.binding.mobileId
     private val migrationContext=ownerContext.easyWorkOwnerContext()
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO+migrationContext)
     private val connecting=Mutex()
@@ -152,13 +153,18 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
             empty.merging(request("thread/sync",empty.parameters(threadId)),threadId)
         }
         currentCoroutineContext().ensureActive()
-        if(closed||readEpoch!=epoch)throw HostReadError("电脑连接已更新，请重新读取历史",transient=true)
-        synchronized(threadSyncs) {
-            val budget=4L*1024*1024
-            threadSyncs.remove(threadId)
-            if(next.first.cacheWeight<=budget)threadSyncs[threadId]=next.first
-            while(threadSyncs.size>4 || threadSyncs.values.sumOf { it.cacheWeight }>budget)
-                threadSyncs.remove(threadSyncs.keys.first())
+        // Commit under the same lock/order as disconnect: a cleared session must not
+        // be repopulated by a response that passed its check before invalidation.
+        synchronized(routeLock) {
+            if(closed||readEpoch!=epoch||route==null||!confirmed)
+                throw HostReadError("电脑连接已更新，请重新读取历史",transient=true)
+            synchronized(threadSyncs) {
+                val budget=4L*1024*1024
+                threadSyncs.remove(threadId)
+                if(next.first.cacheWeight<=budget)threadSyncs[threadId]=next.first
+                while(threadSyncs.size>4 || threadSyncs.values.sumOf { it.cacheWeight }>budget)
+                    threadSyncs.remove(threadSyncs.keys.first())
+            }
         }
         next.second
     }
@@ -196,6 +202,11 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                     if(epoch==requestEpoch)disconnect()
                     if(attempt==1)throw e
                     if(connection.preference=="automatic")connect(currentRoute) else connect()
+                    if(method == "thread/open") {
+                        // An interrupted navigation is query-only, never another thread/open.
+                        return request("thread/open-status",JSONObject().put("threadId",params.getString("threadId"))
+                            .put("clientOperationId",params.getString("clientOperationId")))
+                    }
                     if(method !in READ_METHODS) {
                         val operation=params.optional("clientRequestId")?:params.optional("operationId")?:params.optional("guidanceId")?:id
                         val status=request("command/status",JSONObject().put("commandId",operation))
@@ -250,8 +261,8 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         return threadSequences[threadId]?:after
     }
     companion object {
-        private val READ_METHODS=setOf("usage/read","runtime/context","runtime/summary","project/list","thread/list","thread/search","thread/read","thread/history","thread/suggestion/read","thread/sync","thread/subscribe","thread/unsubscribe","model/list","queue/list","queue/status","filesystem/access-status","filesystem/roots","filesystem/list-directories","filesystem/list-entries","voice/readiness","resource/read","resource/download","resource/resolve","resource/transfer-list","resource/upload-status","command/status")
-        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete")
+        private val READ_METHODS=setOf("usage/read","runtime/context","runtime/summary","project/list","thread/list","thread/search","thread/read","thread/history","thread/suggestion/read","thread/sync","thread/subscribe","thread/unsubscribe","model/list","queue/list","queue/status","filesystem/access-status","filesystem/roots","filesystem/list-directories","filesystem/list-entries","voice/readiness","resource/read","resource/download","resource/resolve","resource/transfer-list","resource/upload-status","command/status","thread/open-status","notification/status","notification/events")
+        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete","thread/open","notification/register","notification/preferences","notification/unregister")
     }
 }
 class EasyWorkRejection(message: String,val code: String?=null): Exception(message)

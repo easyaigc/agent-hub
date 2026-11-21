@@ -201,12 +201,13 @@ protocol AgentClient: Sendable {
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
   func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?, association: String) async throws -> SubagentHistorySnapshot
   func history(_ client: Client, threadId: String, cursor: String?) async throws -> HistorySnapshot
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse
   func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind?
   func acknowledgeRead(_ client: Client, threadId: String, readerId: String, position: ReadPosition) async throws -> ReadAcknowledgement
   func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt
   func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection
   func sendCapturedReply(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> DeliveryReceipt
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch
@@ -258,6 +259,9 @@ extension AgentClient {
 
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
     throw HostServiceError.message(L10n.tr("此客户端暂不支持完整子 Agent 过程"))
+  }
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?, association: String) async throws -> SubagentHistorySnapshot {
+    throw HostServiceError.unavailable
   }
   func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata {
     AgentConnectionMetadata(title: await connectionTitle(client))
@@ -329,16 +333,48 @@ enum AgentDEVReplayOperation: String, Sendable { case create, reply }
 #endif
 struct CodexAgentClient: AgentClient {
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot {
+    try await loadSubagentHistory(client, parentThreadId: parentThreadId, messageId: messageId, childId: childId, cursor: cursor, association: nil)
+  }
+  func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?, association: String) async throws -> SubagentHistorySnapshot {
+    guard association == "parent-thread-lineage" else { throw HostServiceError.invalidResponse }
+    return try await loadSubagentHistory(client, parentThreadId: parentThreadId, messageId: messageId, childId: childId, cursor: cursor, association: association)
+  }
+  private func loadSubagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?, association: String?) async throws -> SubagentHistorySnapshot {
     var query = ["threadId": parentThreadId, "messageId": messageId]
     if let childId { query["childId"] = childId }
     if let cursor { query["cursor"] = cursor }
-    let value: SubagentHistorySnapshot = try await HostService.load(HostService.request(try HostService.url(client, "v1/subagents/history", query), token: CredentialVault.token(client.id)))
     let expected = client.codexDirect?.target ?? client.readingTarget
-    guard value.version == 1, ["saved-history", "desktop-runtime"].contains(value.source), value.hostId == client.id, value.parentThreadId == parentThreadId, value.messageId == messageId,
+    if let association {
+      guard let expected, expected.agentId == "codex", expected.hostId == client.id else { throw HostServiceError.wrongHost }
+      query["association"] = association
+      query["target"] = String(decoding: try JSONEncoder().encode(expected), as: UTF8.self)
+    }
+    let request = HostService.request(try HostService.url(client, "v1/subagents/history", query), token: CredentialVault.token(client.id))
+    let value: SubagentHistorySnapshot
+    if association == nil { value = try await HostService.load(request) }
+    else {
+      // Bounded response envelope: the Host separately enforces its 1 MiB message page budget.
+      let data = try await HostService.bytes(request, maxBytes: 2 * 1024 * 1024)
+      value = try JSONDecoder().decode(SubagentHistorySnapshot.self, from: data)
+    }
+    guard value.version == (association == nil ? 1 : 2),
+      (value.association ?? "typed-tool") == (association ?? "typed-tool"),
+      ["saved-history", "desktop-runtime"].contains(value.source),
+      association == nil || value.source == "saved-history", value.hostId == client.id,
+      value.parentThreadId == parentThreadId, value.messageId == messageId,
       value.children.contains(where: { $0.id == value.childId }), value.threadId == value.childId,
       childId == nil || value.childId == childId,
       expected?.agentId == value.readTarget.agentId, expected?.hostId == value.readTarget.hostId,
       expected?.workspaceId == value.readTarget.workspaceId, expected?.runtimeId == value.readTarget.runtimeId else { throw HostServiceError.wrongHost }
+    if association != nil {
+      guard (1...32).contains(value.children.count), value.children.allSatisfy({ !$0.id.isEmpty && $0.id.count <= 512 }),
+        Set(value.children.map(\.id)).count == value.children.count, value.messages.count <= 80,
+        Set(value.messages.map(\.id)).count == value.messages.count,
+        value.messages.allSatisfy({ !$0.id.isEmpty }),
+        value.messages.allSatisfy({ ($0.attachments ?? []).allSatisfy({ $0.hostId == client.id && $0.threadId == value.childId }) }),
+        value.nextCursor == nil || (value.nextCursor!.count <= 4096 && !value.nextCursor!.isEmpty && value.nextCursor != cursor)
+      else { throw HostServiceError.invalidResponse }
+    }
     return value
   }
   func desktopSuggestionSource(_ client: Client, workspace: WorkspaceSnapshot) -> DesktopSuggestionSourceKind? {
@@ -480,7 +516,11 @@ struct CodexAgentClient: AgentClient {
     return try await HostService.post(client, "v1/threads/read", ["threadId": threadId, "readerId": readerId, "position": value, "target": identity])
   }
   func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt { try await HostService.send(client, reply) }
-  func receipt(_ client: Client, id: String) async throws -> DeliveryReceipt { try await HostService.receipt(client, id: id) }
+  func receipt(_ client: Client, id: String, threadId: String) async throws -> DeliveryReceipt {
+    let receipt = try await HostService.receipt(client, id: id)
+    guard receipt.hostId == client.id, receipt.threadId == threadId, receipt.clientMessageId == id else { throw HostServiceError.wrongHost }
+    return receipt
+  }
   func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection {
     // Legacy connections can query their validated reading target as well.
     // Retry authority still requires a pinned direct connection in SessionStore.
@@ -560,6 +600,9 @@ struct CodexAgentClient: AgentClient {
   private static var providers: [String: any AgentClient] = ["codex": CodexAgentClient(), "easywork": EasyWorkAgentClient()]
   static func register(_ id: String, client: any AgentClient) { providers[id] = client }
   static func resolve(_ client: Client) throws -> any AgentClient {
+    #if R2_REAL_DEV_ACCEPTANCE
+    try R2Admission.client(client)
+    #endif
     guard let provider = providers[client.agentConnection?.target.agentId ?? "codex"] else { throw HostServiceError.message(L10n.tr("此 Agent 客户端尚未注册")) }
     return provider
   }

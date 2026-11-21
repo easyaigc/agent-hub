@@ -1,5 +1,11 @@
 # Android A5：EasyWork 实施与验收
 
+<!-- android-current-status-source:20261112 -->
+
+> 当前 Android 对齐 iOS、对接 Codex/EasyWork 的开发、验收、交付、阻塞和剩余项，唯一以[权威状态和计划](android-ios-alignment-20261107/progress.md)为准。本页保留原日期/原任务的需求与证据；其中“当前”“未开发”“暂停”不直接代表最新状态。后续进度必须登记到权威计划，不在本页另立当前总表。
+
+<!-- /android-current-status-source:20261112 -->
+
 **2026-10-22 更新：**后续按 [新计划 P8](android-alignment-20261022.md)重新对账并封存七组，当前主流程为 EWDAP/1 电脑确认、手机免账号登录。下面 1/7、3/7 和旧手机记录属于当时冻结输入，不是当前完成率；新手机产品验收未执行，A6 仍暂停。
 
 当前调度（2026-10-15）：用户暂停 A6，优先执行[iOS／Host bridge 逐提交迁移计划](android-upstream-migration.md)。A5 未提交成果已保护，当前冻结包验收仍为 1/7；历史通过保留其原指纹，不作为新上游合入后的通过。A5 最终业务／恢复矩阵将在迁移后的统一输入上封存，A6 不自动开始。

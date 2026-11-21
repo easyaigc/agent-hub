@@ -1,6 +1,7 @@
 package com.agenthub.core
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -36,4 +37,37 @@ class OperationPoliciesTest {
         assertTrue(OperationPolicies.historyCatchUpDue(11_000, 9_000, 0, true, 0))
         assertFalse(OperationPolicies.historyCatchUpDue(11_000, 0, 10_000, true, 0))
     }
+
+    @Test fun filteredGlobalCursorHeartbeatKeepsReadyHistory() {
+        // RuntimeSession.poll uses one host sequence but filters snapshots by threadId.
+        // Other chats can advance this cursor while this valid subscription stays quiet.
+        var cursor = 70L
+        for (next in listOf(71L, 72L)) {
+            val decision = OperationPolicies.event("host-epoch", cursor, "host-epoch", next, false, true, 0, threadScoped = true)
+            assertTrue(decision.apply)
+            assertEquals("host-epoch", decision.epoch)
+            assertEquals(next, decision.cursor)
+            assertFalse(decision.reload, "A valid thread-filtered empty batch must not discard ready history")
+            cursor = decision.cursor
+        }
+        val laterSnapshot = OperationPolicies.event("host-epoch", cursor, "host-epoch", 73, false, true, 1)
+        assertTrue(laterSnapshot.apply)
+        assertFalse(laterSnapshot.reload)
+    }
+
+    @Test fun emptyBatchStillRepairsExplicitResetAndChangedEpoch() {
+        val reset = OperationPolicies.event("host-epoch", 70, "host-epoch", 72, true, true, 0)
+        assertTrue(reset.apply)
+        assertTrue(reset.reload)
+        val restarted = OperationPolicies.event("host-epoch", 70, "new-epoch", 1, false, true, 0)
+        assertTrue(restarted.apply)
+        assertTrue(restarted.reload)
+        val unavailable = OperationPolicies.event("host-epoch", 70, "new-epoch", 1, true, false, 0)
+        assertTrue(unavailable.apply)
+        assertFalse(unavailable.reload)
+        val duplicate = OperationPolicies.event("host-epoch", 70, "host-epoch", 70, false, true, 0)
+        assertFalse(duplicate.apply)
+        assertFalse(duplicate.reload)
+    }
+
 }

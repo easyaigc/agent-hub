@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat, utimes, symlink } from 'node:fs/promises';
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  readFile,
+  rm,
+  stat,
+  utimes,
+  symlink,
+  chmod,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -200,6 +210,9 @@ test(
     await mkdir(join(directory, 'diagnostics'), { mode: 0o700 });
     const file = join(directory, 'diagnostics/errors.jsonl');
     await writeFile(file, 'original-evidence', { mode: 0o644 });
+    // Creation mode is filtered by inherited umask; establish the actual public fixture.
+    await chmod(file, 0o644);
+    assert.equal((await stat(file)).mode & 0o777, 0o644);
     const logger = startRuntimeDiagnostics(directory, randomUUID());
     try {
       await until(
@@ -502,3 +515,169 @@ test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 
     if (completed) await rm(directory, { recursive: true, force: true });
   }
 });
+
+test(
+  'lineage HTTP admission binds one complete target and rejects target changes after await',
+  { concurrency: false, timeout: 15_000 },
+  async () => {
+    const directory = join(tmpdir(), 'lineage-http-' + randomUUID());
+    makePrivateDirectorySync(directory);
+    const saved = { ...process.env };
+    const originalConnect = RuntimeSession.prototype.connect;
+    const token = randomUUID() + randomUUID();
+    let service;
+    let releaseBody;
+    let pending;
+    let completed = false;
+    try {
+      // Reuse this file's real Host HTTP harness, never a desktop/CLI connection.
+      // The controlled page boundary tests admission only, not official-child proof.
+      for (const key of Object.keys(process.env))
+        if (
+          key.startsWith('CODEX_') ||
+          key.startsWith('HOST_AGENT_') ||
+          key.startsWith('HOST_NOTIFICATION_')
+        )
+          delete process.env[key];
+      const codexHome = join(directory, 'codex-home');
+      makePrivateDirectorySync(codexHome);
+      Object.assign(process.env, {
+        CODEX_RUNTIME_MODE: 'managed-runtime',
+        CODEX_HOME: codexHome,
+        CODEX_EXECUTABLE: join(directory, 'never-executed'),
+        HOST_AGENT_STATE_DIR: directory,
+        HOST_AGENT_ROOT: directory,
+        HOST_AGENT_TRANSFER_DIR: join(directory, 'downloads'),
+        HOST_AGENT_TOKEN: token,
+        HOST_AGENT_BIND: '127.0.0.1',
+        HOST_AGENT_PORT: '0',
+        HOST_AGENT_DISCOVERY: '0',
+      });
+      RuntimeSession.prototype.connect = async () => {};
+      service = await startRuntimeServer();
+      const target = { ...service.session.readingTarget() };
+      let currentTarget = target;
+      service.session.readingTarget = () => currentTarget;
+      Object.defineProperty(service.session, 'capabilities', {
+        value: ['subagents:history:parent-lineage:v1'],
+        configurable: true,
+      });
+      const calls = [];
+      let deferBody = false;
+      const bodyGate = new Promise((resolve) => {
+        releaseBody = resolve;
+      });
+      let entered = false;
+      const page = {
+        version: 2,
+        association: 'parent-thread-lineage',
+        source: 'saved-history',
+        hostId: target.hostId,
+        threadId: 'parent',
+        messageId: 'card',
+        childId: 'child',
+        messages: [],
+        nextCursor: null,
+        children: [],
+        readTarget: target,
+      };
+      service.session.subagentHistoryPage = async (...args) => {
+        calls.push(args);
+        if (deferBody) {
+          entered = true;
+          await bodyGate;
+        }
+        return page;
+      };
+      const query = () =>
+        new URLSearchParams({
+          hostId: target.hostId,
+          threadId: 'parent',
+          messageId: 'card',
+          childId: 'child',
+          association: 'parent-thread-lineage',
+          target: JSON.stringify(target),
+        });
+      const endpoint = `http://127.0.0.1:${service.server.address().port}`;
+      const request = (params) =>
+        fetch(endpoint + '/v1/subagents/history?' + params, {
+          headers: { Authorization: 'Bearer ' + token },
+          signal: AbortSignal.timeout(5000),
+        });
+      const invalid = [];
+      const missing = query();
+      missing.delete('target');
+      invalid.push([missing, 409]);
+      const incomplete = query();
+      const { runtimeId, ...partialTarget } = target;
+      incomplete.set('target', JSON.stringify(partialTarget));
+      invalid.push([incomplete, 400]);
+      for (const field of ['agentId', 'hostId', 'workspaceId', 'runtimeId']) {
+        const wrong = query();
+        wrong.set('target', JSON.stringify({ ...target, [field]: 'foreign-' + target[field] }));
+        invalid.push([wrong, 409]);
+      }
+      for (const field of ['association', 'target']) {
+        const duplicate = query();
+        duplicate.append(field, duplicate.get(field));
+        invalid.push([duplicate, 400]);
+      }
+      for (const [params, status] of invalid) {
+        const response = await request(params);
+        const body = await response.json();
+        assert.equal(response.status, status);
+        assert.equal(body.version, undefined);
+        assert.equal(calls.length, 0, 'invalid query must not reach the page boundary');
+      }
+      const accepted = await request(query());
+      assert.equal(accepted.status, 200);
+      assert.deepEqual(await accepted.json(), page);
+      assert.deepEqual(calls, [['parent', 'card', 'child', undefined, 'parent-thread-lineage']]);
+
+      deferBody = true;
+      // Attach both fulfillment/rejection handlers immediately; always release/drain below.
+      pending = request(query()).then(
+        (response) => ({ response }),
+        (error) => ({ error }),
+      );
+      await until(() => entered, Boolean, 1000);
+      currentTarget = { ...target, runtimeId: runtimeId + '-changed' };
+      releaseBody();
+      const late = await pending;
+      assert.ifError(late.error);
+      assert.equal(late.response.status, 409);
+      const rejected = await late.response.json();
+      assert.equal(rejected.version, undefined, 'stale child page must not be published');
+      assert.equal(rejected.messages, undefined);
+      assert.equal(rejected.childId, undefined);
+      assert.equal(rejected.readTarget, undefined);
+      assert.deepEqual(calls, [
+        ['parent', 'card', 'child', undefined, 'parent-thread-lineage'],
+        ['parent', 'card', 'child', undefined, 'parent-thread-lineage'],
+      ]);
+      currentTarget = target;
+      completed = true;
+    } finally {
+      releaseBody?.();
+      await pending;
+      try {
+        if (service) {
+          const closed = service.server.listening
+            ? new Promise((resolve) => service.server.once('close', resolve))
+            : Promise.resolve();
+          try {
+            service.close();
+          } finally {
+            await closed;
+            await service.diagnostics.close();
+          }
+        }
+      } finally {
+        RuntimeSession.prototype.connect = originalConnect;
+        for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
+        Object.assign(process.env, saved);
+        if (completed) await rm(directory, { recursive: true, force: true });
+      }
+    }
+  },
+);

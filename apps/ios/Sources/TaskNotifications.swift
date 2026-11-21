@@ -6,6 +6,17 @@ import UserNotifications
 private final class NotificationRedirectPolicy: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
 }
+// UNUserNotificationCenter permits an asynchronous completion. Transfer its single
+// invocation to Main without sharing an unguarded callback between isolation domains.
+private final class NotificationPresentationCompletion: @unchecked Sendable {
+  private let lock = NSLock()
+  private var action: ((UNNotificationPresentationOptions) -> Void)?
+  init(_ action: @escaping (UNNotificationPresentationOptions) -> Void) { self.action = action }
+  func callAsFunction(_ options: UNNotificationPresentationOptions) {
+    lock.lock(); let action = self.action; self.action = nil; lock.unlock()
+    action?(options)
+  }
+}
 struct TaskHostNotificationRevocation: Codable {
   var client: Client
   var deviceId: String
@@ -337,7 +348,15 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       if !seen.contains(event.id) { seen.append(event.id) }; try TaskNotificationShared.write(Array(seen.suffix(2048)), name: "seen.json")
     } catch {
       self.error = L10n.tr("无法显示通知，请检查系统通知设置。")
-      if event.target.agentId == "easywork" { throw error }
+      if event.target.agentId == "easywork" {
+        if generation != owner { await refreshEasyWorkDelivered(owner: generation) }
+        throw error
+      }
+    }
+    // Reconcile only actually delivered originals after a Codex request crosses a settings
+    // commit, including an unknown add/archive outcome. Never resubmit the original alert.
+    if event.target.agentId == "codex", generation != owner {
+      await refreshEasyWorkDelivered(owner: generation)
     }
   }
   private func refreshEasyWorkDelivered(owner: UUID) async {
@@ -350,9 +369,12 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
       let event: TaskNotificationEvent?
       if let value = info["event"], let data = try? JSONSerialization.data(withJSONObject: value) { event = try? JSONDecoder().decode(TaskNotificationEvent.self, from: data) }
       else { event = try? TaskNotificationShared.decodeEnvelope(info) }
-      guard let event, event.target.agentId == "easywork", TaskNotificationValidation.event(event) else { continue }
-      guard preferences.enabled, preferences.foregroundBanner, preferences.kinds.contains(event.kind), !preferences.excludedHosts.contains(event.target.hostId),
-        let host = store?.saved.clients.first(where: { !$0.isDemo && target($0).matchesCapturedPayload(event.target) }) else {
+      // Ordinary Codex and EasyWork notices share this projection; business notices do not.
+      guard let event, ["codex", "easywork"].contains(event.target.agentId), TaskNotificationValidation.event(event) else { continue }
+      guard preferences.enabled, (event.target.agentId == "codex" || preferences.foregroundBanner), preferences.kinds.contains(event.kind), !preferences.excludedHosts.contains(event.target.hostId),
+        let host = store?.saved.clients.first(where: {
+          !$0.isDemo && (event.target.agentId == "codex" ? target($0) == event.target : target($0).matchesCapturedPayload(event.target))
+        }) else {
         center.removeDeliveredNotifications(withIdentifiers: [notification.request.identifier]); continue
       }
       let preview = TaskNotificationPresentation(event: event, computer: host.name, showPreview: preferences.showThreadTitle)
@@ -365,7 +387,12 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
         try await center.add(UNNotificationRequest(identifier: notification.request.identifier, content: content, trigger: nil))
         if generation != owner { await refreshEasyWorkDelivered(owner: generation); return }
       }
-      catch { self.error = L10n.tr("部分系统提醒未能更新，原资料已保留。") }
+      catch {
+        self.error = L10n.tr("部分系统提醒未能更新，原资料已保留。")
+        // An unknown replacement outcome can still have delivered the old projection.
+        // Re-observe current originals; never delete a possibly newer request by an old identifier.
+        if generation != owner { await refreshEasyWorkDelivered(owner: generation); return }
+      }
     }
   }
   #if DEBUG
@@ -626,22 +653,42 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     let event: TaskNotificationEvent?
     if let value = info["event"], let data = try? JSONSerialization.data(withJSONObject: value) { event = try? JSONDecoder().decode(TaskNotificationEvent.self, from: data) }
     else { event = try? TaskNotificationShared.decodeEnvelope(info) }
-    if let event, prefs.enabled, !prefs.excludedHosts.contains(event.target.hostId) {
-      Task { @MainActor in
-        let controller = Self.shared
-        try? await controller.store?.waitForSidebarInteraction()
-        _ = try? MobileUnreadBadge.receive(event)
-        controller.updateBadge()
+    let capturedRevision = prefs.revision
+    let originalTitle = notification.request.content.title, originalBody = notification.request.content.body
+    let isTest = notification.request.identifier == "notification-test"
+    let finish = NotificationPresentationCompletion(completionHandler)
+    Task { @MainActor in
+      let controller = Self.shared
+      // Settings commit preferences and generation synchronously on this actor.
+      // A callback's earlier file snapshot must not authorize the final presentation.
+      let prefs = controller.preferences
+      if !isTest {
+        guard let event, TaskNotificationValidation.event(event),
+          controller.store?.saved.clients.contains(where: {
+            !$0.isDemo && (event.target.agentId == "codex" ? controller.target($0) == event.target : controller.target($0).matchesCapturedPayload(event.target))
+          }) == true else { finish([]); return }
+      }
+      if let event, prefs.enabled, !prefs.excludedHosts.contains(event.target.hostId) {
+        Task { @MainActor in
+          try? await controller.store?.waitForSidebarInteraction()
+          _ = try? MobileUnreadBadge.receive(event)
+          controller.updateBadge()
+        }
+      }
+      if let event, !prefs.kinds.contains(event.kind) || prefs.excludedHosts.contains(event.target.hostId) { finish([]); return }
+      var options: UNNotificationPresentationOptions = []
+      if prefs.enabled || isTest {
+        if prefs.foregroundBanner { options.formUnion([.banner, .list]) }
+        if prefs.soundEnabled { options.insert(.sound) }
+        if prefs.badgeEnabled { options.insert(.badge) }
+      }
+      let stalePreview = !prefs.showThreadTitle && event.map { originalTitle != $0.kind.title || !originalBody.isEmpty } == true
+      if stalePreview { options.subtract([.banner, .list]) }
+      finish(options)
+      if capturedRevision != prefs.revision || stalePreview {
+        await controller.refreshEasyWorkDelivered(owner: controller.generation)
       }
     }
-    if let event, !prefs.kinds.contains(event.kind) || prefs.excludedHosts.contains(event.target.hostId) { completionHandler([]); return }
-    var options: UNNotificationPresentationOptions = []
-    if prefs.enabled || notification.request.identifier == "notification-test" {
-      if prefs.foregroundBanner { options.formUnion([.banner, .list]) }
-      if prefs.soundEnabled { options.insert(.sound) }
-      if prefs.badgeEnabled { options.insert(.badge) }
-    }
-    completionHandler(options)
   }
   nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
     Self.receiveTap(response, completionHandler: completionHandler)

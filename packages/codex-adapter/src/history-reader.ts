@@ -1,3 +1,4 @@
+import { directParentCatalog, verifyOfficialChild, snapshotLineagePage } from './parent-lineage.js';
 import { diagnosticEvent } from './diagnostic-events.js';
 import { retireMetadataProcess } from './metadata-process.js';
 import { withWindowsProcessCreation } from './windows-process.js';
@@ -387,6 +388,30 @@ export class CodexHistoryReader {
       throw Object.assign(new Error('Reader unavailable'), { code: 'CODEX_READER_DISCONNECTED' });
     return object(await this.rpc(method, params));
   }
+  /** Real subprocess/lifecycle fence. Catalog refreshes and clocks do not retire a read. */
+  captureReadContext(): () => void {
+    const process = this.process,
+      generation = this.closeGeneration;
+    const assertCurrent = () => {
+      if (!this.ready || this.process !== process || this.closeGeneration !== generation)
+        throw new Error('Official history reader context changed');
+    };
+    assertCurrent();
+    return assertCurrent;
+  }
+  async parentLineageChildren(parent: string): Promise<string[]> {
+    const current = this.captureReadContext();
+    const page = await this.read('thread/list', {
+      limit: 100,
+      parentThreadId: parent,
+      sourceKinds: ['subAgentThreadSpawn'],
+      modelProviders: [],
+      useStateDbOnly: true,
+    });
+    current();
+    return directParentCatalog(page, parent);
+  }
+
   /** Called only after the desktop IPC validates an exact live owner snapshot. */
   registerOwnerThread(threadId: string): void {
     this.knownThreads.add(threadId);
@@ -667,6 +692,8 @@ export class CodexHistoryReader {
     fullDetails = false,
     // Private adapter side channel. Source paths never enter a history response.
     localImages?: (messageId: string, paths: readonly string[]) => void,
+    // Internal opt-in only; selected-child metadata is checked before any body RPC.
+    lineage?: { expectedParentId: string; historyMode?: string; assertCurrent?: () => void },
   ): Promise<{
     hostId: string;
     threadId: string;
@@ -682,10 +709,26 @@ export class CodexHistoryReader {
         code: 'CODEX_READER_HOST_CURSOR',
         status: 400,
       });
-    if (!this.knownThreads.has(threadId)) throw new Error('Thread not in this host workspace');
+    if (!lineage && !this.knownThreads.has(threadId))
+      throw new Error('Thread not in this host workspace');
+    const readerCurrent = lineage ? this.captureReadContext() : () => {};
+    const current = () => {
+      readerCurrent();
+      lineage?.assertCurrent?.();
+    };
+    current();
     const metadata = object(await this.rpc('thread/read', { threadId, includeTurns: false }));
     const thread = object(metadata.thread);
     if (thread.id !== threadId) throw new Error('History target mismatch');
+    current();
+    if (lineage) {
+      verifyOfficialChild(thread, threadId, lineage.expectedParentId);
+      if (
+        lineage.historyMode &&
+        lineage.historyMode !== (thread.historyMode === 'paginated' ? 'paginated' : 'snapshot')
+      )
+        throw new Error('Official history source changed');
+    }
     let latestTurn: { id: string; status: string } | undefined;
     let items: unknown[],
       turns: ReadTurnEvidence[] = [],
@@ -695,15 +738,36 @@ export class CodexHistoryReader {
         await this.rpc('thread/items/list', {
           threadId,
           sortDirection: 'desc',
-          limit: 100,
+          limit: lineage ? 1 : 100,
           ...(pageCursor ? { cursor: pageCursor } : {}),
         }),
       );
+      current();
+      if (lineage && array(result.data).length > 1)
+        throw new Error('Official page exceeded requested limit');
+      if (
+        lineage &&
+        array(result.data).some((entry) => {
+          const row = object(entry),
+            item = object(row.item);
+          return (
+            typeof row.turnId !== 'string' ||
+            !row.turnId ||
+            row.turnId.length > 512 ||
+            typeof item.id !== 'string' ||
+            !item.id ||
+            item.id.length > 512
+          );
+        })
+      )
+        throw new Error('Official item identity unavailable');
       items = array(result.data)
         .reverse()
         .map((entry) => ({ ...object(object(entry).item), runId: object(entry).turnId }));
       nextCursor = cursor(result.nextCursor);
-      if (!pageCursor) {
+      if (lineage && nextCursor !== null && (!nextCursor || nextCursor === pageCursor))
+        throw new Error('Official history cursor did not advance');
+      if (!pageCursor && !lineage) {
         try {
           // Summary excludes tool bodies. A persisted terminal turn is useful
           // read evidence even when this chat has no complete desktop stream.
@@ -725,6 +789,16 @@ export class CodexHistoryReader {
       }
     } else {
       const result = object(await this.rpc('thread/read', { threadId, includeTurns: true }));
+      current();
+      if (lineage) {
+        const bodyThread = object(result.thread);
+        verifyOfficialChild(bodyThread, threadId, lineage.expectedParentId);
+        if (
+          (bodyThread.historyMode === 'paginated' ? 'paginated' : 'snapshot') !==
+          (thread.historyMode === 'paginated' ? 'paginated' : 'snapshot')
+        )
+          throw new Error('Official history source changed');
+      }
       const rawTurns = array(object(result.thread).turns);
       turns = this.turnEvidence(rawTurns);
       const last = turns.at(-1);
@@ -736,6 +810,16 @@ export class CodexHistoryReader {
     const messages: ReadMessage[] = [];
     for (const value of items) {
       const item = object(value);
+      if (
+        lineage &&
+        (typeof item.id !== 'string' ||
+          !item.id ||
+          item.id.length > 512 ||
+          typeof item.runId !== 'string' ||
+          !item.runId ||
+          item.runId.length > 512)
+      )
+        throw new Error('Official item or Turn identity unavailable');
       if (['todo-list', 'planImplementation'].includes(string(item.type))) continue;
       const { paths, ...message } = renderItem(item, fullDetails ? Infinity : 200_000);
       message.files = paths
@@ -774,11 +858,18 @@ export class CodexHistoryReader {
       }
       messages.push(message);
     }
+    current();
+    const bounded =
+      lineage && thread.historyMode !== 'paginated'
+        ? snapshotLineagePage(messages, pageCursor)
+        : { messages, nextCursor };
+    if (lineage && Buffer.byteLength(JSON.stringify(bounded.messages)) > 1024 * 1024)
+      throw new Error('Official history page exceeds the bounded window');
     return {
       hostId: this.hostId,
       threadId,
-      messages,
-      nextCursor,
+      messages: bounded.messages,
+      nextCursor: bounded.nextCursor,
       turns,
       ...(latestTurn ? { latestTurn } : {}),
       ...(typeof thread.cwd === 'string' && isAbsolute(thread.cwd)

@@ -22,7 +22,7 @@ import androidx.compose.ui.text.TextRange
  * racing two timers or moving voice before 500ms. Tap, double-tap, focus, IME and handle editing use
  * their original handlers. A gesture's configuration is latched until all pointers are up. */
 @Composable internal fun NativeComposerVoiceInput(editor: Any,navigation: String,enabled: Boolean,
-    selection: ()->TextRange,hint: String,actionLabel: String,onStart: ()->Boolean,
+    selection: ()->TextRange,hint: String,actionLabel: String,onStart: ()->Boolean,focused: Boolean=false,
     content: @Composable (Modifier)->Unit) {
     val native=LocalViewConfiguration.current
     val reserved=remember(native) {object: ViewConfiguration by native {
@@ -30,14 +30,16 @@ import androidx.compose.ui.text.TextRange
     }}
     var inGesture by remember(editor,navigation) {mutableStateOf(false)}
     var reservedForGesture by remember(editor,navigation) {mutableStateOf(false)}
-    val reserveAtRest=enabled&&selection().collapsed
+    // Sample focus before a gesture. First-down native focus must not cancel an unfocused hold.
+    // Keep focus out of pointerInput keys; inGesture retains the original reservation until release.
+    val reserveAtRest=enabled&&!focused&&selection().collapsed
     val reserve=if(inGesture)reservedForGesture else reserveAtRest
     val currentSelection by rememberUpdatedState(selection)
     val currentStart by rememberUpdatedState(onStart)
     val currentEnabled by rememberUpdatedState(enabled)
     val currentReserve by rememberUpdatedState(reserve)
     val actions=if(!enabled)Modifier else Modifier.semantics {
-        onLongClick(label=hint){currentStart()}
+        if(!focused)onLongClick(label=hint){currentStart()}
         customActions=listOf(CustomAccessibilityAction(actionLabel){currentStart()})
     }
     val pointer=Modifier.pointerInput(editor,navigation,enabled) {

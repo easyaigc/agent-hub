@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Looper
 import org.json.JSONObject
 
-/** Foreground authenticated local-event entry. Background encrypted/vendor ingress is intentionally absent. */
+/** Authenticated local-event entry. Vendor ingress shares this installation’s durable leases and receipts. */
 internal class NativeChatNotificationRuntime(
     private val store: NativeChatNotificationStore,
     private val platform: NativeChatNotificationPlatform,
@@ -13,6 +13,7 @@ internal class NativeChatNotificationRuntime(
 ) {
     private fun main() = check(Looper.myLooper() == Looper.getMainLooper())
     val preferences get() = store.preferences()
+    /** This legacy local runtime owns no Host registration; production readiness is per-target push reports. */
     val remotePushReady get() = false
     fun update(change: (NativeChatNotificationPreferences) -> NativeChatNotificationPreferences) {
         main(); store.update(change); platform.cancelOwned()

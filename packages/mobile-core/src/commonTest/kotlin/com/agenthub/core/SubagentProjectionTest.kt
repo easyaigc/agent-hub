@@ -74,6 +74,32 @@ class SubagentProjectionTest {
         p.clear();p.accept(event("started",revision=2));assertTrue(p.project(snapshot(),"thread").isEmpty())
         p.clear();assertTrue(p.project(snapshot(),"thread").isEmpty())
     }
+    @Test fun eventCannotReparentAuthoritativeChildWhenBothRootsAreVisible() {
+        val p=SubagentProjection()
+        // A delayed/conflicting event names another root which is also in this
+        // thread's snapshot. It must not attach the original child's body to it.
+        p.accept(event("stream",root="other-root"))
+        val original=Json.parseToJsonElement(snapshot(child(JsonArray(listOf(text("original body"))),status="completed"))).jsonObject
+        val otherTree=buildJsonObject {
+            put("root",buildJsonObject { put("id","other-root");put("threadId","thread");put("branchRevision",1) })
+            put("runs",JsonArray(emptyList()))
+        }
+        val both=JsonObject(original+("subagentRunTrees" to JsonArray(original.getValue("subagentRunTrees").jsonArray+otherTree)))
+        val value=p.project(both.toString(),"thread").single()
+        assertEquals("root",value.rootRunId)
+        assertEquals("completed",value.status)
+        assertEquals("task\n\noriginal body",value.detail)
+    }
+    @Test fun lateEventsCannotReplaceAuthoritativeTerminalDetailOrStatus() {
+        val p=SubagentProjection()
+        val done=snapshot(child(JsonArray(listOf(text("FINAL"))),status="completed"))
+        p.project(done,"thread")
+        p.accept(event("failed",2));p.accept(event("stream",3))
+        val value=p.project(done,"thread").single()
+        assertEquals("root",value.rootRunId);assertEquals("completed",value.status)
+        assertEquals("task\n\nFINAL",value.detail)
+        assertTrue(p.project(snapshot(root="new-root",revision=2),"thread").isEmpty())
+    }
     @Test fun independentTargetSessionsDoNotShareLiveRuns() {
         val first=SubagentProjection();val second=SubagentProjection();first.accept(event("failed"))
         assertEquals("failed",first.project(snapshot(),"thread").single().status)

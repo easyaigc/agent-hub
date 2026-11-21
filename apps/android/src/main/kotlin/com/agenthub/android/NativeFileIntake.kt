@@ -36,16 +36,21 @@ internal object NativeFileIntake {
         if(action !in listOf(android.content.Intent.ACTION_SEND,android.content.Intent.ACTION_SEND_MULTIPLE,android.content.Intent.ACTION_VIEW))return null
         try {
             @Suppress("DEPRECATION")
+            val suppliedStream=if(action==android.content.Intent.ACTION_VIEW)null else intent.extras?.get(android.content.Intent.EXTRA_STREAM)
+            @Suppress("DEPRECATION")
             val sources: List<Uri> = when(action) {
                 android.content.Intent.ACTION_VIEW -> listOfNotNull(intent.data)
                 android.content.Intent.ACTION_SEND -> {
                     val value=if(android.os.Build.VERSION.SDK_INT>=33)intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM,Uri::class.java)
                         else intent.getParcelableExtra<android.os.Parcelable>(android.content.Intent.EXTRA_STREAM)?.let { it as? Uri ?: throw NativeFileIntakeFailure(NativeFileIntakeFailure.CHANGED) }
+                    // Preserve ClipData-only/null-placeholder shares; never replace a nonnull malformed original.
+                    if(value==null&&suppliedStream!=null)throw NativeFileIntakeFailure(NativeFileIntakeFailure.CHANGED)
                     if(value!=null)listOf(value)else clipboardFiles(intent.clipData)
                 }
                 else -> {
                     val values=if(android.os.Build.VERSION.SDK_INT>=33)intent.getParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM,Uri::class.java)
                         else intent.getParcelableArrayListExtra<android.os.Parcelable>(android.content.Intent.EXTRA_STREAM)?.map { it as? Uri ?: throw NativeFileIntakeFailure(NativeFileIntakeFailure.CHANGED) }
+                    if(values==null&&suppliedStream!=null)throw NativeFileIntakeFailure(NativeFileIntakeFailure.CHANGED)
                     values?.toList() ?: clipboardFiles(intent.clipData)
                 }
             }

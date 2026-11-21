@@ -1,16 +1,18 @@
 # 双端一致性验收场景与记录规范
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 2026-11-21 F52/F54（S15/S16）：重复 feed 验收须记录同一真实未处理事件在两次认证 feed 中出现，并独立核系统仅有一份和原展示账本不重复发布；只看到一条系统通知不算去重通过。处理撤回应在通知仍留在系统时从原审批卡处理一次，核 activeIds、展示账本及系统移除。沿原 App 正常重开恢复 feed，不重放模型输入或审批，不伪造 provider/APNs；有界 DEBUG 观察是证据辅助，不能独立替代实际系统结果。冷热路由、隐私与原已合范围按实际证据复用；Android、实体 APNs 和 A6 不新增通过。结果只回填唯一 EasyWork 台账。
 
 2026-11-20 F17／F18／F28／F47（UI04／UI05，S03／S11）接收回执恢复：当前源码与独立编译运行件逐字节核对，Node 24.22.3 新回归 7/7、历史读取 smoke、Adapter build／typecheck、格式和 lint 通过。旧版同一断线断言使 8/8 条已接收消息退为未知，新版保留接收事实。真实 Electron／原模型和独占 iOS 26.0 模拟器完成一条普通消息加七条追加、隔离 Host 断线及进程重启、后续新轮和省略旧轮的窗口故障注入；legacy 真实只读摘要一次核对旧八项为 completed。原生 XCTest 1/1、零失败／跳过，草稿／重开保留、未知提示的合成投影对照通过。独立原 owner 核对本组两轮九个原 ID 各一次、无重放；夹具修正前两组已完成输入与失败证据另存，不当本组通过。首次输入 13 项和持久化五组辅助结果按原候选范围匹配保留。原开发现场的 pnpm check 停在并行 status.json 格式检查，完整检查不标通过；主线隔离组合检查按交付记录另记。无实体 5G、Windows／Android 原生或正式部署通过声明；A6 暂停保持。版本化用例为 scripts/accepted-receipts-recovery.test.mjs、scripts/accepted-receipts-desktop-ios-acceptance.mjs 及其 fixtures。
 
 2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：图片语法指向 MP4 时手机丢失链接已由真实来源与独立 Swift Foundation 辅助诊断复现；媒体卡片及 MIME 修复已完成，隔离工作树 pnpm check、iOS 构建、通用与原样片两个原生模拟器测试均通过；视频实际进度 3→8 秒，初始解析／下载为零，正式部署另记。聊天读取不预下载媒体、视频完整下载回退与未实现流式分别见[专项验收](message-media-20261120.md)。Android 卡片／内联图与 EasyWork 原始来源均未新增通过，A6 暂停保持。
 
-2026-11-20 F09／F72：共同操作向量和生产 Swift requestData／桌面 RemoteCommandService 的故障回归作为辅助证据。原生模拟器、真实 Electron、原输入无重复与正式合并分别登记，未执行不得记通过；Android 与暂停项不新增通过。当前状态只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F09／F72：共同操作向量和生产 Swift requestData／桌面 RemoteCommandService 的故障回归作为辅助证据。原生模拟器、真实 Electron、原输入无重复与正式合并分别登记，未执行不得记通过；Android 与暂停项不新增通过。当前状态只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-20 F35/F41（S06/S09）：将已验候选的命令审批保护移入当前主线候选，保留原once/session/once_only/deny及双端竞争的实际证据。生产Swift方法辅助检查覆盖能力缺失零写入、完整身份/目标、实际回执/作用域及旧端单次确认；不重放原审批、不新增模型输入。原证据匹配、辅助结果、真实PR合并及部署分别回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)，不补签Android或跨重启会话许可。
+2026-11-20 F35/F41（S06/S09）：将已验候选的命令审批保护移入当前主线候选，保留原once/session/once_only/deny及双端竞争的实际证据。生产Swift方法辅助检查覆盖能力缺失零写入、完整身份/目标、实际回执/作用域及旧端单次确认；不重放原审批、不新增模型输入。原证据匹配、辅助结果、真实PR合并及部署分别回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)，不补签Android或跨重启会话许可。
 
-2026-11-20 F72/S04/S18：逐组件匹配原真实文档、中文/嵌套链接、来源变化拒绝、同进程父返回/重开位置、认证回复取消和进度证据。新增原生辅助直接调用生产Docv1校验及Codable/阅读身份，不代替GUI迟到竞态、冷启位置或完整矩阵。桌面PR73与iOS交付分别登记，普通下载边界保持。Android内部导航未新增通过；结果只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F72/S04/S18：逐组件匹配原真实文档、中文/嵌套链接、来源变化拒绝、同进程父返回/重开位置、认证回复取消和进度证据。新增原生辅助直接调用生产Docv1校验及Codable/阅读身份，不代替GUI迟到竞态、冷启位置或完整矩阵。桌面PR73与iOS交付分别登记，普通下载边界保持。Android内部导航未新增通过；结果只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-20 F59/S04/S11/UI13：用真实桌面在线客户端入口发送一次文件，准确目标模拟器刷新、下载并打开，重开后打开同一副本；独立核对桌面原传输完成、两端字节和零新增聊天/模型。真实 UI 结果回填唯一计划。新增原生边界检查发现并修复末级文件不存在时漏检父目录符号链接的问题，复测 30 项通过，仅作辅助证据。旧失败保留哈希和错误，失败版 harness 未完整保留，不冒用通过版。Android 接收及大文件/故障矩阵分别验收。
 
@@ -24,19 +26,21 @@
 
 2026-11-19 F71／UI07／UI12（S04／S18）：附件浅色／暗色回归覆盖零选禁用、选择序号与添加数量、取消重排、相册网格及全屏深色预览；截图核对实际文字和填充，不能用 AX 文案存在代替像素可读。本次仅 iOS 共用 UI，Android 与真实上传不扩大通过；结果、源码／运行包指纹及资源回收见[专项记录](attachment-dark-20261119.md)。
 
-2026-11-19 F42（S09）：异步非首题、结束后处置、迟到不可重试拒绝及原状态冷恢复按原 N9／iOS 模拟器证据与准确实现匹配复用；本次主线适配单列源码、辅助门禁和实际合并，不新增模型输入或把辅助检查算成新 GUI 通过。同步问题、完整来源错误拒绝、相同答案幂等及未知结果不重放继续保持，Android／Windows／Codex 不据此新增验收；所有具体状态、证据和 PR 只维护在[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F42（S09）：异步非首题、结束后处置、迟到不可重试拒绝及原状态冷恢复按原 N9／iOS 模拟器证据与准确实现匹配复用；本次主线适配单列源码、辅助门禁和实际合并，不新增模型输入或把辅助检查算成新 GUI 通过。同步问题、完整来源错误拒绝、相同答案幂等及未知结果不重放继续保持，Android／Windows／Codex 不据此新增验收；所有具体状态、证据和 PR 只维护在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 2026-11-19 F01／F47（UI01／UI10，S01／S11／S18）：启动品牌验收分别检查浅／深色 Logo、标题及真实恢复提示，多帧可观察的轻微呼吸，系统“减少动态效果”下静态呈现，以及无验收参数的冷启动／重启进入原主界面。DEBUG 显式验收参数的有界驻留仅用于观察视觉，不作为生产启动耗时证明；正式路径不能新增品牌等待。原生模拟器、辅助构建和正式部署分别记录于[专项记录](startup-brand-20261119.md)，Android／实体手机与数据恢复全量场景不据此新增通过。
 
-2026-11-19 F15：同名双目录聊天/草稿归属与长路径可辨认分开记录。先前UUID/完整AX路径正确不代替目录尾名可视；本次只补路径显示的模拟器视觉断言，不重发原聊天。最新组合编译、原C22加同一局部修复的GUI及主线交付分列，具体状态见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F15：同名双目录聊天/草稿归属与长路径可辨认分开记录。先前UUID/完整AX路径正确不代替目录尾名可视；本次只补路径显示的模拟器视觉断言，不重发原聊天。最新组合编译、原C22加同一局部修复的GUI及主线交付分列，具体状态见[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F20：原R152三个真实长工具完整值、346pt宽度、纵向阅读及首尾/折叠/搜索证据按准确ToolCallView组件匹配复用；本次单输入真实文件Diff另列成功工具项、增删行、原Run及实际文件SHA。普通工具JSON和原始Diff阅读路径与原C22匹配；保留主线新增的子代理历史入口，其新增交互不在本次复用范围，也不代表新组合GUI重跑，复制及完整父项仍按[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)跟进。
+2026-11-19 F20：原R152三个真实长工具完整值、346pt宽度、纵向阅读及首尾/折叠/搜索证据按准确ToolCallView组件匹配复用；本次单输入真实文件Diff另列成功工具项、增删行、原Run及实际文件SHA。普通工具JSON和原始Diff阅读路径与原C22匹配；保留主线新增的子代理历史入口，其新增交互不在本次复用范围，也不代表新组合GUI重跑，复制及完整父项仍按[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)跟进。
 
-2026-11-19 F08：首次认证地址取得/保存、三种通道偏好、原聊天/草稿及冷恢复沿用唯一计划R244-R249原候选证据，当前主线移植单列辅助检查和构建。新源在完整工作区结果与管理修订验证后才采纳连接观察，不改写并发连接/凭据/偏好；原操作不重放。旧证据不升级为新组合GUI通过，当前状态统一见[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F20：原R152三个真实长工具完整值、346pt宽度、纵向阅读及首尾/折叠/搜索证据按准确ToolCallView组件匹配复用；本次单输入真实文件Diff另列成功工具项、增删行、原Run及实际文件SHA。普通工具JSON和原始Diff阅读路径与原C22匹配；保留主线新增的子代理历史入口，其新增交互不在本次复用范围，也不代表新组合GUI重跑，复制及完整父项仍按[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)跟进。
 
-2026-11-19 F09：同会话LAN到中继订阅恢复、原游标和原操作零重复使用唯一计划R250/R252既有模拟器/真实桌面证据；本次交付核对对应源码并执行辅助构建/兼容边界检查，不新增或重放业务输入。合法legacy信封、最大安全整数与布尔/分数/越界拒绝分别记录；授权恢复其余断言保持开放。状态只读[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F08：首次认证地址取得/保存、三种通道偏好、原聊天/草稿及冷恢复沿用唯一计划R244-R249原候选证据，当前主线移植单列辅助检查和构建。新源在完整工作区结果与管理修订验证后才采纳连接观察，不改写并发连接/凭据/偏好；原操作不重放。旧证据不升级为新组合GUI通过，当前状态统一见[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-18 F28 新增源码候选覆盖从菜单主动打开准确原聊天、同操作查询、无模型输入、原目标草稿保留及错误恢复。iOS 原生模拟器和实际 EasyWork 桌面验收、提交及 PR 状态统一见 [唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。Android 该新增入口未验收。
+2026-11-19 F09：同会话LAN到中继订阅恢复、原游标和原操作零重复使用唯一计划R250/R252既有模拟器/真实桌面证据；本次交付核对对应源码并执行辅助构建/兼容边界检查，不新增或重放业务输入。合法legacy信封、最大安全整数与布尔/分数/越界拒绝分别记录；授权恢复其余断言保持开放。状态只读[历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)。
+
+2026-11-18 F28 新增源码候选覆盖从菜单主动打开准确原聊天、同操作查询、无模型输入、原目标草稿保留及错误恢复。iOS 原生模拟器和实际 EasyWork 桌面验收、提交及 PR 状态统一见 [历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md)。Android 该新增入口未验收。
 
 2026-11-16 F64（S04／S18，UI06／UI21）：分别验证未聚焦的空框／已有草稿长按启动语音、已聚焦的空框／已有文字长按呈现系统编辑菜单且不启动语音、实际粘贴和短按编辑、显式麦克风入口与取消保留草稿。原生手势可用独立 iOS 模拟器验收；合成采集不证明真实麦克风或上游 ASR。Android 及正式部署分别待核，结果见[专项记录](composer-focus-longpress-20261116.md)，不改变 EasyWork 对齐父项状态与 A6 暂停范围。
 
@@ -72,7 +76,7 @@ Host 上传回归 14/14 通过：64 MiB、总传输超过 40 秒、并发 health
 
 2026-11-13 F17／F31／UI05（S02／S11）补充：执行中另行排查发现旧成功回包覆盖新快照的竞态。恢复无条件接收时新增 8 项共享回归中 5 项失败，修复后 139 项全部通过；Android 应用与 instrumentation Kotlin 编译通过。新增 8 个原生排序／控件场景尚未执行，真实手机视觉和 iOS 构建未验收。运行中的只读采样显示状态稳定，不作为手机闪烁已复现的证明；详见[专项记录](thread-filtered-events-20261113.md#additional-active-task-investigation)。
 
-> iOS × EasyWork 当前验收结果、阻塞与剩余项唯一回填 [对齐计划](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文件继续定义共同场景并保留既有原始记录；历史通过不得绕过计划中的指纹匹配而升级为当前通过。
+> iOS × EasyWork 当前验收结果、阻塞与剩余项唯一回填 [历史iOS对齐记录](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文件继续定义共同场景并保留既有原始记录；历史通过不得绕过计划中的指纹匹配而升级为当前通过。
 
 2026-11-13 F17／F31／UI05（S02／S11）：过滤后的空事件全局游标与 Android 翻页状态修复见[专项记录](thread-filtered-events-20261113.md)。共享核心 JVM 131 项通过，恢复旧重载条件时新增 6 项中 2 项失败；原生 UI／真实手机与 iOS 编译结果独立记录，不以共享核心通过替代。
 
@@ -87,6 +91,32 @@ Host 上传回归 14/14 通过：64 MiB、总传输超过 40 秒、并发 health
 2026-11-09 F01／F47、UI01／UI10：iOS 已实现启动加载页、聊天／任务缓存后台恢复、旧库缺页回退有界复用和恢复期间的 URL／通知接收。最终 iOS 构建通过，10 个产品文件在构建前后指纹一致；原生持久化边界 15 项通过。生产加密读取器的 12 页单次取钥、篡改拒绝、新恢复重新取钥及明文不取钥通过；提取生产恢复方法与启动协调器的同步读门闩，核对后台读取、主执行器可响应、两路完成前不发布及完整快照交付通过。这些属于辅助验证，不替代真实大缓存或全部数据类型的 App 端验收。
 
 最终候选在独立模拟器的原 Localization XCTest 1 通过、0 失败／跳过，覆盖进程重启及原草稿恢复；容器报告为 readOnMainThread=false、草稿 1、历史页／待处理回复 0，读取约 7.81 ms，仅代表该小样本读取，不能作为首帧或真机启动耗时。首次侧栏断言失败、后续测试 Runner 启动崩溃分别保留，恢复后的通过不证明重试前容器数据被保留。Node 24 的 pnpm check 返回 0，但执行期间存在并行文件和测试脚本变化，不作为最终完整工作区冻结指纹的证明；两项启动脚本另做最终格式、lint 和运行检查。精确产品／脚本指纹登记于功能清单的 ios-startup-background-restoration-20261109。物理 iPhone 首次 CoreDevice 返回 unavailable／4016，真实首帧、pre-main、真实大缓存、冷启动配对／外部文件／通知完整交互及实际提速仍未验收；正式 App 未更新，Android 未新增验收，A6 暂停保持。
+
+2026-11-17 M287补充：最终runner f715已按1188/cf350033正式runner-only编译75.559秒exit0，Root全源/完整ZIP/DEX/签名/XML独核；App c85独立复用原完整构建，4个test-only差异不冒同次App重建。通知实际冻结源为545846a4，前稿36仅两个局部变量名不同，Root实际采纳和编译一致，原文案口径另证。原/新三runner的AXML逐字相同，完整声明为5provider/5总process，运行quiet门仍原3/3；instrumentation从实际XML核，badging无此字段。元数据reader版本差异不得靠改原raw消除。新包未安装/Native，完整98check v4待执行；其它平台和全部真实DEV门不因此升级。
+2026-11-17 M286补充：通知新增偏好测试的默认alias依赖已以单文件独占UUID fixture替代，仅新方法变更并保留原4模式断言；实际线程/原storage executor退出、先保存合成原件后精确清理与unknown保留分别取证，尚未SDK/Native执行。自原c85 App编译图起累计仅4个androidTest文件变化，后续runner-only实际结果须独立关联，不伪称重建App。98check v3因Root遗漏标准附件测试的专用Simulator范围而中断，前34完成/35未决/后63未达，非完整通过；该唯一Simulator及6fixture已精确回收，下一轮保留原标准门。iOS233生产源未变、物理iPhone继续延期。当前状态和数量仍只见权威计划。
+2026-11-17 Root M285补充（F73，S01/S11/S14/S18，UI02/UI03/UI12）：固定第三profile的两test-only cleanup源与Live观测补丁已具名合成；原67宿主向量7失败/修后0、独审17+50通过及20个JS时序标量反例均仅辅助。真实JSONObject nullable字段省略、普通LAN第三记录和原QUERY/DELETE守卫分别核；无AndroidKeyStore/Native执行。未采到完整loading帧、普通poll跨入口ID前进时对应门明确false，其余断言继续，JUnit0不等于这些格通过；Source/精确数值/coverage/TTL/lease不放宽。此三测试源尚未runner补编，原c85/077及iOS SDK编译不能转签新版本。98check前两轮分别lint及源摘要关联拒绝，原件保留，完整新轮待执行；当前数量与排程只由权威计划决定。
+2026-11-17 Root第二批源码边界记录（M283）：F18/F37/F51/F54/F68/F71及F73 Live有限修改已合成，原候选反例与修正分开保留；50项阅读、47项通知、32/17项缓存和16项队列均为宿主辅助。Android1188源实际完整编译81.661秒exit0，Appc85da8df/runner07778ae9已逐源/ZIP/签名独核，未安装；iOS233源App/双架构测试包57.400/314.325秒编译通过，未运行；完整新pnpm check待执行。Live实际两入口和有界生命周期已编译未运行，固定第三资料清理适配尚未进该runner。这里只记来源与有限实现/验证边界，当前开发/验收/数量/排程唯一见权威计划。
+
+2026-11-16 Root首批检查点（M279）：F40/F49/F50/F55/F73有限修改及F04来源核实已通过完整pnpm check 97顺序阶段（713.040秒），F40永久生产函数回归14/14实际纳入该链。Android App/runner完整1184输入、82任务编译通过（sourceSet 2c381f13，App35de7602/runner5a77b3b7，fc12签名）；iOS App和EasyWorkNative测试包在233输入图上双架构编译通过（83.279/303.027秒），新增共享loading观察方法已真实编译。以上为辅助/完整类型和链接证据，新包未安装、新增Native方法及64格均未运行，真实Provider/功能交互像素和整项通过不增加。后续F18/F71/F51/F68候选仍独立、未混入这些指纹；当前状态仅由权威计划维护。
+
+2026-11-16 Root第二切片证据边界：F73 iOS共享进行中/排队读取发布观察变化，详情显示既有“刷新额度”加载提示，partial沿既有文案进入底部无障碍；Android按钮/详情共享loading，身份/来源/节流规则不变。P3新增8个完整图入口、P5准确前台/收尾和iOS观察方法均未Native执行；P4 iOS阅读15宿主+4KMP为辅助，物理/Provider/UI不新增通过。首次workspace检查因生成文档源遗漏失败已留原件并修正，后续完整检查与双端编译另记；当前状态仅见权威计划M277–M278。
+
+2026-11-16 P3 有限候选，F55/N1.1–N1.2、S18/UI12：提交933435174bd42808a3e2ebd42e28fd7fc72374c9修复Android原始token误入JSON校验。缓存Kotlin2.4.21/JDK17上实际编译新凭据边界并运行22向量，均exit0；MobileClient为DTO stub，不代表完整图/Android/Keystore/Provider/Native通过。新增NativeMigrationCandidateTest两个方法与NativeMigrationActivationTest一个方法待Root独占窗口编译执行，分别检查v1/stream/cold原字节、坏凭据保留前候选、发布前失败后补偿/重试与原操作只读/原指针幂等。未运行SDK/安装/真机/模型；iOS、EasyWork、24域、自然I/O/死亡/冷进程/完整UI/真实DEV仍待验，旧证据及暂停项不变。
+
+2026-11-15 F17／F24恢复复验前置：人类正常打开既有QA后，原SDK已证5轮全completed/idle/0requests、原4轮逐字保留；新增仅人工“QA已打开”确认，不匹配本轮4测试slot。独立Host只读history实际HTTP200/24.720ms，但原实现把同一已完成首轮的 `history-fallback:<turn>:item-1` 与 `item-1` 各展示一次，用户投影6条、权威typed/owner输入5条、原Host receipts4条；此项记实际失败，不能在验收器中静默去重冒通过。原流保留于本轮私有 `deliveries/Root/q04-human-baseline-current-host-read-v1`。共享Adapter源码窄修、Node边界检查、Host正式构建部署和恢复后实际读取分别记录；Android新baseline-v2 runner编译只是辅助，尚未安装/业务Native/模型，不升级整F。当前状态见[权威计划M235](../plans/android-ios-alignment-20261107/progress.md)。
+
+2026-11-13 W4 R2：新增独立 iOS DEV 源码候选对应 F01/F02/F04/F37/F38/F39/F43/F44/F61/F73、Q01–Q04，固定新 bundle 与默认 Keychain 组。当前仅实际 Swift 策略/usage 来源验收 helper/项目结构/语法辅助；usage native 用例要求独立桌面 source proof，合法 unavailable 留脱敏证据并明确失败，不以非空或200通过；完整编译、签名、安装、原生、UI、真实模型均待控制方 review 后按同候选验收。旧 Q11 原 C2 的 1 通过仍仅属于原独立 Simulator 环境，失败原件不改；本包省略的系统功能、Android 和 A6 不增通过。精确 native 方法、启动前零旧资料/零自动跨 target 读取、UNKNOWN 原 ID 核对与剩余场景见[来源记录](../plans/android-ios-alignment-20261107/records/w4-r2-native-dev-isolation-20261113.md)。当前状态只由唯一对齐计划维护。
+
+<!-- android-current-status-source:20261112 -->
+
+> 当前 Android 对齐 iOS、对接 Codex/EasyWork 的开发、验收、交付、阻塞和剩余项，唯一以[权威状态和计划](../plans/android-ios-alignment-20261107/progress.md)为准。本页保留原日期/原任务的需求与证据；其中“当前”“未开发”“暂停”不直接代表最新状态。后续进度必须登记到权威计划，不在本页另立当前总表。
+
+<!-- /android-current-status-source:20261112 -->
+
+<!-- android-parallel-acceptance:20261112 -->
+
+2026-11-12验收归档索引：task `android-parallel-20261112-01a1cd5e` 的源、设备/OS、包指纹、三门限定、原始失败/复验及环境阻塞统一由[权威计划M14–M21](../plans/android-ios-alignment-20261107/progress.md)维护。Android App源`2858e633`、修正runner源`6d61903f`、最终iOS代码源`d3d35562`分别绑定，不能以最后HEAD代替旧包重建。最小原始材料保留在本task私有验收档案，不提交设备凭据或真实资料；新辅助/编译结果不自动关闭真实DEV。
+<!-- /android-parallel-acceptance:20261112 -->
 
 2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](host-lifecycle-cpu-20261109.md)。
 
@@ -1991,6 +2021,365 @@ PR3 公开 macOS 的独占模拟器准备与下载业务断言分列：冷 boot/
 
 2026-11-19：F17/F18 的 Codex 原 owner 投影与刷新同步修复见 [专项证据](conversation-sync-refresh-20261118.md)。本次在最新主线组合重跑边界检查及 iOS 模拟器；Android 仅共享 Host 行为，本轮无新增原生通过。
 
+### 2026-11-13 本机原桌面证明的跨设备时间预算
+
+Android真实DEV驱动不能直接将手机墙钟与Mac观察时间相减。
+Native以公开`SystemClock.elapsedRealtime()`发布唯一、具名clock请求；
+controller校验请求后才采集桌面动作证明，保留原proof字节、观察时间及来源。
+原proof传输成功后才发布独立receipt-clock和SHA。
+侧证绑定run、lease、plan、动作、目标、thread、原请求SHA、原proof SHA与原设备单调时点。
+plan和目录亦绑定固定原件与请求；未确认传输不覆盖或重放。
+
+新鲜度按`(Host传输完成-Host原观察)+(设备当前elapsed-设备请求elapsed)`计算。
+各段非负，重叠保守多算，总和仍不超过30000ms。
+原工具窗口沿原真实启动时点计算45000ms，不能用新观察或本机等待重置窗口。
+lease以相同接收锚点计算保守Host当前上界。
+原字节、Owner、完整目标、唯一原操作与预算断言保持。
+Host观察与原工具时点必须是已证实的同钟域，其他Provider或电脑来源未确认时不外推。
+本变更不修改两端系统时间、生产接口或产品UI；当前结果只由权威计划登记。
+
+### 2026-11-13 Q04 terminal budget facts (auxiliary only)
+
+Q04 acceptance binds the final interrupted `stopOrigin` Turn to its original journal operation ID and frozen body SHA. Its complete terminal state must prove `stopOriginToolCount=1` and `childStarts=0`; the earlier one-command snapshot and planned zero-child budget are insufficient. Complete canonical/legacy history, unique original IDs and exactly the two new Q04 Turns are required. The completed baseline Q03 Turn and its previously consumed child are excluded. Unknown item kinds, incomplete history, missing baseline/records or conflicting bodies remain null. The final command uses the existing exact40-second literal/cwd/original-timestamp verifier; terminal API poll/session association remains unknown.
+
+When only origin exists at `queue-completed`, the new terminal fields stay unknown and do not block the existing completion gate. Controller admission remains strictly before40seconds from each original tool start; Native/outer45seconds is the final deadline. Proof refresh never resets that start. The five original bodies, original queued-item promotion/cancel, same-Turn steer, independent stop and unsent draft rules remain unchanged.
+
+Canonical fact cases directly call [q04TerminalFacts](../../scripts/mobile/real-dev-generation-command-evidence.mjs) in the existing [witness regression suite](../../scripts/mobile/real-dev-generation-command-witness.test.mjs). Private stageReady counterexamples stay outside the repository. The Android method is `MobileGenerationCommandRealDevR2Test.q04NativeQueueAndIndependentStop`; it now requires the same final1/0 facts. These are source/auxiliary assertions, not a real Q04/DEV pass. Production App/UI, iOS and EasyWork behavior are unchanged; their applicable real acceptance remains separate. Exact source hashes and F37/F38/F39/F43/F44 associations are recorded in the product manifest; the coordinator alone updates the current progress plan.
+
+### 2026-11-13 Q02 exact-tag layout synchronization (auxiliary source only)
+
+Original084b on App06d/runner04067 failed1Native method in7.361seconds: the original toggle tag was no longer composed after the SDK touch while asserting the unchanged collapsed StateDescription. This is not an SDK permission rejection or proof of a lost production card. Production expansion remains saved by target/message identity and the LazyColumn uses stable row keys.
+
+The AndroidTest toggle still performs exactly one SDK touch, then scrolls only the same message-list to the same exact original toggle tag before asserting the original expected state. It also rechecks the original target/card. Missing/duplicate cards or wrong state still fail; no fallback click, different message/body, weakened expectation or larger model/UI budget is allowed. The original failure is preserved and a new Native/device run is required.
+
+Failure diagnostics are best-effort and rethrow the original Throwable. They record exact original tag counts/states, target/draft hashes and original intent identities only under the confirmed focused original Q02 Activity. Only the new failureCapture uses PixelCopy of that exact own main Window and bounded own AX, with no whole-display/other-App/notification fallback. If the original main Activity is not focused, diagnostics record capture unavailable and rethrow the original error. The existing successful shot helper is byte-identical to its prior implementation, including original app/window guards and actual popup/menu/toolbar screenshot coverage; no new main-focus gate is applied to successful captures. The existing cleanup/invariant checks remain; a secondary local cleanup failure is suppressed onto the original error. Profile lifecycle and zero-new-model/input guards stay in place. Production App/iOS/EasyWork are unchanged. Formal runner typing/signature evidence is auxiliary, not actual Q02/DEV acceptance; the coordinator alone updates the current plan.
+
+### 2026-11-13 Q02 owned Copy label and parent observer (source only)
+
+Actual7adac on App06d/runner4e58 failed one Native method in33.558seconds while locating the Copy candidate. The original card refresh,302-line SDK coverage and menu/page returns were reached; screenshots show the original cross-line selection and Copy toolbar. They do not prove which observer condition rejected the action. Original failure evidence and the empty unchanged clipboard remain preserved.
+
+The AndroidTest keeps its original direct match and adds a structural match for the exact `android:id/floating_toolbar_menu_item_text` Copy leaf within an already verified own-App APPLICATION window. Its nearest clickable parent must share the window/package, contain the child bounds, have the exact Copy description and no competing visible text/action subtree. Unknown ownership, multiple candidates or ambiguous ancestry still fail. A fresh second observation precedes the original SDK pointer gesture and last empty-clipboard fence; frozen selection bytes and the5000ms wait remain unchanged. Observer flags are enabled before selection creation and restored on every exit, including failure. Bounded failure metadata records owned-window rejection reasons without reading foreign window content or clipboard text. This changes only AndroidTest observation, not production UI, iOS or EasyWork. Typing, pure matcher checks and a new real Native result are separate; the authoritative plan alone records current acceptance.
+
+### 2026-11-13 Q02 clipboard epoch and closed observation (source only)
+
+Actual8538 on App06d/runner69b performed the verified owned native Copy touch, then failed one method in28.793seconds at the single-notification guard. Two notifications alone do not establish two writers. The method did not inspect the copied text and did not restore the clipboard; the old failure and unknown retained value remain unchanged.
+
+The AndroidTest now treats notification count as bounded diagnostics. Only after the original empty-before-touch fence and actual SDK gesture may a fresh plain-text description epoch be admitted. Timestamp, label hash, MIME types, styling and supported classification transitions must agree across callbacks, direct checkpoints and the returned payload's own description before item/text access. Changed or unavailable metadata remains a refusal. The original447..603 selection,156-byte SHA and real system clipboard assertion stay mandatory. A uniquely matching frozen task-marker substring can establish cleanup-only ownership even if the exact-range assertion fails; it cannot make that assertion pass.
+
+Cleanup rechecks the same epoch, payload description and known original slice before its single clear. It separately records immediate emptiness and focused metadata-only observations before and after removing its own listener. Late nonempty/new-epoch observations, unknown or inconsistent presence, lost focus, overflow, unknown clear result or failed close never become restoration success. The original exception survives cleanup and diagnostic errors. Existing8538 clipboard data is neither read nor cleared by this change. Production App/UI, iOS and EasyWork are unchanged. Pure JVM checks, formal Android typing and a future real Native result remain separate under the authoritative plan.
+
+The original60-vector auxiliary output is preserved with its known limitation: four payload rejection vectors and the unknown-clear precondition could treat their own assertion failures as expected rejection. It is not complete boundary evidence. Corrected vectors and deliberately unsafe mutation rejection must be associated with their actual new source SHA and raw results; no prior failure is rewritten.
+
+### 2026-11-13 Clipboard metadata-only diagnosis (source only)
+
+`ClipboardMetadataReadOnlyTest` is a separately leased AndroidTest diagnostic using the unchanged signed installation, default Application and a single declared blank `ComponentActivity`. It combines foreground/focus/keyguard, own active APPLICATION window, AppOp observations and two consistent public presence/description snapshots. Target API33 `unsafeCheck` alone is not sufficient evidence. It never calls a Clipboard payload/item/text/label getter, writes or clears clipboard data, opens product Main/Session or authorizes profile/grant/model actions. Missing or inconsistent metadata, observed changes, failed listener removal or failed scenario close stay unknown. The diagnostic does not verify the original156-byte Copy or restore the retained8538 clip. Compilation and any future actual method result remain separate; production App/UI, iOS and EasyWork are unchanged.
+
+2026-11-13 corrected auxiliary evidence: private probe `58404862943faacac6b4d44161aebfe95a6ef21df76b94a50745260a56b7e7f3` independently passes the original60 vectors on the actual guard. The old probe still falsely reports60 under the combined unsafe payload mutation; the corrected combined mutation, four individual payload mutations and reversed unknown-clear precondition each fail with exit1 and the exact expected assertion marker. The original swallowed-assertion outputs/failures remain preserved and are not complete boundary proof. Test-only mutants are excluded from formal source/APK. This is auxiliary sensitivity evidence, not actual clipboard/Native/DEV acceptance.
+
+<a id="q02-codex-android-20261113-c4e9d1f7"></a>
+
+### 2026-11-13 Q02 Codex / Android 实体生产卡片实际验收
+
+本次通过并已释放执行权：run `c4e9d1f7-9d28-43d0-8ab6-bc8c65b8dfce`，对应 F18/F19/F20、UI05/UI06。范围为 Android API 33／MIUI、中文竖屏、全新任务隔离资料及真实生产 Session/provider/卡片；nativeRuntime=false 未装配的系统集成、ordinary 主安装和原 grant 恢复不在本例。该例复用既有真实 Q03 父／child 的完成结果，独立桌面再次核原父 owner 和同一结果；0 新增模型、child、queue、stop，不把 Q03 原联合 Native 失败改写通过，也未新增当前 child owner 或进行中增长／自然迟到证明。
+
+指纹为 Native 源 `571c0e83be8ea0ccab83e8feda2af12ca5bcc6f3`，runner `fc80ea1f25d07e767a773038d3181b9019687ce013a5de833e7bb13a5210dc94`，App `06d34c3735e0f561dc2c8d82b0e2075dc5a3a30db1a0a04b03172d6abad80b99`，Host Node 源 `249535628b0061a2d69ebd8558c7165e79175b72`。文档候选不代表重新构建这些包；代码未合主线、未发布。
+
+原方法 `MobileIsolatedSubagentReadLiveTest#newInstallationProductionCardExpandsAndRefreshesWithoutSendingInput` 的 raw JNI 为 `[1,0]`、`OK (1 test)`，29.714 秒，1 方法／0 失败。完整生产卡片折叠、展开、再次读取及刷新后，Provider 前后保持同一完整 target／epoch／父子／卡片及 8225 字节全文 `ad1f9840677646cb199507af8d98786bfba700d0a13461255b81a287253e6573`；各次 wire 来源摘要分别匹配实际 history，游标正常推进，不要求两次 sourceFileSha256 相等，也不补造缺失版本。独立桌面原 owner 证明与历史结果分列核对，不用历史可读冒充 runtime 可控。
+
+实体 SDK 滚动的 16 帧覆盖实际 302 布局行；原生长按、跨行手柄拖动和已核本 App 浮动工具栏的真实 Copy 得到 UTF-16 `[447,603)`、两行／156 UTF-8 字节，SHA-256 为 `cd4394c4d5011b3fcc572705b7c7e638fe480a7a558ae1cd54de8ee33b7b6972`。菜单 Back、同父聊天搜索页往返（搜索输入 0）保留同一展开正文与视口，锚点偏移不超过 2 px。本例不增加 F24 的窗口重建、跨聊天恢复或返回最新覆盖。
+
+剪贴板用例从真实空基线开始；两次 Copy 通知保持同 epoch／合法 classification，第三次通知属于本用例清理。精确内容匹配与可清理所有权分别核验，只清本例已证实的值；即刻、移除 observer 前后均有焦点且读回为空，observer 已移除，restoration=true。这是验收收尾，不改变产品正常复制行为。旧 `8538216e` 的单通知守卫失败／恢复未知与旧 `7adac`／`084b`／Q03 失败均保留，不以本次成功追认；`7ec` 仅完成无派发诊断的关闭，不能计产品功能通过。MIUI 不支持的旧 instrumentation 查询所报“空”也不追认，M110 的 supported processes/pidof 只证明各自新采样时的状态。
+
+具名 MIUI 临时启动前置与最终恢复分别留证：仅本独立包的 `10021` 临时 ignore→allow，结束后完整 AppOps 模式与原值一致，`10021` 和 `RUN_ANY_IN_BACKGROUND` 两项独立读回均为 ignore，supported processes/pidof 重新解析为空。总控核 `lease-release` 摘要 `6efd2492` 的 159 原件与准确瞬态清理；执行权已释放。保留本例 9 份密文资料／关闭的 writer 与 own alias／inactive own grant，待独占授权域正常退役；没有单项 revoke 接口，不称单设备授权已撤销。总控另核当前 11 条 binding 中既有 10 条原字节与顺序连续，未写入原状态。
+
+证据标识为本 run 的 `instrumentation.txt`、87 份 Native 原件及索引、`provider-before`／`provider-after`、`original-owner.json`，以及 `r2-c4e9-q02-native-root-review`、`r2-c4e9-q02-final-release-root-review`、`r2-c4e9-q02-bindings-root-review`；原正文、图片／AX及凭据仅在受保护证据保存。F18/F19/F20 仍按适用子场景记局部通过，iOS／EasyWork／其他平台和完整界面门槛不外推，不改变整 F 统计或暂停范围。当前结论见[唯一权威计划 M109–M111](../plans/android-ios-alignment-20261107/progress.md)；本记录不授予 Q04 或任何新模型操作执行权。
+
+<a id="q04-existing-owned-remaining-contract-20261113"></a>
+
+### 2026-11-13 Q04：role 等待修正与 existing-owned 有限续验合同
+
+本段登记源码／验收约束，余四个冻结正文 slot 尚未执行，不新增通过。原 Q04/3c8688a7 方法 197.422 秒失败（JNI `[1,-2]`，等待原工具阶段超时）保留；独立桌面已确认首条 origin 实际提交并完成。验收器曾错误要求 `kind=tool`，而实际记录为 `role=tool`／`kind=commandExecution`；后续等待修正须保持同一当前 Turn/Run、`status=inProgress`、原时间窗和全部业务断言。原 origin 的一条 `exec_command` 与一次同 session 的 `write_stdin` 仅证明该原输入，不代替未执行的 `stopOrigin` 终态证据。
+
+- S07／UI07（F37/F38/F39）：仅消费原预算剩余四份正文，不重发已完成 origin、不增加 child；只有 `stopOrigin` 可作最后一个新增 Turn。取消／提升只指向原队列记录，追加和停止锚同一准确运行目标；独立未发送草稿不得被停止动作发送或清空。
+- S10 及 S11 的原记录保护子边界／UI04/UI10（F43/F44/F61）：新具名租约仅允许 test-only 重开准确原隔离 profile。原完整目标、资料根、身份／alias／grant、原意图／正文 SHA／操作 ID 和既有回执先核；任一缺失、不匹配或未知在写前拒绝，不回落新建资料、重配对／新 grant、清 claim、手改账本或重放原输入。未知结果只查原 ID，不从验收器失败推断产品未执行。
+- 保留原工具起点、严格 40 秒准入与 Native／外层 45 秒围栏、30 秒证明及租约限制；恢复和 proof 刷新不重置它们。最终仍须原完整 `stopOrigin` 终态的单条有界命令和当前 Q04 零 child，排除既有 Q03／child；正文、操作和目标冲突或终态不全仍未知。
+- 最终源码清单／SHA、typing、App/runner、准入反例和实际续验分别冻结；原失败及原 claim 不改写，新 lease 未签不得运行。普通安装／原用户 grant、S03 新建及 S13 桥接恢复不在该 test-only 入口证明范围；此 test-only 入口不改 iOS 代码；同一 Host 的生产影响见下节，EasyWork 与各端真实 UI/控制分别验收。仅原生客户端退出码、HTTP 成功或源码辅助均不能关闭 Q04 或整项 F。
+
+<a id="q04-queue-expected-turn-fence-20261113"></a>
+
+### 2026-11-13 F37 原队列立即执行：expectedTurnId 移除后围栏
+
+这是独立的生产 Adapter/Host 修复；关联 F37（原队列立即执行）、F38（同 Turn）、F43/F44（原意图／未知查询），以及 UI07/UI10、S07/S10/S11 的对应子边界。显式 expectedTurnId 的原 Turn 在队列移除／follow 期间结束为 null 或替换时，追加前拒绝且不发新输入、不转 next-turn；wire 保持已捕获 expected Turn。已经确认接受的原回执只核原结果；已移除但未确认的 uncertain 原 ID 再调用只核对，不重复 remove 或投递。省略 expectedTurnId 的原普通行为不变。
+
+必要反例分别覆盖移除期间完成／替换 Turn、队列项已移除、未新增执行命令、uncertain 原 ID 再核对不再次移除／发送；还需确认原普通省略条件行为保留。当前 W0 源码变更及 smoke fixture 不等于辅助已通过；W3 有限 fixture/构建、最终源及包指纹、部署到准确专属 Host、原生 UI 与原桌面独立核对须各自有真实回执。当前 Node249 未部署，不沿用0ee4/旧进程验收宣称新修复通过。
+
+iOS 与 Android 依赖同一 Codex Host 的真实命令通道，两端本地代码未改但同受此生产前置条件约束；EasyWork 对应路径本次未改且仍需独立实测。本项不修正或追认旧3c的结果：其原失败发生在 queue 前，未构成本竞态证据。原197.422秒失败、已完成origin和remaining-only四slot预算保持，不能为验证本修复重发已消费输入或自行增加模型预算。F39/F61 不因该 Host 修复新增普通停止恢复／首条投递通过。
+
+本阶段已回的有限辅助：Root/W3 核旧 N249 dist 逐字匹配，旧源红例 9.314 秒在移除期间自然完成边界报 `Missing expected rejection`；修复后的正式 package build 1.459 秒通过，完整最终 smoke green 尚未回齐。红例和包构建分别留证，不把未回完整 green、未部署或未执行写成通过，也不据此归因原3c。
+
+<a id="q04-existing-owned-v2-source-20261113"></a>
+
+### 2026-11-13 Q04 existing-owned：Root v2 来源与执行边界
+
+此前 v2 阶段四源按 `root-q04-native-source-adoption-v2` 冻结，Native 为8b2c7f82，另三源为2c0256f9／1d26ac88／f11ce30e，完整 SHA 见产品 manifest 两条独立 test-only change。role 等待只修验收器对真实 tool 的识别；existing-owned 接线只服务原 profile 的剩余四 slot。普通构造不安装 owned policy；仅内部 Root 准入后工厂要求原 namespace/key、准确资料所有权／目标及写前 allowlist，不能创建替代身份、复制原资料、重配对或刷新 grant。源审／正式 typing／双包和真实 Native 分开记录，尚未新增实际剩余方法通过。
+
+v2 必须验证当前 authority 的 `originalLeaseReleaseRef` 和 existing-profile 独立来源；existing-profile 的 `rootDecisionSha256` 指向同一历史不可变 release，不能反向引用当前 authority 形成 SHA 循环。旧 release 须匹配原 storage-owner run、oldLeaseReleased=true、newQ04Inputs=1、continuationExecutionAuthorized=false。该 release 只证明原执行已释放，当前 source adoption 也为未授权执行；新的具名权威／设备租约与既有剩余预算仍须另行准入，不能由源码冻结或旧回执推导获得。
+
+原3c/197.422秒失败、已消费 origin、旧 claim/原 ID 及余四 slot/至多最后一个 stopOrigin Turn、0新 child、40/45秒和原时钟边界保持。普通安装／原 grant 的通用恢复、iOS、EasyWork、完整 S11/S13 均不因该 test-only factory 通过。Host 生产围栏的后续有限辅助由权威计划 M135 另核：正式 package build1.459秒、完整IPC smoke25.846秒均exit0；此前红例9.314秒及替换分支当时未执行的事实保留。这些辅助不表示当前运行的旧 Node249已部署修复，也不归因未到queue的原3c，真实 remaining 仍未执行。
+
+<a id="q04-original-proof-write-fence-v3-20261113"></a>
+
+### 2026-11-13 Q04 Root v3：同步写前复核原 proof／lease／tool fence
+
+当前最终四源为2c0256f9／f01575ba／f11ce30e／0cd947f1，完整 SHA 由 v3 独立 change 记录。原 v2 记录和 e3bd 的 generate／parity通过仍只绑定2c0256f9／1d26ac88／f11ce30e／8b2c7f82，不能沿用为 v3通过；v3须按当前源码重新生成与检查。当前 source adoption 未授权真实执行。
+
+每slot原proof只登记一次；首次新reply（含ready）和新转submitting的同步journal持久化前，必须调用该slot原businessBoundary：原proof30秒、当前lease、相同完整目标／Turn、原工具45秒都有效。只在点击前核对不足以覆盖后续Flow等待；等待超窗拒绝写入，不替换旧proof，不重置工具start，也不扩大40秒准入／45秒最终围栏或四slot／剩余一Turn预算。v2历史release与当前authority/courier的无环引用合同保持不变。
+
+当前三项无模型Native辅助方法为 `q04OwnedPolicyNoopAndRejectedExtensions`、`q04JournalRejectsNextTurnFallbackBeforeSubmission`、`q04JournalRechecksOriginalClockBeforeSubmitting`；最后一项声明在ready44秒后以同一原Clock到46秒时拒绝submitting，尚未实际运行。源码声明、文档parity、正式typing／双包和真实Native均单列，不把任何辅助结果补成旧197.422秒失败或remaining通过。原claim/已完成origin/原ID保留，普通安装恢复、iOS、EasyWork与新Host部署仍未新增验收。
+
+<a id="q04-existing-origin-startup-v4-20261113"></a>
+
+### 2026-11-13 Q04 v4：原已完成记录的既有启动等待
+
+当前 Native `7994abb7` 仅将原old.id记录到位纳入`launchExistingQ04`的既有首个30秒wait，与restoring/loading/historyLoading结束共同等待；随后原唯一记录／intent SHA断言保持。不增加第二个新窗口、模型输入或slot，不刷新原proof、lease、tool start或40/45秒围栏。其余三源与Node两源未变，v3原件及检查保持原指纹；本条不追认为旧197.422秒失败的根因或真实remaining通过。
+
+Root已确认旧完整pnpm check728.424秒／96段退出0，后续仅按未变Node及边界场景的原源码指纹匹配复用；本轮v4文档／parity重测不称全整门重跑。W4的新v4 runner及同三项无模型Nativeaux仍需Root核实际回执，App b5b未变只作其匹配包事实，非Native通过。最终plan、Node gate与Nativeaux未由Root统一核定前不提交，也不运行原remaining／重放origin。
+
+<a id="q04-pre-native-explicit-recovery-20261114"></a>
+
+### 2026-11-14 Q04：同reservation已证零的首次Native前显式恢复（v5源码已采用，未实机）
+
+本批7078的controller启动源守卫因active/history来源角色混用拒绝历史路径，exit1且日志pump已join，尚未到controller-start／业务循环及首次Native Popen，无JNI。此项记为验收基础设施启动失败，不能宣称产品Native实际失败或通过。Root正式零事实proof（`r2-root-confirmed-zero-before-first-native`，SHA ac7b10d0）核234原件：完整actor目录／原stack与执行顺序、独立准确QA当前owner两completed及原7ecc完成、Host持久回执和官方JSONL空时间窗，共同确认本批零新正文／Turn／child／控制；不是只采信nativeLaunchAttempted=false。
+
+原833B reservation、旧a2f authority、原plan／claim永久保留；once继续引用旧authority，不能为了匹配新fresh改写旧哈希。已reserved child、controller启动、9JSON暂存后回收及保留owner锁是实际非零副作用。零事实proof自身不授恢复、fresh或执行权，原Root决定到期必须保持到期。
+
+v5显式恢复协议只允许同一reservation、准确完整target／QA／原资料与原ID；新的独立RootRecoveryAuthority须显式链接原reservation／旧authority和plan、Root已核known-zero事实及新fresh。新fresh仍核原runtime/environment observedAt30秒，不以审核结束时刻刷新起点；Native绑定必须是Root最终采用的新单文件来源与实际runner，不能套用旧runner或旧Native来源。恢复必须同时指定 `w3ConfirmedPreNativeRecovery=1` 和 authority kind `root-q04-confirmed-pre-native-recovery-authority-v1`，二者均不能替代Root授权；不得隐式沿用普通分支或将旧once重新绑定到新authority。
+
+反例必须提前拒绝错reservation／target／原body、旧proof到期或新旧来源不匹配；known-zero缺失／未知、任何Native Popen或任何已提交输入均退出此分支，只查原ID，不换run重放、不删建claim、不重配对或增加模型预算。原五body、已消费origin、余四slot、最后一新增Turn／0新child、40秒process／45秒terminal／原session最多一次poll、同步原proof／lease／工具时钟保护保持，不能因“还有预算”推定未执行。
+
+开发／源码采用、离线辅助、正式typing及v5 runner、本次实际Native和桌面独核、提交与部署分别留证。Root已采用v5单文件Native源码 `fa1c66e3`（完整SHA由manifest登记），当前仍未实机／未验收，本条不提供拟真通过；原3c的197.422秒Native失败及本批启动失败保留，F计数不变。仅AndroidTest验收设施变化，普通branch、App b5b和三生产源不动；iOS产品逻辑、A6暂停、EasyWork和普通安装恢复的独立门槛均不变。
+
+v5准入由 `Q04PreNativeRecoveryAdmission` 在原profile装配前核验：`preNativeRecovery.originalReservationRef`／`originalAuthorityRef`／`originalPlanRef`绑定原833B once、旧a2f授权和原plan；once内仍引用旧授权，旧授权须已过期，新Root授权单独核当前窗口与fresh。`zeroProofRef`与原始 `zeroProofJson` 的字节数／SHA和严格整数零计数匹配，原proof的execution/recovery/fresh均false。独立 `currentAdmission` 须匹配fresh Ref及原observedAt、准确target／QA、原两completed／旧child／idle／0pending／known1／unreviewed0／12bindings，并核无首个Native intent/Popen、无余4回执／新控制Turn、原profile及绑定连续、owner锁复用与原始Ref；旧事实不能单独充当新fresh。
+
+原oldPlan65字段仅11项允许变化：`startsAtEpochMs`、`expiresAtEpochMs`、`startsAt`、`expiresAt`、`rootAuthoritySha256`、`runnerSha256`、`nativeManifestRef`、`desktopExecutableSha256`、`desktopRuntimeFingerprint`、`localMappingSha256`、`productDirectoryProofSha256`。余54字段集合及值冻结，未知新增／缺失字段拒绝；run／lease不变，settings／nativeSpeedSelection／controlHostId与原预算核，不从缺少这些键的旧authority猜值。
+
+恢复courier只允许11份JSON：原 `plan.json`、`local-mapping.json`、`product-directory-proof.json`、`root-authority.json`、`original-budget.json`、`native-binding.json`、`original-lease-release.json`、`continuation-once.json`、`existing-profile.json` 加 `original-root-authority.json`、`original-plan.json`。不得带管理key、Host配置或pair输入。普通branch不改，App b5b及三生产Native源不变；当前实际安装runner仍a5be，v5构建中，新 `q04PreNativeRecoveryAdmissionStrictZeroAndOriginalReferences` 和helper尚未实机。声明的否例不等于实际通过；正式typing／包／新方法／真实remaining按新指纹分别留证。旧7994来源只使用101776 Git及Root保留树外快照，不把已改为fa1c的原W0路径当作旧源未变。
+
+<a id="q04-known-native-failure-and-readonly-v6-20261114"></a>
+
+### 2026-11-14 Q04 v6：已知Native失败后继及独立只读profile准入
+
+共同关联F37/F38/F39/F43/F44/F61、UI07/UI10/UI03和S07/S10/S11；仅Android DEV验收基础设施，不新增场景通过或75F状态。Root adoption5b35533b冻结debug `Q04ExistingOwnedProfile` 0304d5d0、完整Native5830710d（片段33466750）和独立readonly52a42c75，完整SHA由manifest两条独立change登记；另两源2c0256f9／f11ce30e未变。源码采用时正式Gradle未完／新包未交付，实装仍b5b/a238；新增方法／双包／A/B和真实remaining不得由源审或旧aux转签。
+
+M160/M161实际7078 JNI[1,-2]／final-1／Time1.5、1方法1失败、Native Popen1；directory57←admit107的原失败与Root ef67a1ae事实保持。本批只证余四正文／新Turn／child／queue-stop业务0，非零副作用包括11JSON、原clock取证及两个永久新标记；旧3575B/ac7证明只保留其首次Native前时点。原3c/197.422秒失败、833B once／旧authority／plan／claim、1131B recovery-intent和2026B首Native marker不可改写或删建，原恢复器不得重试。
+
+新的 `Q04KnownNativeFailureRecoveryAdmission` 必须同时具备 `w3KnownNativeFailedBeforeBusiness=1` 与 `root-q04-known-native-failed-before-business-authority-v1`；`canonical-admission-successor-v1`／attempt2只作新显式准入，不由flag、预算或源码授执行。拒绝preNativeRecovery混入；严格核Root失败事实Popen1／methods1／failures1／unknown0、准确JNI和原失效点、原首次恢复／结果／marker／释放Ref与原claim／once／旧授权／plan。first release必须确已释放且不授后继执行；Unknown、额外Popen／输入或任何不匹配只查原ID。
+
+原plan65字段仅在原11项元数据之外，增加经Root单独审查的canonical修复 `appSha256` 为第12项例外；余53项集合和值、13项稳定authority、原五正文／target／settings／显式speed／controlHostId冻结。App change须核旧／新App、当前／失败Native来源、包／UID／API／安装AndroidID与同signer及具名修复来源。新currentAdmission承认首marker存在，禁止伪造noFirstNativeIntent/noNativePopen；仍核新鲜源原observedAt30秒、原两completed／旧child／0pending／known1／unreviewed0及原资料／12binding／37mode连续。最后一新增Turn／0child／40秒process／45秒terminal／一次poll和同步原proof／lease／tool围栏不刷新。原pre-first／ordinary分支保持，仅新kind有此AppSHA例外。新增 `q04KnownNativeFailureAdmissionCountsAndReviewedAppFence` 是无模型guard辅助方法，声明或离线向量不等于实际Native通过。
+
+独立 `Q04ExistingOwnedProfileReadOnlyTest#inspectExistingOwnedProfileAdmissionAndCloseWithoutActivityOrWrites` 不进入上述业务恢复流程。须独立inspectionRun、Root只读scope和 `q04-existing-owned-profile-readonly-admission-v1` lease，execution/model/newGrant/pairing皆false；输入只读失败fact／原profile／原plan／runtime-source-binding等固定Ref，实际App／runner长度和SHA、签名、UID／API／AndroidID、完整target／QA必须匹配。时钟域为 `android-device-elapsed-realtime-ms`，设备elapsed notBefore≤now<expires、不倒退、总长≤60000ms，读前及关闭后复核；方法末尾另要求实际耗时<30000ms，不借业务fresh30秒窗口续期。旧业务Permit保持0L无效，不以wall clock、model-ready或controller-ready字段延长或授权。
+
+只读真实行为应先记录Context.filesDir与可信canonical根，以及profile／acceptance／lock目录的absolute==canonical、NOFOLLOW、dev／inode、uid／mode谓词，诊断不替代生产admit断言；随后实际admit→原alias/key已有性核验→inspect，持锁期间同目标重入拒绝，finally release；已关闭对象拒绝再次inspect，释放后原空锁可重获，原11份密文stat／SHA前后不变。只访问既有key，不创建／删除alias；不装配普通Profile或Activity／Session，不配对／新grant，不发模型／队列／stop，不触Clipboard，不写原资料或任一claim／Native永久marker。结果仅用有界instrumentation诊断输出，不把读操作包装成业务授权。
+
+`sendStatus(73)` 只携有界 `ownedProfileDirectoryAdmissionBefore`／`ownedProfileAdmissionFailure`／`ownedProfileReadOnlyAdmission`，不是JUnit完成0或通过。每次均核原STATUS_CODE序列、准确method、final／失败栈、实际关闭和lease；诊断丢失／错误或原异常必须保留，不能以73、进程exit0或单条success字段代替原方法通过。
+
+A/B属于未来独立只读设备诊断：旧b5b App／原f015 helper为A，新canonical修复App／0304 helper为B；两者都要用精确实际runner/source binding、独立设备elapsed lease与原资料前后证据。A的旧admit失败按真实失败保存，不能改预期算pass；B须实际证明路径谓词、原key／inspect／锁释放和11bin不变，异常不能跳过。只允许按Root具名设备租约正常保资料安装，不由文档授安装或执行；不得为了B通过而更改原资料、key、权限或业务预算。即使B只读通过，也不替代真实remaining控制、ordinary安装恢复、iOS／EasyWork独立门槛；唯一实物根因与key可用性仍待这些真实原件核定。A6继续暂停。
+
+<a id="q04-existing-lock-no-create-v7-20261114"></a>
+
+### 2026-11-14 Q04 V7：原锁单FD、非创建及open前reserve
+
+Root adoption97d55dcc冻结debug helper `e74a5cf1`（完整SHA见本次manifest change）；Native5830710d／readonly52a42c75／另两源不变。V6/0304与其检查／正式构建原件保留为历史，未安装V6包被替代不得上机；V7 sourceOnly、正式包／安装／实际A/B待证，实装仍b5b/a238。F37/F38/F39/F43/F44/F61及75F状态不变；原6881B失败事实、833B／1131B／2026B三记录和原3c失败保留，不授第二Native执行。
+
+原锁只以 `Os.open(O_RDWR|O_NOFOLLOW)` 打开，不能带O_CREAT/O_TRUNC；随后fstat与路径lstat均核原inode/dev、regular、uid、0600、size0、nlink1及原profile设备。单一原FD由私有Closeable持有，FileOutputStream(FileDescriptor)不重开／截断且按Android契约不拥有底层FD；它只提供writable channel，真实tryLock仍不可省略。关闭stream/channel后finally Os.close原FD，不能只关闭借用stream，也不混入dup/隐藏isOwner构造或反射。
+
+同进程以已验证的规范锁路径在额外open前同步reserve：未取得reserve的重入直接抛原OverlappingFileLockException，不触原holder的句柄或reserve。取得者在open／构造／fstat／tryLock／后续inventory-key失败及最终close时负责自己的资源；reserve一直保留到stream/channel及原FD关闭流程完成，不能在旧FD仍可能关闭时让新holder进来。该门保护同进程额外FD行为，跨进程仍靠真实OS锁；不能以JavaFileLock.isValid或同进程Overlap alone证明内核排他。清理异常须判失败／inconclusive，不可据异常路径重开或重试。
+
+此变更修补条件性源码风险：旧RandomAccessFile rw规范可CREATE；另一个同文件FD关闭在某些系统可释放本进程原锁。当前没有实体证据显示旧风险已发生，不能把它归因为directory57←admit107或宣称唯一物理根因。可信Context根的canonical修复及对子路径symlink／权限／device检查不降；原key/密文/alias不创建删除。
+
+V7后续只读仍须原device-elapsed lease／实际包和来源／73与JNI分离／真实admit-inspect-release与11bin核对；A与B分别留原始异常和实际关闭证据。旧b5b A将调用旧helper，不能由V7新App源审保证其安全；现readonly方法在admit成功后会再次admit以核重入，故旧A若可能意外成功，必须先由Root收窄该旧额外open路径，不能仅让外层最终结果判inconclusive。未经新具名安全准入不执行A/B，不能为模拟丢锁删除原writer.lock或原资料。任何只读成功也不替代remaining业务、ordinary恢复、iOS／EasyWork或A6门槛。
+
+<a id="q04-readonly-old-admission-fence-v8-20261114"></a>
+
+### 2026-11-14 Q04 V8：readonly旧A拒绝前置与B原断言
+
+Root adoption f9e31e31冻结readonly `a5922622`／27245B（完整SHA见manifest本次change），F37/F38/F39/F43/F44/F61及UI07/UI10/UI03、S07/S10/S11共同边界沿用。runtime-source-binding新增admissionExpectation并与实际App／runner／源／设备只读lease复合绑定；无新业务授权。
+
+- A `known-old-directory-rejection-only`：准确旧f015/b5b App。原73目录观测须分别正面证明acceptanceParent与remainingParent的oldRawContext abs!=canonical、非symlink、dir／当前UID／0700；各自current abs==canonical／非symlink，old canonical==current absolute且device相同。缺失／错误／不符在旧admit前失败，只能记前置失败/inconclusive；实际调用后仍须原JNI／生产帧确认旧拒绝，不能仅用诊断预测归因。若旧admit意外返回，立即release并抛明确inconclusive，绝不inspect、重入或新增alias／模型；释放异常保留，不能用最终红／绿忽略清理。
+- B `current-profile-read-and-lock`：复用实际V7 debug e74a／App2e234a35，保留其原V7输入与构建来源；真实admit／decode／锁／重入拒绝／release／closed拒绝／重获和11bin保持的原断言不变，V7单FD/no-create/先reserve仍必需。新runner另绑V8 a592来源与构建，最终manifest待Root独核，暂不填完整runnerSHA，不称App由新test构建。
+
+本次仅源码／来源合同：V7 App已构建，上文V6/V7未构建与待收窄表述按原时点保留；当前A/B和第二business Native尚未执行。原6881B失败事实、Popen1／业务0、833B／1131B／2026B永久记录、197秒失败／未知、原elapsed lease／预算、73三key与JNI分离不变。前置谓词也不证明旧admit自身意外成功后零读取。75F状态／统计保持，ordinary、iOS产品规则、A6暂停和EasyWork均不据此升通过；唯一当前状态仍以权威计划为准。
+
+<a id="q04-readonly-ab-native-result-20261114"></a>
+
+### 2026-11-14 Q04 readonly A红与B真机通过：仅原资料与锁准入门槛
+
+关联F37/F38/F39/F43/F44/F61及既有UI07/UI10/UI03、S07/S10/S11；仅登记Android debug/androidTest的原资料读取与锁准入，不是产品控制或页面交互通过。来源checkpoint为 `7edf6a06`：A仍是旧f015／b5b App，B是实际V7 e74a／App `2e234a35`；两者使用同一V8 a592／runner `2ca74ddd`。App保留自己的V7输入与构建证明，不能归为新readonly测试源码构建；五份Native完整SHA关联于manifest本次change。
+
+- A实际执行1方法1失败，原JNI `[1,73,73,-2]`／final `-1`保留。Root以原JNI、旧生产directory/admit帧及9个实际目录的谓词适用范围独立确认 `exact-old-directory-denial`；两个oldRawContext父路径的唯一目录拒绝与规范路径差异吻合。原driver的inconclusive、原传输失败及更早Native失败均不改写为通过；系统base目录不套用生产子目录的0700谓词。
+- B实际固定只读方法1次、0fail，原JNI `[1,73,73,0]`／final `-1`／`OK (1 test)`，73仍只是诊断。真实生产admit／inspect／release成功；原KeyStore key可用并经生产解码路径读取原11份密文，保护3记录和原已completed操作核对通过。持锁重入拒绝、release后重新取得原锁并释放、closed对象拒绝inspect逐项通过；原空锁、11份资料摘要及前后资源snapshot完全相等。五份临时只读输入已精确归档／回收，不创建key／profile／grant、不写业务marker。
+
+独立原件basenames为 `actual-readonly-A-root-independent-review.json`（f3286275）与 `actual-readonly-B-root-independent-review.json`（e7713aea）；本地完整原JNI、实际包／签名、原资料及关闭回执分别保留。B通过仅证明这个既有profile在已冻结App／runner上的无模型准入与锁闭环，不推断普通profile恢复、跨进程排他或所有故障路径通过。
+
+本次其余四份业务控制执行仍0，原剩余1个Origin／0新child及30／40／45秒围栏不变，不授执行、不把只读通过换成模型／队列／Stop通过。F级实现／验证字段、75F统计和整F关闭0保持；iOS产品规则无改动、A6继续暂停，EasyWork认证与物理iPhone仍各自阻塞。上文V6/V7/V8采用时的未构建／未执行描述保留其原时点，当前状态只由权威计划维护。
+
+### 2026-11-14 当前profile cache图与EasyWork额度准入（仅测试源码）
+
+B实际只读通过的精确范围更正：11项为密文完整性库存，`productionDecodePassed`来自保护3记录及原operation journal的生产解密，不代表全11明文内容认证。原JNI/原结果不改写。第二业务Native在桌面证明门槛失败；原四控制未进入，不能计通过。
+
+新`inspectCurrentOwnedCacheGraphWithoutActivityOrWrites`使用独立kind与当前inventory，原manifest仅允许inventory及inventorySourceRef变化。固定原空writer lock、原key、目标/线程/包/签名/UID和有限device-elapsed租约；permit elapsed为0，禁止Profile/Session/Activity/writer。`Q04CurrentOwnedCacheGraph`仅从受审metadata及当前history index派生分片名，经ExistingReader和生产NativeHistoryCache.decode认证；回执只输出逻辑名到密文摘要、结构/计数，不导出正文或凭据。当前新增分片认证与已删除旧随机名UNKNOWN分别登记。finally复核密文/锁，释放、关闭拒读与重获独立核验。方法已准备，编译/实机结果仍待。
+
+F73原生产footer/dialog/手动刷新测试增加EasyWork分支：完整受审target、桌面公钥摘要、TLS证书及LAN offer必须匹配，仍由原Q02新隔离工厂建立一次真实绑定，生产usage Store/Provider/UI均不替换；不选择对话、不发模型。现只有源码准入补齐，Android×EasyWork真实来源/精确指标/刷新/界面和其收尾仍待执行。桌面普通SSO成功、Host/TLS通过与手机通过分列。iOS不受测试源码影响，原物理环境与A6暂停保持；唯一当前状态以权威计划为准。
+
+### 2026-11-14 当前cache图实际Native结果
+
+App `2e234a35` / runner `ae2699b7` 的独立只读方法真实1/1通过，JNI `[1,73,0]`、final `-1`、方法658ms。11项398796B密文保持；生产认证读取metadata/index/当前分片3项，解码12消息，新增分片确属当前认证index。保护3及原journal由原inspect另核，原key/空锁、拒重入/释放重获/关闭拒读通过。已删旧随机名仍null，1未动UNKNOWN保留；不称全部11内容解密或历史来源关闭。系统安装重建3个idle Provider PID，按真实组件/权限/内容后置独核再单独批准执行，未重装或重跑；五个输入真实读回后已清理，原资料/绑定/marker保持。证据basenames `execution-final.json`（bfdd29f7）与`root-independent-native-review-v2.json`（9652117e）。四控制、普通恢复及整F仍开放。
+
+F73后续来源采用正式无参getter实际ConnectionPort/owner快照加精确生产reader离线预期投影，明确不是rawHTTP或手机usage/read。Native新增来源kind及状态/label两个输入核验，绑定完整账户、公钥/TLS及reader来源，保留partial/not-returned，usage响应4机器字段与完整grant目标分开。原HTTP Codex分支保持，EasyWork不回退HTTP200；新source必须实际fresh采集，不能修改时间或延长60秒指标有效期。正式新runner和实际手机结果另验。
+
+2026-11-14 M184：实际新鲜主preload来源经精确生产reader离线期望与真实KMP投影通过；Android×EasyWork唯一Native在真实配对后因debug验收入口误将哈希clientId比作hostId失败，额度页尚未通过。两处入口已按Provider真实ID规则修复，完整target断言保持，生产main/iOS与UI设计不变；新App/runner构建及复验另记。唯一新绑定已正常撤销并独立核persisted revoked，原失败/closed profile与key保留待具名清理，当前状态只见权威计划M184/Q12。
+
+2026-11-14 M186–M187：Android×EasyWork当前真实DEV格已通过：App ce27/runner8d、中文竖屏字号1浅色，指定1方法12.569秒零失败；生产footer/详情/精确单余额/手动刷新/真实加载与新snapshot通过。Root独核3份实际投影与真实桌面来源/语义，实际查看3原PNG；真实partial/缺失指标不冒零。原M184入口失败保留，修复仅debug Provider clientId准入。唯一新绑定已正常一次撤销，旧墓碑保持；原资料/37-25模式/12bindings/5marker完整后置与六输入精确清理另据Root复核。此有限结果不关闭wire请求关联、普通安装/完整视口与双端Provider矩阵；iOS/A6状态不变，唯一当前状态仍见权威计划。
+
+2026-11-14 M188：已审采用两个androidTest专用清理源，仅限本任务两次新F73资料与根alias；原Q04和其他UUID拒绝。完整库存与树外归档、原closed证明、普通LAN唯一绑定撤销、独立进程退出及descriptor只读预检先过；signed allowedMode=query不能被参数升级delete，未知只查原once。只删除选定root key，公共API缺失观察不冒硬件全局擦除。17辅助/SDK编译已过，正式runner及真实query/delete/原资料后置尚未验，iOS和产品UI无变化。
+
+2026-11-14 F73清理检查点（M188后继）：测试源`c48c10c5`将实际0771的应用files基础目录单独按可信Android基础校验；本任务子目录0700、文件0600及descriptor边界保持，策略源`7c635c97`不变，旧`6ca86e74`记录保留。正式Gradle退出0/90.613秒，Root核28份引用、1168输入及原1166/非测试648不变；runner `f3db00eb`（9058108B、fc12签名）已唯一实装，App `ce27a87e`保持。安装后Root核80份引用、15份profile元数据/106密文摘要保持、P7连接0及无活动instrumentation。首轮只查记录`query-e6e3eb25`真实Native为`[1,73,0]`/final `-1`、1方法0失败/0.207秒：无删除intent、五文件及root alias仍在，DPoP和12个限定派生alias在公共API观察中缺失。证据为本任务私有build/install独核及该操作的原始Native输出；这是查询通过，该检查点的实际delete及其保护后置尚未验，不增加产品F73通过或改变iOS/A6状态。
+
+2026-11-14 F73首次有限删除：另签`delete-c7999454`仅处理首份新F73资料，真实Native为`[1,73,0]`/final `-1`、1方法0失败/0.365秒；signed mode/allowedMode均delete，intent已写、profile缺失且remaining为空，root/DPoP/12个限定派生alias在公共API观察中均缺失，completeAtPublicApiObservation为true。原十密文树外归档按原指纹保留。结果只证明该具名新profile及有限alias的清理，不证明硬件或所有未具名key擦除；第二份profile的query/delete及完整其他资料保护后置尚待Root独核，整体资源回收与产品F73均未因此关闭。
+
+2026-11-14 M189–M190有限清理收尾：第二份资料的`query-2bdb3a5b`真实1方法0失败/0.216秒，无删除intent、五文件/root alias保持；其后独立签发的`delete-e5208b67`真实1方法0失败/0.413秒，与首份delete均为`[1,73,0]`/final `-1`。Root独核`6c335f6e`确认仅两份新profile缺失、remaining为空，各root/DPoP/12个限定派生alias在公共API观察中缺失；硬件及全部未具名key擦除仍未证明。恢复前保护独核`db5acbbf`实际重读43份引用：其余13份profile/96密文/100文件4451245B、原Q04、37/25模式、12bindings/5markers与21份Native证据保持。24份signed staging输入与四个空目录已精确回收，26个归档member逐字节读回等于24原输入及两份65B SHA-newline once；两份once原stat/SHA继续保留，见`8d016375`。业务runner `8d5e420b`已单次正常恢复并实读核对，App `ce27a87e`保持；最终`0b6e366c`重读102份引用，确认两profile/staging仍缺失、其余保护保持。首次恢复后P7三连接导致保护false的原记录保留，随后同组件/UID自然换PID且连接归零；无force-stop、活动instrumentation或App writer。此为本任务测试资源有限回收闭环，未增加模型输入、普通安装/完整视口或整F73通过；唯一计划统计及iOS/A6保持。
+
+2026-11-14 关联更正：前四条F73清理sourceChange仅关联F73；F60属于Codex机器身份迁移，资源回收不扩展其验收。原`f43c70b4`提交、历史指纹与实际清理证据仍可读取，本次只纠正功能归属。
+
+2026-11-14 M191–M192/F49/F50：Q04 v2六源候选已采用，Root核22份来源引用及综合补丁`8b3b26d4`；旧`97d`候选的foreign scope拒写和foreign pending先发后拒存两项P1保留，旧候选未采用。新增显式ledger文件名与payload permit，在真实存储锁内读settled previous，保留foreign rows的canonical内容与原scopes，仅合并准确QA完整机器目标scope；pending read在HTTP前按完整目标+thread过滤、即发前重核，finally/newer扫描同过滤。普通存储helper仍返回原proposed scopes，predicate保持true；iOS、UI及KMP wire不变。新增11项生产方法组合辅助全部通过，三种删门mutant各被检出；旧63/3只保留原证据，不算本次复跑。正式Gradle 82任务含App/AndroidTest Kotlin实际执行，97.176秒退出0；Root核50份artifact/tool引用及1169份源码输入，原1168中1163不变、五变一增，输入图`6e6f3d80`。新App `8c42aa85`/67143603B、runner `a2eca189`/9058076B均由Root独立apksigner退出0/唯一fc12签名；两manifest不变，仅App classes4.dex与runner classes5.dex内容变化，真实App dex包含scope/dispatch guard。构建中间物已回收，见Root `c72a792e`；候选尚未安装，设备App `ce27a87e`/runner `8d5e420b`保持。KeyStore/加密/AtomicFile运行、真机、真实HTTP/Host控制及当前真实ledger schema兼容仍未验，不能推断真实越界回执已经发生。F49本机已读/F50未读保持部分实现及未验证，原业务Native失败、预算/marker/UNKNOWN和真实控制暂停保持，当前状态仅由唯一计划维护。
+
+2026-11-14 M195（F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：用户已明确批准独立QA产品验收例外，仅原四动作、剩余1 Origin/0新child，开发聊天Host禁投递保持。Root采用统一八源（adoption248de1cf，base c592dad0）：独立post-second-known-zero kind、固定新子目录、sealed Ref/原始UTF-8证据与单QA ledger typed permit；历史manifest六名及旧三kind准入保持。当前11份记录只读诊断逐项经实际生产validator，claim只按生产模板派生一个准确名称；ledger仅内存运行真实save serializer、foreign canonical守卫和pending读取，不装配Session/网络/writer。生产Ledger save编码体无行为抽取已与旧生产save逐字节比较，14辅助通过；Native20辅助及控制器98/25辅助分别保留来源，均不替代新完整构建、安装、真实只读Native及剩余控制。原两次业务失败、旧marker及已删旧名UNKNOWN保持；iOS/产品UI/KMP wire未变，A6暂停。当前状态仅由权威计划决定。
+
+<a id="q04-readonly-pass-and-business-failure-20261114"></a>
+
+2026-11-14 M198–M200（Android×Codex；F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：统一源码检查点e221c1db、App fe6f452e/runner a37445dd、唯一fc12签名。指定真实只读Native一次1方法0失败/3043ms，原JNI `[1,73,0]`/final `-1`，raw c26b5bd6；全11项原key/GCM/生产语义通过，当前生产claim按单一实际模板认证。实际ledger原save codec内存roundtrip、531个foreign rows canonical保留及QA-only内存delta通过，foreignscope0/pending0不能外推真实HTTP过滤或加密/AtomicFile写验收。旧已删6ff逻辑名仍UNKNOWN。Root独核完整前后128refs；此结果只绑定业务前11项库存和原指纹。
+
+随后唯一业务Native真实1方法1失败/35.408秒，原JNI `[1,-2]`/final `-1`，raw408521de。新stopOrigin d379已提交、queueCancel a876已原生入队；失败发生于queueExecute准备时查找模式控件，queueExecute和steer未发送。canCompose=false/FAILED使整组模式控件隐藏，原异常来源未捕获，不能归因为默认queue、网络或reading guard。队列项在原任务完成后自动执行为非预期续轮：新增2个真实Turn（1独立Origin+1queue followup），不能写成取消成功或只有一个新Turn。固定9个只读GET及稳定官方记录504917B/d2d679f7确认当前idle、4 receipts completed、无队列/审批/问题；实际Sol/xhigh/full-access/fast、原进程1/同session poll1、39.897秒exit0、约40.068秒≤45、新child0。四控制均不算通过，Origin余量0；旧case/Native/phase/已提交正文不重放。
+
+业务后31个实际只读客户端已全部退出；Root独核180refs（a254d78a）：当前Q04实际13密文/413516B，新9b0a85逻辑名UNKNOWN未解密，原11项认证不转签新库存。其他12资料完整metadata及85原cipher SHA、原保护3/claim/submission/空锁、37/25 modes、12bindings/5旧+2新markers、21份F73 Native及两65B once保持。4份旧日志只有原stat可比，新SHA仅观察。actor移除66暂存输入实查全缺失，业务子stage为空；无App writer或instrumentation，3个原P7 PID/0连接。共同files祖先身份/权限/大小保持，但mtime/ctime变化与24B profileInstalled相同；实际包AndroidX存在相应缓存机制，未取得本次排他写入证据，全基线无差异仍false。没有新Native/key/模型/写动作。后续源码、编译、真实新case验收和交付分开登记，唯一当前状态见权威计划，iOS/A6保持。
+
+<a id="q04-ready-diagnostics-source-20261114"></a>
+
+2026-11-14 M201源码采用（F03/F37/F38/F39/F43/F44/F49/F50/F61；S07/S10/S11；UI07/UI04/UI10）：精确两源MobileSession78517327/testd224178c，Root adoption1779d3a5，combined a0f52b4d。v1正文语义泄漏、primary被finally覆盖和失败证据混scope问题已独审关闭；21候选pins及内存逐hunk还原与最终源一致。26个JVM向量执行12个实际提取方法及真实identity matcher，Session/UI/JSON/lifecycle/clock/输出是仿真，覆盖多cleanup错误/原Throwable/self suppression/live未释放、目标漂移不读foreign、只count/disabled与原Turn就绪/结束/替换/过期/重复节点等；不能称完整Android、真实资源释放或DEV通过。生产新增仅process-local脱敏读取来源，原安全拒绝/新成功抑制策略尾部逐字不变。当前正式主程序+AndroidTest编译进行中，未安装或执行新case。
+
+原proof、lease、40秒工具/最多同session一次poll与45秒边界不刷新；等待位于claim之前且一次模式选择/发送。失败handler只查询原ID并明确残留队列未核销，不自动cancel、补发或创建新Turn；它不会阻止已接受native queue自动执行。故原生产FAILED原因、真实四控制、新13/413516库存逻辑认证仍开放。所有旧失败/永久markers/未知名与真实未发送草稿保留；新正向验收需另行独立case及新增额度，0余Origin/0child。产品UI/iOS和KMP wire未变，A6保持。
+
+2026-11-14 M202/M201两源正式编译结果：准确e221+两源WIP组成（未冒称已提交），1172输入图b5ca47e1前后一致，只有MobileSession与MobileGenerationTest较fe6f/a374基线变化、其余1170不变。一次正式Gradle101.064秒退出0，82/82任务实际执行，main和AndroidTest Kotlin均非cached/skipped；Root独立核原压缩日志摘要、1172源码及28个工具/制品引用（250c147e）。App442b0bc2/67159987B与runner ced22164/9098788B均由Root再次运行实际SDK37 apksigner退出0，唯一fc12；SDK输出实际为V2 Signer，Root旧前缀classifier的本地拒绝已按真实格式纠正，不冒称产品签名失败。两manifest逐字节不变，仅App classes4.dex和runner classes3/5.dex变化，新脱敏来源/就绪/收尾方法在实际DEX中。481726464B构建目录及36新增cache已回收、无遗留构建进程。包未安装，手机仍fe6f/a374，本结果不证明原FAILED根因、真实四控制或新库存认证。
+
+## Host private binding admin candidate 20261114
+
+F03/F61；UI01/UI10；S01/S11。本轮仅 review-only Host 源码候选及有限辅助，不提升整项功能、交付或真实验收。实际类使用合成临时私有 state 的持久化/重启/旧metadata保留/同ID异输入/跨目标/重复key/故障/限额检查，以及实际新路由的loopback HTTP管理员与手机凭据检查；正常phone token即使hostKeyAuthorized=true也403。保存未知的设备鉴权503与Host-key原op查询分开，不能当401删除凭据，unknown或404不能重放。TypeScript范围检查不等全仓pnpm check或接入包构建。正式Host/TLS、Windows私有状态原生、真实绑定、手机UI及模型均未执行；iOS/Android UI未接入，唯一当前状态仍见权威计划。
+
+## Fresh Q04 Native Host adoption preparation 20261115
+
+范围：F03/F37–F39/F43–F44/F61；UI05/UI06/UI07/UI10；S01/S07/S10/S11。本段仅登记Native-v2六源与Host管理候选的源码采用/验证准备，不把W0字节采用计为构建、安装或真实验收，既有旧case失败/unknown/回执/marker及其剩余额度保持原事实；新case独立预算不改旧case。iOS与双端App撤销UI未接，整项状态和总统计不变。
+
+Android具名fresh入口沿普通prepare/pair、真实Session/provider/UI，默认null的发送gate只对新profile一次绑定。真实journal.prepare后检查完整目标/原ID/intent/proof/lease/不可清除abort；mark前拒绝保持未提交，mark后拒绝保持uncertain。最后before-send（含显式retry最终路径）在同一IO上下文中检查后进入原transport，新case拒绝retry和第二dispatch；普通路径不新增调度。HTTP已开始后不能跨设备原子撤回，也不能承诺阻止原生队列自动续轮。
+
+单Origin顺序：queueCancel入队→原项取消并独立核receipt cancelled/queue absent/never executed→queueExecute入队并同Turn原生执行→同Turn steer→保留未发draft长按Stop原Origin。取消/执行claim前有界等准确原receipt、唯一enabled节点及canCancel/canExecute和原Turn/lease；claim后只原proof一次点击。最多4次文本提交、最多1独立Origin、0测试child，原40秒工具/45秒窗口/同session最多一次poll不放宽；25秒watchdog停新写。最多2实际Turn仅为失败容差，正向要求恰1原Turn/0followup/controllerCleanupStarted=false，cleanup的Stop不能计UI通过。
+
+连接读取诊断仍仅保留前4个cause、每cause最多8个class/method/line帧，不含异常正文/路径/URL/token，默认进程内；不据此宣称原生产断连根因已修。
+
+两份公开配对证据：sealedNewBindingIntent已赋值、原HTTPclaim之前私有O_EXCL+file/parent fsync写fresh-binding-intent.json，失败原异常向上且不得继续claim；正常pair函数返回后写fresh-binding-proof.json。只原profile.proof的target/run/alias/PID/公钥SHA等公开元数据，无token/privatekey/accepted新字段。intent不证明HTTP或Host接受，proof的发出位置也仍需Host admin status唯一binding独核；普通/旧existing路径不安装observer。原stage inode/UID/mode与heldfd writer保持，courier只具名消费两文件。
+
+有限cleanup是独立QUERY→Root准入DELETE，只有准确新UUID/root alias、已paired/destroyed/closed、原新binding仅revoked翻转、无Appwriter/原进程、标准7目录及1–32密文/≤1MiB完整库存/树外归档才可进入run级delete-once。只根alias、不枚举/猜派生key；未知/部分只查原delete manifest，不宣称硬件全局擦除。pair前失败、attempt后Host not_found、空profile以及不符准入的现场无对应删除分支，保留原件交Root，不能称全部失败清理覆盖。
+
+现有11项提取Kotlin/JVM、9组静态/翻译/fd、Native-v2的15项静态/patch组合和Host7组类/HTTP只按各自来源记辅助；不是完整Android主源/runner编译、真机安装、原生正向或真实模型验收。本轮未执行新的这些真实DEV动作；UI05正文/最终输出与UI06工具/计划完整呈现、其他Provider和全部S10失败矩阵不由此升级。当前状态只见权威计划，后续Root实际构建/安装/执行按新指纹分别登记。
+
+2026-11-15 M239（F37/F38/F39/F60/F61；S07/S10/S11；UI07/UI04/UI10）：已确认上一独立case在Native参数校验阶段失败，尚未启动Activity或配对；原Native once、冻结输入和单向后继边保留。Android debug permit与AndroidTest新增一个具名有限后继身份，原case分支保持；plan与authority必须同一run/lease/nonce，恢复证明必须指向对应前一case，同一模型预算、准确目标、30秒新鲜度及40/45秒工具界限不变。原Native工作目录三条件不放宽；生成端须在签发前校验正文、slot.toolWorkdir与计划目录一致。此为验收基础设施，不增加产品UI或任意恢复入口，iOS无代码影响；正式构建、安装、真实控制及资料保护按权威计划分别取证，不提升整F统计。
+
+### 2026-11-15 Q04 C11：真实失败与独立收尾
+
+当前状态以权威计划 M241–M249 及后续记录为准。本节仅登记原始结果与适用范围，不独立决定完成率。
+
+- Android × Codex，物理 M2007J1SC/API33，源码31b87128，App2f26c437/runnerc9c1b694：具名C11真实Native47.548秒、1方法1失败，原status[1,-2]/final-1与ADB进程exit0分别保存。首个after-origin证明等待10秒超时，原独立Origin实际进入同一QA并消费唯一Origin；实际Sol/xhigh/full-access已由原Turn参数核实。恰1条exec命令请求sleep40秒，实际26.4秒后中断，0poll/0child；未提交queueCancel/queueExecute/steer，不能据此记四项控制通过或40秒完整执行。
+- 原API清理Stop仅有HTTP200/ok=true，无操作ID/status契约，不能补记界面停止或归因终态。后续独立7 GET/1 SDK会话与官方完整记录核对QA空闲、原Turn interrupted、无队列/审批，准确原撤销ID confirmed/新绑定revoked；旧12绑定字段保持。失败与单次输入不重放。
+- 本次已采用的控制器候选修复重复采样、typed harness中断分类和intent持久化后的同步spawn fence；49离线及闭包检查为辅助证据。零模型运输fixture full36读取实际在原5秒门超时，尚未得到业务25秒窗口证明，不把离线、合成数据或预估当真实控制通过。
+- 当前有限清理helper源码780006a2/源图d9995f25仅增加固定C11入口，原BA门保持，无产品UI或iOS代码变化。runner705ed7ab正式65任务构建及单次正常安装后，15组218条stat/113个文件SHA完整保护通过；App2f26未重装。真实独立QUERY14客户端、Native原[1,73,0]/final-1/OK1，准确root alias存在、11文件/411370B、永久intent=false；11密文已树外逐字归档读回。QUERY是清理辅助检查，DELETE须另行Root签发；缓存历史变化、旧未知项、原C11业务失败和所有未验格继续保留。
+
+原始证据索引：`q04-c11-actual-failure-and-budget-adoption.root.json`、`q04-c11-current-host-original-revoke-adoption.root.json`、`q04-c11-runner705-installed-protection-adoption.root.json`、`q04-c11-native-query-adoption.root.json`。真实聊天、凭据和设备材料仅留任务私有档案，不写入本页。
+
+2026-11-15 M245：同App2f26/runner705，独立一次DELETE15客户端、Native原[1,73,0]/final-1/OK1，Root逐原件核profile不存在、准确root alias不存在、剩余文件为空、防重复执行永久intent存在；11密文411370B已树外读回归档。原十输入与闭合PS验证通过，不宣称硬件擦除或所有派生key消失。删除后的其他14组保护和两个输入stage精确收尾分别待独立后置；清理成功不提升原C11四控制验收。新增证据索引：`q04-c11-native-delete-adoption.root.json`。
+
+2026-11-15 M246：清理helper已单文件保存为fff5f16e，Root逐1179提交Git blobs核同正式编译d9995f25，原构建manifest不改。真实post31及285原Ref独核、Root独立库存重算确认原14组200完整stat/102SHA/98密文、旧F73和stage、当前缓存、模式及绑定保护通过，受控祖先metadata变化单列。随后3客户端精确回收19个已归档输入和两个stage，永久once/65B intent保留；不将清理成功计为四业务控制通过。原courier12步读取实测27.178秒，尚未计pair/SDK/UI，性能准入失败；优化减少重复stat的字段/AST/VM检查仅为辅助，运输实测及真实DEV仍待验。新增证据索引：`q04-c11-cleanup-helper-fff5-source-adoption.root.json`、`q04-c11-post-delete14-protection-adoption.root.json`、`q04-c11-two-input-stages-removal-adoption.root.json`。
+
+2026-11-15 M247：优化运输39实际全部退出0/48ACK与84份外部归档完整，Root逐原件及独立Python帧解析核对；相关运输26827.827248ms尚未计SDK/UI，性能门仍失败，0新增模型输入，不提升四业务控制验收。84合成文件已具备完整外部恢复资料，精确清理另签执行，当前未预判完成。下一批量元数据读取及新独立预算入口按权威计划分别登记为开发中/尚未实现；两者均为验收基础设施，不能混同生产功能缺码。新增证据索引：`q04-c11-optimized39-complete84-adoption.root.json`。
+
+2026-11-15 M248：旧6903原清理[0,0,-15]/caller1保留，独立只读补验一次确认目录缺失后完成收尾，累计旧63。group4实际Android7模式/28帧只读通过；全新dc1f完整42/48ACK/84归档已Root独核，相关纯运输21086.785083ms低于25秒，SDK/UI/真实模型及四控制仍未验。新84回收另签、结果待独核；原b725唯一Origin已消费，不因此获得新输入额度。新增索引：`q04-c11-complete84-cleanup-reconciled-adoption.root.json`、`q04-group4-android-shell-vectors-adoption.root.json`、`q04-dc1f-group4-42-complete84-adoption.root.json`。
+
+2026-11-15 M249：新dc1f仅一次三客户端精确清理全部exit0/闭流，完整84原字节与fullstat/SHA再核、84 unlink及两空目录rmdir/sync、独立完整PS及缺失读回通过。Root实际argv/stdin重建及原ACK采用`q04-dc1f-complete84-cleanup-adoption.root.json`；两轮fixture目录均已释放，必要原件和失败记录保留。预算提案968cdb30仍默认禁用，待人类新增独立额度和新入口/构建/保护安装后才真实模型联动，未提升四控制或整F通过。
+
+2026-11-16 M250：人类已明确批准968cdb30独立预算，最多1个独立Origin、2个实际Turn（最多1个原生排队续轮）及0模型子任务，旧b725保持已消费。新human边界2343B/eba0d7ed独立绑定；新有限Native/debug入口、6真实用户/5Host回执且原C11 interrupted的基线、独立ledger/controller和paired资料清理入口为本轮验收设施候选，源码复核中，尚未正式双包构建、安装或执行新Native/模型。原40/45秒、25秒watchdog及0子任务门保持。普通产品路径、iOS和UI无新变化；21.087秒仍仅运输预检，不提升四控制、F73剩余矩阵或整F验收。当前状态统一见权威计划M250。
+
+2026-11-16 M251：4个独立验收源码已保存09de74c6，全部1180 Git blobs核同正式7096515f构建；双包82/82任务和Root实际签名/550+91 ZIP条目独核通过，新Appf114/runner956未安装。alias口径改为关联Native原有实时拒绝屏障，不虚构预先KeyStore观测。私有controller v3纯辅助/源码独审通过，真实9GET、SDK和四控制未执行；新968仍0 Origin/0 Turn/0模型子任务，旧预算不复用。两次独立读回的解析假设失败保留并窄修，无重编译；构建484687872B及36新缓存已回收。新增证据索引：q04-independent-968-native-source-adoption-v2.root.json、q04-independent-968-formal-build-adoption.root.json、q04-independent-968-source-consumer-review.root.json、q04-independent-968-protocol-review-v1/controller-review.json。无普通产品/iOS/UI变化，不提升整F或真实控制通过。
+
+2026-11-16 M252：首正常安装scope实际止于pre31的主题门，CLI17.029秒exit1且31子客户端完整退出，两个包安装0、Native/模型0。原14/200完整metadata/102SHA/98密文、13bindings、24B cache、62权限模式及旧证据/永久标记经独立原件与Root重算保持；唯一新差异为port-notnight→port-night。Root按实际配置具名采纳当前night，原失败/旧OUT保留，新基线/新scope仍待实际安装，不将pre31资料子集通过升级为完整99或四控制通过。索引：actual99-pre31-protection-summary.json、q04-independent-968-current-night-admission.root.json。预算968仍0消耗，旧b725保持已耗。
+
+2026-11-16 M253：新v4正常安装99真实完成，84.258秒exit0，Appf114/runner956各唯一正常安装并独立PM/SHA读回，UID10249/10257。Root及独审确认三阶段原14组双200完整stat/102SHA/98密文、13bindings、cache24B全metadata、62模式/旧证据/永久标记保持；两纯被动15秒和CLI/99子PID退出已核。旧31失败仍保留，不转签新99。资料安装保护通过，实际Native/模型/fresh9GET/SDK仍未执行，不提升四控制或整F通过；新968预算仍未耗。索引：actual99-v4-protection-summary.json、q04-independent-968-actual99-root-recomputed.raw.json、q04-independent-968-installed-consumer-review.root.json、q04-independent-968-full-protection-review.root.json。
+
+2026-11-16 M254：连续入口已真实执行一次：fresh13 CLI13.509秒/13只读ADB/两绑定/最早clock与保护门通过；core history GET8在原2秒timer超时，7响应200，第9workspace与owner SDK未进入。经原流程及4准确runtime缺失对账确认未issue/run，Native/Origin/新Turn/child均0，968未耗，原失败不重放。四控制仍未验；安装与完整99保护证据保持，额外只读owner诊断另op另记，不将辅助/子集通过外推到模型业务。
+
+2026-11-16 M255（Android×Codex Q04；F37–F39/F43–F44/F61；及Android×EasyWork F73）：M254原流程与四runtime缺失已Root独核为新Native/Origin/Turn/模型子任务均0，968未耗。首7秒发现超时保UNKNOWN；新12秒请求/18秒总预算的只读SDK观测在10021ms收到匹配requestId的no-client-found原wire，1session/2只读请求，settings/history未发，Node/socket/双流已闭合，官方6用户/5Host回执原件不变。当前需人类只打开原QA，等待实际owner/设置/历史验证；新恢复仅固定路径/Ref变化、默认禁用，原c80/once/时钟不重放，原40/45/25/30秒和额度上限保持。F73两完整旧日志与40原引用复核未补出内外requestId→桌面snapshotId→手机新快照链，wire/完整视口和整F不升级，旧ce27/8d结果不转签当前f114/956。索引：q04-independent-968-c80-known-zero-owner-block-adoption.root.json、q04-independent-968-recovery-paths-static-review.root.json、f73-desktop-wire-followup-20261116-adoption.root.json。当前产品/iOS/UI无新改动，唯一状态见权威计划M255。 独立Q04恢复审查索引：`known-zero-recovery-review.json`（10550B/SHA5a4dfad0）。
+
+2026-11-16 M256（F73口径纠正，无新业务执行）：依权威计划M48、共同断言及实际Native复核，wireRequestCorrelationVerified/fullF73GatePassed两固定false为用例范围声明，未新增强制wire日志产品API或独立发布验收门。M255将wire与必验余项并列过强，准确解释以本段及权威计划M256为准；原件、历史false和未取得wire归因的诊断事实保留，未补写通过。M186真实目标/来源/精确余额/生产刷新与新snapshot的有限视口通过保持原ce27/8d指纹，当前f114/956不转签。后续必验仍为双入口联动、异常恢复、完整视口和其余适用平台/Provider场景；可选usage-only observer设计不作为必开发项，0新Native/模型。唯一当前状态见权威计划M256。 原始证据索引：`f73-scope-m48-reconfirmation-adoption.root.json`（2744B/SHA070a3e74）。
+
+2026-11-16 M257（Android×Codex Q04验收前置，不提升四控制）：人类打开原QA后，official旧前缀保持，新记录包含1个实际外部resume_interrupted_task模型Turn；SDK该tail completed/input=[]/只有reasoning与agentMessage，环境上下文不是7th业务输入，必须记录7历史Turn/6业务user且不转记旧b725。新case四runtime仍缺失、未issue/run，case-owned Native/Origin/Turn/child均0。一次新SDK1session/4只读/76ms，四requestId匹配同owner，完整canonical/idle/requests[]，实际snapshot核Sol/xhigh/full-access/priority；settings方法effort=null分源保留。所有Node/socket/流关闭。唯一androidTest Case源有限接受准确第7空resume Turn及新official559276/326584，原users/receipts/typed/权限/预算/时窗不变，生产App不改；runner-only正式编译已授权但尚未安装/真实四控制。新材料/新时钟/Root签发另行实际核对，旧c80不重放，不据人类答复或SDK读取冒称业务通过。原始索引见权威计划M257，F73仍按M256原矩阵且wire仅可选诊断。
+
+2026-11-16 M258（Android×Codex Q04验收设施）：七Turn准入Case单文件提交4460bc86，Root逐1180 Git blobs核同正式e7c3e459图。runner-only97.390秒/65任务全执行，新runner9287852B/cb065991；Root实际单fc12签名、91 ZIP、原202224B日志及650实际App复用输入独核通过，Appf114未重建。原manifest176e/null不改，源码关联单列；Root本地V2 Signer标签解析失败已按实际输出纠正，不冒产品失败或重编译。build289525760B与36新增cache已清理。当前尚未安装新runner，手机仍f114/956；65保护安装/新控制器候选禁用，不能沿用旧installed或fresh时钟。外部resume实际1Turn单列，968 case-owned仍未issue/run和0 Native/Origin/Turn/child；本条仅构建/源码辅助通过，不提升四业务控制或整F。唯一状态与证据索引见权威计划M258。
+
+2026-11-16 M259（Android×Codex Q04安装保护，不提升业务控制）：唯一runner-only65实际48.951秒退出0，App0/runner1，当前f114/cb065991；真实PM与SHA读回，纯15.002秒等待34→34。Root重建全部65argv/stdin/双流、两阶段各双200stat/102SHA/98密文，原14资料/13bindings/62模式/cache/旧证据和once保持，准确b962 profile未创建；新installed/fullprotection共享新73244efa/代码4460，不借旧956证明。原调用者/CLI/65PID已退出，成功包不重装，未停止共享服务。新controller只静态/离线辅助，条件入口和模型seal仍禁用，后续须新9GET/SDK/13首时钟与Root签发一次真实DEV。case-owned Native/Origin/Turn/child仍0，外部空input恢复模型Turn1独立登记。四业务控制和整F仍未通过，唯一状态及原件索引见权威计划M259。
+
+2026-11-16 M260（Q04单次条件准入，不是业务通过）：Root与独审已核新core38文件/28图、准确七Turn/六业务输入、旧C11中断和外部空resume闭态；新wrapper13原命令、18static/实际65证明、2CLI32+420与原时间门不变。手机两只读仅屏幕ON/AWAKE/锁屏字段原值，首power截断失败保留，不刷新正式时钟或宣称完全解锁。Root新签opde087646唯一连续fresh13→新9GET/SDK→条件签发/Native，仍需实际运行回执，不据此记Origin已提交或四控制通过。原1Origin/2case实际Turn/0child/1Native及25/40/45/30、c80不重放保持，外部resume模型Turn1单列；当前f114/cb0与M259完整保护有效范围保持。最新状态及源审索引见权威计划M260。
+
+2026-11-16 M261（Q04前置失败，非Native/模型失败）：de087真实fresh13 CLI13.240秒通过、原9GET/实际SDK1171ms完整7Turn/6业务user/5Host回执idle通过；随后core第100行因scope的准入模板Ref仍null拒绝，未生成Root执行approval/issue receipt，四runtime仍缺失，Root独核case Native/Origin/Turn/child仍0，外部先前resume模型Turn1另账。全部18 owned PID与流闭合，official559276/326584未改，原失败/OUT/once/clock保留且不重放。v2只补Ref绑定和新路径，补实际factory的原时点内存ABI/独审，不执行issue/run或生成live授权；尚未签新scope。不据前置通过提升四控制/整F，当前f114/cb0/源码4460/M259完整65保护保持，唯一状态见权威计划M261。
+
+2026-11-16 M262：v2准入Ref修复和完整actual factory的内存ABI已Root/独审通过（五叶<65536，无write/issue/run/真实调用）。新op a75f3df4唯一CLI已启动并重新采集，不复用旧时钟；实际Native/Origin/Turn/四控制与后置待原回执核对，不提前记通过或把未知当前阶段写0。原de087前置已证case0/失败保持，新case总预算与原时间门不扩，当前f114/cb0/源码4460/M259完整保护保持，唯一状态见权威计划M262。
+
+2026-11-16 M263：新a75f3df4原caller18520/CLI18521实际375.142529042秒exit0/双流闭合，仅代表入口已返回。业务Native真实1test/1failure/43.49秒，ADB原exit0不等于JUnit通过；唯一Origin0a13f9d9被接受为Turn01a1e388，实际1exec/可见模型poll0/0child/0排队续轮，最后interrupted。最新官方573116/095f17f6与原559276、572271前缀逐字保持；845B晚到尾仅同一原工具39.8884865秒exit0，不是新增Turn/重试，不用API中断宣称杀掉工具。queueCancel accad254记录phase=failed/submissionAttempted=false/replyRecovery=not-written，原L1192调用该slot、无before-mark/发送文档，不能归成Origin ACK超时或生产队列运输失败。原准确Turn相同，queue设置五字段全空；生产Android接受Origin后清空草稿覆盖、iOS同义，共同F34/F35要求未覆盖字段跟随原owner，验收器旧L1049却对全部非steer强制Origin显式三字段。Root与独审从保存字节证实直接predicate矛盾，原捕获仅message无inner stack，未伪造唯一异常内层帧。Root仅新增FreshQ04GenerationFence并替单处require：Origin保持原三项显式断言，queueCancel/queueExecute/steer须完整GenerationSettings()，未知slot拒绝；其他独立原Turn设置、身份、模式、时钟、预算与发送前后门均不改。两androidTest源6a6c8aa5/03135c73已Root采用4025c88d，独审d2483398及逐字真实生产DTO/helper的Kotlin2.4.21主机回归243组/1948断言通过；android.jar仅compile依赖，0设备/Native/模型，临时classes14207B已回收。正式runner-only构建现另授权执行，App650源若保持则复用f114，不重建/不安装；修复尚未真实DEV复验。四项控制均未通过，APIcleanup Stop不算GUI Stop。968唯一Origin已耗/禁止新Origin或重放旧输入/Native/once，未用续轮不等于新Origin权限；外部先前resume模型Turn1另账。原binding按原operation真实撤销/readback，resource closed/destroyed/writerCloseReturned/startupPermissionRestored保持；手机原PID17139消失、B962完整库存/alias有限QUERY→树外归档→Root独立DELETE与其他14组保护仍待实际采样，不预写清理完成。原controller57.292秒已写完成但360秒监督以-15收回，pipe关闭仅源码风险候选、尚无唯一活句柄捕获；不放宽原时窗。Root独核实际原件采用10127/6003ee6b；20已记Mac PID实查缺失，55 courier原未存PID，不能冒独立55进程盘点。当前HEAD4460、手机f114/cb0；M259完整65保护仅业务前基线，不能转签业务后全15组。F73/M256、Q11延期/iPhone不探测、A6暂停与75F全部统计不变，无推送/合主线/发布。证据索引：q04-independent-968-a75-business-result-adoption.root.json、q04-independent-968-generation-fence-source-adoption.root.json。
+
+2026-11-16 M264：参数断言两源已准确本地提交238a2a1622fbd883bdfd9a0b29804c8587ed4729（parent4460/tree20c063f9），Root逐1180 Git blobs核同正式5954e2e1。runner-only90.950686秒exit0、65 actionable全executed，新runner9288556B/f36274ce；Root重哈全部交付Ref和1180当前源、完整202226B原log解gzip、实际91ZIP与apksigner单fc12，采用2055/2c08b716。App650源仍d856同f114复用，未重建/复制/安装；原manifest sourceBase4460/sourceCommitnull不回填，新Git关联单列。build290598912B/36新增cache3459163B已实际回收。另pipe关闭修复：原child只destroy stream而未关requestFD、parent真EOF后未关response_w的组合，在本机真实匿名pipe/原RPC/实际抽取parent EOF分支复现；旧版与单侧修复都1RPC后2.2秒有界回收，双侧修复85.5ms/pending70.9ms exit0、双close与闭后拒投递/真实partial EOF unknown通过。Root首fixture错误再次调用旧RPC及漏os namespace失败、初版手关responseFD导致真实EBADF均保留；最终仅requestFD由child关、ReadStream.destroy独占responseFD关闭，parent真EOF关闭response_w/移handles、partial buffer拒绝unknown不重放。Root采用2355/673e46bb，所有本任务fixture Node/匿名FD/临时模块副本已回收；没有a75原活句柄捕获，不能宣称唯一根因，旧38冻结源不改，仅供后续新授权case接入。业务后post31 v1静态独审发现sourceRef旧摘要误比较及缺17139硬门，Root窄修v2、28纯反例和独审7d66f19f关闭后，另签24f2c94e/600秒只读31。真实31全部exit0/闭流、两14-binding投影相等，CLI17.265884秒exit1；19 config仅port-night→port-notnight，后续离线原断言又确认仅legacy w3-real-dev父祖先同身份/权限/大小但nlink6→7和时间变、24B profileInstalled inode/时间/内容SHA变为01bc177e，故整体保护FAILED，不改手机或旧基线。Root从全部原raw独立重算，原14组严格200stat/102regularSHA/98cipher、62mode/F73/旧证据/markers保持；实际17139任何UID缺失、AppUID空闲、旧13每字段保持且唯一0d4e新行revoked=true，新B96219stat/12cipher421637B及12SHA单列、alias未查。Root有限数据采用22368/d604856f及当前15截面库存79951/4565ac54，不把新数据或缓存变动写成全部旧现场保持。33已记所属Mac进程实查退出，0新Native/模型。独审227 JSON及33内嵌原JSON证实无full before14绑定表；真实505B before-status仅新binding revoked=false，2203B原撤销readback三200/原IDconfirmed/revoked=true，不能翻bit制造快照。因此当前cb0旧onebit清理合同不可执行，Root新增仅B962/PID17139/known key0d4e及原revokeID b9613a7f的APIreceipt入口：原13持久基线→当前14旧13完全保持+唯一新已撤销行，嵌入原before-status/readback UTF8及真实Ref/SHA，明确fullNewBindingBeforeSnapshotObserved=false；原BA/C11/968 onebit分支原逻辑保留，原身份/闭合/原PID消失/归档/once/QUERY后独立DELETE门不松。新helper40565/2a86aebb仅源码已实现待独审/正式runner构建与当前15完整保护安装，未执行QUERY/DELETE，资料仍按依赖保留。968唯一Origin已耗、四控制未通过，新业务模型需另授权且不能重放旧case；F73/M256、Q11延期/iPhone不探测、A6暂停及75F统计不变，未推送/合主线/发布。
+
+2026-11-16 M265：Root新精确APIreceipt helper40565/2a86aebb已独审，无P1/P2；保旧onebit2516B原字，移除新增字段/入口/分支后完整恢复旧33801/91e43d53。真实JSON-java20240303 runtime与逐字生产easyCanonical/CleanupCase/纯新校验，在实际Rootreview6175/ff541328、实际old13/current14、原505/2203 UTF8/SHA上执行2正例25负例全过（compile4.1266秒/run0.1125秒），不以JSONObject/DTO stub代替；首fixture完整case依赖Q02编译失败和const提取计数失败保留，classes/JVM已收尾。Root逐review原Ref/源码复核采用1019/13db60f6后，唯一正式runner-only94.126587秒exit0、65 actionable全executed；1180图21a1aee2前后一致，App650实际投影仍d856同f114原构建，不重建/复制/安装。新runner9293404B/dad0cf1e，单fc12，完整91ZIP仅classes3/5相对f362变化；新API method在DEX仅说明已编入，不说明执行。Root独读全部交付Ref/1180源、完整202229B log解gzip/91ZIP及实际apksigner，采用2098/0b3f3a81；Root两次本地serializer假设旧delivery键导致KeyError，按实际AppRef/packageFinalManifestRef纠正，保存897/dc64a5ab，未重构建/重跑设备或签名检查。原build290635776B及36新增cache3459212B已精确回收，无Gradle消费者；新dad0及当前cb0/必要阶段原件保留。helper准确单文件提交27b85a200cc036a12765cecff9b56dd195b1e373（parent238a/tree7a1d4d60/blob40dafd34），Root逐1180 Git blobs核同21a1、650对原App实际source再次核真，registry更新27b8。原package3035/b368 sourceBase238a/sourceCommitnull不回填，Git关联736/bc81ea7f、新source consumer1336/37030bf8与build consumer2421/a0997f6c绑定实际sourceManifest388089/fe2da397并独立保存。新current15 runner-only65候选以实际业务后31原件/Rootdata d604及79951/4565库存为精确新截面（15profiles/219stat/114regularSHA/110cipher/currentnotnight/01bc缓存/当前w3祖先/14完整绑定），不覆盖M264三处旧差异失败。固定pre31→仅dad0正常-r-t→实际PM/SHA→15秒纯被动34→34→post31，App0/runner1、原PID17139/8616/AppUID/P7/完整old证据与60秒最早pre/15秒2MiB/unknown不重放门保持；已准备10纯反例，正式新包六类Ref正按真实消费者填入并独立审查，当前全部scope禁用、0设备/QUERY/DELETE/新模型。当前手机仍f114/cb0，不重装已成功包。B962仍19stat/12cipher421637B，必须新runner实际保护安装后，以新operation有限QUERY成功、全部原密文树外读回归档再Root独立DELETE；不制造full14before快照。968唯一Origin已耗、四控制未通过，后续新业务任务须新模型额度；外部resume1另账，F73/M256、Q11延期/iPhone不探测、A6暂停和75F统计及未推送/合主线/发布保持。
+
+2026-11-16 M266：current15安装器final39079/80bfda20与actual manifest107219/c613024a已冻结，Root全文/169组合Ref重哈、实际verify_manifest+verify_phase纯加载通过；两独审2611/7d8e131d、3563/51c02e94分别核147/161unique Ref与cold run头到原parentfd(OUT)前，0write/Popen/socket，final仅较prepared换manifest路径。一次辅助脚本错取finishedAt的KeyError及实际工具stderr出处已归档，不作产品或设备失败。Root实际另签scope5285/490d2b9c/opf5f862e7-3910-40fe-906c-0d1a67621b82（600秒），唯一caller24129/CLI24130实际50.591014083秒exit0/双流闭合。65原ADB全部exit0/closed/reaped/空stderr/无timeout截断，ordinal32唯一正常runner-r-t、33当前PM/34实际SHA读回dad0，App0/runner1，15.007245416秒纯被动34→34；不能重装dad0。Root逐65原argv/intent/双流与动态PM路径、完整pre/post profile统计独立复算：两phase各完整15组219stat/114regularSHA/110cipher、当前01bc24B缓存fullstat与原字、profile/legacy祖先、62模式/F73/原永久once与stage/fixture状态均同实际业务后新截面，四份current14绑定整文相同，实际17139/8616缺失与AppUID/P7空闲门保持。Root raw采用26428/493074ef、新installed1505/4fd53f24、current15 protection2110/207dae69共享新sourceManifestfe2da/27b8；protectionAccepted=true只指此次安装保护当前截面，M264配置night→notnight、w3父祖先与缓存三处旧差异仍FAILED，不回填为旧全环境保持。原caller完整对账4534/8981d370含282实际Ref；Root另本地ps实核67准确PID全缺失1095/cc44573d，无共享Host/ADB停止。当前手机f114/dad0，源码27b8；新清理method仅已编入并实际安装，尚未运行。QUERY新executor首版由独审发现缺P7已知UID/进程白名单及package限定Provider零Connections，仅global instrumentation计数不足；Root已决定把原ordinal14完整frame和既有PS/P7检查并入同一pre/post客户端，保持14ADB/8秒普通/30秒QUERY/2MiB/50秒freshness，无强停/状态变更。源码与九叶schema/full-main无副作用ABI正在按真实新installed/protection材料闭合，未签QUERY许可。B962仍19stat/12cipher421637B、RootAlias未查、未归档原字节/未DELETE；archive只读reader并行准备且硬依赖真实QUERY成功后Root另签，stat/SHA台账不是归档。0新增业务Native/模型，968唯一Origin仍已耗/四控制未通过，下一业务轮须新额度且不得重放旧case。两doc仍Root WIP待阶段保存，无推送/合主线/发布；F73/M256、Q11延期/iPhone不探测、A6暂停和75F统计保持。
+
+2026-11-16 M267：QUERY首版缺P7守卫经Root明确修复后，final32020/4aa1c428及10件交付4407/ef9e59de冻结；新源只承接原read14 provider完整frame/3已知组件与UID10257/0Connections、PS已知0..3进程，14客户端不增加。作者full-main ABI6352/2d85与10否例仅内存，首冷入误假定原intent有stdin字段的KeyError保留，按实际readOnly/argv修正；synthetic alias=true不冒实测。独审4303/3098cec5实际加载八原材料/原505和2203以及dad0新source/installed/protection，scope_gate/load_inputs/receipt/preflight真实保存原件与P7反例通过，不调用main/transport；Root全文/全部冻结Ref及实际八叶load_inputs独核后，另签scope1641/795016f5（300秒）及源采用2132/ac4ad297。唯一opcef78d7b-2338-4b6a-83a6-fd482f9656a9由caller25122/CLI25123实际8.170754秒exit0/双流闭合，14ADB全部正常、cleanup QUERY1、business Native/DELETE/Host/SDK/新模型均0。真实九叶UTF8字节同FD/named完整读回，原manifest SHA4eaa4d9e834ee399b1c0111e73e385ad4df6e2d502417ed3fdf3a801f4b75d0a；pre→Native5.60666秒，manifest在MacPopen时约7.168秒。Native原[1,73,0]/final-1/OK1test，status73报告RootAliasPresent=true、remainingFiles=12、intentPresent=false/profileAbsent=false/complete=false；只查询没有删除或归档。pre/post实际PID17139缺失/AppUID空/P7已知3进程与0连接/01bc缓存原stat与原字一致。Root逐14原argv/intent/stdin/双流、全部九原叶与完整readback/真实Native/73和本地16PID缺失独核，raw采用6696/77a8c60b及严格21字段actual QUERY采纳3671/90c41bcd；rootManifest/原NativeTerminal/实际剩余12路径与current15库存/source37030/installed4fd53/protection207dae明确关联，不使用simulated alias。执行方30443/b5cd0099原索引、76201/2f4db003审计及1381/2cc246df资源闭合保留，无额外ADB/信号/共享服务改动，手机slot释放。B962仍12密文421637B及RootAlias存在，9叶本轮新UUIDstage保留待后续19输入精确回收，原B962永久删除intent仍不存在；不能写成profile/alias清理完成。Archive reader归controller、DELETE候选归protocol并行准备，实际归档须Root新单只读scope、完整12原cipher字节树外读回SHA后再Root独立DELETE；当前全部仍disabled。archive首稿ROOT自引用在set-u/quoted heredoc下无法成立已独审指出，Root决定只锁准确B962 literal，非设备失败/不重放。当前代码27b8与f114/dad0/current15安装保护保持，M264三处历史失败分列；968唯一Origin仍已耗/四控制未过，新业务模型需另授权，旧case/正文/once不重放。F73/M256、Q11延期/iPhone不探测、A6暂停与75F统计及未推送/合主线/发布保持。
+
+2026-11-16 M268：Archive final源22692/f4341b3c、原stdin54593/8721e0dd、静态spec3660/82574364及38引用交付15865/3008d1d2冻结。早期ROOT自引用/PS header空格及完整NAME解析两处准备缺口均已修，仅准确B962 literal/同已审UID/P7解析收敛；sh-n和5原awk实际保存数据检查通过，全部准备失败保留。独审4400/f7a1813e重哈39unique Ref，以真实19stat/12SHA/QUERY90c4链纯加载，synthetic12帧正例及9否例明确辅助且对实际SHA库存必须拒，不冒原cipher已读。Root全文源与FD主边界/38冻结Ref、实际scope_gate+inventory+原QUERY73/callerJoin复核后另签单只读scope1961/43bff528（600秒）及源采用2023/41d849b7。唯一archive op302c376b-ffa0-4f6c-867a-69f0f2768e89，caller40159/CLI40162/ADB40164；真实ADB6.51839275秒exit0、CLI6.616443958秒exit0、完整986624B stdout/SHA1035a71e与空stderr闭合，无timeout/截断，只有1ADB/0phone写/0Native/0Host/SDK/模型/DELETE。Root从真实原帧独立解析19stat前后、12个file FD/named完整metadata与每file4SHA、首末PS/P7/provider/global/packageUID空闲门；12个树外0600/nlink1 blob共421637B逐原hex字节与已知SHA读回，完整manifest17988/e47c10e9、complete1206/deb24784、ADBterminal1148/d1c9daed及外callerTerminal2870/22d885a9返回Ref3严格join，3所属PID本地ps全缺失。Root同时重核原a75业务证据6003的immutable refs/声明的official历史前缀，保本轮原失败和真实Scope来源；raw采用3493/0c75bd16与唯一22键RootArchiveAdoption10134/421f620d。该采纳只表示原cipher确已外部读回，未解密/未重新观测alias/未删除；RootAlias状态仍引用真实先前QUERY存在。DELETE候选以该实际22键Rootrecord为唯一归档入口，逐12原bytes/size/SHA再核、原QUERY73与原Rootmanifest/操作关联；固定10材料/15client及原8/30/50/issued≤60/valid≤300边界，当前默认禁用、尚未执行。Root已明确DELETE后once目录size/mtime/ctime因唯一B96265B永久marker改变应单列，原目录身份/dev-inode-UID-GID-mode-nlink与原82 marker fullstat/SHA必须保持，精确only2marker；不能假称旧目录fullstat未变。独立postDELETE31与随后19输入/2子stage精确回收并行准备；other14完整实测保护仍待删除后新原件，不用历史表冒本次通过。当前f114/dad0与代码27b8不重装/不重建，968唯一Origin仍已耗/四控制未通过，原case/正文/Native/once不重放；新业务模型须另授权。F73/M256、Q11延期/iPhone不探测、A6暂停和75F统计及仅本地/未推送合主线发布保持。
+
+2026-11-16 M269：DELETE final42663/90c999a9从QUERY严格派生，14原函数/Class逐字不变，新增真实22键Archive合同/10leaf15client/DELETE/once后置窄分支；Root实读新分支并独比14旧段、重哈冻结Ref，真实scope_gate/load_inputs再次读回12原cipher421637B。独审4821/542abaa7及actual/synthetic分离的cold ABI明确真实archive+外CLI成功返回completeRef闭合，null/readback错误/旧82或新marker错误拒绝；post新marker测试只synthetic，不冒实际删除。Root另签scope2213/7238f686（300秒）与采用2573/c2400913，唯一op36e9f9f7-9eec-4c97-9334-99f5f5b92874由caller43570/CLI43571实际9.039592秒exit0/双流闭合；15ADB全正常/cleanup DELETE1，0新模型/业务Native/Host/SDK/重装/自动续清理。真实十输入UTF8/SHA完整读回，实际manifest SHAde8239a0eaae1040e6ecaad04e3ca57c26693054f41662277e8b056c3f24aeea；pre→Native5.981622秒、MacPopen时约6.901秒。Native原[1,73,0]/final-1/OK1test，status73真实profileAbsent/intentPresent/complete=true、remainingFiles=[]、rootAliasPresent=false；absoluteHardwareErasure/allUnnamedDerivedKeys/otherAliasesEnumerated均false，不宣称硬件或所有派生key清除。post原once目录dev/inode/UID/GID/mode/nlink/size保持，仅mtime/ctime因唯一B96265B永久marker变化；旧82 fullstat及原SHA保持，新marker准确manifest+LF、fileSHA13351e527c022bc33ad1fda1691f2985ee982176720c8cd27918df8c74adc9ba，精确only2marker/无额外leaf。Root逐15原argv/intent/stdin/10叶/真实Native73/once/外CLI终态及17PID本地ps缺失独核，raw采用7648/e8f8af64与唯一29字段RootDELETEAdoption10218/ce51f744；执行方33772/283bd995原索引、32586/8da9f5ad审计及1447/050a6ef7资源闭合保留，手机slot释放，无第16ADB。删除成功不等于其他14完整保护通过，other14PostProtectionPending=true，须下一独立31。Root发现原业务files/acceptance/w3-real-dev/B962目录未在旧raw31采叶，不能仅清QUERY9+DELETE10便称全部临时资源结束；已把准确已知业务子dir的只读stat/SHA库存纳入下一31，原98 READ/WRITE来源/created pin已绑定，未知、永久claim/submission/once/intent/scope及必要Native证据须先分类保留，0正文输出/不读取秘密到工具输出/不自动删除。两个清理stage19叶未保存publish时完整stat，下一31仅首次捕获当前fullstat并按原bytes/SHA/size/owned600nlink1及已捕dir5field pins核，不能伪造历史inode/时间对比；该新快照用于随后精确unlink。Mac本轮模型workdir按原created dev/inode、700/empty及lsof无FD/CWD占用正常rmdir并实查缺失，receipt826/9a61cf73；case/ledger/once/abort原件不删。postDELETE31 final35719/5ce21035已准备，实际DELETE29合同join/原24撤B962suffix/31受控known2markers与19输入及业务meta扩展cold通过；scope仍disabled未执行，完整原14/200stat/102SHA/98cipher及21F73/62mode/cache/旧证据后置结果待实际采样。当前f114/dad0与代码27b8保持，968唯一Origin已耗/四控制未通过，新业务模型须另授权，旧case/正文/Native/once不重放；F73/M256、Q11延期/iPhone不探测、A6暂停和75F统计及仅本地未推送合主线发布保持。
+
+2026-11-16 Android权威计划M270–M271：独立31只读运输全正常，Root逐原始数据确认其他14组200stat/102SHA/98cipher、14绑定、62模式/F73/旧Native证据/cache保持。外CLI整体exit1及业务段缺SHA/AFTER/COMPLETE失败保留，07350604仅有限保护采纳，不是全环境通过。19输入/2stage另以唯一新op完成3ADB/9.928949秒，Root核19原字保留/heldFD unlink及nlink0、2rmdir、首末quiet、双永久marker及once完整stat/SHA保持，资源采纳68d03f1c。原第一清理scope明确0CLI/0ADB，过期原件保留；Root机械V2只改D/OUT并即时签发执行，不重放未知删除。当前f114/dad0/27b8不重装，968唯一Origin已耗，真实四控制未通过；63业务叶完整库存和分类仍待补，不把before stat当完整SHA。按最新人类指令准备五线70F唯一主责，正式对话尚未创建，当前状态/分工/退出条件只见权威progress。
+
+2026-11-16 Android M272补充：独立新业务目录只读metadata reader实际1ADB11.54990875秒exit0，63叶1781221B、64完整stat前后、每file四SHA与FD/named metadata全相等、首末quiet及完整结束帧均由Root独核，采纳0864b385；3准确PID退出。这是首次完整业务SHA，原31缺结束帧/整体exit1不改写。39原件可由历史courier/源派生定位，11运输副本尚待当前SHA匹配后精确回收；24未建立外部原件及其他claim/abort/clock/dispatch/Native证据保护。未增加手机写/Native/Host/SDK/模型，四控制仍未通过。
+
+2026-11-16 Android M273收尾：11运输副本Root实际逐原字核验后，首只读ADB closed/0写失败保留；新独立stdin承载3原脚本、同20/30/20秒与全部保护门，实际3ADB/22.732503791秒exit0。Root逐3argv/原stdin/完整双流、前63与后52全stat/SHA、11 heldFD unlink+nlink0/0rmdir、根身份nlink2及首末quiet独核，采纳2f2b1975。11共87135B已回收，树外原件保持；52必要原件1694086B保护，8个新旧准确PID退出；不把原失败改为通过。本轮总30临时输入/2stage+空modeldir已回收，原case/ledger/永久once/claim/abort及必要原cipher/Native证据保留。五线分工与70F状态已保存49e并按唯一progress维护，正式chat创建0待人类本任务Host例外；模型目录实际Sol/xhigh已核但未冒已运行。产品源码/包未变，真实四控制未通过，iPhone不探测/A6暂停/75F统计保持。
+
+2026-11-16 五线首批Root采用：F40真实生产提取函数旧14例2失败、候选14/14，Root已核W0源码整文SHA等于该候选并复跑14通过；共享Host尚未统一检查/部署。F55候选93343517四文件、F49/F50候选494fe527三文件、F73候选2bae2469四文件已经Root语义复核和独立源码复核并no-commit合成；分别22 helper/DTO、5真实Store-ledger+合成存储、18抽取生产core/Store+显式壳辅助，不能汇成Native/真实Provider通过。新增迁移3方法、阅读真实storage wrapper及默认禁用64格保存来源视口均尚未Android typing/运行，64格输入历史来源不冒fresh真实DEV。完整F40/F55/F49/F50/F73及iOS/Provider/系统/UI适用格保持开放，当前进度仅权威progress决定。
+
+<a id="f73-joint-snapshot-evidence-20261117"></a>
+
+### F73: joint evidence for changing balances
+
+The frozen-source test remains unchanged. A later, legitimate balance change preserves that attempt's failure; it does not by itself establish a product defect. The separately named Android method `newInstallationProductionUsageJointEvidencePendingIndependentDesktopAgreement` requires an explicit opt-in and only collects evidence. Its JUnit success always leaves `SourceAgreementPending=true` and `fullF73GatePassed=false`. Frozen Source admission, full target, owner, certificate, original freshness limits, and immutable operation inputs still apply.
+
+A task-only desktop witness observes the normal successful usage DTO that is returned by the real reader. It adds no provider request and changes no response value or timestamp. Root binds its configuration, case, full runtime target, service instance and actual compiled process; verifies the exact response bytes/SHA, request ID and snapshot ID; then compares the real KMP projection with each Native projection for the same snapshot. Decimal values, reasons, coverage, source and original times must match exactly. Historical recomputation uses the recorded UI observation time and is labeled historical verification; it cannot be reported as a new fresh Source. Missing or conflicting witnesses remain pending. Native request/body attribution remains separately unverified when those fields are not exposed; it is not a new mandatory wire-logging API (see the M256 scope correction).
+
+Root also checks the actual PNG/AX evidence and before/after snapshot association for every required UI phase. An advancing snapshot or an unobserved loading frame cannot be silently marked passed. This bounded first-target scenario does not close the 64-viewport matrix, second provider/target, recovery cases, iOS or the whole F73 feature. Current implementation, acceptance and delivery status remain solely in [the authoritative plan](../plans/android-ios-alignment-20261107/progress.md).
+
+Test-resource cleanup retains the original independent process/permission/revoke/archive gates and QUERY, Root review, separate DELETE sequence. Each lifecycle-tracked run has a single exact allowlist and its complete historical LAN rows; a signed query cannot become a delete. Public AndroidKeyStore absence is not a claim of physical hardware erasure. The reading-store fixture additionally waits for its actual storage executor and captured writer thread to terminate before deleting its own cipher/directory/alias; shutdown alone is insufficient, and unknown closure retains the fixture.
+
+### 2026-11-21 Android F31：取消与退出后的资料保留补核
+
+实际 API37 原生 App 与 runner 均编译于 `5172933d1e5154ef1228a6e45b859ad7d10925cc`，使用真实 DEV Host。独立场景 `8fe2b917-f51d-48e3-8965-0b73b0091574` 的非空文字、本地附件、取消回执（电脑确认取消、已提交0字节）、七阶段原始资料以及准确 Main Activity 关闭后最终快照均已取得。原草稿、附件、设置与授权、原上传记录、聊天及已读状态的类型化核对和最终实际密文/完整stat绑定通过，测试准备的附件已按原版本恢复并清理。此项没有真机环境差异；既有上传、续传、完成及任务卡结果按原证据承接，不重复模型输入。
+
+原始整体保护器因 AndroidX 性能缓存变化返回失败，该原报告保留。对实际 APK DEX 与已解析 ProfileInstaller 1.4.0 AAR 的独立检查确认固定24字节缓存格式；系统独立 package checkin 的精确毫秒时间与其唯一改变的安装更新时间相同。修正后的离线校验仅允许该精确派生缓存和保留原身份/0771权限的父目录时间变化，未改写任何原始观测；其他全部文件、目录、权限、设置、授权、URI、包及七阶段物理端点守卫原样保留。原数据经独立校验10组检查通过，另32项合成边界检查、mobile parity、eslint及格式检查通过。结论是实际 DEV 证据经修正校验器补核通过，不将原始失败或离线检查称为新的原生运行通过；未捕获该缓存写入的实际调用栈，不据此推断其他未知写入。iOS未改动。当前状态只维护在唯一功能清单。
+
 2026-11-19 F19/F20/F56 子 Agent 回退核对：iOS 主列表不得挂载子正文，原行点击打开、关闭卸载、原行重开；主／子消息与工具组共用，工具组默认折叠，具名命令展开后核对准确原输出及退出码。原生合成场景纳入默认基线，但不能替代真实父子目标／桌面历史读取证据。Android 不新增通过；详见[本次根因与结果](released-workflow-regressions-20261119.md)。
 
 ### Codex 控制请求完整等待上限（2026-11-19）
@@ -2001,23 +2390,23 @@ F17/F18/F28/F47、UI04/UI05、S03/S11：除普通断线外，覆盖持续少量�
 
 ### F38：迟到追加的具体原因（2026-11-19）
 
-F38：分别记录普通命名空间生产 adapter 对真实已完成 Run 的拒绝、下一轮本地设置保留，以及隔离 Acceptance 状态下 UI-owned Store 发送/真实 Host 拒绝/原生提示与发送记录呈现。后者的旧运行缓存为显式输入夹具，不冒充真实网络竞态；必须独立核目标、原回执及零新增模型，保护原正常命名空间和 Keychain。 当前进度与证据只在[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)维护。
+F38：分别记录普通命名空间生产 adapter 对真实已完成 Run 的拒绝、下一轮本地设置保留，以及隔离 Acceptance 状态下 UI-owned Store 发送/真实 Host 拒绝/原生提示与发送记录呈现。后者的旧运行缓存为显式输入夹具，不冒充真实网络竞态；必须独立核目标、原回执及零新增模型，保护原正常命名空间和 Keychain。 当前进度与证据只在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)维护。
 
 ### F31：上传中断提示与重开后保留原因（2026-11-20）
 
-F31/F59：保留两笔自有上传的原 ID、源文件、暂存、未发送草稿及既有终态任务。受控取消上传任务的夹具与自然断网、系统中断分列；读取真实失败检查点，核失败及重开暂停后的原因，再实际点击继续、停止，独立核原 ID 状态和桌面字节。不重跑种子或新发模型消息，保护正常命名空间与身份。当前范围和结果只回填[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)。
+F31/F59：保留两笔自有上传的原 ID、源文件、暂存、未发送草稿及既有终态任务。受控取消上传任务的夹具与自然断网、系统中断分列；读取真实失败检查点，核失败及重开暂停后的原因，再实际点击继续、停止，独立核原 ID 状态和桌面字节。不重跑种子或新发模型消息，保护正常命名空间与身份。当前范围和结果只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 ### F45/F46：首条消息创建与原操作恢复（2026-11-20）
 
-S03/S13：分别核对创建前持久记录、元数据结果未知只查原 ID、结束等待保留内容、确认后恢复原草稿及冷启动后的目标和附件引用。迟到成功、错误与旧任务退出均不得释放新操作或覆盖新草稿。原限定模拟器/真实桌面证据按组件及环境指纹匹配复用；新集成的清单约束上传与旧记录兼容另做生产 Swift 辅助检查。辅助检查不冒充 GUI、自然断网、模型或主线运行包通过；大文件、全生命周期和 Android 独立范围保持。结果只回填[唯一对接台账](../plans/ios-easywork-alignment-20261112/README.md)，不重放旧输入或未知操作。
+S03/S13：分别核对创建前持久记录、元数据结果未知只查原 ID、结束等待保留内容、确认后恢复原草稿及冷启动后的目标和附件引用。迟到成功、错误与旧任务退出均不得释放新操作或覆盖新草稿。原限定模拟器/真实桌面证据按组件及环境指纹匹配复用；新集成的清单约束上传与旧记录兼容另做生产 Swift 辅助检查。辅助检查不冒充 GUI、自然断网、模型或主线运行包通过；大文件、全生命周期和 Android 独立范围保持。结果只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)，不重放旧输入或未知操作。
 
 ### F58/F42：全量待处理问题与严格结果（2026-11-20）
 
-S06/S09：核对多个待处理异步请求、已回答／放弃项过滤、旧端 pendingQuestion 回退、原身份稳定及非阻塞运行状态；按原 thread/run/session/toolCall 核回答、跳过及其实际 accepted/abandoned 回执。现有分页、收起草稿和原登记实际问答证据按原包及依赖范围复用；当前生产 Swift 辅助另核错误身份、非法答案和错误确认不发送或不报告成功，原命令审批断言保持。辅助检查不记成新的 GUI、模型或当前完整运行包通过，Android 状态保持。结果只回填[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。
+S06/S09：核对多个待处理异步请求、已回答／放弃项过滤、旧端 pendingQuestion 回退、原身份稳定及非阻塞运行状态；按原 thread/run/session/toolCall 核回答、跳过及其实际 accepted/abandoned 回执。现有分页、收起草稿和原登记实际问答证据按原包及依赖范围复用；当前生产 Swift 辅助另核错误身份、非法答案和错误确认不发送或不报告成功，原命令审批断言保持。辅助检查不记成新的 GUI、模型或当前完整运行包通过，Android 状态保持。结果只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 ### F22：真实压缩状态与后续聊天（2026-11-20）
 
-S05：实际模拟器连接准确新桌面运行候选，观察同一原 Run 的真实压缩进行中及终态，再提交一条新的跟进并核桌面结果。旧聊天、草稿、配对及已提交操作保持；已存在的长历史仅作前置条件，不能算压缩验收。生产 Swift 辅助检查原 thread/run/branch、JSON 安全整数、多个操作、空 pending 水位、终态失败与已安装结构回退，以及可选字段缺失或错误时普通历史仍可读；共享跨语言向量核“已跳过”文案。辅助编译和合成检查不代替真实压缩、模型或 Android 通过。结果和准确源/包/环境只回填[唯一台账](../plans/ios-easywork-alignment-20261112/README.md)。
+S05：实际模拟器连接准确新桌面运行候选，观察同一原 Run 的真实压缩进行中及终态，再提交一条新的跟进并核桌面结果。旧聊天、草稿、配对及已提交操作保持；已存在的长历史仅作前置条件，不能算压缩验收。生产 Swift 辅助检查原 thread/run/branch、JSON 安全整数、多个操作、空 pending 水位、终态失败与已安装结构回退，以及可选字段缺失或错误时普通历史仍可读；共享跨语言向量核“已跳过”文案。辅助编译和合成检查不代替真实压缩、模型或 Android 通过。结果和准确源/包/环境只回填[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。
 
 ### F36 请求与实际速度反馈
 

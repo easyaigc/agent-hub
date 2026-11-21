@@ -1,6 +1,8 @@
 package com.agenthub.android
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertTextEquals
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.agenthub.core.TargetScope
 import kotlinx.coroutines.*
@@ -79,6 +81,29 @@ class MobileReadingContextTest {
         ui.waitUntil(5_000) { reads.get()==3&&!session.historyLoading }
         release.complete(Unit);ui.waitForIdle()
         assertTrue(session.messages.all { it.text.startsWith("read-3 ") });assertEquals("new navigation draft",session.text)
+    }
+    @Test fun oldHistorySuccessCannotClearNewNavigationFailure() {
+        setup();val started=gate();val release=gate();val exited=gate()
+        handler={call,client,thread,cursor ->
+            if(call==2)try { withContext(NonCancellable) { started.complete(Unit);release.await() } } finally { exited.complete(Unit) }
+            if(call>=3)throw HostReadError("new navigation read failed",java.net.SocketTimeoutException(),true)
+            page(client,thread,cursor,call)
+        }
+        ui.runOnIdle { session.text="failure-owner draft";session.loadHistory() }
+        runBlocking { withTimeout(5_000) { started.await() } }
+        ui.runOnIdle { session.select(session.selectedClient) }
+        // A background transient read owns the conversation banner, not a modal error.
+        // Finish the new navigation's own workspace before releasing the cancelled old read.
+        ui.waitUntil(5_000) { reads.get()>=3&&!session.loading&&!session.historyLoading&&session.conversationSyncIssue!=null }
+        val issue=checkNotNull(session.conversationSyncIssue);val messages=session.messages
+        val online=session.selectedClient.online;val phase=session.selectedClient.connectionPhase
+        assertEquals("对话同步失败",issue.title);assertNull(session.error)
+        ui.onNodeWithTag("conversation-sync-failure").assertTextEquals(issue.title)
+        release.complete(Unit);runBlocking { withTimeout(5_000) { exited.await() } };ui.waitForIdle()
+        assertEquals(issue,session.conversationSyncIssue);assertNull(session.error);assertEquals(messages,session.messages)
+        assertEquals(online,session.selectedClient.online);assertEquals(phase,session.selectedClient.connectionPhase)
+        ui.onNodeWithTag("conversation-sync-failure").assertTextEquals(issue.title)
+        assertEquals("failure-owner draft",session.text);assertFalse(session.historyLoading)
     }
     @Test fun oldReadFinallyCannotReleaseNewNavigationReadSlot() {
         setup();val oldStarted=gate();val oldRelease=gate();val oldExited=gate();val newStarted=gate();val newRelease=gate()

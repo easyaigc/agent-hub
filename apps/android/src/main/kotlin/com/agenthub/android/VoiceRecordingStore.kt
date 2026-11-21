@@ -64,7 +64,18 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
                 supplied.packageName==BuildConfig.APPLICATION_ID&&actual.packageName==BuildConfig.APPLICATION_ID&&info.packageName==BuildConfig.APPLICATION_ID&&
                 (info.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&info.uid==android.os.Process.myUid())
         },storage) {audioCommittedCheckpoint=checkpoint}
-    private val directory=File(context.noBackupFilesDir,"voice-recordings-v1").apply { check(mkdirs() || isDirectory);android.system.Os.chmod(path,0x1c0) }
+    private val directory=File(context.noBackupFilesDir,"voice-recordings-v1").apply {
+        check(mkdirs() || isDirectory)
+        require(canonicalFile==File(context.noBackupFilesDir.canonicalFile,name))
+        val before=android.system.Os.lstat(path)
+        check(android.system.OsConstants.S_ISDIR(before.st_mode) && before.st_uid==android.os.Process.myUid())
+        // Keep an already-private directory untouched; redundant chmod changes its ctime.
+        if((before.st_mode and 0xfff) != 0x1c0) android.system.Os.chmod(path,0x1c0)
+        val after=android.system.Os.lstat(path)
+        check(android.system.OsConstants.S_ISDIR(after.st_mode) && after.st_uid==before.st_uid &&
+            after.st_gid==before.st_gid && after.st_dev==before.st_dev && after.st_ino==before.st_ino &&
+            (after.st_mode and 0xfff) == 0x1c0)
+    }
     private fun key(id: String)="voice-recording:$id"
     private fun rawWriter(id: String): NativeVoiceRawGate.Writer {storage.requireRawWriterOwner();return NativeVoiceRawOwnership.writer(file(id))}
     private fun index()=storage.migrationReadTextRecords(setOf("voice-index-v1"))["voice-index-v1"]?.let { raw->

@@ -25,6 +25,12 @@ import androidx.compose.ui.unit.dp
         fun line(x: Float, y: Float, xx: Float, yy: Float) = drawLine(color, Offset(x*u,y*u), Offset(xx*u,yy*u), 1.7f*u, StrokeCap.Round)
         fun path(vararg points: Float) { val p = Path(); p.moveTo(points[0]*u, points[1]*u); for (i in 2 until points.size step 2) p.lineTo(points[i]*u,points[i+1]*u); drawPath(p,color,style=stroke) }
         when(name) {
+            "sliders" -> {
+                for((y,x) in listOf(6f to 8f,12f to 16f,18f to 10f)) {
+                    line(3f,y,x-3f,y);line(x+3f,y,21f,y)
+                    drawCircle(color,2.5f*u,Offset(x*u,y*u),style=stroke)
+                }
+            }
             "settings" -> {
                 val gear=Path()
                 for(i in 0 until 32) {

@@ -254,7 +254,8 @@ export function desktopProposedPlan(state: WireObject): ProposedPlan | undefined
         object(v.params).threadId === state.id &&
         object(v.params).turnId === turn.turnId,
     );
-  if (request)
+  // A consumed latest request must also fence older unresolved plan requests.
+  if (request && request.completed !== true)
     return {
       id: string(request.id),
       turnId: string(turn.turnId),
@@ -275,7 +276,7 @@ function desktopInput(value: unknown): WireObject[] {
 }
 
 export class DesktopIpc {
-  private socket?: Duplex;
+  private socket: Duplex | undefined;
   windowsIdentity?: WindowsDesktopIdentity;
   private clientId = '';
   private pending = new Map<
@@ -285,6 +286,7 @@ export class DesktopIpc {
   private owners = new Map<string, string>();
   private states = new Map<string, { revision: number; state: WireObject }>();
   private streamVersions = new Map<string, number>();
+  private retiredStreamVersions = new Map<string, Set<number>>();
   private streamErrors = new Map<string, DesktopStreamCompatibilityError>();
   // One owner can publish both a retired cached stream and its replacement.
   // Revisions are comparable within a stream, not across those two histories.
@@ -389,25 +391,10 @@ export class DesktopIpc {
     socket.on('close', () => {
       frames.reset();
       if (socket !== this.socket) return;
-      this.ready = false;
-      for (const pending of this.pending.values()) {
-        clearTimeout(pending.timer);
-        pending.reject(new Error('Desktop disconnected; outcome uncertain'));
-      }
-      this.pending.clear();
-      this.owners.clear();
-      this.states.clear();
-      this.streamVersions.clear();
-      this.streamErrors.clear();
-      this.retiredStreams.clear();
-      this.terminalResets.clear();
-      this.snapshotReads.clear();
-      this.snapshotRetryAt.clear();
-      this.liveWindows.clear();
-      this.observedOwners.clear();
-      this.currentModels.clear();
-      this.modelEpoch++;
-      for (const waiters of this.waiters.values()) for (const done of waiters) done();
+      this.connectionEpoch++;
+      this.connectionAbort?.abort();
+      this.socket = undefined;
+      this.clearConnectionState();
       this.onDisconnect();
     });
     if (process.platform !== 'win32')
@@ -528,6 +515,7 @@ export class DesktopIpc {
             this.owners.delete(id);
             this.states.delete(id);
             this.streamVersions.delete(id);
+            this.retiredStreamVersions.delete(id);
             this.streamErrors.delete(id);
             this.retiredStreams.delete(id);
             this.terminalResets.delete(id);
@@ -558,21 +546,8 @@ export class DesktopIpc {
         this.incompatibleStream(id);
         return;
       }
-      const old = this.states.get(id);
-      if (
-        change.type === 'patches' &&
-        this.streamVersions.has(id) &&
-        this.streamVersions.get(id) !== message.version
-      ) {
-        // A new wire revision needs its own full baseline. Never apply its
-        // patches to a snapshot from another contract, or infer an execution ACK.
-        this.invalidate(id);
-        this.liveWindows.delete(id);
-        this.observedOwners.delete(id);
-        this.streamVersions.set(id, message.version);
-        this.following(id, true);
-        return;
-      }
+      // A prior wire contract from this owner cannot replace its newer baseline.
+      if (this.retiredStreamVersions.get(id)?.has(message.version)) return;
       if (change.type === 'patches' && !Array.isArray(change.patches)) {
         this.incompatibleStream(id);
         return;
@@ -581,7 +556,39 @@ export class DesktopIpc {
         this.incompatibleStream(id);
         return;
       }
-      this.streamVersions.set(id, message.version);
+      if (change.type === 'snapshot') {
+        const snapshot = object(change.conversationState);
+        if (snapshot.id !== id || snapshot.hostId !== 'local' || !streamState(snapshot)) {
+          this.incompatibleStream(id);
+          return;
+        }
+      }
+      let old = this.states.get(id);
+      const priorVersion = this.streamVersions.get(id);
+      if (priorVersion !== undefined && priorVersion !== message.version) {
+        const retired = this.retiredStreamVersions.get(id) ?? new Set<number>();
+        if (retired.size >= 32) {
+          this.incompatibleStream(id);
+          return;
+        }
+        retired.add(priorVersion);
+        this.retiredStreamVersions.set(id, retired);
+        // Counters belong to one wire contract. Preserve semantic retired heads
+        // and terminal outcomes, but do not compare another contract's revisions.
+        this.invalidate(id);
+        this.liveWindows.delete(id);
+        this.observedOwners.delete(id);
+        old = undefined;
+        for (const [key] of this.retiredStreams.get(id) ?? [])
+          this.retiredStreams.get(id)!.set(key, -1);
+        for (const reset of this.terminalResets.get(id)?.values() ?? [])
+          reset.retiredRevisions.clear();
+        if (change.type === 'patches') {
+          this.streamVersions.set(id, message.version);
+          this.following(id, true);
+          return;
+        }
+      }
       let terminalReset: ReturnType<typeof terminalDesktopReset>;
       if (change.type === 'patches' && !old) {
         const window = this.liveWindows.get(id) ?? new DesktopLiveWindow();
@@ -682,7 +689,7 @@ export class DesktopIpc {
         this.terminalResets.set(id, resets);
       }
       const continued = old && continuedDesktopStream(old.state, state);
-      if (continued) {
+      if (continued && old) {
         const streams = this.retiredStreams.get(id) ?? new Map<string, number>();
         streams.set(continued.key, old.revision);
         this.retiredStreams.set(id, streams);
@@ -988,6 +995,8 @@ export class DesktopIpc {
     const ownerId = string(owner.handledByClientId);
     if (!ownerId || object(owner.result).supportsUntrustedAppInput !== true) {
       this.owners.delete(id);
+      this.streamVersions.delete(id);
+      this.retiredStreamVersions.delete(id);
       this.retiredStreams.delete(id);
       this.terminalResets.delete(id);
       this.invalidate(id);
@@ -1002,6 +1011,8 @@ export class DesktopIpc {
     // discovery reply alone cannot refresh a stale running/completed state.
     if (this.owners.get(id) !== ownerId) {
       this.states.delete(id);
+      this.streamVersions.delete(id);
+      this.retiredStreamVersions.delete(id);
       this.retiredStreams.delete(id);
       this.terminalResets.delete(id);
       this.liveWindows.delete(id);
@@ -1010,6 +1021,7 @@ export class DesktopIpc {
     this.owners.set(id, ownerId);
     this.streamErrors.delete(id);
     let received = false;
+    const connectionEpoch = this.connectionEpoch;
     const skippedBefore = this.skippedFrames;
     this.snapshotReads.set(id, skippedBefore);
     try {
@@ -1037,8 +1049,9 @@ export class DesktopIpc {
         }
       });
     } finally {
-      this.snapshotReads.delete(id);
+      if (connectionEpoch === this.connectionEpoch) this.snapshotReads.delete(id);
     }
+    if (connectionEpoch !== this.connectionEpoch) return undefined;
     const streamError = this.streamErrors.get(id);
     if (streamError) throw streamError;
     if (!received) {
@@ -1104,11 +1117,43 @@ export class DesktopIpc {
       throw new Error('Desktop owner response mismatch; outcome uncertain');
     return object(result.result);
   }
+  private clearConnectionState(): void {
+    this.ready = false;
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error('Desktop disconnected; outcome uncertain'));
+    }
+    this.pending.clear();
+    this.owners.clear();
+    this.states.clear();
+    this.streamVersions.clear();
+    this.retiredStreamVersions.clear();
+    this.streamErrors.clear();
+    this.retiredStreams.clear();
+    this.terminalResets.clear();
+    this.snapshotReads.clear();
+    this.snapshotRetryAt.clear();
+    this.liveWindows.clear();
+    this.observedOwners.clear();
+    this.currentModels.clear();
+    this.modelEpoch++;
+    const waiting = [...this.waiters.values()].flatMap((values) => [...values]);
+    this.waiters.clear();
+    this.follows.clear();
+    this.limitedReads.clear();
+    this.snapshotReceivedAt.clear();
+    this.modelReads.clear();
+    this.clientId = '';
+    for (const done of waiting) done();
+  }
   close(): void {
     this.connectionEpoch++;
     this.connectionAbort?.abort();
-    this.ready = false;
-    this.socket?.destroy();
+    const socket = this.socket;
+    this.socket = undefined;
+    this.clearConnectionState();
+    socket?.destroy();
+    if (socket) this.onDisconnect();
   }
 }
 

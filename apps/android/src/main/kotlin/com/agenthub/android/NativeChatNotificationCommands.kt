@@ -15,8 +15,12 @@ import kotlin.coroutines.resumeWithException
 
 /** Immutable saved/retained authorization. Never consults a live credential callback after capture. */
 internal class NativeChatNotificationSnapshot(client: MobileClient, credential: String, val credentialEpoch: String) {
+    companion object {
+        internal fun acceptsCredential(value: String) =
+            value.length in 32..512 && value.none(Char::isWhitespace) && value.none { it.code < 32 }
+    }
     val target = NativeChatNoticeTarget.from(requireNotNull(client.scope))
-    private val authorization = credential.also { require(it.length in 32..512 && it.none(Char::isWhitespace) && it.none { c -> c.code < 32 }) }
+    private val authorization = credential.also { require(acceptsCredential(it)) }
     private val endpoint = NativeHostReads.baseAddress(requireNotNull(client.endpoint)).toString().trimEnd('/')
     private val paired = client.codexDirect?.let {
         require(NativeChatNoticeTarget.from(it.target) == target)
@@ -47,6 +51,7 @@ internal class NativeChatNotificationSnapshot(client: MobileClient, credential: 
         val fields = linkedMapOf("hostId" to target.hostId, "target" to NativeChatNotificationCodec.target(target).toString(), "deviceId" to deviceId)
         when (call) {
             NativeChatRecoveryCall.CAPABILITIES -> require(original == null && page == null)
+            NativeChatRecoveryCall.PUSH_CAPABILITIES -> { require(original == null && page == null); fields["pushProviders"] = "1" }
             NativeChatRecoveryCall.SUBMIT, NativeChatRecoveryCall.QUERY -> {
                 require(original != null && original.target == target && original.deviceId == deviceId && page == null)
                 if (call == NativeChatRecoveryCall.QUERY) { fields["epoch"] = original.epoch; fields["operationId"] = original.operationId }

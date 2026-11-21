@@ -6,6 +6,10 @@ import com.agenthub.core.TargetScope
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.*
+import org.junit.After
+import org.junit.Rule
+import org.junit.rules.TestName
+import java.security.MessageDigest
 import org.junit.Before
 import org.junit.Test
 import java.time.Instant
@@ -14,7 +18,10 @@ import java.util.UUID
 /** Synthetic local boundaries with real Keystore/AtomicFile. Never posts an OS/remote notice. */
 class NativeChatNotificationTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
-    private val namespace = "P9-chat-notification-${UUID.randomUUID()}"
+    private val namespace by lazy { "P9-chat-notification-${UUID.randomUUID()}" }
+    @get:Rule val testMethod=TestName()
+    private var preferenceFixture: PreferenceEpochFixture?=null
+    private var preferencePrimary: Throwable?=null
     private lateinit var storage: NativeSessionStorage
     private lateinit var store: NativeChatNotificationStore
     private val target = NativeChatNoticeTarget("host", "workspace", "desktop-runtime")
@@ -27,8 +34,28 @@ class NativeChatNotificationTest {
     private fun enable(): NativeChatNoticeLease { store.update { it.copy(enabled = true) }; return store.bind(target, "credential-reference-1") }
     @Before fun prepare() {
         require(context.packageName == "com.easyai.agenthub.android.acceptance")
-        storage = NativeSessionStorage(context, namespace)
-        store = NativeChatNotificationStore(storage)
+        val exactMethod=checkNotNull(testMethod.methodName) {"JUnit must identify the method before fixture construction"}
+        if(exactMethod=="preferenceCommitRevokesEpochsCapturedWhileWaitingForStorage") {
+            val owned=PreferenceEpochFixture(context);preferenceFixture=owned
+            try {owned.prepare();storage=owned.storage;store=NativeChatNotificationStore(storage)}
+            catch(error: Throwable){preferencePrimary=error;owned.rememberFailure(error);throw error}
+        } else {
+            storage = NativeSessionStorage(context, namespace)
+            store = NativeChatNotificationStore(storage)
+        }
+    }
+    @After fun finishOwnedPreferenceFixture() {
+        preferenceFixture?.let {owned->
+            try {owned.finish()}catch(error: Throwable) {
+                val original=preferencePrimary
+                if(original==null)throw error
+                if(original!==error)original.addSuppressed(error) // The original Before/body failure still fails JUnit.
+            }
+        }
+    }
+    @Test fun preferenceCommitRevokesEpochsCapturedWhileWaitingForStorage() {
+        val owned=checkNotNull(preferenceFixture)
+        try {owned.run()}catch(error: Throwable){preferencePrimary=error;owned.rememberFailure(error);throw error}
     }
     @Test fun preferencesStrictRoundtripAndDefaults() {
         val initial = store.preferences(); assertFalse(initial.enabled); assertTrue(initial.showThreadTitle)
@@ -193,4 +220,163 @@ class NativeChatNotificationTest {
         override suspend fun receive(event: NativeChatNotificationEvent) = error("Route must never reconcile or execute")
         override fun mayPresent(event: NativeChatNotificationEvent) = false
     }) = NativeChatNotificationRuntime(store, NativeChatNotificationPlatform(context, NativeL10n(context, "en")), reading) { now }
+
+    /** Only the new preference wrapper owns this fixture; no default installation key is queried. */
+    private class PreferenceEpochFixture(private val context: android.content.Context) {
+        val id=UUID.randomUUID().toString()
+        val namespace="P9-preference-epoch-$id"
+        val alias="agent-hub-pref-epoch-$id"
+        private val root=java.io.File(context.noBackupFilesDir,namespace)
+        private val evidence=java.io.File(context.filesDir,"acceptance/notification-preference-epoch/$id")
+        private val group=ThreadGroup("preference-epoch-$id")
+        private var body: Thread?=null
+        private val failure=java.util.concurrent.atomic.AtomicReference<Throwable>()
+        private var initialized=false;private var rootOwned=false;private var aliasChecked=false;private var aliasAbsent=false
+        private var rootInode=0L;private var rootDevice=0L;private var cipherInode=0L;private var cipherDevice=0L
+        private var bodyPassed=false;private var workersClosed=false;private var storageClosed=false
+        private var finishAttempted=false
+        private var executor: java.util.concurrent.ExecutorService?=null
+        private val writer=java.util.concurrent.atomic.AtomicReference<Thread>()
+        private var originalCipher: ByteArray?=null
+        lateinit var storage: NativeSessionStorage;private set
+        private fun sha(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString(""){"%02x".format(it)}
+        private fun directory(file: java.io.File) {
+            require(file.isDirectory&&!java.nio.file.Files.isSymbolicLink(file.toPath())&&file.canonicalFile==file.absoluteFile)
+            val observed=android.system.Os.lstat(file.path)
+            require(observed.st_uid==android.os.Process.myUid())
+            if(file==root&&rootOwned)require(observed.st_ino==rootInode&&observed.st_dev==rootDevice&&observed.st_mode and 511==448)
+        }
+        private fun mkdir(file: java.io.File,fresh: Boolean=false) {
+            directory(checkNotNull(file.parentFile))
+            if(fresh||!file.exists()) {java.nio.file.Files.createDirectory(file.toPath());android.system.Os.chmod(file.path,448)}
+            directory(file);require(android.system.Os.lstat(file.path).st_mode and 511==448)
+        }
+        private fun bytes(name: String,value: ByteArray) {
+            directory(evidence)
+            val file=java.io.File(evidence,name)
+            val fd=android.system.Os.open(file.path,android.system.OsConstants.O_WRONLY or android.system.OsConstants.O_CREAT or android.system.OsConstants.O_EXCL or android.system.OsConstants.O_NOFOLLOW,384)
+            java.io.FileOutputStream(fd).use {it.write(value);it.fd.sync()}
+            require(file.readBytes().contentEquals(value))
+            NativeReadingFixtureFiles.syncDirectory(evidence)
+        }
+        private fun record(name: String,value: JSONObject)=bytes(name,value.toString().toByteArray(Charsets.UTF_8))
+        private fun state()=JSONObject().put("fixture",id).put("namespace",namespace).put("root",root.path).put("alias",alias)
+            .put("evidence",evidence.path).put("rootOwned",rootOwned).put("aliasAbsenceChecked",aliasChecked).put("aliasAbsentBeforeFixture",aliasAbsent)
+            .put("initialized",initialized).put("bodyPassed",bodyPassed).put("workersClosed",workersClosed).put("storageExecutorTerminated",storageClosed)
+            .put("bodyAlive",body?.isAlive?:false).put("bodyThreadId",body?.id).put("writerAlive",writer.get()?.isAlive?:false)
+            .put("writerThreadId",writer.get()?.id).put("executorIdentity",executor?.let(System::identityHashCode))
+            .put("failureClass",failure.get()?.javaClass?.name).put("failureStack",failure.get()?.stackTraceToString())
+            .put("replayAllowed",false).put("defaultAliasAccessAttempted",false).put("reviewAtMs",System.currentTimeMillis()+21_600_000L)
+            .put("recovery","Read this same fixture ownership/originals/cleanup records; reconcile physical workers, executor, files and alias. Never re-run the wrapper to resolve unknown.")
+            .put("releaseCondition","Root captures originals and confirms exact worker/writer and cleanup outcomes, then separately retires only this evidence fixture; no shared/default key deletion")
+        private val cleanup=NativeReadingFixtureCleanup {n,phase,states->
+            record("cleanup-%02d.json".format(n),state().put("phase",phase).put("states",JSONObject(states)).put("missingCompletionMeansUnknown",true))
+        }
+        fun prepare() {
+            check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+            mkdir(java.io.File(context.filesDir,"acceptance"));mkdir(checkNotNull(evidence.parentFile));mkdir(evidence,true)
+            record("identity.json",state()) // Durable ownership before any namespace/key creation.
+            require(!java.nio.file.Files.exists(root.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            val keys=java.security.KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
+            aliasAbsent=!keys.containsAlias(alias);aliasChecked=true;require(aliasAbsent)
+            mkdir(root,true);android.system.Os.lstat(root.path).also {rootInode=it.st_ino;rootDevice=it.st_dev};rootOwned=true
+            storage=NativeSessionStorage(context,namespace,alias)
+            executor=NativeSessionStorage::class.java.getDeclaredField("writes").apply {isAccessible=true}.get(storage) as java.util.concurrent.ExecutorService
+            initialized=true;record("prepared.json",state())
+        }
+        fun rememberFailure(error: Throwable) {
+            if(!failure.compareAndSet(null,error))failure.get()?.let {if(it!==error)it.addSuppressed(error)}
+        }
+        fun run() {
+            check(initialized&&body==null&&!finishAttempted)
+            body=Thread(group,{
+                try {NativeChatNotificationPreferenceEpochAssertions.run(storage);bodyPassed=true}
+                catch(error: Throwable){rememberFailure(error)}
+            },"preference-body-$id").also {it.start()}
+            checkNotNull(body).join(40_000)
+            check(body?.isAlive==false) {"Owned preference body exit unknown; retain exact fixture"}
+            failure.get()?.let {throw it}
+            check(bodyPassed)
+        }
+        private fun closeWorkers() {
+            body?.join(5_000)
+            check(body?.isAlive!=true) {"Owned preference controller still alive"}
+            // All four helper writers inherit this exact group, never a global name match.
+            val threads=arrayOfNulls<Thread>(16);val count=group.enumerate(threads,true)
+            check(count<threads.size) {"Owned helper thread inventory overflow"}
+            val deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(5)
+            threads.take(count).filterNotNull().forEach {t->
+                val left=deadline-System.nanoTime()
+                if(t.isAlive&&left>0)java.util.concurrent.TimeUnit.NANOSECONDS.timedJoin(t,left)
+                check(!t.isAlive) {"Owned helper writer exit unknown"}
+            }
+            val remainingThreads=arrayOfNulls<Thread>(16)
+            check(group.enumerate(remainingThreads,true)==0);workersClosed=true
+        }
+        private fun captureOriginal() {
+            directory(root)
+            val name=sha(NativeChatNotificationStore.RECORD.toByteArray(Charsets.UTF_8))+".bin"
+            require(root.list()?.toSet()==setOf(name)) {"Unexpected fixture files; retain without deletion"}
+            val file=java.io.File(root,name);val s=android.system.Os.lstat(file.path)
+            require(android.system.OsConstants.S_ISREG(s.st_mode)&&s.st_uid==android.os.Process.myUid()&&s.st_nlink==1L&&s.st_mode and 511==384&&s.st_size in 1L..1_048_576L)
+            val fd=android.system.Os.open(file.path,android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NOFOLLOW or android.system.OsConstants.O_NONBLOCK,0)
+            val raw=java.io.FileInputStream(fd).use {input->
+                val before=android.system.Os.fstat(fd);val value=input.readBytes();val after=android.system.Os.fstat(fd)
+                require(value.size.toLong()==before.st_size&&before.st_size==after.st_size&&before.st_ino==after.st_ino);value
+            }
+            cipherInode=s.st_ino;cipherDevice=s.st_dev
+            originalCipher=raw;bytes("original-record.bin",raw)
+            val text=checkNotNull(storage.read(NativeChatNotificationStore.RECORD)).toByteArray(Charsets.UTF_8)
+            bytes("original-record.json",text)
+            record("original-manifest.json",state().put("cipherName",name).put("cipherBytes",raw.size).put("cipherSha256",sha(raw)).put("textBytes",text.size).put("textSha256",sha(text)))
+        }
+        private fun closeStorage() {
+            check(initialized&&workersClosed)
+            val actual=checkNotNull(executor)
+            try {
+                // Capture the thread of the ACTUAL storage executor, not a substitute or a flag.
+                actual.submit(Runnable {writer.set(Thread.currentThread())}).get(5,java.util.concurrent.TimeUnit.SECONDS)
+                if(bodyPassed)captureOriginal()
+            } finally {storage.retireWriter()}
+            check(actual.awaitTermination(5,java.util.concurrent.TimeUnit.SECONDS)) {"Storage executor exit unknown"}
+            checkNotNull(writer.get()).join(5_000)
+            storageClosed=actual.isTerminated&&writer.get()?.isAlive==false
+            check(storageClosed)
+        }
+        fun finish() {
+            check(!finishAttempted);finishAttempted=true
+            var closeError: Throwable?=null
+            try {closeWorkers();if(initialized)closeStorage()}catch(error: Throwable){closeError=error}
+            if(failure.get()!=null||!bodyPassed||!workersClosed||!storageClosed||closeError!=null) {
+                val error=failure.get()?:closeError?:IllegalStateException("Fixture initialization/body/physical closure incomplete")
+                if(closeError!=null&&closeError!==error)error.addSuppressed(closeError)
+                runCatching {record("retained.json",state().put("cleanupPhase",cleanup.phase).put("cleanupStates",JSONObject(cleanup.snapshot())).put("retentionReason","Failed/unknown; inspect original outcome and exact owned identities before any later action"))}.exceptionOrNull()?.let {if(it!==error)error.addSuppressed(it)}
+                System.err.println("NOTIFICATION_PREFERENCE_RETAINED fixture=$id root=${root.path} alias=$alias evidence=${evidence.path} workersClosed=$workersClosed storageClosed=$storageClosed")
+                throw error
+            }
+            val file=java.io.File(root,sha(NativeChatNotificationStore.RECORD.toByteArray(Charsets.UTF_8))+".bin")
+            try {
+                cleanup.step("cipher","removed") {
+                    directory(root);require(root.list()?.toSet()==setOf(file.name))
+                    val s=android.system.Os.lstat(file.path);require(android.system.OsConstants.S_ISREG(s.st_mode)&&s.st_uid==android.os.Process.myUid()&&s.st_nlink==1L&&s.st_mode and 511==384&&s.st_ino==cipherInode&&s.st_dev==cipherDevice)
+                    require(file.readBytes().contentEquals(checkNotNull(originalCipher)))
+                    java.nio.file.Files.delete(file.toPath());require(!java.nio.file.Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS));NativeReadingFixtureFiles.syncDirectory(root)
+                }
+                cleanup.step("directory","removed") {directory(root);require(root.list()?.isEmpty()==true);java.nio.file.Files.delete(root.toPath());require(!java.nio.file.Files.exists(root.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS));NativeReadingFixtureFiles.syncDirectory(context.noBackupFilesDir)}
+                cleanup.step("alias","removed") {
+                    check(aliasAbsent&&rootOwned)
+                    val keys=java.security.KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
+                    require(keys.containsAlias(alias));keys.deleteEntry(alias);require(!keys.containsAlias(alias))
+                }
+                cleanup.step("result","written") {record("result.json",state().put("executionNamespaceRemoved",true).put("syntheticAliasRemoved",true).put("originalsRetainedForRoot",true))}
+                originalCipher?.fill(0)
+                System.err.println("NOTIFICATION_PREFERENCE_CAPTURE fixture=$id evidence=${evidence.path} workersClosed=true storageClosed=true")
+            }catch(error: Throwable) {
+                rememberFailure(error)
+                runCatching {record("retained.json",state().put("cleanupPhase",cleanup.phase).put("cleanupStates",JSONObject(cleanup.snapshot())))}.exceptionOrNull()?.let {if(it!==error)error.addSuppressed(it)}
+                System.err.println("NOTIFICATION_PREFERENCE_RETAINED fixture=$id root=${root.path} alias=$alias evidence=${evidence.path} phase=${cleanup.phase}; no automatic replay")
+                throw error
+            }
+        }
+    }
 }

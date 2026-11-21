@@ -232,3 +232,13 @@ U3 必须核对：实际 billing API／桌面 service、余额精度与单位、
 生产定义以 [usage.ts](../../packages/protocol/src/usage.ts) 和 [JSON Schema](../../packages/protocol/schemas/usage-v1.schema.json) 为准，KMP 的 [UsageRules](../../packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt) 同时校验两端。HTTP 请求仅允许单个 target 查询项；requestId 由 Host 生成，EasyWork 则回显固定 RPC 的 requestId。余额摘要使用字符串进位，详情保留完整原值；数量型限额仅为显示比例进行精确整数除法，不将余额转为 Double。相等的余额不建立共享池，legacy 与具名 map 不重复导入。
 
 provider-defined 组合不由手机解释为 all-of／any-of。环选择只取有来源的首个有效全局窗口（其次总量），不会求和、平均或推断哪个窗口耗尽意味着整个账号不可用。上游未返回的窗口不创建占位假数据。扩展类型保持命名空间和有界文本，未知 v1 子类型在元素边界跳过并形成手机本地 partial 投影。
+
+## 2026-11-12 失败来源连续性的落地边界
+
+本地投影增加debt/balanceDebt、cached/failureReason等展示字段，不扩充usage v1 wire。共同`UsageReadRules`处理严格投影和失败策略；HTTP401/403与200内单指标unavailable分开。有效partial响应的新快照保留合法兄弟项；认证、禁止、错目标及无效数据不保留旧数值。
+
+当前`status=unavailable`响应不携带当前source，网络错误也没有独立钱包来源证明。先前scopeRef与相同endpoint/设备grant均不能证明失败时来源仍连续；双端Store在此情况下撤下数值并分别显示连续性未确认和实际失败原因，不改连接/授权、草稿或命令。只有受信读取边界另行证实当前adapterId+非空scopeRef与旧样本一致时，共同策略才允许暂时网络失败沿用旧样本；当前生产失败通道没有此证明，不伪造提供。过期但尚无新失败的原有效快照按原时刻显示缓存，不改写sampledAt、observedAt或validUntil。
+
+主动刷新不绕过5秒间隔。两端Store统一跨可见消费者两槽预算；同目标共享一个读取，消费者引用计数控制取消，排队与晚到回调均核原读取代际。Android使用四机器字段构造稳定目标键，不把对象地址或Codex账号展示元数据当作缓存身份。
+
+R2稳定读取身份补充：usage缓存与可见消费者使用同一个确定性连接身份。Android不使用嵌套TargetScope对象字符串；Codex配对按完整四机器目标、pin、路由和systemEndpoints编码，历史账号仅展示；EasyWork按原connection JSON规范编码，完整账号、credentialRef、peer/candidates/preference继续隔离。iOS只在用量身份的Codex连接副本去掉legacy account，原Client、保存连接、命令payload与操作指纹不变。summary/footer/details副作用绑定稳定身份；等值对象重建或Codex历史账号展示变化不取消共享flight，真实绑定、目标、可见或前后台变化仍按原生命周期处理。

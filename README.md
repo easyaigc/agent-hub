@@ -1,5 +1,7 @@
 # Agent Hub
 
+开发与验收：Android 对接 Codex/EasyWork 的当前状态和后续计划统一维护于[权威状态和计划](docs/plans/android-ios-alignment-20261107/progress.md)。
+
 **在手机上一键切换多台电脑、多种 Agent 客户端。**
 
 连接电脑上的 Codex、EasyWork，随时管理项目、对话和任务。任务继续在所选电脑上执行，手机负责查看、交互与控制。

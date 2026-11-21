@@ -451,6 +451,558 @@ test('named child request errors retain explicit HTTP status at the session boun
   }
 });
 
+// Parent-chat association is an explicit additional read mode, never a tool alias.
+const lineageSource = (parent) => ({
+  subAgent: { thread_spawn: { parent_thread_id: parent, depth: 1 } },
+});
+async function lineageReader(rpc) {
+  const { CodexHistoryReader } = await import('../packages/codex-adapter/dist/history-reader.js');
+  const reader = Object.create(CodexHistoryReader.prototype);
+  Object.assign(reader, {
+    hostId: 'host',
+    initialized: true,
+    closeGeneration: 0,
+    process: { exitCode: null, killed: false },
+    knownThreads: new Set(),
+  });
+  reader.rpc = async (method, args) => {
+    assert.ok(
+      ['thread/list', 'thread/read', 'thread/items/list'].includes(method),
+      'zero execution RPCs',
+    );
+    return rpc(method, args, reader);
+  };
+  return reader;
+}
+
+test('lineage official catalog uses direct parent selector and fails closed on incomplete or foreign rows', async () => {
+  const { directParentCatalog } = await import('../packages/codex-adapter/dist/parent-lineage.js');
+  const row = { id: 'child', source: lineageSource('parent') };
+  let calls = 0;
+  const reader = await lineageReader((method, args) => {
+    calls++;
+    assert.equal(method, 'thread/list');
+    assert.deepEqual(args, {
+      limit: 100,
+      parentThreadId: 'parent',
+      sourceKinds: ['subAgentThreadSpawn'],
+      modelProviders: [],
+      useStateDbOnly: true,
+    });
+    return { data: [row], nextCursor: null };
+  });
+  assert.deepEqual(await reader.parentLineageChildren('parent'), ['child']);
+  assert.equal(calls, 1);
+  for (const value of [
+    { data: [row], nextCursor: 'remaining' },
+    { data: Array(33).fill(row) },
+    { data: [row, row] },
+    { data: [{ ...row, source: lineageSource('other') }] },
+    { data: [{ ...row, source: 'subAgentThreadSpawn' }] },
+    { data: [{ id: 'parent', source: lineageSource('parent') }] },
+    {},
+  ])
+    assert.throws(() => directParentCatalog(value, 'parent'));
+  assert.throws(() => directParentCatalog({ data: [] }, 'parent'), /No direct/);
+});
+
+test('selected-child official metadata rejects identity and lineage mismatch before any body RPC', async () => {
+  for (const thread of [
+    { id: 'other', source: lineageSource('parent') },
+    { id: 'child', source: lineageSource('wrong-parent') },
+    { id: 'child' },
+  ]) {
+    const calls = [];
+    const reader = await lineageReader((method, args) => {
+      calls.push([method, args]);
+      return { thread };
+    });
+    await assert.rejects(
+      reader.history('child', undefined, true, undefined, { expectedParentId: 'parent' }),
+    );
+    assert.deepEqual(calls, [['thread/read', { threadId: 'child', includeTurns: false }]]);
+  }
+});
+
+test('lineage paginated reads consume one upstream item with real cursor and repeat proof per page', async () => {
+  const calls = [];
+  const reader = await lineageReader((method, args) => {
+    calls.push([method, args]);
+    if (method === 'thread/read') {
+      assert.equal(args.includeTurns, false);
+      return { thread: { id: 'child', source: lineageSource('parent'), historyMode: 'paginated' } };
+    }
+    assert.equal(method, 'thread/items/list');
+    assert.equal(args.limit, 1);
+    const index = args.cursor ? 0 : 1;
+    return {
+      data: [
+        {
+          turnId: 'turn',
+          item: { id: 'item-' + index, type: 'agentMessage', text: 'message ' + index },
+        },
+      ],
+      nextCursor: index ? 'official-earlier' : null,
+    };
+  });
+  const options = { expectedParentId: 'parent' };
+  const first = await reader.history('child', undefined, true, undefined, options);
+  const earlier = await reader.history('child', first.nextCursor, true, undefined, {
+    ...options,
+    historyMode: 'paginated',
+  });
+  assert.equal(first.nextCursor, 'official-earlier');
+  assert.equal(earlier.nextCursor, null);
+  assert.deepEqual(
+    [...earlier.messages, ...first.messages].map((m) => m.id),
+    ['history-fallback:turn:item-0', 'history-fallback:turn:item-1'],
+  );
+  assert.equal(calls.filter(([method]) => method === 'thread/read').length, 2);
+  assert.ok(
+    calls.every(([method, args]) => method !== 'thread/read' || args.includeTurns === false),
+  );
+});
+
+test('lineage snapshot pages preserve all 181 IDs, turns, order and detect changed snapshots/oversized items', async () => {
+  const { snapshotLineagePage } = await import('../packages/codex-adapter/dist/parent-lineage.js');
+  const messages = Array.from({ length: 181 }, (_, i) => ({
+    id: 'm' + i,
+    runId: 't' + Math.floor(i / 2),
+    text: 'same text',
+  }));
+  const result = [];
+  let cursor;
+  do {
+    const page = snapshotLineagePage(messages, cursor);
+    result.unshift(...page.messages);
+    cursor = page.nextCursor;
+  } while (cursor);
+  assert.deepEqual(result, messages);
+  // Newer saved activity is outside the remaining prefix and must not invalidate unchanged paging.
+  const stable = snapshotLineagePage(messages);
+  assert.deepEqual(
+    snapshotLineagePage(
+      [...messages, { id: 'appended', runId: 'new', text: 'later' }],
+      stable.nextCursor,
+    ).messages,
+    snapshotLineagePage(messages, stable.nextCursor).messages,
+  );
+
+  const first = snapshotLineagePage(messages);
+  assert.throws(
+    () =>
+      snapshotLineagePage(
+        [{ ...messages[0], text: 'changed' }, ...messages.slice(1)],
+        first.nextCursor,
+      ),
+    /changed/,
+  );
+  assert.throws(
+    () => snapshotLineagePage([{ id: 'large', text: 'x'.repeat(1024 * 1024) }]),
+    /budget/,
+  );
+  let calls = 0;
+  const reader = await lineageReader((method, args) => {
+    calls++;
+    assert.equal(method, 'thread/read');
+    const thread = { id: 'child', source: lineageSource('parent') };
+    return {
+      thread: args.includeTurns
+        ? { ...thread, source: lineageSource('foreign'), turns: [] }
+        : thread,
+    };
+  });
+  await assert.rejects(
+    reader.history('child', undefined, true, undefined, { expectedParentId: 'parent' }),
+  );
+  assert.equal(calls, 2);
+});
+
+async function lineageSession() {
+  const { RuntimeSession } = await import('../packages/codex-adapter/dist/runtime-session.js');
+  const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
+  const target = {
+    agentId: 'codex',
+    hostId: 'host',
+    workspaceId: 'workspace',
+    runtimeId: 'desktop-runtime',
+  };
+  const parent = {
+    id: 'parent',
+    hostId: 'host',
+    messages: [{ id: 'card', kind: 'subAgent', text: 'legacy card' }],
+  };
+  const runtime = Object.create(DesktopRuntime.prototype);
+  const session = Object.create(RuntimeSession.prototype);
+  Object.defineProperty(runtime, 'ready', { value: true });
+  Object.defineProperty(session, 'hostId', { value: 'host' });
+  Object.defineProperty(session, 'capabilities', {
+    value: ['subagents:history:parent-lineage:v1'],
+    configurable: true,
+  });
+  Object.assign(session, {
+    runtime,
+    closed: false,
+    requireReady: () => {},
+    readingTarget: () => target,
+    thread: (id) => {
+      assert.equal(id, 'parent');
+      return parent;
+    },
+  });
+  const calls = [];
+  runtime.reader = {
+    captureReadContext: () => () => {},
+    parentLineageChildren: async (id) => {
+      calls.push(['catalog', id]);
+      return ['child', 'second'];
+    },
+    history: async (id, cursor, full, images, options) => {
+      calls.push(['body', id, cursor, options]);
+      assert.equal(typeof options.assertCurrent, 'function');
+      const { assertCurrent, ...proof } = options;
+      assertCurrent();
+      assert.deepEqual(proof, {
+        expectedParentId: 'parent',
+        ...(cursor ? { historyMode: 'paginated' } : {}),
+      });
+      return {
+        hostId: 'host',
+        threadId: id,
+        messages: [],
+        nextCursor: cursor ? null : 'official-cursor',
+        historyMode: 'paginated',
+      };
+    },
+  };
+  // Any accidental active-runtime method is a failure, including purely acquiring a follower.
+  runtime.ipc = new Proxy(
+    {},
+    {
+      get: (_, key) => {
+        throw Error('Unexpected IPC ' + String(key));
+      },
+    },
+  );
+  return { session, runtime, target, parent, calls };
+}
+
+test('explicit lineage mode binds full target/card/child/source and fresh proof on every continuation', async () => {
+  const { session, target, parent, calls } = await lineageSession();
+  const first = await session.subagentHistoryPage(
+    'parent',
+    'card',
+    undefined,
+    undefined,
+    'parent-thread-lineage',
+  );
+  assert.equal(first.version, 2);
+  assert.equal(first.association, 'parent-thread-lineage');
+  assert.equal(first.source, 'saved-history');
+  assert.equal(first.childId, 'child');
+  assert.equal(calls.length, 2);
+  await session.subagentHistoryPage(
+    'parent',
+    'card',
+    undefined,
+    first.nextCursor,
+    'parent-thread-lineage',
+  );
+  assert.equal(calls.length, 4);
+  for (const [card, child, cursor, mode] of [
+    ['card', 'second', first.nextCursor, 'parent-thread-lineage'],
+    ['other', 'child', first.nextCursor, 'parent-thread-lineage'],
+    ['card', 'child', 'subagent-page-v1:old', 'parent-thread-lineage'],
+    ['card', 'child', first.nextCursor, undefined],
+    ['card', 'child', 'garbage', 'parent-thread-lineage'],
+    ['card', 'child', undefined, 'arbitrary'],
+  ])
+    await assert.rejects(session.subagentHistoryPage('parent', card, child, cursor, mode));
+  const count = calls.length;
+  target.workspaceId = 'other';
+  await assert.rejects(
+    session.subagentHistoryPage(
+      'parent',
+      'card',
+      'child',
+      first.nextCursor,
+      'parent-thread-lineage',
+    ),
+  );
+  assert.equal(calls.length, count);
+  target.workspaceId = 'workspace';
+  parent.messages[0].text = 'new card';
+  await assert.rejects(
+    session.subagentHistoryPage(
+      'parent',
+      'card',
+      'child',
+      first.nextCursor,
+      'parent-thread-lineage',
+    ),
+  );
+  assert.equal(calls.length, count);
+});
+
+test('lineage rejects wrong child and late card/target/reader retirement without granting ownership', async () => {
+  for (const changed of ['wrong-child', 'card', 'target', 'reader', 'capability', 'missing-card']) {
+    const { session, runtime, parent, target, calls } = await lineageSession();
+    let retired = false;
+    runtime.reader.captureReadContext = () => () => {
+      if (retired) throw Error('retired');
+    };
+    if (changed === 'capability') Object.defineProperty(session, 'capabilities', { value: [] });
+    if (changed === 'missing-card') parent.messages = [];
+    runtime.reader.parentLineageChildren = async () => {
+      calls.push(['catalog']);
+      if (changed === 'card') parent.messages[0].text = 'replaced';
+      if (changed === 'target') target.runtimeId = 'other';
+      if (changed === 'reader') retired = true;
+      return ['child'];
+    };
+    await assert.rejects(
+      session.subagentHistoryPage(
+        'parent',
+        'card',
+        changed === 'wrong-child' ? 'foreign' : undefined,
+        undefined,
+        'parent-thread-lineage',
+      ),
+    );
+    assert.equal(calls.filter(([kind]) => kind === 'body').length, 0);
+  }
+});
+
+test('closed lineage cursor rejects extra fields, wrong source, wrong parent and empty backend', async () => {
+  const { encodeLineageCursor, decodeLineageCursor } =
+    await import('../packages/codex-adapter/dist/parent-lineage.js');
+  const expected = { target: 'host-target', parent: 'parent', anchor: 'card', anchorHash: 'hash' };
+  const cursor = {
+    ...expected,
+    child: 'child',
+    source: 'saved-history',
+    historyMode: 'paginated',
+    backend: 'real-backend',
+  };
+  assert.deepEqual(decodeLineageCursor(encodeLineageCursor(cursor), expected), cursor);
+  for (const patch of [
+    { extra: true },
+    { parent: 'foreign' },
+    { source: 'desktop-runtime' },
+    { backend: '' },
+    { historyMode: 'other' },
+  ])
+    assert.throws(() =>
+      decodeLineageCursor(encodeLineageCursor({ ...cursor, ...patch }), expected),
+    );
+});
+
+test('reader lifecycle retirement fences late metadata without using clocks/catalog epochs', async () => {
+  let calls = 0;
+  const reader = await lineageReader((method, args, self) => {
+    calls++;
+    self.closeGeneration++;
+    return { thread: { id: 'child', source: lineageSource('parent'), historyMode: 'paginated' } };
+  });
+  await assert.rejects(
+    reader.history('child', undefined, true, undefined, { expectedParentId: 'parent' }),
+    /context changed/,
+  );
+  assert.equal(calls, 1);
+});
+
+test('parent/card cancellation is rechecked after metadata and before body read', async () => {
+  const calls = [];
+  let changed = false;
+  const reader = await lineageReader((method, _args) => {
+    calls.push(method);
+    changed = true;
+    return { thread: { id: 'child', source: lineageSource('parent'), historyMode: 'paginated' } };
+  });
+  await assert.rejects(
+    reader.history('child', undefined, true, undefined, {
+      expectedParentId: 'parent',
+      assertCurrent: () => {
+        if (changed) throw Error('parent/card changed');
+      },
+    }),
+    /parent\/card changed/,
+  );
+  assert.deepEqual(calls, ['thread/read']);
+});
+
+test('lineage never trims an upstream overfull page and rejects mode/cursor/Turn drift', async () => {
+  for (const fault of ['too-many', 'missing-turn', 'same-cursor', 'mode', 'oversized']) {
+    let bodyCalls = 0;
+    const reader = await lineageReader((method, args) => {
+      if (method === 'thread/read')
+        return {
+          thread: { id: 'child', source: lineageSource('parent'), historyMode: 'paginated' },
+        };
+      bodyCalls++;
+      const row = {
+        turnId: 't',
+        item: {
+          id: 'item-1',
+          type: 'agentMessage',
+          text: fault === 'oversized' ? 'x'.repeat(1024 * 1024) : 'body',
+        },
+      };
+      if (fault === 'missing-turn') delete row.turnId;
+      return {
+        data: fault === 'too-many' ? [row, row] : [row],
+        nextCursor: fault === 'same-cursor' ? args.cursor : null,
+      };
+    });
+    await assert.rejects(
+      reader.history('child', fault === 'same-cursor' ? 'old' : undefined, true, undefined, {
+        expectedParentId: 'parent',
+        ...(fault === 'mode' ? { historyMode: 'snapshot' } : {}),
+      }),
+    );
+    assert.equal(bodyCalls, fault === 'mode' ? 0 : 1);
+  }
+});
+
+test('late selected-child body cannot pass a changed anchor and never invokes IPC/control', async () => {
+  const { session, runtime, parent } = await lineageSession();
+  runtime.reader.history = async (id, cursor, full, images, options) => {
+    options.assertCurrent();
+    parent.messages[0].text = 'changed while body was pending';
+    return { hostId: 'host', threadId: id, messages: [{ id: 'never-publish' }], nextCursor: null };
+  };
+  await assert.rejects(
+    session.subagentHistoryPage('parent', 'card', undefined, undefined, 'parent-thread-lineage'),
+  );
+});
+
+test('lineage snapshot rejects metadata/body mode drift before reading turns or publishing any page', async () => {
+  const calls = [];
+  let turnsRead = 0;
+  let successfulPages = 0;
+  const reader = await lineageReader((method, args) => {
+    calls.push([method, args]);
+    assert.equal(method, 'thread/read');
+    const thread = {
+      id: 'child',
+      source: lineageSource('parent'),
+      historyMode: args.includeTurns ? 'paginated' : 'snapshot',
+    };
+    if (args.includeTurns)
+      Object.defineProperty(thread, 'turns', {
+        get() {
+          turnsRead++;
+          return [];
+        },
+      });
+    return { thread };
+  });
+  await assert.rejects(async () => {
+    const page = await reader.history('child', undefined, true, undefined, {
+      expectedParentId: 'parent',
+    });
+    successfulPages++;
+    return page;
+  }, /Official history source changed/);
+  assert.equal(turnsRead, 0, 'mode proof must precede reading the body turns');
+  assert.equal(successfulPages, 0);
+  assert.deepEqual(calls, [
+    ['thread/read', { threadId: 'child', includeTurns: false }],
+    ['thread/read', { threadId: 'child', includeTurns: true }],
+  ]);
+});
+
+test('lineage snapshot accepts matching normalized metadata/body modes and preserves the original item', async () => {
+  for (const [metadataMode, bodyMode] of [
+    ['snapshot', 'snapshot'],
+    [undefined, 'snapshot'],
+    ['snapshot', undefined],
+    [undefined, undefined],
+  ]) {
+    const calls = [];
+    const reader = await lineageReader((method, args) => {
+      calls.push([method, args]);
+      assert.equal(method, 'thread/read');
+      return {
+        thread: {
+          id: 'child',
+          source: lineageSource('parent'),
+          historyMode: args.includeTurns ? bodyMode : metadataMode,
+          ...(args.includeTurns
+            ? {
+                turns: [
+                  {
+                    id: 'turn',
+                    status: 'completed',
+                    items: [{ id: 'item-0', type: 'agentMessage', text: 'original body' }],
+                  },
+                ],
+              }
+            : {}),
+        },
+      };
+    });
+    const page = await reader.history('child', undefined, true, undefined, {
+      expectedParentId: 'parent',
+    });
+    assert.equal(page.threadId, 'child');
+    assert.equal(page.historyMode, metadataMode);
+    assert.equal(page.nextCursor, null);
+    assert.deepEqual(
+      page.messages.map(({ id, runId, text }) => ({ id, runId, text })),
+      [{ id: 'history-fallback:turn:item-0', runId: 'turn', text: 'original body' }],
+    );
+    assert.deepEqual(
+      page.turns.map(({ id, status }) => ({ id, status })),
+      [{ id: 'turn', status: 'completed' }],
+    );
+    assert.deepEqual(calls, [
+      ['thread/read', { threadId: 'child', includeTurns: false }],
+      ['thread/read', { threadId: 'child', includeTurns: true }],
+    ]);
+  }
+});
+
+test('typed history retains its original snapshot branch without the lineage-only body-mode gate', async () => {
+  const calls = [];
+  const reader = await lineageReader((method, args) => {
+    calls.push([method, args]);
+    assert.equal(method, 'thread/read');
+    return {
+      thread: {
+        id: 'child',
+        historyMode: args.includeTurns ? 'paginated' : 'snapshot',
+        ...(args.includeTurns
+          ? {
+              turns: [
+                {
+                  id: 'turn',
+                  status: 'completed',
+                  items: [{ id: 'item-0', type: 'agentMessage', text: 'typed body' }],
+                },
+              ],
+            }
+          : {}),
+      },
+    };
+  });
+  reader.knownThreads.add('child');
+  // Deliberately divergent body metadata detects an accidentally broadened gate.
+  // This preserves existing typed behavior; it is not a new lineage success case.
+  const page = await reader.history('child', undefined, true);
+  assert.equal(page.threadId, 'child');
+  assert.equal(page.historyMode, 'snapshot');
+  assert.equal(page.nextCursor, null);
+  assert.deepEqual(
+    page.messages.map(({ id, runId, text }) => ({ id, runId, text })),
+    [{ id: 'history-fallback:turn:item-0', runId: 'turn', text: 'typed body' }],
+  );
+  assert.deepEqual(calls, [
+    ['thread/read', { threadId: 'child', includeTurns: false }],
+    ['thread/read', { threadId: 'child', includeTurns: true }],
+  ]);
+});
+
 test('owned child reads metadata once while keeping live status and output', async () => {
   const { DesktopRuntime } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
   const { renderItem } = await import('../packages/codex-adapter/dist/runtime.js');

@@ -21,7 +21,8 @@ internal val LocalMessageLinkOpen=staticCompositionLocalOf<((String,String)->Uni
 internal enum class MessageResourceAction { Preview, Share }
 internal val LocalMessageResourceOpen=staticCompositionLocalOf<((String,String,MessageResourceAction)->Unit)?> { null }
 internal val LocalOpeningMessageAnchor=staticCompositionLocalOf<String?> { null }
-private class MessageResourceJob { var value: Job?=null;var active=true }
+internal val LocalMessageDownloadProgress=staticCompositionLocalOf<ResourceDownloadProgress?> { null }
+private class MessageResourceJob { var value: Job?=null;var active=true;var progressOwner: Any?=null }
 private data class MessageLinkFailure(val text: String,val appOwned: Boolean=true,val status: Int?=null)
 private data class ResourcePresentation(val key: String,val selection: Long,val connection: Long,val message: String,val resources: List<String>)
 private class MessageResourcePreview(val resource: MobileSession.PreparedMessageResource,val reference: String,val attachmentIdentity: String?)
@@ -37,6 +38,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
     var selected by remember(owner) { mutableStateOf<String?>(null) }
     var failure by remember(owner) { mutableStateOf<MessageLinkFailure?>(null) }
     var loading by remember(owner) { mutableStateOf<String?>(null) }
+    var downloadProgress by remember(owner) { mutableStateOf<ResourceDownloadProgress?>(null) }
     // A background version update must not destroy an already opened immutable preview.
     var preview by remember(presentation) { mutableStateOf<MessageResourcePreview?>(null) }
     // IME/inset changes and background history layout may recycle the source row.
@@ -48,7 +50,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
         val pinned=if(holdsSource)pinnable?.pin()else null
         onDispose { pinned?.release() }
     }
-    DisposableEffect(owner) { onDispose { read.active=false;read.value?.cancel() } }
+    DisposableEffect(owner) { onDispose { read.active=false;read.progressOwner=null;read.value?.cancel() } }
     val shareTitle by rememberUpdatedState(productText("保存或分享文件"))
     val openResource: (String,String,MessageResourceAction)->Unit=remember(owner) { { reference,anchor,action->
         if(read.active&&session.messageLinkCurrent(owner)&&loading==null) {
@@ -60,10 +62,15 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
                     "external" -> context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(reference)).addCategory(Intent.CATEGORY_BROWSABLE))
                     "computerWeb" -> failure=MessageLinkFailure("此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。")
                     "attachment","computerFile" -> {
-                        loading=anchor
+                        loading=anchor;downloadProgress=ResourceDownloadProgress()
+                        val progressOwner=Any();read.progressOwner=progressOwner
                         read.value=tasks.launch(Dispatchers.Main.immediate) {
                             try {
-                                val result=session.prepareMessageResource(owner,reference,File(context.cacheDir,"resources"))
+                                val result=session.prepareMessageResource(owner,reference,File(context.cacheDir,"resources")) { value ->
+                                    tasks.launch(Dispatchers.Main.immediate) {
+                                        if(read.progressOwner===progressOwner&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor)downloadProgress=value
+                                    }
+                                }
                                 if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) {
                                     when(action) {
                                         MessageResourceAction.Preview -> preview=MessageResourcePreview(result,reference,
@@ -83,7 +90,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
                                         else -> MessageLinkFailure(error.message ?: "读取电脑资源失败，请重试。",native?.appOwnedCopy ?: (error.message==null),native?.status)
                                     }
                                 }
-                            } finally { if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) { loading=null;read.value=null } }
+                            } finally { if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) { loading=null;downloadProgress=null;read.progressOwner=null;read.value=null } }
                         }
                     }
                     else -> failure=MessageLinkFailure("手机暂不支持此类链接，可复制后在对应应用中打开。")
@@ -95,7 +102,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
     } }
     val openLink: (String,String)->Unit=remember(openResource) { { reference,anchor->openResource(reference,anchor,MessageResourceAction.Preview) } }
     CompositionLocalProvider(LocalMessageLinkOpen provides openLink,LocalMessageResourceOpen provides openResource,
-        LocalOpeningMessageAnchor provides loading,content=content)
+        LocalOpeningMessageAnchor provides loading,LocalMessageDownloadProgress provides downloadProgress,content=content)
     failure?.let { error->
         val text=if(!error.appOwned) error.text else if(error.status!=null)productText("电脑请求失败（%@）",error.status) else productText(error.text)
         AlertDialog(onDismissRequest={ failure=null },modifier=Modifier.testTag("message-link-error"),
@@ -105,7 +112,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
     }
     preview?.let { opened->key(opened) {
         NativeResourcePreview(opened.resource,close={ if(preview===opened) {
-            preview=null;read.value?.cancel();read.value=null;loading=null
+            preview=null;read.progressOwner=null;read.value?.cancel();read.value=null;loading=null;downloadProgress=null
         } },current={
             val now=session.messageLinkContext(session.messages.firstOrNull { it.id==message.id } ?: message)
             read.active&&preview===opened&&ResourcePresentation(now.key,now.selection,now.connection,now.message.id,now.message.attachments.map { it.resourceIdentity })==presentation &&
@@ -119,7 +126,15 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
                 if(reference!=null)openResource(reference,"resource-preview-retry",MessageResourceAction.Preview)
                 else {selected=opened.reference;preview=null;failure=MessageLinkFailure("此文件尚未由电脑提供，请刷新对话后重试。")}
             }
-        },refreshing=loading!=null)
+        },refreshing=loading!=null,resolveDocument={ source,reference,digest,progress ->
+            val latest=session.messages.firstOrNull { it.id==message.id }
+                ?: throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+            val now=session.messageLinkContext(latest)
+            val currentPresentation=ResourcePresentation(now.key,now.selection,now.connection,now.message.id,now.message.attachments.map { it.resourceIdentity })
+            if(!read.active||preview!==opened||currentPresentation!=presentation||!session.messageLinkCurrent(now))
+                throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+            session.prepareDocumentResource(now,source,reference,digest,File(context.cacheDir,"resources"),progress)
+        })
     } }
 }
 
@@ -128,7 +143,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
         Row(Modifier.fillMaxWidth().padding(vertical=6.dp).testTag("$tag-link-wait"),horizontalArrangement=Arrangement.spacedBy(8.dp),
             verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=2.dp)
-            Text(productText("正在下载并打开文件…"),style=MaterialTheme.typography.bodySmall)
+            Box(Modifier.weight(1f)) { NativeResourceDownloadProgress(LocalMessageDownloadProgress.current,"$tag-link-progress") }
         }
     }
 }

@@ -1,12 +1,14 @@
 # 架构设计
 
+> 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
+
 2026-11-20 F17／F18／F28／F47：Codex 回执将原 owner 已确认的接收事实与执行新鲜度分开。Host 重启、IPC 断线及接收确认先于迟到请求失败时保留 `acceptedTurnId`，旧版 `uncertain` 记录已有该证据时恢复为 `submitted`，原 ID、意图、附件和终态不变。最新窗口在后台合并查询已接受轮次的只读摘要，最多四页、每页一百轮，三十秒退避；不加载完整工具正文，不阻塞当前阅读，不授予运行控制或重放输入。历史存储模式不作能力门禁；legacy 同样查询已实现的只读轮次方法，仅明确不支持时保留接收事实。状态摘要允许 items 为 null 或省略，不能据此推断未知输入已被接收。源码与本轮验收见移动一致性记录，不改变 EasyWork 唯一台账或 Android 原生验收状态。
 
 2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：iOS 消息媒体在文本 Markdown 前保留图片语法的目的地址，呈现按需打开的图片／视频／音频卡片，复用原消息鉴权、下载和系统预览；打开后的图片只生成有界本地缩略图，不在聊天加载时下载视频。Codex Host 补媒体 MIME，当前完整下载回退与尚未实现的流式方案分别见[消息媒体设计](design/message-media.md)及[专项验收](acceptance/message-media-20261120.md)。iOS 26 原生模拟器的图片、视频及原样片播放场景已通过，初始解析／下载为零。Android 原有图片链接入口保持，媒体卡片与缩略图待独立对齐；不新增 Android／EasyWork 通过，A6 暂停保持。
 
 统一 Host 与 App 的职责、实际契约基准及交付审查按 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md) 执行：EasyWork 在 Host／Adapter 映射同一领域语义，手机复用公共流程。已有不同认证和传输按兼容边界保留；规范生效不代表生产路径已经全部收敛，具体实现与验收只读取唯一计划。
 
-2026-11-20 F72：共用AgentClient.resolveDocumentFile作为文档导航边界，EasyWork适配器独立协商Docv1，校验完整目标及源资源/授权/版本/消息/SHA和引用回显。原消息路由提示用于重新授权，不授予文件访问；桌面负责来源作用域和最终发布。阅读位置与下载授权分离，旧资源键兼容，取消或离开后按操作代次隔离迟到进度和结果。桌面PR73、iOS检查与原验匹配分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-20 F72：共用AgentClient.resolveDocumentFile作为文档导航边界，EasyWork适配器独立协商Docv1，校验完整目标及源资源/授权/版本/消息/SHA和引用回显。原消息路由提示用于重新授权，不授予文件访问；桌面负责来源作用域和最终发布。阅读位置与下载授权分离，旧资源键兼容，取消或离开后按操作代次隔离迟到进度和结果。桌面PR73、iOS检查与原验匹配分别见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
 ## 独立文件接收（2026-11-20）
 
@@ -14,9 +16,11 @@ iOS 的 AgentClient 增加具名独立接收和已校验本地副本读取；Com
 
 目录上限兼容有效有限值与 null。本轮先补接收；当前 iOS 旧 EasyWork 独立上传保留原 20 MiB 客户端边界，避免原 Data 全量读取路径接受无限大导入。上传流式候选与大文件主线对齐单独跟进，本次接收不代表大文件上传已交付。
 
-2026-11-19 F08：EasyWork适配器从已认证、完整目标匹配的runtime/context读取可选直连地址及固定证书指纹，规范化且有界合并，保留中继和旧入口。通用连接观察接口在客户端代次、工作区结果与管理修订仍匹配时，按原目标/凭据/偏好及当前连接快照保存；无可选字段或无效可选元数据仍可沿原通道读取，不主动关闭健康会话，不重放输入。原已验候选、当前主线检查和交付分别见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F08：EasyWork适配器从已认证、完整目标匹配的runtime/context读取可选直连地址及固定证书指纹，规范化且有界合并，保留中继和旧入口。通用连接观察接口在客户端代次、工作区结果与管理修订仍匹配时，按原目标/凭据/偏好及当前连接快照保存；无可选字段或无效可选元数据仍可沿原通道读取，不主动关闭健康会话，不重放输入。原已验候选、当前主线检查和交付分别见[历史验收记录](plans/ios-easywork-alignment-20261112/README.md)。
 
-2026-11-19 F09：iOS适配层在验证加密信封版本/序号及更新订阅游标前采用桌面协议的JSON安全整数边界，拒绝布尔、分数、负值及越界值；合法旧信封省略发送会话标识仍兼容。目标、凭据、原操作ID及恢复流程保持。原真实同会话恢复与去重证据、源码对应和交付状态统一见[唯一计划](plans/ios-easywork-alignment-20261112/README.md)。
+2026-11-19 F08：EasyWork适配器从已认证、完整目标匹配的runtime/context读取可选直连地址及固定证书指纹，规范化且有界合并，保留中继和旧入口。通用连接观察接口在客户端代次、工作区结果与管理修订仍匹配时，按原目标/凭据/偏好及当前连接快照保存；无可选字段或无效可选元数据仍可沿原通道读取，不主动关闭健康会话，不重放输入。原已验候选、当前主线检查和交付分别见[历史iOS对齐记录](plans/ios-easywork-alignment-20261112/README.md)。
+
+2026-11-19 F09：iOS适配层在验证加密信封版本/序号及更新订阅游标前采用桌面协议的JSON安全整数边界，拒绝布尔、分数、负值及越界值；合法旧信封省略发送会话标识仍兼容。目标、凭据、原操作ID及恢复流程保持。原真实同会话恢复与去重证据、源码对应和交付状态统一见[历史iOS对齐记录](plans/ios-easywork-alignment-20261112/README.md)。
 
 Codex stdio 通道统一按 JSONL 的 LF 字节边界解码 UTF-8，兼容 CRLF；字符串中的 U+2028/U+2029 保留为正文。历史读取、执行服务、元数据准备、聊天管理、后台授权读取及共享服务启动器使用同一解码器，不使用终端文本行读取器拆分协议消息。有效正文不能因 Unicode 行分隔符触发协议错误、撤销运行时就绪或重复重连；真正的无效 JSON 仍按原有失败和未知结果规则处理，不重放业务操作。
 
@@ -43,6 +47,14 @@ iOS 共用 `UploadCenter` 的受保护源快照、加密恢复记录及进度视
 2026-11-09 F17（UI05，S02／S11）追加：原 MacBook 隔离 DEV 发现共享缓存已被其他读者扩展后，旧上游游标的窗口会误返空页。Host 现以本次上游页的实际消息边界返回有界窗口；成功较早页更新历史可用时间，最新页的观察连续性与实时控制权限独立核对。iOS 验收增加可见正文断言与原生截图；Android 共用 Host 分页行为，原生双端和物理设备的实际通过分别记录，未借用 iPhone 结果。
 
 2026-11-09 F01／F47（UI01／UI10／S01／S11／S18）：iOS 冷启动先绘制本地恢复进度页，聊天状态／历史与任务 SQLite 的读取、解密和解析在后台执行，完整快照就绪后才创建主界面；缓存缺页回退每次恢复最多读取一次旧版整库。启动期间配对链接暂存，外部文件立即进入原收件箱，仍由用户选择草稿；失败沿用原数据保护与重试，不重放未知输入。同轮减少逐页 Keychain 调用：每次恢复仅在局部读取器中复用历史页解密密钥，每页仍独立认证，退出恢复即释放，不跨启动缓存密钥。 Android 的现有恢复路径不改，本次未新增 Android 通过；iOS 构建、恢复回归、交互和真机结果分别记录，A6 继续暂停。
+
+Codex 原桌面 IPC 流的版本差异封装在 Adapter，按共同字段的严格结构支持 11、13、14；执行消息仍使用独立的具名命令契约。流版本切换必须取得新版本完整快照后才能应用增量，旧版本缓存不能恢复过期运行状态。连接关闭时同步清除该代次的 owner、流契约、缓存和等待者，晚到回调不能污染重连后的状态；不兼容快照保留原操作并明确拒绝，不重放输入。
+
+Codex stdio 通道统一按 JSONL 的 LF 字节边界解码 UTF-8，兼容 CRLF；字符串中的 U+2028/U+2029 保留为正文。历史读取、执行服务、元数据准备、聊天管理、后台授权读取及共享服务启动器使用同一解码器，不使用终端文本行读取器拆分协议消息。有效正文不能因 Unicode 行分隔符触发协议错误、撤销运行时就绪或重复重连；真正的无效 JSON 仍按原有失败和未知结果规则处理，不重放业务操作。
+
+2026-11-18 Android F52/F54：Firebase 客户端配置只注入准确安装包的公开选项，发送凭据仍留在服务端；单一 MessagingService 按唯一保存绑定分派到 Codex 或 EasyWork，分别核对原授权和完整目标。后台令牌变更先使旧本地展示租约失效，持久化当前安装的同步意图，再由同一 JobScheduler 作业处理；旧未知提交不重发。Codex v2 将推送 provider/token 绑定到不可变原意图和代次，外部登记待确认时不报告 ready；EasyWork 保留自己的账号权限及 v1 原提交限制。原 iOS wire 与默认能力投影不变。本文定义边界，当前实施/验收只维护于[唯一功能清单](plans/android-ios-alignment-20261107/progress.md)。
+
+2026-11-17 M283：双端阅读以本地阅读代次和已接受的新鲜publication隔离迟到响应，unready/unavailable不能取代真实latest，quiet全局cursor与内容checkpoint分开；完整原目标先于过期成功判断。EasyWork cache在原连接仍有效时原子提交，Android沿disconnect锁序，iOS沿actor无await提交并核live transport/confirmation。普通通知在最终Main偏好和当前完整目标下决定展示，未知原add结果只重查当前原件，不重放或盲删旧ID。原队列仍桌面唯一执行、共享当前owner设置优先级。无新增wire字段、UI入口或业务TaskHub权限，源码/宿主/编译与真实系统和Provider分别取证。
 
 2026-11-09 F03／F69（UI01／UI10，S01／S11／S18）：Host 元数据辅助进程失败后保留退出与 stdio close 屏障，原生队列初始化中关闭立即回收，只终止本进程创建的准确 child；SIGTERM 后一秒仍存活则升级 SIGKILL，未确认关闭不重建，未知输入不重放。macOS Trace 回收在全 payload inventory 前增加新鲜占用早拒，原删除前后身份、内容与占用校验全部保留；同结果保留／失败项按 1／2／4／8／15 分钟退避，active 仍五秒，新目录不等待旧项。iOS／Android 共用 Host 恢复路径，界面、token、文案不变；本轮为隔离辅助证据，正式服务、真实原 owner 写入、手机与 Windows 未验收，A6 保持暂停。见[专项记录](acceptance/host-lifecycle-cpu-20261109.md)。
 
@@ -631,6 +643,8 @@ EasyWork 的远程持久队列通过受类型约束的 preload 接口显示在�
 Codex 按用户 2026-10-17 确认采用允许短时延迟的同步方式：桌面 owner 就绪且原生队列接口可用时，Host 将活动任务的 queue 输入写入官方 `thread/queue/add`，由原桌面负责后续执行；这些项不再进入 Host FIFO 执行。手机通过原生列表核对队列，事件等待期间每秒刷新，连续读取至少间隔 750 ms；Host 自己的写操作使旧读取失效。原生列表实际可用后声明 `queue:native`，不支持的版本保留 Host FIFO。
 
 手机取消或立即执行先持久记录原项及动作，按原生项 ID 调用 `thread/queue/delete`；成功删除后才向原 owner 追加或开始下一轮。删除返回 false、响应丢失、任务发生变化或已有接管证据时不盲目追加。手机与 Host 的同项重复操作合并，原始输入指纹、附件和 queue 模式不变。队列沿用当前桌面生成设置；不同设置明确拒绝，避免静默丢弃选择。此实现不提供手机与桌面同时操作时的跨端原子认领保证，也不替换整条桌面队列。官方源码、安装与既有历史文件均不修改。研究与验收范围见 [队列接入记录](research/native-queue-boundary-20261017.md)。
+
+2026-11-13 源码补强显式 Turn 前置条件：请求指定 `expectedTurnId` 时，原生移除和后续 follow 完成后仍必须处于同一非空 Turn，最终仅向该 Turn 追加。等待期间原轮自然完成或被替换时，已移除的原项保持可核对状态，不降级为新一轮；同 ID 重试不再移除或投递。省略前置条件的普通动作保持原语义。iOS/Android 共用这一 Codex Host 边界，EasyWork 路径独立；定向反例与新产物、部署、真实手机验收分别登记，见[权威计划 M133/M135](plans/android-ios-alignment-20261107/progress.md)。
 
 iOS 草稿由输入栏单独观察，文字修改立即更新目标草稿和发送按钮，不发布到聊天历史的全局状态。输入停顿 350 ms 后保存，持续输入最长 2 s 保存一次。2026-10-10 起，连接、草稿、outbox、创建回执及缓存索引写入较小的 `session-state-v1.json`，由独立串行队列按顺序原子保存；历史按完整目标和缓存命名空间分文件，只编码变化的目标，另一个后台队列合并排队更新。创建操作 ID 和提交前的结果未知记录仍须等待小状态落盘成功后才发送对应远程命令，历史编码不能阻塞该边界。后台保存申请有限系统执行时间并等待历史页刷新。历史页失败会标记待保存并提示，不能视为保存成功。旧 `session.json` 留作升级时缺失历史页的回退；导入先排空旧写入并更换命名空间。含 Agent 连接的状态和历史继续使用同一 Keychain 缓存密钥加密，目标身份及消息去重规则不变。
 
@@ -1597,6 +1611,34 @@ Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协�
 2026-11-08 F03/F06/F57/F63。双端私有直连地址支持专用 `*.mesh.51easyai.com` 电脑名，候选归为 VPN 并沿用稳定顺序。地址仅提供路径，实际读取仍核对配对证书指纹、完整 Host/workspace/runtime 目标与桌面公钥。远程 issuer、已有 grant 与已提交操作保持各自原身份；新路径的原生及真实网络结果见[阶段126](plans/android-alignment-20261022/records/stage126-c2-new-domain-and-android-permissions.md)。
 
 2026-11-19 主线组合保留已发布 iOS 114 的输入、语音、文档及额度行为；子 Agent 完整记录新增独立协商的 `subagents:history:read:v1`，严格按原父消息具名子线程只读分页，不将保存历史作为桌面控制证明。旧 Host 继续使用原摘要，未知输入不重放。具体兼容与验证范围见 [iOS 115 组合核对](acceptance/mainline-release-compatibility-20261119.md)。
+
+桌面历史中原始序号与携带已知Turn的序号是同一条目的两种表示，确切身份更新不依赖正文推断；缺少Turn时不补造身份。序号与不同稳定ID之间的重构仍须原完成证据并逐条消费匹配额度，资源记录继续逐项核对完整注册声明。预占时以原Turn和原ID共同区分同一表示，不能让另一Turn的同名序号消耗或绕过本Turn额度。重复的同一确切ID可一并修复；不同真实ID、不同序号的同文消息仍分别保留，部分历史不据正文推断旧项消失。
+
+## 私有设备绑定的 Host 管理边界（候选，2026-11-14）
+
+2026-11-14 F03/F61 私有设备绑定管理源码候选：仅原 Host access-key 管理接口；手机设备凭据即使 hostKeyAuthorized=true 也无管理权。iOS/Android 连接、移除及撤销 UI 均未接入，不提升整项功能或真实验收状态；当前状态仍由唯一完整功能清单维护。
+
+Host 私有窄层复用机器 RuntimeTarget/machine key，独立区分实际 Host access-key 与设备的历史授权标记。单绑定状态投影不含 token、tokenHash、原公钥或全量列表；撤销意图/摘要/原 ID 回执与 bindings 同次私有原子保存，重启按原 ID 查询。保留旧 account 元数据，后继 claim 不丢旧撤销回执。未知保存先阻断私有设备请求并以503表明暂时不可用，Host key 可核原操作；不存在记录不触发重放。无新 Relay/通知权限或普通聊天执行能力。具体封闭 wire、限额、故障和 Windows 边界见[协议](protocol.md#host-私有设备绑定管理候选2026-11-14f03f61)。
+
+### Android EasyWork 认证地址观察（2026-11-19）
+
+EasyWork适配器只从已认证且完整目标匹配的 `runtime/context` 读取可选 LAN 地址。无效可选元数据不破坏现有连接；原目标、凭据引用、连接偏好、已有证书绑定及 Relay 保留，候选总数有界。观察通过原生工作区结果的本地字段传递，不新增 wire 字段或缓存授权；Session只在原工作区读取 owner、连接修订及当前连接仍一致时保存。旧目标或并发编辑的迟到结果不能更新连接，不重新配对或重放写操作。iOS既有观察路径保持。
+
+### Android 独立桌面打开与子代理阅读（2026-11-19）
+
+独立桌面打开与冷聊天发送共用具名操作和本地原操作回执。预检、一次原提交、状态查询及独立的当前 owner 读取共用35秒可取消工作预算；持久保存原结果及实际传输线程退出另行核对，此预算不代表墙钟或整体发送时限已验收。已保存但未知的原操作只查询，明确预检未提交单列。EasyWork仅在声明能力时接入正式 `thread/open` / `thread/open-status`，打开回执必须匹配原电脑、聊天及操作，历史可读不能替代此回执。Codex兼容未返回连接字段的旧投影仍须完整目标、能力、原打开回执及新的可控历史；明确断连一律拒绝。原草稿和附件不参与导航操作，切目标后只保留原目标账本，不回填新界面。
+
+完整子代理历史通过已有Codex具名只读接口读取；详情按父目标、父聊天、父消息和所选child分页，独立generation丢弃迟到结果，来源明确区分保存记录与实时记录。它不发布控制权、不继承父聊天的附件或命令回调。Android文件准备区按实际接收字节投影下载阶段与区间速度，无新采样时速度归零；文档相对链接保留原资源身份/摘要及当前目标校验，经过完整性检查后才打开嵌套预览。iOS既有对应路径保持。
+
+### Android 上传任务与迁移边界（2026-11-19）
+
+普通聊天附件、首条附件和独立文件上传通过同一有界任务账本显示确认字节、阶段及适用的暂停、继续、查询和取消。实际能力由适配器协商；旧接口保留整文件上传，不宣称支持续传。每次派发前复核原目标、连接、前台及原输入授权，未知结果先查询同一任务，重启仅恢复暂停记录；文件任务的恢复不重建模型输入或发送闭包。设备本地连接ID与EasyWork认证电脑目标分别保存，Codex账号元数据变化不更换机器目标。F59原文件账本及本地结束等待语义保持，未接入远端取消终态的路径不显示取消电脑操作。
+
+上传账本迁移仅投影为惰性审计，保存原JSON文本及完整摘要；不据此跟随文件引用、取得原件访问权或恢复执行授权。活动账本不能作为可导入的控制权，源记录不修改；目的端原上传记录同样转入惰性审计并与导入历史去重合并，超限拒绝且不截断。正常恢复及迁移审计共用严格解码器，审计最多8份、实际编码4MiB，每份原账本最多32任务、1MiB。原件、业务回执与任务卡分别管理。
+
+### Optional official parent-chat subtask association (private candidate specification)
+
+Keep the typed-parent-tool Adapter path unchanged. A separate explicit capability `subagents:history:parent-lineage:v1` opts into the same named endpoint with a complete machine target and existing subAgent anchor. Each request uses the official direct-parent/source-filtered state DB metadata catalog (maximum 32 complete candidates) and then validates the selected child's official metadata before body reads. Reader subprocess lifecycle plus exact target/parent/card fences apply after asynchronous boundaries, including between selected metadata and body. No catalog cache/TTL, execution instance, follower, owner registration, history-file API or legacy alias inference is added. Saved history remains read-only. Pagination is bounded and lossless; protocol details are specified in docs/protocol.md. This private candidate does not establish build, deployment or runtime acceptance.
 
 2026-11-19 Codex iOS 控制请求：原生适配层对 JSON 控制响应增加 ContinuousClock 绝对截止，避免小段数据无限续期空闲超时；连接预算在首次打开前建立并传播到各请求。路径恢复只取消旧安全读取，已提交 POST 仍按原 ID 查询；原草稿／附件和独立文件传输预算保持。Android 不使用此原生实现；源码、辅助、原生与正式 Host 部署分列于[专项记录](acceptance/codex-control-deadline-20261119.md)。
 

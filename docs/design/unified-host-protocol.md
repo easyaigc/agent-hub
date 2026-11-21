@@ -2,7 +2,7 @@
 
 生效：2026-11-20。依据用户确认的 iOS × EasyWork 对接方向：复用现有 App 能力，由 EasyWork Host 与 Codex Host 接入同一套领域协议。本文规定后续实现与审查边界；规范写入不代表现有代码已经全部符合或通过验收。
 
-本任务的计划和当前进度仍只维护在 [唯一计划](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文不另建功能进度表。版本演进同时遵守 [兼容规范](compatibility.md)。
+本任务的计划和当前进度仍只维护在 [历史验收记录](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文不另建功能进度表。版本演进同时遵守 [兼容规范](compatibility.md)。
 
 ## 共同契约的基准
 

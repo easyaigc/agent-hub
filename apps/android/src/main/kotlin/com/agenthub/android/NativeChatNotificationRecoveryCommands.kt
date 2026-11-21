@@ -11,10 +11,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 internal enum class NativeChatRecoveryCall(val route: String, val post: Boolean) {
-    CAPABILITIES("capabilities", false), SUBMIT("operations", true), QUERY("operations", false), FEED("feed", false)
+    CAPABILITIES("capabilities", false), PUSH_CAPABILITIES("capabilities", false), SUBMIT("operations", true), QUERY("operations", false), FEED("feed", false)
 }
 internal interface NativeChatNotificationRecoveryCommands {
     suspend fun recoveryCapabilities(snapshot: NativeChatNotificationSnapshot, deviceId: String): NativeChatRecoveryCapabilities?
+    suspend fun recoveryPushCapabilities(snapshot: NativeChatNotificationSnapshot, deviceId: String): NativeChatRecoveryCapabilities? = null
     suspend fun recoverySubmit(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt
     suspend fun recoveryQuery(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt?
     suspend fun recoveryFeed(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent, query: NativeChatRecoveryQuery,
@@ -45,7 +46,8 @@ internal class NativeChatNotificationRecoveryHttp : NativeChatNotificationRecove
                     }
                     if (!continuation.isActive) return@submit
                     val code = connection.responseCode
-                    if (call == NativeChatRecoveryCall.CAPABILITIES && code == 404) { if (continuation.isActive) continuation.resume(null); return@submit }
+                    if ((call == NativeChatRecoveryCall.CAPABILITIES && code == 404) ||
+                        (call == NativeChatRecoveryCall.PUSH_CAPABILITIES && code in setOf(400, 404))) { if (continuation.isActive) continuation.resume(null); return@submit }
                     check(code == 200) { "Notification recovery request unconfirmed" }
                     val maximum = if (call == NativeChatRecoveryCall.FEED) NativeChatRecoveryWire.MAX_PAGE_BYTES else 512 * 1024
                     val value = connection.inputStream.use { JSONObject(NativeWireReader.read(it, maximum) { continuation.isActive }) }
@@ -59,6 +61,9 @@ internal class NativeChatNotificationRecoveryHttp : NativeChatNotificationRecove
     }
     override suspend fun recoveryCapabilities(snapshot: NativeChatNotificationSnapshot, deviceId: String) = withContext(Dispatchers.IO) {
         request(snapshot, NativeChatRecoveryCall.CAPABILITIES, deviceId)?.let { NativeChatRecoveryWire.capabilities(it, snapshot.target) }
+    }
+    override suspend fun recoveryPushCapabilities(snapshot: NativeChatNotificationSnapshot, deviceId: String) = withContext(Dispatchers.IO) {
+        request(snapshot, NativeChatRecoveryCall.PUSH_CAPABILITIES, deviceId)?.let { NativeChatRecoveryWire.capabilities(it, snapshot.target, pushProviders = true) }
     }
     override suspend fun recoverySubmit(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent) = withContext(Dispatchers.IO) {
         NativeChatRecoveryWire.receipt(requireNotNull(request(snapshot, NativeChatRecoveryCall.SUBMIT, original.deviceId, original)), original)

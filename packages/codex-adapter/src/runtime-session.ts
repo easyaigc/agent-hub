@@ -1,3 +1,9 @@
+import {
+  parentLineageCapability,
+  parentLineageAssociation,
+  decodeLineageCursor,
+  encodeLineageCursor,
+} from './parent-lineage.js';
 import { SubagentHistoryError } from './subagents.js';
 import type { CodexHistoryReader } from './history-reader.js';
 import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
@@ -808,6 +814,7 @@ export class RuntimeSession {
             'threads:read',
             'history:read',
             'subagents:history:read:v1',
+            parentLineageCapability,
             'threads:read-state',
             'reply',
             'reply:delivery-status',
@@ -1967,12 +1974,117 @@ export class RuntimeSession {
       this.saveBackground();
     return { ...page, readTarget: this.readingTarget() };
   }
-  async subagentHistoryPage(
+  /** Opt-in association with this parent chat, never with a guessed legacy tool alias. */
+  private async parentLineageHistoryPage(
     parentThreadId: string,
     messageId: string,
     childId?: string,
     cursor?: string,
   ) {
+    this.requireReady();
+    if (
+      !(this.runtime instanceof DesktopRuntime) ||
+      !this.capabilities.includes(parentLineageCapability)
+    )
+      throw new RuntimeError(409, '当前电脑不支持父聊天子任务读取');
+    const runtime = this.runtime;
+    const readTarget = this.readingTarget();
+    const target = machineRuntimeTargetKey(readTarget);
+    const anchor = () => {
+      const parent = this.thread(parentThreadId);
+      const matches = parent.messages.filter(
+        (message) => message.id === messageId && message.kind === 'subAgent',
+      );
+      if (parent.hostId !== this.hostId || parent.archived || matches.length !== 1)
+        throw new RuntimeError(409, '原父聊天子任务卡已变化');
+      return createHash('sha256').update(JSON.stringify(matches[0])).digest('hex');
+    };
+    const anchorHash = anchor();
+    const binding = { target, parent: parentThreadId, anchor: messageId, anchorHash };
+    const continuation = cursor ? decodeLineageCursor(cursor, binding, childId) : undefined;
+    const readerCurrent = runtime.reader.captureReadContext();
+    const current = () => {
+      if (
+        this.closed ||
+        !this.ready ||
+        this.runtime !== runtime ||
+        machineRuntimeTargetKey(this.readingTarget()) !== target ||
+        anchor() !== anchorHash
+      )
+        throw new RuntimeError(409, '父聊天读取目标或原卡片已变化');
+      readerCurrent();
+    };
+    try {
+      const children = await runtime.reader.parentLineageChildren(parentThreadId);
+      current();
+      const selected = childId ?? continuation?.child ?? children[0]!;
+      if (!children.includes(selected))
+        throw new SubagentHistoryError(403, 'Selected child is not an official direct subtask');
+      // history itself reads official metadata and checks the selected child/parent before body RPCs.
+      const page = await runtime.reader.history(selected, continuation?.backend, true, undefined, {
+        expectedParentId: parentThreadId,
+        assertCurrent: current,
+        ...(continuation ? { historyMode: continuation.historyMode } : {}),
+      });
+      current();
+      if (page.hostId !== this.hostId || page.threadId !== selected)
+        throw new SubagentHistoryError(409, 'Selected child history target changed');
+      const historyMode = page.historyMode === 'paginated' ? 'paginated' : 'snapshot';
+      const nextCursor = page.nextCursor
+        ? encodeLineageCursor({
+            ...binding,
+            child: selected,
+            source: 'saved-history',
+            historyMode,
+            backend: page.nextCursor,
+          })
+        : null;
+      return {
+        version: 2 as const,
+        association: parentLineageAssociation,
+        hostId: this.hostId,
+        readTarget,
+        parentThreadId,
+        messageId,
+        children: children.map((id, index) => ({
+          id,
+          title: `子任务 ${index + 1}`,
+          status: 'unknown',
+        })),
+        childId: selected,
+        threadId: selected,
+        source: 'saved-history' as const,
+        messages: page.messages,
+        nextCursor,
+      };
+    } catch (error) {
+      if (error instanceof RuntimeError) throw error;
+      if (error instanceof SubagentHistoryError)
+        throw new RuntimeError(error.status, error.message);
+      throw new RuntimeError(409, '官方父聊天子任务来源不可用或已变化');
+    }
+  }
+  async subagentHistoryPage(
+    parentThreadId: string,
+    messageId: string,
+    childId?: string,
+    cursor?: string,
+    association?: string,
+  ) {
+    if (association !== undefined) {
+      if (association !== parentLineageAssociation)
+        throw new RuntimeError(400, 'Invalid subagent association');
+      return this.parentLineageHistoryPage(parentThreadId, messageId, childId, cursor).catch(
+        (error: unknown) => {
+          if (error instanceof RuntimeError) throw error;
+          if (error instanceof SubagentHistoryError)
+            throw new RuntimeError(error.status, error.message);
+          throw new RuntimeError(409, '官方父聊天子任务来源不可用或已变化');
+        },
+      );
+    }
+    if (cursor?.startsWith('subagent-lineage-page-v1:'))
+      throw new RuntimeError(400, 'Invalid typed-tool cursor mode');
     this.requireReady();
     if (!(this.runtime instanceof DesktopRuntime))
       throw new RuntimeError(409, '需要原桌面子 Agent 历史连接');
@@ -4666,11 +4778,16 @@ export class RuntimeSession {
       this.save();
       return;
     }
+    const currentModel =
+      this.runtime instanceof DesktopRuntime
+        ? this.runtime.ipc.modelSettings(thread.id)
+        : undefined;
     // The official persistent queue inherits the desktop thread settings.
     // Reject an override it cannot represent rather than silently dropping it.
     if (
-      (reply.model !== undefined && reply.model !== thread.runtimeModel) ||
-      (reply.effort !== undefined && reply.effort !== thread.runtimeEffort) ||
+      (reply.model !== undefined && reply.model !== (currentModel?.model ?? thread.runtimeModel)) ||
+      (reply.effort !== undefined &&
+        reply.effort !== (currentModel ? currentModel.effort : thread.runtimeEffort)) ||
       (reply.permissionMode !== undefined && reply.permissionMode !== thread.permissionMode) ||
       (reply.speed !== undefined && reply.speed !== thread.speed) ||
       (reply.collaborationMode !== undefined &&
@@ -4909,11 +5026,17 @@ export class RuntimeSession {
         if (!latest) throw new Error('原桌面执行状态待核对');
         await this.desktopSnapshot(thread, latest);
         if (record.acceptedTurnId) return { ok: true };
-        if (thread.turnId && thread.turnId !== originalTurnId)
+        if (
+          (expectedTurnId && thread.turnId !== expectedTurnId) ||
+          (thread.turnId && thread.turnId !== originalTurnId)
+        )
           throw new Error('当前任务已变化，已移除队列项但未追加输入');
+        // An explicit running-turn precondition never falls back to a new turn
+        // after the asynchronous queue removal. Keep it pinned at the wire call.
+        const promotedTurnId = expectedTurnId ?? thread.turnId;
         await this.execute(record, undefined, {
-          mode: thread.turnId ? 'steer' : 'next-turn',
-          ...(thread.turnId ? { turnId: thread.turnId } : {}),
+          mode: promotedTurnId ? 'steer' : 'next-turn',
+          ...(promotedTurnId ? { turnId: promotedTurnId } : {}),
         });
       }
     } catch (error) {
@@ -6322,8 +6445,9 @@ export class RuntimeSession {
         await this.runtime.ipc.refreshModelSettings(threadId);
       await this.refreshNativeQueue(threadId);
     }
-    const reset =
+    const requiresReset = () =>
       epoch !== this.epoch || after < (this.events[0]?.seq ?? this.seq) - 1 || after > this.seq;
+    let reset = requiresReset();
     if (!reset && after === this.seq && !signal.aborted)
       await new Promise<void>((done) => {
         const finish = () => {
@@ -6346,6 +6470,8 @@ export class RuntimeSession {
       });
     if (!signal.aborted && !reset && this.seq > after)
       await new Promise<void>((done) => setTimeout(done, 75));
+    // The epoch or retained window can change during either await above.
+    reset = reset || requiresReset();
     if (windowed && threadId && this.runtime instanceof DesktopRuntime) {
       const projection = this.desktopProjections.get(threadId);
       if (projection && !signal.aborted) {
@@ -6378,6 +6504,8 @@ export class RuntimeSession {
         };
       }
     }
+    // Projection completion can also replace the epoch/retained window.
+    reset = reset || requiresReset();
     // A latest snapshot per thread coalesces bursts while retaining actual streamed text/progress.
     const latest = new Map<string, (typeof this.events)[number]>();
     for (const event of this.events)

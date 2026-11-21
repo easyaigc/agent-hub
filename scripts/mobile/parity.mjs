@@ -165,11 +165,11 @@ export async function renderManifest(manifest, template) {
   assert.equal(template.split(marker).length, 2, 'Exactly one generated table marker required');
   const lines = [
     '<!-- Generated from mobile-parity.manifest.json. Do not edit these tables. -->',
-    '## 源码与证据入口',
+    '## 规范与源码来源',
     '',
     '表内缩写为源码核对入口，不能代表实时能力或真实验收通过。',
     '',
-    '| 缩写 | 当前 iOS / 协议来源 |',
+    '| 缩写 | 规范 / 源码来源 |',
     '| --- | --- |',
   ];
   for (const [alias, files] of Object.entries(manifest.sourceAliases))
@@ -185,7 +185,7 @@ export async function renderManifest(manifest, template) {
       '',
       '## ' + group,
       '',
-      '| ID | 功能及必须一致的断言 | iOS 实现来源 | Android 状态／阶段 | 场景 | UI |',
+      '| ID | 功能及必须一致的断言 | 规范与源码来源 | 历史阶段关联 | 场景 | UI |',
       '| --- | --- | --- | --- | --- | --- |',
     );
     for (const feature of manifest.features.filter((entry) => entry.group === group))
@@ -195,16 +195,8 @@ export async function renderManifest(manifest, template) {
             feature.id,
             feature.assertion,
             feature.sourceAliases.join('、') +
-              (feature.sourceNotes ? '；' + feature.sourceNotes : ''),
-            {
-              planned: '待开发',
-              'in-progress': '开发中',
-              implemented: '已实现',
-              'platform-not-applicable': '平台不适用',
-              'code-present': '存在源码',
-            }[feature.implementation.android] +
-              ' ' +
-              feature.androidStages.join('、'),
+              (feature.sourceNotes ? '；[历史来源记录](mobile-parity.manifest.json)' : ''),
+            feature.androidStages.join('、'),
             feature.scenarios.join('、'),
             feature.ui.join('、'),
           ].join(' | ') +

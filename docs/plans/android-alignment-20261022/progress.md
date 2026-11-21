@@ -1,3 +1,9 @@
+<!-- authority-status-source:20261112 -->
+
+> 当前状态和调度统一以[权威状态和计划](../android-ios-alignment-20261107/progress.md)为准。本文件保留需求、历史状态或原始证据；其中旧状态不独立决定当前完成率。
+
+<!-- /authority-status-source:20261112 -->
+
 # Android 开发计划与进度
 
 > 历史快照：本表保留2026-11-06及此前状态。2026-11-07起，当前调度统一迁至[新计划](../android-ios-alignment-20261107/plan.md)和[新进度总表](../android-ios-alignment-20261107/progress.md)；本文件不再追加阶段过程。

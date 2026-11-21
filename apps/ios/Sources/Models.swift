@@ -481,6 +481,7 @@ struct SubagentHistorySnapshot: Decodable {
   let children: [Child]
   let childId: String
   let threadId: String
+  let association: String?
   let source: String
   let messages: [ChatMessage]
   let nextCursor: String?

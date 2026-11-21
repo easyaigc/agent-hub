@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 
 /** Actual Store jobs/reset/Compose projection + real storage lock and encrypted ledger.
@@ -110,12 +111,16 @@ class NativePhoneReadingStoreEpochTest {
         var bodyPassed=false
         var workersJoined=false;private set
         var storageRetired=false;private set
+        var storageExecutorTerminated=false;private set
+        private val storageWriter=AtomicReference<Thread>()
         private var finishAttempted=false
         val cleanup=NativeReadingFixtureCleanup {sequence,phase,states->
             immutable("cleanup-%02d.json".format(sequence),JSONObject().put("version",1).put("case",caseName)
                 .put("fixture",id).put("alias",alias).put("phase",phase).put("states",JSONObject(states))
                 .put("completionMissingMeansUnknown",true).put("ownedJobsJoined",workersJoined)
                 .put("storageRetired",storageRetired).put("nativeStoreComponentAssertionsPassed",bodyPassed)
+                .put("storageExecutorTerminated",storageExecutorTerminated)
+                .put("storageWriterThreadId",storageWriter.get()?.id).put("storageWriterAlive",storageWriter.get()?.isAlive)
                 .put("interactiveUiProof",false).toString().toByteArray())
         }
         init {
@@ -216,12 +221,22 @@ class NativePhoneReadingStoreEpochTest {
             val jobs=try {runBlocking {withTimeout(15_000){parent.join()}};parent.isCompleted}
                 catch(error: Throwable) {errors.add(error);false}
             workersJoined=jobs&&gates.all {it.joined}
-            if(workersJoined)try {storage.retireWriter();storageRetired=true}catch(error: Throwable){errors.add(error)}
+            if(workersJoined)try {
+                val executor=NativeSessionStorage::class.java.getDeclaredField("writes").apply {isAccessible=true}
+                    .get(storage) as java.util.concurrent.ExecutorService
+                try {
+                    executor.submit(Runnable {storageWriter.set(Thread.currentThread())}).get(10,TimeUnit.SECONDS)
+                } finally {storage.retireWriter();storageRetired=true}
+                check(executor.awaitTermination(10,TimeUnit.SECONDS)) {"Owned storage executor exit unknown; preserve fixture/key"}
+                val writer=checkNotNull(storageWriter.get());writer.join(10_000)
+                storageExecutorTerminated=executor.isTerminated&&!writer.isAlive
+                check(storageExecutorTerminated) {"Owned storage writer still alive; preserve fixture/key"}
+            }catch(error: Throwable){errors.add(error)}
             else if(errors.isEmpty())errors.add(IllegalStateException("Owned Store physical exit unknown; fixture cleanup not attempted"))
             return errors
         }
         fun finish(name: String) {
-            offMain();check(!finishAttempted&&bodyPassed&&workersJoined&&storageRetired);finishAttempted=true
+            offMain();check(!finishAttempted&&bodyPassed&&workersJoined&&storageRetired&&storageExecutorTerminated);finishAttempted=true
             val directory=File(root,"ledger")
             require(root.canonicalFile==File(base.noBackupFilesDir.canonicalFile,root.name)&&directory.canonicalFile==File(root.canonicalFile,"ledger"))
             require(root.list()?.toSet()==setOf("ledger","original-ledger.txt","original-ledger.bin")&&directory.list()?.toSet()==setOf(cipher.name))
@@ -236,6 +251,8 @@ class NativePhoneReadingStoreEpochTest {
             cleanup.step("result","written") {immutable("result.json",JSONObject().put("version",1).put("case",name).put("fixture",id)
                 .put("originalLedgerSha256",sha(original.toByteArray())).put("originalCipherSha256",sha(originalCipher))
                 .put("ownedJobsJoined",true).put("executionNamespaceRemoved",true).put("syntheticAliasRemoved",true)
+                .put("storageExecutorTerminated",storageExecutorTerminated).put("storageWriterThreadId",checkNotNull(storageWriter.get()).id)
+                .put("storageWriterAlive",checkNotNull(storageWriter.get()).isAlive)
                 .put("nativeStoreComponentAssertionsPassed",true).put("parentCaptured",false).put("interactiveUiProof",false)
                 .put("taskId","android-parallel-p7-reading-voice-20261028").put("purpose","Root capture of exact synthetic original evidence")
                 .put("releaseCondition","Root independently captures originals and result, then removes this exact evidence fixture")
@@ -258,9 +275,13 @@ class NativePhoneReadingStoreEpochTest {
         if(failure==null)try {fixture.finish(name)}catch(error: Throwable){failure=error}
         if(failure!=null) {
             // RETAINED identifies the evidence directory, never a claim that a deleted key survived.
-            System.err.println("P7_READING_STORE_EPOCH_RETAINED case=$name fixture=${fixture.id} alias=${fixture.alias} workersJoined=${fixture.workersJoined} storageRetired=${fixture.storageRetired} bodyPassed=${fixture.bodyPassed} cleanupPhase=${fixture.cleanup.phase} cleanupStates=${JSONObject(fixture.cleanup.snapshot())} originalLedger=original-ledger.txt originalCipher=original-ledger.bin")
+            System.err.println("P7_READING_STORE_EPOCH_RETAINED case=$name fixture=${fixture.id} alias=${fixture.alias} workersJoined=${fixture.workersJoined} storageRetired=${fixture.storageRetired} storageExecutorTerminated=${fixture.storageExecutorTerminated} bodyPassed=${fixture.bodyPassed} cleanupPhase=${fixture.cleanup.phase} cleanupStates=${JSONObject(fixture.cleanup.snapshot())} originalLedger=original-ledger.txt originalCipher=original-ledger.bin")
             throw failure
         }
+    }
+    @Test fun visibleBodyWaitsForItsHeadWithoutRenewingTheOriginalLease()=fixture("visible-head-order") {f->
+        NativeReadingOrderingAssertions.run(f.storage,b)
+        assertEquals(f.originalRow,row(checkNotNull(f.storage.read(NativeReadingLedger.STORAGE_NAME)),a))
     }
     /** Unlike a callback rejected before scheduling, this body write has entered the real IO queue. */
     @Test fun actualQueuedVisibleBodyCannotReadAfterBackgroundAndForeground()=fixture("visible-background") {f->

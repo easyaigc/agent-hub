@@ -1,3 +1,9 @@
+<!-- authority-status-source:20261112 -->
+
+> 当前状态和调度统一以[权威状态和计划](progress.md)为准。本文件保留需求、历史状态或原始证据；其中旧状态不独立决定当前完成率。
+
+<!-- /authority-status-source:20261112 -->
+
 # Android 对齐最新 iOS：实施计划
 
 更新：2026-11-07（用户补充后重排）。每项功能同时核对 iOS/Android 与 Codex/EasyWork；核心链路优先，进入按功能实施和验收。

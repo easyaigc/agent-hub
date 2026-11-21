@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.sp
                         else ProductIcon("share",color=if(enabled)colors.onSurface else colors.onSurface.copy(alpha=.3f))
                     }
                 }
-                if(busy)Text(productText("正在准备文件…"),Modifier.testTag("resource-card-wait-"+file.id),fontSize=12.sp,color=colors.onSurfaceVariant)
+                if(busy)Box(Modifier.testTag("resource-card-wait-"+file.id)) { NativeResourceDownloadProgress(LocalMessageDownloadProgress.current,"resource-card-progress-"+file.id) }
             }
         }
     } }

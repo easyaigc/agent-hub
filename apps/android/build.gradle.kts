@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -15,6 +17,28 @@ if (acceptanceScenario != "default") {
     layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(".build/native/android-${acceptanceScenario}"))
 }
 
+// Explicit public client options. Server credentials never enter an Android build.
+// No file means the shipped foreground path remains available without Firebase initialization.
+val fcmConfigPath=providers.environmentVariable("AGENT_HUB_FCM_ANDROID_CONFIG").orNull
+val fcmOptions:Map<String,String> = if(fcmConfigPath==null)emptyMap() else run {
+    val input=file(fcmConfigPath)
+    require(input.isFile&&!Files.isSymbolicLink(input.toPath())&&input.length() in 1..65536) { "Invalid private FCM client configuration file" }
+    val value=try { groovy.json.JsonSlurper().parseText(input.readText()) as? Map<*,*> } catch(_:Exception) { null }
+    require(value!=null&&value.keys==setOf("version","packageName","applicationId","projectId","senderId","apiKey")&&value["version"]==1) { "Invalid FCM client configuration shape" }
+    value.filterKeys { it!="version" }.map { (key,value)->
+        require(key is String&&value is String&&value.isNotBlank()&&value.length<=256) { "Invalid FCM client option" }
+        key to value
+    }.toMap()
+}
+val debugInstallSuffix = when (acceptanceScenario) {
+    "document-cold" -> ".acceptance.documents"
+    "photo-cold" -> ".acceptance.photos"
+    "camera-cold" -> ".acceptance.cameras"
+    else -> if (acceptanceBuild) ".acceptance" else ".debug"
+}
+val fcmPackage=fcmOptions["packageName"]
+require(fcmPackage==null||fcmPackage in setOf("com.easyai.agenthub.android","com.easyai.agenthub.android"+debugInstallSuffix)) { "FCM options must match an exact install identity" }
+
 android {
     namespace = "com.agenthub.android"
     compileSdk = 37
@@ -25,6 +49,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        for ((name,key) in mapOf("FCM_PACKAGE" to "packageName", "FCM_APP_ID" to "applicationId", "FCM_PROJECT_ID" to "projectId", "FCM_SENDER_ID" to "senderId", "FCM_API_KEY" to "apiKey"))
+            buildConfigField("String", name, groovy.json.JsonOutput.toJson(fcmOptions[key].orEmpty()))
     }
     buildTypes {
         debug {
@@ -70,6 +96,7 @@ dependencies {
     // Platform transports and API26-compatible X25519; domain rules remain in KMP.
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("org.bouncycastle:bcprov-jdk15to18:1.86")
+    implementation("com.google.firebase:firebase-messaging:26.0.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

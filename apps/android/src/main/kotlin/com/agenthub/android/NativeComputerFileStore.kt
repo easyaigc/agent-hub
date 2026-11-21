@@ -207,7 +207,25 @@ internal class NativeComputerFileStore private constructor(private val context: 
             }finally {bytes.fill(0)}
         }
         require(total==row.sizeBytes&&hash.digest().joinToString("") {"%02x".format(it)}==row.sha256) {"手机保存的原件校验失败，请保留原记录。"}
-    }
+    }.also {source->source.uploadRange={offset,length->
+        require(offset>=0&&length in 1..1024*1024&&offset+length<=row.sizeBytes)
+        root.requireRawWriterOwner()
+        val current=transaction {rows().single {it.id==row.id}}
+        require(current.manifest(target.scope.hostId)==row.manifest(target.scope.hostId))
+        val out=ByteArray(length);var written=0;var start=0L
+        row.chunks.forEachIndexed {index,chunk->
+            val end=start+chunk.bytes
+            if(offset<end&&offset+length>start) {
+                val bytes=transaction {storage.computerFileReadChunk(binary(row.id,index),chunk.bytes)}
+                try {require(ComputerFileCodec.hash(bytes)==chunk.sha256)
+                    val from=maxOf(0L,offset-start).toInt();val until=minOf(chunk.bytes.toLong(),offset+length-start).toInt()
+                    bytes.copyInto(out,written,from,until);written+=until-from
+                } finally {bytes.fill(0)}
+            }
+            start=end
+        }
+        require(written==length);out
+    }}
 }
 
 /** Worker/Future completion is not descriptor release. A failed close retains the

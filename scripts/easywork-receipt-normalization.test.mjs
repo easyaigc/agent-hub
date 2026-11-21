@@ -141,3 +141,87 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     assert.deepEqual(result, { passed: true, checks: 35 + vectorCases.cases.length });
   },
 );
+
+test(
+  'actual iOS stop and queue cancellation require a JSON boolean ACK',
+  { skip: process.platform !== 'darwin' },
+  async (t) => {
+    const source = await readFile(
+      join(repository, 'apps/ios/Sources/EasyWorkAgentClient.swift'),
+      'utf8',
+    );
+    await mkdir(join(repository, '.local'), { recursive: true, mode: 0o700 });
+    const directory = await mkdtemp(join(repository, '.local/easywork-cancellation-ack-'));
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const swift = join(directory, 'Cancellation.swift');
+    const binary = join(directory, 'cancellation');
+    const program = String.raw`import Foundation
+struct Client {}
+struct CommandResult { let ok: Bool }
+enum HostServiceError: Error { case invalidResponse }
+enum EasyWorkReceiptNormalization {
+  ${source.includes('static func confirmedCancellation(') ? declaration(source, 'static func confirmedCancellation(') : ''}
+}
+@MainActor final class ScriptedSession {
+  var calls: [(String, [String: Any])] = []
+  let raw: String
+  init(_ raw: String) { self.raw = raw }
+  func request(_ method: String, _ params: [String: Any]) async throws -> Data {
+    calls.append((method, params)); return Data(raw.utf8)
+  }
+}
+@MainActor struct ActualMethods {
+  let channel: ScriptedSession
+  func session(_ client: Client) async throws -> ScriptedSession { channel }
+  private func object(_ data: Data) throws -> [String: Any] {
+    guard let value = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw HostServiceError.invalidResponse }
+    return value
+  }
+  ${declaration(source, 'func cancelQueue(_ client: Client,')}
+  ${declaration(source, 'func stop(_ client: Client,')}
+}
+@main struct Cancellation {
+  @MainActor static func main() async throws {
+    let cases: [(String, Bool)] = [
+      (#"{"cancelled":true}"#, true), (#"{"cancelled":false}"#, false),
+      (#"{"cancelled":1}"#, false), (#"{"cancelled":0}"#, false),
+      (#"{"cancelled":"true"}"#, false), (#"{"cancelled":"false"}"#, false),
+      (#"{"cancelled":null}"#, false), (#"{}"#, false),
+      (#"{"cancelled":[]}"#, false), (#"{"cancelled":{}}"#, false)]
+    for (raw, expected) in cases {
+      for method in ["turn/cancel", "queue/cancel"] {
+        let channel = ScriptedSession(raw)
+        let methods = ActualMethods(channel: channel)
+        let result = try await (method == "turn/cancel"
+          ? methods.stop(Client(), threadId: "captured-thread", turnId: "captured-run")
+          : methods.cancelQueue(Client(), threadId: "captured-thread", messageId: "captured-message"))
+        guard result.ok == expected, channel.calls.count == 1,
+          channel.calls[0].0 == method,
+          channel.calls[0].1["threadId"] as? String == "captured-thread",
+          channel.calls[0].1[method == "turn/cancel" ? "turnId" : "messageId"] as? String == (method == "turn/cancel" ? "captured-run" : "captured-message") else {
+          throw NSError(domain: method + ": " + raw, code: 1)
+        }
+      }
+    }
+    print("20 cancellation cases passed")
+  }
+}`;
+    await writeFile(swift, program, { mode: 0o600 });
+    await run(
+      '/usr/bin/swiftc',
+      [
+        '-parse-as-library',
+        '-module-cache-path',
+        join(directory, 'module-cache'),
+        '-o',
+        binary,
+        swift,
+      ],
+      { timeout: 30000 },
+    );
+    assert.equal(
+      (await run(binary, [], { timeout: 5000 })).stdout.trim(),
+      '20 cancellation cases passed',
+    );
+  },
+);

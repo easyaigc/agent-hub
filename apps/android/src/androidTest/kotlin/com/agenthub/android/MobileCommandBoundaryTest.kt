@@ -5,6 +5,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.agenthub.core.OperationPolicies
 import com.agenthub.core.TargetScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -203,6 +205,63 @@ class MobileCommandBoundaryTest {
             assertTrue(server.requests.none { it.path=="/v1/desktop/creations/submit" })
         }
     }
+    /** Existing flow + isolated encrypted storage; no Activity, model, Host or live service. */
+    @Test fun continuedCreationSkipsConfirmedAAndKeepsOriginalIndicesForBAndC()=runBlocking {
+        withTimeout(15_000) {
+            val owned=F28OwnedNativeFixture() // Reuse only its fresh store and verified close contract.
+            try {
+                val c=owned.client("https://synthetic.invalid")
+                var workspaceReads=0;var submitCalls=0
+                val observed=mutableListOf<Triple<String,Int,Int>>()
+                val batchIds=mutableListOf<String>();val batchBytes=mutableListOf<Long?>()
+                val expected=linkedMapOf<String,ByteArray>()
+                val reads=object:HostReads by NativeHostReads({error("Unexpected network/credential access")}) {
+                    override suspend fun workspace(client:MobileClient,projectCursor:String?,threadCursor:String?):MobileWorkspace {
+                        assertEquals(c,client)
+                        return HostReadCodec.workspace(creationWorkspace(++workspaceReads==1)
+                            .put("hostId",c.id).put("readTarget",CodexCommandCodec.target(checkNotNull(c.scope))).toString())
+                    }
+                }
+                val port=object:AgentCommands by NativeCodexCommands({error("Unexpected network/credential access")}) {
+                    override suspend fun uploadCreation(client:MobileClient,operationId:String,file:CreationFile,bytes:ByteArray) {
+                        assertEquals(c,client)
+                        val origin=checkNotNull(currentCoroutineContext()[NativeUploadOrigin])
+                        assertTrue(origin.current());assertEquals(operationId,origin.operationId)
+                        assertArrayEquals(checkNotNull(expected[file.id]),bytes)
+                        assertEquals(file.sha256,ComputerFileCodec.hash(bytes))
+                        observed.add(Triple(file.id,origin.index,origin.count))
+                        batchIds.add(origin.operationId);batchBytes.add(origin.totalBytes)
+                    }
+                    override suspend fun submitCreation(client:MobileClient,operationId:String):DesktopCreation {
+                        submitCalls++;error("Business submit is outside this file-index regression")
+                    }
+                }
+                val flow=NativeCodexFlow(owned.store,reads,port)
+                val files=listOf("A","B","C").map {name->
+                    val bytes="Synthetic original $name".toByteArray()
+                    flow.files.import("$name.txt","text/plain",bytes).also {expected[it.manifest.id]=bytes}
+                }
+                val intent=CreationIntent(c.id,UUID.randomUUID().toString(),null,"Synthetic first draft",files.map {it.manifest})
+                val saved=flow.journal.prepare(c,null,"creation",intent.body())
+                flow.journal.markPreparing(saved.target,saved.id)
+                val original=flow.journal.observed(saved.target,saved.id,"prepared",JSONObject()
+                    .put("hostId",c.id).put("clientOperationId",saved.id).put("projectId",JSONObject.NULL)
+                    .put("phase","prepared").put("threadId",JSONObject.NULL).put("error",JSONObject.NULL)
+                    .put("uploaded",JSONArray(listOf(files[0].manifest.id))))
+                assertEquals(listOf(files[0].manifest.id),CodexCommandCodec.creation(JSONObject(checkNotNull(original.result))).uploaded)
+                val result=flow.continuePrepared(c,original,{true},{})
+                assertEquals(listOf(Triple(files[1].manifest.id,1,3),Triple(files[2].manifest.id,2,3)),observed)
+                assertEquals(listOf(saved.id,saved.id),batchIds)
+                val total=files.sumOf {it.manifest.sizeBytes}
+                assertEquals(listOf<Long?>(total,total),batchBytes)
+                assertEquals(2,workspaceReads);assertEquals(0,submitCalls)
+                assertEquals(original.intent,result.record.intent);assertFalse(result.record.submissionAttempted)
+                // The second authoritative workspace deliberately revokes creation capability,
+                // as in the existing fixture: this test must never dispatch a first model input.
+            } finally {owned.close()}
+        }
+    }
+
     private suspend fun finalReplyAuthorityRejectsChangedRunCapabilityOrPlan(change: String,confirmed: Boolean=false) {
         var workspaceReads=0;var historyReads=0;var file: CreationFile?=null
         val proof=java.util.concurrent.atomic.AtomicReference<Pair<MobileWorkspace,MobileHistory>?>(null)

@@ -1,6 +1,6 @@
 # Codex 控制请求等待与本机 Host 同步升级（2026-11-19）
 
-范围：F17/F18/F28/F47、UI04/UI05、S03/S11。Codex 专项，不接管 iOS × EasyWork 唯一计划、Android 独立进度或 A6。
+范围：F17/F18/F28/F47、UI04/UI05、S03/S11。Codex 专项，不接管 iOS × EasyWork 历史计划、Android 独立进度或 A6。
 
 ## 两个独立问题
 

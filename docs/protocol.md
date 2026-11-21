@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+2026-11-21 可选附件固定版本读取：attachments:range-read:v1 复用原附件解析/字节端点，公共范围语义位于 packages/protocol/src/attachment-reads.ts。准备、认证、版本、目标、取消及错误见 [运行时契约](protocol-runtime.md#可选附件固定版本分段读取)；原完整下载请求保持兼容。
+
 > 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。
 
 跨 Codex／EasyWork 的统一要求见 [统一 Host 协议与客户端适配规范](design/unified-host-protocol.md)。已有能力以实际运行时契约和对应已实现解析器为基准，统一操作、完整目标、能力、错误、回执及恢复语义；认证和 wire 差异限制在适配边界。早期领域草案或相同 Schema 摘要不等于生产调用统一，不为接入草案类型另造并行协议。

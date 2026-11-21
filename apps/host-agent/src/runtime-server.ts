@@ -40,6 +40,8 @@ import {
   privateConnectionManagementRoute,
 } from './private-connection-routes.js';
 import { FileTransfers } from './file-transfers.js';
+import { AttachmentReads, attachmentReadScope } from './attachment-reads.js';
+import { ATTACHMENT_READ_CAPABILITY, ATTACHMENT_READ_MODE } from '@codex-manage/protocol';
 import { ResumableUploads } from './resumable-uploads.js';
 import { receivingDeadline } from './upload-timeouts.js';
 import { createReadStream } from 'node:fs';
@@ -486,6 +488,8 @@ export async function startRuntimeServer() {
   const httpsEndpoints = parseCodexSystemEndpoints(process.env.HOST_AGENT_HTTPS_ENDPOINTS);
   // Every response that replaces the client's capabilities must include current
   // Host-owned readiness, including collector and trace-directory changes.
+  const attachmentReads = new AttachmentReads(session, directory);
+  const rangeReadsEnabled = process.env.HOST_AGENT_ATTACHMENT_RANGE_READ !== '0';
   const mergeHostCapabilities = (capabilities: string[]): string[] => [
     ...new Set([
       ...capabilities,
@@ -496,6 +500,7 @@ export async function startRuntimeServer() {
       'notifications',
       'files:upload',
       UPLOAD_CAPABILITY,
+      ...(rangeReadsEnabled ? [ATTACHMENT_READ_CAPABILITY] : []),
       ...(process.platform === 'darwin' ? DEV_PREVIEW_CAPABILITIES : []),
       'commands:target-bound:v1',
       ...(projectGitAvailable ? [PROJECT_GIT_CAPABILITY, PROJECT_GIT_FILES_CAPABILITY] : []),
@@ -1376,6 +1381,58 @@ export async function startRuntimeServer() {
         }
         throw new RuntimeError(404, '未知通知操作');
       }
+      if (
+        (url.searchParams.has('read') || url.searchParams.has('readId')) &&
+        ['/v1/attachments', '/v1/attachments/resolve'].includes(url.pathname)
+      ) {
+        if (!rangeReadsEnabled) throw new RuntimeError(501, '此电脑未启用视频分段读取');
+        if (
+          url.searchParams.get('read') !== ATTACHMENT_READ_MODE ||
+          !commandTarget ||
+          [...url.searchParams.keys()].some(
+            (key) =>
+              !['hostId', 'target', 'threadId', 'id', 'read', 'readId'].includes(key) ||
+              url.searchParams.getAll(key).length !== 1,
+          ) ||
+          !url.searchParams.get('threadId') ||
+          !url.searchParams.get('id')
+        )
+          throw new RuntimeError(400, '视频读取必须指定准确目标及具名资源');
+        const scope = attachmentReadScope(
+          machineRuntimeTargetKey(commandTarget),
+          request.headers.authorization ?? '',
+        );
+        const readId = url.searchParams.get('readId') ?? '';
+        const sourceId = url.searchParams.get('id')!;
+        if (url.pathname === '/v1/attachments/resolve' && request.method === 'GET') {
+          const preparation = await attachmentReads.prepare(readId, scope, threadId, sourceId);
+          verifyCommandTarget();
+          json(response, 200, {
+            hostId: session.hostId,
+            readTarget: session.readingTarget(),
+            threadId,
+            sourceAttachmentId: sourceId,
+            ...preparation,
+          });
+        } else if (url.pathname === '/v1/attachments/resolve' && request.method === 'DELETE') {
+          await attachmentReads.cancel(readId, scope, threadId, sourceId);
+          json(response, 200, { readId, phase: 'cancelled' });
+        } else if (
+          url.pathname === '/v1/attachments' &&
+          ['GET', 'HEAD'].includes(request.method ?? '')
+        )
+          await attachmentReads.serve(
+            request,
+            response,
+            readId,
+            scope,
+            threadId,
+            sourceId,
+            verifyCommandTarget,
+          );
+        else throw new RuntimeError(405, '视频读取方法不支持');
+        return;
+      }
       let result: unknown;
       if (request.method === 'GET') {
         if (url.pathname === '/v1/desktop/open-status')
@@ -1848,6 +1905,9 @@ export async function startRuntimeServer() {
     let failure: unknown;
     clearInterval(voiceExpiryTimer);
     for (const dispose of [
+      () => {
+        void attachmentReads.close().catch(() => {});
+      },
       () => projectGit.close(),
       () => devPreviews.close(),
       unsubscribeNotifications,
@@ -1880,6 +1940,7 @@ export async function startRuntimeServer() {
     session,
     close,
     diagnostics,
+    attachmentReads,
     get direct() {
       return direct;
     },

@@ -132,6 +132,7 @@ extension View {
 }
 
 private struct DocumentFilePreview: View {
+  @Environment(\.mediaPlayback) private var mediaPlayback
   let item: FilePreviewItem
   let renderer: FilePreviewRegistry.Renderer
   @Environment(\.dismiss) private var dismiss
@@ -247,6 +248,9 @@ private struct DocumentFilePreview: View {
           let service = try AgentClients.resolve(item.client)
           let file = try await service.resolveDocumentFile(item.client, file: item.file, reference: url.absoluteString, sourceSha256: document.digest)
           try Task.checkCancellation()
+          if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType), let mediaPlayback {
+            mediaPlayback.open(client: item.client, file: file); return
+          }
           let local = try await service.download(item.client, file: file, progress: { value in
             Task { @MainActor in
               guard linkDownloadOwner == owner, pendingLink == url,

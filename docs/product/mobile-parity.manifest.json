@@ -24297,6 +24297,37 @@
       "files": {
         "apps/ios/Sources/TaskNotifications.swift": "0ec7dbfebb539516178cb65856f24aad05d5c5a5bf9048617228ab594112d807"
       }
+    },
+    {
+      "id": "ios-media-mainline-integration-20261121",
+      "baseCommit": "77892b19710a67beb99ae8f1e2a7acc3837d1ef3",
+      "features": ["F19", "F32", "F59", "F72"],
+      "summary": "Integrate bounded authenticated video reads and shared iOS inline/fullscreen playback; preserve current-main download progress and target protections. Physical35d player17 scoped passes stay historical candidate evidence; current integration native/build/full checks recorded separately. Android and other providers retain original playback.",
+      "files": {
+        "apps/host-agent/src/attachment-reads.ts": "4ad091929bd218cefa50cbab5e8f1bd920b09fe9058498dd705b17e76d8c7614",
+        "apps/host-agent/src/runtime-server.ts": "c78ad9bb9c383bda04b5597b772d401a16b2fc0fc971d15df827aa26ac76be29",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "55773379ae2bd6cf2d12220dc5d344bcdf54fbbbf10bf9605006b896efd9a910",
+        "apps/ios/Resources/PrivacyInfo.xcprivacy": "2c77670f729ad872634aa6c44dd64897f2fe1eab592c0a4e990780413c03489d",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "60f76e385fe8ec8c676e9c3645d98db5af92fb1bf2a08eb7708666ae273d47db",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "7a792033e9bc35c8f0d7556ecd1ac3af9c0178eca20f4f9015069402dcf182c4",
+        "apps/ios/Sources/AgentClient.swift": "51d26125934eb2f3d2d309f0c631cc13e247db7e3454e3b8f164a4b8b5e29063",
+        "apps/ios/Sources/FilePreview.swift": "597228b4f7b52d3e1340193d7058289473f0d3ecdc5129697f9cccc6cc44c51b",
+        "apps/ios/Sources/MediaPlayback.swift": "35d64156156bddc02c31a1ccd996f688df3fcbeda5155f218a6b7d6c65d21bc4",
+        "apps/ios/Sources/MessageLinks.swift": "2d0971132f984ba9cef572e2c6d41577ef0f2353176e2e51d4f556172d583fcb",
+        "apps/ios/Sources/RootView.swift": "e6cffc738a439b98ea29eb2fe3a1c6ea0e1382cdbe6a4a4c9758dc9d4a07af3b",
+        "packages/codex-adapter/src/attachment-files.ts": "41ed4310b8de92a945be39fc5e8700446286343343997ec422b21b042414687b",
+        "packages/protocol/src/attachment-reads.ts": "451f279c75cd0446772e7c25694336636fa7e17e83fb39a44648abacecf1a7ed",
+        "packages/protocol/src/index.ts": "2e0f45a0cd92bebb1ce7f56aa325ccb296fe6fcac2b37fb6e05a2a630c0f45ec",
+        "scripts/attachment-range-http.test.mjs": "72af1a3d30eb47f589c5996382dc95bcce60236d545e04f4bad62c5dc8ce2c15",
+        "scripts/fixtures/media-playback-host.mjs": "171cd090a51d803da3de12a4fd22041b7dfe1ab740d26ec3107cedd861643872",
+        "scripts/fixtures/media-playback-ios-tests.swift": "0546d80c3ad106c0b03933c1b1298195965abf6785ea2f107ac123826014cfc5",
+        "scripts/media-playback-ios-acceptance.mjs": "b2394350625b52bc9caf3bc4c2c6c8559ef8e6065614fd152e78ee8c33be4a87",
+        "packages/codex-adapter/src/runtime-session.ts": "dfd1166564201799e11917c21545363e3d630e0a25b63659daf1720a443d46f5",
+        "apps/android/localization/native-copy.json": "e161b8cea0ced4d952271c607863e14477062da7bc069ded21c2656e4a993647",
+        "apps/android/src/main/res/values/product_strings.xml": "bd63722ce1746624c1263b9c1b012d8fb6367d9fcd6f17af4521685a94522761",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "6fcbc0e9eca1e87c363eae90cdca849a67e6f27d4e490b211cb2384b254aa113",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "efbcbf2cb9be0dafb9a54c6920a0b96ce2cbf58a1bab0f2fd45664109241bfc1"
+      }
     }
   ]
 }

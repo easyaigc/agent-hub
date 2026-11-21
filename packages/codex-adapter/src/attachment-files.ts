@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { open, realpath, stat } from 'node:fs/promises';
+import type { FileHandle } from 'node:fs/promises';
 import type { BigIntStats } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
@@ -322,6 +323,78 @@ export class AttachmentFiles {
     } catch (error) {
       if (error instanceof AttachmentFileError) throw error;
       throw attachmentFileError(error);
+    }
+  }
+
+  /** Copy into a separately owned private file; never stream the mutable source to a player. */
+  async snapshot(
+    path: string,
+    roots: string[],
+    expectedHash: string | null,
+    output: FileHandle,
+    exactPaths: readonly string[],
+    fixedPath: boolean,
+    signal: AbortSignal,
+    reserve: (size: number) => Promise<void>,
+    progress: (bytes: number, total: number) => void,
+  ) {
+    const before = await this.checked(path, roots, exactPaths, fixedPath);
+    const total = Number(before.value.size);
+    if (!Number.isSafeInteger(total)) throw new AttachmentFileError(413, '文件长度超出支持范围');
+    // Reservation errors belong to the caller, not the source-file error mapper.
+    await reserve(total);
+    signal.throwIfAborted();
+    const source = await open(before.actual, 'r');
+    const assertCurrent = async () => {
+      const current = await this.checked(path, roots, exactPaths, fixedPath);
+      if (current.actual !== before.actual || current.key !== before.key)
+        throw changed('snapshot-source', before.value, current.value);
+    };
+    try {
+      signal.throwIfAborted();
+      if (identity(await source.stat({ bigint: true })) !== before.key)
+        throw changed('snapshot-open');
+      const chunk = Buffer.alloc(256 * 1024);
+      const hash = createHash('sha256');
+      let position = 0;
+      progress(0, total);
+      for (;;) {
+        signal.throwIfAborted();
+        const { bytesRead } = await source.read(chunk, 0, chunk.length, position);
+        if (!bytesRead) break;
+        if (position + bytesRead > total) throw changed('snapshot-size');
+        const bytes = chunk.subarray(0, bytesRead);
+        hash.update(bytes);
+        let written = 0;
+        while (written < bytesRead) {
+          signal.throwIfAborted();
+          const result = await output.write(
+            bytes,
+            written,
+            bytesRead - written,
+            position + written,
+          );
+          if (!result.bytesWritten) throw new AttachmentFileError(507, '视频快照写入停滞');
+          written += result.bytesWritten;
+        }
+        position += bytesRead;
+        progress(position, total);
+        await setImmediate();
+      }
+      signal.throwIfAborted();
+      const sha256 = hash.digest('hex');
+      if (position !== total || (expectedHash !== null && sha256 !== expectedHash))
+        throw changed('snapshot-sha256');
+      if (identity(await source.stat({ bigint: true })) !== before.key)
+        throw changed('snapshot-stat');
+      await assertCurrent();
+      await output.sync();
+      return { assertCurrent, metadata: { path: before.actual, sizeBytes: total, sha256 } };
+    } catch (error) {
+      if (signal.aborted) throw signal.reason;
+      throw attachmentFileError(error);
+    } finally {
+      await source.close();
     }
   }
 }

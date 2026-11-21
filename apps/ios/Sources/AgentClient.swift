@@ -228,6 +228,9 @@ protocol AgentClient: Sendable {
   func uploadRequest(_ client: Client, manifest: UploadManifest, action: UploadAction, bytes: Data?, sent: (@Sendable (Int64) -> Void)?) async throws -> UploadReceipt
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL?
+  func prepareMediaRead(_ client: Client, file: RemoteAttachment, readId: String, progress: @escaping @Sendable (Int64, Int64) -> Void) async throws -> MediaReadDescriptor?
+  func mediaBytes(_ client: Client, source: RemoteAttachment, read: MediaReadDescriptor, offset: Int64, count: Int) async throws -> Data
+  @discardableResult func cancelMediaRead(_ client: Client, file: RemoteAttachment, readId: String) async -> Bool
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
   func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
@@ -274,6 +277,9 @@ extension AgentClient {
   func projectGitFiles(_ client: Client, projectId: String, target: AgentRuntimeTarget, snapshotId: String, worktreeId: String, cursor: String?) async throws -> Data { throw HostServiceError.unavailable }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { throw HostServiceError.unavailable }
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { nil }
+  func prepareMediaRead(_ client: Client, file: RemoteAttachment, readId: String, progress: @escaping @Sendable (Int64, Int64) -> Void) async throws -> MediaReadDescriptor? { nil }
+  func mediaBytes(_ client: Client, source: RemoteAttachment, read: MediaReadDescriptor, offset: Int64, count: Int) async throws -> Data { throw HostServiceError.unavailable }
+  @discardableResult func cancelMediaRead(_ client: Client, file: RemoteAttachment, readId: String) async -> Bool { false }
   func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。")) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
@@ -550,6 +556,11 @@ struct CodexAgentClient: AgentClient {
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId]) }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL { try await HostService.download(client, file: file, progress: progress) }
+  func prepareMediaRead(_ client: Client, file: RemoteAttachment, readId: String, progress: @escaping @Sendable (Int64, Int64) -> Void) async throws -> MediaReadDescriptor? {
+    try await HostService.prepareMediaRead(client, file: file, readId: readId, progress: progress)
+  }
+  func mediaBytes(_ client: Client, source: RemoteAttachment, read: MediaReadDescriptor, offset: Int64, count: Int) async throws -> Data { try await HostService.mediaBytes(client, source: source, read: read, offset: offset, count: count) }
+  @discardableResult func cancelMediaRead(_ client: Client, file: RemoteAttachment, readId: String) async -> Bool { await HostService.cancelMediaRead(client, file: file, readId: readId) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await HostService.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
   func resolveDocumentFile(_ client: Client, file: RemoteAttachment, reference: String, sourceSha256: String) async throws -> RemoteAttachment { try await HostService.resolveDocumentFile(client, file: file, reference: reference, sourceSha256: sourceSha256) }
   func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data {

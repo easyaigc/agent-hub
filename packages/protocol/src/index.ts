@@ -92,3 +92,4 @@ export * from './chat-actions.js';
 export * from './chat-management.js';
 export * from './uploads.js';
 export * from './dev-previews.js';
+export * from './attachment-reads.js';

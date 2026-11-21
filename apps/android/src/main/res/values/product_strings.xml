@@ -1874,6 +1874,12 @@
     <string name="product_c098e854e60b951af9f99747" formatted="false">"Unconfirmed"</string>
     <string name="product_b6938505e6d19d0a6a59dcac" formatted="false">"Latest response speed"</string>
     <string name="product_ab1469bc9614d6e0f5ba33a7" formatted="false">"This selects a requested speed. Actual speed requires the service response; missing or conflicting reports remain unconfirmed."</string>
+    <string name="product_c3396195e91ccdd8468b38f0" formatted="false">"Play"</string>
+    <string name="product_22ea3f47fee80536c2f2450d" formatted="false">"Full Screen"</string>
+    <string name="product_0f1505b6ad3fafe48456efa6" formatted="false">"Exit Full Screen"</string>
+    <string name="product_e5ca0c5fc31ada319a3761d2" formatted="false">"Preparing video…"</string>
+    <string name="product_1686103b719242501920b3de" formatted="false">"Buffering…"</string>
+    <string name="product_441027138450f80ec7cda971" formatted="false">"Unable to read the computer resource. Try again."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>
@@ -1923,7 +1929,6 @@
     <string name="product_829010de602ffeb75a1acf1e" formatted="false">"Query conversation action receipt, %@, conversation %@, operation %@"</string>
     <string name="product_abfa64cb81c37d8c098030fc" formatted="false">"Computer offline"</string>
     <string name="product_4df44c740718f5cec25ba12a" formatted="false">"This computer does not provide resource downloads."</string>
-    <string name="product_441027138450f80ec7cda971" formatted="false">"Unable to read the computer resource. Try again."</string>
     <string name="product_2c0eb4f337975bca64a51961" formatted="false">"This file does not belong to the current computer and conversation."</string>
     <string name="product_6a12e2693570915967051cb3" formatted="false">"This file cannot be previewed here. Save it or open it in another app."</string>
     <string name="product_a0f8c91829d45a918ce10432" formatted="false">"Open in another app"</string>

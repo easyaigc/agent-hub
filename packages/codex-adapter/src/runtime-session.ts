@@ -16,6 +16,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
 import { AttachmentFiles, AttachmentFileError, attachmentFileError } from './attachment-files.js';
 import { realpath } from 'node:fs/promises';
+import type { FileHandle } from 'node:fs/promises';
 import { appendRuntimeDiagnostic } from './runtime-diagnostics.js';
 import { localMessagePath, messageLinks, mobileVisualizationLinks } from './message-links.js';
 import {
@@ -3711,6 +3712,72 @@ export class RuntimeSession {
     return this.state.attachments
       .filter((file) => file.threadId === threadId)
       .map((file) => file.path);
+  }
+  async prepareAttachmentRead(
+    threadId: string,
+    id: string,
+    output: FileHandle,
+    signal: AbortSignal,
+    reserve: (size: number) => Promise<void>,
+    progress: (bytes: number, total: number) => void,
+  ) {
+    signal.throwIfAborted();
+    const thread = this.thread(threadId);
+    const source = this.state.attachments.find(
+      (entry) => entry.id === id && entry.threadId === threadId,
+    );
+    if (!source) throw new RuntimeError(410, '原附件已不存在');
+    try {
+      // Capture and hash the current source in one bounded pass. Preserve the
+      // old attachment and all submitted intents when the source has changed.
+      const { assertCurrent, metadata } = await this.attachmentFiles.snapshot(
+        source.path,
+        this.attachmentRoots(thread),
+        null,
+        output,
+        this.attachmentExactPaths(threadId),
+        !!source.desktopMessageLinks?.length,
+        signal,
+        reserve,
+        progress,
+      );
+      signal.throwIfAborted();
+      let file = this.state.attachments.find(
+        (entry) =>
+          entry.threadId === threadId &&
+          entry.path === metadata.path &&
+          entry.sha256 === metadata.sha256,
+      );
+      if (!file) {
+        file = { ...source, ...metadata, id: randomUUID() };
+        this.state.attachments.push(file);
+        this.save();
+      }
+      const preparedId = file.id;
+      return {
+        file: this.cleanAttachment(file),
+        assertSource: async () => {
+          this.thread(threadId);
+          if (
+            !this.state.attachments.some(
+              (entry) => entry.id === preparedId && entry.threadId === threadId,
+            )
+          )
+            throw new RuntimeError(410, '原附件已不存在');
+          try {
+            await assertCurrent();
+          } catch (error) {
+            if (error instanceof AttachmentFileError)
+              throw new RuntimeError(error.status, error.message, error.code);
+            throw error;
+          }
+        },
+      };
+    } catch (error) {
+      if (error instanceof AttachmentFileError)
+        throw new RuntimeError(error.status, error.message, error.code);
+      throw error;
+    }
   }
   async download(threadId: string, id: string) {
     const thread = this.thread(threadId);

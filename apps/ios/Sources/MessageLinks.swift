@@ -38,6 +38,7 @@ extension EnvironmentValues {
 
 
 struct MessageLinkOpening: ViewModifier {
+  @Environment(\.mediaPlayback) private var mediaPlayback
   let messageId: String
   let threadId: String?
   let client: Client?
@@ -107,6 +108,9 @@ struct MessageLinkOpening: ViewModifier {
       download = Task { @MainActor in
         defer { if !Task.isCancelled { loading = false; download = nil } }
         do {
+          if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType), let mediaPlayback {
+            mediaPlayback.open(client: client, file: file, anchor: anchor); return
+          }
           let local = try await AgentClients.resolve(client).download(client, file: file)
           guard !Task.isCancelled else { return }
           rememberMedia(url, local: local)
@@ -116,7 +120,9 @@ struct MessageLinkOpening: ViewModifier {
           self.error = error.localizedDescription
         }
       }
-    case .web(let url): webURL = BrowserLink(url: url)
+    case .web(let url):
+      if MediaPlaybackFormat.external(url), let mediaPlayback { mediaPlayback.open(url: url) }
+      else { webURL = BrowserLink(url: url) }
     case .external(let url):
       UIApplication.shared.open(url) { opened in
         if !opened && selectedURL == url { error = L10n.tr("手机上没有可打开此链接的应用。") }
@@ -132,6 +138,10 @@ struct MessageLinkOpening: ViewModifier {
         do {
           let service = try AgentClients.resolve(client)
           let file = try await service.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: url.absoluteString)
+          guard !Task.isCancelled else { return }
+          if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType), let mediaPlayback {
+            mediaPlayback.open(client: client, file: file, anchor: anchor); return
+          }
           let local = try await service.download(client, file: file)
           guard !Task.isCancelled else { return }
           rememberMedia(url, local: local)
@@ -373,6 +383,7 @@ private struct MessageMediaCard: View {
   @Environment(\.openingMessageLink) private var openingLink
   @Environment(\.openingMessageLinkAnchor) private var openingAnchor
   @Environment(\.messageMediaSnapshots) private var snapshots
+  @Environment(\.mediaPlayback) private var mediaPlayback
   @State private var anchor = UUID()
   @State private var thumbnail: UIImage?
   private var url: URL? { URL(string: reference) }
@@ -382,6 +393,12 @@ private struct MessageMediaCard: View {
   }
   private var loading: Bool { openingLink == url && openingAnchor == anchor }
   var body: some View {
+    Group {
+      if kind == .video, let mediaPlayback { MediaInlineCard(coordinator: mediaPlayback, anchor: anchor, fallback: card) }
+      else { card }
+    }
+  }
+  private var card: some View {
     Button {
       guard let url else { return }
       if let messageLinkOpen { messageLinkOpen(url, anchor) } else { openURL(url) }

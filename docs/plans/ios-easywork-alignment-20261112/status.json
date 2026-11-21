@@ -1755,7 +1755,7 @@
         "note": " R302：本次回退修复与同类盘点已完成限定源/辅助及原生范围核验；原任务负责人、执行状态及F75/A6暂停保持，整仓检查另留本任务证据。"
       },
       "nextAction": "先核共享源码采用状态；未改纯手机行为匹配原证据，不重复完整UI验收。 本轮回退修复交付关联RELEASED-INTERACTION-REGRESSION-SCOPED-REPAIR-AUX-R302及docs/acceptance/released-workflow-regressions-20261119.md，原EasyWork通过仅按原候选范围复用。",
-      "openItemIds": [],
+      "openItemIds": ["MEDIA01"],
       "updatedAt": "2026-11-19T10:13:35.807396+00:00",
       "initialScopeStatus": "shared-mobile",
       "functionalDeliverableIds": []
@@ -2607,7 +2607,17 @@
         "ownerRole": "Root owns remaining scopes; native share executor completed and cleaned"
       },
       "nextAction": "普通TXT下载后Quick Look已有PR176交付，复用R257/R284；图片、文档链接和其余下载边界按原子项，不重传本原件。",
-      "openItemIds": ["DEV01", "DEV02", "INT01", "REV04", "REV06", "REV10", "REV15", "REV16"],
+      "openItemIds": [
+        "DEV01",
+        "DEV02",
+        "INT01",
+        "REV04",
+        "REV06",
+        "REV10",
+        "REV15",
+        "REV16",
+        "MEDIA01"
+      ],
       "updatedAt": "2026-11-18T21:41:40.200377+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
@@ -4532,7 +4542,7 @@
         "ownerRole": "主会话与本机Terra请求执行方，正式App模拟器连接准确26b Electron"
       },
       "nextAction": "REV16 R141/R142限定恢复已过，N9在R176正常停止并收尾；仅为具体下一用例按需启动当前D3888组合。继续AC21独立上传、有限/null限额、预算错误/断线重启与回执矩阵，不重做已结束原操作。",
-      "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16"],
+      "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16", "MEDIA01"],
       "updatedAt": "2026-11-16T11:52:48.752977+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
@@ -5237,7 +5247,7 @@
         "ownerRole": "主会话与本机Terra请求执行方，正式App模拟器连接准确26b Electron"
       },
       "nextAction": "REV15双入口进度/取消R138/R143已有限通过，继续AC22真实源SHA、相对/中文/嵌套/锚点/返回、越界/旧端提示/冷启位置与GUI迟到；原证据逐项匹配C8/c76/D3888。",
-      "openItemIds": ["DEV02", "INT01", "REV04", "REV06", "REV09", "REV15"],
+      "openItemIds": ["DEV02", "INT01", "REV04", "REV06", "REV09", "REV15", "MEDIA01"],
       "updatedAt": "2026-11-16T11:52:48.752977+00:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
@@ -5475,8 +5485,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 326,
-  "updatedAt": "2026-11-19T10:13:35.807396+00:00",
+  "revision": 327,
+  "updatedAt": "2026-11-21T09:44:09.939004+00:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -13856,6 +13866,236 @@
       "scope": "PR208已实际合入Gitea BCAI/agent-hub-app/main，合并1f0f5ddddfd4e70d3744229b7d2c306d37bff24a；独立核PR关闭/merged、远端SHA、双父及整tree与已验e010完全一致。CI12862的workspace29979与iOS29980全部成功，默认原生3/4/1零失败/零跳过。真实EasyWork1子过程与同包8项旧候选验收仅按未变provider/投影/渲染和实际输入路径匹配复用；不新增真实模型输入。子历史173条三页、旧messages:null及目标/游标负例、Codex Git动态请求和唯一路由门禁均已进入默认检查。正式App/Host未部署；完整F20、F75/A6暂停及Android原生范围保持。源码开发分支本地/远端已正常删除，事实回填用独立分支和原工作树，完成后即回收。",
       "path": ".local/subagent-easywork-restore-20261119/gitea/pr208/actual-main-merge-verification.json",
       "sha256": "8477945330841c16f69e2e154891c66265dd5429e1fb64f99de105fb04035bcf"
+    },
+    "MEDIA01-ASTRA-ULTRA-PLAN-HOST-SNAPSHOT-RANGE-CANDIDATE-R424": {
+      "kind": "source-candidate-review",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "current WIP; task source SHA and baseline recorded in .local/media-streaming-20261121/execution.json",
+      "packageSha256": null,
+      "environment": "local source review, actual reviewer gpt-6-astra/ultra independently checked from official turn_context; no native player run",
+      "mobileEnvironment": "not-required",
+      "scope": "MV0 reviewed plan and VA01-VA12; MV1 Codex host candidate only. No iOS/EasyWork/Android playback or delivery pass. Existing WIP and prior acceptance retained.",
+      "path": "docs/plans/mobile-video-streaming-20261121.md",
+      "sha256": "d4d2a41887833a357f26eda33aedf35814802146c0b216038512a1b9e79e80ae"
+    },
+    "MEDIA01-HOST-RANGE-22-AUX-OLD-GET-AND-CLEANUP-R425": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "task input SHA in verification-v3/inputs-before.sha256; source candidate, not merged commit",
+      "packageSha256": null,
+      "environment": "Node24.19.0; production local HTTP/snapshot boundary, runtime connection fixture; actual Terra medium independently checked",
+      "mobileEnvironment": "not-required",
+      "scope": "build and22 tests, fixture performance and message links passed; original GET bytes/SHA preserved; no native playback or deployment pass",
+      "path": ".local/media-streaming-20261121/verification-v3/report.json",
+      "sha256": "2a3f50664bb0cf3c7d79e96400570f3b4cd5c0ea12075f3f8a3cbb60bb721083"
+    },
+    "MEDIA01-FINAL22-LINT-TYPECHECK-LEDGER-AND-OPEN-GATES-R426": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": null,
+      "sourceTree": "exact9 input SHA in final-task-check/final-verification.json; no merged source or installable App package",
+      "environment": "Node24; actual Terra medium verified by main official turn_context, model request distinct from self-report; speed unavailable",
+      "mobileEnvironment": "not-required",
+      "scope": "final22 tests/lint/format pass; prior13-task typecheck and ledger check pass. Full pnpm check blocked by unrelated AppStore lint; parity missing shared EasyWork mapping. No native player acceptance.",
+      "path": ".local/media-streaming-20261121/final-task-check/final-verification.json",
+      "sha256": "01f026e9f3156e0d89ae73b802efa49ed44ea19c97bda282e9b21c1141328193"
+    },
+    "MEDIA01-MV2-IOS-PLAYER-SOURCE-AND-SIMULATOR-START-R428": {
+      "kind": "source-candidate",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": null,
+      "environment": "iOS source candidate; independent simulator tester preparing/building; no current package GUI pass",
+      "mobileEnvironment": "simulator",
+      "scope": "AVPlayer/common four-chat-entry routing, bounded authenticated loader and caches, old-provider fallback; source and actual native results separate",
+      "path": ".local/media-streaming-20261121/mv2/source-candidate-7aff4b3126f434c1.json",
+      "sha256": "7aff4b3126f434c1885113388acd9f8800a330b6f0e1ac4f42fdbbbff87e3e74"
+    },
+    "MEDIA01-MV2-ASTRA-REVIEW-FROZEN-PLAYER-R430": {
+      "kind": "source-candidate",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": null,
+      "environment": "main source candidate; actual Astra ultra bounded review completed; new native simulator suite in progress",
+      "mobileEnvironment": "simulator",
+      "scope": "six actionable player review findings fixed; exact Swift SHA and actual review settings independently checked. No new full-suite acceptance claimed.",
+      "path": ".local/media-streaming-20261121/mv2/astra-review.json",
+      "sha256": "878c1c47ed76f041f8476c65c1534902face45d0bfcc6bf6ac8a4f8098123340",
+      "sourceTree": ".local/media-streaming-20261121/mv2/source-candidate-c2a6e16eaed2ede4.json"
+    },
+    "MEDIA01-MV2-LEASE-CLOCK-REVIEW-AND-FINAL-SOURCE-R433": {
+      "kind": "source-candidate",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": null,
+      "environment": "iOS frozen 6f2cef player and matching Host lease metadata/expired cancellation source; final simulator matrix executing",
+      "mobileEnvironment": "simulator",
+      "scope": "same-version lease replacement with confirmed cleanup and independent close cancellation; actual Astra ultra bounded review plus main ContinuousClock correction; old native eight scoped passes and tail seek precision failure preserved, not current candidate acceptance",
+      "path": ".local/media-streaming-20261121/mv2/source-candidate-3e51db344e20d0e6.json",
+      "sha256": "3e51db344e20d0e662bd19fdc0f256050369d14fc0a6207e98ceac9dedd3d6b0",
+      "reviewPath": ".local/media-streaming-20261121/mv2/astra-lease-review.json"
+    },
+    "MEDIA01-MV2-IOS-CURRENT6-NATIVE-R435": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/mv2/source-candidate-453ab4633867f239.json",
+      "packageSha256": "64fd28eef39b2d311945a833247b2edb00da8ad35bc1f0469915557e16ffb070",
+      "packageFingerprintKind": "app-tree-v1",
+      "mobileEnvironment": "simulator",
+      "environment": "iPhone17Pro iOS26.0 / Xcode27; local loopback, task-owned synthetic media; unmerged source",
+      "scope": "Current48a simulator native6: inline frame/seek/fullscreen return with root interaction and pixel motion; legacy octet-stream attachment; portrait fullscreen; short same-version lease and renewal403/version rejection. Synthetic history/resolver, production file pipeline, no real Electron/model input claim. Runtime bundle captured before declaration-only privacy correction.",
+      "path": ".local/media-streaming-20261121/mv2/run-DLutyv/report.json",
+      "sha256": "7f0a50104424e0f50e9b3df93d53035e9fe380b0c2899459c9b3d2b30f7d1e31"
+    },
+    "MEDIA01-MV2-BASELINE9-SOURCE-MATCH-R435": {
+      "kind": "exact-match-review",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/mv2/source-candidate-453ab4633867f239.json",
+      "packageSha256": "64fd28eef39b2d311945a833247b2edb00da8ad35bc1f0469915557e16ffb070",
+      "packageFingerprintKind": "app-tree-v1",
+      "mobileEnvironment": "simulator",
+      "environment": "iPhone17Pro iOS26.0 / Xcode27; local loopback, task-owned synthetic media; unmerged source",
+      "scope": "Baseline9 routes/legacy/retry/context/share/tail matched by unchanged media core and captured production inputs; current layout separately revalidated.19 executions include repeats; broader providers/performance not closed.",
+      "path": ".local/media-streaming-20261121/mv2/final-acceptance-review.json",
+      "sha256": "83587cf3d811b48eafa783dc38fc7c3b81a370a6d6e8f35a336386bae5c7bc83"
+    },
+    "MEDIA01-MV2-HOST23-BUILD-AND-PRIVACY-AUX-R435": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/mv2/source-candidate-453ab4633867f239.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "not-a-runtime-package",
+      "mobileEnvironment": "simulator",
+      "environment": "iPhone17Pro iOS26.0 / Xcode27; local loopback, task-owned synthetic media; unmerged source",
+      "scope": "23 Host HTTP/metadata passes, build/typecheck/scoped lint; explicit disk-space privacy declaration checked against official JSON and plist, standard resource-copy build tracked separately. No full-repo gate upgrade.",
+      "path": ".local/media-streaming-20261121/mv2/metadata-privacy-impact.json",
+      "sha256": "a60a1d5ed0f9fc27df5a3cdbc880ee758bc6a84afb88987169abd5c3cd429713"
+    },
+    "MEDIA01-MV2-FINAL-GATES-AND-RESOURCE-CLOSURE-R436": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/mv2/source-candidate-453ab4633867f239.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "not-a-runtime-package",
+      "mobileEnvironment": "simulator",
+      "environment": "iPhone17Pro iOS26.0 / Xcode27; local loopback, task-owned synthetic media; unmerged source",
+      "scope": "Final standard iOS build/resource-copy passed; DiskSpace privacy metadata only, no new GUI run. Whole pnpm check format/preceding checks passed then stopped at14 preexisting AppStore render.cjs lint errors; later tasks not run.23 Host boundaries and scoped lint passed. All8 completed task auxiliary chats closed and official archive/read-only-state verified; dedicated simulators/fixtures/media/build copies released, shared WIP preserved.",
+      "path": ".local/media-streaming-20261121/mv2/final-gates-summary.json",
+      "sha256": "379cfba4071c088ff42577e31673ecb0efa692b5146621a08017dba51647091e"
+    },
+    "MEDIA01-PHYSICAL-PLAYER-START-R445": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/physical/initial-source-check.json",
+      "packageSha256": null,
+      "mobileEnvironment": "physical",
+      "environment": "Current user explicitly authorized connected paired iPhone15ProMax physical test; exact device details private, CoreDevice connected. iOS27.2.1 reported.",
+      "scope": "Preflight only:10 frozen media inputs match simulator source baseline; independent signed physical test build and XCTest pending. No new physical playback pass, no other device/remote/model input or release authorization.",
+      "path": ".local/media-streaming-20261121/physical/initial-source-check.json",
+      "sha256": "8059b079475ca466cfccff01d912de95821c5430d0323c300278c7583ab200d8"
+    },
+    "MEDIA01-PHYSICAL-BUILD-START-AND-CLI-BOOTSTRAP-FAILURE-R449": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/physical/run-physical-20261121/source-manifest.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "build-start-only; separate initial and direct-rebuild executable hashes in report",
+      "mobileEnvironment": "physical",
+      "environment": "Connected paired iPhone15ProMax iOS27.2.1; Xcode27.0; independent acceptance bundle, device details private",
+      "scope": "Signed App install/start succeeded with exact bundle/path/PID; no player test executed. Core/no-fixture/minimal/direct-test all failed XCTest bootstrap74 before methods; zero media requests. Main independently verified11 evidence hashes/rawRunner errors/task apps absent/owned large paths removed. GUI entry control remains pending; no source/model/other platform/deployment upgrade.",
+      "path": ".local/media-streaming-20261121/physical/run-physical-20261121/final-report.json",
+      "sha256": "0c6cda971e50854e96d4ed7a71b9b0d6f9dec69749fbac8233656613e587b445"
+    },
+    "MEDIA01-PHYSICAL-GUI74-GATES-AND-CLEANUP-BLOCKED-R450": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/physical/run-physical-20261121/source-manifest.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "diagnostic controls only; not physical player acceptance",
+      "mobileEnvironment": "physical",
+      "environment": "Paired connected iPhone15ProMax iOS27.2.1; Xcode27.0 GUI and CLI; exact device private",
+      "scope": "GUI minimal Product Test also exits74 before connection/method; main screenshot/raw/hashes reviewed. Zero physical player methods/passes. Current44 fixture lint and token/auth/capability/close smoke passed; generation blocked by unrelated EasyWork pin, whole check14 existing screenshot lint.10 production media pins unchanged.4 task auxiliaries closed and official archive verified; task App/Runner, processes, dedicated builds/media/Hosts absent; small reproducible evidence/shared environment retained.",
+      "path": ".local/media-streaming-20261121/physical/final-summary.json",
+      "sha256": "71071b0be0715de71664438a1ab717a57b3c835ecb295f2377aabe521a9b5bba"
+    },
+    "MEDIA01-RUNNER74-REPAIR-RESUME-R454": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/start-scope.json",
+      "packageSha256": null,
+      "mobileEnvironment": "physical",
+      "environment": "Same paired iPhone15ProMax; independent signed minimal test prepared, physical player test pending",
+      "scope": "User explicitly requests Runner74 repair and physical player acceptance; resume from blocked, main root diagnosis and Astra ultra review, Terra medium native execution. Prior errors and zero physical passes preserved.",
+      "path": ".local/media-streaming-20261121/repair74/start-scope.json",
+      "sha256": "c1c00e43f6372359f5602741dd0f25f5e906e4a4c3e1727afdc26e19cb9d99e5"
+    },
+    "MEDIA01-RUNNER74-HOST-TRANSPORT-RECOVERY-READINESS-R457": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/runner/build-manifest.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "same minimal executable and xctestrun as failed controls; readiness only",
+      "mobileEnvironment": "physical",
+      "environment": "Same paired iPhone15ProMax iOS27.2.1 / Xcode27.0; host user CoreDeviceService rebuilt after idle checks; no pairing/network/identity change",
+      "scope": "Main independently verified actual testHandshake start/pass1,zero failures/skips after host transport service recovery; before/after executable and xctestrun hashes identical and old failed candidate matched. Device daemon reset and process proxy controls did not recover. Internal Apple cause not uniquely proven. Player candidate build underway, zero player pass at this checkpoint.",
+      "path": ".local/media-streaming-20261121/repair74/main-recovery-review.json",
+      "sha256": "e7e39dd238fd4994287a0dce5c8cb6e1d5d2124890456fc5e99e393556fed132"
+    },
+    "MEDIA01-PHYSICAL-SEEK-RED-AND-COALESCING-CANDIDATE-R460": {
+      "kind": "source-candidate",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/seek-final-source-candidate.json",
+      "packageSha256": null,
+      "mobileEnvironment": "physical",
+      "environment": "Same paired iPhone15ProMax; recovered XCTest; strict HTTPS App media with bounded fixture control bridge",
+      "scope": "Old48a native core assertion pass had copy7000; retained bridge all3 copies passed but actual cached seek clock194 remained194. Original failure retained. New be5474 candidate coalesces seeks, reviews/build/native current matrix pending; old simulator and limited legacy passes not promoted to new source.",
+      "path": ".local/media-streaming-20261121/repair74/seek-final-source-candidate.json",
+      "sha256": "f30df87e407a0f62252ef9430a1cbe17fcf4c71bae386f1e15c67008ea865f7c"
+    },
+    "MEDIA01-PHYSICAL-BOUNDED-REFILL-WARM2-RED-GREEN-R462": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/bounded-progress-source-candidate.json",
+      "packageSha256": "b2b784f204ba7b1f723fe9a452c8ac494a34ce0e8c1f68889a8689dddbd36ca5",
+      "packageFingerprintKind": "physical build executable; not installed full-tree equality",
+      "mobileEnvironment": "physical",
+      "environment": "Paired iPhone15ProMax iOS27.2.1; exact native XCTest and task HTTPS connection; device identifiers private",
+      "scope": "Current35d same-package warm2 both1pass0fail0skip, one with trace disabled via actual launch argument; zero media network bytes both, actual player clock203.61→208.30 observed, no active responses after close. Prior c6 clock204.336/5.125s range starvation red retained. Current cold/core/complete physical matrix still executing; not all providers/Android/release.",
+      "path": ".local/media-streaming-20261121/repair74/main-warm-red-green-review.json",
+      "sha256": "7359ade783bc5cbac64af57ccb7e9705ac317bbe0a545cb695baf07db172c5fa"
+    },
+    "MEDIA01-PHYSICAL-CURRENT35D-NATIVE16-MATRIX-R466": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/player/recovery-input-35d-manifest.json",
+      "packageSha256": "b2b784f204ba7b1f723fe9a452c8ac494a34ce0e8c1f68889a8689dddbd36ca5",
+      "packageFingerprintKind": "physical build executable, not installed full-tree equality",
+      "mobileEnvironment": "physical",
+      "environment": "Paired iPhone15ProMax iOS27.2.1 / Xcode27; task HTTPS, original pin/target, exact device private. Current35d unmerged source.",
+      "scope": "Current35d physical16 matrix executions,13 methods incl repeats. Main raw/native/bridge/input/binary/visual/tail atom independent review; remaining providers/platform/performance/real-old-release combinations excluded.",
+      "path": ".local/media-streaming-20261121/repair74/main-final-matrix-review.json",
+      "sha256": "4f217a639af0b123cbad8766293edafde2ddd81c432199c0b453a66bb6c75c74"
+    },
+    "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/player/recovery-input-35d-manifest.json",
+      "packageSha256": "b2b784f204ba7b1f723fe9a452c8ac494a34ce0e8c1f68889a8689dddbd36ca5",
+      "packageFingerprintKind": "physical build executable, not installed full-tree equality",
+      "mobileEnvironment": "physical",
+      "environment": "Paired iPhone15ProMax iOS27.2.1 / Xcode27; task HTTPS, original pin/target, exact device private. Current35d unmerged source.",
+      "scope": "Additional same35d no-trace cold original-core native1pass0fail0skip,5verifiedcopies,no fullGET,closed port/active0; total current-source17 executions with matrix. No new business model input.",
+      "path": ".local/media-streaming-20261121/repair74/main-extra-cold-traceoff-review.json",
+      "sha256": "b4ed0b11a9c69b34567aa226fdb1a9254bdeb73d89197ef67f645ac90ef8f53c"
+    },
+    "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/player/recovery-input-35d-manifest.json",
+      "packageSha256": null,
+      "packageFingerprintKind": "not-a-runtime-package",
+      "mobileEnvironment": "physical",
+      "environment": "Paired iPhone15ProMax iOS27.2.1 / Xcode27; task HTTPS, original pin/target, exact device private. Current35d unmerged source.",
+      "scope": "Main fresh CoreDevice task app absence, filesystem/process/resource and source recovery verified.17current passes preserved; six task agents actual models/efforts and official archives verified. Formal/DEV/shared environment and unrelated WIP retained; no branch,commit,push or deployment.",
+      "path": ".local/media-streaming-20261121/repair74/main-final-resource-closure-review.json",
+      "sha256": "287c92e3b0448677e2b34393b879f5acf68e14f3443718696262f5fab0003d6a"
     }
   },
   "openItems": [
@@ -15463,6 +15703,68 @@
       "desktop": "D8 actual authenticated context published5 LAN endpoints/pin; formal configureLan enable and owned disable both confirmed on N17. Original false/listener absent restored. No desktop source change required for this exact gap.",
       "nextAction": "Acquisition-specific review closed and responsibility returned to Main F08/F09 remaining route/preference/subscription matrix. Mainline integration and Android separate.",
       "updatedAt": "2026-11-16T08:21:11.569637+00:00"
+    },
+    {
+      "id": "MEDIA01",
+      "name": "手机各入口视频渐进播放与原模式兼容",
+      "featureIds": ["F19", "F32", "F59", "F72"],
+      "kind": "user-requested-media-range-enhancement",
+      "developmentState": "partial",
+      "executionState": "in-progress",
+      "owner": "current media delivery chat",
+      "evidenceRefs": [
+        "MEDIA01-ASTRA-ULTRA-PLAN-HOST-SNAPSHOT-RANGE-CANDIDATE-R424",
+        "MEDIA01-HOST-RANGE-22-AUX-OLD-GET-AND-CLEANUP-R425",
+        "MEDIA01-FINAL22-LINT-TYPECHECK-LEDGER-AND-OPEN-GATES-R426",
+        "MEDIA01-MV2-IOS-PLAYER-SOURCE-AND-SIMULATOR-START-R428",
+        "MEDIA01-MV2-ASTRA-REVIEW-FROZEN-PLAYER-R430",
+        "MEDIA01-MV2-LEASE-CLOCK-REVIEW-AND-FINAL-SOURCE-R433",
+        "MEDIA01-MV2-IOS-CURRENT6-NATIVE-R435",
+        "MEDIA01-MV2-BASELINE9-SOURCE-MATCH-R435",
+        "MEDIA01-MV2-HOST23-BUILD-AND-PRIVACY-AUX-R435",
+        "MEDIA01-MV2-FINAL-GATES-AND-RESOURCE-CLOSURE-R436",
+        "MEDIA01-PHYSICAL-PLAYER-START-R445",
+        "MEDIA01-PHYSICAL-BUILD-START-AND-CLI-BOOTSTRAP-FAILURE-R449",
+        "MEDIA01-PHYSICAL-GUI74-GATES-AND-CLEANUP-BLOCKED-R450",
+        "MEDIA01-RUNNER74-REPAIR-RESUME-R454",
+        "MEDIA01-RUNNER74-HOST-TRANSPORT-RECOVERY-READINESS-R457",
+        "MEDIA01-PHYSICAL-SEEK-RED-AND-COALESCING-CANDIDATE-R460",
+        "MEDIA01-PHYSICAL-BOUNDED-REFILL-WARM2-RED-GREEN-R462",
+        "MEDIA01-PHYSICAL-CURRENT35D-NATIVE16-MATRIX-R466",
+        "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466",
+        "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466"
+      ],
+      "ios": "当前35d限定iOS切片真机完成：16次矩阵加1次关闭诊断的冷缓存复核，17通过/0失败/0跳过、13方法含重复；冷/暖、inline/三类链接入口、拖动/全屏/竖向素材、旧能力回退/完整分享、续期及故障拒绝和尾置moov均按范围通过。旧48a模拟器与各失败候选保持原记录。源码仍为未集成候选，未部署。",
+      "desktop": "Host固定快照/Range、相对租约和原GET保持；原23项辅助记录保留，本次物理App经HTTPS使用生产文件管线。合成历史/解析来源不冒充真实Electron或其他Provider联调。",
+      "nextAction": "Current isolated latest-main check and iOS simulator build passed; proceed with Gitea PR and its CI. Other platforms, physical integration acceptance and deployment remain separate.",
+      "updatedAt": "2026-11-21T08:43:45.886490+00:00",
+      "plan": "docs/plans/mobile-video-streaming-20261121.md",
+      "acceptancePlan": "docs/acceptance/mobile-video-streaming-20261121.md",
+      "gateNote": "Runner74 recovered; actual cached5.125s gate starvation repaired by bounded refill plus seek/clock fixes. Current17 scoped physical passes and35d standard iOS build38.43s verified. Wholecheck c6 stopped14 preexisting screenshot lint;35d not whole-green. Product generation still unrelated EasyWork source pin blocked. Final docs/ledger consistency checked separately; six task agents archived and task apps/builds/media/Hosts removed. The former14 CommonJS lint errors are fixed; isolated latest-main pnpm check, 16 attachment HTTP tests, root lint and iOS simulator build passed. Gitea PR and CI remain pending; no new physical acceptance is claimed.",
+      "physicalAcceptance": {
+        "state": "passed-scoped-current-candidate",
+        "playerMethodsExecuted": 17,
+        "playerPasses": 17,
+        "nativeReadinessPasses": 1,
+        "evidenceRefs": [
+          "MEDIA01-RUNNER74-HOST-TRANSPORT-RECOVERY-READINESS-R457",
+          "MEDIA01-PHYSICAL-SEEK-RED-AND-COALESCING-CANDIDATE-R460",
+          "MEDIA01-PHYSICAL-BOUNDED-REFILL-WARM2-RED-GREEN-R462",
+          "MEDIA01-PHYSICAL-CURRENT35D-NATIVE16-MATRIX-R466",
+          "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466",
+          "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466"
+        ],
+        "rootCauseScope": "Recovery after user-level host CoreDeviceService transport rebuild; exact Apple internal defect not claimed",
+        "countScope": "current35d physical17 executions,13unique methods; repeats and older failed candidates separate",
+        "newCandidateSourceSHA256": "35d64156156bddc02c31a1ccd996f688df3fcbeda5155f218a6b7d6c65d21bc4",
+        "packageExecutableSHA256": "b2b784f204ba7b1f723fe9a452c8ac494a34ce0e8c1f68889a8689dddbd36ca5",
+        "playerFailures": 0,
+        "playerSkipped": 0,
+        "matrixExecutions": 16,
+        "additionalNoTraceColdExecutions": 1,
+        "uniqueTestMethods": 13,
+        "cleanup": "owned resources released, six task auxiliary threads officially archived"
+      }
     }
   ],
   "acceptanceScenarios": [
@@ -22101,6 +22403,18 @@
         "PR208-FINAL-CI12862-FULL-WORKSPACE-EIGHT-UI-PASS-20261119",
         "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119"
       ]
+    },
+    {
+      "revision": 327,
+      "date": "2026-11-21",
+      "kind": "media-scoped-physical-evidence-and-authorized-mainline-integration",
+      "scope": "Import only MEDIA01 owned source/physical evidence into mainline ledger; preserve unrelated mainline facts. Physical17 candidate passes remain scoped; latest-main integration checks pending. F75/A6 stay paused.",
+      "newProductAcceptancePasses": 0,
+      "evidenceRefs": [
+        "MEDIA01-PHYSICAL-CURRENT35D-NATIVE16-MATRIX-R466",
+        "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466",
+        "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -25147,6 +25461,19 @@
         "F20-CHILD-HISTORY-PR208-ACTUAL-MAIN-MERGE-20261119",
         "F20-EASYWORK-CHILD-RESTORE-REAL-NATIVE-20261119"
       ]
+    },
+    {
+      "component": "MEDIA01 scoped current physical player",
+      "role": "unmerged-source-native-physical-accepted",
+      "baseCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": ".local/media-streaming-20261121/repair74/player/recovery-input-35d-manifest.json",
+      "verification": "35d source; physical17 scoped passes incl no-trace cold and warm; exact build b2b784; source recovery preserved. No whole-feature/platform/P95/installed-tree or deployment claim.",
+      "evidenceRefs": [
+        "MEDIA01-PHYSICAL-CURRENT35D-NATIVE16-MATRIX-R466",
+        "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466",
+        "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466"
+      ],
+      "updatedAt": "2026-11-21T08:43:45.886490+00:00"
     }
   ],
   "sourcePinHistory": [

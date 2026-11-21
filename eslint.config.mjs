@@ -7,6 +7,14 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: globals.node },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'no-redeclare': ['error', { builtinGlobals: false }],
+    },
+  },
+  {
     files: ['**/*.{ts,mjs}'],
     languageOptions: { globals: globals.node },
     rules: {

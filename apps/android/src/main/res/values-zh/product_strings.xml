@@ -1874,6 +1874,12 @@
     <string name="product_c098e854e60b951af9f99747" formatted="false">"未确认"</string>
     <string name="product_b6938505e6d19d0a6a59dcac" formatted="false">"最近一次回复速度"</string>
     <string name="product_ab1469bc9614d6e0f5ba33a7" formatted="false">"选择的是请求速度；实际档位以服务方回报为准，未回报或回报不一致时显示未确认。"</string>
+    <string name="product_c3396195e91ccdd8468b38f0" formatted="false">"播放"</string>
+    <string name="product_22ea3f47fee80536c2f2450d" formatted="false">"全屏"</string>
+    <string name="product_0f1505b6ad3fafe48456efa6" formatted="false">"退出全屏"</string>
+    <string name="product_e5ca0c5fc31ada319a3761d2" formatted="false">"正在准备视频…"</string>
+    <string name="product_1686103b719242501920b3de" formatted="false">"正在缓冲…"</string>
+    <string name="product_441027138450f80ec7cda971" formatted="false">"读取电脑资源失败，请重试。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>
@@ -1923,7 +1929,6 @@
     <string name="product_829010de602ffeb75a1acf1e" formatted="false">"查询聊天操作记录，%@，对话 %@，操作 %@"</string>
     <string name="product_abfa64cb81c37d8c098030fc" formatted="false">"电脑离线"</string>
     <string name="product_4df44c740718f5cec25ba12a" formatted="false">"此电脑未提供逻辑资源下载"</string>
-    <string name="product_441027138450f80ec7cda971" formatted="false">"读取电脑资源失败，请重试。"</string>
     <string name="product_2c0eb4f337975bca64a51961" formatted="false">"文件不属于当前电脑和对话"</string>
     <string name="product_6a12e2693570915967051cb3" formatted="false">"此文件无法直接预览，可保存或使用其他应用打开。"</string>
     <string name="product_a0f8c91829d45a918ce10432" formatted="false">"用其他应用打开"</string>

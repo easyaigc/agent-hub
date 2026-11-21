@@ -1485,6 +1485,7 @@ struct RootView: View {
   @StateObject private var voiceSessions = VoiceInputSessions()
   @StateObject private var sidebarMotion = SidebarDrawerCommands()
   @StateObject private var readingCovers = ChatReadingCovers()
+  @StateObject private var mediaPlayback = MediaPlaybackCoordinator()
   @ObservedObject private var notifications = TaskNotificationController.shared
   @ObservedObject private var businessNotifications = TaskHubBusinessNotifications.shared
   @State private var showComposerActions = false
@@ -1696,12 +1697,20 @@ struct RootView: View {
     .tint(.primary)
     .environmentObject(voice)
     .environmentObject(voiceSessions)
+    .environment(\.mediaPlayback, mediaPlayback)
+    .background(MediaPlaybackWindowProbe(coordinator: mediaPlayback).frame(width: 0, height: 0))
+    .onAppear {
+      mediaPlayback.readingCover = { [weak gate = readingCovers] owner, context, active in
+        if active { _ = gate?.begin(owner, context: context) }
+        else { gate?.end(owner, context: context) }
+      }
+    }
     .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented || devServiceSource != nil))
     .sheet(item: $devServiceSource) { source in
       DevServiceEntry(client: source.client, threadId: source.threadId)
     }
     .onChange(of: store.readingContextKey, initial: true) { _, context in
-      readingCovers.activate(context); devServiceSource = nil
+      readingCovers.activate(context); devServiceSource = nil; mediaPlayback.activate(context)
     }
     .fullScreenCover(item: Binding(get: { readingCovers.imagePreview }, set: { item in
       if item == nil { readingCovers.dismissImage() }
@@ -3979,6 +3988,7 @@ struct RemoteFileView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @Environment(\.chatReadingCovers) private var readingCovers
   @Environment(\.chatReadingContext) private var readingContext
+  @Environment(\.mediaPlayback) private var mediaPlayback
   let client: Client
   let file: RemoteAttachment
   @State private var localURL: URL?
@@ -4000,6 +4010,12 @@ struct RemoteFileView: View {
   }
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
+      if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType), let mediaPlayback {
+        MediaInlineCard(coordinator: mediaPlayback, anchor: readingCoverOwner, fallback:
+          Button { mediaPlayback.open(client: client, file: file, anchor: readingCoverOwner) } label: {
+            Label(file.name, systemImage: "play.rectangle.fill").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+          }.buttonStyle(.plain).accessibilityIdentifier("play-resource-" + file.name))
+      }
       if let image {
         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 220)
           .clipShape(RoundedRectangle(cornerRadius: 12)).onTapGesture {

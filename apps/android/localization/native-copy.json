@@ -247,11 +247,6 @@
       "zhHans": "此电脑未提供逻辑资源下载"
     },
     {
-      "key": "读取电脑资源失败，请重试。",
-      "en": "Unable to read the computer resource. Try again.",
-      "zhHans": "读取电脑资源失败，请重试。"
-    },
-    {
       "key": "文件不属于当前电脑和对话",
       "en": "This file does not belong to the current computer and conversation.",
       "zhHans": "文件不属于当前电脑和对话"

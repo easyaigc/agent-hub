@@ -1872,3 +1872,11 @@
 "未确认" = "Unconfirmed";
 "最近一次回复速度" = "Latest response speed";
 "选择的是请求速度；实际档位以服务方回报为准，未回报或回报不一致时显示未确认。" = "This selects a requested speed. Actual speed requires the service response; missing or conflicting reports remain unconfirmed.";
+
+// Media playback
+"播放" = "Play";
+"全屏" = "Full Screen";
+"退出全屏" = "Exit Full Screen";
+"正在准备视频…" = "Preparing video…";
+"正在缓冲…" = "Buffering…";
+"读取电脑资源失败，请重试。" = "Unable to read the computer resource. Try again.";

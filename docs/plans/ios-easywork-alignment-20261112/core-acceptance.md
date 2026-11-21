@@ -1,10 +1,6 @@
-> Historical evidence only. Current iOS/Android implementation and acceptance are maintained exclusively in the [single complete feature list](../android-ios-alignment-20261107/progress.md). This imported snapshot and its JSON/rendering sources are frozen; do not update them as current progress.
-
-> 历史档案（2026-11-19冻结）：本目录只保留此前的规格、来源和验收证据，不再维护当前状态。全项目当前功能、双端实现和验收统一见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。以下状态、数量及下一步仅代表原记录时点。
-
 # 核心使用验收与剩余对接盘点
 
-> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 326，更新 2026-11-19T10:13:35.807396+00:00。台账 SHA-256：`ff607816de5fad156cf8574104860f1db0bad9491261bc37e9878a8d3d2fd3cf`。
+> 历史档案，非当前状态；当前功能见 [唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。历史来源：[status.json](status.json)，修订 327，更新 2026-11-21T09:44:09.939004+00:00。台账 SHA-256：`d90e91d9613730fcfccd9a7d26e96fc0abdda576fadaa639880a68bf0c142a13`。
 
 R313：F48失败回执/明确停止提示已随PR206实际合入Gitea main9becc0d7，Root独立核ls-remote、祖先、整tree与2生产SHA；完整check与两CI最终成功，首次iOS启动超时原失败保留且只重试失败job。旧F44树/本地远端分支及独占缓存已实际清。F05新808包正常不可用路径/缓存附件名/草稿和恢复入口限定通过，Root重提两官方1/0及安装exe并人工核实际AX日志，旧LAN子范围按未变分类/传输复用；源待提交合并，0新模型。核心31/38已合，另F05通过待合，6项仍待继续；并行R309/R311子历史通过与交付归属保持。
 

@@ -345,9 +345,20 @@ private var userRequestedWorkspaceGeneration: UUID?
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       UserDefaults.standard.removeObject(forKey: VoiceTranscriptionPreference.storageKey)
     }
+    #if DEBUG && targetEnvironment(simulator) && !R2_REAL_DEV_ACCEPTANCE
+    // An explicitly named hosted examiner may use the single App-owned normal
+    // store. It must not copy encrypted state or construct a second writer.
+    // The existing admission still requires this acceptance bundle, XCTest,
+    // restore-testing and a matching case UUID. Ordinary launches stay unchanged.
+    let hostedNormalStore = Self.hostedEasyWorkAcceptanceEnabled
+      && ProcessInfo.processInfo.arguments.contains("-hosted-original-store-acceptance")
+      && ProcessInfo.processInfo.environment["EASYWORK_HOSTED_NATIVE_NORMAL_STORE_CASE"] == Self.hostedEasyWorkAcceptanceRun
+    #else
+    let hostedNormalStore = false
+    #endif
     let directory = FileManager.default.urls(
       for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent(testMode ? (ProcessInfo.processInfo.arguments.contains("-composer-performance-fixture") ? "ComposerPerformance" : "Acceptance") : "CodexManage", isDirectory: true)
+      .appendingPathComponent(testMode && !hostedNormalStore ? (ProcessInfo.processInfo.arguments.contains("-composer-performance-fixture") ? "ComposerPerformance" : "Acceptance") : "CodexManage", isDirectory: true)
     #if !R2_REAL_DEV_ACCEPTANCE
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     #endif

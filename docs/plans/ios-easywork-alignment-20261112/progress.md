@@ -1,6 +1,6 @@
 # 当前唯一进度总表
 
-> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 476，更新 2026-11-21T19:47:15.808354+08:00。台账 SHA-256：`9ed5732770728fab88d24b76f3684cb7f561174f30a91e7255b4e3d276e9d16c`。
+> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 480，更新 2026-11-21T21:02:08.745059+08:00。台账 SHA-256：`52e239e481ac1b1dc839df055936bb37451642c88358957ab72e2411409ecc19`。
 
 本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。
 
@@ -67,9 +67,9 @@ commit 是已有提交；tree 是隔离候选的内容快照，不表示已合�
 
 | 状态                     | 项数 |
 | ------------------------ | ---- |
-| 代码已存在，完整性待核对 | 19   |
+| 代码已存在，完整性待核对 | 18   |
 | 本计划不适用             | 8    |
-| 已实现（登记范围）       | 41   |
+| 已实现（登记范围）       | 42   |
 | 已开发，待集成           | 3    |
 | 部分实现，仍有开发缺口   | 4    |
 
@@ -88,10 +88,10 @@ commit 是已有提交；tree 是隔离候选的内容快照，不表示已合�
 
 | 状态                      | 项数 |
 | ------------------------- | ---- |
-| 当前组合的集成/部署未核实 | 32   |
+| 当前组合的集成/部署未核实 | 30   |
 | 不适用                    | 8    |
-| 已集成，未部署            | 26   |
-| 候选尚未合入基准主线      | 7    |
+| 已集成，未部署            | 25   |
+| 候选尚未合入基准主线      | 10   |
 | 准确目标已部署            | 2    |
 
 ## 执行状态（75项）
@@ -99,10 +99,10 @@ commit 是已有提交；tree 是隔离候选的内容快照，不表示已合�
 | 状态                 | 项数 |
 | -------------------- | ---- |
 | 共用维护，免重复验收 | 13   |
-| 待执行（未在进行）   | 26   |
+| 待执行（未在进行）   | 25   |
 | 范围外               | 8    |
+| 正在执行             | 12   |
 | 按范围关闭           | 15   |
-| 正在执行             | 11   |
 | 有明确阻塞           | 1    |
 | 暂停/暂缓            | 1    |
 
@@ -442,16 +442,16 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 
 ## 最近更新
 
-| 修订 | 日期       | 变化                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 469  | 2026-11-21 | Desktopcbdnormaldeployed/8Hostprobespassed/originalsexact. iOS819fullsuite/native passed but5a95sameSimlocalrestorefailedbeforepicker; RootprevioussignatureslotreviewdidnotcoverembeddedSimnamespace, actualgapcorrected/legacygroupaddedsourceonly. No newmodel/input/file/RSS orFDclosure;alloldpositive/negativeevidencepreserved.                                                          |
-| 470  | 2026-11-21 | Same7207df repaired5a95legacySimulatorgroupread failure; twoactual newfiletransfers byteexact, RootrawRSS3200KiB difference<=24576 and sevenoldtableproof. F59 finiteFD accepted-scopedbutiosnotmerged; parentscopesretained. F68test-onlybundle preparedandactualrun stillpending. Endedrunners/samples/builds plusobsolete5a95expandedhost released; shared7df/pre0163specificallyheldforF68. |
-| 471  | 2026-11-21 | Only MEDIA01 local gates/source PR updated; full feature/platform/physical package/deployment not promoted; all unrelated current facts and pauses preserved.                                                                                                                                                                                                                                   |
-| 472  | 2026-11-21 | PreservesconcurrentMEDIA01R471/PR230. F68 finiteFD accepted by actualnative8sync+unchangedcurrentparser/originalmergedreset/reorder/compression scope, 0newmodel. Firsttest-onlyrouteoverconstraintfailure preserved; multipleapprovedsamepinroutes notedited. Testbinary/cache/support immediatelyreleased. F59PR231inCI; F44/F18singleStoreexaminercandidateonly, nobusinessaction yet.       |
-| 473  | 2026-11-21 | Only MEDIA01 actual source integration/PR CI/cleanup updated; postmerge automatic CI pending, no production or new physical-package pass; unrelated facts and pauses preserved.                                                                                                                                                                                                                 |
-| 474  | 2026-11-21 | PreservesMediaR473actualPR230/mainfacts. RootresolvedF59union/catalog/latestsoleledgerwithoutchangingaccepted7dfF59control; finalnewCI/mergepending. EndedF59/F68expandedApp/fullbaseline nowreleasedafterhashproof. F44/F18namednormal-storecfc packagebuilt/auxiliaryonly;0newinflightinputs/models orrealpass.                                                                               |
-| 475  | 2026-11-21 | MEDIA01 source delivery/lint/PR+main CI+existing mirror/owned cleanup complete; broad remaining phases stay planned, no new product/physical/performance/provider/deployment pass. All unrelated facts and A6/F75 pauses preserved.                                                                                                                                                             |
-| 476  | 2026-11-21 | PreserveMediaR475. F59specificFD actualiOS/main+Desktopmasterdelivered, acceptedcomponentsmatched, ownedIOSWT/local/remotebranchgone. F68acceptedtestsource awaitsownmainintegration. Correct53supportcompletenessmiss via57nolinks rebuild; Nativefbdecompiledbut0run/0newmodels. Remainingacceptance3unchanged; oldfailures/parentbroader/pausedF75A6 retained.                               |
+| 修订 | 日期       | 变化                                                                                                                                                                                                                                                                                                                                                              |
+| ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 473  | 2026-11-21 | Only MEDIA01 actual source integration/PR CI/cleanup updated; postmerge automatic CI pending, no production or new physical-package pass; unrelated facts and pauses preserved.                                                                                                                                                                                   |
+| 474  | 2026-11-21 | PreservesMediaR473actualPR230/mainfacts. RootresolvedF59union/catalog/latestsoleledgerwithoutchangingaccepted7dfF59control; finalnewCI/mergepending. EndedF59/F68expandedApp/fullbaseline nowreleasedafterhashproof. F44/F18namednormal-storecfc packagebuilt/auxiliaryonly;0newinflightinputs/models orrealpass.                                                 |
+| 475  | 2026-11-21 | MEDIA01 source delivery/lint/PR+main CI+existing mirror/owned cleanup complete; broad remaining phases stay planned, no new product/physical/performance/provider/deployment pass. All unrelated facts and A6/F75 pauses preserved.                                                                                                                               |
+| 476  | 2026-11-21 | PreserveMediaR475. F59specificFD actualiOS/main+Desktopmasterdelivered, acceptedcomponentsmatched, ownedIOSWT/local/remotebranchgone. F68acceptedtestsource awaitsownmainintegration. Correct53supportcompletenessmiss via57nolinks rebuild; Nativefbdecompiledbut0run/0newmodels. Remainingacceptance3unchanged; oldfailures/parentbroader/pausedF75A6 retained. |
+| 477  | 2026-11-21 | SevenrequestedFDdelivered unchanged; F68realacceptedawaitPR232newheadCI. F44/F18 originalAandpureinspectorfailedbeforewire, no newRoot; Rootnormalizesonlyrestorationonlinepresentationfield. F07narrowHTTPsource/buildpending; no newgrant/Simulator/model. Allpriorfailure/Media/pausedF75A6 preserved.                                                         |
+| 478  | 2026-11-21 | Aofficial1pass0skip withoneactualnewroot/onechild, boundedwait/endwait/newdraft assertions. Originalpreconditionfailuresretained. Bstillnotpassed; missingprewirefixturewitnessNOTpromoted; no replay. F07activecheck/nativebuildnotruntime, 7/11deliveredunchanged; pausedF75A6 andMediarecords preserved.                                                       |
+| 479  | 2026-11-21 | EightofelevenFD nowdelivered; remainingF44/F18/F07actualacceptance+delivery. Rootverifiedmain/tree/Native359ea/actualremoteandcleanup. F07fullcheck/build/Nativeauxonly, newownSimShutdown0grant/model. F44Apartialreal retained, Bstillnotpassed andoriginalonlyrecover. Media/oldfailure/F75A6kept.                                                             |
+| 480  | 2026-11-21 | OneoriginalnewrootonlyalreadycountedR478. Bofficial1/0/0+normalGUIbothends/olddata finitecomposite accepted, priorfixturefailuresandmissingextraobserverretained. Oldmergedreset/chaosscopesreusewithoutduplicateinputs. 8/11delivered,2acceptedawaitPR,1F07awaitrealmatrix; wholeparents/F75A6/Media untouched.                                                  |
 
 ## 候选代码审查问题
 

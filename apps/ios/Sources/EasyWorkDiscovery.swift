@@ -7,7 +7,7 @@ import VisionKit
 
 @MainActor final class EasyWorkDiscovery: NSObject, ObservableObject, @preconcurrency NetServiceBrowserDelegate, @preconcurrency NetServiceDelegate {
   struct Host: Identifiable {
-    var id: String; var name: String; var endpoint: String; var knownClientId: String? = nil; var detail: String? = nil; var deviceId: String? = nil
+    var id: String; var name: String; var endpoint: String; var knownClientId: String? = nil; var detail: String? = nil; var deviceId: String? = nil; var observedDescriptor: EasyWorkHostDescriptor? = nil
     var address: String { URLComponents(string: endpoint).map { ($0.host ?? endpoint) + ($0.port.map { ":\($0)" } ?? "") } ?? endpoint }
   }
   @Published var hosts: [Host] = []
@@ -19,8 +19,9 @@ import VisionKit
   private var generation = UUID()
   private var knownSubscription: AnyCancellable?
   private var vpnSubscription: AnyCancellable?
-  func start() { guard !searching else { return }; searching = true; knownSubscription = EasyWorkKnownHosts.shared.$hosts.receive(on: RunLoop.main).sink { [weak self] _ in self?.rebuild() }; vpnSubscription = VPNHostDiscovery.shared.$easyworkHosts.receive(on: RunLoop.main).sink { [weak self] _ in self?.rebuild() }; rebuild(); browser.schedule(in: .main, forMode: .common); browser.delegate = self; browser.searchForServices(ofType: "_easywork-host._tcp.", inDomain: "local.") }
-  func stop() { searching = false; generation = UUID(); probes.values.forEach { $0.cancel() }; probes.removeAll(); browser.stop(); services.forEach { $0.stop() }; services.removeAll(); localHosts.removeAll(); hosts.removeAll(); knownSubscription = nil; vpnSubscription = nil }
+  private var officeSubscription: AnyCancellable?
+  func start() { guard !searching else { return }; searching = true; officeSubscription = OfficeHostDiscovery.shared.$easyworkHosts.receive(on: RunLoop.main).sink { [weak self] _ in self?.rebuild() }; knownSubscription = EasyWorkKnownHosts.shared.$hosts.receive(on: RunLoop.main).sink { [weak self] _ in self?.rebuild() }; vpnSubscription = VPNHostDiscovery.shared.$easyworkHosts.receive(on: RunLoop.main).sink { [weak self] _ in self?.rebuild() }; rebuild(); browser.schedule(in: .main, forMode: .common); browser.delegate = self; browser.searchForServices(ofType: "_easywork-host._tcp.", inDomain: "local.") }
+  func stop() { searching = false; generation = UUID(); probes.values.forEach { $0.cancel() }; probes.removeAll(); browser.stop(); services.forEach { $0.stop() }; services.removeAll(); localHosts.removeAll(); hosts.removeAll(); knownSubscription = nil; vpnSubscription = nil; officeSubscription = nil }
   func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) { guard services.count < 32, !services.contains(service) else { return }; services.append(service); service.delegate = self; service.resolve(withTimeout: 5) }
   func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) { probes.removeValue(forKey: service.name)?.cancel(); localHosts.removeAll { $0.id == service.name }; services.removeAll { $0 == service }; rebuild() }
   func netServiceDidResolveAddress(_ sender: NetService) {
@@ -52,7 +53,7 @@ import VisionKit
     guard searching else { return }
     let known = EasyWorkKnownHosts.shared.hosts
     hosts = known.map { Host(id: $0.id, name: $0.name, endpoint: $0.endpoint, knownClientId: $0.id, detail: $0.reachable ? L10n.tr("已发现 · ") + ($0.networkKind == .vpn ? "VPN" : L10n.tr("直连")) : L10n.tr("已保存，暂不可达"), deviceId: $0.deviceId) }
-    for item in VPNHostDiscovery.shared.easyworkHosts + localHosts where !hosts.contains(where: { $0.deviceId == item.deviceId && item.deviceId != nil || $0.endpoint == item.endpoint }) { hosts.append(item) }
+    for item in OfficeHostDiscovery.shared.easyworkHosts + VPNHostDiscovery.shared.easyworkHosts + localHosts where !hosts.contains(where: { $0.deviceId == item.deviceId && item.deviceId != nil || $0.endpoint == item.endpoint }) { hosts.append(item) }
   }
 }
 
@@ -182,7 +183,7 @@ extension EasyWorkPairing {
     configuration.timeoutIntervalForResource = timeout
     let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     defer { session.invalidateAndCancel() }
-    let (data, response) = try await session.data(from: url.appendingPathComponent("host"))
+    let (data, response) = try await DiscoveryResponse.read(session, request: URLRequest(url: url.appendingPathComponent("host")))
     guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 65536 else { throw HostServiceError.unavailable }
     let value = try JSONDecoder().decode(EasyWorkHostDescriptor.self, from: data)
     let pin = fingerprint?.lowercased() ?? discovered.fingerprint
@@ -236,8 +237,8 @@ extension EasyWorkPairing {
     let candidates = try directCandidates([url.absoluteString] + (host.endpoints ?? []) + offer.endpoints, hints: (host.endpointHints ?? []) + (offer.endpointHints ?? []), fingerprint: host.fingerprint)
     return (binding, candidates)
   }
-  static func connectDiscovered(endpoint: String, name: String, expectedDeviceId: String? = nil) async throws -> (EasyWorkBinding, [AgentConnectionCandidate]) {
-    let host = try await readHost(endpoint: endpoint, timeout: 5)
+  static func connectDiscovered(endpoint: String, name: String, expectedDeviceId: String? = nil, observed: EasyWorkHostDescriptor? = nil) async throws -> (EasyWorkBinding, [AgentConnectionCandidate]) {
+    let host = try await readHost(endpoint: endpoint, fingerprint: observed?.fingerprint, target: observed?.target, publicKey: observed?.publicKey, timeout: 5)
     guard expectedDeviceId == nil || host.target.desktopDeviceId == expectedDeviceId else { throw HostServiceError.wrongHost }
     guard host.connectionMode == "automatic" else { throw HostServiceError.message(L10n.tr("这台电脑未提供自动直连，请扫描桌面配对二维码；更新 EasyWork 后可点选连接。")) }
     let offer = EasyWorkLANOffer(endpoints: [endpoint], fingerprint: host.fingerprint, publicKey: host.publicKey, target: host.target, offerId: "", pairingCode: "", expiresAt: "", connectionMode: "automatic", endpointHints: host.endpointHints)

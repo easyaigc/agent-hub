@@ -1,5 +1,9 @@
 # 应用协议与领域契约
 
+2026-11-21 F06/F08：iOS 新增显式办公室私网范围发现，完整扫描 CIDR 的可用地址，不使用 VPN peer 的32条裁剪；仅固定端口的公开描述读取，原目标/证书/公钥与授权保持。Android 对应入口待实现；已完成独立15的真实蜂窝子网发现/首次授权与同记录冷恢复，原用户手机升级保留与新主线组合仍独立验收，未改 WAN/ACL。设计见 [办公室子网发现](design/office-subnet-discovery.md)，当前状态只见唯一台账 `F06-office-subnet-discovery`。
+
+App 私有连接状态增加向后可选的 `observedEndpoint`：经完整目标和原证书核对的实际地址独立于 Host v1 的32条广告及原候选合并容量，冷恢复仍固定原 pin；旧存储缺字段可读，不改变 Host/VPN wire。
+
 2026-11-21 可选附件固定版本读取：attachments:range-read:v1 复用原附件解析/字节端点，公共范围语义位于 packages/protocol/src/attachment-reads.ts。准备、认证、版本、目标、取消及错误见 [运行时契约](protocol-runtime.md#可选附件固定版本分段读取)；原完整下载请求保持兼容。
 
 > 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。

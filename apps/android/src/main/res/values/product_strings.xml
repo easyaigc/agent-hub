@@ -1884,6 +1884,16 @@
     <string name="product_ce768940050caa4fd8ca27ac" formatted="false">"The cancellation result is determined by the computer receipt. The message and original attachments are kept."</string>
     <string name="product_942c2bffef65ee1266f669e0" formatted="false">"Sending from the phone has stopped. This computer does not support synchronized cancellation; manage the staged file on the computer."</string>
     <string name="product_aee88743413144a2ec6c48e3" formatted="false">"Refresh"</string>
+    <string name="product_28f92ea6515369a8cbad0e89" formatted="false">"Office subnet, e.g. 192.168.8.0/24"</string>
+    <string name="product_92841bb5a9b16b97ecd794e8" formatted="false">"Save and discover"</string>
+    <string name="product_4f86b589a42a152a4fc70f0f" formatted="false">"Enter an aligned IPv4 subnet entirely within a private address block."</string>
+    <string name="product_c3a11506d955961005488a41" formatted="false">"Remove office subnet"</string>
+    <string name="product_0a5da0d82f20ebe830c0340c" formatted="false">"Looking for office computers…"</string>
+    <string name="product_c9f613770c819f02de060cb2" formatted="false">"Stop discovery"</string>
+    <string name="product_d0dea80dd5a12ad4b8f5b729" formatted="false">"Discovery finished. If nothing was found, check the phone VPN, subnet route and computer Host."</string>
+    <string name="product_371d9568b2a5d39105587fb7" formatted="false">"Office network"</string>
+    <string name="product_175ae4d5c9062d425dec8a3b" formatted="false">"Reads Host descriptions only in the configured subnet. Large ranges can take a long time; stop at any time. Routes and computer authorization are unchanged."</string>
+    <string name="product_6f2f21f3c0040d51594c016c" formatted="false">"Connect directly over LAN, or remotely using a computer VPN or a phone VPN with an office subnet route. Configure the office subnet to discover Hosts without a VPN on every computer. Each computer still requires authorization."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

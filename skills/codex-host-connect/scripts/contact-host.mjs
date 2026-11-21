@@ -16,7 +16,7 @@ const requireValue = (value, code) => {
   if (!value) fail(code);
 };
 const digest = (value) => createHash('sha256').update(value).digest('hex');
-const pinnedTlsOptions = async (pin) => {
+export const pinnedTlsOptions = async (pin) => {
   if (pin === undefined) return {};
   requireValue(
     pin !== null &&

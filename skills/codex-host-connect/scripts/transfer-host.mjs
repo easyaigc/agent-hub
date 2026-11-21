@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import https from 'node:https';
+import { pinnedTlsOptions } from './contact-host.mjs';
 
 const uuid = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -173,6 +174,8 @@ export function createTransferTransport(host, options = {}) {
         new URL(path, endpoint),
         {
           ...(options.ca ? { ca: options.ca } : {}),
+          ...(options.tlsOptions ?? {}),
+          rejectUnauthorized: true,
           method: bytes === undefined ? 'GET' : 'POST',
           headers: {
             ...(authenticated ? { Authorization: 'Bearer ' + host.clientKey } : {}),
@@ -265,7 +268,8 @@ export async function main(args = process.argv.slice(2), options = {}) {
     'INVALID_CLIENT_KEY',
   );
   // Validate even with an injected transport. A registry cannot introduce HTTP or redirects.
-  const transport = createTransferTransport(host, options);
+  const tlsOptions = await pinnedTlsOptions(host.tlsPin);
+  const transport = createTransferTransport(host, { ...options, tlsOptions });
   const request = options.transport ?? transport;
   const parent = join(root, 'file-transfers'),
     directory = join(parent, id);

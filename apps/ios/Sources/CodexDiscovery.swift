@@ -35,6 +35,9 @@ struct CodexDirectConnection: Codable, Equatable, Sendable {
   var candidates: [AgentConnectionCandidate]
   var fingerprint: String
   var systemEndpoints: [String]? = nil
+  // A TLS-verified route learned independently of the Host advertisement (v1 max 32).
+  var observedEndpoint: String? = nil
+  var observedRoute: String? { observedEndpoint.flatMap { try? EasyWorkPairing.localEndpoint($0).absoluteString } }
   var systemRoutes: [String] { (systemEndpoints ?? []).prefix(4).compactMap { CodexRouteRules.shared.systemEndpoint(value: $0) } }
 }
 struct CodexHostDescriptor: Codable, Sendable {
@@ -130,6 +133,8 @@ final class CodexHostRoutes: @unchecked Sendable {
     guard let connection = client.codexDirect else { return }
     lock.withLock {
       for endpoint in connection.systemRoutes { if let url = URL(string: endpoint), let origin = origin(url) { pins.removeValue(forKey: origin) } }
+      if let endpoint = connection.observedRoute, !connection.systemRoutes.contains(endpoint),
+        let url = URL(string: endpoint), let origin = origin(url) { pins[origin] = connection.fingerprint }
       for candidate in connection.candidates where !connection.systemRoutes.contains(candidate.endpoint) {
         if let url = URL(string: candidate.endpoint), let origin = origin(url) { pins[origin] = connection.fingerprint }
       }
@@ -272,7 +277,7 @@ enum CodexDiscoveryAPI {
       NativeReadAcceptanceTiming.discovery(endpoint, event: "start", startedAt: startedAt)
       let data: Data, response: URLResponse
       do {
-        (data, response) = try await session.data(for: request)
+        (data, response) = try await DiscoveryResponse.read(session, request: request)
         NativeReadAcceptanceTiming.discovery(endpoint, event: "response", startedAt: startedAt)
       } catch {
         NativeReadAcceptanceTiming.discovery(endpoint, event: "failed", startedAt: startedAt, error: error)
@@ -334,9 +339,9 @@ enum CodexDiscoveryAPI {
     guard let wire = String(data: workspaceData, encoding: .utf8), CodexHttpContract.shared.validate(json: wire, definition: "workspace") == nil else { throw HostServiceError.invalidResponse }
     let workspace = try JSONDecoder().decode(WorkspaceSnapshot.self, from: workspaceData)
     guard workspace.hostId == host.target.hostId, workspace.readTarget == host.target, workspace.connectionMode == "desktop-runtime" else { throw HostServiceError.wrongHost }
-    let candidates = try EasyWorkPairing.directCandidates([endpoint] + host.endpoints, hints: host.endpointHints ?? [], fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
+    let candidates = try EasyWorkPairing.directCandidates(host.endpoints, hints: host.endpointHints ?? [], fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
     host.systemEndpoints = await systemEndpoints(session, base: base, token: token, target: host.target)
-    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints))
+    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints, observedEndpoint: endpoint))
     host.token = token
     return (host, client, workspace)
   }
@@ -611,7 +616,7 @@ struct VPNPeerSnapshot: Decodable, Sendable {
 
 @MainActor final class CodexHostDiscovery: NSObject, ObservableObject, @preconcurrency NetServiceBrowserDelegate, @preconcurrency NetServiceDelegate {
   static let shared = CodexHostDiscovery()
-  struct Host: Identifiable { var id: String; var name: String; var endpoint: String; var known: Bool; var reachable: Bool; var networkKind: AgentConnectionCandidate.NetworkKind? = nil }
+  struct Host: Identifiable { var id: String; var name: String; var endpoint: String; var known: Bool; var reachable: Bool; var networkKind: AgentConnectionCandidate.NetworkKind? = nil; var observedConnection: CodexDirectConnection? = nil }
   @Published private(set) var hosts: [Host] = []
   private var browser: NetServiceBrowser?
   private var services: [NetService] = []
@@ -686,14 +691,14 @@ struct VPNPeerSnapshot: Decodable, Sendable {
       .sorted { $0.id == store.client?.id && $1.id != store.client?.id }
     for client in clients {
       guard let target = client.codexDirect?.target ?? store.saved.workspaces[client.id]?.readTarget else { continue }
-      var endpoints = (client.endpoint.map { [$0] } ?? []) + (client.codexDirect?.candidates.map(\.endpoint) ?? []) + (client.codexDirect?.systemRoutes ?? [])
+      var endpoints = (client.endpoint.map { [$0] } ?? []) + (client.codexDirect?.candidates.map(\.endpoint) ?? []) + (client.codexDirect?.systemRoutes ?? []) + (client.codexDirect?.observedRoute.map { [$0] } ?? [])
       if client.codexDirect != nil { endpoints += bonjour.values.filter { $0.id == client.id }.map(\.endpoint) }
       // Probe the saved route together with VPN alternatives, before a long
       // tail of unreachable LAN hints. Keep the current route when healthy.
       endpoints = (client.endpoint.map { [$0] } ?? []) + VPNPeerSnapshot.orderedEndpoints(endpoints.filter { $0 != client.endpoint })
       var seen = Set<String>()
       for endpoint in endpoints where seen.insert(endpoint).inserted {
-        let pin = client.codexDirect?.candidates.first(where: { $0.endpoint == endpoint })?.peerFingerprint ?? (bonjour.values.contains(where: { $0.id == client.id && $0.endpoint == endpoint }) ? client.codexDirect?.fingerprint : nil)
+        let pin = client.codexDirect?.candidates.first(where: { $0.endpoint == endpoint })?.peerFingerprint ?? (client.codexDirect?.observedRoute == endpoint ? client.codexDirect?.fingerprint : nil) ?? (bonjour.values.contains(where: { $0.id == client.id && $0.endpoint == endpoint }) ? client.codexDirect?.fingerprint : nil)
         // Legacy discovery authenticates only the existing, system-trusted HTTPS route.
         if pin == nil && !endpoint.hasPrefix("https://") { continue }
         probes.append(Probe(client: client, endpoint: endpoint, fingerprint: pin, target: target))
@@ -742,5 +747,146 @@ struct VPNPeerSnapshot: Decodable, Sendable {
       for row in hosts.indices where hosts[row].known && !found.contains(hosts[row].id) { hosts[row].reachable = false }
       rebuild()
     }
+  }
+}
+
+/// An explicit private subnet is a discovery scope, not a VPN peer or a trust grant.
+/// Keep this value independent from the v1 VPN directory wire contract.
+struct OfficeDiscoveryScope: Equatable, Sendable {
+  let cidr: String
+  let addressCount: Int
+  private let firstAddress: UInt64
+  init(_ input: String) throws {
+    let parts = input.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "/", omittingEmptySubsequences: false)
+    guard parts.count == 2, let prefix = Int(parts[1]), (0...32).contains(prefix) else { throw HostServiceError.invalidAddress }
+    let octets = parts[0].split(separator: ".", omittingEmptySubsequences: false)
+    guard octets.count == 4 else { throw HostServiceError.invalidAddress }
+    let numbers = octets.compactMap { value -> UInt64? in
+      guard let byte = UInt8(value), String(byte) == value else { return nil }; return UInt64(byte)
+    }
+    guard numbers.count == 4 else { throw HostServiceError.invalidAddress }
+    let address = numbers.reduce(UInt64(0)) { ($0 << 8) | $1 }
+    let count = UInt64(1) << (32 - prefix)
+    // The entire scope must be within one RFC1918 block, not merely its first IP.
+    let privateBlocks: [(UInt64, UInt64)] = [(0x0a000000, 0x0affffff), (0xac100000, 0xac1fffff), (0xc0a80000, 0xc0a8ffff)]
+    guard address % count == 0, privateBlocks.contains(where: { address >= $0.0 && address + count - 1 <= $0.1 }) else { throw HostServiceError.invalidAddress }
+    cidr = Self.text(address) + "/" + String(prefix)
+    // /31 point-to-point and /32 single-host scopes have no broadcast address.
+    firstAddress = address + (prefix < 31 ? 1 : 0)
+    addressCount = Int(count) - (prefix < 31 ? 2 : 0)
+  }
+  private static func text(_ value: UInt64) -> String {
+    [24, 16, 8, 0].map { String((value >> $0) & 255) }.joined(separator: ".")
+  }
+  func address(at index: Int) -> String {
+    precondition((0..<addressCount).contains(index))
+    return Self.text(firstAddress + UInt64(index))
+  }
+}
+
+/// No credentials, claim, binding or command is sent by office discovery.
+/// A foreground scan is explicit, bounded and cancelled when its sheet closes.
+@MainActor final class OfficeHostDiscovery: ObservableObject {
+  static let shared = OfficeHostDiscovery()
+  private static let key = "agent-hub-office-subnet-v1"
+  @Published private(set) var scope: OfficeDiscoveryScope?
+  @Published private(set) var codexHosts: [CodexHostDiscovery.Host] = []
+  @Published private(set) var easyworkHosts: [EasyWorkDiscovery.Host] = []
+  @Published private(set) var searching = false
+  @Published private(set) var completed = 0
+  @Published private(set) var total = 0
+  private var task: Task<Void, Never>?
+  private var generation = UUID()
+  private init() {
+    if let saved = UserDefaults.standard.string(forKey: Self.key) { scope = try? OfficeDiscoveryScope(saved) }
+  }
+  func configure(_ input: String, store: SessionStore) throws {
+    let next = try OfficeDiscoveryScope(input)
+    reset(); scope = next; UserDefaults.standard.set(next.cidr, forKey: Self.key)
+    start(store)
+  }
+  func remove() { reset(); scope = nil; UserDefaults.standard.removeObject(forKey: Self.key) }
+  func stop() {
+    generation = UUID(); task?.cancel(); task = nil; searching = false
+  }
+  private func reset() {
+    stop()
+    codexHosts = []; easyworkHosts = []; completed = 0; total = 0
+  }
+  func start(_ store: SessionStore) {
+    guard !searching, let scope else { return }
+    reset(); let epoch = generation
+    searching = true; total = scope.addressCount * 2
+    task = Task { [weak self, weak store] in
+      guard let self, let store else { return }
+      await self.scan(scope, store: store, epoch: epoch)
+      if self.generation == epoch { self.searching = false; self.task = nil }
+    }
+  }
+  private func scan(_ scope: OfficeDiscoveryScope, store: SessionStore, epoch: UUID) async {
+    struct Probe: Sendable { var endpoint: String; var codex: Bool }
+    enum Result: Sendable { case codex(String, CodexHostDescriptor), easywork(String, EasyWorkHostDescriptor) }
+    // Iterate even a /8 in constant space. No peer-count truncation and no
+    // request beyond the explicitly configured scope. User cancellation stops it.
+    let probeCount = scope.addressCount * 2
+    await withTaskGroup(of: Result?.self) { group in
+      var index = 0
+      @MainActor func enqueue() {
+        guard index < probeCount, !Task.isCancelled, generation == epoch else { return }
+        let address = scope.address(at: index / 2), codex = index % 2 == 0
+        let probe = Probe(endpoint: "https://\(address):\(codex ? 8796 : 4319)", codex: codex); index += 1
+        group.addTask {
+          guard !Task.isCancelled else { return nil }
+          if probe.codex, let host = try? await CodexDiscoveryAPI.read(probe.endpoint, fingerprint: nil, target: nil, discover: true, timeout: 2) { return .codex(probe.endpoint, host) }
+          if !probe.codex, let host = try? await EasyWorkPairing.readHost(endpoint: probe.endpoint, timeout: 2) { return .easywork(probe.endpoint, host) }
+          return nil
+        }
+      }
+      for _ in 0..<4 { enqueue() }
+      while let result = await group.next() {
+        guard generation == epoch, !Task.isCancelled else { group.cancelAll(); return }
+        completed += 1
+        switch result {
+        case .codex(let endpoint, let host):
+          // The observation is separate from the unchanged, at-most-32 advertised routes.
+          let saved = store.saved.clients.first { $0.id == host.target.hostId }
+          // A spoofed descriptor cannot replace an existing target or pin.
+          if let saved, saved.codexDirect?.target != host.target || saved.codexDirect?.fingerprint.lowercased() != host.fingerprint.lowercased() { break }
+          if let saved, !saved.online { _ = store.updateCodexDiscovery(saved, host: host, reachableEndpoint: endpoint, verifiedObservedEndpoint: endpoint) }
+          if !codexHosts.contains(where: { $0.id == host.target.hostId }) {
+            codexHosts.append(.init(id: host.target.hostId, name: host.name, endpoint: endpoint, known: saved != nil, reachable: true, networkKind: .lan, observedConnection: CodexDirectConnection(target: host.target, candidates: (try? host.candidates()) ?? [], fingerprint: host.fingerprint.lowercased(), observedEndpoint: endpoint)))
+          }
+        case .easywork(let endpoint, let host):
+          let saved = store.saved.clients.first { $0.agentConnection?.target.hostId == host.target.desktopDeviceId }
+          if let saved {
+            guard let connection = saved.agentConnection,
+              let credential = try? JSONDecoder().decode(EasyWorkCredential.self, from: Data(CredentialVault.token(connection.credentialRef).utf8)),
+              credential.binding.target == host.target, credential.binding.desktopPublicKey == host.publicKey,
+              connection.candidates.contains(where: { $0.peerFingerprint?.lowercased() == host.fingerprint.lowercased() }) else { break }
+          }
+          EasyWorkKnownHosts.shared.offerBonjour(endpoint: endpoint, deviceId: host.target.desktopDeviceId)
+          if !easyworkHosts.contains(where: { $0.deviceId == host.target.desktopDeviceId }) {
+            easyworkHosts.append(.init(id: "office-" + host.target.desktopDeviceId, name: host.displayName, endpoint: endpoint, knownClientId: saved?.id, detail: L10n.tr("办公室网络"), deviceId: host.target.desktopDeviceId, observedDescriptor: host))
+          }
+        case nil: break
+        }
+        enqueue()
+      }
+    }
+  }
+}
+
+/// Enforce the descriptor limit while receiving, before allocating an arbitrary body.
+enum DiscoveryResponse {
+  static func read(_ session: URLSession, request: URLRequest) async throws -> (Data, URLResponse) {
+    let (bytes, response) = try await session.bytes(for: request, delegate: session.delegate as? URLSessionTaskDelegate)
+    defer { bytes.task.cancel() }
+    guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw HostServiceError.unavailable }
+    var data = Data()
+    for try await byte in bytes {
+      guard data.count < 65536 else { throw HostServiceError.invalidResponse }
+      data.append(byte)
+    }
+    return (data, response)
   }
 }

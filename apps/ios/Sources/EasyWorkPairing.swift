@@ -425,7 +425,8 @@ struct EasyWorkConnectionForm: View {
         detail: client.online ? L10n.tr("已连接") : L10n.tr("未连接 · ") + store.connectionLabel(for: client), deviceId: client.agentConnection?.target.hostId)
     } + discovery.hosts.filter { host in !saved.contains { $0.id == host.knownClientId || $0.agentConnection?.target.hostId == host.deviceId } }
   }
-  private var discoveredHosts: some View {
+  @ViewBuilder private var discoveredHosts: some View {
+    OfficeDiscoverySection(store: store)
     Section(L10n.tr("自动发现")) {
       if discoveryRows.isEmpty { Text(L10n.tr("正在查找同一网络的电脑…")).foregroundStyle(.secondary) }
       ForEach(discoveryRows) { host in
@@ -434,7 +435,7 @@ struct EasyWorkConnectionForm: View {
             if store.saved.clients.first(where: { $0.id == id })?.online == true { store.selectClient(id); dismiss() }
             else { perform { store.selectClient(id, refreshAutomatically: false); await store.refresh(); guard store.client?.online == true else { throw HostServiceError.unavailable }; dismiss() } }
           } else { perform {
-            let (binding, candidates) = try await EasyWorkPairing.connectDiscovered(endpoint: host.endpoint, name: UIDevice.current.name, expectedDeviceId: host.deviceId)
+            let (binding, candidates) = try await EasyWorkPairing.connectDiscovered(endpoint: host.endpoint, name: UIDevice.current.name, expectedDeviceId: host.deviceId, observed: host.observedDescriptor)
             try await store.saveEasyWork(name: name == "EasyWork" ? host.name : name, binding: binding, candidates: candidates)
             dismiss()
           } }

@@ -1884,6 +1884,16 @@
     <string name="product_ce768940050caa4fd8ca27ac" formatted="false">"取消结果以电脑回执为准；消息和原附件保留。"</string>
     <string name="product_942c2bffef65ee1266f669e0" formatted="false">"手机发送已停止；当前电脑不支持同步取消，请在电脑端处理暂存。"</string>
     <string name="product_aee88743413144a2ec6c48e3" formatted="false">"刷新"</string>
+    <string name="product_28f92ea6515369a8cbad0e89" formatted="false">"办公室网段，如 192.168.8.0/24"</string>
+    <string name="product_92841bb5a9b16b97ecd794e8" formatted="false">"保存并查找"</string>
+    <string name="product_4f86b589a42a152a4fc70f0f" formatted="false">"请输入完整位于私网内、网络地址对齐的 IPv4 网段。"</string>
+    <string name="product_c3a11506d955961005488a41" formatted="false">"移除办公室网段"</string>
+    <string name="product_0a5da0d82f20ebe830c0340c" formatted="false">"正在查找办公室电脑…"</string>
+    <string name="product_c9f613770c819f02de060cb2" formatted="false">"停止查找"</string>
+    <string name="product_d0dea80dd5a12ad4b8f5b729" formatted="false">"本轮查找已结束；未找到时请检查手机 VPN、子网路由及电脑 Host。"</string>
+    <string name="product_371d9568b2a5d39105587fb7" formatted="false">"办公室网络"</string>
+    <string name="product_175ae4d5c9062d425dec8a3b" formatted="false">"只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。"</string>
+    <string name="product_6f2f21f3c0040d51594c016c" formatted="false">"局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

@@ -25,7 +25,7 @@ function block(source, marker) {
   }
   throw Error('Unclosed declaration ' + marker);
 }
-const [discovery, easywork, transport, shared, client, host, facade] = await Promise.all(
+const [discovery, easywork, transport, shared, client, host, facade, store] = await Promise.all(
   [
     'CodexDiscovery',
     'EasyWorkDiscovery',
@@ -34,6 +34,7 @@ const [discovery, easywork, transport, shared, client, host, facade] = await Pro
     'AgentClient',
     'HostService',
     'SharedMobileRules',
+    'SessionStore',
   ].map((name) => readFile('apps/ios/Sources/' + name + '.swift', 'utf8')),
 );
 let reads = 0,
@@ -113,7 +114,10 @@ const legacyServer = createServer(
         JSON.stringify({
           ...service.descriptor(),
           connectionMode: 'automatic',
-          endpoints: [legacyEndpoint],
+          endpoints: Array.from(
+            { length: 32 },
+            (_, index) => `https://192.168.91.${index + 1}:8796`,
+          ),
           endpointHints: [],
         }),
       );
@@ -147,6 +151,11 @@ const uri =
   Buffer.from(JSON.stringify({ ...descriptor, token })).toString('base64url');
 try {
   const declarations = [
+    block(discovery, 'enum DiscoveryResponse {'),
+    host.slice(
+      host.indexOf('struct FileDownloadProgress:'),
+      host.indexOf('enum NativeReadAcceptanceTiming {'),
+    ),
     block(host, 'enum NativeReadAcceptanceTiming {'),
     block(shared, 'struct AgentAccount:'),
     block(shared, 'struct AgentRuntimeTarget:'),
@@ -181,6 +190,15 @@ enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable
 enum TaskNotificationValidation { static func target(_ target: AgentRuntimeTarget) -> Bool { target.agentId == "codex" && !target.hostId.isEmpty && !target.workspaceId.isEmpty && !target.runtimeId.isEmpty } }
 struct Client: Sendable { var id: String; var name: String; var endpoint: String?; var isDemo: Bool; var online: Bool; var codexDirect: CodexDirectConnection? }
 struct WorkspaceSnapshot: Decodable { var hostId: String; var readTarget: AgentRuntimeTarget?; var connectionMode: String }
+struct SavedFixture { var clients: [Client]; var workspaces: [String: WorkspaceSnapshot] = [:] }
+@MainActor final class SessionStore {
+ var saved: SavedFixture; var client: Client? = nil; var persisted: Data? = nil
+ init(_ value: Client) { saved = SavedFixture(clients: [value]) }
+ func persist() { persisted = try? JSONEncoder().encode(saved.clients[0].codexDirect) }
+ func invalidateAgentConnection(_ id: String) {}
+ func refresh() async {}
+ ${block(store, '  func updateCodexDiscovery(')}
+}
 enum CredentialVault { static var tokens: [String: String] = [:]; static func token(_ id: String) -> String { tokens[id] ?? "" }; static func set(_ value: String, id: String) throws { tokens[id] = value } }
 struct HostService {
 ${block(host, '  static func baseURL(')}
@@ -188,7 +206,7 @@ ${block(host, '  static func request(')}
 ${block(host, '  static func hash(')}
 }
 @main struct Check {
-static func main() async throws {
+@MainActor static func main() async throws {
 let offer = try CodexHostDescriptor.parse(${JSON.stringify(uri)})
 let peer = VPNPeerSnapshot.Peer(name: "VPN", addresses: ["100.64.0.1", "fd7a:115c:a1e0::1"])
 try VPNPeerSnapshot(version: 1, target: offer.target, peers: [peer]).validate(offer.target)
@@ -221,6 +239,16 @@ let recovered = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: 
 precondition(recovered.0.token == automatic.0.token)
 let legacy = try await CodexDiscoveryAPI.connectDiscovered(${JSON.stringify(legacyEndpoint)}, hostId: offer.target.hostId, name: "Legacy", hostKey: offer.token!)
 precondition(legacy.2.readTarget == offer.target && legacy.0.token == automatic.0.token)
+let legacyConnection = legacy.1.codexDirect!
+precondition(legacy.0.endpoints.count == 32 && legacyConnection.candidates.map(\\.endpoint) == legacy.0.endpoints && legacyConnection.observedRoute == ${JSON.stringify(legacyEndpoint)})
+let legacyRoundtrip = try JSONDecoder().decode(CodexDirectConnection.self, from: JSONEncoder().encode(legacyConnection))
+precondition(legacyRoundtrip == legacyConnection)
+CodexHostRoutes.shared.register(legacy.1)
+let legacyRequest = URLRequest(url: URL(string: ${JSON.stringify(legacyEndpoint)} + "/host")!)
+precondition(CodexHostRoutes.shared.session(for: legacyRequest).delegate is PairedHostTrust)
+let (_, legacyPinnedResponse) = try await CodexHostRoutes.shared.data(for: legacyRequest)
+precondition((legacyPinnedResponse as? HTTPURLResponse)?.statusCode == 200)
+print("PASS connectDiscovered preserves all 32 advertisements plus separate pinned observed route")
 
 do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: String(repeating: "0", count: 64), target: offer.target); fatalError("Wrong pin accepted") } catch {}
 var other = offer.target; other.runtimeId = "wrong"
@@ -228,6 +256,41 @@ do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: offer.fingerpri
 for invalid in ["https://100.63.255.255", "https://100.128.0.0", "https://100.64.0.1/path", "https://user@100.64.0.1", "https://100.64.0.1?query=1"] {
 do { _ = try EasyWorkPairing.localEndpoint(invalid); fatalError("Invalid address accepted") } catch {}
 }
+var full = offer
+full.endpoints = (1...32).map { "https://192.168.90.\\($0):8796" }
+full.endpointHints = nil; full.systemEndpoints = nil
+let allAdvertised = try full.candidates()
+precondition(allAdvertised.count == 32)
+let prior = Client(id: offer.target.hostId, name: "Saved", endpoint: allAdvertised[0].endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: offer.target, candidates: allAdvertised, fingerprint: offer.fingerprint))
+let state = SessionStore(prior)
+precondition(state.updateCodexDiscovery(prior, host: full, reachableEndpoint: endpoint, verifiedObservedEndpoint: endpoint))
+let updated = state.saved.clients[0].codexDirect!
+precondition(updated.candidates.map(\\.endpoint) == allAdvertised.map(\\.endpoint) && updated.observedRoute == endpoint)
+precondition(!updated.systemRoutes.contains(endpoint) && state.saved.clients.count == 1)
+let persisted = try JSONDecoder().decode(CodexDirectConnection.self, from: state.persisted!)
+precondition(persisted == updated)
+var legacyJSON = try JSONSerialization.jsonObject(with: state.persisted!) as! [String: Any]
+legacyJSON.removeValue(forKey: "observedEndpoint")
+let old = try JSONDecoder().decode(CodexDirectConnection.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
+precondition(old.observedEndpoint == nil && old.candidates.count == 32)
+let current = state.saved.clients[0]
+precondition(state.updateCodexDiscovery(current, host: full, reachableEndpoint: endpoint))
+precondition(state.saved.clients[0].codexDirect?.observedRoute == endpoint && !(state.saved.clients[0].codexDirect?.systemRoutes.contains(endpoint) ?? true))
+var priorWithRoute = prior
+priorWithRoute.endpoint = endpoint
+priorWithRoute.codexDirect!.candidates = try EasyWorkPairing.directCandidates([endpoint] + Array(full.endpoints.prefix(31)), fingerprint: full.fingerprint)
+let legacyState = SessionStore(priorWithRoute)
+precondition(legacyState.updateCodexDiscovery(priorWithRoute, host: full, reachableEndpoint: endpoint, verifiedObservedEndpoint: endpoint))
+precondition(legacyState.saved.clients[0].codexDirect!.candidates.map(\\.endpoint) == allAdvertised.map(\\.endpoint))
+precondition(legacyState.saved.clients[0].codexDirect!.observedRoute == endpoint)
+let pinnedSession = CodexHostRoutes.shared.session(for: URLRequest(url: URL(string: endpoint + "/host")!))
+precondition(pinnedSession.delegate is PairedHostTrust)
+let (pinnedData, pinnedResponse) = try await CodexHostRoutes.shared.data(for: URLRequest(url: URL(string: endpoint + "/host")!))
+precondition((pinnedResponse as? HTTPURLResponse)?.statusCode == 200 && !pinnedData.isEmpty)
+var wrong = state.saved.clients[0]; wrong.codexDirect!.fingerprint = String(repeating: "0", count: 64)
+CodexHostRoutes.shared.register(wrong)
+do { _ = try await CodexHostRoutes.shared.data(for: URLRequest(url: URL(string: endpoint + "/host")!)); fatalError("Wrong observed route pin accepted") } catch {}
+print("PASS actual update, 32 advertisements, observed route persistence, legacy decoding and pinned TLS")
 CodexHostRoutes.shared.register(connected.1)
 var request = HostService.request(try HostService.baseURL(endpoint).appendingPathComponent("write"), token: offer.token!, method: "POST", body: Data("once".utf8))
 request.timeoutInterval = 2

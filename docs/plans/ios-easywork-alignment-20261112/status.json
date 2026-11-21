@@ -6030,8 +6030,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 482,
-  "updatedAt": "2026-11-21T22:10:09.619873+08:00",
+  "revision": 496,
+  "updatedAt": "2026-11-21",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -17131,6 +17131,234 @@
       "scope": "Exact9D shutdown/delete and registration/directory absence, frozen App/support/five expanded test bundles removed; old720 and Desktop/broker protected. Source/ZIP/four raw xcresults/minimal proof retained. Volume free delta not exclusive physical claim.",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f07-owned-refresh/owned-case-ef4f7a6f-0dbd-470c-b96a-873eb808e223/resource-release-final.json",
       "sha256": "45ca90c8887b6a789a89c05597f39ea3fd5393859fb42ba4654c2394a4857d24"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE": {
+      "kind": "source-candidate",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "path": "docs/design/office-subnet-discovery.md",
+      "mobileEnvironment": "not-required",
+      "scope": "独立工作树从已授权未提交现场冻结，输入与任务差异摘要保存在私有验收记录；手机显式私网CIDR、全地址固定端口只读发现、取消和原绑定隔离。未提交未合并未安装；真实蜂窝/VPN验收未完成。"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "not-required",
+      "path": "docs/design/office-subnet-discovery.md",
+      "scope": "Production Swift extraction: /24 all 508 probes incl last usable address, max4 concurrency, same-target dedup and old pin mismatch, cancellation/late rejection; /8 /12 /16 lazy counts, /31 /32 semantics. Actual Foundation Codex and EasyWork TLS regression passed. pnpm build:ios both simulator architectures passed. Whole pnpm check did not pass: inherited non-task coverage mismatch; task-scoped coverage validated separately. No physical VPN or existing-phone-binding acceptance claimed. Initial pnpm check (Node22) stopped on newly added localization coverage, now corrected. Current Node24 whole-tree parity check still fails on inherited unchanged EasyWorkAgentClient.swift; task-only coverage, six changed script lint/format and generated localization consistency pass. 65 coordination/transfer boundary tests pass.",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "f009f3012659a2d6d516dc4c362c6a97e00132080df01ad50faf25d841f602bc",
+        "apps/ios/Sources/EasyWorkDiscovery.swift": "106be74d0f65ff6f81311746a4018a4035c8fe32013b621c332f6b721f5cd382",
+        "apps/ios/Sources/EasyWorkTransport.swift": "c12c0f499c0e70bca43190d53c30c160ebde138bda1ecff7f8b55bf4ce612f63",
+        "apps/ios/Sources/EasyWorkPairing.swift": "a970d0d205eeab3a148591712d245d83a81e4876badcde490a7489089fa9e1ab",
+        "apps/ios/Sources/SessionStore.swift": "40cc7ed4f95f910cba75e8cbf42be22303db2df0ce650d909a561e4af62555d7",
+        "apps/ios/Sources/Sheets.swift": "6ab71ffc6f7b126d649e28c2e4fa775c4a883bbbe117bf1399f3d42c7e955be6"
+      }
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PINNED-LAN-READ": {
+      "kind": "real-dev-readonly",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "not-required",
+      "scope": "Production Foundation PairedHostTrust + bounded DiscoveryResponse GET /host against the explicitly authorized source computer, with independently supplied leaf SHA256. Exact name/host/workspace/runtime matched. Source reports Tailscale exited, Host running; development machine route is LAN en1. No credentials/claims/model inputs in this probe. Earlier unpinned metadata read excluded from acceptance. Does not prove App UI, old phone credentials or outside-office VPN.",
+      "path": "docs/design/office-subnet-discovery.md"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-LAN-UI": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "Task-only review-01 patch SHA256 6f01ecd662c1a8a9ebaadd8462013045ea040f1f412b08e89dc4c2655d366b84 on frozen inherited input, not clean HEAD",
+      "packageSha256": "9774cab2836f44a0edad0e2673ee87396d57c3875f75906df9a961ccaa9b9768",
+      "testSourceSha256": "cec557c3f9505bf940dd415fd935d8c03e39ff12bfa3db5548fe66e22c94877a",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent iOS26 simulator, com.easyai.agenthub.officediscovery.acceptance; actual authorized office LAN /24 via development Mac en1",
+      "scope": "Native XCTest passed 342.792s: explicit subnet save, stop/restart, exact source Host name/id, visibly tappable result, same-name empty Host Key prompt with disabled authorization, cancel, cold persistence/removal. No key entered or claim sent. Does not prove physical phone, existing phone binding or outside-office Tailscale. Full-scan elapsed proof tracked separately.",
+      "path": "private evidence office-discovery-20261121/verification/office-ui-click.log and office-ui-click.xcresult",
+      "sha256": "06dafa91bb4ed80cd76d6b5f843433fcf8a7ad6432ebd355b3708a87632682c0"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-READINESS": {
+      "kind": "environment-blocker",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": "not-installed: physical app inventory unavailable",
+      "mobileEnvironment": "physical",
+      "environment": "Specified paired iPhone15 Pro Max, Xcode27.0, iOS27.2.1; official CLI and Device Hub",
+      "scope": "Paired and Developer Mode enabled; DDI Services Disabled / Apps unavailable. Official DDI refresh succeeded without restoring bounded app/DDI queries; normal GUI has no available network-connect/prepare action. No evidence of screen lock. No install, unpair, data/binding change or shared service restart. Source original thread asked to coordinate existing wireless connection; physical Tailscale route and credential recovery remain unverified. Later reconnect-2: at19:37 details/apps/DDI succeeded; device DDI27B52 newer than host27A266a and compatible. No deliberate state change explains recovery; original cause remains unknown. Exact independent bundle absent. Physical functional acceptance remains unverified.",
+      "path": "private evidence office-discovery-20261121/physical/device-hub-result.json and device-readiness-20261121.md",
+      "sha256": "7f4b58e3ec30d4d22d64df5a6a438d726d80f540251c9121f44e910f4348359d"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-FULL-SCAN": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": "9774cab2836f44a0edad0e2673ee87396d57c3875f75906df9a961ccaa9b9768",
+      "testSourceSha256": "51ff1d0197c1d44c4c842161235a07f4dcf2a5437fc27b44e363acfe8d1d2d3a",
+      "mobileEnvironment": "simulator",
+      "environment": "Same isolated iOS26 native App and explicitly authorized office /24; development Mac LAN en1",
+      "scope": "Native full-scan XCTest passed436.341s. UI initially reports508 probes; no stop/navigation during run. Source Host first seen273.092s after save, explicit finished-scan message407.277s; last sampled progress494/508. This is source Host timing, not first result across merged Bonjour/VPN/office mechanisms. Full .254 scheduling separately verified by production Swift extraction. No auth/claim, no physical VPN or existing-phone-binding assertion.",
+      "path": "private evidence office-discovery-20261121/verification/office-ui-fullscan.log and ui-fullscan-package.json",
+      "sha256": "9ca4ea7878f243bae39f86bc5e02a493776591b2c93daa2e26b52e79322a3243"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-REVIEW-CORRECTION-AUXILIARY": {
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "kind": "auxiliary-check",
+      "mobileEnvironment": "simulator",
+      "environment": "Node24, production Swift/Foundation extraction, both simulator architectures",
+      "path": "private evidence office-discovery-20261121/verification/repair-office-smoke-final.log + repair-codex-native-complete.log + repair-build-ios-final.log",
+      "sha256": "70a6c9a32810f77039f1ec38fc53f4742453d4f374c4eb9279974c6248218084",
+      "scope": "stop preserves discovered rows/counts; late results suppressed; full /24 all508 incl .254 and max4 concurrency; real SessionStore update method preserves32 ads and separately persists observed route; old missing-field JSON works; route uses paired TLS and wrong pin rejected; both iOS simulator architectures build passed. Real device VPN and old phone credential recovery not covered."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-INSTALLED": {
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "kind": "environment-readiness",
+      "mobileEnvironment": "physical",
+      "environment": "Specified paired iPhone15 Pro Max iOS27.2.1; Xcode27.0; dedicated com.easyai.agenthub.officediscovery.acceptance 0.1.0(115)",
+      "packageSha256": "1e1294bef1b6daf49233bdd8736329f6f2f53202291a2c8572f5e462aecd3798",
+      "path": "private evidence office-discovery-20261121/physical/reconnect-2/device-candidate.json + handoff.md",
+      "sha256": "e7f6571d6512642d99aa33699530f13dbead5d35da1ab94c51ebebe0039ba9aa",
+      "scope": "DDI/apps recovered; signed independent App+extension/group/keychain namespace verified; installed and normal launch showed empty add-computer state; formal and existing DEV preserved. Existing Tailscale account/control server/node read-only observed; source independently confirmed node maps to existing authorized group. No key/claim/network switch; no runtime cross-App data-isolation test or VPN-path acceptance."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-ROUTE-ASSERTION-PENDING": {
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "kind": "acceptance-diagnostic",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent simulator native XCTest; local Mac LAN en1",
+      "path": "private evidence office-discovery-20261121/verification/repair-ui-verified.log + source-unavailable-20261121.json",
+      "sha256": "cefb09063312458d8894887bfce446a6ce6c4bc5a2bfcb8e990437d978e24e47",
+      "scope": "Precise address equality timed out220s; raw AX snapshot includes targetID and source endpoint but actual runtime value requires diagnosis. Native stop-after-result/click case not passed. Later at20:26 target address ARP incomplete and production pinned read timeout plus canonical probe failure; no assumption this explains earlier XCTest failure. No TLS downgrade or permission change."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-DHCP-REFRESH-PINNED-LAN": {
+      "kind": "real-dev-readonly",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "not-required",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "environment": "Production Swift/Foundation and MobileCore contract on Mac; direct LAN en1",
+      "path": "private evidence office-discovery-20261121/verification/real-contract-201.log + real-contract-201.swift",
+      "sha256": "7de8a6d85484b4d75c619b54cde4ba73d9512a5569457ad232bc6bbbb91132a0",
+      "scope": "Source independently confirmed DHCP address change; full target and leaf pin unchanged. Strict supplied-pin read + actual production descriptor/model/candidates validation passed; separate discover=true two-second read also returned exact pin/target. Only public /host GET, no credentials/writes. Source currently reports Tailscale Running, so this is explicitly not the final Host-without-Tailscale/subnet-route scenario."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-STOP-RETAINED-NATIVE": {
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "testSourceSha256": "93f4a49df083e4560cd8a820de5de51beb866746c4589389e7dce0aecd7033a5",
+      "kind": "real-dev",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent iOS26 simulator, dedicated acceptance bundle, authorized office /24 subset /26 via development LAN",
+      "packageSha256": "c016412cc4a5f36daea38e274794001cf932ed29d52fbb23383758b4c75a054c",
+      "scope": "XCTest passed41.755s: exact current office endpoint row, stop at20/124, progress unchanged after late-result interval, same row remains clickable and opens correct-name empty Host Key prompt, authorization disabled until key provided. No key or claim. Prior AX diagnostic showed actual endpoint string valid but expected URL arrived as https:/...; test now passes authority only and builds scheme locally, without weakening exact equality or changing product code. Old172 failure retained; no claim it was exclusively DHCP-caused.",
+      "path": "private evidence office-discovery-20261121/verification/repair-stop-current.log + repair-stop-current.xcresult + repair-stop-current-package.json",
+      "sha256": "2b886e014f6b541f8969bbe3b6a1a80087b7bff6a6b308c42fe3da6c8b45da4d"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-NORMAL-PREP": {
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/SessionStore.swift": "9cc12fbfb984a0500566641a9a0c1d3a181f931bee898e98104c3926538ea335",
+        "apps/ios/Sources/Sheets.swift": "69d206ce8060e66f9058f816cabe77245dbdfa6f0f669db148a2f0d2deb0b5ec"
+      },
+      "testSourceSha256": "93f4a49df083e4560cd8a820de5de51beb866746c4589389e7dce0aecd7033a5",
+      "kind": "real-dev",
+      "mobileEnvironment": "physical",
+      "environment": "Specified iPhone15 Pro Max, ordinary store of dedicated com.easyai.agenthub.officediscovery.acceptance; same development Wi-Fi",
+      "packageSha256": "a2fa09f399ba0417a7d0f22a7d3e2e16d13cdd13760780dd9225b724309895e7",
+      "scope": "Real XCTest passed36.555s: authorized same-bundle candidate update (no uninstall), normal launch with no -ui-testing, empty onboarding, office /24 configured/stopped, normal terminate/relaunch retains config and still empty binding. Formal and original DEV unchanged. No Host click/key/claim or network switch; discovery of source over phone VPN and credential recovery not covered.",
+      "path": "private evidence office-discovery-20261121/physical/reconnect-2/normal-prep.log + normal-prep.xcresult + normal-prep-package.json",
+      "sha256": "b743dc4625ce0cee7e07479e0d78a451103fe6e6db97fef61c1f1392975fe0f8"
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHONE-LABEL-BLOCKER": {
+      "kind": "real-environment-handoff",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "physical",
+      "environment": "Source-coordinated phone cellular attempt; exact independent acceptance bundle",
+      "path": "private coordination source operation b53d402c-e485-4e88-8672-46303004d390; physical/display-name/preparation.json",
+      "scope": "Human switched15 to cellular but could not identify three same-name Apps; no discovery/auth attempt. Source reports67 filtered router samples with0 flows, classified unexecuted, not networking failure/pass; source restored own TailscaleRunning20:44:06. Authorized same-bundle display name 办公室测试 update prepared privately; no uninstall or data/group/credential change; signing/install/device-name check pending. Earlier normal-store and behavior checks remain scoped to recorded source/packages. Same-bundle renamed package is now signed and deep-strict verified; root/en/zh-Hans display names all 办公室测试,48 file-backed Mach-O sections match original, root entitlements/profile and nested extensions unchanged. New package not yet installed; waiting source-directed phone return to development Wi-Fi. Latest human correction: phone is connected by USB; Wi-Fi return is not a prerequisite. Exact-device USB installation and actual-name/store verification now executing while phone stays cellular+Tailscale."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHONE-NAMED-INSTALLED": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "physical",
+      "environment": "Specified15 CoreDevice wired, ordinary store, same dedicated bundle; human confirms cellular+Tailscale",
+      "packageSha256": "78bcf6581fe2e5a274752baf727c017dd44254e1cdb0b956388842a2591dd779",
+      "path": "private evidence office-discovery-20261121/physical/display-name/identity-ui-visible.log + identity-ui-visible.xcresult + usb-install-summary.json + signed-package-verification.json",
+      "sha256": "9485b37aceeac9e1b896a058419974bfaca00f44f60ab9178f901e09ec054fcb",
+      "scope": "Same-bundle USB install succeeded; actual system app name办公室测试; saved/24 retained. XCTest passed16.939s after normal visible-page navigation: unique named icon visible/hittable and launches exact normal unbound App. Earlier offscreen0x0 frame tap failure retained, not a permissions refusal. Original entitlements/profile/extensions unchanged;48 code sections match prior candidate. These checks do not yet prove VPN route/discovery/authentication."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-SUBNET-DISCOVERY": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "physical",
+      "environment": "Specified15 ordinary acceptance App, wired CoreDevice development only; phone cellular/noWi-Fi, existing Tailscale; source independently confirmed own TS Stopped and router flow",
+      "packageSha256": "78bcf6581fe2e5a274752baf727c017dd44254e1cdb0b956388842a2591dd779",
+      "testSourceSha256": "32178598eb9bd3995282fab1f0e3dcf564c42222a2550cee06e18ae173ccb117",
+      "path": "private evidence office-discovery-20261121/physical/display-name/cellular-window.log + cellular-window.xcresult; physical/window02-source-receipt.json",
+      "sha256": "89bab0e1967c5833c55b541557dd6c5cfeacbe498d7b304d697e56a217a4270a",
+      "scope": "Physical test passed606.750s: full /24 start21:06:40, first private merged-list Host134.440659s, exact source LAN endpoint/name/ID first recorded267.985386s, explicit scan completion268.016764s,total508,last sample504. Only source clicked to emptyKey21:11:11; human entered privately, UI returned21:16:32. Source router independently reports0.8→sourceLAN:8796 ESTABLISHED/ASSURED21:10:11.581 while sourceTSStopped; NAT reply and bidirectional counts. Initial NWPath unsatisfied was in test runner, not App and not connectivity proof. App persisted fulltarget/pin/one-record/cold recovery still pending; source raw router JSON not yet transferred, source operation recorded. Original other-phone old binding unverified."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-COLD-RECOVERY": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "physical",
+      "environment": "Same15 normal signed acceptance App, cellular+Tailscale, source reports continuing Stopped window; USB development channel separate",
+      "packageSha256": "78bcf6581fe2e5a274752baf727c017dd44254e1cdb0b956388842a2591dd779",
+      "testSourceSha256": "c2a0f9b049e89e181e5a1aa56023402b8ff11e0288dbe1399c7fad446a0290c8",
+      "path": "private evidence office-discovery-20261121/physical/display-name/cold-recovery.log + cold-recovery.xcresult + cold-recovery-package.json + normal-session-sanitized.json + normal-session-after-cold-sanitized.json",
+      "sha256": "d69c1afa2ff2c72e7c27d4a9d531b9ba1b4cd74edabe2541ab38481b92a84d06",
+      "scope": "Native cold test passed19.415s; source online8.901478s at21:23:55, actual source project/chat opened read-only. No new message, claim, Key entry or Keychain read. Before/after actual normal SavedSession each exactly1 source record, same full target/independently supplied pin/current LAN endpoint and observedEndpoint. Same15 new authorized record recovery only; does not cover original other-phone legacy binding, Android office UI or a new EasyWork physical test."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-SOURCE-NETWORK-CLOSEOUT": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "mobileEnvironment": "physical",
+      "environment": "Source Mac independent strict-pinned file delivery; MT6000 existing conntrack metadata, same15 phone source and LAN Host destination; source client Stopped throughout scan/auth/cold run",
+      "packageSha256": "78bcf6581fe2e5a274752baf727c017dd44254e1cdb0b956388842a2591dd779",
+      "path": "private office-discovery-20261121/physical/source-network/manifest.json and seven allowed JSON files; transfer995ef89d-084b-4de6-b8c2-3970b0a44cde",
+      "sha256": "eb011280f037aa564fdb3cb78a70d116ed0568d8efa3da3797bdc581f1ff5af3",
+      "scope": "Received ZIP6407bytes hash verified, all7 manifest file hashes verified. 683 samples, all28 nonempty flow samples retained, first phone-to-source flow21:10:11.581 and last21:24:13 overlapping cold recovery21:23:55. Router bidirectional ASSURED and sourceStopped independently evidenced; UI timing remains distinct from network first packet. Source up21:26:41 and independent21:29:03 Running/Self.Online=true; observers74625/57755/88720 absent. ACL/NAT/routes/Host unchanged. Source coordination forward retained only for final audit and to be closed by source, not claimed released. No new scan/auth/input."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-REVIEW03-ACCEPTED-CLOSEOUT": {
+      "kind": "exact-match-review",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "packageSha256": "78bcf6581fe2e5a274752baf727c017dd44254e1cdb0b956388842a2591dd779",
+      "mobileEnvironment": "not-required",
+      "environment": "Source coordinator reviewed existing actual15 artifacts and router evidence; current main checks only artifact identity and resource state, no additional product test",
+      "path": "private office-discovery-20261121/review-03.zip + verification/audited-closeout-receipt.json; source operation83e2eb7a-41e9-4886-8fb3-5cc8b62843a5",
+      "sha256": "689d98713a46248bff87b6dba0a5c2165f1d81573161c67eb8b04abbcd22ced7",
+      "scope": "Source formally accepted review03 ZIP3232171bytes/SHA4320f8f3fbde4daeee691f2496d19b8f4c5cb32d5205d66f23fb2ead12f64abc, all26 evidence hashes, exact six-file delta and unchanged product source; three actual XCTest logs/screenshots/normal session fields reviewed with independent source router proof. Scope remains only specified15 new authorization and same-record cold recovery. Signed candidate/raw xcresult audit dependence now released. Current limited closeout deleted no files because existing shared cleanup lock is held by another live task; exact30 roots/holder/release condition privately recorded. Prior own simulator/dependency/intermediate cleanup remains valid. Unique uncommitted worktree and installed phone binding protected. No re-test, no new model input, no merge/release."
+    },
+    "OFFICE-SUBNET-DISCOVERY-20261121-MAIN-INTEGRATION-GATES": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "mobileEnvironment": "ios-simulator-build-and-native-boundaries",
+      "environment": "macOS arm64 / Node24 / Xcode27; local Terra medium actual turn_context verified; speed not exposed",
+      "path": "private office-discovery-20261121/delivery/gates-summary.json; formal116-input-comparison.json; integration-review-aebbbef4.zip",
+      "sha256": "8090074beb16b872b8d037859ef0457c6a575fef6ba7b08113350a09a75ce519",
+      "scope": "Task-only three-way delta integrated onto actual Gitea main aebbbef4. Whole pnpm check requirement completed by preserving passed prefix and exact unchanged suffix after building missing dist; suffix exit0. Initial dependency failures are retained, not described as a single successful full invocation. Explicit PR-base parity, office/Codex/EasyWork actual Swift TLS boundaries and pnpm build:ios pass. Windows-only native tests skipped on macOS. All32 frozen files unchanged, no conflicts/extras. Release116 all3330 inputs match clean commit06c706d3, which is an ancestor of this main; no116 files deleted and formal device entitlement sources unchanged. No new physical phone or original-phone upgrade pass.",
+      "sourceFiles": {
+        "apps/ios/Sources/CodexDiscovery.swift": "e15213cab6b93736d30a869ecdd73150d416cfdb7ce8aa3d22b632a5977c78c9",
+        "apps/ios/Sources/EasyWorkDiscovery.swift": "9b163f3446f01cff19ca42ed0dd17f940d584f9861ddb4f9e59b363300a0d25c",
+        "apps/ios/Sources/EasyWorkPairing.swift": "a2460620cf1d4c6f310e63ced25fbf67fa0c058b3c89b29c5ae71a5851438045",
+        "apps/ios/Sources/EasyWorkTransport.swift": "c12c0f499c0e70bca43190d53c30c160ebde138bda1ecff7f8b55bf4ce612f63",
+        "apps/ios/Sources/SessionStore.swift": "57c25e33da86a6ef957b77e5c044bb6415cb4a66fd2b7d22c5b6152a6e8cb8a3",
+        "apps/ios/Sources/Sheets.swift": "5da4a615f42b3639e4ab2f893fa229c88d867d4902aa6aff80daba39a5156641"
+      }
     }
   },
   "openItems": [
@@ -27720,6 +27948,171 @@
         "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482"
       ],
       "maintenanceCorrection": "Renderer correctly rejects whole-parent execution closure with historical-partial acceptance; parentF18/F44 planned retained, finiteFDs merged/closed only."
+    },
+    {
+      "revision": 483,
+      "date": "2026-11-21",
+      "kind": "office-subnet-discovery-candidate",
+      "scope": "追加F06/F08有限办公室发现交付项，保留原全部事实、其他正在执行事项及F75/A6暂停；本隔离差异待协调按ID合并，不能覆盖并行主台账。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PINNED-LAN-READ"
+      ],
+      "sourceRevision": 473
+    },
+    {
+      "revision": 484,
+      "date": "2026-11-21",
+      "kind": "office-subnet-native-lan-and-physical-readiness",
+      "scope": "仅追加F06/F08子网发现的原生LAN/真实源身份与物理环境阻塞证据，保留其他事项与F75/A6。未把LAN或首次授权提示当作外网VPN和旧手机恢复通过；主台账按ID差异对账。 原生完整扫描通过；开发implemented-candidate、验收LAN有限通过/真机未验、交付candidate-unmerged、执行blocked(DDI连接)。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PINNED-LAN-READ",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-LAN-UI",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-READINESS",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-FULL-SCAN"
+      ],
+      "sourceRevision": 474
+    },
+    {
+      "revision": 485,
+      "date": "2026-11-21",
+      "kind": "office-subnet-review-stop-and-route-correction",
+      "scope": "来源审查要求停止保留已发现列表、实际路由不改32条原广告，独立测试待补；分支分类更名不改变HEAD/源码。人类已确认物理15与mini同Wi-Fi，不再将网络未确认作为阻塞理由；继续DDI原因诊断。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PINNED-LAN-READ",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-LAN-UI",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-READINESS",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-FULL-SCAN"
+      ],
+      "sourceRevision": 475
+    },
+    {
+      "revision": 486,
+      "date": "2026-11-21",
+      "kind": "office-review-auxiliary-and-dedicated-phone-install",
+      "scope": "审查修正辅助检查/构建通过，独立15候选已安装启动；准确路由停止点击仍未通过，原生AX诊断与normal-store准备继续。源现地址暂不可达，不改路由ACL；真机跨网与另一手机旧记录未验。 同轮来源独立确认DHCP换址，201生产pin/契约/发现读取已通过；目标TS当前Running，最终窗口须暂down，现不冒称满足子网场景。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-REVIEW-CORRECTION-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-INSTALLED",
+        "OFFICE-SUBNET-DISCOVERY-20261121-ROUTE-ASSERTION-PENDING",
+        "OFFICE-SUBNET-DISCOVERY-20261121-DHCP-REFRESH-PINNED-LAN"
+      ],
+      "sourceRevision": 476
+    },
+    {
+      "revision": 487,
+      "date": "2026-11-21",
+      "kind": "office-native-correction-and-physical-preparation-passed",
+      "scope": "精确办公室路由停止后仍可点/授权提示通过；物理15独立候选normal-store保存/停止/冷恢复通过，无Key/claim。原AX期待值URL在运行时少一斜线，改测试authority输入保持严格等值；生产无需为此改动。外网子网窗口仍待来源指导，原用户另一手机未验。",
+      "newProductAcceptancePasses": 2,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-STOP-RETAINED-NATIVE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-NORMAL-PREP"
+      ],
+      "sourceRevision": 477
+    },
+    {
+      "revision": 488,
+      "date": "2026-11-21",
+      "kind": "office-independent-candidate-visible-name-correction",
+      "scope": "真人不能识别三个同名App，蜂窝扫描未执行。只改独立验收包显示名，保留bundle/namespace/store，待签名原位更新；不改功能，不将零flow计作网络失败或跨网通过，源TS已恢复Running。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-PHONE-LABEL-BLOCKER"],
+      "sourceRevision": 478
+    },
+    {
+      "revision": 489,
+      "date": "2026-11-21",
+      "kind": "office-visible-independent-name-usb-installed",
+      "scope": "按人类USB现场纠正已同bundle更新办公室测试；normal store/24保留、可见图标点击进入正确App16.939秒通过。源已开第二个临时down+路由只读窗口，手机真实跨网扫描/授权仍待执行，不用USB连通代替网络证明。",
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-PHONE-NAMED-INSTALLED"],
+      "sourceRevision": 479
+    },
+    {
+      "revision": 490,
+      "date": "2026-11-21",
+      "kind": "office-physical-subnet-scan-and-human-authorization",
+      "scope": "手机正常store完整/24发现正确来源LAN并在真人正规输入后回主界面；native606.750s通过，source独立router双向path与Stopped证据关联。真实pin/record及冷恢复仍待补，不重放授权，不用另手机旧绑定代签。",
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-SUBNET-DISCOVERY"],
+      "sourceRevision": 480
+    },
+    {
+      "revision": 491,
+      "date": "2026-11-21",
+      "kind": "office-physical-codex-scoped-acceptance-complete",
+      "scope": "独立15真实子网发现/正规授权/同一记录target+pin/只读项目聊天/冷恢复按登记范围通过；原另一手机旧绑定/Android/新EasyWork真机未代签。只交候选，不合并发布；来源恢复回执与最终资源收尾等待完成。",
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-COLD-RECOVERY"],
+      "sourceRevision": 481
+    },
+    {
+      "revision": 492,
+      "date": "2026-11-21",
+      "kind": "office-physical-source-network-closeout",
+      "scope": "来源7个脱敏JSON/683样本/28条非空flow完整收到并逐项SHA核对；源TS恢复Running/Online、三个观察进程结束。将网络证据与App冷恢复关联但不混淆首包和UI首见；协调转发仍待来源最终关停。无新产品执行/无模型消息。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-SOURCE-NETWORK-CLOSEOUT"],
+      "sourceRevision": 482
+    },
+    {
+      "revision": 493,
+      "date": "2026-11-21",
+      "kind": "office-review03-accepted-resource-closeout",
+      "scope": "来源正式审收最小review03和本轮15真实验收，产品代码未变，无新增测试。签名候选/xcresult审收依赖解除；本机共享锁仍被另一活跃任务持有，本次0删除，精确保留清单/holder/释放条件已留证。隔离未提交源码、手机正常授权数据和本专用收尾会话保留。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-REVIEW03-ACCEPTED-CLOSEOUT"],
+      "sourceRevision": 483
+    },
+    {
+      "revision": 494,
+      "date": "2026-11-21",
+      "kind": "office-subnet-main-integration-authorized",
+      "scope": "仅合入原冻结输入后的办公室发现delta，保留当前main的F44/F18/F68等并行事实；原分支473-483历史以sourceRevision保留并在当前台账顺延。用户授权Gitea正式合并及原手机通过私有Tailscale安装链接升级；未声称新main/原手机通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-REVIEW03-ACCEPTED-CLOSEOUT"],
+      "sourceRevision": 492
+    },
+    {
+      "revision": 495,
+      "date": "2026-11-21",
+      "kind": "office-subnet-main-integration-gates-passed",
+      "scope": "aebbbef4任务delta集成检查分段完成、三Swift边界和iOS构建通过；记录初始依赖失败及修复续跑，不重跑有效前段、不跳hook。116干净源码输入与主线祖先关系核实；正式签名/合并/原机升级仍待，不新增产品通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-MAIN-INTEGRATION-GATES"],
+      "sourceRevision": 493
+    },
+    {
+      "revision": 496,
+      "date": "2026-11-21",
+      "kind": "office-subnet-pr235-new-main-semantic-merge",
+      "scope": "PR235创建期间main推进a87486e4；语义保留F07授权恢复transport和上游状态字段，重放仅office事实delta并顺延其历史revision。办公室生产源码无变化；原aeb完整门禁按输入复用，新增生产授权源需最终组合构建/签名，不将旧117IPA冒作新main产物。原手机仍未升级。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-SUBNET-DISCOVERY-20261121-MAIN-INTEGRATION-GATES"]
     }
   ],
   "maintenanceValidation": {
@@ -38401,6 +38794,56 @@
         "state": "owned-ios-worktree-and-both-branches-released",
         "evidenceRef": "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476",
         "retained": "IndependentDesktopactualruntimeandbroker stillusedF44/F18/F07; originalSimdata andoutsidefrozenpackages/minimalproof preserved"
+      }
+    },
+    {
+      "id": "F06-office-subnet-discovery",
+      "featureIds": ["F06", "F08"],
+      "phase": "extensions",
+      "behavior": "手机一次配置办公室网段，在发现列表中找到路由器后的Codex和EasyWork Host，不要求每台电脑运行Tailscale",
+      "acceptanceCriteria": "全/24包含最后可用地址；仅显式范围和固定端口；读描述不授权；已配对目标/证书/公钥/权限保持，同机新地址不重复。原生输入保存/冷恢复/停止/移除与真实办公室外手机VPN连接分列。",
+      "state": "accepted-scoped",
+      "owner": "办公室子网发现专用会话",
+      "acceptanceBasis": "physical15-codex-subnet-new-authorization-and-same-record-cold-recovery-passed; original-other-phone-unverified",
+      "evidenceRefs": [
+        "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PINNED-LAN-READ",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-LAN-UI",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-READINESS",
+        "OFFICE-SUBNET-DISCOVERY-20261121-NATIVE-FULL-SCAN",
+        "OFFICE-SUBNET-DISCOVERY-20261121-REVIEW-CORRECTION-AUXILIARY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-INSTALLED",
+        "OFFICE-SUBNET-DISCOVERY-20261121-ROUTE-ASSERTION-PENDING",
+        "OFFICE-SUBNET-DISCOVERY-20261121-DHCP-REFRESH-PINNED-LAN",
+        "OFFICE-SUBNET-DISCOVERY-20261121-STOP-RETAINED-NATIVE",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-NORMAL-PREP",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHONE-LABEL-BLOCKER",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHONE-NAMED-INSTALLED",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-SUBNET-DISCOVERY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-PHYSICAL-COLD-RECOVERY",
+        "OFFICE-SUBNET-DISCOVERY-20261121-SOURCE-NETWORK-CLOSEOUT",
+        "OFFICE-SUBNET-DISCOVERY-20261121-REVIEW03-ACCEPTED-CLOSEOUT",
+        "OFFICE-SUBNET-DISCOVERY-20261121-MAIN-INTEGRATION-GATES"
+      ],
+      "pullRequests": [],
+      "nextAction": "提交并经Gitea PR合并；核117实际签名及旧App身份/Keychain兼容；交来源部署既有HTTPS版本后更新Tailscale私有入口。来源协调原手机原位升级及旧授权跨网恢复，独立15结果不替代该范围。",
+      "updatedAt": "2026-11-21",
+      "development": {
+        "state": "pending-integration",
+        "scope": "iOS显式办公室私网发现与审查修正候选已实现，旧Host v1无需同步升级；Android入口未实现。"
+      },
+      "acceptance": {
+        "state": "current-passed",
+        "scope": "登记范围：独立15/Codex实际蜂窝+既有Tailscale→办公室路由器→关闭Tailscale的源Host，完整/24发现、真人正规授权、准确目标/原pin/单一record、只读项目聊天与正常冷恢复通过；停止保留、32广告独立observed route与旧JSON边界亦通过。原用户另一手机旧绑定、Android入口及新的EasyWork真机未覆盖，未将其整体标通过。"
+      },
+      "delivery": {
+        "state": "candidate-not-integrated",
+        "scope": "本任务已提交e441d067并推送Gitea PR235；实际main推进后正在合入a87486e4，未合并。原117仅aeb组合候选，必须待最终生产输入重建签名；原手机升级/数据与旧授权保留未验。"
+      },
+      "execution": {
+        "state": "in-progress",
+        "scope": "PR235已提交，期间main推进a87486e4，现语义整合新授权transport及双方台账。原完整门禁复用，最终组合构建/117重签待完成；来源唯一负责既有HTTPS部署，Mini核验后更新原私有入口。"
       }
     }
   ],

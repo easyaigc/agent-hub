@@ -1884,3 +1884,23 @@
 "取消结果以电脑回执为准；消息和原附件保留。" = "The cancellation result is determined by the computer receipt. The message and original attachments are kept.";
 "手机发送已停止；当前电脑不支持同步取消，请在电脑端处理暂存。" = "Sending from the phone has stopped. This computer does not support synchronized cancellation; manage the staged file on the computer.";
 "刷新" = "Refresh";
+
+"办公室网段，如 192.168.8.0/24" = "Office subnet, e.g. 192.168.8.0/24";
+
+"保存并查找" = "Save and discover";
+
+"请输入完整位于私网内、网络地址对齐的 IPv4 网段。" = "Enter an aligned IPv4 subnet entirely within a private address block.";
+
+"移除办公室网段" = "Remove office subnet";
+
+"正在查找办公室电脑…" = "Looking for office computers…";
+
+"停止查找" = "Stop discovery";
+
+"本轮查找已结束；未找到时请检查手机 VPN、子网路由及电脑 Host。" = "Discovery finished. If nothing was found, check the phone VPN, subnet route and computer Host.";
+
+"办公室网络" = "Office network";
+
+"只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。" = "Reads Host descriptions only in the configured subnet. Large ranges can take a long time; stop at any time. Routes and computer authorization are unchanged.";
+
+"局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。" = "Connect directly over LAN, or remotely using a computer VPN or a phone VPN with an office subnet route. Configure the office subnet to discover Hosts without a VPN on every computer. Each computer still requires authorization.";

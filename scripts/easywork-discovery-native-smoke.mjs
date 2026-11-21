@@ -153,11 +153,13 @@ try {
   const transport = await readFile('apps/ios/Sources/EasyWorkTransport.swift', 'utf8');
   const discovery = await readFile('apps/ios/Sources/EasyWorkDiscovery.swift', 'utf8');
   const pairing = await readFile('apps/ios/Sources/EasyWorkPairing.swift', 'utf8');
+  const codexDiscovery = await readFile('apps/ios/Sources/CodexDiscovery.swift', 'utf8');
   const client = await readFile('apps/ios/Sources/AgentClient.swift', 'utf8');
   const shared = await readFile('apps/ios/Sources/NotificationModels.swift', 'utf8');
   const host = await readFile('apps/ios/Sources/HostService.swift', 'utf8');
   const failures = await readFile('apps/ios/Sources/OperationFailure.swift', 'utf8');
   const declarations = [
+    block(codexDiscovery, 'enum DiscoveryResponse {'),
     block(failures, 'struct ConnectionAuthorizationIdentity<'),
     block(shared, 'struct AgentAccount:'),
     block(shared, 'struct AgentRuntimeTarget:'),

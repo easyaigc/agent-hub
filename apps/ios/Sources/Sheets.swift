@@ -167,6 +167,7 @@ struct CodexConnectionForm: View {
     @State private var token: String
     @ObservedObject private var discovery = CodexHostDiscovery.shared
     @ObservedObject private var vpnDiscovery = VPNHostDiscovery.shared
+    @ObservedObject private var officeDiscovery = OfficeHostDiscovery.shared
     @State private var showScanner = false
     @State private var qrText = ""
     @State private var connectionMethod = ConnectionMethod.discovery
@@ -201,7 +202,7 @@ struct CodexConnectionForm: View {
                 discoveredHosts
             }
             Section {
-                Text(L10n.tr("默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。"))
+                Text(L10n.tr("局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。"))
                     .font(.footnote).foregroundStyle(Palette.secondary)
                     .accessibilityIdentifier("codex-dual-channel-help")
             }
@@ -247,6 +248,7 @@ struct CodexConnectionForm: View {
     }
 
     @ViewBuilder private var discoveredHosts: some View {
+        OfficeDiscoverySection(store: store)
         if let host = authorizationHost {
             Section {
                 Text(host.name)
@@ -304,7 +306,7 @@ struct CodexConnectionForm: View {
 
     private var discoveryRows: [CodexHostDiscovery.Host] {
         let saved = store.saved.clients.filter { !$0.isDemo && $0.agentConnection == nil }
-        var discovered = vpnDiscovery.codexHosts
+        var discovered = officeDiscovery.codexHosts + vpnDiscovery.codexHosts.filter { vpn in !officeDiscovery.codexHosts.contains { $0.id == vpn.id } }
         for host in discovery.hosts where !discovered.contains(where: { $0.id == host.id }) { discovered.append(host) }
         return saved.map { client in
             let found = discovered.first { $0.id == client.id }
@@ -336,7 +338,7 @@ struct CodexConnectionForm: View {
                 }
                 if let previous = store.saved.clients.first(where: { $0.id == host.id }), let direct = previous.codexDirect, host.reachable {
                     let descriptor = try await CodexDiscoveryAPI.read(host.endpoint, fingerprint: direct.fingerprint, target: direct.target, timeout: 8)
-                    guard store.updateCodexDiscovery(previous, host: descriptor, reachableEndpoint: host.endpoint) else { throw HostServiceError.wrongHost }
+                    guard store.updateCodexDiscovery(previous, host: descriptor, reachableEndpoint: host.endpoint, verifiedObservedEndpoint: host.endpoint) else { throw HostServiceError.wrongHost }
                 }
                 store.selectClient(host.id, refreshAutomatically: false); await store.refresh()
                 guard store.client?.online == true else { throw HostServiceError.unavailable }
@@ -1119,5 +1121,48 @@ struct NativeSuggestionButton: UIViewRepresentable {
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIButton, context: Context) -> CGSize? {
         let intrinsic = uiView.intrinsicContentSize
         return CGSize(width: proposal.width ?? max(44, intrinsic.width), height: max(44, intrinsic.height))
+    }
+}
+
+/// Shared discovery configuration for Codex and EasyWork. Saving grants only a
+/// bounded read of the specified subnet; each computer keeps its own pairing.
+struct OfficeDiscoverySection: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject var store: SessionStore
+    @ObservedObject private var discovery = OfficeHostDiscovery.shared
+    @State private var subnet = ""
+    @State private var scopeError: String?
+    var body: some View {
+        Section {
+            TextField(L10n.tr("办公室网段，如 192.168.8.0/24"), text: $subnet)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .accessibilityIdentifier("office-discovery-subnet")
+            Button(L10n.tr("保存并查找")) {
+                do { try discovery.configure(subnet, store: store); scopeError = nil }
+                catch { scopeError = L10n.tr("请输入完整位于私网内、网络地址对齐的 IPv4 网段。") }
+            }.accessibilityIdentifier("office-discovery-save")
+            if discovery.scope != nil {
+                Button(L10n.tr("移除办公室网段")) { discovery.remove(); subnet = ""; scopeError = nil }
+                    .accessibilityIdentifier("office-discovery-remove")
+                if discovery.searching {
+                    ProgressView(value: Double(discovery.completed), total: Double(max(1, discovery.total)))
+                    Text(L10n.tr("正在查找办公室电脑…") + " \(discovery.completed)/\(discovery.total)")
+                    Button(L10n.tr("停止查找")) { discovery.stop() }
+                } else if discovery.total > 0 {
+                    Text(discovery.completed < discovery.total
+                        ? L10n.tr("已停止") + " \(discovery.completed)/\(discovery.total)"
+                        : L10n.tr("本轮查找已结束；未找到时请检查手机 VPN、子网路由及电脑 Host。"))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if let scopeError { Text(scopeError).foregroundStyle(.red) }
+        } header: { Text(L10n.tr("办公室网络")) } footer: {
+            Text(L10n.tr("只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。"))
+        }
+        .task { subnet = discovery.scope?.cidr ?? ""; discovery.start(store) }
+        .onDisappear { discovery.stop() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { discovery.start(store) } else { discovery.stop() }
+        }
     }
 }

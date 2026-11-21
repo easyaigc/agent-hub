@@ -19213,3 +19213,408 @@ extension CodexManageUITests {
     shot("physical-reply-receipt-draft")
   }
 }
+
+// Office subnet acceptance uses a separate simulator and bundle; it never pairs.
+extension CodexManageUITests {
+  @MainActor func testOfficeDiscoveryIsolatedDEV() throws {
+    let env = ProcessInfo.processInfo.environment
+    guard let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], !subnet.isEmpty,
+      let hostID = env["OFFICE_ACCEPTANCE_HOST_ID"], !hostID.isEmpty,
+      let hostName = env["OFFICE_ACCEPTANCE_HOST_NAME"], !hostName.isEmpty else { throw XCTSkip("Office acceptance target not configured") }
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    func openDiscovery() {
+      XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+      XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+      let codex = app.buttons["Codex"].firstMatch
+      if codex.waitForExistence(timeout: 5) { codex.tap() }
+      let field = app.textFields["office-discovery-subnet"]
+      for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+      XCTAssertTrue(field.waitForExistence(timeout: 15))
+    }
+    app.launch(); openDiscovery()
+    let field = app.textFields["office-discovery-subnet"]
+    field.tap(); field.typeText(subnet)
+    let save = app.buttons["office-discovery-save"]
+    if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10)); save.tap()
+    let stop = app.buttons["停止查找"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 10)); if !stop.isHittable { app.swipeUp() }; stop.tap()
+    XCTAssertFalse(stop.exists); if !save.isHittable { app.swipeDown() }; save.tap()
+    let target = app.buttons["codex-discovered-" + hostID]
+    XCTAssertTrue(target.waitForExistence(timeout: 300), "Expected exact authorized Host discovered; no pairing")
+    XCTAssertTrue(target.label.contains(hostName), "Expected configured Host name")
+    let done = app.buttons["完成输入"]
+    if done.exists && done.isHittable { done.tap() }
+    for _ in 0..<8 where !target.isHittable { app.swipeUp() }
+    XCTAssertTrue(target.exists && target.isHittable, "Discovered source row must remain visible and tappable when scrolled")
+    let found = XCTAttachment(screenshot: app.screenshot()); found.name = "office-source-visible"; found.lifetime = .keepAlways; add(found)
+    target.tap()
+    let key = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(key.waitForExistence(timeout: 30), "Expected Host Key prompt without sending a claim")
+    XCTAssertTrue(app.staticTexts[hostName].exists)
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    let prompt = XCTAttachment(screenshot: app.screenshot()); prompt.name = "office-host-key-empty"; prompt.lifetime = .keepAlways; add(prompt)
+    let cancel = app.buttons["codex-authorize-cancel"]
+    for _ in 0..<6 where !cancel.isHittable { app.swipeUp() }
+    XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
+    XCTAssertFalse(key.exists)
+    if stop.exists && stop.isHittable { stop.tap(); XCTAssertFalse(stop.exists) }
+    app.terminate(); app.launch(); openDiscovery()
+    XCTAssertEqual(app.textFields["office-discovery-subnet"].value as? String, subnet)
+    let remove = app.buttons["office-discovery-remove"]
+    if !remove.isHittable { app.swipeUp() }
+    XCTAssertTrue(remove.waitForExistence(timeout: 10)); remove.tap()
+    XCTAssertFalse(remove.exists)
+    app.terminate(); app.launch(); openDiscovery()
+    XCTAssertFalse(app.buttons["office-discovery-remove"].exists)
+    XCTAssertNotEqual(app.textFields["office-discovery-subnet"].value as? String, subnet)
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testOfficeDiscoveryFullScanDEV() throws {
+    let env = ProcessInfo.processInfo.environment
+    guard let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], !subnet.isEmpty,
+      let hostID = env["OFFICE_ACCEPTANCE_HOST_ID"], !hostID.isEmpty else { throw XCTSkip("Office acceptance target not configured") }
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+    XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+    let codex = app.buttons["Codex"].firstMatch
+    if codex.waitForExistence(timeout: 5) { codex.tap() }
+    let field = app.textFields["office-discovery-subnet"]
+    for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+    XCTAssertTrue(field.waitForExistence(timeout: 15)); field.tap(); field.typeText(subnet)
+    let done = app.buttons["完成输入"]; if done.exists && done.isHittable { done.tap() }
+    let save = app.buttons["office-discovery-save"]
+    if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10))
+    let started = ProcessInfo.processInfo.systemUptime
+    print("OFFICE_FULL_SCAN_BEGIN_UPTIME \(started)")
+    save.tap()
+    let progress = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "/508")).firstMatch
+    XCTAssertTrue(progress.waitForExistence(timeout: 15), "Expected 508 bounded reads")
+    let initial = XCTAttachment(screenshot: app.screenshot()); initial.name = "office-scan-progress"; initial.lifetime = .keepAlways; add(initial)
+    let target = app.buttons["codex-discovered-" + hostID]
+    XCTAssertTrue(target.waitForExistence(timeout: 500), "Expected specified Host during full scan")
+    print("OFFICE_FULL_SCAN_FIRST_HOST_SECONDS \(ProcessInfo.processInfo.systemUptime - started)")
+    let finished = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "本轮查找已结束")).firstMatch
+    XCTAssertTrue(finished.waitForExistence(timeout: 500), "Expected explicit completed-scan message; no stop or navigation")
+    print("OFFICE_FULL_SCAN_FINISHED_SECONDS \(ProcessInfo.processInfo.systemUptime - started)")
+    let complete = XCTAttachment(screenshot: app.screenshot()); complete.name = "office-scan-complete"; complete.lifetime = .keepAlways; add(complete)
+    let remove = app.buttons["office-discovery-remove"]
+    if !remove.isHittable { app.swipeDown() }
+    XCTAssertTrue(remove.waitForExistence(timeout: 10)); remove.tap()
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testOfficeStopKeepsSourceDEV() throws {
+    let env = ProcessInfo.processInfo.environment
+    guard let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], !subnet.isEmpty,
+      let hostID = env["OFFICE_ACCEPTANCE_HOST_ID"], !hostID.isEmpty,
+      let hostName = env["OFFICE_ACCEPTANCE_HOST_NAME"], !hostName.isEmpty,
+      let authority = env["OFFICE_ACCEPTANCE_AUTHORITY"], !authority.isEmpty else { throw XCTSkip("Office acceptance target not configured") }
+    let expectedEndpoint = "https://" + authority
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+    XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+    let codex = app.buttons["Codex"].firstMatch
+    if codex.waitForExistence(timeout: 5) { codex.tap() }
+    let field = app.textFields["office-discovery-subnet"]
+    for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+    XCTAssertTrue(field.waitForExistence(timeout: 15)); field.tap(); field.typeText(subnet)
+    let done = app.buttons["完成输入"]; if done.exists && done.isHittable { done.tap() }
+    let save = app.buttons["office-discovery-save"]
+    if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10)); save.tap()
+    let target = app.buttons["codex-discovered-" + hostID]
+    let expectedRoute = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      target.exists && (target.value as? String) == expectedEndpoint
+    }, object: target)
+    XCTAssertEqual(XCTWaiter.wait(for: [expectedRoute], timeout: 220), .completed, "Expected exact source on the office route")
+    let stop = app.buttons["停止查找"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 5), "Scan must still be running when stopped")
+    if !stop.isHittable { app.swipeUp() }; XCTAssertTrue(stop.isHittable); stop.tap()
+    let stopped = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "已停止 ")).firstMatch
+    XCTAssertTrue(stopped.waitForExistence(timeout: 10)); let stoppedLabel = stopped.label
+    XCTAssertTrue(stoppedLabel.contains("/")); XCTAssertTrue(target.exists); XCTAssertEqual(target.value as? String, expectedEndpoint)
+    sleep(3); XCTAssertEqual(stopped.label, stoppedLabel, "Late results must not advance progress")
+    for _ in 0..<8 where !target.isHittable { app.swipeUp() }
+    XCTAssertTrue(target.exists && target.isHittable && target.label.contains(hostName)); XCTAssertEqual(target.value as? String, expectedEndpoint)
+    let retained = XCTAttachment(screenshot: app.screenshot()); retained.name = "office-stop-retained-source"; retained.lifetime = .keepAlways; add(retained)
+    target.tap()
+    let key = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(key.waitForExistence(timeout: 30)); XCTAssertTrue(app.staticTexts[hostName].exists)
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    let prompt = XCTAttachment(screenshot: app.screenshot()); prompt.name = "office-stop-empty-key"; prompt.lifetime = .keepAlways; add(prompt)
+    let cancel = app.buttons["codex-authorize-cancel"]
+    for _ in 0..<6 where !cancel.isHittable { app.swipeUp() }
+    XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap(); XCTAssertFalse(key.exists)
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testOfficeAXRouteDiagnosticDEV() throws {
+    let env = ProcessInfo.processInfo.environment
+    guard let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], subnet.hasSuffix("/32"),
+      let hostID = env["OFFICE_ACCEPTANCE_HOST_ID"], !hostID.isEmpty,
+      let authority = env["OFFICE_ACCEPTANCE_AUTHORITY"], !authority.isEmpty else { throw XCTSkip("Exact diagnostic target not configured") }
+    let expected = "https://" + authority
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+    XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+    let codex = app.buttons["Codex"].firstMatch
+    if codex.waitForExistence(timeout: 5) { codex.tap() }
+    let field = app.textFields["office-discovery-subnet"]
+    for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+    XCTAssertTrue(field.waitForExistence(timeout: 15)); field.tap(); field.typeText(subnet)
+    let done = app.buttons["完成输入"]; if done.exists && done.isHittable { done.tap() }
+    let save = app.buttons["office-discovery-save"]; if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10)); save.tap()
+    let matches = app.buttons.matching(identifier: "codex-discovered-" + hostID)
+    var foundExact = false
+    for attempt in 0..<12 {
+      let count = matches.count
+      for index in 0..<count {
+        let element = matches.element(boundBy: index)
+        let value = element.value
+        print("OFFICE_AX_DIAGNOSTIC attempt=\(attempt) count=\(count) index=\(index) valueType=\(value.map { String(reflecting: type(of: $0)) } ?? "nil") value=\(String(reflecting: value)) label=\(String(reflecting: element.label)) expected=\(String(reflecting: expected))")
+        if let string = value as? String, string == expected { foundExact = true }
+      }
+      if foundExact { break }
+      sleep(1)
+    }
+    XCTAssertTrue(foundExact, "Exact authorized office endpoint must be visible in XCTest AX value")
+  }
+}
+
+// Physical preparation must use the installed acceptance bundle's ordinary store.
+final class OfficePhysicalPreparationTests: XCTestCase {
+  @MainActor func testPrepareOfficeNormalStore() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical device only")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard let bundle = env["OFFICE_DEVICE_BUNDLE_ID"], bundle == "com.easyai.agenthub.officediscovery.acceptance",
+      let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], !subnet.isEmpty else { throw XCTSkip("Exact acceptance bundle and subnet required") }
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: bundle)
+    app.launchArguments = []; app.launchEnvironment = [:]
+    func allowLocalNetworkIfPrompted() {
+      let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+      let title = system.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "本地网络", "local network")).firstMatch
+      if title.waitForExistence(timeout: 2) {
+        let allow = system.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "无线局域网与蜂窝网络", "无线局域网与蜂窝数据"])).firstMatch
+        XCTAssertTrue(allow.waitForExistence(timeout: 5)); allow.tap()
+      }
+    }
+    func openOffice() {
+      let onboarding = app.buttons["onboarding-add"]
+      XCTAssertTrue(onboarding.waitForExistence(timeout: 25), "Normal store must show empty unbound onboarding")
+      onboarding.tap(); allowLocalNetworkIfPrompted()
+      let codex = app.buttons["Codex"].firstMatch
+      if codex.waitForExistence(timeout: 3) { codex.tap() }
+      let field = app.textFields["office-discovery-subnet"]
+      for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+      XCTAssertTrue(field.waitForExistence(timeout: 15))
+    }
+    func stopScan() {
+      let stop = app.buttons.matching(NSPredicate(format: "label IN %@", ["停止查找", "Stop discovery"])).firstMatch
+      XCTAssertTrue(stop.waitForExistence(timeout: 10)); if !stop.isHittable { app.swipeUp() }; stop.tap()
+      let stopped = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "已停止 ", "Stopped ")).firstMatch
+      XCTAssertTrue(stopped.waitForExistence(timeout: 10)); XCTAssertTrue(stopped.label.contains("/"))
+    }
+    app.activate(); openOffice()
+    let field = app.textFields["office-discovery-subnet"]
+    field.tap(); field.typeText(subnet)
+    let done = app.buttons.matching(NSPredicate(format: "label IN %@", ["完成输入", "Done"])).firstMatch
+    if done.exists && done.isHittable { done.tap() }
+    let save = app.buttons["office-discovery-save"]
+    if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10)); save.tap(); allowLocalNetworkIfPrompted(); stopScan()
+    let saved = XCTAttachment(screenshot: app.screenshot()); saved.name = "physical-office-saved-stopped"; saved.lifetime = .keepAlways; add(saved)
+    app.terminate(); app.launch(); openOffice()
+    XCTAssertEqual(app.textFields["office-discovery-subnet"].value as? String, subnet)
+    XCTAssertTrue(app.buttons["office-discovery-remove"].exists)
+    stopScan()
+    let restored = XCTAttachment(screenshot: app.screenshot()); restored.name = "physical-office-normal-cold-restore"; restored.lifetime = .keepAlways; add(restored)
+    XCTAssertEqual(app.state, .runningForeground)
+    #endif
+  }
+}
+
+final class OfficePhysicalIdentityTests: XCTestCase {
+  @MainActor func testDesktopNameAndNormalEntry() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical device only")
+    #else
+    guard ProcessInfo.processInfo.environment["OFFICE_DEVICE_BUNDLE_ID"] == "com.easyai.agenthub.officediscovery.acceptance" else { throw XCTSkip("Exact acceptance bundle required") }
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = []; app.launchEnvironment = [:]
+    XCUIDevice.shared.press(.home)
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let icon = springboard.icons["办公室测试"]
+    for _ in 0..<8 where !icon.isHittable { springboard.swipeLeft() }
+    if !icon.isHittable {
+      XCUIDevice.shared.press(.home); springboard.swipeDown()
+      let search = springboard.searchFields.firstMatch
+      XCTAssertTrue(search.waitForExistence(timeout: 10), "SpringBoard search must be available")
+      search.tap(); search.typeText("办公室测试")
+    }
+    XCTAssertTrue(icon.waitForExistence(timeout: 10), "Exact acceptance desktop icon must exist")
+    XCTAssertEqual(springboard.icons.matching(identifier: "办公室测试").count, 1)
+    XCTAssertTrue(icon.isHittable, "Exact acceptance icon must be visible and tappable")
+    let desktop = XCTAttachment(screenshot: springboard.screenshot()); desktop.name = "physical-office-desktop-name"; desktop.lifetime = .keepAlways; add(desktop)
+    icon.tap()
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 25), "The exact acceptance bundle must open from the named icon")
+    XCTAssertTrue(app.buttons["onboarding-add"].waitForExistence(timeout: 20), "Normal store remains unbound")
+    let opened = XCTAttachment(screenshot: app.screenshot()); opened.name = "physical-office-normal-entry"; opened.lifetime = .keepAlways; add(opened)
+    #endif
+  }
+}
+
+final class OfficePhysicalCellularDiscoveryTests: XCTestCase {
+  @MainActor func testCellularOfficeReadOnlyAndAwaitHuman() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical device only")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard env["OFFICE_DEVICE_BUNDLE_ID"] == "com.easyai.agenthub.officediscovery.acceptance",
+      let subnet = env["OFFICE_ACCEPTANCE_SUBNET"], !subnet.isEmpty,
+      let hostID = env["OFFICE_ACCEPTANCE_HOST_ID"], !hostID.isEmpty,
+      let hostName = env["OFFICE_ACCEPTANCE_HOST_NAME"], !hostName.isEmpty,
+      let authority = env["OFFICE_ACCEPTANCE_AUTHORITY"], !authority.isEmpty else { throw XCTSkip("Exact acceptance target required") }
+    continueAfterFailure = false
+    let expectedEndpoint = "https://" + authority
+    let monitor = NWPathMonitor(); let semaphore = DispatchSemaphore(value: 0); let lock = NSLock()
+    var cellular = false, wifi = false, networkStatus = "unknown"
+    monitor.pathUpdateHandler = { path in
+      lock.lock(); cellular = path.usesInterfaceType(.cellular); wifi = path.usesInterfaceType(.wifi); networkStatus = String(describing: path.status); lock.unlock(); semaphore.signal()
+    }
+    monitor.start(queue: DispatchQueue(label: "office-cellular-readonly"))
+    let pathReceived = semaphore.wait(timeout: .now() + 10) == .success; monitor.cancel()
+    lock.lock(); let cell = cellular, wireless = wifi, status = networkStatus; lock.unlock()
+    print("OFFICE_CELL_NETWORK status=\(status) cellular=\(cell) wifi=\(wireless)")
+    XCTAssertTrue(pathReceived && cell && !wireless, "Require actual cellular path without Wi-Fi before scanning")
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = []; app.launchEnvironment = [:]; app.terminate(); app.launch()
+    let onboarding = app.buttons["onboarding-add"]
+    if onboarding.waitForExistence(timeout: 20) { onboarding.tap() }
+    else {
+      XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 10)); app.buttons["client-switch"].tap()
+      XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 10)); app.buttons["add-client"].tap()
+    }
+    let codex = app.buttons["Codex"].firstMatch; if codex.waitForExistence(timeout: 3) { codex.tap() }
+    let field = app.textFields["office-discovery-subnet"]
+    for _ in 0..<6 where !field.isHittable { app.swipeUp() }
+    XCTAssertTrue(field.waitForExistence(timeout: 15)); XCTAssertEqual(field.value as? String, subnet)
+    let save = app.buttons["office-discovery-save"]; if !save.isHittable { app.swipeUp() }
+    XCTAssertTrue(save.waitForExistence(timeout: 10))
+    let start = ProcessInfo.processInfo.systemUptime; let startUTC = ISO8601DateFormatter().string(from: Date())
+    print("OFFICE_CELL_SCAN_BEGIN_UTC \(startUTC)"); save.tap()
+    let target = app.buttons["codex-discovered-" + hostID]
+    let finished = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "本轮查找已结束", "This discovery round has finished")).firstMatch
+    let progress = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "/508")).firstMatch
+    XCTAssertTrue(progress.waitForExistence(timeout: 15), "Expected /24 total of 508 reads")
+    var firstRecorded = false, sourceRecorded = false, maxProgress = 0
+    while ProcessInfo.processInfo.systemUptime - start < 700 {
+      if progress.exists {
+        let text = progress.label
+        if let match = text.range(of: #"[0-9]+/508"#, options: .regularExpression), let count = Int(text[match].split(separator: "/")[0]) { maxProgress = max(maxProgress, count) }
+      }
+      if !firstRecorded {
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "codex-discovered-"))
+        for i in 0..<rows.count {
+          let row = rows.element(boundBy: i)
+          guard let value = row.value as? String, let url = URLComponents(string: value), let host = url.host, host.hasPrefix("192.168.8.") else { continue }
+          print("OFFICE_CELL_FIRST_MERGED_PRIVATE_UTC \(ISO8601DateFormatter().string(from: Date())) seconds=\(ProcessInfo.processInfo.systemUptime - start) endpoint=\(value) label=\(row.label)")
+          firstRecorded = true; break
+        }
+      }
+      if !sourceRecorded && target.exists && (target.value as? String) == expectedEndpoint {
+        XCTAssertTrue(target.label.contains(hostName))
+        print("OFFICE_CELL_SOURCE_UTC \(ISO8601DateFormatter().string(from: Date())) seconds=\(ProcessInfo.processInfo.systemUptime - start) endpoint=\(expectedEndpoint)")
+        sourceRecorded = true
+      }
+      if finished.exists {
+        print("OFFICE_CELL_SCAN_COMPLETE_UTC \(ISO8601DateFormatter().string(from: Date())) seconds=\(ProcessInfo.processInfo.systemUptime - start) maxVisible=\(maxProgress) total=508")
+        break
+      }
+      sleep(2)
+    }
+    XCTAssertTrue(finished.exists, "Full scan completion message required")
+    XCTAssertTrue(sourceRecorded && target.exists && (target.value as? String) == expectedEndpoint, "Exact authorized source office route required")
+    let complete = XCTAttachment(screenshot: app.screenshot()); complete.name = "physical-cellular-office-complete"; complete.lifetime = .keepAlways; add(complete)
+    for _ in 0..<8 where !target.isHittable { app.swipeUp() }
+    XCTAssertTrue(target.exists && target.isHittable && (target.value as? String) == expectedEndpoint && target.label.contains(hostName))
+    target.tap()
+    let keyField = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(keyField.waitForExistence(timeout: 30), "Expected source Host Key prompt")
+    XCTAssertTrue(app.staticTexts[hostName].exists); XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    let prompt = XCTAttachment(screenshot: app.screenshot()); prompt.name = "physical-cellular-office-empty-key"; prompt.lifetime = .keepAlways; add(prompt)
+    print("OFFICE_CELL_HUMAN_KEY_PROMPT_UTC \(ISO8601DateFormatter().string(from: Date()))")
+    let holdStart = ProcessInfo.processInfo.systemUptime
+    while ProcessInfo.processInfo.systemUptime - holdStart < 600 {
+      if !keyField.exists && app.buttons["open-sidebar"].exists {
+        print("OFFICE_CELL_HUMAN_AUTH_UI_RETURNED_UTC \(ISO8601DateFormatter().string(from: Date()))")
+        return
+      }
+      sleep(2)
+    }
+    XCTFail("Human authorization not observed within bounded hold; no Key was read or entered by test")
+    #endif
+  }
+}
+
+final class OfficePhysicalColdRecoveryTests: XCTestCase {
+  @MainActor func testSameNormalStoreColdRecoveryReadOnly() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical device only")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard env["OFFICE_DEVICE_BUNDLE_ID"] == "com.easyai.agenthub.officediscovery.acceptance",
+      let hostName = env["OFFICE_ACCEPTANCE_HOST_NAME"], !hostName.isEmpty else { throw XCTSkip("Exact acceptance target required") }
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = []; app.launchEnvironment = [:]
+    app.terminate(); let started = ProcessInfo.processInfo.systemUptime; app.launch()
+    let client = app.buttons["client-switch"]
+    XCTAssertTrue(client.waitForExistence(timeout: 30)); XCTAssertFalse(app.secureTextFields["codex-host-key"].exists)
+    let connected = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      let value = client.value as? String ?? ""
+      return client.label.contains(hostName) && (value.contains("实时连接") || value.contains("已连接") || value.contains("新聊天 · 首条发送时创建") || value.contains("新建暂不可用 · 草稿已保留") || value.localizedCaseInsensitiveContains("connected"))
+    }, object: client)
+    XCTAssertEqual(XCTWaiter.wait(for: [connected], timeout: 120), .completed, "Same source must restore online without a Key prompt")
+    XCTAssertFalse(app.secureTextFields["codex-host-key"].exists)
+    print("OFFICE_COLD_SOURCE_ONLINE_UTC \(ISO8601DateFormatter().string(from: Date())) seconds=\(ProcessInfo.processInfo.systemUptime - started)")
+    let sidebar = app.buttons["open-sidebar"]; XCTAssertTrue(sidebar.waitForExistence(timeout: 20)); sidebar.tap()
+    let list = app.scrollViews["sidebar-list"]; XCTAssertTrue(list.waitForExistence(timeout: 15))
+    let toggle = app.buttons["sidebar-projects-toggle"]
+    if toggle.exists, let value = toggle.value as? String, value == "已折叠" || value.localizedCaseInsensitiveContains("collapsed") { toggle.tap() }
+    let projects = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "project-"))
+    for _ in 0..<8 where projects.count == 0 { list.swipeUp() }
+    XCTAssertGreaterThan(projects.count, 0, "Source project list must be available")
+    let project = projects.firstMatch; for _ in 0..<8 where !project.isHittable { list.swipeUp() }
+    XCTAssertTrue(project.isHittable); let projectID = project.identifier
+    if let value = project.value as? String, value == "已折叠" || value.localizedCaseInsensitiveContains("collapsed") { project.tap() }
+    let threads = app.buttons.matching(NSPredicate(format: "identifier MATCHES %@", "thread-[A-Za-z0-9_-]+"))
+    for _ in 0..<10 where threads.count == 0 { list.swipeUp() }
+    XCTAssertGreaterThan(threads.count, 0, "A source project chat must be available")
+    let thread = threads.firstMatch; for _ in 0..<8 where !thread.isHittable { list.swipeUp() }
+    XCTAssertTrue(thread.isHittable); let threadID = thread.identifier; thread.tap()
+    XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch.waitForExistence(timeout: 30))
+    XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "message-list").firstMatch.waitForExistence(timeout: 30))
+    XCTAssertFalse(app.secureTextFields["codex-host-key"].exists)
+    print("OFFICE_COLD_SOURCE_READONLY_OPENED project=\(projectID) chat=\(threadID)")
+    let proof = XCTAttachment(screenshot: app.screenshot()); proof.name = "physical-cellular-cold-readonly-chat"; proof.lifetime = .keepAlways; add(proof)
+    #endif
+  }
+}

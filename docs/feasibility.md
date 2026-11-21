@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-21 F06/F08：iOS 新增显式办公室私网范围发现，完整扫描 CIDR 的可用地址，不使用 VPN peer 的32条裁剪；仅固定端口的公开描述读取，原目标/证书/公钥与授权保持。Android 对应入口待实现；已完成独立15的真实蜂窝子网发现/首次授权与同记录冷恢复，原用户手机升级保留与新主线组合仍独立验收，未改 WAN/ACL。设计见 [办公室子网发现](design/office-subnet-discovery.md)，当前状态只见唯一台账 `F06-office-subnet-discovery`。
+
 2026-11-21 视频渐进播放已提供 Host 固定快照与 iOS 公共播放器。首次快照仍须本地全片 I/O；限定物理播放器 17 次原生执行通过，范围、指纹、历史失败与性能边界见 [专项记录](acceptance/mobile-video-streaming-20261121.md)。其他 Provider、Android、蜂窝/VPN 与全量性能门槛独立验收。
 
 > 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。

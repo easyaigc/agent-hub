@@ -3061,7 +3061,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: name)
   }
   func addCodexDiscovered(_ host: CodexHostDiscovery.Host, hostKey: String = "") async throws {
-    let expected = saved.clients.first(where: { $0.id == host.id })?.codexDirect
+    let expected = saved.clients.first(where: { $0.id == host.id })?.codexDirect ?? host.observedConnection
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connectDiscovered(host.endpoint, hostId: host.id, name: "", hostKey: hostKey, expected: expected)
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: "")
   }
@@ -3072,11 +3072,12 @@ private var userRequestedWorkspaceGeneration: UUID?
     var incoming = incoming
     if let old = saved.clients.first(where: { $0.id == incoming.id }), var direct = incoming.codexDirect {
       guard old.codexDirect == nil || old.codexDirect?.fingerprint == direct.fingerprint else { throw HostServiceError.wrongHost }
-      let legacy = old.codexDirect?.candidates.contains(where: { $0.endpoint == old.endpoint }) == true ? nil : old.endpoint
+      let legacy = old.codexDirect?.candidates.contains(where: { $0.endpoint == old.endpoint }) == true || old.codexDirect?.observedRoute == old.endpoint ? nil : old.endpoint
       direct.systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: old.codexDirect?.systemEndpoints ?? [], supplied: direct.systemEndpoints ?? [], legacy: legacy)
       let oldCandidates = old.codexDirect?.candidates ?? []
       direct.candidates += oldCandidates.filter { old in !direct.candidates.contains(where: { $0.endpoint == old.endpoint }) }
       direct.candidates = Array(direct.candidates.prefix(32))
+      direct.observedEndpoint = direct.observedEndpoint ?? old.codexDirect?.observedEndpoint
       incoming.codexDirect = direct
     }
     try CredentialVault.set(offer.token!, id: incoming.id)
@@ -3093,20 +3094,22 @@ private var userRequestedWorkspaceGeneration: UUID?
     selectVerifiedClient(client.id); persist()
   }
 
-  func updateCodexDiscovery(_ previous: Client, host: CodexHostDescriptor, reachableEndpoint: String) -> Bool {
+  func updateCodexDiscovery(_ previous: Client, host: CodexHostDescriptor, reachableEndpoint: String, verifiedObservedEndpoint: String? = nil) -> Bool {
     guard let index = saved.clients.firstIndex(where: { $0.id == previous.id }), saved.clients[index].codexDirect == previous.codexDirect,
       saved.clients[index].endpoint == previous.endpoint,
       host.target == (previous.codexDirect?.target ?? saved.workspaces[previous.id]?.readTarget), host.target.hostId == previous.id,
       previous.codexDirect == nil || previous.codexDirect?.fingerprint == host.fingerprint.lowercased(),
       let hostCandidates = try? host.candidates() else { return false }
-    let isPinnedRoute = previous.codexDirect?.candidates.contains(where: { $0.endpoint == reachableEndpoint }) == true || reachableEndpoint.lowercased().contains(".local")
+    guard verifiedObservedEndpoint == nil || (verifiedObservedEndpoint == reachableEndpoint && previous.codexDirect != nil && (try? EasyWorkPairing.localEndpoint(reachableEndpoint)) != nil) else { return false }
+    let isObservedRoute = verifiedObservedEndpoint != nil || previous.codexDirect?.observedRoute == reachableEndpoint
+    let isPinnedRoute = !isObservedRoute && (previous.codexDirect?.candidates.contains(where: { $0.endpoint == reachableEndpoint }) == true || reachableEndpoint.lowercased().contains(".local"))
     let reachable: [AgentConnectionCandidate] = isPinnedRoute ? ((try? EasyWorkPairing.directCandidates([reachableEndpoint], fingerprint: host.fingerprint)) ?? []).map { value in var item = value; item.transportId = "codex-https"; return item } : []
     let candidates = reachable + hostCandidates.filter { item in !reachable.contains(where: { $0.endpoint == item.endpoint }) }
     let old = previous.codexDirect?.candidates ?? []
     let combined = candidates + old.filter { item in !candidates.contains(where: { $0.endpoint == item.endpoint }) }
-    let legacy = previous.codexDirect?.candidates.contains(where: { $0.endpoint == previous.endpoint }) == true ? nil : previous.endpoint
+    let legacy = previous.codexDirect?.candidates.contains(where: { $0.endpoint == previous.endpoint }) == true || previous.codexDirect?.observedRoute == previous.endpoint ? nil : previous.endpoint
     let systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: previous.codexDirect?.systemEndpoints ?? [], supplied: host.systemEndpoints ?? [], legacy: legacy)
-    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased(), systemEndpoints: systemEndpoints)
+    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased(), systemEndpoints: systemEndpoints, observedEndpoint: verifiedObservedEndpoint ?? previous.codexDirect?.observedEndpoint)
     let priorEndpoint = saved.clients[index].endpoint
     let changed = saved.clients[index].codexDirect != connection || saved.clients[index].endpoint != reachableEndpoint
     saved.clients[index].codexDirect = connection

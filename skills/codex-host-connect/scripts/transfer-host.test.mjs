@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import https from 'node:https';
 import {
   mkdtemp,
   realpath,
@@ -12,7 +13,14 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { randomUUID, randomBytes, createHash } from 'node:crypto';
+import {
+  randomUUID,
+  randomBytes,
+  createHash,
+  generateKeyPairSync,
+  sign,
+  X509Certificate,
+} from 'node:crypto';
 import { FileTransfers } from '../../../apps/host-agent/dist/file-transfers.js';
 import {
   protectWindowsStateDirectory,
@@ -114,6 +122,7 @@ async function fixture(t, byteCount = 1024 * 80 + 3) {
     target,
     registry,
     store,
+    transportForTLS: transport,
     calls,
     outputs,
     setFault: (value) => {
@@ -286,4 +295,162 @@ test('HTTP registry, invalid filenames, public credentials and source symlinks a
     await assert.rejects(f.run('send', ['--file', f.file]), { code: 'UNSAFE_PRIVATE_PERMISSIONS' });
   }
   assert.equal(f.writes().length, 0);
+});
+
+// Ephemeral, synthetic X.509 fixtures built with Node crypto; no stored private keys,
+// openssl executable or external server is needed. No SAN is deliberately present.
+const der = (tag, ...parts) => {
+  const body = Buffer.concat(parts);
+  const size = body.length;
+  const length =
+    size < 128
+      ? Buffer.from([size])
+      : Buffer.from(size.toString(16).padStart(size < 256 ? 2 : 4, '0'), 'hex');
+  return Buffer.concat([
+    Buffer.from([tag]),
+    ...(size < 128 ? [length] : [Buffer.from([0x80 | length.length]), length]),
+    body,
+  ]);
+};
+const sequence = (...parts) => der(0x30, ...parts);
+function certificateFixture({ ca = false, issuer, badSignature = false, from, to } = {}) {
+  const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const name = sequence(
+    der(
+      0x31,
+      sequence(
+        der(0x06, Buffer.from('550403', 'hex')),
+        der(0x0c, Buffer.from('contact-host-fixture.invalid')),
+      ),
+    ),
+  );
+  const algorithm = sequence(der(0x06, Buffer.from('2a8648ce3d040302', 'hex')));
+  const timestamp = (date) =>
+    der(
+      0x18,
+      Buffer.from(
+        date
+          .toISOString()
+          .replace(/[-:T]/g, '')
+          .replace(/\.\d{3}/, ''),
+      ),
+    );
+  const now = Date.now();
+  const serial = randomBytes(16);
+  serial[0] &= 0x7f;
+  serial[0] |= 1;
+  const body = sequence(
+    der(0xa0, der(0x02, Buffer.from([2]))),
+    der(0x02, serial),
+    algorithm,
+    issuer?.name ?? name,
+    sequence(
+      timestamp(from ?? new Date(now - 60_000)),
+      timestamp(to ?? new Date(now + 86_400_000)),
+    ),
+    name,
+    publicKey.export({ type: 'spki', format: 'der' }),
+    der(
+      0xa3,
+      sequence(
+        sequence(
+          der(0x06, Buffer.from('551d13', 'hex')),
+          der(0x01, Buffer.from([0xff])),
+          der(0x04, ca ? sequence(der(0x01, Buffer.from([0xff]))) : sequence()),
+        ),
+      ),
+    ),
+  );
+  const signingKey = badSignature
+    ? generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey
+    : (issuer?.privateKey ?? privateKey);
+  const raw = sequence(
+    body,
+    algorithm,
+    der(0x03, Buffer.from([0]), sign('sha256', body, signingKey)),
+  );
+  const pem =
+    '-----BEGIN CERTIFICATE-----\n' +
+    raw
+      .toString('base64')
+      .match(/.{1,64}/g)
+      .join('\n') +
+    '\n-----END CERTIFICATE-----\n';
+  return { pem, raw, privateKey, name, sha256: createHash('sha256').update(raw).digest('hex') };
+}
+
+async function realTransferTLSFixture(t, serverCertificate, trustedCertificate) {
+  const f = await fixture(t, 256);
+  const certificatePath = join(f.directory, 'public-leaf.pem');
+  await writeFile(certificatePath, trustedCertificate.pem, { mode: 0o644 });
+  const requests = [];
+  const server = https.createServer(
+    {
+      key: serverCertificate.privateKey.export({ type: 'pkcs8', format: 'pem' }),
+      cert: serverCertificate.pem,
+    },
+    async (request, response) => {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      const bytes = Buffer.concat(chunks);
+      const binary = request.url.startsWith('/v1/file-transfers/content');
+      const body = bytes.length ? (binary ? bytes : JSON.parse(bytes.toString())) : undefined;
+      requests.push({ path: request.url, authenticated: !!request.headers.authorization });
+      try {
+        const result = await f.transportForTLS(request.url, body, !!request.headers.authorization);
+        response.writeHead(result.http, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(result.value));
+      } catch {
+        request.socket.destroy();
+      }
+    },
+  );
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  });
+  f.registry.hosts[0].endpoint = 'https://127.0.0.1:' + server.address().port;
+  f.registry.hosts[0].tlsPin = { sha256: trustedCertificate.sha256, certificatePath };
+  const save = () =>
+    writeFile(join(f.directory, 'hosts.json'), JSON.stringify(f.registry), { mode: 0o600 });
+  await save();
+  const run = () =>
+    main(['send', '--host-id', hostId, '--operation-id', f.id, '--file', f.file], {
+      directory: f.directory,
+      output: (value) => f.outputs.push(JSON.parse(value)),
+    });
+  return { ...f, runTLS: run, save, requests };
+}
+
+test('transfer rejects an invalid fixed-leaf pin before network or transfer intent', async (t) => {
+  const certificate = certificateFixture();
+  const f = await realTransferTLSFixture(t, certificate, certificate);
+  f.registry.hosts[0].tlsPin.sha256 = '0'.repeat(64);
+  await f.save();
+  await assert.rejects(f.runTLS(), { code: 'TLS_PIN_CERTIFICATE_MISMATCH' });
+  assert.equal(f.requests.length, 0);
+  assert.deepEqual(await readdir(join(f.directory, 'file-transfers')).catch(() => []), []);
+});
+
+test('transfer accepts a no-SAN fixed leaf and delivers exact bytes over real HTTPS', async (t) => {
+  const certificate = certificateFixture();
+  assert.equal(new X509Certificate(certificate.pem).subjectAltName, undefined);
+  const f = await realTransferTLSFixture(t, certificate, certificate);
+  assert.equal(await f.runTLS(), 0);
+  assert.deepEqual(await readFile(f.outputs.at(-1).receipt.destinationPath), f.bytes);
+  assert(
+    f.requests.some((r) => r.path.startsWith('/v1/file-transfers/content') && r.authenticated),
+  );
+});
+
+test('transfer rejects a different leaf signed by the pinned CA before HTTP', async (t) => {
+  const pinned = certificateFixture({ ca: true });
+  const other = certificateFixture({ issuer: pinned });
+  const f = await realTransferTLSFixture(t, other, pinned);
+  await assert.rejects(f.runTLS(), { code: 'NETWORK_OUTCOME_UNKNOWN' });
+  assert.equal(f.requests.length, 0);
 });

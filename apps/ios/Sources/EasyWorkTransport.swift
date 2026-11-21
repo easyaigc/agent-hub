@@ -182,6 +182,9 @@ final class DiscoveredHostTrust: NSObject, URLSessionTaskDelegate, @unchecked Se
   var fingerprint: String? { lock.withLock { certificate } }
   init(endpoint: URL) { host = Self.normalizedHost(endpoint.host ?? "") }
   private static func normalizedHost(_ host: String) -> String { host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".[]")) }
+  func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    urlSession(session, didReceive: challenge, completionHandler: completionHandler)
+  }
   func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust, Self.normalizedHost(challenge.protectionSpace.host) == host, let trust = challenge.protectionSpace.serverTrust, let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate], let cert = chain.first else { completionHandler(.cancelAuthenticationChallenge, nil); return }
     let pin = HostService.hash(SecCertificateCopyData(cert) as Data)

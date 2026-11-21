@@ -336,6 +336,15 @@ interface Receipt {
     checkpoint: CreationInputCheckpoint;
   };
 }
+/** Transport loss cannot revoke an acceptance already proved by the original owner. */
+function restoreReceiptAcceptance(receipt: Receipt): void {
+  if (!['submitting', 'submitted', 'uncertain'].includes(receipt.state)) return;
+  if (receipt.acceptedTurnId) {
+    receipt.turnId = receipt.acceptedTurnId;
+    receipt.state = 'submitted';
+    receipt.error = null;
+  } else receipt.state = 'uncertain';
+}
 interface FirstInputAttempt {
   boundary: CreationInputBoundary;
   checkpoint: CreationInputCheckpoint;
@@ -473,6 +482,8 @@ export class RuntimeSession {
   private restoring = new Map<string, Promise<ReturnType<RuntimeSession['history']>>>();
   private desktopReceiptHistoryReads = new Map<string, Promise<void>>();
   private desktopReceiptHistoryRetryAfter = new Map<string, number>();
+  private acceptedReceiptHistoryReads = new Map<string, Promise<void>>();
+  private acceptedReceiptHistoryRetryAfter = new Map<string, number>();
   private desktopHistoryReads = new Map<string, number>();
   private desktopHistoryPageReads = new Map<string, number>();
   private desktopHistoryTips = new Map<string, string>();
@@ -570,7 +581,7 @@ export class RuntimeSession {
       this.state.desktopOpenOperations = [...this.openOperations.values()];
     }
     for (const receipt of this.state.receipts) {
-      if (['submitting', 'submitted'].includes(receipt.state)) receipt.state = 'uncertain';
+      restoreReceiptAcceptance(receipt);
       if (receipt.fingerprintVersion === 2) {
         receipt.target = replyTarget(receipt.target);
         receipt.reply = Object.freeze({
@@ -739,8 +750,7 @@ export class RuntimeSession {
       this.sharedLiveItems.clear();
       this.startedTurns.clear();
       this.notificationTasks.clear();
-      for (const receipt of this.state.receipts)
-        if (['submitting', 'submitted'].includes(receipt.state)) receipt.state = 'uncertain';
+      for (const receipt of this.state.receipts) restoreReceiptAcceptance(receipt);
       for (const thread of this.state.threads) {
         thread.state = 'unknown';
         thread.turnId = null;
@@ -2115,6 +2125,56 @@ export class RuntimeSession {
       this.restoring.delete(threadId);
     }
   }
+  private async recoverAcceptedReceiptHistory(
+    thread: Thread,
+    runtime: DesktopRuntime,
+    target?: ReplyTarget,
+  ): Promise<void> {
+    if (this.closed || this.runtime !== runtime) return;
+    const pending = this.acceptedReceiptHistoryReads.get(thread.id);
+    if (pending) return pending;
+    if ((this.acceptedReceiptHistoryRetryAfter.get(thread.id) ?? 0) > Date.now()) return;
+    const turnIds = [
+      ...new Set(
+        this.state.receipts
+          .filter(
+            (receipt) =>
+              receipt.threadId === thread.id &&
+              receipt.acceptedTurnId &&
+              ['submitted', 'submitting', 'uncertain'].includes(receipt.state),
+          )
+          .map((receipt) => receipt.acceptedTurnId!),
+      ),
+    ];
+    if (!turnIds.length) return;
+    this.acceptedReceiptHistoryRetryAfter.set(thread.id, Date.now() + 30_000);
+    while (this.acceptedReceiptHistoryRetryAfter.size > 2048)
+      this.acceptedReceiptHistoryRetryAfter.delete(
+        this.acceptedReceiptHistoryRetryAfter.keys().next().value!,
+      );
+    const work = (async () => {
+      try {
+        const evidence = await this.readWithReplyFence(target, () =>
+          runtime.reader.receiptTurnEvidence(thread.id, turnIds),
+        );
+        if (this.closed || this.runtime !== runtime) return;
+        if (this.reconcileReadReceiptEvidence(thread, evidence)) {
+          this.save();
+          this.emit(thread.id, 'receipt-reconciled');
+        }
+      } catch {
+        // Status-read failure cannot revoke acceptance, grant control or replay input.
+      }
+    })();
+    this.acceptedReceiptHistoryReads.set(thread.id, work);
+    try {
+      await work;
+    } finally {
+      if (this.acceptedReceiptHistoryReads.get(thread.id) === work)
+        this.acceptedReceiptHistoryReads.delete(thread.id);
+    }
+  }
+
   private async recoverDesktopReceiptHistory(
     thread: Thread,
     runtime: DesktopRuntime,
@@ -2225,6 +2285,9 @@ export class RuntimeSession {
       }
       if (state && !cursor) {
         await this.readWithReplyFence(target, () => this.desktopSnapshot(thread, state));
+        // Do not hold the current mobile window behind old tool bodies. Durable
+        // acceptances only need small, read-only turn summaries in the background.
+        void this.recoverAcceptedReceiptHistory(thread, runtime, target);
         // Reading the latest mobile window must not expand the owner's entire
         // history just to reconcile an old unknown submission. Keep it unknown.
         if (!windowed) await this.recoverDesktopReceiptHistory(thread, runtime, target);
@@ -2252,6 +2315,7 @@ export class RuntimeSession {
               ? latest.status
               : undefined;
           this.reconcileReadReceiptEvidence(thread, page.turns ?? []);
+          void this.recoverAcceptedReceiptHistory(thread, runtime, target);
           if (
             !page.turns?.length &&
             this.state.receipts.some((v) => v.threadId === threadId && v.state === 'uncertain') &&
@@ -4670,14 +4734,17 @@ export class RuntimeSession {
       this.save();
     } catch (error) {
       if (this.closed) throw error;
-      receipt.state = wrote ? 'uncertain' : 'failed';
-      if (!wrote) receipt.submissionState = 'not-submitted';
       receipt.nativeQueue.phase = 'uncertain';
-      receipt.error = wrote
-        ? '原生排队结果待核对，原消息不会重复投递'
-        : error instanceof Error
-          ? error.message
-          : '原生排队未提交';
+      if (receipt.acceptedTurnId) restoreReceiptAcceptance(receipt);
+      else {
+        receipt.state = wrote ? 'uncertain' : 'failed';
+        if (!wrote) receipt.submissionState = 'not-submitted';
+        receipt.error = wrote
+          ? '原生排队结果待核对，原消息不会重复投递'
+          : error instanceof Error
+            ? error.message
+            : '原生排队未提交';
+      }
       this.save();
     } finally {
       this.nativeQueueRevisions.set(thread.id, (this.nativeQueueRevisions.get(thread.id) ?? 0) + 1);
@@ -5125,7 +5192,11 @@ export class RuntimeSession {
         thread.permissionMode = desktopPermissionMode(this.runtime.ipc.state(thread.id) ?? {});
       } else if (mode !== 'steer') thread.permissionMode = currentPermissionMode(permissions);
       if (reply.speed) thread.speed = reply.speed;
-      receipt.turnId = string(object(result.turn).id) || string(result.turnId) || thread.turnId;
+      receipt.turnId =
+        string(object(result.turn).id) ||
+        string(result.turnId) ||
+        receipt.acceptedTurnId ||
+        thread.turnId;
       if (!['completed', 'interrupted', 'failed'].includes(receipt.state))
         receipt.state = 'submitted';
       if (
@@ -5141,13 +5212,20 @@ export class RuntimeSession {
     } catch (error) {
       if (this.closed) throw error; // The close snapshot is fenced; no late callback may save or execute.
       if (creation) creation.failure = error;
-      receipt.state = wireAttempted && !(error instanceof CodexRejection) ? 'uncertain' : 'failed';
-      if (!wireAttempted) receipt.submissionState = 'not-submitted';
-      receipt.error = creation
-        ? '首条输入阶段尚未确认，原操作已保留'
-        : error instanceof Error
-          ? error.message
-          : '发送失败';
+      if (receipt.acceptedTurnId) {
+        // An owner snapshot can confirm the input before the request ACK is
+        // lost. A late transport rejection must not overwrite that evidence.
+        restoreReceiptAcceptance(receipt);
+      } else {
+        receipt.state =
+          wireAttempted && !(error instanceof CodexRejection) ? 'uncertain' : 'failed';
+        if (!wireAttempted) receipt.submissionState = 'not-submitted';
+        receipt.error = creation
+          ? '首条输入阶段尚未确认，原操作已保留'
+          : error instanceof Error
+            ? error.message
+            : '发送失败';
+      }
       if (
         creation &&
         !creation.wrote &&
@@ -5836,24 +5914,41 @@ export class RuntimeSession {
   private reconcileReadReceiptEvidence(
     thread: Thread,
     turns: import('./history-reader.js').ReadTurnEvidence[],
-  ): void {
+  ): boolean {
+    let changed = false;
     for (const receipt of this.state.receipts) {
-      if (receipt.threadId !== thread.id || receipt.state !== 'uncertain') continue;
-      const matching = turns.filter(
-        (turn) =>
-          receipt.reply.attachmentIds.length === 0 &&
-          turn.acceptedMessageIds.includes(receipt.clientMessageId) &&
-          turn.acceptedMessageHashes?.[receipt.clientMessageId] ===
-            createHash('sha256').update(receipt.reply.text).digest('hex'),
-      );
+      if (
+        receipt.threadId !== thread.id ||
+        !(
+          receipt.state === 'uncertain' ||
+          (receipt.acceptedTurnId && ['submitted', 'submitting'].includes(receipt.state))
+        )
+      )
+        continue;
+      const matching = receipt.acceptedTurnId
+        ? turns.filter((turn) => turn.id === receipt.acceptedTurnId)
+        : turns.filter(
+            (turn) =>
+              receipt.reply.attachmentIds.length === 0 &&
+              turn.acceptedMessageIds.includes(receipt.clientMessageId) &&
+              turn.acceptedMessageHashes?.[receipt.clientMessageId] ===
+                createHash('sha256').update(receipt.reply.text).digest('hex'),
+          );
       const accepted = matching.length === 1 ? matching[0] : undefined;
       if (
         accepted &&
         ['inProgress', 'completed', 'failed', 'interrupted'].includes(accepted.status)
       ) {
+        const state = accepted.status === 'inProgress' ? 'submitted' : accepted.status;
+        changed ||=
+          receipt.acceptedTurnId !== accepted.id ||
+          receipt.turnId !== accepted.id ||
+          receipt.state !== state ||
+          (state !== 'failed' && receipt.error !== null);
         receipt.acceptedTurnId = accepted.id;
         receipt.turnId = accepted.id;
-        receipt.state = accepted.status === 'inProgress' ? 'submitted' : accepted.status;
+        receipt.state = state;
+        if (state !== 'failed') receipt.error = null;
         // Persisted acceptance settles this exact message only. Runtime control
         // still requires the original owner's complete current snapshot.
         this.historicalReceiptContexts.delete(receipt.clientMessageId);
@@ -5867,6 +5962,7 @@ export class RuntimeSession {
       const later = index >= 0 ? turns.slice(index + 1).at(-1) : undefined;
       if (later) this.historicalReceiptContexts.set(receipt.clientMessageId, later.id);
     }
+    return changed;
   }
 
   private desktopControls(thread: Thread, state: Record<string, unknown>): void {

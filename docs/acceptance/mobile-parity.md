@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-11-20 F17／F18／F28／F47（UI04／UI05，S03／S11）接收回执恢复：当前源码与独立编译运行件逐字节核对，Node 24.22.3 新回归 7/7、历史读取 smoke、Adapter build／typecheck、格式和 lint 通过。旧版同一断线断言使 8/8 条已接收消息退为未知，新版保留接收事实。真实 Electron／原模型和独占 iOS 26.0 模拟器完成一条普通消息加七条追加、隔离 Host 断线及进程重启、后续新轮和省略旧轮的窗口故障注入；legacy 真实只读摘要一次核对旧八项为 completed。原生 XCTest 1/1、零失败／跳过，草稿／重开保留、未知提示的合成投影对照通过。独立原 owner 核对本组两轮九个原 ID 各一次、无重放；夹具修正前两组已完成输入与失败证据另存，不当本组通过。首次输入 13 项和持久化五组辅助结果按原候选范围匹配保留。原开发现场的 pnpm check 停在并行 status.json 格式检查，完整检查不标通过；主线隔离组合检查按交付记录另记。无实体 5G、Windows／Android 原生或正式部署通过声明；A6 暂停保持。版本化用例为 scripts/accepted-receipts-recovery.test.mjs、scripts/accepted-receipts-desktop-ios-acceptance.mjs 及其 fixtures。
+
 2026-11-20 F17／F19／F32（UI05／UI12，S04／S11／S18）：图片语法指向 MP4 时手机丢失链接已由真实来源与独立 Swift Foundation 辅助诊断复现；媒体卡片及 MIME 修复已完成，隔离工作树 pnpm check、iOS 构建、通用与原样片两个原生模拟器测试均通过；视频实际进度 3→8 秒，初始解析／下载为零，正式部署另记。聊天读取不预下载媒体、视频完整下载回退与未实现流式分别见[专项验收](message-media-20261120.md)。Android 卡片／内联图与 EasyWork 原始来源均未新增通过，A6 暂停保持。
 
 2026-11-20 F09／F72：共同操作向量和生产 Swift requestData／桌面 RemoteCommandService 的故障回归作为辅助证据。原生模拟器、真实 Electron、原输入无重复与正式合并分别登记，未执行不得记通过；Android 与暂停项不新增通过。当前状态只回填[唯一计划](../plans/ios-easywork-alignment-20261112/README.md)。

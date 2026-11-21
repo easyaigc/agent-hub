@@ -22442,6 +22442,21 @@
         "scripts/fixtures/message-media-native.swift": "383c4ea818995e66d91232ca2d5df6608ee765468d525da3836bd5975ecfc5a8",
         "scripts/message-links-smoke.mjs": "775368118c8b5070a2218e186056e9a2da8f9c445519e9b15e7e7245569ce0d4"
       }
+    },
+    {
+      "id": "codex-accepted-receipts-recovery-20261120",
+      "baseCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "features": ["F17", "F18", "F28", "F47"],
+      "summary": "Preserve original-owner acceptance across disconnect, restart and late ACK failure; reconcile old accepted turns through bounded status-only reads independent of legacy/paginated storage. Null or omitted summary items never infer unknown-message acceptance. Current candidate passed seven regressions and real Electron/native simulator XCTest 1/1, eight receipts completed and original input IDs not replayed; formal deployment remains separate.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "d1c5f528c5b61861ece9248bb8a2040dfa6c2b8d8a166fcd7db5ec7242e35c20",
+        "packages/codex-adapter/src/history-reader.ts": "dc8878aed36f73ad2e0e72efbba4d83181f197853ca4c7674dc48045ff0a3d26",
+        "scripts/accepted-receipts-recovery.test.mjs": "65c8e69d9b1aca203b06e1227133d21d082c660d18972456856e12e620811c35",
+        "scripts/accepted-receipts-desktop-ios-acceptance.mjs": "c60fc565aa0a22dec4449cf7af29777f0f200c0c2b35fa5677b0eacc29b64881",
+        "scripts/fixtures/accepted-receipts-host.mjs": "2c569083d44be5b4c58879c178aa4a14a6c73eb2a6b669e690caaed0cc91c67a",
+        "scripts/fixtures/accepted-receipts-native.swift": "dd397dabdde804e3080957165a9af8b49a53007bbdfe355895e2ee2372ab1f8f",
+        "scripts/fixtures/accepted-receipts-projection.mjs": "8690ecb8bb931ffdf34e39d14c9fa240280cdb777065a1a3fb71f97e05f4ad95"
+      }
     }
   ]
 }

@@ -574,12 +574,19 @@ export class CodexHistoryReader {
           acceptedMessageHashes: Object.fromEntries(
             array(turn.items).flatMap((value) => {
               const item = object(value);
-              if (item.type !== 'userMessage' || typeof item.clientId !== 'string') return [];
-              const content = Array.isArray(item.content) ? item.content.map(object) : [];
+              const id =
+                item.type === 'userMessage'
+                  ? item.clientId
+                  : item.type === 'steeringUserMessage' && item.status === 'accepted'
+                    ? item.clientUserMessageId
+                    : null;
+              const input = item.type === 'userMessage' ? item.content : item.input;
+              if (typeof id !== 'string' || !id || !Array.isArray(input)) return [];
+              const content = input.map(object);
               if (content.some((v) => v.type !== 'text' || typeof v.text !== 'string')) return [];
               return [
                 [
-                  item.clientId,
+                  id,
                   createHash('sha256')
                     .update(content.map((v) => v.text).join('\n\n'))
                     .digest('hex'),
@@ -598,6 +605,60 @@ export class CodexHistoryReader {
     const thread = object(response.thread);
     if (thread.id !== threadId) throw new Error('Receipt evidence target mismatch');
     return this.turnEvidence(array(thread.turns));
+  }
+
+  /** Bounded status-only reconciliation for receipts whose acceptance is already durable. */
+  async receiptTurnEvidence(threadId: string, turnIds: string[]): Promise<ReadTurnEvidence[]> {
+    if (!this.knownThreads.has(threadId)) throw new Error('Thread not in this host workspace');
+    const wanted = new Set(turnIds.slice(0, 100));
+    if (!wanted.size) return [];
+    const metadata = object(await this.rpc('thread/read', { threadId, includeTurns: false }));
+    const thread = object(metadata.thread);
+    if (thread.id !== threadId) throw new Error('Receipt evidence target mismatch');
+    // Storage layout is not an API capability. The same status-only method can
+    // serve legacy threads; only an explicit unsupported method ends this read.
+    const turns: ReadTurnEvidence[] = [];
+    const seen = new Set<string>();
+    let next: string | null = null;
+    for (let page = 0; page < 4; page++) {
+      let result: RecordValue;
+      try {
+        result = object(
+          await this.rpc('thread/turns/list', {
+            threadId,
+            limit: 100,
+            sortDirection: 'desc',
+            itemsView: 'notLoaded',
+            ...(next ? { cursor: next } : {}),
+          }),
+        );
+      } catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === -32601) return [];
+        throw error;
+      }
+      for (const value of array(result.data)) {
+        const turn = object(value);
+        if (
+          typeof turn.id === 'string' &&
+          typeof turn.status === 'string' &&
+          wanted.delete(turn.id)
+        )
+          turns.push({
+            id: turn.id,
+            status: turn.status,
+            acceptedMessageIds: [],
+            acceptedMessageHashes: {},
+          });
+      }
+      if (!wanted.size) break;
+      next = cursor(result.nextCursor);
+      if (!next) break;
+      if (seen.has(next)) throw new Error('Repeated Codex receipt evidence cursor');
+      seen.add(next);
+    }
+    // notLoaded summaries intentionally omit items (or carry null). They can
+    // settle an already accepted turn, never infer acceptance of an unknown input.
+    return turns.reverse();
   }
 
   async history(

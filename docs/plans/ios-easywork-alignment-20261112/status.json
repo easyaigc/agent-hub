@@ -112,8 +112,8 @@
       "features": ["F02", "F04", "F05", "F06", "F07", "F08", "F09", "F10"],
       "priority": "P0",
       "executionState": "in-progress",
-      "ownerRole": "当前主会话与本机执行方接续",
-      "nextAction": "原生轮换后冷恢复已通过，不重做配对或业务输入。继续验收并合并桌面Host权威撤销范围、独立grant批量选择/失败保留修复；408/429/5xx及原刷新意图未知等专项保留后续。",
+      "ownerRole": "Root主协调与具名本机Terra执行方（请求设置/实际可核限制分列）",
+      "nextAction": "本轮F07错误与原意图恢复四阶段已通过，只有最后源码PR交付；原旧授权不重做。",
       "currentEvidence": [
         "LOGIN-DIRECTION-R34",
         "RUNTIME-PEER-REVIEW-R36",
@@ -121,9 +121,11 @@
         "F09-ACTUAL-SAME-ACTOR-CHECKPOINT-FIVE-ORIGINAL-DEDUP-R250",
         "AC04-ACTUAL-SAME-OWNED-GRANT-DPOP-ROTATION-AND-SCOPED-REVOKE-R254",
         "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
-        "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119"
+        "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119",
+        "F07-F06-EXACT-FULLCHECK-IOS-PACKAGE-AND-CFDC-NATIVE-COMPILED-NOT-RUN-R479",
+        "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482"
       ],
-      "updatedAt": "2026-11-19T10:22:06.083011+00:00"
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00"
     },
     {
       "id": "EW03",
@@ -131,8 +133,8 @@
       "features": ["F12", "F13", "F15", "F17", "F18", "F20", "F22", "F68"],
       "priority": "P0",
       "executionState": "in-progress",
-      "ownerRole": "当前主会话及F22独立模拟器/Electron测试执行方",
-      "nextAction": "F22实际PR220交付及阶段资源均完成，不重做。后续F18reset/child/F68增量缓存按FD单独处理；当前先F36生成速度和F49读状态。",
+      "ownerRole": "Root主协调与具名本机Terra执行方（请求设置/实际可核限制分列）",
+      "nextAction": "本轮F44/F18有限范围已合PR233并收尾，F68已合PR232；父域其他断言保持原范围，不重跑已过操作。",
       "currentEvidence": [
         "AC06-REAL-CATALOG-CURSOR-HISTORY-CANONICAL-REVIEW-R147",
         "AC06-REAL-FULLTEXT-SEARCH-LOCATE-AND-SIDEBAR-UI-R147",
@@ -144,9 +146,12 @@
         "PHASE1-QWEN-SAME-CHAT-SINGLE-SEND-MOBILE-DESKTOP-STREAM-END-R258",
         "F22-FROZEN3505-CHECK-BUILD-N19-NORMAL-CUTOVER-AND-STAGE-CLEANUP-R382",
         "F22-REAL3505-D-STARTED-INSTALLED-E-FOLLOWUP-ROOT-VISUAL-AND-ORIGINALS-R386",
-        "F22-ACTUAL-MAIN-OWNED-TREE-REFS-GRADLE-WATCH-AND-OLD-OUTPUTS-CLEANED-R390"
+        "F22-ACTUAL-MAIN-OWNED-TREE-REFS-GRADLE-WATCH-AND-OLD-OUTPUTS-CLEANED-R390",
+        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480",
+        "F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481",
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
       ],
-      "updatedAt": "2026-11-20T08:27:51.636740+00:00"
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00"
     },
     {
       "id": "EW04",
@@ -353,8 +358,8 @@
       "features": ["F43", "F44", "F46", "F61"],
       "priority": "P0",
       "executionState": "in-progress",
-      "ownerRole": "Main owns remaining target/actual attachment-byte scenarios; scoped Terra Native responsibility completed",
-      "nextAction": "F45/F46原已验首条恢复组件当前主线集成；保持现有上传/草稿/事件处理，按具体缺口检查并逐功能交付，其他父项原范围保持。",
+      "ownerRole": "Root主协调与具名本机Terra执行方（请求设置/实际可核限制分列）",
+      "nextAction": "本轮F44/F18有限范围已合PR233并收尾，F68已合PR232；父域其他断言保持原范围，不重跑已过操作。",
       "currentEvidence": [
         "AC19-READONLY-ORIGINAL-COMPLETED-INTENT-HASH-AND-NAMESPACE-REVIEW-R171",
         "AC19-REVIEWED-C76-NATIVE-11-SCHEMAS-COMPLETE-FREEZE-R172",
@@ -362,9 +367,12 @@
         "LIVE-LATE-COMPOSITE-ZERO-WRITE-QUALIFICATION-INTENT-R198",
         "F46-CURRENT-C19-D8-ERROR-EVENT-DEPENDENCY-MATCH-R224",
         "F46-POSITIVE-TYPED-CALLBACK-BOUNDED-NATIVE-PREEXECUTION-R224",
-        "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257"
+        "PHASE1-ORDINARY-PAIRED-HISTORY-SEND-PREVIEW-COLD-R257",
+        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480",
+        "F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481",
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
       ],
-      "updatedAt": "2026-11-20T01:49:48.789493+00:00"
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00"
     },
     {
       "id": "EW09",
@@ -935,7 +943,8 @@
         ],
         "currentEvidence": [
           "F07-NARROW-AUTHORIZATION-HTTP-DEPENDENCY-SOURCE-PENDING-R477",
-          "F07-F06-EXACT-FULLCHECK-IOS-PACKAGE-AND-CFDC-NATIVE-COMPILED-NOT-RUN-R479"
+          "F07-F06-EXACT-FULLCHECK-IOS-PACKAGE-AND-CFDC-NATIVE-COMPILED-NOT-RUN-R479",
+          "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482"
         ]
       },
       "acceptance": {
@@ -945,7 +954,8 @@
         "currentEvidence": [
           "LOCAL-OWNER-PUBLICATION-REPAIR-N7-REAL-COLD-ZERO-DELTA-R165",
           "AC04-ACTUAL-SAME-OWNED-GRANT-DPOP-ROTATION-AND-SCOPED-REVOKE-R254",
-          "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119"
+          "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119",
+          "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482"
         ],
         "scopedAttemptEvidence": [
           "AC04-ORIGINAL-GRANT-REAL-WRONG-KEY-CORRECT-REJECTION-HARNESS-FAILED-R253"
@@ -957,19 +967,20 @@
           "F07-EXACT808-REBUILT-TESTMODULE-IMPORT-LINK-AUX-20261119",
           "F07-ORDINARY-AUTH-COLD-AND-DESKTOP-PR70-MAIN-CLOSURE-20261119"
         ],
-        "currentGrantScopedPass": "真实独立授予自然轮换后，全新App进程读取同一已轮换记录及原刷新收据；准确撤销403、移除仅自有grant/claim/checkpoint，原legacy加密上下文与草稿/原收据保持；四项正式原生测试各1/0。错误矩阵与正常手机配对UI范围不提升。"
+        "currentGrantScopedPass": "真实独立授予自然轮换后，全新App进程读取同一已轮换记录及原刷新收据；准确撤销403、移除仅自有grant/claim/checkpoint，原legacy加密上下文与草稿/原收据保持；四项正式原生测试各1/0。错误矩阵与正常手机配对UI范围不提升。",
+        "currentMatrixScopedPass": "Four official Native stages each1pass0fail0skip: same owned ready/identity, before-network wrong workspace, controlled408/429/503 retain original grant/intent; one genuine server rotation with local delivery dropped after decrypt+verify; cold pinnedLAN-forward same original POST/token/body/id returns identical encrypted receipt and version2 stays; exact new grant revoked, signed403 and owned vault cleared. Original five bindings/seven tables/720 files/C77 draft protected, zero models. Controlled faults are not actual issuer outage. Root formal hold invocation distinct from Terra-requested other phases; source ab10 A/c917 BCD and matched f06 modules, no latest whole runtime claim."
       },
       "delivery": {
         "state": "candidate-not-integrated",
-        "note": "iOS既有808实际受测；桌面PR70已合master，未把N17/N18旧D8或组件fixture当作新版整包部署。"
+        "note": "普通路径已有交付；本轮f06窄HTTP/最终ab10 Native待最后PR，实际受测包97d1，不声明最新整包部署。"
       },
       "execution": {
         "state": "in-progress",
-        "ownerRole": "主协调会话保留完整授权故障专项；普通范围开发/验收/合并已结束"
+        "ownerRole": "Root语义集成；Terra例行检查/提交交付"
       },
-      "nextAction": "独立W07窄HTTP依赖全检查/构建中，后续新独占Simulator/grant验收；旧授权保持，不重复自然轮换。",
+      "nextAction": "有限授权错误/原意图恢复已真实通过且新授权/模拟器收尾；仅余源码集成检查和Gitea main交付。",
       "openItemIds": [],
-      "updatedAt": "2026-11-19T13:35:59.790170+00:00",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC03", "AC04"],
@@ -1782,16 +1793,20 @@
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "当前模拟器普通包102c71与独立真实Desktop734706e在已登记子范围通过；两仓候选仅本地保存，尚未合基准/推送，不冒充正式部署。 R285: F18-stream matched existing merged PRs; latest combined runtime and whole parent remain unverified."
+        "state": "integrated-not-deployed",
+        "note": "本轮有限F44/F18源已合PR233/main aebbbef；实际验收cfcApp/匹配模块与当前来源按登记关联，未重新部署最新整包。",
+        "currentEvidence": [
+          "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
+        ]
       },
       "execution": {
-        "state": "in-progress",
-        "ownerRole": "Root laterhardening; ordinarycore scope delivered and resourcesclosed"
+        "state": "planned",
+        "ownerRole": "Root负责历史父域边界；本轮有限FD已交付并收尾",
+        "note": "本轮具体FD已合并关闭；父项未覆盖的历史断言仍待执行，不能关闭整父项。"
       },
-      "nextAction": "本轮F44/F18具体FD有限复合验收通过，main00c集成/检查/PR交付中；不重跑原操作，父广范围仍保留历史部分通过。",
+      "nextAction": "本轮具体FD已合PR233并收尾，不重复原操作；父级其他已登记断言按历史范围保留。",
       "openItemIds": ["REV03"],
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC06", "AC07"],
@@ -3798,22 +3813,25 @@
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "PR206/main9becc0d7仅明确失败回执分类器与停止caption限定源实合，两生产SHA/整tree已核，完整check及CI通过；非完整F44网络恢复或新正式桌面/物理设备发布。 R434 PR226/main14ad有界发送/回执修复真实合主线，848所有原生/KMP/lock匹配复用；非完整unknownACK矩阵。W1/本地远端ref已回收。",
+        "state": "integrated-not-deployed",
+        "note": "本轮有限F44/F18源已合PR233/main aebbbef；实际验收cfcApp/匹配模块与当前来源按登记关联，未重新部署最新整包。",
         "evidenceRefs": [
           "F48-PR206-ACTUAL-MAIN-SOURCE-AND-FINAL-CLEANUP-ROOT-R313",
           "F44-PR226-ACTUAL-MAIN14AD-NATIVE-EQUIVALENCE-AND-OWNED-REF-CLEANUP-R434"
         ],
-        "currentEvidence": ["F44-PR226-POSTMERGE13168-BOTH-CI-AND-AUTOSYNC-TERMINAL-R437"]
+        "currentEvidence": [
+          "F44-PR226-POSTMERGE13168-BOTH-CI-AND-AUTOSYNC-TERMINAL-R437",
+          "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
+        ]
       },
       "execution": {
-        "state": "in-progress",
-        "ownerRole": "Root源码/原验收匹配；f44_deadline_boundary_execution辅助检查与构建",
-        "note": "PR226 finite fix merged and pre/postmerge CI terminalgreen; full unknownACK/cancel matrix remains, no repeat original read."
+        "state": "planned",
+        "ownerRole": "Root负责历史父域边界；本轮有限FD已交付并收尾",
+        "note": "本轮具体FD已合并关闭；父项未覆盖的历史断言仍待执行，不能关闭整父项。"
       },
-      "nextAction": "本轮F44/F18具体FD有限复合验收通过，main00c集成/检查/PR交付中；不重跑原操作，父广范围仍保留历史部分通过。",
+      "nextAction": "本轮具体FD已合PR233并收尾，不重复原操作；父级其他已登记断言按历史范围保留。",
       "openItemIds": ["REV21"],
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "initialScopeStatus": "historical-scoped-closure-to-match",
       "acceptancePlan": {
         "scenarioIds": ["AC05", "AC20"],
@@ -6012,8 +6030,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 480,
-  "updatedAt": "2026-11-21T21:02:08.745059+08:00",
+  "revision": 482,
+  "updatedAt": "2026-11-21T22:10:09.619873+08:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -17073,6 +17091,46 @@
       "scope": "Finitecomposite actualAoneinput1/0, Bsameoriginal0writes1/0, GUIbothends andold-data preserved. OriginalmergedI25/I27scopesreusedperuser; missingoptionalprewirefile/oldfailures/pastpackageuncertainty retained, noallparent/wholemainruntimeclaim.",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/root-inflight-cold-gui-and-merged-scope-composite-review.json",
       "sha256": "468bb317d7cbc7103c0dfebfbe3dbadce344a2dd3edfb70add09ce9b9534c400"
+    },
+    "F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
+      "environment": "Rootformalapproval+existingglobalcleanupmutex; exactrestoredNative/GUI/source/nooccupancyreview",
+      "mobileEnvironment": "not-required",
+      "scope": "Actualreleasedcfc expandedApp/57support/nativebundle/twoownedsealedrestorationcopies+emptycase, 182262542logicalbytes; volume72960315392→73142837248notexclusivephysicalclaim. Rootsupplementedactualhumanstagecleanupinstructions onformalapproval afteroriginalrejection; firstscriptwrongtypedreportguardstoppedbeforedelete, correctedtoactualofficialNativeattachment thenapprovedsuccess. Smallmanifests retained, ephemeralcleanupscriptremoved afterinputhashsaved. ZIProllback/rawxcresult/minimalGUI/Git/source/installed720/oldbindings/Desktop/broker preserved; liveprofilehelper retainedwhileF07depends.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/acceptance-prep/root-ended-native-stage-release-receipt.json",
+      "sha256": "7c730f30213ffb64cd5f5b507f5dc7af02baf52876fa96035117d84984286741"
+    },
+    "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482": {
+      "kind": "exact-match-review",
+      "sourceCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
+      "environment": "Root independent source/official Native and authority records review",
+      "mobileEnvironment": "not-required",
+      "scope": "PR233 actual merged/main/tree, accepted Native b6035f EOF-only format equivalence, exact two required CI success, owned worktree/both branches/build caches removed. Formal closeout receipt344042 preserved; latest whole runtime/parent assertions not inferred.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/root-pr233-main-source-and-owned-resource-review.json",
+      "sha256": "3d59718ff8f3136d71da6d1e59d9c926cc20b2e9d96194f7835b142c60340c50"
+    },
+    "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482": {
+      "kind": "real-dev",
+      "sourceCommit": "f06ba6aa3add0851f1690071515b274b32cd978e",
+      "packageSha256": "97d16494c9be0dd4665e95165bc1cb45ccf81162ac8fad29d2526918dea5249c",
+      "environment": "Owned9D iOS26 Simulator + real EasyWork DEV/cbd43 + actual service file authority; Root independent full review; requestedTerra medium telemetry unavailable",
+      "mobileEnvironment": "simulator",
+      "scope": "Four official Native stages each1pass0fail0skip: same owned ready/identity, before-network wrong workspace, controlled408/429/503 retain original grant/intent; one genuine server rotation with local delivery dropped after decrypt+verify; cold pinnedLAN-forward same original POST/token/body/id returns identical encrypted receipt and version2 stays; exact new grant revoked, signed403 and owned vault cleared. Original five bindings/seven tables/720 files/C77 draft protected, zero models. Controlled faults are not actual issuer outage. Root formal hold invocation distinct from Terra-requested other phases; source ab10 A/c917 BCD and matched f06 modules, no latest whole runtime claim.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f07-owned-refresh/owned-case-ef4f7a6f-0dbd-470c-b96a-873eb808e223/root-full-owned-refresh-matrix-review.json",
+      "sha256": "94328e01c86be73155c8e857784919bbc759ec06b7f50f503305d2a2b4f0706b"
+    },
+    "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "f06ba6aa3add0851f1690071515b274b32cd978e",
+      "packageSha256": "97d16494c9be0dd4665e95165bc1cb45ccf81162ac8fad29d2526918dea5249c",
+      "environment": "Root independent source/official Native and authority records review",
+      "mobileEnvironment": "not-required",
+      "scope": "Exact9D shutdown/delete and registration/directory absence, frozen App/support/five expanded test bundles removed; old720 and Desktop/broker protected. Source/ZIP/four raw xcresults/minimal proof retained. Volume free delta not exclusive physical claim.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f07-owned-refresh/owned-case-ef4f7a6f-0dbd-470c-b96a-873eb808e223/resource-release-final.json",
+      "sha256": "45ca90c8887b6a789a89c05597f39ea3fd5393859fb42ba4654c2394a4857d24"
     }
   },
   "openItems": [
@@ -17945,7 +18003,7 @@
       ],
       "ios": "每语删除2个原生重复键并补5个实际引用的缺译；正式本地化/Swift lookup、parity、生成和格式均通过。实际App输入仅2资源表，Swift/Xcode/共享/Android/桌面字节不变。",
       "desktop": "不影响桌面d6c5源与125项范围。",
-      "nextAction": "本次资源修复、官方检查、新包入包与Bundle查找按范围收尾；源仍待主线集成，F18其他历史/流式能力按原计划执行。",
+      "nextAction": "原关闭子范围保持并停止重复执行；当前同父功能的有限补验/交付仅跟进currentFunctionalFollowup所列唯一FD，aebbbe检查/PR中。",
       "reviewFindings": [
         {
           "id": "L10N-01",
@@ -17957,7 +18015,9 @@
           "acceptanceNote": "最小资源修复、五个官方检查、新App构建、入包及实际Bundle查找通过；不代表F18整项或跨端验收。"
         }
       ],
-      "resolution": "source-and-exact-package-scope-completed; candidate-not-mainline-integrated"
+      "resolution": "source-and-exact-package-scope-completed; candidate-not-mainline-integrated",
+      "currentFunctionalFollowup": "本轮对应有限FD已验并合PR233/main aebbbef，原关闭范围保留，其他父域断言不扩大。",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00"
     },
     {
       "id": "REV04",
@@ -18551,8 +18611,9 @@
       ],
       "ios": "同方法源码新正常包712官方1/0，实际终态/错误/缺失与保护均通过；原c76失败不改。",
       "desktop": "D7d6原failed/ok=false不变，当前正常N13真实核对通过后已停止。",
-      "nextAction": "限定修复C14本地已保存且真实验收，主线交付由INT01，原F44/F48其余矩阵继续；无当前独占运行资源待释放。",
-      "updatedAt": "2026-11-15T18:44:55.054109+00:00"
+      "nextAction": "原关闭子范围保持并停止重复执行；当前同父功能的有限补验/交付仅跟进currentFunctionalFollowup所列唯一FD，aebbbe检查/PR中。",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
+      "currentFunctionalFollowup": "本轮对应有限FD已验并合PR233/main aebbbef，原关闭范围保留，其他父域断言不扩大。"
     },
     {
       "id": "REV22",
@@ -19091,10 +19152,11 @@
       "currentEvidence": [
         "AC04-ORIGINAL-GRANT-REAL-WRONG-KEY-CORRECT-REJECTION-HARNESS-FAILED-R253",
         "AC04-ACTUAL-SAME-OWNED-GRANT-DPOP-ROTATION-AND-SCOPED-REVOKE-R254",
-        "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119"
+        "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119",
+        "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-19T13:35:59.790170+00:00",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -19117,14 +19179,23 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["AC04-ACTUAL-SAME-OWNED-GRANT-DPOP-ROTATION-AND-SCOPED-REVOKE-R254"],
           "scope": "独立 iOS 模拟器真实授权。冷启动读回同一专用授予，有效签名请求 200。重复 DPoP、错误签名密钥及错误绑定分别被真实服务拒绝。到正常刷新窗口后访问令牌与刷新令牌各轮换一次，保留原授予与绑定以及刷新操作回执，实际加密会话恢复。桌面仅撤销该授予，原令牌和新会话均拒绝，原绑定仍有效。官方 1/0，原业务与模型零新增。"
+        },
+        {
+          "id": "owned-transient-errors-original-refresh-lost-delivery-cold-same-operation-recovery",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482"
+          ],
+          "scope": "Four official Native stages each1pass0fail0skip: same owned ready/identity, before-network wrong workspace, controlled408/429/503 retain original grant/intent; one genuine server rotation with local delivery dropped after decrypt+verify; cold pinnedLAN-forward same original POST/token/body/id returns identical encrypted receipt and version2 stays; exact new grant revoked, signed403 and owned vault cleared. Original five bindings/seven tables/720 files/C77 draft protected, zero models. Controlled faults are not actual issuer outage. Root formal hold invocation distinct from Terra-requested other phases; source ab10 A/c917 BCD and matched f06 modules, no latest whole runtime claim."
         }
       ],
       "auxiliaryEvidence": [
         "F08-F09-CURRENT-BOUNDED-ZERO-MODEL-PREFERENCE-RECOVERY-DESIGN-ORIGINAL-N17-LAN-READ-R239",
         "AC04-ENDED-OWNED-SIM-NATIVE-AND-SUPERSEDED-F09-RESOURCES-RETIRED-R254"
       ],
-      "nextAction": "完成剩余第一阶段后，按原AC04独占授予/准确目标补授权错误矩阵；不重复已通过自然轮换/轮换后冷进程/原legacy隔离。",
-      "remainingScope": "错工作区、刷新后独立冷启动、408/429/5xx 与原刷新响应未知的有界恢复。"
+      "nextAction": "本轮登记有限故障/原意图恢复矩阵已验并清理，只余源码交付；历史失败保留，不按场景组整项升级。",
+      "remainingScope": "本轮有限FD无待验；未声明任意issuer真实故障或所有安全/平台组合均通过。"
     },
     {
       "id": "AC05",
@@ -19478,7 +19549,7 @@
         "PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-18T19:36:00.470658+00:00",
+      "updatedAt": "2026-11-21T21:23:12.745425+08:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -19534,6 +19605,15 @@
           "mobileEnvironment": "simulator",
           "currentEvidence": ["PHASE1-REAL-OWNED-FILE-DIFF-SUCCESS-AND-RESTORE-R276"],
           "scope": "one actual user input; original completed run; successful fileChange expanded; visible -VALUE=before/+VALUE=after/+CHECKED=true; same-card full path in AX and actual expected desktop file SHA; original B2 draft restored. Path tail clipped in screenshot; no broad/multi-file claim."
+        },
+        {
+          "id": "f18-one-owned-child-transport-close-cold-final-gui-20261121",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480"
+          ],
+          "scope": "Oneparentonechild actual. Childlivebeforeoriginaltransportclose, completedbeforecold. Sameoriginalcanonicalfinal+normalSimulatorchildsuccess/roottextandDesktopmarkers; noextraRoot/child, rawolddataandC77protected. Historicalmergedreset/chaosreuseis separate, not newall-branch/currentwholeparentacceptance."
         }
       ],
       "auxiliaryEvidence": [
@@ -19542,7 +19622,7 @@
         "F20-RAW-DIFF-MAIN-SOURCE-SCOPE-AND-INDEPENDENT-RESULT-R276",
         "F20-ACCEPTED-TOOLVIEW-EXACT-MAIN-INTEGRATION-R276"
       ],
-      "nextAction": "本次普通真实Diff已通过；原JSON长工具换行源码正在交付，不重复原通过。长子正文/推理/复制和事件恢复余项按原阶段保留。",
+      "nextAction": "本次具名有限子断言已真实完成，按FD推进aebbbe源码交付；原历史失败/更广工程矩阵不补签，不重复原输入。",
       "remainingScope": "当前真实父+2child/独立输出冷读、长工具完整内容和软换行阅读/可见首尾/展开折叠/搜索已过；长子正文/实际推理段、运行中刷新/分页、跨branch迟到/终态回退与完整事件恢复矩阵仍开。复制点击后因跨App提示超时未核值，原模拟器旧clipboard状态未知且未恢复；本机无已保存Codex客户端，不能作真实Codex回归。"
     },
     {
@@ -20950,7 +21030,7 @@
         "F46-CURRENT-REGISTERED-SIMULATOR-SCOPE-CLOSURE-R228"
       ],
       "historicalEvidencePolicy": "已有历史证据按F条目查；此处不把资料迁移算重新执行。",
-      "updatedAt": "2026-11-16T05:02:44.885514+00:00",
+      "updatedAt": "2026-11-21T21:23:12.745425+08:00",
       "environmentPolicy": {
         "mode": "simulator-sufficient",
         "simulatorScope": "适用的原生UI、协议、文件、持久化与恢复断言可用模拟器完成；真实Electron/实际模型或原资源及独立核对按该场景保留。",
@@ -21043,6 +21123,15 @@
             "F46-ACTUAL-SUCCESS-SAMEKEY-METADATA-DEFER-ISOLATION-ONE-REAL-INPUT-R227"
           ],
           "scope": "Actual original typed success/defer protect B3; same-key old metadata/defer protect B4; detached metadata sends no input. Fresh cold and remaining F44 separate."
+        },
+        {
+          "id": "f44-one-owned-original-ack-loss-endwait-cold-late-draft-finite-20261121",
+          "state": "passed",
+          "mobileEnvironment": "simulator",
+          "currentEvidence": [
+            "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480"
+          ],
+          "scope": "Oneactualnewinput alreadycountedR478; verifiedgenuineACKlocaldeliveryloss,32.2745send/26.22msendwait, immutableoriginal/newdraft/coldoriginalreceipt/lateotherthreadisolation+exactoriginaldraftrestore, noBnewwrite, NativeAandB1/0each; extracaseprewirefilemissingNOTpassed, historicalfailuresretained."
         }
       ],
       "reviewEvidence": [
@@ -21051,7 +21140,7 @@
         "F29-F61-NATIVE-EMPTY-METADATA-AND-LOCAL-NOT-WRITTEN-R180",
         "F46-CURRENT-C19-D8-ERROR-EVENT-DEPENDENCY-MATCH-R224"
       ],
-      "nextAction": "Continue F44 lifecycle using original IDs only; no duplicate inputs.",
+      "nextAction": "本次具名有限子断言已真实完成，按FD推进aebbbe源码交付；原历史失败/更广工程矩阵不补签，不重复原输入。",
       "resolvedHistoricalBlockers": ["BASELINE-01", "NATIVE-01", "DESKTOP-01"],
       "remainingScope": "F61 and F46 registered simulator scopes closed. F44 remaining recovery/lifecycle matrix still separate and unclosed; group remains partial.",
       "auxiliaryEvidence": [
@@ -27608,6 +27697,29 @@
       "newProductAcceptancePasses": 1,
       "newProductAcceptanceModelTurns": 0,
       "evidenceRefs": ["F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480"]
+    },
+    {
+      "revision": 481,
+      "date": "2026-11-21",
+      "kind": "remaining11-four-dimension-rollup-and-actual-native-resource-release",
+      "scope": "WorkpackagesEW02/EW03/EW08/REV03REV21followup andAC20/AC07actualfiniteassertions reconciledwithoutreopeningoriginalclosedscope. 8delivered/2acceptedawaitPR/1F07pendingmatrix. Rootactualownedartifactreleaseafterformalapprovedhuman-evidence supplementation; originalrejection/guardfailure retained. F07firstboot recoveredsameSim, stableproductpaths repaired, actualpre-authcontext failures0grant; strictURL/source unaffected, pureconfiginspection pending.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481"]
+    },
+    {
+      "revision": 482,
+      "date": "2026-11-21",
+      "kind": "remaining11-pr233-main-and-f07-actual-matrix",
+      "scope": "F44/F18 actualPR233 main and ownedresources verified; F07 controlled408/429/503/wrongworkspace plus one real original refresh rotation/deliveryloss/cold exactreceipt recovery/revocation allfour officialNative1/0/0, no models. ExactownedSim/artifacts removed. 10delivered/lastF07acceptedawaitsourcePR, no pendingAcceptance; historical failures/broaderparents/F75A6 preserved.",
+      "newProductAcceptancePasses": 4,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482",
+        "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482",
+        "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482"
+      ],
+      "maintenanceCorrection": "Renderer correctly rejects whole-parent execution closure with historical-partial acceptance; parentF18/F44 planned retained, finiteFDs merged/closed only."
     }
   ],
   "maintenanceValidation": {
@@ -31281,6 +31393,17 @@
         "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
         "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
       ]
+    },
+    {
+      "component": "remaining11-f44-f18-main-delivery-and-f07-actual-accepted-candidate",
+      "sourceCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "verification": "F44/F18 PR233 exactmain; F07 actualf06/97d1 +Nativeab10A/c917BCD accepted, candidate notyetmain; no combined latest runtime claim",
+      "evidenceRefs": [
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482",
+        "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482",
+        "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482"
+      ],
+      "baseCommit": "00c8253a02454fb761fec0757ab9f3809ed8ed9e"
     }
   ],
   "sourcePinHistory": [
@@ -35720,7 +35843,7 @@
     }
   ],
   "executionFocus": {
-    "summary": "先交付已通过的大文件与缓存有限范围，继续实际在途/父子恢复和授权暂态错误矩阵；已合普通功能按受影响范围复用，所有阶段即时清理无依赖资源。",
+    "summary": "本轮11项中10项已按具体范围交付，最后F07四阶段实际验收和阶段资源清理完成，仅余源码集成/检查/合主线；F75/A6保持暂停。",
     "firstRun": "Desktop3919实际cold修复/HostRuntime ready，iOSf85c与checkpoint2f504/3365源匹配并Root独立核包，按原720授权安装和两样本正常文件页推进21/64同ID重开、SHA/路径/观测RSS；原11余5。新增找到I2.5/I2.7历史已合验收，按范围复用防重复。",
     "exitRule": "第一阶段通过要求：从正常 iOS 模拟器界面可完成核心流程，EasyWork 独立桌面核对实际对象与结果；用户可见失败有清楚提示并能继续。直接调接口、编译和夹具作为辅助证据。第一阶段动作通过后，仍按各父项登记范围和正式交付条件分别判断。",
     "deferred": "通知冷热×隐私全组合及工程专项排在当前语音实际缺口和普通用户功能之后；既有已合实现/验收按原范围复用。F75/A6保持暂停，actualFast保持原ENV01未确认，不因阶段切换重做已过核心或归档/共享动作。",
@@ -36075,16 +36198,9 @@
       "F10-adapter-extension"
     ],
     "remainingElevenExitRule": "每项核实际主线及原通过范围，先复用已交付；实际缺口按Codex Host同领域协议修，原生模拟器/真实桌面验收后逐项合正确主线，唯一FD更新开发/验收/交付/执行及精确证据。未知结果只查询原操作，阶段无依赖资源即回收。F75/A6仍暂停。",
-    "currentRemainingRequestedIds": [
-      "F44-bounded-offline-wait-and-unknown-ack",
-      "F18-event-reset-child-recovery",
-      "F07-authorization-error-recovery-matrix"
-    ],
-    "currentPendingAcceptanceRequestedIds": ["F07-authorization-error-recovery-matrix"],
-    "currentPendingDeliveryRequestedIds": [
-      "F44-bounded-offline-wait-and-unknown-ack",
-      "F18-event-reset-child-recovery"
-    ]
+    "currentRemainingRequestedIds": ["F07-authorization-error-recovery-matrix"],
+    "currentPendingAcceptanceRequestedIds": [],
+    "currentPendingDeliveryRequestedIds": ["F07-authorization-error-recovery-matrix"]
   },
   "functionalDeliverables": [
     {
@@ -36406,9 +36522,9 @@
       "phase": "hardening",
       "behavior": "异常事件重置及父子运行跨断线恢复",
       "acceptanceCriteria": "从权威快照继续显示同一回复和子运行状态；按原REV03覆盖重复、乱序、gap、强制reset及父子Run/branch迟到批次隔离。",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "当前主协调会话",
-      "acceptanceBasis": "real-dev-and-matched-merged-scopes",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F18-ORDINARY-SAME-ROOT-RECOVERY-BOUNDARIES-AND-MAIN-REUSE-ROOT-20261119",
         "REMAINING5-EXACT-RECOVERY-INPUT-MAP-NO-NEW-ACCEPTANCE-R458",
@@ -36420,15 +36536,18 @@
         "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476",
         "F44-NATIVE-PRECONDITION-FAILURE-DIAGNOSED-NO-TRANSPORT-R477",
         "F44-F18-ONE-REAL-ORIGINAL-ACK-LOSS-ENDWAIT-AND-RECOVERY-FAILURES-R478",
-        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480"
+        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480",
+        "F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481",
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
       ],
-      "pullRequests": [],
-      "nextAction": "本轮有限验收已完成，不重复A/B或已合reset；把DBG单Store入口和d45d Native/规范/唯一台账集成main00c，完成检查与Gitea PR合并，立即收尾已无依赖冻结支持/fixture备份。",
-      "updatedAt": "2026-11-21T21:02:08.745059+08:00",
+      "pullRequests": ["BCAI/agent-hub-app#233"],
+      "nextAction": "登记有限范围已合Gitea PR233/main aebbbef，两项必需CI/本机检查与构建通过，自有工作树/分支/缓存回收；保留原失败和父项其他边界，不重放原输入。",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "scopeSource": "Explicitremainingobligation splitfromF18-snapshot-recovery; no deletedrequirement, no pass inferred fromordinaryreadonlycase.",
       "currentDevelopmentScope": "当前 events 将游标推进/epoch变化转为 canonical history，pump具备加密帧窗口去重、target/epoch保护；父子快照已有生产投影。是否缺gap保护需沿该完整链判断，不能仅pump无gap分支就称缺功能。 R474: 仅DEBUGSimulator具名normal-single-store入口cfc已构建、docs7800补record通过；没有新真实在途/父子业务输入，不把原生编译当验收。",
-      "executionState": "in-progress",
-      "currentAcceptedScope": "真实单原输入/一父一子、ACK仅本机丢失、32.2745秒结束/26.22ms结束等待；同原ID冷查询、真实迟到快照跨聊天隔离、新草稿保持及原稿恢复，双端正常可见与旧7表/身份/5绑定保护；旧已合reset/乱序按登记范围复用。额外prewire观察文件未生成不补签，父wholeFeature仍false。"
+      "executionState": "closed",
+      "currentAcceptedScope": "真实单原输入/一父一子、ACK仅本机丢失、32.2745秒结束/26.22ms结束等待；同原ID冷查询、真实迟到快照跨聊天隔离、新草稿保持及原稿恢复，双端正常可见与旧7表/身份/5绑定保护；旧已合reset/乱序按登记范围复用。额外prewire观察文件未生成不补签，父wholeFeature仍false。",
+      "pendingPullRequests": []
     },
     {
       "id": "F20-tool-details",
@@ -38133,22 +38252,30 @@
       "phase": "hardening",
       "behavior": "授权暂态错误与原刷新意图恢复",
       "acceptanceCriteria": "原授权和目标保持，暂态错误有明确提示并可恢复；保留错工作区、408/429/5xx及结果未知时同一原刷新意图查询/恢复，不重复签发。",
-      "state": "developing",
+      "state": "accepted-scoped",
       "owner": "当前主协调会话",
-      "acceptanceBasis": "pending",
+      "acceptanceBasis": "real-dev",
       "evidenceRefs": [
         "F07-ACTUAL-POST-ROTATION-FRESH-PROCESS-AND-LEGACY-PRESERVED-20261119",
         "F07-ORDINARY-AUTH-COLD-AND-DESKTOP-PR70-MAIN-CLOSURE-20261119",
         "REMAINING5-EXACT-RECOVERY-INPUT-MAP-NO-NEW-ACCEPTANCE-R458",
         "F07-NARROW-AUTHORIZATION-HTTP-DEPENDENCY-SOURCE-PENDING-R477",
-        "F07-F06-EXACT-FULLCHECK-IOS-PACKAGE-AND-CFDC-NATIVE-COMPILED-NOT-RUN-R479"
+        "F07-F06-EXACT-FULLCHECK-IOS-PACKAGE-AND-CFDC-NATIVE-COMPILED-NOT-RUN-R479",
+        "F07-REAL-OWNED-TRANSIENT-ERROR-ORIGINAL-REFRESH-COLD-RECOVERY-AND-REVOCATION-R482",
+        "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482"
       ],
       "pullRequests": [],
-      "nextAction": "f06准确App与cfdc Native已构建，全检查通过；Root冻结包复核后将9D1E新独占模拟器接入同目标，分受控错误/真实原刷新丢交付/同POST pinnedLAN恢复，严格0模型，旧720与授权保持。",
-      "updatedAt": "2026-11-21T20:45:13.433034+08:00",
+      "nextAction": "四阶段原生/服务端矩阵和精确撤销、资源清理均已完成；仅余f06窄HTTP边界及最终Native ab10源码集成主线233、检查/PR合并。无新配对/刷新/模型，原未知操作不重放。",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "scopeSource": "Originalcriteria retained fromF07-authorization-recovery; ordinaryscope doesnotclose parentF07 or allauthorization errors.",
-      "currentDevelopmentScope": "原grant与refresh intent持久化、同operationId POST及校验回执已有；408/429/5xx明确可恢复分类。恢复入口是同意图幂等POST，未实现独立GET查询，台账不再把GET当现有能力。 R479: f06源checkpoint+完整check/原生App/Native编译完成，未实际授权恢复验收。",
-      "executionState": "in-progress"
+      "currentDevelopmentScope": "f06窄HTTP边界默认生产语义保持；ab10具名同ready恢复及c917 B/C/D原方法实际验收。冻结源/包与最新主线整包部署分别记录。",
+      "executionState": "in-progress",
+      "currentAcceptedScope": "Four official Native stages each1pass0fail0skip: same owned ready/identity, before-network wrong workspace, controlled408/429/503 retain original grant/intent; one genuine server rotation with local delivery dropped after decrypt+verify; cold pinnedLAN-forward same original POST/token/body/id returns identical encrypted receipt and version2 stays; exact new grant revoked, signed403 and owned vault cleared. Original five bindings/seven tables/720 files/C77 draft protected, zero models. Controlled faults are not actual issuer outage. Root formal hold invocation distinct from Terra-requested other phases; source ab10 A/c917 BCD and matched f06 modules, no latest whole runtime claim.",
+      "resourceCleanup": {
+        "state": "owned-simulator-and-expanded-native-artifacts-released",
+        "evidenceRef": "F07-OWNED-SIMULATOR-AND-ENDED-NATIVE-RESOURCES-ACTUALLY-RELEASED-R482",
+        "retained": "Source/ZIP/raw xcresults and minimal proof required until final source delivery; old720/shared Desktop/broker unchanged."
+      }
     },
     {
       "id": "F44-bounded-offline-wait-and-unknown-ack",
@@ -38156,9 +38283,9 @@
       "phase": "hardening",
       "behavior": "Disconnect waiting ends with a bounded recoverable state; unknown ACK queries original operation",
       "acceptanceCriteria": "Measure offline timeout/cancel and late original receipt, preserve immutable operation/draft/attachments, recover without duplicate execution; actual unknown-ACK matrix per AC20/REV21.",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "Current root coordinator",
-      "acceptanceBasis": "real-dev-and-matched-merged-scopes",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F44-ORDINARY-ORIGINAL-RECEIPT-RECOVERY-COMPOSITE-ROOT-R332",
         "F44-BLOCKED-SEND-DEADLINE-ORIGINAL-RED-EIGHT-CASES-AND-SCOPED-DEBUG-CANDIDATE-R427",
@@ -38174,15 +38301,18 @@
         "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476",
         "F44-NATIVE-PRECONDITION-FAILURE-DIAGNOSED-NO-TRANSPORT-R477",
         "F44-F18-ONE-REAL-ORIGINAL-ACK-LOSS-ENDWAIT-AND-RECOVERY-FAILURES-R478",
-        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480"
+        "F44-F18-ORIGINAL-ACK-ENDWAIT-COLD-LATE-DRAFT-GUI-FINITE-COMPOSITE-R480",
+        "F44-F18-ENDED-NATIVE-STAGE-ROOT-ACTUAL-RESOURCE-RELEASE-R481",
+        "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482"
       ],
-      "pullRequests": ["BCAI/agent-hub-app#226"],
-      "nextAction": "本轮有限验收已完成，不重复A/B或已合reset；把DBG单Store入口和d45d Native/规范/唯一台账集成main00c，完成检查与Gitea PR合并，立即收尾已无依赖冻结支持/fixture备份。",
-      "updatedAt": "2026-11-21T21:02:08.745059+08:00",
+      "pullRequests": ["BCAI/agent-hub-app#226", "BCAI/agent-hub-app#233"],
+      "nextAction": "登记有限范围已合Gitea PR233/main aebbbef，两项必需CI/本机检查与构建通过，自有工作树/分支/缓存回收；保留原失败和父项其他边界，不重放原输入。",
+      "updatedAt": "2026-11-21T22:10:09.619873+08:00",
       "scopeSource": "Explicit remaining engineering obligation; ordinary criterion unchanged, original failed network test retained.",
-      "executionState": "in-progress",
+      "executionState": "closed",
       "currentAcceptedScope": "真实单原输入/一父一子、ACK仅本机丢失、32.2745秒结束/26.22ms结束等待；同原ID冷查询、真实迟到快照跨聊天隔离、新草稿保持及原稿恢复，双端正常可见与旧7表/身份/5绑定保护；旧已合reset/乱序按登记范围复用。额外prewire观察文件未生成不补签，父wholeFeature仍false。",
-      "currentDevelopmentScope": "PR226单调期限/response先到修复已合并；reply写失联后先查原command/status并进入明确待核，不自动再发turn/start。现有真实read故障开关不能冒充write ACK丢失。 R474: 仅DEBUGSimulator具名normal-single-store入口cfc已构建、docs7800补record通过；没有新真实在途/父子业务输入，不把原生编译当验收。"
+      "currentDevelopmentScope": "PR226单调期限/response先到修复已合并；reply写失联后先查原command/status并进入明确待核，不自动再发turn/start。现有真实read故障开关不能冒充write ACK丢失。 R474: 仅DEBUGSimulator具名normal-single-store入口cfc已构建、docs7800补record通过；没有新真实在途/父子业务输入，不把原生编译当验收。",
+      "pendingPullRequests": []
     },
     {
       "id": "F31-stop-upload-on-computer",
@@ -39056,6 +39186,26 @@
       },
       "mergeVerificationPath": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f68-original-readonly/delivery-inputs/pr232-merged-verification.json",
       "mergeVerificationSha256": "f1fb5dd5aa3116c8861cb86dad5cb172ddc3dbeb3704a19ed7b973de5fa6788a"
+    },
+    "BCAI/agent-hub-app#233": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 233,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/233",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "mergeCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "checkedMainCommit": "aebbbef46561451b9d86f021b50ad6d461a0220c",
+      "mergedAt": "2026-11-21T21:56:06+08:00",
+      "checkedAt": "2026-11-21T22:10:09.619873+08:00",
+      "tree": "27c5c9c94547590a1016256cf9c9492abe9bdbee",
+      "scope": "F44/F18 accepted finite original-operation/parent-child/cold/late/draft composite; test-only source and DEBUG Simulator single-store admission. Broad parents retain original scope.",
+      "evidenceRef": "F44-F18-PR233-ACTUAL-MAIN-EXACT-NATIVE-AND-OWNED-RESOURCES-RELEASED-R482",
+      "sourceDeleted": true,
+      "premergeCI": {
+        "workspace": "success",
+        "ios": "success"
+      }
     }
   },
   "deliveryWorkflow": {

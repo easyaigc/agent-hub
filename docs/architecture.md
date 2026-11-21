@@ -1,5 +1,7 @@
 # 架构设计
 
+EasyWork 设备授权的固定端点、DPoP issuer authority、完整目标和原刷新意图仍由授权 actor 校验。HTTP 通过请求级窄接口提供状态和有界正文；默认原生实现沿用 ephemeral 配置、证书委托、禁止重定向及流式读取上限。测试仅向独立 actor 注入响应处理，不注册全局协议、不修改共享授权服务。实际恢复场景见唯一 EasyWork 台账。
+
 2026-11-21 F19/F32：可选 attachments:range-read:v1 沿具名附件授权和完整目标提供固定私有快照及有界 Range；iOS 共同 AVPlayer 会话覆盖 inline、全屏、附件、链接及文档入口，旧 Host 与完整下载/分享保留。源码、限定物理验收和未验范围见 [专项记录](acceptance/mobile-video-streaming-20261121.md)。
 
 > 当前用户功能及 iOS/Android 实现、模拟器与真机验收仅维护在[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。本页的规格、日期段落、计数与验证描述保留其原始范围和历史时点，不构成另一份当前状态表。

@@ -135,10 +135,49 @@ struct EasyWorkDeviceAuthorizationFailure: LocalizedError, ConnectionAuthorizati
   }
 }
 
+enum EasyWorkAuthorizationHTTPTrust: Sendable {
+  case issuer
+  case paired(endpoint: String, fingerprint: String)
+}
+
+struct EasyWorkAuthorizationHTTPResponse: Sendable {
+  let status: Int
+  let body: Data
+}
+
+// Keep native HTTP details behind one request-scoped transport. The authorization
+// actor still owns the fixed endpoints, proof, grant checks and durable intent.
+protocol EasyWorkAuthorizationHTTPTransport: Sendable {
+  func response(for request: URLRequest, trust: EasyWorkAuthorizationHTTPTrust) async throws -> EasyWorkAuthorizationHTTPResponse
+}
+
+struct EasyWorkNativeAuthorizationHTTPTransport: EasyWorkAuthorizationHTTPTransport {
+  func response(for request: URLRequest, trust: EasyWorkAuthorizationHTTPTrust) async throws -> EasyWorkAuthorizationHTTPResponse {
+    guard let destination = request.url else { throw HostServiceError.invalidAddress }
+    let delegate: any URLSessionTaskDelegate
+    switch trust {
+    case .issuer: delegate = EasyWorkDeviceHTTPDelegate()
+    case .paired(let endpoint, let fingerprint):
+      delegate = PairedHostTrust(endpoint: endpoint, fingerprint: fingerprint)
+    }
+    let session = URLSession(configuration: EasyWorkHTTPConfiguration.ephemeral(for: destination), delegate: delegate, delegateQueue: nil)
+    defer { session.invalidateAndCancel() }
+    let (stream, response) = try await session.bytes(for: request, delegate: delegate)
+    guard let http = response as? HTTPURLResponse else { throw HostServiceError.invalidResponse }
+    var data = Data(); let limit = (200..<300).contains(http.statusCode) ? 65_536 : 4096
+    for try await byte in stream { guard data.count < limit else { throw HostServiceError.invalidResponse }; data.append(byte) }
+    return EasyWorkAuthorizationHTTPResponse(status: http.statusCode, body: data)
+  }
+}
+
 actor EasyWorkDeviceAuthorization {
   static let shared = EasyWorkDeviceAuthorization()
+  private let transport: any EasyWorkAuthorizationHTTPTransport
   private var pairing = false
   private var refreshing: Set<String> = []
+  init(transport: any EasyWorkAuthorizationHTTPTransport = EasyWorkNativeAuthorizationHTTPTransport()) {
+    self.transport = transport
+  }
   private func read<T: Decodable>(_ key: String, as type: T.Type) throws -> T? {
     let value = CredentialVault.token(key); return value.isEmpty ? nil : try JSONDecoder().decode(type, from: Data(value.utf8))
   }
@@ -146,13 +185,13 @@ actor EasyWorkDeviceAuthorization {
   private func request(origin: String, path: String, method: String, signer: EasyWorkDPoP, token: String? = nil, body: Data? = nil, lanForward: AgentConnectionCandidate? = nil, binding: EasyWorkBinding? = nil) async throws -> Data {
     guard let url = URL(string: try EasyWorkDeviceOffer.origin(origin) + "/v2/remote-access" + path) else { throw HostServiceError.invalidAddress }
     var destination=url
-    let delegate: any URLSessionTaskDelegate
+    let trust: EasyWorkAuthorizationHTTPTrust
     if let candidate=lanForward {
       guard path=="/device-grants/refresh",method=="POST",candidate.transportId=="lan-wss",let pin=candidate.peerFingerprint,let binding,var local=URLComponents(string:try EasyWorkPairing.localEndpoint(candidate.endpoint).absoluteString)else{throw HostServiceError.invalidAddress}
       local.path="/device-authorization/refresh";local.queryItems=[URLQueryItem(name:"bindingId",value:binding.bindingId)]
       guard let localURL=local.url else{throw HostServiceError.invalidAddress};destination=localURL
-      delegate=PairedHostTrust(endpoint:candidate.endpoint,fingerprint:pin)
-    }else{delegate=EasyWorkDeviceHTTPDelegate()}
+      trust = .paired(endpoint: candidate.endpoint, fingerprint: pin)
+    } else { trust = .issuer }
     var request = URLRequest(url: destination); request.httpMethod = method; request.httpBody = body; request.timeoutInterval = 40
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     if body != nil { request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type") }
@@ -160,15 +199,12 @@ actor EasyWorkDeviceAuthorization {
     request.setValue(try signer.proof(method: method, url: url, accessToken: token, body: body), forHTTPHeaderField: "DPoP")
     // Proof keeps the original issuer authority and immutable refresh body;
     // the pinned Desktop only forwards this named endpoint to that issuer.
-    let session = URLSession(configuration: EasyWorkHTTPConfiguration.ephemeral(for: destination), delegate: delegate, delegateQueue: nil)
-    defer { session.invalidateAndCancel() }
-    let (stream, response) = try await session.bytes(for: request, delegate: delegate)
-    guard let http = response as? HTTPURLResponse else { throw HostServiceError.invalidResponse }
-    var data = Data(); let limit = (200..<300).contains(http.statusCode) ? 65_536 : 4096
-    for try await byte in stream { guard data.count < limit else { throw HostServiceError.invalidResponse }; data.append(byte) }
-    guard (200..<300).contains(http.statusCode) else {
+    let response = try await transport.response(for: request, trust: trust)
+    let data = response.body
+    guard data.count <= ((200..<300).contains(response.status) ? 65_536 : 4096) else { throw HostServiceError.invalidResponse }
+    guard (200..<300).contains(response.status) else {
       let code = (try? easyWorkObject(data)["error"] as? [String: Any])?["code"] as? String
-      throw EasyWorkHTTPFailure.response(status: http.statusCode, code: code)
+      throw EasyWorkHTTPFailure.response(status: response.status, code: code)
     }
     return data.isEmpty ? Data("{}".utf8) : data
   }

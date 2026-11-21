@@ -4378,6 +4378,9 @@
       "apps/ios/CodexManage.xcodeproj/project.pbxproj"
     ],
     "EasyWorkIOSOriginalCacheAcceptance": ["apps/ios/NativeTests/EasyWorkHostedNativeTests.swift"],
+    "EasyWorkOwnedRefreshRecoveryAcceptance": [
+      "apps/ios/NativeTests/EasyWorkAuthorizationRecoveryNativeTests.swift"
+    ],
     "EasyWorkOriginalInflightAcceptance": [
       "apps/ios/NativeTests/EasyWorkInflightRecoveryNativeTests.swift"
     ]
@@ -4751,11 +4754,12 @@
         "AndroidFormLifecycleOwningComposeClock",
         "AndroidReadonlyTargetFiniteColumnLayout",
         "AndroidCompleteTextWrapPreconditions",
-        "AndroidImportedEditorActiveWindowReadiness"
+        "AndroidImportedEditorActiveWindowReadiness",
+        "EasyWorkOwnedRefreshRecoveryAcceptance"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 28,
+      "revision": 29,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4765,7 +4769,7 @@
         "android": "not-verified"
       },
       "androidStages": ["A5"],
-      "sourceNotes": "用户明确要求免手机账号登录。旧 PKCE 模块仅保留既有 DEV/兼容路径，公开连接表单已使用设备确认；DEV、本次原生验收和公网/Desktop真实OIDC部署分别记录。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。 I7.74 iOS-only Native56 candidate adds an in-memory temporary LAN test identity and exact-owned-binding GUI revocation probe; original credentials/permissions preserved. I7.77 actual Native56/V30 passed1/0/0 with exact owned GUI revoke and canonical audit; revoked old/new encrypted reads rejected, same-original-identity auto reconnect400, original phone and39 prior authorizations/nine business tables exact. First I7.75 failure preserved;73 scoped scenes139Run769receipts, zero new models/business receipts. Whole feature/global/Android/EWDAP DPoP/refresh unchanged."
+      "sourceNotes": "用户明确要求免手机账号登录。旧 PKCE 模块仅保留既有 DEV/兼容路径，公开连接表单已使用设备确认；DEV、本次原生验收和公网/Desktop真实OIDC部署分别记录。 P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 PAR2待验接入：Android native protocol/EWDAP/DPoP/receipt fixture prepared; API26 14 core passed, numeric sequence regression failed on API26 and physical as expected from reproduced defect. Native correction assigned; physical core not started while EasyWork runner occupied device. PAR4 easywork-authorization-intake: implementation checkpoint integrated; native and complete real DEV separate, remaining limits retained. PAR4 authorization-save-fence: integrated; exact candidate verification separate, full phase open. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。 I7.74 iOS-only Native56 candidate adds an in-memory temporary LAN test identity and exact-owned-binding GUI revocation probe; original credentials/permissions preserved. I7.77 actual Native56/V30 passed1/0/0 with exact owned GUI revoke and canonical audit; revoked old/new encrypted reads rejected, same-original-identity auto reconnect400, original phone and39 prior authorizations/nine business tables exact. First I7.75 failure preserved;73 scoped scenes139Run769receipts, zero new models/business receipts. Whole feature/global/Android/EWDAP DPoP/refresh unchanged.；2026-11-21 授权 HTTP 使用窄传输依赖，默认仍为原生 ephemeral/bytes、原信任委托及有界正文。固定端点、原签名 authority、完整目标、持久刷新意图及回执验证继续由原 actor 负责；测试专用实例可只控制本任务请求的响应。原模拟器/绑定不受影响，暂态错误与未知同操作恢复的实际结果只记唯一 EasyWork 台账，Android无新增通过。；同一独占授权四阶段真实Native均1/0/0：受控错误保留、一次真实轮换后丢本机交付、原POST经pinnedLAN同回执恢复、精确撤销及签名403；原五绑定/七表/草稿保持，专用模拟器已删除。当前结果和缺口只维护唯一台账，受控错误不称真实issuer故障。"
     },
     {
       "id": "F08",
@@ -24378,6 +24382,24 @@
       "summary": "Register the actual original simulator encrypted thread/sync and bounded session LRU acceptance source. Eight canonical desktop head/body reads, real knownCount and eviction observations, original identity/draft preservation and zero model inputs are recorded in the sole EasyWork ledger. This corrects PR232 missing source coverage without changing product behavior or existing Android/user-confirmed status. First route precondition failure remains historical; no new GUI, whole-history or capacity stress acceptance is implied.",
       "files": {
         "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "359ea3a1a024cbd507904be4900521bfff8c35e6c3f49a29dde95ecec830e3f1"
+      }
+    },
+    {
+      "id": "easywork-owned-refresh-http-transport-boundary-20261121",
+      "baseCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "features": ["F07"],
+      "summary": "Isolate request-scoped native authorization HTTP behind a Sendable transport dependency. Default path retains ephemeral configuration, TLS delegates, redirect rejection, timeout, streaming byte limits and cleanup. Fixed endpoints, issuer DPoP authority, target checks and original refresh intent/receipt semantics remain in the authorization actor. Controlled faults belong only to explicitly constructed test actors; no global interception, shared issuer modification, new protocol operation or old credential replay. Simulator and real issuer recovery results remain pending in the sole EasyWork ledger; Android verification is unchanged.",
+      "files": {
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift": "ffdae20a7711ab832bdf5d77240cfe32fb285aa64d99b625a9c720917a723f1e"
+      }
+    },
+    {
+      "id": "easywork-owned-refresh-native-acceptance-20261121",
+      "baseCommit": "00c8253a02454fb761fec0757ab9f3809ed8ed9e",
+      "features": ["F07"],
+      "summary": "Strict simulator/case/full-target owned authorization Native matrix, now actually accepted in the sole EasyWork ledger. Before-network wrong workspace and controlled 408/429/503 retain the original grant/intent; genuine native issuer completion is decrypted and verified before local delivery loss; a cold process recovers the same original POST/token through pinned Desktop with identical sealed receipt and one server rotation. Precisely revoke only the new grant and verify signed403/vault cleanup. An approved same-ready recovery requires exact existing identity/public-key/thumbprint and no prior offer/pending/checkpoint; no identity recreation or unknown replay. Custom config lives only in EnvironmentVariables, retaining full URLs. Root formal hold invocation and Terra-requested other phases are distinct; no new models or Android/physical result. Old precondition/environment/approval failures retained.",
+      "files": {
+        "apps/ios/NativeTests/EasyWorkAuthorizationRecoveryNativeTests.swift": "ab106409b67304db6375446206da707ab363af965120e4f085b4228fe102f97e"
       }
     },
     {

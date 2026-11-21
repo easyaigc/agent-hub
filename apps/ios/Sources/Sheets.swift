@@ -1046,9 +1046,15 @@ struct NativeContentButton<Content: View>: UIViewRepresentable {
         control.accessibilityLabel=label
         control.accessibilityValue=value
         control.isSelected=selected
-        if selected { control.accessibilityTraits.insert(.selected) }
-        else { control.accessibilityTraits.remove(.selected) }
-        control.accessibilityTraits.insert(.button)
+        var traits=control.accessibilityTraits
+        if selected { traits.insert(.selected) }
+        else { traits.remove(.selected) }
+        // Explicit traits retain UIKit's disabled flag after isEnabled changes.
+        // Keep assistive input in sync with the actual control and its guards.
+        if control.isEnabled { traits.remove(.notEnabled) }
+        else { traits.insert(.notEnabled) }
+        traits.insert(.button)
+        control.accessibilityTraits=traits
         let configuration=UIHostingConfiguration { content().allowsHitTesting(false).accessibilityHidden(true) }.margins(.all,0)
         if let hosted=control.hosted { hosted.configuration=configuration }
         else {

@@ -1607,3 +1607,5 @@ Codex 实时父会话使用正式 `subAgentActivity.agentThreadId` 与既有协�
 生成速度输入继续使用已有 GenerationOptions.speed，已提交操作及指纹不变。runtime 可选 generationSpeed 作为只读结果，包含 version=1、runId、requested、status=reported|unconfirmed，只有 reported 才有 actual。供应商 wire 档位由适配层转换；缺失/未知/冲突不可推定实际档位。结果只来自当前目标、聊天及分支所选 Run 的持久化采样记录，不按正文、时间或当前偏好推断。旧端缺少该字段不影响连接、历史及发送。
 
 2026-11-21 F44 候选：EasyWork 适配层在发布前建立单调时钟请求期限，覆盖发送与回执等待，并以原请求和连接 epoch 限定到期释放。提前到达的认证原回复保留；未知写入继续既有原操作查询，不扩大重发权。连接建立与通道选择维持各自预算，公共领域契约和 Host API 不变。DEBUG 准确目标的回调故障门及正常通知只读观察只服务独立模拟器验收，不伪造业务数据；实际结果见唯一 iOS × EasyWork 计划。
+
+2026-11-21 F31 源码候选：取消上传继续使用共同 UploadCenter 的持久取消意图、原清单及状态恢复。Codex Adapter 映射既有 v1/uploads/cancel，EasyWork Adapter 映射协议 v2 的 resource/transfer-cancel；后者自 file-transfers 能力引入时即属于严格命名契约，无需再造桌面接口。调用前核当前 runtime/context 完整目标和能力，回执核原传输、设备、用途、线程、清单和已提交偏移；已完成竞争保留原完成结果，未知结果继续查询原 ID，不重发文件字节。旧端不能同步取消时保留取消等待、原件和明确原因，不把本机停止假称电脑已取消。桌面既有服务按完整绑定目标取消其自身暂存；源码、模拟器双端结果和正式合并分别记录。

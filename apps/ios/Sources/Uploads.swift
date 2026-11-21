@@ -545,7 +545,7 @@ struct UploadProgressView: View {
             }.accessibilityIdentifier("upload-cancel-\(job.id)")
           }
         }.font(.caption).buttonStyle(.borderless)
-        if job.client.agentConnection != nil { Text(L10n.tr("停止后保留消息，电脑暂存由电脑端管理")).font(.caption2).foregroundStyle(.secondary) }
+        Text(L10n.tr("取消结果以电脑回执为准；消息和原附件保留。")).font(.caption2).foregroundStyle(.secondary)
       }
     }.accessibilityElement(children: .contain).accessibilityIdentifier("upload-progress-\(job.id)")
   }
@@ -670,6 +670,9 @@ enum EasyWorkUploadValidation {
     else { throw HostServiceError.invalidResponse }
     let offset = try EasyWorkReading.integer(record["transferredBytes"])
     guard (0...m.sizeBytes).contains(offset), !completed || offset == m.sizeBytes else { throw HostServiceError.invalidResponse }
+    if let expected = record["expectedSha256"], !(expected is NSNull) {
+      guard expected as? String == m.sha256 else { throw HostServiceError.invalidResponse }
+    }
     return record
   }
   static func chunk(_ response: [String: Any], end: Int, size: Int) throws {
@@ -741,7 +744,24 @@ extension EasyWorkAgentClient {
       result = try EasyWorkUploadValidation.completion(response, manifest: m, deviceId: deviceId)
       phase = "completed"; offset = m.sizeBytes
     case .cancel:
-      // EWDAP does not advertise a remote abort operation. Stop our bytes, preserve its receipt.
+      // Protocol v2's file-transfers contract includes the named cancel route.
+      // Keep older targets usable, but never report local cancellation as a
+      // computer receipt when that contract is unavailable.
+      let context = try object(await channel.request("runtime/context", [:]))
+      let confirmed = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+      guard confirmed == channel.target else { throw HostServiceError.wrongHost }
+      guard (context["capabilities"] as? [String] ?? []).contains("file-transfers") else {
+        throw HostServiceError.message(L10n.tr("手机发送已停止；当前电脑不支持同步取消，请在电脑端处理暂存。"))
+      }
+      let response = try object(await channel.request("resource/transfer-cancel", ["transferId": m.id], id: "cancel-" + m.id))
+      let record = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
+      offset = try EasyWorkReading.integer(record["transferredBytes"])
+      if record["status"] as? String == "completed" {
+        // Completion won the race. Reconcile the original publication rather
+        // than relabel its completed file as cancelled or resend its bytes.
+        return try await uploadRequest(client, manifest: m, action: .complete, bytes: nil, sent: nil)
+      }
+      guard record["status"] as? String == "cancelled" else { throw HostServiceError.invalidResponse }
       phase = "cancelled"
     }
     if phase == "uploading" {
@@ -750,10 +770,11 @@ extension EasyWorkAgentClient {
       else { response = try object(await channel.request("resource/upload-status", ["transferId": m.id])) }
       let transfer = try EasyWorkUploadValidation.transfer(response, manifest: m, deviceId: deviceId)
       offset = try EasyWorkReading.integer(transfer["transferredBytes"])
+      if transfer["status"] as? String == "cancelled" { phase = "cancelled" }
       if transfer["status"] as? String == "completed" {
         return try await uploadRequest(client, manifest: m, action: .complete, bytes: nil, sent: nil)
       }
-      guard ["transferring", "verifying"].contains(transfer["status"] as? String ?? "")
+      guard phase == "cancelled" || ["transferring", "verifying"].contains(transfer["status"] as? String ?? "")
         || (captured != nil && transfer["status"] as? String == "waiting") else { throw HostServiceError.invalidResponse }
     }
     let now = ISO8601DateFormatter().string(from: Date())

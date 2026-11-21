@@ -19,6 +19,75 @@ import Security
 #error("Build this driver with the independent EasyWork acceptance bundle or the default local compiler target")
 #endif
 
+@MainActor private final class NativeButtonState: ObservableObject {
+  @Published var text = ""
+  @Published var permitted = true
+  @Published var selected = false
+  var activations = 0
+  var enabled: Bool { !text.isEmpty && permitted }
+}
+
+private struct NativeButtonStateView: View {
+  @ObservedObject var state: NativeButtonState
+  var body: some View {
+    NativeContentButton(identifier: "native-button-state-regression", label: "Send",
+      value: state.enabled ? "Available" : "Unavailable", selected: state.selected) {
+      Text("Send").frame(width: 44, height: 44)
+    } action: { state.activations += 1 }
+      .disabled(!state.enabled)
+  }
+}
+
+final class NativeContentButtonAccessibilityTests: XCTestCase {
+  @MainActor func testEnabledTransitionsRetainRealGuardsAndSelectedTrait() async throws {
+    let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+    let previous = scene.windows.first(where: \.isKeyWindow)
+    let window = UIWindow(windowScene: scene)
+    let state = NativeButtonState()
+    window.rootViewController = UIHostingController(rootView: NativeButtonStateView(state: state))
+    window.makeKeyAndVisible()
+    defer {
+      window.isHidden = true
+      window.rootViewController = nil
+      previous?.makeKey()
+    }
+    func find(_ view: UIView) -> UIButton? {
+      if let button = view as? UIButton, button.accessibilityIdentifier == "native-button-state-regression" { return button }
+      for child in view.subviews { if let button = find(child) { return button } }
+      return nil
+    }
+    func wait(_ predicate: () -> Bool) async throws {
+      let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+      while !predicate() && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
+      XCTAssertTrue(predicate(), "The actual UIKit control did not reach the expected state")
+    }
+    try await wait { find(window) != nil }
+    let button = try XCTUnwrap(find(window))
+    try await wait { !button.isEnabled && button.accessibilityTraits.contains(.notEnabled) }
+    button.sendActions(for: .touchUpInside)
+    XCTAssertEqual(state.activations, 0)
+
+    state.text = "test"
+    state.selected = true
+    try await wait { button.isEnabled && !button.accessibilityTraits.contains(.notEnabled) }
+    XCTAssertTrue(button.accessibilityTraits.contains(.button))
+    XCTAssertTrue(button.accessibilityTraits.contains(.selected))
+    button.sendActions(for: .touchUpInside)
+    XCTAssertEqual(state.activations, 1)
+
+    state.permitted = false
+    state.selected = false
+    try await wait { !button.isEnabled && button.accessibilityTraits.contains(.notEnabled) }
+    XCTAssertFalse(button.accessibilityTraits.contains(.selected))
+    button.sendActions(for: .touchUpInside)
+    XCTAssertEqual(state.activations, 1, "The original disabled-action guard must remain effective")
+
+    state.permitted = true
+    try await wait { button.isEnabled && !button.accessibilityTraits.contains(.notEnabled) }
+    XCTAssertTrue(button.accessibilityTraits.contains(.button))
+  }
+}
+
 final class EasyWorkEncryptedEnvelopeWireTests: XCTestCase {
   func testSealedHeaderAcceptsLegacyAndSafeIntegersButRejectsBooleanVersion() throws {
     let mobile = Curve25519.KeyAgreement.PrivateKey()
@@ -261,7 +330,7 @@ private struct EasyWorkReceiptGateProvider: AgentClient {
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment {
     await gate.block("upload"); throw HostServiceError.unavailable
   }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL {
     await gate.block("download"); throw HostServiceError.unavailable
   }
 }
@@ -406,7 +475,7 @@ private struct EasyWorkLateEventProvider: AgentClient {
   func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection { try await base.replyDeliveryStatus(client, reply: reply, target: target) }
   func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { try await base.threadCreationStatus(client, projectId: projectId, operationId: operationId) }
   func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation { try await base.workspaceManagementStatus(client, request: request) }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await base.download(client, file: file) }
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL { try await base.download(client, file: file, progress: progress) }
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { try await base.cachedDownload(client, file: file) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await base.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { try await base.fileTransfers(client) }
@@ -586,7 +655,7 @@ private struct EasyWorkLateMissingReceiptProvider: AgentClient {
   func replyDeliveryStatus(_ client: Client, reply: PendingReply, target: AgentRuntimeTarget) async throws -> ReplyDeliveryInspection { try await base.replyDeliveryStatus(client, reply: reply, target: target) }
   func threadCreationStatus(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation? { try await base.threadCreationStatus(client, projectId: projectId, operationId: operationId) }
   func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation { try await base.workspaceManagementStatus(client, request: request) }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await base.download(client, file: file) }
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL { try await base.download(client, file: file, progress: progress) }
   func cachedDownload(_ client: Client, file: RemoteAttachment) async throws -> URL? { try await base.cachedDownload(client, file: file) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await base.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog { try await base.fileTransfers(client) }
@@ -871,7 +940,7 @@ private struct EasyWorkSendWaitProvider: AgentClient {
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment {
     throw HostServiceError.unavailable
   }
-  func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
+  func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler?) async throws -> URL {
     throw HostServiceError.unavailable
   }
 }

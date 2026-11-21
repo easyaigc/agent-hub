@@ -2,7 +2,7 @@ import Foundation
 import CryptoKit
 import CoreFoundation
 
-enum HostServiceError: Error { case invalidResponse, unavailable, rejected(Int, String), message(String) }
+enum HostServiceError: Error { case invalidResponse, wrongHost, unavailable, rejected(Int, String), message(String) }
 enum L10n { static func tr(_ s: String) -> String { s } }
 struct Client: Codable, Sendable { var id: String }
 extension Data { var base64URL: String { base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "") } }
@@ -10,6 +10,7 @@ struct EasyWorkAgentClient { func session(_ client: Client) async throws -> Fake
 // PRODUCTION_DECLARATIONS
 final class FakeChannel {
  let mobileDeviceId = "device"
+ let target = EasyWorkTarget(account: AgentAccount(authority: "https://acceptance.invalid", subject: "synthetic"), desktopDeviceId: "desktop", workspaceId: "workspace", runtimeId: "local")
  var calls: [(String, [String: Any], String?)] = []
  var statusMissing = false
  var commandExists = false

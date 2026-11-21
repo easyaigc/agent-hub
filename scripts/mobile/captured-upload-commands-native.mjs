@@ -28,13 +28,17 @@ const paths = [
   'apps/ios/Sources/HostService.swift',
   'apps/ios/Sources/EasyWorkAgentClient.swift',
   'apps/ios/Sources/EasyWorkReading.swift',
+  'apps/ios/Sources/EasyWorkTransport.swift',
+  'apps/ios/Sources/NotificationModels.swift',
   'scripts/mobile/captured-upload-commands-native.swift',
 ];
-const [uploads, models, host, easy, reading, fixture] = await Promise.all(
-  paths.map((p) => readFile(join(repo, p), 'utf8')),
-);
+const sources = await Promise.all(paths.map((p) => readFile(join(repo, p), 'utf8')));
+const [uploads, models, host, easy, reading, transport, notifications, fixture] = sources;
 const easyExtension = uploads.slice(uploads.indexOf('extension EasyWorkAgentClient {'));
 const code = [
+  declaration(notifications, 'struct AgentAccount:'),
+  declaration(transport, 'struct EasyWorkTarget:'),
+  declaration(transport, 'func easyWorkJSON('),
   declaration(models, 'struct DesktopCreationFile:'),
   ...[
     'struct UploadManifest:',
@@ -83,12 +87,7 @@ try {
         status,
         detail,
         inputs: Object.fromEntries(
-          paths.map((p, i) => [
-            p,
-            createHash('sha256')
-              .update([uploads, models, host, easy, reading, fixture][i])
-              .digest('hex'),
-          ]),
+          paths.map((p, i) => [p, createHash('sha256').update(sources[i]).digest('hex')]),
         ),
         scope: 'production declarations and request; fake channel; no network or GUI',
       },

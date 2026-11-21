@@ -22471,6 +22471,28 @@
         "apps/ios/Sources/EasyWorkTransport.swift": "40624d446c5faa5583819ea816b38246fbf208df69292b13687b07709bb3642e",
         "apps/ios/Sources/NotificationModels.swift": "c052fcf62e1fa05530c5e2f06021e84f1d0c1cf064889e034c6fa88ab564e951"
       }
+    },
+    {
+      "id": "easywork-remote-upload-cancel-20261121",
+      "baseCommit": "cecc2595f91a8ea0f2cca608f3d3aa2f74c834ed",
+      "features": ["F31"],
+      "summary": "Route existing shared upload cancel intent to protocol-v2 file-transfers resource/transfer-cancel, validate current full target/capability and original device/file manifest/offset, preserve completion races, and reconcile terminal cancellation after an unknown result without replaying bytes. Existing Codex UploadCenter lifecycle retained; unsupported older targets report pending computer cancellation rather than false local success. Original completed/local-only historical operations are not migrated or replayed. Existing Desktop named contract/service reused; independent large-file integration remains F59. Candidate and controlled Swift boundaries do not imply actual simulator/Desktop or Android acceptance; A6 remains paused. Existing captured-upload fixture now extracts the actual target/account/canonical JSON dependencies required by the production request; original assertions unchanged.",
+      "files": {
+        "apps/ios/Sources/Uploads.swift": "78e7aff04b2afbcb20d9f0c94cff18a9c33324d22f23b07668407ed113979226",
+        "scripts/easywork-upload-cancel.test.mjs": "a1181658e5ec04eb243fd763116820b10fd8a0c65bed381ec2dcf6b856f8c86e",
+        "scripts/mobile/captured-upload-commands-native.mjs": "1bd81cc45e364ba643805377ca6eefadf9890a2cb857f225a97f4ffddef78cb4",
+        "scripts/mobile/captured-upload-commands-native.swift": "197c4115155d1a32b08886328956098730c076d67292523a41d6779151756c24"
+      }
+    },
+    {
+      "id": "ios-native-content-button-enabled-trait-20261121",
+      "baseCommit": "f23a1fa78afbcc07fb59bb084ae401b6ef7a4f88",
+      "features": ["F29", "F39"],
+      "summary": "Synchronize notEnabled accessibility trait with actual UIKit isEnabled after each NativeContentButton update, preserving selected/button traits, environment disabled state and activation guards. Real extracted original UIKit source reproduces enabled control/disabled AX; repair native and real EasyWork acceptance tracked separately in sole ledger. Hosted native regression covers disabled/enabled/revoked/restored transitions and guarded actions. No Android change or acceptance; A6 paused. Four existing native test providers adopt the current download progress signature, preserving their blocking/unavailable behavior and forwarding progress in the two decorators; assertions unchanged.",
+      "files": {
+        "apps/ios/Sources/Sheets.swift": "bfa3b1cb8fe61240062c00925ea50578859f72e0bf66915f2fb866e42e77cbd5",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "e6315303364070b875e86821bd0f8872829f10da3b65d1b466bf8349b11e7fe5"
+      }
     }
   ]
 }

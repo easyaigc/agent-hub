@@ -9,7 +9,8 @@ import { verifyHostRuntime } from './verify-host-runtime.mjs';
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const names = ['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'];
 
-async function fixture(run) {
+async function fixture(run, { preview = true } = {}) {
+  const fixtureNames = preview ? [...names, 'dev-preview'] : names;
   const root = await mkdtemp(join(tmpdir(), 'host-runtime-resolution-'));
   const body = 'throw new Error("Runtime verification must not execute this module");\n';
   const fingerprint = sha256(JSON.stringify({ 'index.js': sha256(body) }));
@@ -31,9 +32,9 @@ async function fixture(run) {
     await makePackage(
       host,
       'host-agent',
-      Object.fromEntries(names.map((name) => ['@codex-manage/' + name, 'workspace:*'])),
+      Object.fromEntries(fixtureNames.map((name) => ['@codex-manage/' + name, 'workspace:*'])),
     );
-    for (const name of names)
+    for (const name of fixtureNames)
       await makePackage(
         join(root, 'node_modules/@codex-manage', name),
         name,
@@ -45,7 +46,7 @@ async function fixture(run) {
       JSON.stringify({
         runtimeFingerprints: Object.fromEntries([
           ['apps/host-agent', fingerprint],
-          ...names.map((name) => ['packages/' + name, fingerprint]),
+          ...fixtureNames.map((name) => ['packages/' + name, fingerprint]),
         ]),
       }),
     );
@@ -67,7 +68,42 @@ test('uses real ESM import resolution and verifies without running application c
   fixture(async ({ entry, bundle }) => {
     const result = await verifyHostRuntime({ entry, bundle });
     assert.equal(result.ok, true);
-    assert.equal(result.packages.length, 5);
+    assert.equal(result.packages.length, 6);
+  }));
+
+test('retains compatibility with older Hosts and bundles without preview', () =>
+  fixture(
+    async ({ entry, bundle }) => {
+      const result = await verifyHostRuntime({ entry, bundle });
+      assert.equal(result.ok, true);
+      assert.equal(result.packages.length, 5);
+    },
+    { preview: false },
+  ));
+
+test('verifies the actual preview dependency rather than ignoring a stale shadow', () =>
+  fixture(async ({ host, entry, bundle, makePackage }) => {
+    const shadow = join(host, 'dist/node_modules/@codex-manage/dev-preview');
+    await makePackage(shadow, 'dev-preview', {}, 'export const stalePreview = true;\n');
+    const result = await verifyHostRuntime({ entry, bundle });
+    assert.equal(result.ok, false);
+    assert(result.mismatches.some((item) => item.name === '@codex-manage/dev-preview'));
+  }));
+
+test('a declared preview dependency needs a matching unified fingerprint', () =>
+  fixture(async ({ entry, bundle }) => {
+    const value = JSON.parse(await readFile(bundle, 'utf8'));
+    delete value.runtimeFingerprints['packages/dev-preview'];
+    await writeFile(bundle, JSON.stringify(value));
+    const result = await verifyHostRuntime({ entry, bundle });
+    assert.equal(result.ok, false);
+    assert(
+      result.mismatches.some(
+        (item) =>
+          item.name === '@codex-manage/dev-preview' &&
+          item.reason === 'missing-unified-fingerprint',
+      ),
+    );
   }));
 
 test('rejects a stale nested Adapter even when nominal packages match the bundle', () =>

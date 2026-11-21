@@ -210,6 +210,10 @@ final class SessionStore: ObservableObject {
 
   private var eventTask: Task<Void, Never>?
   private var lastConnectionSuccess: [String: TimeInterval] = [:]
+  // Preserve the actual failure for an explicit reconnect. Being offline alone
+  // is not evidence that a saved device credential has been revoked.
+  private var connectionFailures: [String: Error] = [:]
+  func connectionFailure(for id: String) -> Error? { connectionFailures[id] }
   private var connectionAuthorizationNotices = ConnectionAuthorizationNotices<ConnectionAuthorizationIdentity<AgentRuntimeTarget>?>()
   private var workspaceRefreshGeneration: UUID?
   private var workspaceRefreshOwner: UUID?
@@ -1067,6 +1071,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     }
   }
   private func recordConnectionSuccess(_ host: Client) {
+    connectionFailures.removeValue(forKey: host.id)
     lastConnectionSuccess[host.id] = ProcessInfo.processInfo.systemUptime
     if let index = saved.clients.firstIndex(where: { $0.id == host.id }), !saved.clients[index].online { saved.clients[index].online = true }
     if connectionPhases[host.id] != nil { connectionPhases.removeValue(forKey: host.id) }
@@ -1084,6 +1089,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     // validated response from this Host disproves this request's offline inference.
     // Authentication, identity and protocol failures still fail closed.
     if transient, let startedAt, let success = lastConnectionSuccess[host.id], success > startedAt { return }
+    connectionFailures[host.id] = failure
     if host.id == client?.id { suggestionNeedsFreshHistory = transient }
     if let index = saved.clients.firstIndex(where: { $0.id == host.id }) { saved.clients[index].online = false }
     connectionPhases[host.id] = transient ? .waiting : .failed
@@ -3078,6 +3084,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       direct.candidates += oldCandidates.filter { old in !direct.candidates.contains(where: { $0.endpoint == old.endpoint }) }
       direct.candidates = Array(direct.candidates.prefix(32))
       direct.observedEndpoint = direct.observedEndpoint ?? old.codexDirect?.observedEndpoint
+      direct.discoveryNetworks = direct.discoveryNetworks ?? old.codexDirect?.discoveryNetworks
       incoming.codexDirect = direct
     }
     try CredentialVault.set(offer.token!, id: incoming.id)
@@ -3109,7 +3116,15 @@ private var userRequestedWorkspaceGeneration: UUID?
     let combined = candidates + old.filter { item in !candidates.contains(where: { $0.endpoint == item.endpoint }) }
     let legacy = previous.codexDirect?.candidates.contains(where: { $0.endpoint == previous.endpoint }) == true || previous.codexDirect?.observedRoute == previous.endpoint ? nil : previous.endpoint
     let systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: previous.codexDirect?.systemEndpoints ?? [], supplied: host.systemEndpoints ?? [], legacy: legacy)
-    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased(), systemEndpoints: systemEndpoints, observedEndpoint: verifiedObservedEndpoint ?? previous.codexDirect?.observedEndpoint)
+    var networks = host.discoveryNetworks ?? previous.codexDirect?.discoveryNetworks
+    if let address = URLComponents(string: reachableEndpoint)?.host,
+      let local = LocalDiscoveryNetworks.read().first(where: { $0.scope?.contains(address: address) == true }) {
+      // A successful, target/pin-matched local read can teach the real local
+      // mask even when this older Host has no networks endpoint yet.
+      let learned = HostDiscoveryNetwork(address: address, cidr: local.cidr)
+      if !(networks ?? []).contains(learned) { networks = (networks ?? []) + [learned] }
+    }
+    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased(), systemEndpoints: systemEndpoints, observedEndpoint: verifiedObservedEndpoint ?? previous.codexDirect?.observedEndpoint, discoveryNetworks: networks)
     let priorEndpoint = saved.clients[index].endpoint
     let changed = saved.clients[index].codexDirect != connection || saved.clients[index].endpoint != reachableEndpoint
     saved.clients[index].codexDirect = connection

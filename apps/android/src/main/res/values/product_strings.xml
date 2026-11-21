@@ -1894,6 +1894,12 @@
     <string name="product_371d9568b2a5d39105587fb7" formatted="false">"Office network"</string>
     <string name="product_175ae4d5c9062d425dec8a3b" formatted="false">"Reads Host descriptions only in the configured subnet. Large ranges can take a long time; stop at any time. Routes and computer authorization are unchanged."</string>
     <string name="product_6f2f21f3c0040d51594c016c" formatted="false">"Connect directly over LAN, or remotely using a computer VPN or a phone VPN with an office subnet route. Configure the office subnet to discover Hosts without a VPN on every computer. Each computer still requires authorization."</string>
+    <string name="product_11c98e2f1bb20bee1f6580fe" formatted="false">"Automatically discover computers on the current LAN and networks learned from connected computers. Remote access needs your phone VPN and subnet route; computers only need their Host running. Discovery still requires computer authorization."</string>
+    <string name="product_ef394841b81d06bb178222da" formatted="false">"No discoverable networks have been learned yet. Connect once through an existing computer connection to learn its network automatically. Both connection apps must support this feature."</string>
+    <string name="product_070e25527ffc1f5994d261cb" formatted="false">"Automatically find computers"</string>
+    <string name="product_c6f028a3f2a51078bdd53dcc" formatted="false">"Network ranges come automatically from the current LAN and authorized computers. No address entry is needed. You can stop discovery at any time; saved computers and authorizations are preserved."</string>
+    <string name="product_7fa3dadd4ac3e2e0eea584e6" formatted="false">"The computer rejected the saved device authorization. Check its authorization status on that computer."</string>
+    <string name="product_bc3b41e454c84515234214b0" formatted="false">"Found in this scan"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

@@ -202,7 +202,7 @@ struct CodexConnectionForm: View {
                 discoveredHosts
             }
             Section {
-                Text(L10n.tr("局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。"))
+                Text(L10n.tr("自动查找当前局域网，以及已连接电脑提供的网络。跨网络时请保持手机 VPN 和子网路由可用；电脑只需运行 Host。发现后仍需电脑授权。"))
                     .font(.footnote).foregroundStyle(Palette.secondary)
                     .accessibilityIdentifier("codex-dual-channel-help")
             }
@@ -290,7 +290,7 @@ struct CodexConnectionForm: View {
             if discoveryRows.isEmpty {
                 Text(L10n.tr("正在查找同一网络的电脑…")).foregroundStyle(Palette.secondary)
             }
-            Button(L10n.tr("重新查找"), systemImage: "arrow.clockwise") { Task { await discovery.scan(store); await vpnDiscovery.scan(store) } }
+            Button(L10n.tr("重新查找"), systemImage: "arrow.clockwise") { officeDiscovery.start(store); Task { await discovery.scan(store); await vpnDiscovery.scan(store) } }
         } header: { Text(L10n.tr("自动发现")) } footer: {
             Text(L10n.tr("自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。"))
         }
@@ -315,6 +315,10 @@ struct CodexConnectionForm: View {
         } + discovered.filter { found in !saved.contains { $0.id == found.id } }
     }
     private func discoveryDetail(_ host: CodexHostDiscovery.Host) -> String {
+        if officeDiscovery.codexHosts.contains(where: { $0.id == host.id && $0.reachable && $0.endpoint == host.endpoint }) {
+            let connected = store.saved.clients.contains { $0.id == host.id && $0.online }
+            return L10n.tr("本轮已发现") + " · " + (connected ? L10n.tr("已连接") : L10n.tr("点选连接"))
+        }
         if let client = store.saved.clients.first(where: { $0.id == host.id }) {
             let network = host.networkKind == .vpn ? "VPN · " : ""
             if client.online { return network + L10n.tr("已连接") }
@@ -337,11 +341,16 @@ struct CodexConnectionForm: View {
                     dismiss(); connecting = false; return
                 }
                 if let previous = store.saved.clients.first(where: { $0.id == host.id }), let direct = previous.codexDirect, host.reachable {
-                    let descriptor = try await CodexDiscoveryAPI.read(host.endpoint, fingerprint: direct.fingerprint, target: direct.target, timeout: 8)
-                    guard store.updateCodexDiscovery(previous, host: descriptor, reachableEndpoint: host.endpoint, verifiedObservedEndpoint: host.endpoint) else { throw HostServiceError.wrongHost }
+                    let systemTrusted = direct.systemRoutes.contains(host.endpoint)
+                    let descriptor = try await CodexDiscoveryAPI.read(host.endpoint, fingerprint: systemTrusted ? nil : direct.fingerprint, target: direct.target, token: CredentialVault.token(previous.id), timeout: 8)
+                    guard store.updateCodexDiscovery(previous, host: descriptor, reachableEndpoint: host.endpoint, verifiedObservedEndpoint: systemTrusted ? nil : host.endpoint) else { throw HostServiceError.wrongHost }
                 }
-                store.selectClient(host.id, refreshAutomatically: false); await store.refresh()
-                guard store.client?.online == true else { throw HostServiceError.unavailable }
+                store.selectClient(host.id, refreshAutomatically: false)
+                // Wait for an already running workspace read as well. A generic
+                // offline flag must not erase its network/authentication error.
+                await store.refresh(includeHistory: false, userInitiated: true)
+                guard store.client?.id == host.id else { connecting = false; return }
+                guard store.client?.online == true else { throw store.connectionFailure(for: host.id) ?? HostServiceError.unavailable }
                 NativeReadAcceptanceTiming.record("connection-success", hostId: host.id)
                 dismiss()
             } catch {
@@ -350,7 +359,7 @@ struct CodexConnectionForm: View {
                     authorizationHost = host; hostKey = ""; formError = nil
                 } else {
                     formError = error.userFacingDescription
-                    if host.known { failedKnownHost = host }
+                    if host.known, case HostServiceError.rejected(401, _) = error { failedKnownHost = host }
                 }
             }
             connecting = false
@@ -1130,39 +1139,37 @@ struct OfficeDiscoverySection: View {
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var store: SessionStore
     @ObservedObject private var discovery = OfficeHostDiscovery.shared
-    @State private var subnet = ""
-    @State private var scopeError: String?
     var body: some View {
         Section {
-            TextField(L10n.tr("办公室网段，如 192.168.8.0/24"), text: $subnet)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .accessibilityIdentifier("office-discovery-subnet")
-            Button(L10n.tr("保存并查找")) {
-                do { try discovery.configure(subnet, store: store); scopeError = nil }
-                catch { scopeError = L10n.tr("请输入完整位于私网内、网络地址对齐的 IPv4 网段。") }
-            }.accessibilityIdentifier("office-discovery-save")
-            if discovery.scope != nil {
-                Button(L10n.tr("移除办公室网段")) { discovery.remove(); subnet = ""; scopeError = nil }
-                    .accessibilityIdentifier("office-discovery-remove")
+            if !discovery.scopes.isEmpty {
                 if discovery.searching {
                     ProgressView(value: Double(discovery.completed), total: Double(max(1, discovery.total)))
                     Text(L10n.tr("正在查找办公室电脑…") + " \(discovery.completed)/\(discovery.total)")
-                    Button(L10n.tr("停止查找")) { discovery.stop() }
+                        .accessibilityIdentifier("office-discovery-progress")
+                    Button(L10n.tr("停止查找")) { discovery.stop() }.accessibilityIdentifier("office-discovery-stop")
                 } else if discovery.total > 0 {
                     Text(discovery.completed < discovery.total
                         ? L10n.tr("已停止") + " \(discovery.completed)/\(discovery.total)"
                         : L10n.tr("本轮查找已结束；未找到时请检查手机 VPN、子网路由及电脑 Host。"))
                         .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("office-discovery-progress")
                 }
+            } else {
+                Text(L10n.tr("尚未取得可查找的网络。请先通过已有连接连上一次电脑，自动学习网络；电脑与手机连接程序需支持此功能。"))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("office-discovery-awaiting-network")
             }
-            if let scopeError { Text(scopeError).foregroundStyle(.red) }
-        } header: { Text(L10n.tr("办公室网络")) } footer: {
-            Text(L10n.tr("只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。"))
+            if !discovery.searching {
+                Button(L10n.tr("重新查找")) { discovery.start(store) }.accessibilityIdentifier("office-discovery-retry")
+            }
+        } header: { Text(L10n.tr("自动查找网络中的电脑")) } footer: {
+            Text(L10n.tr("网络范围由当前局域网和已授权电脑自动提供，无需填写地址。查找可随时停止，已有记录和授权不会改变。"))
         }
-        .task { subnet = discovery.scope?.cidr ?? ""; discovery.start(store) }
-        .onDisappear { discovery.stop() }
+        .task { discovery.activate(store) }
+        .onDisappear { discovery.deactivate() }
+        .onChange(of: store.saved.clients.map { $0.codexDirect?.discoveryNetworks }) { _, _ in discovery.updateScopes(store) }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { discovery.start(store) } else { discovery.stop() }
+            if phase == .active { discovery.activate(store) } else { discovery.deactivate() }
         }
     }
 }

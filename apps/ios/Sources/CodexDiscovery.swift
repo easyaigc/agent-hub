@@ -31,15 +31,20 @@ enum CodexPrivateCredential {
 }
 
 struct CodexDirectConnection: Codable, Equatable, Sendable {
+  struct Network: Codable, Equatable, Sendable { var address: String; var cidr: String }
   var target: AgentRuntimeTarget
   var candidates: [AgentConnectionCandidate]
   var fingerprint: String
   var systemEndpoints: [String]? = nil
   // A TLS-verified route learned independently of the Host advertisement (v1 max 32).
   var observedEndpoint: String? = nil
+  // Learned through this saved target's authenticated, certificate-checked
+  // connection. Removing the record removes its network hints as well.
+  var discoveryNetworks: [Network]? = nil
   var observedRoute: String? { observedEndpoint.flatMap { try? EasyWorkPairing.localEndpoint($0).absoluteString } }
   var systemRoutes: [String] { (systemEndpoints ?? []).prefix(4).compactMap { CodexRouteRules.shared.systemEndpoint(value: $0) } }
 }
+typealias HostDiscoveryNetwork = CodexDirectConnection.Network
 struct CodexHostDescriptor: Codable, Sendable {
   var version: Int
   var agentId: String
@@ -52,6 +57,8 @@ struct CodexHostDescriptor: Codable, Sendable {
   var token: String? = nil
   // Learned only from the separate authenticated routes contract; /host stays v1 compatible.
   var systemEndpoints: [String]? = nil
+  // Local observation only; the public /host v1 payload remains unchanged.
+  var discoveryNetworks: [HostDiscoveryNetwork]? = nil
   static func validatePayload(_ data: Data, allowToken: Bool = false) throws {
     guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw HostServiceError.invalidResponse }
     if allowToken { object.removeValue(forKey: "token") }
@@ -246,6 +253,27 @@ final class CodexSystemTrust: NSObject, URLSessionTaskDelegate, @unchecked Senda
 }
 
 enum CodexDiscoveryAPI {
+  static func networks(_ session: URLSession, base: URL, token: String, host: CodexHostDescriptor) async -> [HostDiscoveryNetwork]? {
+    guard !token.isEmpty else { return nil }
+    do {
+      var url = URLComponents(url: base.appendingPathComponent("v1/discovery/networks"), resolvingAgainstBaseURL: false)!
+      url.queryItems = [URLQueryItem(name: "hostId", value: host.target.hostId)]
+      // Authenticated network inventory has no descriptor-size/count ceiling.
+      // Keep the same route-specific TLS delegate and request cancellation;
+      // the public /host reader retains its separate 64 KiB limit.
+      let (data, response) = try await session.data(for: HostService.request(url.url!, token: token), delegate: session.delegate as? URLSessionTaskDelegate)
+      guard (response as? HTTPURLResponse)?.statusCode == 200,
+        let wire = String(data: data, encoding: .utf8), CodexDiscoveryContract.shared.validateNamed(json: wire, definition: "discoveryNetworks") == nil else { return nil }
+      struct Snapshot: Decodable { var version: Int; var target: AgentRuntimeTarget; var networks: [HostDiscoveryNetwork] }
+      let snapshot = try JSONDecoder().decode(Snapshot.self, from: data)
+      guard snapshot.version == 1, snapshot.target == host.target else { return nil }
+      // The authenticated contract is independent of the public descriptor's
+      // 32-advertisement limit. The Host applies the same LAN eligibility rules
+      // before returning each real interface address and mask-derived CIDR.
+      guard snapshot.networks.allSatisfy({ $0.scope != nil }) else { return nil }
+      return snapshot.networks
+    } catch { return nil } // 404/old version/offline is not an empty replacement or authorization loss.
+  }
   static func systemEndpoints(_ session: URLSession, base: URL, token: String, target: AgentRuntimeTarget) async -> [String] {
     guard !token.isEmpty else { return [] }
     do {
@@ -277,7 +305,7 @@ enum CodexDiscoveryAPI {
       NativeReadAcceptanceTiming.discovery(endpoint, event: "start", startedAt: startedAt)
       let data: Data, response: URLResponse
       do {
-        (data, response) = try await DiscoveryResponse.read(session, request: request)
+        (data, response) = try await DiscoveryResponse.read(session, request: request, authenticated: !token.isEmpty && target != nil)
         NativeReadAcceptanceTiming.discovery(endpoint, event: "response", startedAt: startedAt)
       } catch {
         NativeReadAcceptanceTiming.discovery(endpoint, event: "failed", startedAt: startedAt, error: error)
@@ -289,6 +317,8 @@ enum CodexDiscoveryAPI {
       guard target == nil || value.target == target, fingerprint == nil || value.fingerprint.lowercased() == fingerprint?.lowercased() else { throw HostServiceError.wrongHost }
       if discover { guard value.fingerprint.lowercased() == discovered.fingerprint else { throw HostServiceError.wrongHost } }
       value.systemEndpoints = await systemEndpoints(session, base: url, token: token, target: value.target)
+      // Never expand scan scope from an unauthenticated public descriptor.
+      if target != nil { value.discoveryNetworks = await networks(session, base: url, token: token, host: value) }
       return value
     }
   }
@@ -341,7 +371,8 @@ enum CodexDiscoveryAPI {
     guard workspace.hostId == host.target.hostId, workspace.readTarget == host.target, workspace.connectionMode == "desktop-runtime" else { throw HostServiceError.wrongHost }
     let candidates = try EasyWorkPairing.directCandidates(host.endpoints, hints: host.endpointHints ?? [], fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
     host.systemEndpoints = await systemEndpoints(session, base: base, token: token, target: host.target)
-    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints, observedEndpoint: endpoint))
+    host.discoveryNetworks = await networks(session, base: base, token: token, host: host)
+    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints, observedEndpoint: endpoint, discoveryNetworks: host.discoveryNetworks))
     host.token = token
     return (host, client, workspace)
   }
@@ -352,7 +383,7 @@ enum CodexDiscoveryAPI {
       do {
         let host = try await read(candidate.endpoint, fingerprint: offer.fingerprint, target: offer.target, token: offer.token!)
         let merged = try EasyWorkPairing.directCandidates([candidate.endpoint] + host.endpoints + offer.endpoints, hints: (host.endpointHints ?? []) + (offer.endpointHints ?? []), fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
-        let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: candidate.endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: merged, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints))
+        let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: candidate.endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: merged, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints, discoveryNetworks: host.discoveryNetworks))
         let session = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: candidate.endpoint, fingerprint: offer.fingerprint), delegateQueue: nil)
         defer { session.invalidateAndCancel() }
         let (data, response) = try await session.data(for: HostService.request(try HostService.baseURL(candidate.endpoint).appendingPathComponent("v1/workspace"), token: offer.token!))
@@ -445,6 +476,13 @@ struct VPNPeerSnapshot: Decodable, Sendable {
     codexHosts = []; seenCodex = [:]; easyworkHosts = []; bonjour = [:]; store = nil
   }
   func run(_ store: SessionStore) async {
+    #if DEBUG && targetEnvironment(simulator)
+    // A named independent UI examiner may test the LAN path without probing
+    // unrelated VPN peers. Device and release discovery are unchanged.
+    if Bundle.main.bundleIdentifier == "com.easyai.agenthub.officediscovery.acceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      ProcessInfo.processInfo.arguments.contains("-office-local-discovery-acceptance") { return }
+    #endif
     stop(); active = true; self.store = store; let current = generation
     let monitor = NWPathMonitor(); self.monitor = monitor
     monitor.pathUpdateHandler = { [weak self, weak store] _ in Task { @MainActor in
@@ -750,12 +788,14 @@ struct VPNPeerSnapshot: Decodable, Sendable {
   }
 }
 
-/// An explicit private subnet is a discovery scope, not a VPN peer or a trust grant.
+/// An observed private subnet is a discovery scope, not a VPN peer or a trust grant.
 /// Keep this value independent from the v1 VPN directory wire contract.
 struct OfficeDiscoveryScope: Equatable, Sendable {
   let cidr: String
   let addressCount: Int
   private let firstAddress: UInt64
+  private let networkAddress: UInt64
+  private let networkCount: UInt64
   init(_ input: String) throws {
     let parts = input.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "/", omittingEmptySubsequences: false)
     guard parts.count == 2, let prefix = Int(parts[1]), (0...32).contains(prefix) else { throw HostServiceError.invalidAddress }
@@ -771,6 +811,7 @@ struct OfficeDiscoveryScope: Equatable, Sendable {
     let privateBlocks: [(UInt64, UInt64)] = [(0x0a000000, 0x0affffff), (0xac100000, 0xac1fffff), (0xc0a80000, 0xc0a8ffff)]
     guard address % count == 0, privateBlocks.contains(where: { address >= $0.0 && address + count - 1 <= $0.1 }) else { throw HostServiceError.invalidAddress }
     cidr = Self.text(address) + "/" + String(prefix)
+    networkAddress = address; networkCount = count
     // /31 point-to-point and /32 single-host scopes have no broadcast address.
     firstAddress = address + (prefix < 31 ? 1 : 0)
     addressCount = Int(count) - (prefix < 31 ? 2 : 0)
@@ -782,14 +823,81 @@ struct OfficeDiscoveryScope: Equatable, Sendable {
     precondition((0..<addressCount).contains(index))
     return Self.text(firstAddress + UInt64(index))
   }
+  func contains(_ other: OfficeDiscoveryScope) -> Bool {
+    networkAddress <= other.networkAddress && networkAddress + networkCount >= other.networkAddress + other.networkCount
+  }
+  func contains(address: String) -> Bool {
+    guard let host = try? OfficeDiscoveryScope(address + "/32") else { return false }
+    return host.networkAddress >= firstAddress && host.networkAddress < firstAddress + UInt64(addressCount)
+  }
+  static func interface(address: String, netmask: String) -> OfficeDiscoveryScope? {
+    func number(_ text: String) -> UInt64? {
+      let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+      guard parts.count == 4 else { return nil }
+      let bytes = parts.compactMap { part -> UInt64? in
+        guard let byte = UInt8(part), String(byte) == part else { return nil }; return UInt64(byte)
+      }
+      return bytes.count == 4 ? bytes.reduce(0) { ($0 << 8) | $1 } : nil
+    }
+    guard let ip = number(address), let mask = number(netmask) else { return nil }
+    let hostBits = UInt64(0xffffffff) - mask
+    guard hostBits & (hostBits + 1) == 0 else { return nil }
+    let prefix = 32 - hostBits.nonzeroBitCount
+    guard let scope = try? OfficeDiscoveryScope(text(ip & mask) + "/" + String(prefix)), scope.contains(address: address) else { return nil }
+    return scope
+  }
+  static func unique(_ scopes: [OfficeDiscoveryScope]) -> [OfficeDiscoveryScope] {
+    var result: [OfficeDiscoveryScope] = []
+    for scope in scopes.sorted(by: { $0.networkCount > $1.networkCount || $0.networkCount == $1.networkCount && $0.networkAddress < $1.networkAddress }) {
+      if !result.contains(where: { $0.contains(scope) }) { result.append(scope) }
+    }
+    return result.sorted { $0.networkAddress < $1.networkAddress }
+  }
+}
+
+extension CodexDirectConnection.Network {
+  var scope: OfficeDiscoveryScope? {
+    guard let value = try? OfficeDiscoveryScope(cidr), value.contains(address: address) else { return nil }
+    return value
+  }
+}
+
+enum LocalDiscoveryNetworks {
+  static func read() -> [HostDiscoveryNetwork] {
+    var first: UnsafeMutablePointer<ifaddrs>?
+    guard getifaddrs(&first) == 0 else { return [] }
+    defer { freeifaddrs(first) }
+    func ipv4(_ address: UnsafeMutablePointer<sockaddr>?) -> String? {
+      guard let address, address.pointee.sa_family == UInt8(AF_INET) else { return nil }
+      var value = address.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { $0.pointee.sin_addr }
+      var buffer = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+      guard inet_ntop(AF_INET, &value, &buffer, socklen_t(buffer.count)) != nil else { return nil }
+      return String(cString: buffer)
+    }
+    var result: [HostDiscoveryNetwork] = [], current = first
+    while let interface = current {
+      defer { current = interface.pointee.ifa_next }
+      let value = interface.pointee, flags = value.ifa_flags
+      let name = String(cString: value.ifa_name)
+      // iOS Wi-Fi/Ethernet only. Cellular private addresses, point-to-point
+      // utun and peer-to-peer Apple interfaces are not office networks.
+      guard name.range(of: "^en[0-9]+$", options: .regularExpression) != nil,
+        flags & UInt32(IFF_UP) != 0, flags & UInt32(IFF_RUNNING) != 0,
+        flags & UInt32(IFF_LOOPBACK | IFF_POINTOPOINT) == 0,
+        let address = ipv4(value.ifa_addr), let mask = ipv4(value.ifa_netmask),
+        let scope = OfficeDiscoveryScope.interface(address: address, netmask: mask) else { continue }
+      result.append(.init(address: address, cidr: scope.cidr))
+    }
+    return result
+  }
 }
 
 /// No credentials, claim, binding or command is sent by office discovery.
-/// A foreground scan is explicit, bounded and cancelled when its sheet closes.
+/// Only real local interfaces and saved authenticated Host observations supply
+/// ranges. The retired manual UserDefaults key is deliberately not read.
 @MainActor final class OfficeHostDiscovery: ObservableObject {
   static let shared = OfficeHostDiscovery()
-  private static let key = "agent-hub-office-subnet-v1"
-  @Published private(set) var scope: OfficeDiscoveryScope?
+  @Published private(set) var scopes: [OfficeDiscoveryScope] = []
   @Published private(set) var codexHosts: [CodexHostDiscovery.Host] = []
   @Published private(set) var easyworkHosts: [EasyWorkDiscovery.Host] = []
   @Published private(set) var searching = false
@@ -797,44 +905,79 @@ struct OfficeDiscoveryScope: Equatable, Sendable {
   @Published private(set) var total = 0
   private var task: Task<Void, Never>?
   private var generation = UUID()
-  private init() {
-    if let saved = UserDefaults.standard.string(forKey: Self.key) { scope = try? OfficeDiscoveryScope(saved) }
-  }
-  func configure(_ input: String, store: SessionStore) throws {
-    let next = try OfficeDiscoveryScope(input)
-    reset(); scope = next; UserDefaults.standard.set(next.cidr, forKey: Self.key)
+  private var monitor: NWPathMonitor?
+  private var active = false
+  private var stoppedByUser = false
+  private let localNetworks: () -> [HostDiscoveryNetwork]
+  init(localNetworks: @escaping () -> [HostDiscoveryNetwork] = LocalDiscoveryNetworks.read) { self.localNetworks = localNetworks }
+  func activate(_ store: SessionStore) {
+    guard !active else { return }; active = true
+    let monitor = NWPathMonitor(); self.monitor = monitor
+    monitor.pathUpdateHandler = { [weak self, weak store] _ in Task { @MainActor in
+      guard let self, let store, self.active else { return }; self.updateScopes(store)
+    } }
+    monitor.start(queue: DispatchQueue(label: "agent-hub-office-path"))
     start(store)
   }
-  func remove() { reset(); scope = nil; UserDefaults.standard.removeObject(forKey: Self.key) }
+  func deactivate() { active = false; monitor?.cancel(); monitor = nil; stop() }
+  private func availableScopes(_ store: SessionStore) -> [OfficeDiscoveryScope] {
+    let learned = store.saved.clients.filter { !$0.isDemo }.flatMap { $0.codexDirect?.discoveryNetworks ?? [] }
+    return OfficeDiscoveryScope.unique((localNetworks() + learned).compactMap(\.scope))
+  }
+  func updateScopes(_ store: SessionStore) {
+    guard active, !stoppedByUser, availableScopes(store) != scopes else { return }
+    start(store)
+  }
   func stop() {
-    generation = UUID(); task?.cancel(); task = nil; searching = false
+    generation = UUID(); task?.cancel(); task = nil; searching = false; stoppedByUser = true
   }
   private func reset() {
     stop()
     codexHosts = []; easyworkHosts = []; completed = 0; total = 0
   }
   func start(_ store: SessionStore) {
-    guard !searching, let scope else { return }
-    reset(); let epoch = generation
-    searching = true; total = scope.addressCount * 2
+    let next = availableScopes(store)
+    if searching, next == scopes { return }
+    reset(); scopes = next; stoppedByUser = false
+    guard !scopes.isEmpty else { return }
+    let epoch = generation
+    searching = true; total = scopes.reduce(0) { $0 + $1.addressCount * 2 }
+    let captured = scopes
+    var seenAddresses = Set<String>()
+    let priority = store.saved.clients.flatMap { $0.codexDirect?.discoveryNetworks ?? [] }.map(\.address)
+      .filter { address in captured.contains { $0.contains(address: address) } && seenAddresses.insert(address).inserted }
     task = Task { [weak self, weak store] in
       guard let self, let store else { return }
-      await self.scan(scope, store: store, epoch: epoch)
+      await self.scan(captured, priority: priority, store: store, epoch: epoch)
       if self.generation == epoch { self.searching = false; self.task = nil }
     }
   }
-  private func scan(_ scope: OfficeDiscoveryScope, store: SessionStore, epoch: UUID) async {
+  private func scan(_ scopes: [OfficeDiscoveryScope], priority: [String], store: SessionStore, epoch: UUID) async {
     struct Probe: Sendable { var endpoint: String; var codex: Bool }
     enum Result: Sendable { case codex(String, CodexHostDescriptor), easywork(String, EasyWorkHostDescriptor) }
     // Iterate even a /8 in constant space. No peer-count truncation and no
-    // request beyond the explicitly configured scope. User cancellation stops it.
-    let probeCount = scope.addressCount * 2
+    // request beyond the observed scopes. User cancellation stops it.
     await withTaskGroup(of: Result?.self) { group in
-      var index = 0
+      var indices = scopes.map { _ in 0 }, nextScope = 0, priorityIndex = 0
+      let prioritized = Set(priority)
       @MainActor func enqueue() {
-        guard index < probeCount, !Task.isCancelled, generation == epoch else { return }
-        let address = scope.address(at: index / 2), codex = index % 2 == 0
-        let probe = Probe(endpoint: "https://\(address):\(codex ? 8796 : 4319)", codex: codex); index += 1
+        guard !Task.isCancelled, generation == epoch else { return }
+        let address: String, codex: Bool
+        if priorityIndex < priority.count * 2 {
+          address = priority[priorityIndex / 2]; codex = priorityIndex % 2 == 0; priorityIndex += 1
+        } else {
+          // Round-robin scopes so a large legitimate network cannot starve a
+          // smaller learned LAN. Skip only addresses already scheduled above.
+          for slot in scopes.indices {
+            while indices[slot] < scopes[slot].addressCount * 2,
+              prioritized.contains(scopes[slot].address(at: indices[slot] / 2)) { indices[slot] += 1 }
+          }
+          guard let slot = (0..<scopes.count).map({ (nextScope + $0) % scopes.count })
+            .first(where: { indices[$0] < scopes[$0].addressCount * 2 }) else { return }
+          let index = indices[slot]; indices[slot] += 1; nextScope = (slot + 1) % scopes.count
+          address = scopes[slot].address(at: index / 2); codex = index % 2 == 0
+        }
+        let probe = Probe(endpoint: "https://\(address):\(codex ? 8796 : 4319)", codex: codex)
         group.addTask {
           guard !Task.isCancelled else { return nil }
           if probe.codex, let host = try? await CodexDiscoveryAPI.read(probe.endpoint, fingerprint: nil, target: nil, discover: true, timeout: 2) { return .codex(probe.endpoint, host) }
@@ -878,9 +1021,12 @@ struct OfficeDiscoveryScope: Equatable, Sendable {
 
 /// Enforce the descriptor limit while receiving, before allocating an arbitrary body.
 enum DiscoveryResponse {
-  static func read(_ session: URLSession, request: URLRequest) async throws -> (Data, URLResponse) {
+  static func read(_ session: URLSession, request: URLRequest, authenticated: Bool = false) async throws -> (Data, URLResponse) {
     let (bytes, response) = try await session.bytes(for: request, delegate: session.delegate as? URLSessionTaskDelegate)
     defer { bytes.task.cancel() }
+    if authenticated, (response as? HTTPURLResponse)?.statusCode == 401 {
+      throw HostServiceError.rejected(401, L10n.tr("电脑拒绝了已有设备授权，请核对电脑端的授权状态。"))
+    }
     guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw HostServiceError.unavailable }
     var data = Data()
     for try await byte in bytes {

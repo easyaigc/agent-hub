@@ -19618,3 +19618,179 @@ final class OfficePhysicalColdRecoveryTests: XCTestCase {
     #endif
   }
 }
+
+// Uses the existing isolated acceptance installation and its normal store.
+// Run only after the authorized network environment and updated Host are verified.
+final class AutomaticRoutedDiscoveryTests: XCTestCase {
+  @MainActor func testAutomaticRoutedDiscoveryWithExistingConnection() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Physical iPhone required")
+    #else
+    let env = ProcessInfo.processInfo.environment
+    guard env["AUTOMATIC_DISCOVERY_SCOPE_VERIFIED"] == "192.168.8.0/24",
+          env["AUTOMATIC_DISCOVERY_HOST_ID"] == "b055934c-43f5-4a95-8a8c-5f00682d4c5d",
+          let endpoint = env["AUTOMATIC_DISCOVERY_EXPECTED_ENDPOINT"], !endpoint.isEmpty else {
+      throw XCTSkip("Verify the authorized network, Host and expected observed endpoint before running")
+    }
+    continueAfterFailure = false
+    let hostID = env["AUTOMATIC_DISCOVERY_HOST_ID"]!
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = []; app.launchEnvironment = [:]
+    func openPicker() {
+      XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30))
+      app.buttons["client-switch"].tap()
+      XCTAssertTrue(app.buttons["client-" + hostID].waitForExistence(timeout: 20))
+      XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier MATCHES %@", "client-[0-9a-fA-F-]{36}")).count, 1)
+    }
+    func openDiscovery() {
+      openPicker()
+      let known = app.buttons["client-" + hostID]
+      let connected = NSPredicate { object, _ in
+        guard let element = object as? XCUIElement, let value = element.value as? String else { return false }
+        let lower = value.lowercased()
+        return (value.contains("已连接") && !value.contains("未连接")) || (lower.contains("connected") && !lower.contains("disconnected") && !lower.contains("not connected"))
+      }
+      XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: connected, object: known)], timeout: 60), .completed, "Existing connection must be online before network learning")
+      app.buttons["add-client"].tap()
+      let codex = app.buttons["Codex"].firstMatch
+      if codex.waitForExistence(timeout: 5) { codex.tap() }
+      XCTAssertTrue(app.staticTexts["office-discovery-progress"].waitForExistence(timeout: 30), "A learned or local network must start discovery")
+      XCTAssertFalse(app.textFields["office-discovery-subnet"].exists)
+      XCTAssertFalse(app.buttons["office-discovery-save"].exists)
+      XCTAssertFalse(app.buttons["office-discovery-remove"].exists)
+    }
+    app.terminate(); app.launch(); openDiscovery()
+    let row = app.buttons["codex-discovered-" + hostID]
+    let observed = NSPredicate(format: "value == %@ AND (label CONTAINS %@ OR label CONTAINS %@)", endpoint, "本轮已发现", "Found in this scan")
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: observed, object: row)], timeout: 300), .completed, "Expected authorized observed route")
+    let stop = app.buttons["office-discovery-stop"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 10), "Stop while discovery is active")
+    for _ in 0..<6 where !stop.isHittable { app.swipeUp() }
+    stop.tap()
+    XCTAssertTrue(row.exists, "Stopping must retain the seen row")
+    XCTAssertEqual(row.value as? String, endpoint)
+    let retry = app.buttons["office-discovery-retry"]
+    XCTAssertTrue(retry.waitForExistence(timeout: 10))
+    for _ in 0..<6 where !retry.isHittable { app.swipeUp() }
+    retry.tap()
+    XCTAssertTrue(app.staticTexts["office-discovery-progress"].waitForExistence(timeout: 30))
+    app.terminate(); app.launch(); openPicker()
+    XCTAssertTrue(app.buttons["client-" + hostID].exists, "Cold restart must retain the original record")
+    #endif
+  }
+}
+
+
+final class AutomaticDiscoveryIsolatedSimulatorTests: XCTestCase {
+  @MainActor func testAutomaticDiscoveryIsolatedSimulatorDEV() throws {
+    #if targetEnvironment(simulator)
+    guard ProcessInfo.processInfo.environment["AUTOMATIC_DISCOVERY_ALL_PATHS_SCOPE_VERIFIED"] == "192.168.8.0/24" else {
+      throw XCTSkip("All discovery paths must be verified within the authorized simulator scope before scanning")
+    }
+    continueAfterFailure = false
+    let hostID = "b055934c-43f5-4a95-8a8c-5f00682d4c5d"
+    let endpoint = "https://192.168.8.201:8796"
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-office-local-discovery-acceptance", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    func shot(_ name: String) {
+      let attachment = XCTAttachment(screenshot: app.screenshot())
+      attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+    func openDiscovery() {
+      XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+      XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+      let codex = app.buttons["Codex"].firstMatch
+      if codex.waitForExistence(timeout: 5) { codex.tap() }
+      XCTAssertFalse(app.textFields["office-discovery-subnet"].exists)
+      XCTAssertFalse(app.buttons["office-discovery-save"].exists)
+      XCTAssertFalse(app.buttons["office-discovery-remove"].exists)
+      XCTAssertTrue(app.staticTexts["office-discovery-progress"].waitForExistence(timeout: 30), "Automatic scan must start")
+    }
+    app.launch()
+    let started = ProcessInfo.processInfo.systemUptime
+    openDiscovery()
+    let row = app.buttons["codex-discovered-" + hostID]
+    let observed = NSPredicate(format: "value == %@ AND label CONTAINS %@ AND (label CONTAINS %@ OR label CONTAINS %@)", endpoint, "wangbo", "本轮已发现", "Found in this scan")
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: observed, object: row)], timeout: 300), .completed)
+    print("AUTOMATIC_SIM_FIRST_HIT_SECONDS=\(ProcessInfo.processInfo.systemUptime - started)")
+    let progress = app.staticTexts["office-discovery-progress"]
+    print("AUTOMATIC_SIM_BEFORE_STOP=\(progress.label)")
+    shot("automatic-simulator-found")
+    let stop = app.buttons["office-discovery-stop"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 10), "Scan must still be running when stopped")
+    for _ in 0..<6 where !stop.isHittable { app.swipeUp() }
+    XCTAssertTrue(stop.isHittable); stop.tap()
+    let stopped = NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "已停止 ", "Stopped ")
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stopped, object: progress)], timeout: 10), .completed)
+    let stoppedLabel = progress.label
+    for _ in 0..<4 { Thread.sleep(forTimeInterval: 1); XCTAssertEqual(progress.label, stoppedLabel, "Stopped count must remain unchanged") }
+    print("AUTOMATIC_SIM_STOPPED=\(progress.label)")
+    XCTAssertTrue(row.exists); XCTAssertEqual(row.value as? String, endpoint)
+    for _ in 0..<6 where !row.isHittable { app.swipeUp() }
+    XCTAssertTrue(row.isHittable); shot("automatic-simulator-stopped"); row.tap()
+    let key = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(key.waitForExistence(timeout: 30))
+    let keyValue = key.value as? String ?? ""
+    let keyPlaceholder = key.placeholderValue ?? ""
+    XCTAssertTrue(keyValue.isEmpty || (!keyPlaceholder.isEmpty && keyValue == keyPlaceholder), "Untouched Host Key must be empty or expose its placeholder as the accessibility value")
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    shot("automatic-simulator-empty-host-key")
+    app.terminate(); app.launch(); openDiscovery()
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: observed, object: row)], timeout: 300), .completed, "Cold launch must rediscover automatically")
+    print("AUTOMATIC_SIM_COLD_PROGRESS=\(progress.label)")
+    shot("automatic-simulator-cold-found")
+    app.terminate()
+    #else
+    throw XCTSkip("Independent simulator only")
+    #endif
+  }
+  @MainActor func testAutomaticDiscoveryStopSettlesOnly() throws {
+    #if targetEnvironment(simulator)
+    guard ProcessInfo.processInfo.environment["AUTOMATIC_DISCOVERY_ALL_PATHS_SCOPE_VERIFIED"] == "192.168.8.0/24" else {
+      throw XCTSkip("Authorized discovery scope must be verified before scanning")
+    }
+    continueAfterFailure = false
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.officediscovery.acceptance")
+    app.launchArguments = ["-ui-testing", "-office-local-discovery-acceptance", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    defer { app.terminate() }
+    app.launch()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+    XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+    let codex = app.buttons["Codex"].firstMatch
+    if codex.waitForExistence(timeout: 5) { codex.tap() }
+    let progress = app.staticTexts["office-discovery-progress"]
+    XCTAssertTrue(progress.waitForExistence(timeout: 30))
+    let deadline = ProcessInfo.processInfo.systemUptime + 30
+    var count = 0
+    while ProcessInfo.processInfo.systemUptime < deadline {
+      let label = progress.label
+      if let match = label.range(of: #"[0-9]+/[0-9]+"#, options: .regularExpression) {
+        count = Int(label[match].split(separator: "/")[0]) ?? 0
+        if count >= 4 { break }
+      }
+      Thread.sleep(forTimeInterval: 0.2)
+    }
+    XCTAssertGreaterThanOrEqual(count, 4, "Real scan must advance before stopping")
+    let stop = app.buttons["office-discovery-stop"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 10))
+    for _ in 0..<6 where !stop.isHittable { app.swipeUp() }
+    XCTAssertTrue(stop.isHittable)
+    print("STOP_BOUNDARY_BEFORE=\(progress.label)")
+    let started = ProcessInfo.processInfo.systemUptime
+    stop.tap()
+    let stopped = NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "已停止 ", "Stopped ")
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: stopped, object: progress)], timeout: 10), .completed, "Stop must settle")
+    print("STOP_BOUNDARY_SETTLE_SECONDS=\(ProcessInfo.processInfo.systemUptime - started)")
+    XCTAssertFalse(stop.exists)
+    XCTAssertTrue(app.buttons["office-discovery-retry"].waitForExistence(timeout: 10))
+    let settled = progress.label
+    print("STOP_BOUNDARY_SETTLED=\(settled)")
+    for _ in 0..<4 { Thread.sleep(forTimeInterval: 1); XCTAssertEqual(progress.label, settled, "Stopped count must remain unchanged") }
+    print("STOP_BOUNDARY_OBSERVATION_SECONDS=\(ProcessInfo.processInfo.systemUptime - started)")
+    let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "stop-boundary-settled"; shot.lifetime = .keepAlways; add(shot)
+    #else
+    throw XCTSkip("Independent simulator only")
+    #endif
+  }
+
+}

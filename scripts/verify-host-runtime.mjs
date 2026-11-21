@@ -10,6 +10,7 @@ const components = {
   '@codex-manage/protocol': 'packages/protocol',
   '@codex-manage/service-runtime': 'packages/service-runtime',
   '@codex-manage/notification-runtime': 'packages/notification-runtime',
+  '@codex-manage/dev-preview': 'packages/dev-preview',
 };
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
@@ -38,7 +39,13 @@ async function packageAt(entry, expectedName) {
 /** Compare the actual ESM dependency closure with a unified bundle's compiled fingerprints. */
 export async function verifyHostRuntime({ entry, bundle, node = process.execPath }) {
   const expected = JSON.parse(await readFile(bundle, 'utf8')).runtimeFingerprints;
-  for (const component of Object.values(components))
+  // Older packages predate preview support. Require it when advertised by the
+  // bundle, and still inspect it when an actual Host dependency declares it.
+  const requiredComponents = Object.entries(components).filter(
+    ([name, component]) =>
+      name !== '@codex-manage/dev-preview' || Object.hasOwn(expected ?? {}, component),
+  );
+  for (const [, component] of requiredComponents)
     if (!/^[a-f0-9]{64}$/.test(expected?.[component] ?? ''))
       throw new Error('Missing unified runtime fingerprint: ' + component);
   const pending = [{ name: '@codex-manage/host-agent', entry: resolve(entry), importer: null }];
@@ -64,7 +71,12 @@ export async function verifyHostRuntime({ entry, bundle, node = process.execPath
       expected: expected[component],
       matches,
     });
-    if (!matches) mismatches.push({ name: next.name, root: value.root, reason: 'fingerprint' });
+    if (!matches)
+      mismatches.push({
+        name: next.name,
+        root: value.root,
+        reason: expected[component] ? 'fingerprint' : 'missing-unified-fingerprint',
+      });
     const requests = Object.keys(value.manifest.dependencies ?? {})
       .filter((name) => Object.hasOwn(components, name))
       .map((name) => ({ name, parent: pathToFileURL(value.entry).href }));
@@ -91,7 +103,7 @@ export async function verifyHostRuntime({ entry, bundle, node = process.execPath
       pending.push({ name: item.name, entry: fileURLToPath(item.url), importer: value.entry });
     }
   }
-  for (const [name] of Object.entries(components))
+  for (const [name] of requiredComponents)
     if (!packages.some((item) => item.name === name))
       mismatches.push({ name, reason: 'not-resolved-from-host' });
   return {

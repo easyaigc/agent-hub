@@ -1904,3 +1904,15 @@
 "只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。" = "Reads Host descriptions only in the configured subnet. Large ranges can take a long time; stop at any time. Routes and computer authorization are unchanged.";
 
 "局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。" = "Connect directly over LAN, or remotely using a computer VPN or a phone VPN with an office subnet route. Configure the office subnet to discover Hosts without a VPN on every computer. Each computer still requires authorization.";
+
+"自动查找当前局域网，以及已连接电脑提供的网络。跨网络时请保持手机 VPN 和子网路由可用；电脑只需运行 Host。发现后仍需电脑授权。" = "Automatically discover computers on the current LAN and networks learned from connected computers. Remote access needs your phone VPN and subnet route; computers only need their Host running. Discovery still requires computer authorization.";
+
+"尚未取得可查找的网络。请先通过已有连接连上一次电脑，自动学习网络；电脑与手机连接程序需支持此功能。" = "No discoverable networks have been learned yet. Connect once through an existing computer connection to learn its network automatically. Both connection apps must support this feature.";
+
+"自动查找网络中的电脑" = "Automatically find computers";
+
+"网络范围由当前局域网和已授权电脑自动提供，无需填写地址。查找可随时停止，已有记录和授权不会改变。" = "Network ranges come automatically from the current LAN and authorized computers. No address entry is needed. You can stop discovery at any time; saved computers and authorizations are preserved.";
+
+"电脑拒绝了已有设备授权，请核对电脑端的授权状态。" = "The computer rejected the saved device authorization. Check its authorization status on that computer.";
+
+"本轮已发现" = "Found in this scan";

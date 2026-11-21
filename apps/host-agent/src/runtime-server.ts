@@ -33,7 +33,7 @@ import {
 import { notificationRecoveryRoute } from './notification-recovery-routes.js';
 import { startDirectDiscovery } from './direct-discovery.js';
 import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
-import { VPNPeerDirectory } from './direct-endpoints.js';
+import { SystemDirectAddressProvider, VPNPeerDirectory } from './direct-endpoints.js';
 import { PrivateConnections } from './private-connections.js';
 import {
   privateConnectionHostKeyAuthorized,
@@ -748,6 +748,19 @@ export async function startRuntimeServer() {
           peers: await vpnDirectory.peers(),
         };
         json(response, 200, snapshot);
+        return;
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/discovery/networks') {
+        if (url.searchParams.get('hostId') !== session.hostId || [...url.searchParams].length !== 1)
+          throw new RuntimeError(400, '网络发现请求必须指定当前电脑');
+        // This branch is behind the ordinary device/Host authorization above.
+        // It exposes local interface scope only, never Headscale credentials or
+        // an assertion that this phone has permission to access that network.
+        json(response, 200, {
+          version: 1,
+          target: session.readingTarget(),
+          networks: new SystemDirectAddressProvider().networks(),
+        });
         return;
       }
       if (request.method === 'GET' && url.pathname === '/host' && direct) {

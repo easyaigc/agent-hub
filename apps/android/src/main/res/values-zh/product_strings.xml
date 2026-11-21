@@ -1894,6 +1894,12 @@
     <string name="product_371d9568b2a5d39105587fb7" formatted="false">"办公室网络"</string>
     <string name="product_175ae4d5c9062d425dec8a3b" formatted="false">"只读取明确配置网段内的 Host 描述；大范围可能耗时很长，可随时停止。不会改变路由或代替电脑授权。"</string>
     <string name="product_6f2f21f3c0040d51594c016c" formatted="false">"局域网可直接连接；远程可使用电脑 VPN，或手机 VPN 与办公室子网路由。配置办公室网段后可查找网内 Host，无需每台电脑运行 VPN。发现后仍需各电脑授权。"</string>
+    <string name="product_11c98e2f1bb20bee1f6580fe" formatted="false">"自动查找当前局域网，以及已连接电脑提供的网络。跨网络时请保持手机 VPN 和子网路由可用；电脑只需运行 Host。发现后仍需电脑授权。"</string>
+    <string name="product_ef394841b81d06bb178222da" formatted="false">"尚未取得可查找的网络。请先通过已有连接连上一次电脑，自动学习网络；电脑与手机连接程序需支持此功能。"</string>
+    <string name="product_070e25527ffc1f5994d261cb" formatted="false">"自动查找网络中的电脑"</string>
+    <string name="product_c6f028a3f2a51078bdd53dcc" formatted="false">"网络范围由当前局域网和已授权电脑自动提供，无需填写地址。查找可随时停止，已有记录和授权不会改变。"</string>
+    <string name="product_7fa3dadd4ac3e2e0eea584e6" formatted="false">"电脑拒绝了已有设备授权，请核对电脑端的授权状态。"</string>
+    <string name="product_bc3b41e454c84515234214b0" formatted="false">"本轮已发现"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

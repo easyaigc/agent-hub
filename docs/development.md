@@ -70,15 +70,15 @@ P9 scoped bootstrap只建立正常Storage的独占scope/key/write准入，不能
 统一升级按以下顺序执行：
 
 1. 在本仓库合并源码与 SKILL，更新对应设计、协议和运行文档，执行 `pnpm check`；涉及原生工程时另执行 `pnpm build:ios`。
-2. 将通过检查的 Git commit 归档到独立冻结源码目录，确认 Host、Relay、Protocol、Service Runtime、Notification Runtime、Adapter 六个组件的 `dist` 均为空或尚不存在；使用锁定依赖，按 Protocol → Service Runtime → Notification Runtime → Adapter → Host → Relay 顺序，逐组件执行 `pnpm exec tsc --project <组件>/tsconfig.json`。在同一冻结目录以 `TASK_HUB_BUNDLE=<冻结的 Task Hub 目录> node scripts/package-host-connect.mjs` 生成完整接入包与 SHA-256。不得复制开发工作区中被忽略的 `dist` 或复用构建缓存；普通增量构建或干净 Git status 不能证明没有旧编译文件。保存 commit、源码与配置输入摘要及六组件发射文件清单。同一次分发的 macOS 和 Windows 必须使用这一个包，记录包摘要、Adapter 指纹和各目标实际桌面版本。
+2. 将通过检查的 Git commit 归档到独立冻结源码目录，确认 Host、Relay、Protocol、Service Runtime、Notification Runtime、Adapter、Dev Preview 七个组件的 `dist` 均为空或尚不存在；使用锁定依赖，按 Protocol → Service Runtime → Notification Runtime → Adapter → Dev Preview → Host → Relay 顺序，逐组件执行 `pnpm exec tsc --project <组件>/tsconfig.json`。在同一冻结目录以 `TASK_HUB_BUNDLE=<冻结的 Task Hub 目录> node scripts/package-host-connect.mjs` 生成完整接入包与 SHA-256。不得复制开发工作区中被忽略的 `dist` 或复用构建缓存；普通增量构建或干净 Git status 不能证明没有旧编译文件。保存 commit、源码与配置输入摘要及七组件发射文件清单。同一次分发的 macOS 和 Windows 必须使用这一个包，记录包摘要、Adapter 指纹和各目标实际桌面版本。
 3. 目标电脑先保存程序、差异与私有配置，核对包摘要后更新稳定程序和 SKILL。保留 Host ID、密钥、项目根目录、Node、服务路径、端口及既有配置。完整接入按 [Trace 流程](../skills/codex-host-connect/references/desktop-suggestions.md) 简要解释手机建议同步与本机保存范围，macOS 和原生 x64 Windows 默认使用各自持久环境工具配置 Trace 及 Host 观察器，不逐项追加记录授权；已有匹配配置复用，用户明确关闭或仅本次诊断时保留。持久环境就绪后由用户择机正常退出并从原图标重开，只有本次诊断才用独立等待器。必要时只重启本产品 Host，不强退原 Codex；当前进程、新 Trace、手机效果与注销恢复分别记证。Windows 实现及本机验收范围见 [Windows Trace](windows-native-trace.md)，不把源码或其他电脑通过写成当前目标全通过。默认核对当前用户登录自启，用户明确关闭时除外。
-4. 逐机核对回环与 HTTPS 身份、实际 owner、创建与主动打开，并记录真实原生客户端和模型任务的结果。使用原 Node 运行 `scripts/verify-host-runtime.mjs --entry <正式 Host dist/runtime-entry.js> --bundle <统一包 bundle.json>`，核对实际 ESM 解析到的直接及传递依赖指纹；检查嵌套 `dist/node_modules`，不能把工作区目录摘要当作正式进程已加载证明；工具核对解析到的磁盘文件，变更后仍核对必要重启后的 PID、入口与原环境。客户端可由有 Xcode 的开发电脑配合验收，桌面 owner 和执行证据仍须在各目标独立核对。
+4. 逐机核对回环与 HTTPS 身份、实际 owner、创建与主动打开，并记录真实原生客户端和模型任务的结果。使用原 Node 运行 `scripts/verify-host-runtime.mjs --entry <正式 Host dist/runtime-entry.js> --bundle <统一包 bundle.json>`，核对实际 ESM 解析到的直接及传递依赖指纹；检查嵌套 `dist/node_modules`，包括 Host 已声明的 Dev Preview 依赖；旧 Host/包均未提供该组件时继续兼容。不能把工作区目录摘要当作正式进程已加载证明；工具核对解析到的磁盘文件，变更后仍核对必要重启后的 PID、入口与原环境。客户端可由有 Xcode 的开发电脑配合验收，桌面 owner 和执行证据仍须在各目标独立核对。
 
 Windows 已有受保护 Host 可使用[同源增量升级入口](windows-host-regular-upgrade.md)：在本机独立、干净的冻结检出中安装自身依赖并从空 `dist` 编译，再冻结 `windows-host-regular-runtime-v1` 闭包，按 manifest SHA-256 发布。它用于 Windows 本机程序升级，保留原身份、私有配置、端口与 Task 定义；不声称生成完整 Skill ZIP，不取代同一次 macOS／Windows 联合分发的统一包要求，也不把 Windows 验收升级为 macOS 通过。
 
-冻结目录必须先执行 `pnpm install --frozen-lockfile`，建立自身的 `node_modules`，再编译六组件；不得链接或借用其他工作区的 `node_modules`。若依赖状态核验触发自动安装或共享模块目录重建确认，保留该次失败场景，从新的独立冻结目录重新安装，不得为绕过确认设置 `CI`、修改 `confirmModulesPurge` 或强行通过共享目录核验。
+冻结目录必须先执行 `pnpm install --frozen-lockfile`，建立自身的 `node_modules`，再编译七组件；不得链接或借用其他工作区的 `node_modules`。若依赖状态核验触发自动安装或共享模块目录重建确认，保留该次失败场景，从新的独立冻结目录重新安装，不得为绕过确认设置 `CI`、修改 `confirmModulesPurge` 或强行通过共享目录核验。
 
-打包器在暂存和生成指纹前，要求五个实际分发的运行组件中，平铺 `dist/*.js` 与当前非声明 `src/*.ts` 的发射文件名完整对应。发现无源码的孤儿或缺失项立即拒绝；保留旧产物，从新的冻结源码、空 `dist` 重建，不静默过滤文件或改写指纹来制造一致。该清单检查不证明同名 JS 字节来自当前源码，仍须执行上述干净冻结构建。`pnpm check:skill` 包含真实打包边界回归：合法发射可生成包，注入无源 JS 后不得生成 ZIP 或摘要文件。
+打包器在暂存和生成指纹前，要求六个实际分发的运行组件中，平铺 `dist/*.js` 与当前非声明 `src/*.ts` 的发射文件名完整对应。发现无源码的孤儿或缺失项立即拒绝；保留旧产物，从新的冻结源码、空 `dist` 重建，不静默过滤文件或改写指纹来制造一致。该清单检查不证明同名 JS 字节来自当前源码，仍须执行上述干净冻结构建。`pnpm check:skill` 包含真实打包边界回归：合法发射可生成包，注入无源 JS 后不得生成 ZIP 或摘要文件。
 
 发现指纹不一致时，先核对其他已授权部署的任务、包摘要和源码差异。正在验证的新修复必须保留，不为匹配旧 `bundle.json` 回滚；各现场分别记录实际指纹及归属，统一源码和产物完成后再复核，不能将不同版本写成同包通过。
 

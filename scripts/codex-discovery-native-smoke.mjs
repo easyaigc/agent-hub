@@ -38,7 +38,9 @@ const [discovery, easywork, transport, shared, client, host, facade, store] = aw
   ].map((name) => readFile('apps/ios/Sources/' + name + '.swift', 'utf8')),
 );
 let reads = 0,
-  writes = 0;
+  writes = 0,
+  networkReads = 0,
+  networkMode = 'valid';
 const token = 'fixture-token-with-32-characters-or-more';
 const target = {
   agentId: 'codex',
@@ -65,7 +67,11 @@ const service = await startDirectDiscovery({
       res.end();
       return;
     }
-    reads++;
+    if (
+      !req.url.startsWith('/v1/discovery/networks') &&
+      !req.url.startsWith('/fixture-network-mode/')
+    )
+      reads++;
     if (
       req.headers.authorization !== 'Bearer ' + token &&
       !privateConnections.accepts(
@@ -75,6 +81,42 @@ const service = await startDirectDiscovery({
     ) {
       res.writeHead(401);
       res.end();
+      return;
+    }
+    if (req.url.startsWith('/fixture-network-mode/')) {
+      networkMode = req.url.split('/').at(-1);
+      res.writeHead(200);
+      res.end('{}');
+      return;
+    }
+    if (req.url.startsWith('/v1/discovery/networks?')) {
+      networkReads++;
+      if (networkMode === 'old' || networkMode === 'revoked') {
+        res.writeHead(networkMode === 'old' ? 404 : 401);
+        res.end('{}');
+        return;
+      }
+      const snapshot = {
+        version: networkMode === 'version' ? 2 : 1,
+        target: networkMode === 'target' ? { ...target, runtimeId: 'wrong' } : target,
+        networks: Array.from({ length: 40 }, (_, i) => ({
+          address: `10.${160 + i}.0.1`,
+          cidr: `10.${160 + i}.0.0/24`,
+        })),
+      };
+      if (networkMode === 'large')
+        snapshot.networks = Array.from({ length: 2048 }, (_, i) => ({
+          address: `10.${Math.floor(i / 256)}.${i % 256}.1`,
+          cidr: `10.${Math.floor(i / 256)}.${i % 256}.0/24`,
+        }));
+      if (networkMode === 'malformed') snapshot.networks[0].cidr = '10.160.0.1/24';
+      if (networkMode === 'public')
+        snapshot.networks[0] = { address: '8.8.8.8', cidr: '8.8.8.0/24' };
+      if (networkMode === 'extra') snapshot.token = 'must-not-be-exported';
+      const body = JSON.stringify(snapshot);
+      if (networkMode === 'large') assert.ok(Buffer.byteLength(body) > 65536);
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(body);
       return;
     }
     res.writeHead(200, { 'content-type': 'application/json' });
@@ -176,6 +218,9 @@ try {
       discovery.indexOf('struct VPNPeerSnapshot:'),
     ),
     block(discovery, 'struct VPNPeerSnapshot:'),
+    block(discovery, 'struct OfficeDiscoveryScope:'),
+    block(discovery, 'extension CodexDirectConnection.Network {'),
+    block(discovery, 'enum LocalDiscoveryNetworks {'),
     block(discovery, 'enum CodexPrivateCredential {'),
     'enum SharedMobileRules { ' + block(facade, '  static func scope(') + ' }',
   ].join('\n');
@@ -186,7 +231,7 @@ import CryptoKit
 import Darwin
 import MobileCore
 ${declarations}
-enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, hostKeyRequired, message(String) }
+enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, hostKeyRequired, message(String), rejected(Int, String) }
 enum TaskNotificationValidation { static func target(_ target: AgentRuntimeTarget) -> Bool { target.agentId == "codex" && !target.hostId.isEmpty && !target.workspaceId.isEmpty && !target.runtimeId.isEmpty } }
 struct Client: Sendable { var id: String; var name: String; var endpoint: String?; var isDemo: Bool; var online: Bool; var codexDirect: CodexDirectConnection? }
 struct WorkspaceSnapshot: Decodable { var hostId: String; var readTarget: AgentRuntimeTarget?; var connectionMode: String }
@@ -249,6 +294,28 @@ precondition(CodexHostRoutes.shared.session(for: legacyRequest).delegate is Pair
 let (_, legacyPinnedResponse) = try await CodexHostRoutes.shared.data(for: legacyRequest)
 precondition((legacyPinnedResponse as? HTTPURLResponse)?.statusCode == 200)
 print("PASS connectDiscovered preserves all 32 advertisements plus separate pinned observed route")
+precondition(automatic.1.codexDirect?.discoveryNetworks?.count == 40)
+precondition(legacyRoundtrip.discoveryNetworks?.count == 40)
+let scopeSession = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: endpoint, fingerprint: offer.fingerprint), delegateQueue: nil)
+defer { scopeSession.invalidateAndCancel() }
+let scopeBase = URL(string:endpoint)!
+for mode in ["old", "version", "malformed", "target", "public", "extra", "revoked"] {
+  _ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/" + mode),token:offer.token!))
+  let unsupported = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
+  precondition(unsupported == nil, "Unexpected networks for " + mode)
+}
+_ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/valid"),token:offer.token!))
+let networkSnapshot = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
+precondition(networkSnapshot?.count == 40)
+let unauthenticated = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:"",host:automatic.0)
+precondition(unauthenticated == nil)
+print("PASS authenticated device-token learning; 40 networks independent of 32 advertisements; old/unknown/malformed/public/wrong-target/revoked hints rejected")
+_ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/large"),token:offer.token!))
+let largeNetworkSnapshot = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
+precondition(largeNetworkSnapshot?.count == 2048)
+precondition(largeNetworkSnapshot?.last?.address == "10.7.255.1")
+_ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/valid"),token:offer.token!))
+
 
 do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: String(repeating: "0", count: 64), target: offer.target); fatalError("Wrong pin accepted") } catch {}
 var other = offer.target; other.runtimeId = "wrong"
@@ -258,7 +325,7 @@ do { _ = try EasyWorkPairing.localEndpoint(invalid); fatalError("Invalid address
 }
 var full = offer
 full.endpoints = (1...32).map { "https://192.168.90.\\($0):8796" }
-full.endpointHints = nil; full.systemEndpoints = nil
+full.endpointHints = nil; full.systemEndpoints = nil; full.discoveryNetworks = largeNetworkSnapshot
 let allAdvertised = try full.candidates()
 precondition(allAdvertised.count == 32)
 let prior = Client(id: offer.target.hostId, name: "Saved", endpoint: allAdvertised[0].endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: offer.target, candidates: allAdvertised, fingerprint: offer.fingerprint))
@@ -271,8 +338,13 @@ let persisted = try JSONDecoder().decode(CodexDirectConnection.self, from: state
 precondition(persisted == updated)
 var legacyJSON = try JSONSerialization.jsonObject(with: state.persisted!) as! [String: Any]
 legacyJSON.removeValue(forKey: "observedEndpoint")
+legacyJSON.removeValue(forKey: "discoveryNetworks")
 let old = try JSONDecoder().decode(CodexDirectConnection.self, from: JSONSerialization.data(withJSONObject: legacyJSON))
-precondition(old.observedEndpoint == nil && old.candidates.count == 32)
+precondition(old.observedEndpoint == nil && old.discoveryNetworks == nil && old.candidates.count == 32)
+full.discoveryNetworks = nil // old/failed optional endpoint preserves this same record
+precondition(persisted.discoveryNetworks == largeNetworkSnapshot)
+precondition(persisted.discoveryNetworks?.count == 2048 && state.persisted!.count > 65536)
+print("PASS >64 KiB authenticated TLS inventory: all 2048 ranges persisted under the original record, target and pin")
 let current = state.saved.clients[0]
 precondition(state.updateCodexDiscovery(current, host: full, reachableEndpoint: endpoint))
 precondition(state.saved.clients[0].codexDirect?.observedRoute == endpoint && !(state.saved.clients[0].codexDirect?.systemRoutes.contains(endpoint) ?? true))
@@ -344,6 +416,7 @@ print("Codex native QR, all paths, pins, identity, URL boundary and one submitte
       passed: true,
       writes,
       authenticatedReads: reads,
+      networkReads,
       native: result.stdout.trim(),
       evidence: 'auxiliary actual Swift/Foundation code; no desktop model or physical VPN',
     }),

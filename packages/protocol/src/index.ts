@@ -5,6 +5,7 @@ export * from './read-state.js';
 export * from './file-transfers.js';
 export * from './thread-forks.js';
 export * from './vpn-discovery.js';
+export * from './discovery-networks.js';
 export * from './codex-private-connection.js';
 export * from './codex-connection-routes.js';
 export * from './workspace-sidebar.js';

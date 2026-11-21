@@ -6035,8 +6035,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 503,
-  "updatedAt": "2026-11-22T00:10:10.197878+08:00",
+  "revision": 505,
+  "updatedAt": "2026-11-22",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -17456,6 +17456,76 @@
       "scope": "Actual main unprotected, enable_status_check false, required contexts empty and user_can_merge true. Prior term requiredCI was coordinator assumption, not repository/service rule. Product source unchanged from main235; existing implementation/Native/sourceCI reused. Pure four-ledger-file delivery uses renderer/format/diff/metadata and source-equivalence checks, normal merge; workflow pending retained honestly. No protection change, forged statuses, other-run cancellation or new product test.",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f07-owned-refresh/final-builder/evidence/gitea-protection-pr237-evidence.json",
       "sha256": "3ca812507087dce5c1010025d92cc8a7ae1b4503efd06713da44f9a0ba8d082d"
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-CANDIDATE": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "6ae76eca87bea1834af3f1fec38e21558e3c1694aa2c8e2ee90abfbd5ee710a8",
+      "mobileEnvironment": "not-required",
+      "environment": "Clean task worktree; Apple public docs/current iOS SDK research; authenticated synthetic loopback Host checks. No new phone or source deployment assertion.",
+      "path": "private office-discovery-20261121/automatic-20261122/review-auto01.zip",
+      "sha256": "6ae76eca87bea1834af3f1fec38e21558e3c1694aa2c8e2ee90abfbd5ee710a8",
+      "scope": "Human rejected CIDR maintenance. Root causes confirmed: empty scope does not scan; known failures all showed reauthorization. Separate networks endpoint, original trust/target/credential learning, optional record fields, current physical interface scope, automatic foreground scheduling and exact failure evidence implemented as source candidate. 11-file review package excludes unfinished tests/docs; package is patch evidence, not signed App. First learning requires one reachable trusted original route; all-PC-TS-off recovery afterwards still pending. Terra research and Host tests observed model/medium/full-access; speed not verifiable in tool."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-REVIEW02-AUXILIARY": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "d93c869059c7310dc110795dee387154292d281c165f3823de4c7f2fd0c56343",
+      "mobileEnvironment": "not-required",
+      "environment": "macOS real TLS/Foundation Swift/KMP, isolated HTTP Host, actual iOS build; not physical phone",
+      "path": "private office-discovery-20261121/automatic-20261122/review-auto02.zip",
+      "sha256": "d93c869059c7310dc110795dee387154292d281c165f3823de4c7f2fd0c56343",
+      "scope": "Source independently reconstructed auto01 + auto02 and accepted both fixes. Chinese/custom LAN interfaces retained, known virtual interfaces excluded; authenticated 2048-network body exceeds 64KiB and persists completely in original record; old404, version/target/pin/range and401 boundaries covered. No production or phone deployment."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-COMPOSITE-GATES": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "c2c6a9b35a35940c78136ba2646af279e90333239fcbe3898cf0117404ec5a70",
+      "mobileEnvironment": "not-required",
+      "environment": "macOS clean task worktree; Node24 locked workspace; gpt-6.1-terra medium actual Full Access; speed unavailable",
+      "path": "private office-discovery-20261121/automatic-20261122/composite-gate-review.json",
+      "sha256": "c2c6a9b35a35940c78136ba2646af279e90333239fcbe3898cf0117404ec5a70",
+      "scope": "Original pnpm check chain composed from successful prefix and two exact suffixes after missing-workspace-dependency and Unix socket path repairs. No skipped failed command or changed expectation; not one uninterrupted full pass. During continuation only named DEBUG simulator isolation and new UI test changed; Release source equivalence byte-verified, affected final metadata/native checks separately required."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-INSTALLED-CLOSURE-REVIEW": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "8854e48ef80ff002f187715dda946be1bea1c91b8cf59f191378c721cb4d3483",
+      "mobileEnvironment": "not-required",
+      "environment": "Source actual ESM resolved package paths and 14 verified compiled JS bodies; main semantic review",
+      "path": "private office-discovery-20261121/automatic-20261122/source-runtime-compatibility-review.json",
+      "sha256": "8854e48ef80ff002f187715dda946be1bea1c91b8cf59f191378c721cb4d3483",
+      "scope": "No installed-only fix requiring reverse merge found. Real root node_modules copies differ from nominal packages; update exact frozen component closure while preserving identity/private state/config. Original v1 authorized binding and target semantics retained; source read-only legacy preflight and Host-only deployment still pending."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-AUTOMATIC-LAN": {
+      "kind": "real-dev",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "f842c8d5af9e7c9b7193131610b0224950ec8934be38dc8caa44e8a208b48793",
+      "mobileEnvironment": "simulator",
+      "environment": "independent arm64 iOS26 simulator using current Mac real en LAN; not physical cellular/VPN",
+      "path": "private office-discovery-20261121/automatic-20261122/native-auto-discovery-review.json",
+      "sha256": "f842c8d5af9e7c9b7193131610b0224950ec8934be38dc8caa44e8a208b48793",
+      "scope": "Real native automatic scope/no-CIDR discovery found the source Host and opened empty authorization page, then rediscovered after cold launch. First run stopped405/508 with retained clickable source; later AX assertion failed. Second run1/1passed but did not prove stop settled; separate short cancel check pending. No authenticated claim or model input. This is real LAN simulator UI, not learned-source physical VPN acceptance."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-SIGNED-CANDIDATE": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "ba5f6da6c9c6bed49642d4857b676f166c798855c789144d70cfbd27785d4489",
+      "mobileEnvironment": "not-required",
+      "environment": "Real Release iPhoneOS arm64 archive and existing Apple Development/debugging signing, four components match formal117 entitlements/Team/profile devices/expiry",
+      "path": "private office-discovery-20261121/automatic-20261122/formal118-review-package.json",
+      "sha256": "ba5f6da6c9c6bed49642d4857b676f166c798855c789144d70cfbd27785d4489",
+      "scope": "Formal same-app build118 IPA10257630 bytes/SHA163004a41a60721c69c00c2670c0cee9c472faac046154ac28da559417d31433;459 production input hashes unchanged; private premerge review sent, no installation/server deployment/pointer update. Profile eligibility and user-phone preservation remain separate."
+    },
+    "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED": {
+      "kind": "real-dev",
+      "sourceCommit": "7325883ead3c5495f61f8e2979a9b36130ed28eb",
+      "packageSha256": "a49c102ba77b7e68f53e77ed5da5f55194d0c32f4cc4cabab58792160887615b",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent real arm64 iOS26 simulator, original production scheduler and observed en LAN; scoped public discovery only",
+      "path": "private office-discovery-20261121/automatic-20261122/local-ui/stop-boundary/summary.json",
+      "sha256": "a49c102ba77b7e68f53e77ed5da5f55194d0c32f4cc4cabab58792160887615b",
+      "scope": "Targeted new cancellation UI test1/1passed: real progress8/508, stop settles in1.73s, stop button disappears/retry appears, count unchanged through four subsequent seconds. Production unchanged; prior discovered-row retained/clickable and cold discovery evidence reused rather than full rescan. Not physical cellular/VPN."
     }
   },
   "openItems": [
@@ -28303,6 +28373,31 @@
       "newProductAcceptancePasses": 0,
       "newProductAcceptanceModelTurns": 0,
       "evidenceRefs": ["GITEA-ACTUAL-NO-SERVER-CI-GATE-AND-PURE-LEDGER-DELIVERY-POLICY-R503"]
+    },
+    {
+      "revision": 504,
+      "date": "2026-11-22",
+      "kind": "office-automatic-discovery-correction-in-progress",
+      "scope": "F06/F08 scope reopened from manual117 to automatic authenticated learning and error classification; preserve all previous product/history proofs and other work. New source candidate/Host auxiliary only, no original phone upgrade or automatic cross-network acceptance yet.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-CANDIDATE"]
+    },
+    {
+      "revision": 505,
+      "date": "2026-11-22",
+      "kind": "office-automatic-discovery-reviewed-gates",
+      "scope": "Auto02 source fixes accepted, full original check chain completed as exact composed suffixes with two environment repairs; actual installed ESM closure reviewed. Native final checks/signing ongoing; no new physical automatic or original-phone preservation pass.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-REVIEW02-AUXILIARY",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-COMPOSITE-GATES",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-INSTALLED-CLOSURE-REVIEW",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-AUTOMATIC-LAN",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-SIGNED-CANDIDATE",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED"
+      ]
     }
   ],
   "maintenanceValidation": {
@@ -39550,11 +39645,11 @@
       "id": "F06-office-subnet-discovery",
       "featureIds": ["F06", "F08"],
       "phase": "extensions",
-      "behavior": "手机一次配置办公室网段，在发现列表中找到路由器后的Codex和EasyWork Host，不要求每台电脑运行Tailscale",
-      "acceptanceCriteria": "全/24包含最后可用地址；仅显式范围和固定端口；读描述不授权；已配对目标/证书/公钥/权限保持，同机新地址不重复。原生输入保存/冷恢复/停止/移除与真实办公室外手机VPN连接分列。",
-      "state": "merged",
+      "behavior": "正常自动发现页从实际局域网和原已配对电脑自动学习的网络中找到Host，无需维护CIDR；电脑退出Tailscale后沿原记录/授权经批准子网重连",
+      "acceptanceCriteria": "正常连接即可自动学习完整target/pin归属的范围；不读取117手填种子、不推测第三方VPN路由；原已知地址优先且全范围不截断/可取消。网络故障与真实认证拒绝分离。相关电脑Tailscale退出、Host运行时原手机从办公室外自动发现、旧记录/凭据/草稿和冷恢复须分别实测。",
+      "state": "developing",
       "owner": "办公室子网发现专用会话",
-      "acceptanceBasis": "merged-pr",
+      "acceptanceBasis": "source-review",
       "evidenceRefs": [
         "OFFICE-SUBNET-DISCOVERY-20261121-CANDIDATE",
         "OFFICE-SUBNET-DISCOVERY-20261121-AUXILIARY",
@@ -39578,27 +39673,35 @@
         "OFFICE-SUBNET-DISCOVERY-20261121-FORMAL-PR235-MERGED",
         "OFFICE-SUBNET-DISCOVERY-20261121-FORMAL117-SIGNED",
         "OFFICE-SUBNET-DISCOVERY-20261121-FORMAL-STAGE-CLEANUP",
-        "OFFICE-SUBNET-DISCOVERY-20261121-FORMAL117-INSTALL-ENTRY"
+        "OFFICE-SUBNET-DISCOVERY-20261121-FORMAL117-INSTALL-ENTRY",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-SOURCE-CANDIDATE",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-REVIEW02-AUXILIARY",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-COMPOSITE-GATES",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-INSTALLED-CLOSURE-REVIEW",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-AUTOMATIC-LAN",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-FORMAL118-SIGNED-CANDIDATE",
+        "OFFICE-AUTOMATIC-DISCOVERY-20261122-NATIVE-STOP-SETTLED"
       ],
       "pullRequests": ["BCAI/agent-hub-app#235"],
-      "nextAction": "来源提供现有Tailscale域名入口，引导原手机正常覆盖升级117（不卸载），核原5记录/授权/草稿与蜂窝VPN子网重连；该人类步骤尚未完成。Mini保存实际台账/入口证据并回收无消费者文档交付树；旧树含冻结他人WIP保留。",
-      "updatedAt": "2026-11-21",
+      "nextAction": "提交本次已审差异到Gitea PR并核准确CI/合并SHA；沿主线同步冻结统一Host程序和118。同App签名包来源已私有核验，待合并等价证明和官方Host闭包后部署。再协调正常可信连接学习、电脑TS关闭及原手机自动发现/原凭据重连。",
+      "updatedAt": "2026-11-22",
       "development": {
-        "state": "implemented-scoped",
-        "scope": "办公室显式私网发现、独立observed route与原身份/凭据恢复兼容已由PR235合入正式main；旧Host v1无需升级；Android办公室入口仍未实现。"
+        "state": "pending-integration",
+        "scope": "本次清洁候选在7325883e上增加独立已鉴权networks接口、真实接口掩码与原记录归属保存，正常前台自动学习、地址优先/多范围完整调度及网络/认证错误区分。117显式范围版本仍保留原合入事实；本候选未合入/部署。"
       },
       "acceptance": {
-        "state": "current-passed",
-        "scope": "登记范围：独立15/Codex实际蜂窝+既有Tailscale→办公室路由器→关闭Tailscale的源Host，完整/24发现、真人正规授权、准确目标/原pin/单一record、只读项目聊天与正常冷恢复通过；停止保留、32广告独立observed route与旧JSON边界亦通过。原用户另一手机旧绑定、Android入口及新的EasyWork真机未覆盖，未将其整体标通过。"
+        "state": "historical-partial",
+        "scope": "自动来源修正：原生模拟器无CIDR真实LAN发现来源201、空授权页、冷后再发现通过；首轮停止后来源行保留可点击，独立短取消1/1通过且计数稳定。真实TLS2048范围原记录学习、中文网卡/虚接口、错误分类和组合根门禁为辅助通过。117独立15历史验收仅原手填实现；原手机自动学习/旧凭据/草稿/跨网及新物理场景仍未验。"
       },
       "delivery": {
-        "state": "integrated-not-deployed",
-        "scope": "PR235实际合入74e95baf；正式117包d87df1e15cfd247c8f956abf58f8c5106fc6cd2174c3ea0540ca9addf3620204与合并树等价，四组件签名/存储权限及登记设备与116相同。来源既有可信HTTPS已发布117，Mini原Tailscale安装页实际200并指向117、Serve路由不变；安装资产沿既有HTTPS公开托管。原用户另一手机升级/原授权/数据保留尚未验，故App目标部署状态不提前升级为通过。"
+        "state": "candidate-not-integrated",
+        "scope": "正式117与回退保持；本次auto01/02及118私有包已由来源审收；当前待提交/PR。118四组件权限与117一致、459构建输入相等；源Host须按真实解析闭包及只读原绑定预检升级，尚未部署或切安装入口。"
       },
       "execution": {
         "state": "in-progress",
-        "scope": "正式代码、签名及既有安装入口已交付；38根无消费者生成物和PR235本地/远端开发分支已清理。来源协调原手机Safari原位升级及旧记录/授权/草稿、跨网重连；升级前5台（4Codex+1EasyWork）为真人提供，未推定升级后仍在。Mini仅收尾唯一台账及文档交付树；旧树冻结他人WIP继续保留。"
-      }
+        "scope": "Mini负责本次产品/协议/台账及受影响检查；来源负责Host统一部署、原手机和最终服务器发布/停TS观测窗口。原手机当前网络与停用哪台电脑TS由来源等待真人答复，本机独立工作不阻塞。"
+      },
+      "mergedScope": "PR235/正式117仅显式CIDR发现；2026-11-22真人反馈后本功能自动化修正重新开放，原PR/验收证据全部保留。"
     }
   ],
   "mergedPullRequests": {

@@ -135,6 +135,61 @@ final class EasyWorkEncryptedEnvelopeWireTests: XCTestCase {
   }
 }
 
+// Read-only observer: authenticates and inspects outgoing frames before forwarding.
+private actor EasyWorkSyncReadObserver: AgentTransport {
+  struct Observation: Sendable { let thread: String; let knownIDs: [String] }
+  private let crypto: EasyWorkEnvelopeCrypto
+  private let candidate: AgentConnectionCandidate
+  private let alias: String
+  private let threads: Set<String>
+  private var base: LANAgentTransport?
+  private var observations: [Observation] = []
+  init(credential: EasyWorkCredential, candidate: AgentConnectionCandidate, alias: String, threads: Set<String>) throws {
+    guard credential.grantRef == nil, credential.binding.status == "active", candidate.transportId == "lan-wss", threads.count == 5 else { throw HostServiceError.wrongHost }
+    crypto = try EasyWorkEnvelopeCrypto(credential: credential, binding: credential.binding)
+    self.candidate = candidate; self.alias = alias; self.threads = threads
+  }
+  func make(_ options: AgentTransportOptions) throws -> any AgentTransport {
+    guard base == nil, options.bindingId == crypto.binding.bindingId, options.grantRef == nil,
+      options.candidate.transportId == alias, options.candidate.endpoint == candidate.endpoint,
+      options.candidate.peerFingerprint == candidate.peerFingerprint else { throw HostServiceError.wrongHost }
+    base = try LANAgentTransport(candidate: candidate, bindingId: options.bindingId)
+    return self
+  }
+  func send(_ data: Data) async throws {
+    guard let base else { throw HostServiceError.unavailable }
+    let frame = try easyWorkObject(data)
+    guard EasyWorkEnvelopeCrypto.wireInteger(frame["version"]) == 1,
+      frame["bindingId"] as? String == crypto.binding.bindingId,
+      frame["senderDeviceId"] as? String == crypto.binding.mobileDeviceId,
+      frame["recipientDeviceId"] as? String == crypto.binding.desktopDeviceId,
+      let seq = EasyWorkEnvelopeCrypto.wireInteger(frame["sequence"]), seq > 0,
+      let session = frame["senderSessionId"] as? String, !session.isEmpty,
+      let sent = frame["sentAt"] as? String, !sent.isEmpty,
+      let nonce = Data(base64URL: frame["nonce"] as? String ?? ""),
+      let bytes = Data(base64URL: frame["ciphertext"] as? String ?? ""), bytes.count >= 16 else { throw HostServiceError.wrongHost }
+    let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: nonce), ciphertext: bytes.dropLast(16), tag: bytes.suffix(16))
+    let payload = try easyWorkObject(AES.GCM.open(box, using: crypto.outbound, authenticating: crypto.header(frame)))
+    if payload["kind"] as? String == "key-confirmation" {
+      guard payload["value"] as? String == crypto.confirmation else { throw HostServiceError.wrongHost }
+    } else {
+      guard payload["kind"] as? String == "protocol", let envelope = payload["envelope"] as? [String: Any],
+        envelope["kind"] as? String == "request", envelope["method"] as? String == "thread/sync",
+        let target = envelope["target"],
+        try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(target)) == crypto.binding.target,
+        let params = envelope["params"] as? [String: Any], let thread = params["threadId"] as? String,
+        threads.contains(thread), let known = params["known"] as? [[String: Any]] else { throw HostServiceError.wrongHost }
+      let ids = known.compactMap { $0["id"] as? String }
+      guard ids.count == known.count else { throw HostServiceError.invalidResponse }
+      observations.append(Observation(thread: thread, knownIDs: ids))
+    }
+    try await base.send(data)
+  }
+  func receive() async throws -> Data { guard let base else { throw HostServiceError.unavailable }; return try await base.receive() }
+  func close() async { await base?.close(); base = nil }
+  func snapshot() -> [Observation] { observations }
+}
+
 // Integration-only acceptance driver. Historical phone-only and physical-device
 // UI probes remain in their original fingerprinted evidence and are not rerun here.
 /// Test-process adapter: changes delivery of four genuine authenticated frames,
@@ -12938,6 +12993,161 @@ final class EasyWorkHostedNativeTests: XCTestCase {
       try? save()
       throw error
     }
+  }
+
+  @MainActor func testOriginalFiveThreadCacheReadOnly() async throws {
+    let env = ProcessInfo.processInfo.environment
+    guard let run = env["EASYWORK_HOSTED_NATIVE_CASE"], UUID(uuidString: run)?.uuidString.lowercased() == run,
+      let encoded = env["EASYWORK_HOSTED_NATIVE_CONFIG_JSON"],
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      ProcessInfo.processInfo.arguments.contains("-restore-testing") else { throw XCTSkip("Frozen read-only cache examiner required") }
+    #if !targetEnvironment(simulator)
+    throw XCTSkip("Simulator only")
+    #else
+    let config = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any])
+    guard config["caseId"] as? String == run, config["newModelInputsAuthorized"] as? Int == 0,
+      config["newRemoteCommandsAuthorized"] as? Int == 0,
+      let expectations = config["threads"] as? [[String: Any]], expectations.count == 5,
+      let bindingID = config["bindingId"] as? String, UUID(uuidString: bindingID) != nil,
+      let mobileID = config["mobileDeviceId"] as? String, !mobileID.isEmpty,
+      let normalStateSHA = config["normalStateSha256"] as? String, normalStateSHA.count == 64,
+      normalStateSHA.allSatisfy({ $0.isHexDigit }),
+      let fingerprint = config["peerFingerprint"] as? String, fingerprint.count == 64,
+      fingerprint.allSatisfy({ $0.isHexDigit }) else { throw HostServiceError.wrongHost }
+    let allowed = expectations.compactMap { $0["threadId"] as? String }
+    guard allowed.count == 5, Set(allowed).count == 5,
+      allowed.allSatisfy({ UUID(uuidString: $0) != nil }) else { throw HostServiceError.wrongHost }
+    let target = try JSONDecoder().decode(AgentRuntimeTarget.self, from: easyWorkJSON(try XCTUnwrap(config["target"])))
+    guard target.agentId == "easywork", !target.hostId.isEmpty, !target.workspaceId.isEmpty,
+      !target.runtimeId.isEmpty, let account = target.account,
+      !account.authority.isEmpty, !account.subject.isEmpty else { throw HostServiceError.wrongHost }
+    let deadline = Date().addingTimeInterval(30)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil && Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired else { throw HostServiceError.unavailable }
+    // Decode a value snapshot directly from the normal App's encrypted state.
+    // Do not construct a second store, migrate, copy, or write this namespace.
+    let normalStateURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("CodexManage", isDirectory: true).appendingPathComponent("session-state-v1.json")
+    let normalBytes = try Data(contentsOf: normalStateURL)
+    guard normalBytes.starts(with: Data("agent-cache-v1\n".utf8)),
+      HostService.hash(normalBytes) == normalStateSHA else { throw HostServiceError.invalidResponse }
+    let normal = try AgentCache.decode(normalBytes)
+    let matches = normal.clients.filter { !$0.isDemo && $0.agentConnection?.target == target }
+    guard matches.count == 1 else { throw HostServiceError.wrongHost }
+    let client = try XCTUnwrap(matches.first), connection = try XCTUnwrap(client.agentConnection)
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef)).utf8))
+    guard credential.binding.bindingId == bindingID,
+      credential.binding.mobileDeviceId == mobileID, credential.grantRef == nil,
+      credential.binding.target.desktopDeviceId == target.hostId,
+      credential.binding.target.workspaceId == target.workspaceId,
+      credential.binding.target.runtimeId == target.runtimeId,
+      credential.binding.target.account == account else { throw HostServiceError.wrongHost }
+    // Candidate IDs describe saved routes, not target identity. The normal
+    // connection can retain several approved LAN/VPN paths for the same pin.
+    // Preserve their saved order; the real session still checks the full target.
+    let candidates = connection.candidates.filter { $0.transportId == "lan-wss" && $0.peerFingerprint == fingerprint }
+    let routeReport: [String: Any] = ["caseId": run, "pinnedLANRouteCount": candidates.count,
+      "savedRoutes": connection.candidates.map { value -> [String: Any] in
+        ["idSHA256": HostService.hash(Data(value.id.utf8)), "transport": value.transportId,
+          "peerFingerprintLength": value.peerFingerprint?.count ?? 0,
+          "expectedPinMatches": value.peerFingerprint == fingerprint]
+      }]
+    let routeAttachment = XCTAttachment(data: try easyWorkJSON(routeReport), uniformTypeIdentifier: "public.json")
+    routeAttachment.name = "f68-saved-route-counts-" + run; routeAttachment.lifetime = .keepAlways; add(routeAttachment)
+    let candidate = try XCTUnwrap(candidates.first, "No original saved LAN route matches the frozen TLS pin")
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+    let drafts = try encoder.encode(store.drafts.values), outbox = try encoder.encode(store.saved.outbox)
+    let clients = try encoder.encode(store.saved.clients), preferences = try encoder.encode(store.saved.generationPreferences)
+    let recovery = try encoder.encode(store.saved.replyRecovery)
+    let normalFieldHashes: [String: String] = [
+      "clients": HostService.hash(try encoder.encode(normal.clients)),
+      "drafts": HostService.hash(try encoder.encode(normal.drafts)),
+      "outbox": HostService.hash(try encoder.encode(normal.outbox)),
+      "recovery": HostService.hash(try encoder.encode(normal.replyRecovery))]
+    let identity = try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity"))
+    let selectedClient = store.saved.selectedClientId, selectedThread = store.selectedThreadId
+    // Restoration independently resumes these two receipt observers. Check before
+    // closing or opening any transport; never alter or detach a pending intent.
+    let pendingCreations = (store.saved.desktopCreations ?? [:]).values.filter {
+      ["submitted", "outcome-unknown"].contains($0.phase)
+    }.count
+    let pendingForks = (store.saved.threadForks ?? [:]).values.filter {
+      $0.phase.isPending && $0.detached != true
+    }.count
+    let restoreReport: [String: Any] = ["caseId": run, "stage": "before-transport",
+      "shellRestorableDesktopCreations": pendingCreations, "shellRestorableThreadForks": pendingForks]
+    let restoreAttachment = XCTAttachment(data: try easyWorkJSON(restoreReport), uniformTypeIdentifier: "public.json")
+    restoreAttachment.name = "f68-restore-counts-" + run; restoreAttachment.lifetime = .keepAlways; add(restoreAttachment)
+    guard pendingCreations == 0, pendingForks == 0 else { throw HostServiceError.unavailable }
+    let provider = try AgentClients.resolve(client)
+    await provider.close(client)
+    let alias = "easywork-readonly-cache-" + run
+    let observer = try EasyWorkSyncReadObserver(credential: credential, candidate: candidate, alias: alias, threads: Set(allowed))
+    await AgentTransportRegistry.shared.register(alias) { options in try await observer.make(options) }
+    var isolated = connection, readCandidate = candidate
+    readCandidate.id = alias; readCandidate.transportId = alias
+    isolated.candidates = [readCandidate]; isolated.preference = .automatic
+    var readClient = client
+    readClient.agentConnection = isolated
+    let channel = try await EasyWorkSessions.shared.session(readClient)
+    let sequence = [0, 1, 2, 3, 0, 4, 0, 1]
+    var stage = "before-first-read"
+    func attach(_ status: String, _ error: Error? = nil) {
+      var report: [String: Any] = ["caseId": run, "status": status, "stage": stage,
+        "newModels": 0, "newBusinessCommands": 0, "wholeFeaturePassed": false]
+      if let error { report["errorDomain"] = (error as NSError).domain; report["errorCode"] = (error as NSError).code }
+      if let bytes = try? Data(contentsOf: normalStateURL) {
+        report["normalStateUnchanged"] = HostService.hash(bytes) == normalStateSHA
+      }
+      if let currentIdentity = try? CredentialVault.existingToken("easywork-device-identity") {
+        report["identityUnchanged"] = currentIdentity == identity
+      }
+      if let data = try? easyWorkJSON(report) {
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        attachment.name = "f68-readonly-" + run; attachment.lifetime = .keepAlways; add(attachment)
+      }
+    }
+    do {
+      for (step, index) in sequence.enumerated() {
+        stage = "read-step-\(step + 1)"
+        let expected = expectations[index]
+        let ids = try XCTUnwrap(expected["messageIds"] as? [String])
+        let hashes = try XCTUnwrap(expected["textSHA256ByMessageId"] as? [String: String])
+        guard !ids.isEmpty, Set(ids).count == ids.count, Set(ids) == Set(hashes.keys) else { throw HostServiceError.invalidResponse }
+        let result = try easyWorkObject(await channel.synchronizedThread(allowed[index]))
+        let messages = try XCTUnwrap(result["messages"] as? [[String: Any]])
+        guard messages.compactMap({ $0["id"] as? String }) == ids else { throw HostServiceError.invalidResponse }
+        for message in messages {
+          let id = try XCTUnwrap(message["id"] as? String), parts = try XCTUnwrap(message["content"] as? [[String: Any]])
+          let text = parts.filter { $0["type"] as? String == "text" }.compactMap { $0["text"] as? String }.joined()
+          guard HostService.hash(Data(text.utf8)) == hashes[id] else { throw HostServiceError.invalidResponse }
+        }
+        let seen = await observer.snapshot()
+        guard seen.count == step + 1, seen[step].thread == allowed[index],
+          (step == 4 || step == 6 ? !seen[step].knownIDs.isEmpty : seen[step].knownIDs.isEmpty) else { throw HostServiceError.invalidResponse }
+      }
+      guard try encoder.encode(store.drafts.values) == drafts, try encoder.encode(store.saved.outbox) == outbox,
+        try encoder.encode(store.saved.clients) == clients, try encoder.encode(store.saved.generationPreferences) == preferences,
+        try encoder.encode(store.saved.replyRecovery) == recovery, try CredentialVault.existingToken("easywork-device-identity") == identity,
+        store.saved.selectedClientId == selectedClient, store.selectedThreadId == selectedThread else { throw HostServiceError.invalidResponse }
+      let normalAfter = try Data(contentsOf: normalStateURL)
+      guard HostService.hash(normalAfter) == normalStateSHA else { throw HostServiceError.invalidResponse }
+      stage = "completed-head-id-order-full-text-hash"
+      let seen = await observer.snapshot()
+      let report: [String: Any] = ["caseId": run, "status": "passed-read-only-five-thread-cache",
+        "scope": "normal-app-encrypted-state-value-snapshot-protocol-cache-not-gui",
+        "normalStateSHA256BeforeAndAfter": normalStateSHA, "normalStateFieldSHA256": normalFieldHashes,
+        "identityUnchanged": true,
+        "threadIds": seen.map(\.thread), "knownCounts": seen.map { $0.knownIDs.count },
+        "knownIDHashes": seen.map { HostService.hash(Data($0.knownIDs.joined(separator: "\n").utf8)) },
+        "newModels": 0, "newBusinessCommands": 0, "wholeFeaturePassed": false]
+      let attachment = XCTAttachment(data: try easyWorkJSON(report), uniformTypeIdentifier: "public.json")
+      attachment.name = "f68-readonly-" + run; attachment.lifetime = .keepAlways; add(attachment)
+      await provider.close(readClient); await observer.close()
+    } catch { attach("failed-read-only-five-thread-cache", error); await provider.close(readClient); await observer.close(); throw error }
+    #endif
   }
 
   @MainActor func testOriginalSyncDeltaResetAndReconnectWithoutSending() async throws {

@@ -4851,8 +4851,8 @@
         "note": "历史状态保留；本次未执行业务验收，后续按实际源码/运行包/场景匹配证据。"
       },
       "development": {
-        "state": "pending-integration",
-        "scope": "本清单父功能；已有实现不等于当前两仓完整目标已交付",
+        "state": "implemented-scoped",
+        "scope": "已核独立文件收发/流式容量FD与已合普通恢复范围；其他父项按原定义",
         "basis": "登记生产源问题已修复复核；d6c5七套125项通过，87f正式构建及本地完整App UI子断言通过。当前源待准确目标集成，真实双端整组未验收。 R139: backend terminal recovery/delayed mutation gap confirmed and fixed in unverified WIP. R140: terminal recovery/locking fix saved734706e, checked51 current/matched tests and staged/type/native gates; real runtime acceptance pending. R345: standalone incoming UI and strict named stream/cache adapter implemented in unmerged main94b-based candidate, build72Swift and30nativeboundaries passed; actualGUI pending. ExistingDesktop send/list/download already implemented, not duplicated. R351: desktop actualmaster terminal receipt defect reproduced by four original regression cases; scoped original734706e fix ported, checks/PR running, no new full runtime deployment. R352: ordinary terminal recovery port actuallymergedDesktopPR71/main8abe; other large candidate scope still pending. R456: 当前桌面6c最小候选已完成，37定向及正式staged/生产测试type通过；iOS4c公共上传接线/限额六组辅助边界通过，准确包构建中。均非当前真实大文件通过。 R463: 实际大文件功能已过，但共享hash autoreleased读取缓冲区随体积累积，Root逐块pool修复正在永久回归/构建。 R470: Root逐块pool与模拟器旧Keychain组兼容均已实际通过；DesktopPR78已合，iOS7df待PR交付。",
         "evidenceRefs": [
           "LEDGER",
@@ -4891,7 +4891,8 @@
           "F59-IOS819-FULLCHECK850-NATIVE-FROZEN5A95-3530-ROOT-REVIEW-R469",
           "F47-SIMULATOR-LEGACY-EMBEDDED-KEYCHAIN-GROUP-COMPATIBILITY-ROOT-REPAIR-R469",
           "F59-7DF-FROZEN-EMBEDDED-KEYCHAIN-COMPATIBLE-PACKAGE-ROOT-R470",
-          "F59-7DF-REAL21-64-BYTES-RSS3200-AND-OLD7TABLES-ROOT-R470"
+          "F59-7DF-REAL21-64-BYTES-RSS3200-AND-OLD7TABLES-ROOT-R470",
+          "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476"
         ]
       },
       "acceptance": {
@@ -4931,14 +4932,16 @@
         ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "R349：普通独立接收已经PR215合入Giteamain7adc，当前720包5b5778的88原生输入与主线逐hash匹配、准确CI双项成功；原实际验收复用。父项上传、重启恢复和大文件/桌面候选各范围继续独立跟进，整体交付状态不由一个接收子项升级。 R350普通上传既有PR142与PR215范围已对账，当前普通双向文件路径主线已交付；PR215工作树/两端临时分支及runner已实清。大文件和其余恢复范围仍分列。 Desktop startup draft repair and independentfile10source3919 actuallymergedPR78/mastercbd43; newruntime notyetstarted, mobileF59memorypending. R470: Desktopcbd43实际运行、7df iOS实际安装且本FD已验收，但后者尚未合main，等待逐项PR。",
+        "state": "integrated-not-deployed",
+        "note": "R349：普通独立接收已经PR215合入Giteamain7adc，当前720包5b5778的88原生输入与主线逐hash匹配、准确CI双项成功；原实际验收复用。父项上传、重启恢复和大文件/桌面候选各范围继续独立跟进，整体交付状态不由一个接收子项升级。 R350普通上传既有PR142与PR215范围已对账，当前普通双向文件路径主线已交付；PR215工作树/两端临时分支及runner已实清。大文件和其余恢复范围仍分列。 Desktop startup draft repair and independentfile10source3919 actuallymergedPR78/mastercbd43; newruntime notyetstarted, mobileF59memorypending. R470: Desktopcbd43实际运行、7df iOS实际安装且本FD已验收，但后者尚未合main，等待逐项PR。 R476: iOSPR231/main d6d+DesktopPR78/mastercbd均实际合，已验7dfF59组件与main全文件匹配；实际main整包尚未另行部署，不因此重开已验FD或冒称main整包已装。",
         "currentEvidence": [
           "F59-TERMINAL-RECOVERY-PR71-ACTUAL-MASTER-REUSE-AND-CLEANUP-R352",
           "F59-DESKTOP-PR78-ACTUAL-CBD43-MASTER-3919-SOURCE-EQUAL-R467",
           "F59-7DF-FROZEN-EMBEDDED-KEYCHAIN-COMPATIBLE-PACKAGE-ROOT-R470",
           "F59-7DF-REAL21-64-BYTES-RSS3200-AND-OLD7TABLES-ROOT-R470",
-          "F59-MAIN-A8BF-PR230-SEMANTIC-INTEGRATION-ROOT-REVIEW-R474"
+          "F59-MAIN-A8BF-PR230-SEMANTIC-INTEGRATION-ROOT-REVIEW-R474",
+          "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+          "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
         ]
       },
       "execution": {
@@ -4947,9 +4950,9 @@
         "note": "DesktopPR78主线实际normal运行/原件/8HostRuntime通过；819完整检查/包通过后原720升级暴露模拟器旧密钥组兼容缺口，Root已补源并重建，真实恢复和内存仍待验。",
         "currentEvidence": ["F59-DESKTOP-3919-ACCEPTED-STOPPED-CBD43-DELIVERY-R464"]
       },
-      "nextAction": "Root已解决main a8bf媒体集成17处交叉并保留最新唯一台账。优先将准确merge候选正常stage/commit/push，核PR231最终HEAD新CI后合main；原d3719两CI已绿只限旧提交，原21/64/续传不重放。",
+      "nextAction": "限定独立流式大文件、原ID续传、字节/RSS及升级兼容已验并交付iOS PR231/main d6d和DesktopPR78/cbd；自有iOS分支/工作树已收。保留原失败和更广父项边界，不重复模型/21/64/重开测试。",
       "openItemIds": ["DEV01", "INT01", "DEV03", "REV02", "REV04", "REV16", "MEDIA01"],
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "initialScopeStatus": "open",
       "acceptancePlan": {
         "scenarioIds": ["AC21"],
@@ -5997,8 +6000,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 474,
-  "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+  "revision": 476,
+  "updatedAt": "2026-11-21T19:47:15.808354+08:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -16927,6 +16930,67 @@
       "scope": "Actualcfc SDKdefaultbuildandacceptancebuild passed, Appf6ac/ZIP779548. Gitcfc3530sourceinputs and50payloads, botharchitectures current+legacykeychaingroups;4strictadhocbundles,53minimumNative-supportfiles frozen. Firstparitychange-recordfailure retained andRoot5docs-onlychild7800 fixedrecord; parity/nativeboundaries/R2/format passed thereafter. ActualAppremainscfc, neverchildHEADclaim. Ownbuild/deps/cache/Gradledaemon released; supportkeptonlyforforthcomingF44/F18bundlecompile/run. NoSimulator/Host/model/networkbusinessaction; realinflighttest/source/codeinspectorstillpendingRoot.",
       "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/ios-package-acceptance/manifest.json",
       "sha256": "11b0769c47fad8aa28469a200421ea4e718c619079574832add98e6e0b1e0dd0"
+    },
+    "MEDIA01-GITEA-PR230-MERGED-MAIN-ALL-CI-GREEN-20261121": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "a8bf72a103edf092a41ec121c61b548d2cabbd4b",
+      "packageSha256": "49d7f7bfaf33fd8db2c776c076bdc2ed8990899b31af46b3c65ca99fe17ffd10",
+      "environment": "Gitea actual main a8bf72a1; official merged-main CI run13320 and existing public mirror run13321; isolated standard iOS Simulator build; no production deployment",
+      "scope": "Actual PR230 main merge and identical source tree verified; local fullcheck/rootlint/frozen iOSbuild, PR ios/workspace CI and main ios20m4s/workspace20m10s/sync12m3s all success. 23source+553native inputs match; owned worktree/local+remote branch/build/deps removed and2 delivery auxiliaries officially archived. Original physical35d17 remains original package, no new physical/performance/provider claim.",
+      "path": ".local/media-delivery-20261121/main-push-ci-passed.json",
+      "sha256": "b39d9e7e9bbc8f2c27508d6f4e29f4c447565bdc7202f9fd28668f3808504ef8",
+      "date": "2026-11-21",
+      "sourceVerification": ".local/media-delivery-20261121/main-final-verification.json"
+    },
+    "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476": {
+      "kind": "exact-match-review",
+      "sourceCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "packageSha256": "7ffee01c3b8507d1e582dacc6afaf4cea5a41e73a3ddcd67a832888b10bcffb9",
+      "environment": "GiteaactualPR231API/remote executorproof plusRootGit/acceptedcomponent audit",
+      "mobileEnvironment": "not-required",
+      "scope": "PR231 actuallymergedGiteamain d6d withHEAD9cf ancestor andtree16c890 exact; requiredworkspace20m49/iOS19m47success. RootindependentlycheckedGitancestry/trees andwholeUploads/EWA/FileTransfers/Simulatorentitlements exactlyaccepted7df, preservingMainMediaoptionalinterfacepaths. Actual21/64+RSS/upgraderestore R470 andsameIDreopen matchedoriginal scope reused; nonewproductinput/realcase. LatestwholemergedAppnotnewlydeployed, exactacceptedcomponent/runtime compatibility distinguished.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f59-shared-streaming-limits/integration-main-a8bf/delivery-receipt/root-main-tree-and-accepted-component-review.json",
+      "sha256": "66a42c3aa808f3c5255562fcb5c9f62ef2aab66aeb3870fe82bbacedf4d879b6"
+    },
+    "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "packageSha256": "7ffee01c3b8507d1e582dacc6afaf4cea5a41e73a3ddcd67a832888b10bcffb9",
+      "environment": "Actualownedresource cleanup aftermainmerge",
+      "mobileEnvironment": "not-required",
+      "scope": "WI59 normalgitworktree remove/path+registrationabsent; localnormalbranch-d/remote normaldelete verified, noforce/stash/reset. Ninechecklogreferencedreports hashedcopiedoutsideWT beforedelete; frozenZIP/Git/source/realproof preserved. RootprimarymixedWIP, originalSimulator/Desktop/broker untouched. OldsharedexpandedApp/pre0163alreadyreleasedb76; DesktopWD59stillrealconsumer retained.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f59-shared-streaming-limits/integration-main-a8bf/delivery-receipt/cleanup-receipt.json",
+      "sha256": "150be3fa7d4dbb6bf25f93d21355a75b516216ca5cc14a5d60f34aef46edb283"
+    },
+    "F44-CFC-FROZEN-PACKAGE-ROOT-REVIEW-AND-MISSING-SUPPORT-DISCOVERED-R476": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "cfc416f7f70be344f9790652d6b9228cf542e4e1",
+      "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
+      "environment": "Rootpackageaudit only; noSiminstall/run/model",
+      "mobileEnvironment": "not-required",
+      "scope": "Rootverified3530cfcGitblobs/all50programfiles/fourbundleidentities/strictadhoc/botharchitectureembeddedgroups; ZIPalsohas68standardAppleDoublemetadataskippedfromsingleexpandedtesthost withoutarchivechange. Botharch19153exportedsymbols same7df. NativeAppcfcanddocs-onlychild7800distinguished. Rootverifiedregistered53supportfilesbutmissedunregisteredMobileCoreframeworksymlink; thisdidnotprovecompletesupport andfirstNativecompilefailedmissingmodule. Runtime/originalstore admissionnotyettested.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/root-package-review/root-cfc-779548-source-signature-embedded-entitlements-review.json",
+      "sha256": "b9d418464bc04dd8ed823a0eaf45d8c02443252e11034c1d38eb3cbc99472f38"
+    },
+    "F44-NATIVE-SUPPORT-HEADER-REBUILT-SAME-INPUTS-ZERO-LINKS-R476": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "cfc416f7f70be344f9790652d6b9228cf542e4e1",
+      "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
+      "environment": "Task-onlycompileinputrepair, notacceptance",
+      "mobileEnvironment": "not-required",
+      "scope": "Original53regular-filemanifest/logskeptimmutable; danglingownframeworklink removedwithoutfollowing. SamecfcKMPsource/lockedcompiler/SDK rebuiltarm64MobileCore119.07s, onlyHeaders/Modules/Info needed, runtimebinarynotadded. Complete57files/13dirs/0links verified, original53unchanged. Rootandbuilder snapshot-completenessmiss corrected; oldmissingmodule failureand later3Swiftoptional-draftcompileerrors retained,Rootfixednonoptionaldrafts usage. NoAppcode/re-sign/model operation.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/native-driver/repair-proof.json",
+      "sha256": "8721d08ed6818d89b5385c83e2df41b62ee9c4c80a933c87ff4d1b34df760899"
+    },
+    "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "cfc416f7f70be344f9790652d6b9228cf542e4e1",
+      "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
+      "environment": "Terrarequestedmedium nativeSDKcompileonly, actualmodel/effort/speed telemetryunavailable",
+      "mobileEnvironment": "not-required",
+      "scope": "Nativefbde source compiled35.28s, testexe804d4ac3; arm64Simulator/strictadhoc/bundle_loadercfc/57declarationinputs and50Apppayload unchanged; noMobileCore dynamiclib. MethodA observes anddurablysealsoriginalbeforetransport, permitsonefrozenownedturn, onlydropsitsgenuineauthresponse/locallyexcludesalts, testsendwait/newdraft while30srequestlaterends. MethodB readonlyoriginalquery, genuineparentread lateonotherthread, parentchildcanonical/cold/restoreoriginaldraft. Cases/body/targets/samplesstillrequireRootfrozenGO; 0executed/0modelwrites. Oldb4cacompleteproofkept; caches/oldbundle/daemon released, currentbundle/support/frozenApp retainedonlyactualcases.",
+      "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f44-f18-inflight/native-driver/build-proof-fbde.json",
+      "sha256": "23fd96e7a9b88e1e020f6972a613495a9b218aac0df4a69cd7674f8aa3c385b5"
     }
   },
   "openItems": [
@@ -16975,9 +17039,9 @@
         "ELECTRON-FINAL-CLEANUP-R27",
         "INT01-MAIN2AB-REAL-FILE-DOWNLOAD-AND-CANCEL-R134"
       ],
-      "ios": "7df/b86实际正常恢复原聊天/草稿，21/64各一次实际上传原字节，App采样峰差3200KiB通过预置24576；原f85同ID重开匹配复用。iOS待PR，其他历史子范围不扩张。",
+      "ios": "F59有限独立大文件范围实际7df通过且对应组件已合PR231/d6d；旧分享/首条创建子范围不由此补签。",
       "desktop": "PR78/mastercbd实际normal99b8bc8a/66309 ready；7旧表/原文件/身份/草稿保持，8HostRuntime探针通过。",
-      "nextAction": "将准确7df候选与R470唯一台账快照交Gitea/main完成PR/CI/合并核验；不重做已过文件或同ID续传。之后立即清理无依赖源码/构建；共享测试host仅保留F68明确消费者。",
+      "nextAction": "本次F59-large-file-upload已合并并收尾，不重复；本事项其余登记范围按各自FD/原证据继续。",
       "reviewFindings": [
         {
           "id": "D1-01",
@@ -17120,7 +17184,7 @@
           "executionState": "in-progress"
         }
       ],
-      "updatedAt": "2026-11-21T18:15:51.522942+08:00",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "currentEvidence": [
         "F31-CONTROLLED-ORIGINAL-TWO-JOBS-FAILED-RETAINED-R337",
         "F31-READABLE-FAILED-AND-RESTORED-PAUSED-UI-R337",
@@ -17139,7 +17203,9 @@
         "F59-7DF-FROZEN-EMBEDDED-KEYCHAIN-COMPATIBLE-PACKAGE-ROOT-R470",
         "F47-7DF-ACTUAL-ORIGINAL-SIMULATOR-UPGRADE-RESTORED-NO-KEY-EXPORT-R470",
         "F59-7DF-REAL21-64-BYTES-RSS3200-AND-OLD7TABLES-ROOT-R470",
-        "F59-F85-SAMEID64-REOPEN-TO-7DF-UNCHANGED-CONTROL-SCOPED-REUSE-R470"
+        "F59-F85-SAMEID64-REOPEN-TO-7DF-UNCHANGED-CONTROL-SCOPED-REUSE-R470",
+        "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+        "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
       ],
       "historicalCurrentDescriptions": [
         {
@@ -17679,9 +17745,9 @@
         "ELECTRON-FINAL-REVIEW-R27",
         "ELECTRON-FINAL-CLEANUP-R27"
       ],
-      "ios": "7df/b86实际正常恢复原聊天/草稿，21/64各一次实际上传原字节，App采样峰差3200KiB通过预置24576；原f85同ID重开匹配复用。iOS待PR，其他历史子范围不扩张。",
+      "ios": "F59有限独立大文件范围实际7df通过且对应组件已合PR231/d6d；旧分享/首条创建子范围不由此补签。",
       "desktop": "PR78/mastercbd实际normal99b8bc8a/66309 ready；7旧表/原文件/身份/草稿保持，8HostRuntime探针通过。",
-      "nextAction": "将准确7df候选与R470唯一台账快照交Gitea/main完成PR/CI/合并核验；不重做已过文件或同ID续传。之后立即清理无依赖源码/构建；共享测试host仅保留F68明确消费者。",
+      "nextAction": "本次F59-large-file-upload已合并并收尾，不重复；本事项其余登记范围按各自FD/原证据继续。",
       "reviewFindings": [
         {
           "id": "FNAME-01",
@@ -17720,7 +17786,7 @@
           "acceptanceNote": "精确d6c5生产边界独立复验，实际Electron与完整手机互传未随辅助检查关闭"
         }
       ],
-      "updatedAt": "2026-11-21T18:15:51.522942+08:00",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "currentEvidence": [
         "F31-CONTROLLED-ORIGINAL-TWO-JOBS-FAILED-RETAINED-R337",
         "F31-READABLE-FAILED-AND-RESTORED-PAUSED-UI-R337",
@@ -17739,7 +17805,9 @@
         "F59-7DF-FROZEN-EMBEDDED-KEYCHAIN-COMPATIBLE-PACKAGE-ROOT-R470",
         "F47-7DF-ACTUAL-ORIGINAL-SIMULATOR-UPGRADE-RESTORED-NO-KEY-EXPORT-R470",
         "F59-7DF-REAL21-64-BYTES-RSS3200-AND-OLD7TABLES-ROOT-R470",
-        "F59-F85-SAMEID64-REOPEN-TO-7DF-UNCHANGED-CONTROL-SCOPED-REUSE-R470"
+        "F59-F85-SAMEID64-REOPEN-TO-7DF-UNCHANGED-CONTROL-SCOPED-REUSE-R470",
+        "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+        "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
       ],
       "historicalCurrentDescriptions": [
         {
@@ -18716,8 +18784,8 @@
       "featureIds": ["F19", "F32", "F59", "F72"],
       "kind": "user-requested-media-range-enhancement",
       "developmentState": "partial",
-      "executionState": "in-progress",
-      "owner": "current media main chat monitors post-merge automatic CI; owned local resources closed",
+      "executionState": "planned",
+      "owner": "current media chat completed MV1/MV2 source delivery and CI/resource closure; remaining original phases planned",
       "evidenceRefs": [
         "MEDIA01-ASTRA-ULTRA-PLAN-HOST-SNAPSHOT-RANGE-CANDIDATE-R424",
         "MEDIA01-HOST-RANGE-22-AUX-OLD-GET-AND-CLEANUP-R425",
@@ -18740,15 +18808,16 @@
         "MEDIA01-PHYSICAL-CURRENT35D-NO-TRACE-COLD-CONTROL-R466",
         "MEDIA01-PHYSICAL-OWNED-RESOURCE-AND-SIX-ARCHIVE-CLOSURE-R466",
         "MEDIA01-GITEA-PR230-LOCAL-GATES-PASSED-20261121",
-        "MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121"
+        "MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121",
+        "MEDIA01-GITEA-PR230-MERGED-MAIN-ALL-CI-GREEN-20261121"
       ],
       "ios": "当前35d限定iOS切片真机完成：16次矩阵加1次关闭诊断的冷缓存复核，17通过/0失败/0跳过、13方法含重复；冷/暖、inline/三类链接入口、拖动/全屏/竖向素材、旧能力回退/完整分享、续期及故障拒绝和尾置moov均按范围通过。旧48a模拟器与各失败候选保持原记录。本切片源码已合Gitea PR230/main a8bf72a1；未做生产部署。",
       "desktop": "Host固定快照/Range、相对租约和原GET保持；原23项辅助记录保留，本次物理App经HTTPS使用生产文件管线。合成历史/解析来源不冒充真实Electron或其他Provider联调。",
-      "nextAction": "核对main自动push CI和现有同步的最终结果；本次代码交付已实际合主线且自有资源已释放。后续MEDIA01 Android/其他Provider/全量性能/生产部署仍依原阶段，A6/F75暂停保持。",
-      "updatedAt": "2026-11-21T10:45:32.512317+00:00",
+      "nextAction": "本次iOS/Host切片、14项lint与Gitea主线交付已经完成。MEDIA01其余Android、其他Provider、全量性能和生产部署继续按原MV3-MV5计划；A6/F75暂停保持，不将本次检查扩为全功能/新物理包通过。",
+      "updatedAt": "2026-11-21T11:15:25.779373+00:00",
       "plan": "docs/plans/mobile-video-streaming-20261121.md",
       "acceptancePlan": "docs/acceptance/mobile-video-streaming-20261121.md",
-      "gateNote": "原14项lint已修复，root lint0；隔离候选完整check0(872s)、HTTP16/配置2通过、553输入冻结iOS构建0(7s)，Astra三项已复核解决。Gitea PR230两项CI全绿后实际合main a8bf72a1，合并树与HEAD1be完全相同，23源/553输入匹配。自有工作树/本地远端分支/构建依赖已清理，两名本次辅助正式归档。main合并后的独立自动复检/同步仍在执行，未补签通过；历史物理35d17保持原包范围。",
+      "gateNote": "14项lint全部修复：root lint0，隔离完整check0(872s)、HTTP16/配置2通过、553输入冻结iOS构建0(7s)，Astra三项已修复复核。PR230两项CI全绿后实际合main a8bf72a1；合并树等于交付HEAD1be，23源/553输入一致。合并后main iOS20m4s/workspace20m10s及既有GitHub同步12m3s全部success。自有工作树/本地远端分支/构建依赖已回收，两名本次辅助正式归档；其他WIP和共享环境保留。未做生产部署，原物理35d17仍按原运行包范围。",
       "physicalAcceptance": {
         "state": "passed-scoped-current-candidate",
         "playerMethodsExecuted": 17,
@@ -18771,7 +18840,8 @@
         "matrixExecutions": 16,
         "additionalNoTraceColdExecutions": 1,
         "uniqueTestMethods": 13,
-        "cleanup": "owned resources released, six task auxiliary threads officially archived"
+        "cleanup": "owned resources released, six task auxiliary threads officially archived",
+        "currentMainlineBoundary": "Player source35d remains exact; actual17 physical executions belong to old b2b package. Current main49d standard simulator build and CI are separately recorded; no new current-main physical package pass."
       },
       "mainlineDelivery": {
         "pr": 230,
@@ -18779,12 +18849,17 @@
         "head": "1be178e5fad75a06d449f9ecefa9c570233206e3",
         "mergeCommit": "a8bf72a103edf092a41ec121c61b548d2cabbd4b",
         "remoteMain": "a8bf72a103edf092a41ec121c61b548d2cabbd4b",
-        "state": "integrated-not-deployed-postmerge-ci-pending",
+        "state": "integrated-not-deployed",
         "prCi": "success",
-        "mainPushCi": "pending",
+        "mainPushCi": "success",
         "deployed": false,
         "cleanup": "worktree/local+remote temporary branch/build/deps removed;2 delivery auxiliaries officially archived",
-        "evidenceRefs": ["MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121"]
+        "evidenceRefs": [
+          "MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121",
+          "MEDIA01-GITEA-PR230-MERGED-MAIN-ALL-CI-GREEN-20261121"
+        ],
+        "publicMirrorSync": "success",
+        "updatedAt": "2026-11-21T11:15:25.779373+00:00"
       }
     }
   ],
@@ -27382,6 +27457,31 @@
         "F59-MAIN-A8BF-PR230-SEMANTIC-INTEGRATION-ROOT-REVIEW-R474",
         "F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474"
       ]
+    },
+    {
+      "revision": 475,
+      "date": "2026-11-21",
+      "kind": "media-pr230-merged-main-all-ci-green-and-complete-scoped-delivery",
+      "scope": "MEDIA01 source delivery/lint/PR+main CI+existing mirror/owned cleanup complete; broad remaining phases stay planned, no new product/physical/performance/provider/deployment pass. All unrelated facts and A6/F75 pauses preserved.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": ["MEDIA01-GITEA-PR230-MERGED-MAIN-ALL-CI-GREEN-20261121"]
+    },
+    {
+      "revision": 476,
+      "date": "2026-11-21",
+      "kind": "f59-pr231-main-merged-and-owned-references-cleaned-native-inflight-bundle-ready-not-run",
+      "scope": "PreserveMediaR475. F59specificFD actualiOS/main+Desktopmasterdelivered, acceptedcomponentsmatched, ownedIOSWT/local/remotebranchgone. F68acceptedtestsource awaitsownmainintegration. Correct53supportcompletenessmiss via57nolinks rebuild; Nativefbdecompiledbut0run/0newmodels. Remainingacceptance3unchanged; oldfailures/parentbroader/pausedF75A6 retained.",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0,
+      "evidenceRefs": [
+        "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+        "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476",
+        "F44-CFC-FROZEN-PACKAGE-ROOT-REVIEW-AND-MISSING-SUPPORT-DISCOVERED-R476",
+        "F44-NATIVE-SUPPORT-HEADER-REBUILT-SAME-INPUTS-ZERO-LINKS-R476",
+        "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476"
+      ],
+      "maintenanceCorrection": "InitialR476 renderer rejected noncanonicalacceptanceBasis andmissingmergedAt. Correctedliteralmerged-pr andactualGiteatimestamp; no productchange/newacceptance. Originalexecutionfailure retainedinprivateupdatelog."
     }
   ],
   "maintenanceValidation": {
@@ -31026,16 +31126,17 @@
     },
     {
       "component": "MEDIA01 current isolated Gitea delivery",
-      "role": "gitea-main-integrated-source-not-deployed",
+      "role": "gitea-main-integrated-source-all-ci-green-not-deployed",
       "baseCommit": "77892b19710a67beb99ae8f1e2a7acc3837d1ef3",
       "sourceCommit": "a8bf72a103edf092a41ec121c61b548d2cabbd4b",
       "sourceTree": ".local/media-delivery-20261121/integration-source-pins.json",
-      "verification": "Actual PR230 main merge, head ancestor/tree equal,23current source+553native inputs matched; local gates and official PR CI passed. Main push CI pending independently; original35d physical17 not promoted to a new package.",
+      "verification": "PR230 actual main merge; head ancestor/tree identical;23source+553native inputs match. Local gates, PR CI, merged-main iOS/workspace and existing mirror sync all success; owned resources closed and2 delivery auxiliaries archived. Original35d physical17 remains old package; no deployment claim.",
       "evidenceRefs": [
         "MEDIA01-GITEA-PR230-LOCAL-GATES-PASSED-20261121",
-        "MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121"
+        "MEDIA01-GITEA-PR230-ACTUAL-MAIN-MERGE-AND-CLEANUP-20261121",
+        "MEDIA01-GITEA-PR230-MERGED-MAIN-ALL-CI-GREEN-20261121"
       ],
-      "updatedAt": "2026-11-21T10:45:32.512317+00:00"
+      "updatedAt": "2026-11-21T11:15:25.779373+00:00"
     },
     {
       "component": "F44/F18 cfc单Store具名原生验收包已构建，未安装/未实际在途验收",
@@ -31044,6 +31145,16 @@
       "packageSha256": "7795484337b0a719b788f153b4b684a39b3888d112a516013f8866afbe99bf13",
       "verification": "Native实际cfc，只有docs的child7800补parity记录；支持输入53保留给具体Native编译/执行，整构建/deps/cache已清。当前720实际仍7df/b86，无新业务输入/模型；最终与maina8bf组合语义和具体原生场景仍待。",
       "evidenceRefs": ["F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474"]
+    },
+    {
+      "component": "F59 iOS PR231实际主线d6d，已验7df组件匹配；自有分支/工作树已收",
+      "baseCommit": "a8bf72a103edf092a41ec121c61b548d2cabbd4b",
+      "sourceCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "verification": "Root核main/9cf树16c890相同及祖先，required双CI绿；3份F59Swift和Simulator权限与实际7df同。完整main新包未另装，原未决操作/数据不重放。",
+      "evidenceRefs": [
+        "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+        "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
+      ]
     }
   ],
   "sourcePinHistory": [
@@ -35839,7 +35950,6 @@
     ],
     "remainingElevenExitRule": "每项核实际主线及原通过范围，先复用已交付；实际缺口按Codex Host同领域协议修，原生模拟器/真实桌面验收后逐项合正确主线，唯一FD更新开发/验收/交付/执行及精确证据。未知结果只查询原操作，阶段无依赖资源即回收。F75/A6仍暂停。",
     "currentRemainingRequestedIds": [
-      "F59-large-file-upload",
       "F44-bounded-offline-wait-and-unknown-ack",
       "F18-event-reset-child-recovery",
       "F07-authorization-error-recovery-matrix",
@@ -35850,7 +35960,7 @@
       "F07-authorization-error-recovery-matrix",
       "F44-bounded-offline-wait-and-unknown-ack"
     ],
-    "currentPendingDeliveryRequestedIds": ["F59-large-file-upload", "F68-incremental-cache"]
+    "currentPendingDeliveryRequestedIds": ["F68-incremental-cache"]
   },
   "functionalDeliverables": [
     {
@@ -36180,11 +36290,14 @@
         "REMAINING5-EXACT-RECOVERY-INPUT-MAP-NO-NEW-ACCEPTANCE-R458",
         "HISTORICAL-I25-I27-MERGED-SYNC-AND-CHAOS-ACCEPTANCE-FOUND-R461",
         "F44-F18-ORIGINAL-SINGLE-STORE-NATIVE-ADMISSION-ROOT-CANDIDATE-R472",
-        "F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474"
+        "F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474",
+        "F44-CFC-FROZEN-PACKAGE-ROOT-REVIEW-AND-MISSING-SUPPORT-DISCOVERED-R476",
+        "F44-NATIVE-SUPPORT-HEADER-REBUILT-SAME-INPUTS-ZERO-LINKS-R476",
+        "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476"
       ],
       "pullRequests": [],
-      "nextAction": "复用原已合普通ACK/原ID冷查和I2.5/I2.7；只补一条任务自有实际在途父子运行的等待/断开/冷恢复/晚到草稿隔离有限组合。Root正在准备原正常singleStore的模拟器native入口与严格真实wire故障，不重发旧A/D/G；新输入执行前冻结目标/body/唯一原操作和计数。",
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "nextAction": "原正常单Store cfc包与fbde双阶段Native已编译并完成支持缺失修复，尚未实际运行。先冻结严格target/body/原资料基线与两phase配置，Root审Go后才发送一条新的合成父子在途样本；传输前sealed原意图，未知先查不重发。",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "scopeSource": "Explicitremainingobligation splitfromF18-snapshot-recovery; no deletedrequirement, no pass inferred fromordinaryreadonlycase.",
       "currentDevelopmentScope": "当前 events 将游标推进/epoch变化转为 canonical history，pump具备加密帧窗口去重、target/epoch保护；父子快照已有生产投影。是否缺gap保护需沿该完整链判断，不能仅pump无gap分支就称缺功能。 R474: 仅DEBUGSimulator具名normal-single-store入口cfc已构建、docs7800补record通过；没有新真实在途/父子业务输入，不把原生编译当验收。"
     },
@@ -37920,11 +38033,14 @@
         "F44-PR226-POSTMERGE13168-BOTH-CI-AND-AUTOSYNC-TERMINAL-R437",
         "REMAINING5-EXACT-RECOVERY-INPUT-MAP-NO-NEW-ACCEPTANCE-R458",
         "F44-F18-ORIGINAL-SINGLE-STORE-NATIVE-ADMISSION-ROOT-CANDIDATE-R472",
-        "F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474"
+        "F44-F18-CFC-SINGLE-STORE-EXAMINER-NATIVE-PACKAGE-PREPARED-R474",
+        "F44-CFC-FROZEN-PACKAGE-ROOT-REVIEW-AND-MISSING-SUPPORT-DISCOVERED-R476",
+        "F44-NATIVE-SUPPORT-HEADER-REBUILT-SAME-INPUTS-ZERO-LINKS-R476",
+        "F44-F18-FBDE-NATIVE-EXAMINER-COMPILED-NOT-EXECUTED-R476"
       ],
       "pullRequests": ["BCAI/agent-hub-app#226"],
-      "nextAction": "复用原已合普通ACK/原ID冷查和I2.5/I2.7；只补一条任务自有实际在途父子运行的等待/断开/冷恢复/晚到草稿隔离有限组合。Root正在准备原正常singleStore的模拟器native入口与严格真实wire故障，不重发旧A/D/G；新输入执行前冻结目标/body/唯一原操作和计数。",
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "nextAction": "原正常单Store cfc包与fbde双阶段Native已编译并完成支持缺失修复，尚未实际运行。先冻结严格target/body/原资料基线与两phase配置，Root审Go后才发送一条新的合成父子在途样本；传输前sealed原意图，未知先查不重发。",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "scopeSource": "Explicit remaining engineering obligation; ordinary criterion unchanged, original failed network test retained.",
       "executionState": "in-progress",
       "currentAcceptedScope": "Bounded send/response repair mergedPR226/main14ad with matched848 native; fullunknownwriteACK/cancelmatrix remains explicit.",
@@ -37971,9 +38087,9 @@
       "phase": "hardening",
       "behavior": "按电脑实际限额流式上传超过20MiB的独立文件",
       "acceptanceCriteria": "沿原DEV01/DEV03/AC21核有限20MiB旧端与可配置/null新端，允许时21MiB及64MiB原名/大小/SHA一致、传输内存有界、原ID在App重开后可查询继续；优先匹配R37原结果，代码变化才补受影响场景，不新增模型。",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "Root公共流式/限额语义；Terra构建与真实双端验收",
-      "acceptanceBasis": "real-dev-plus-exact-matched-original-reopen",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "F59-ORDINARY-UPLOAD-PR142-PR215-EXACT8-COMPONENT-REUSE-R350",
         "PEER-FILE-EXECUTION-R37",
@@ -38003,14 +38119,21 @@
         "F59-7DF-REAL-STAGE-RUNNERS-SAMPLES-CACHE-RELEASED-R470",
         "F59-OLD5A95-EXPANDED-HOST-RETIRED-AFTER-7DF-CONSUMER-TRANSFER-R470",
         "F59-F68-ENDED-STAGES-SHAREDHOST-AND-FULLBASELINE-RELEASED-R474",
-        "F59-MAIN-A8BF-PR230-SEMANTIC-INTEGRATION-ROOT-REVIEW-R474"
+        "F59-MAIN-A8BF-PR230-SEMANTIC-INTEGRATION-ROOT-REVIEW-R474",
+        "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+        "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476"
       ],
-      "pullRequests": ["BCAI/comfy-desktop#78"],
-      "nextAction": "Root已解决main a8bf媒体集成17处交叉并保留最新唯一台账。优先将准确merge候选正常stage/commit/push，核PR231最终HEAD新CI后合main；原d3719两CI已绿只限旧提交，原21/64/续传不重放。",
-      "updatedAt": "2026-11-21T19:02:52.317206+08:00",
+      "pullRequests": ["BCAI/comfy-desktop#78", "BCAI/agent-hub-app#231"],
+      "nextAction": "限定独立流式大文件、原ID续传、字节/RSS及升级兼容已验并交付iOS PR231/main d6d和DesktopPR78/cbd；自有iOS分支/工作树已收。保留原失败和更广父项边界，不重复模型/21/64/重开测试。",
+      "updatedAt": "2026-11-21T19:47:15.808354+08:00",
       "currentDevelopmentScope": "iOS7df native/source包与DesktopPR78/cbd43实际组合通过：正常升级恢复、21/64独立流式字节及预置RSS门槛；默认限额/严格quota/原ID去重辅助检查保留。iOS尚未推送合并。",
-      "executionState": "in-progress",
-      "currentAcceptedScope": "本FD有限范围已通过；当前21/64新ID b12fd12f/c64af76a，各唯一prepare/complete，无thread/模型。App采样峰差3200KiB<=24576。原f85同ID重开续传按不变控制链匹配复用；原失败历史保留。"
+      "executionState": "closed",
+      "currentAcceptedScope": "本FD有限范围已通过；当前21/64新ID b12fd12f/c64af76a，各唯一prepare/complete，无thread/模型。App采样峰差3200KiB<=24576。原f85同ID重开续传按不变控制链匹配复用；原失败历史保留。",
+      "resourceCleanup": {
+        "state": "owned-ios-worktree-and-both-branches-released",
+        "evidenceRef": "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476",
+        "retained": "IndependentDesktopactualruntimeandbroker stillusedF44/F18/F07; originalSimdata andoutsidefrozenpackages/minimalproof preserved"
+      }
     }
   ],
   "mergedPullRequests": {
@@ -38734,6 +38857,44 @@
         "sha256": "54c09ba48dbb010398c85f72d7659d6b4bdb5e91300c20f8a11b6f5ad22ec265",
         "releaseCondition": "F59 memory/F68/read-recovery/authorization acceptance no longer needs source/deps; own normalDEV stopped; taskfinish manifest reviewed outside tree.",
         "completed": false
+      }
+    },
+    "BCAI/agent-hub-app#231": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 231,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/231",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "9cf54f5cfd75e8cb3798684d9bfe685b21151564",
+      "mergeCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "checkedMainCommit": "d6d426769893892d38161f85f035e7130f699c3e",
+      "tree": "16c890052901e3100b44124275b056c4a32f6ec3",
+      "checkedAt": "2026-11-21T19:47:15.808354+08:00",
+      "sourceDeleted": true,
+      "scope": "FiniteF59independentstreaming/negotiatedlimits/hashRSS/simulatorlegacykeychain scope; originalactual7df/desktopproofmatched, MediaPR230preserved; notfullparent ornewwholemain runtimepass.",
+      "evidenceRef": "F59-PR231-ACTUAL-MAIN-D6D-BOTH-CI-AND-ACCEPTED-COMPONENT-MATCH-R476",
+      "resourceEvidenceRef": "F59-PR231-OWNED-IOS-WORKTREE-AND-BOTH-BRANCHES-RELEASED-R476",
+      "premergeCI": {
+        "workspace": "success",
+        "ios": "success",
+        "workspaceDuration": "20m49s",
+        "iosDuration": "19m47s"
+      },
+      "postmergeCI": {
+        "workspace": "pending",
+        "ios": "pending",
+        "observedSource": "PR231 exactmerged Gitea metadata, no fabricatedcompletion"
+      },
+      "automaticPublicSync": {
+        "run": 13335,
+        "state": "success",
+        "manualPush": false,
+        "actualPublicRemoteSHA": "not-independently-checked"
+      },
+      "mergedAt": "2026-11-21T19:32:44+08:00",
+      "mergeMetadataEvidence": {
+        "path": ".local/ios-easywork-closeout-20261112/resume-20261112/integration-candidate-20261115/remaining-47-20261115/delivery-reconcile-20261118/remaining11-development/f59-shared-streaming-limits/integration-main-a8bf/delivery-receipt/pr231-final-metadata.json",
+        "sha256": "ca51d463d5f533eaf9e3c720266907a21c945bae1416e87541c0959c4fa23a6b"
       }
     }
   },

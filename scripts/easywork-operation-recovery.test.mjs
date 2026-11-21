@@ -42,6 +42,7 @@ test(
       'nonisolated static func verifiedWriteResult(',
       '  private func requestData(',
     );
+    const expiry = declaration('private func expireRequest(', '  private func publish(');
     const harness = `import Foundation
 func easyWorkJSON(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .fragmentsAllowed]) }
 func easyWorkObject(_ data: Data) throws -> [String: Any] { try JSONSerialization.jsonObject(with: data) as! [String: Any] }
@@ -74,6 +75,7 @@ actor Harness {
  }
  func request(_ method: String, _ params: [String: Any]) async throws -> Data { precondition(method == "command/status" && params["commandId"] as? String == "original"); status += 1; return try easyWorkJSON(NSNull()) }
  ${verified}
+ ${expiry}
  ${method}
  func verify(_ method: String, _ params: Data, _ shouldSucceed: Bool, _ expectedStatus: Int) async throws {
    do { let result = try await requestData(method, params: params, id: "same-id"); precondition(shouldSucceed); let value = try easyWorkObject(result); precondition(value["fresh"] as? Bool == true) }

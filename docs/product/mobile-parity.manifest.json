@@ -22457,6 +22457,20 @@
         "scripts/fixtures/accepted-receipts-native.swift": "dd397dabdde804e3080957165a9af8b49a53007bbdfe355895e2ee2372ab1f8f",
         "scripts/fixtures/accepted-receipts-projection.mjs": "8690ecb8bb931ffdf34e39d14c9fa240280cdb777065a1a3fb71f97e05f4ad95"
       }
+    },
+    {
+      "id": "easywork-send-and-response-deadline-20261121",
+      "baseCommit": "ab0c3c2d8fe342643c92fda25ab36cd7ce57c7ca",
+      "features": ["F44", "F51", "F52", "F54"],
+      "summary": "Bound the thirty-second EasyWork per-request send and response interval with a monotonic deadline before publication. Expire only the original connection; retain an authenticated response that precedes send completion, keep original IDs and read/write recovery semantics, preserve authorization errors and cancellation. Connection and route-selection budgets remain separate. DEBUG-only normal acceptance gates with a complete target and thread scope can hold one actual sent read callback; read-only notification observation also supports the exact normal acceptance target without fake UI state. Android and Codex transports unchanged; no cross-platform or full notification acceptance implied, A6 paused.",
+      "files": {
+        "apps/ios/Sources/EasyWorkSession.swift": "c8f0bca8badb43844549b5447734588a1b3aad9b5ad20e793b2f4181e8525358",
+        "apps/ios/Sources/TaskNotifications.swift": "00f28b6a3dcc2363e487b327a9fcaca6825f1c888e1f01bbc60e1e850ba58078",
+        "scripts/easywork-request-deadline.test.mjs": "a59294975829444df3029e15dbdbf2978258021518e90818b4fbea35912da81d",
+        "scripts/easywork-operation-recovery.test.mjs": "c884e758ceb0c1e0d4fb12dce303b2c13d3fb3bec97c52a991b82e355fb5356c",
+        "apps/ios/Sources/EasyWorkTransport.swift": "40624d446c5faa5583819ea816b38246fbf208df69292b13687b07709bb3642e",
+        "apps/ios/Sources/NotificationModels.swift": "c052fcf62e1fa05530c5e2f06021e84f1d0c1cf064889e034c6fa88ab564e951"
+      }
     }
   ]
 }

@@ -3,6 +3,30 @@ import MobileCore
 import os
 
 #if DEBUG
+/// Delays only completion of an actual sent read in the normal acceptance App.
+/// It never supplies a response, changes credentials or publishes a model input.
+enum EasyWorkRequestDeadlineAcceptance {
+  static func matches(bundleIdentifier: String?, arguments: [String], environment: [String: String],
+    target: [String: Any], request: [String: Any]) -> Bool {
+    guard bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      arguments.contains("-easywork-local-dev"), arguments.contains("-request-deadline-acceptance"),
+      !arguments.contains("-ui-testing"),
+      let desktop = target["desktopDeviceId"] as? String, !desktop.isEmpty,
+      let workspace = target["workspaceId"] as? String, !workspace.isEmpty,
+      let runtime = target["runtimeId"] as? String, !runtime.isEmpty,
+      let account = target["account"] as? [String: Any],
+      let authority = account["authority"] as? String, !authority.isEmpty,
+      let subject = account["subject"] as? String, !subject.isEmpty,
+      request["method"] as? String == "thread/history",
+      let id = request["requestId"] as? String, UUID(uuidString: id) != nil,
+      let params = request["params"] as? [String: Any], let thread = params["threadId"] as? String, !thread.isEmpty,
+      environment["EASYWORK_REQUEST_DEADLINE_THREAD_ID"] == thread,
+      let captured = request["target"] as? [String: Any], let encoded = try? easyWorkJSON(target),
+      let original = try? easyWorkJSON(captured), original == encoded,
+      environment["EASYWORK_REQUEST_DEADLINE_TARGET_SHA256"] == HostService.hash(encoded) else { return false }
+    return true
+  }
+}
 /// One original synthetic prepare response can be withheld locally after its
 /// authentication. This never changes transport, receipts, IDs or file bytes.
 actor EasyWorkFilePrepareReconciliationFault {
@@ -168,6 +192,7 @@ actor EasyWorkRemoteSession {
   #if DEBUG
   private var fileCompletionFaultConsumed = false
   private var droppedReadRequestId: String?
+  private var requestDeadlineFaultConsumed = false
   #endif
   private var pendingRequestIds: Set<String> = []
   private var events: [[String: Any]] = []
@@ -312,6 +337,14 @@ actor EasyWorkRemoteSession {
     subagents.clear()
     await route.close()
   }
+  private func expireRequest(_ id: String, epoch requestEpoch: String) async {
+    guard epoch == requestEpoch, !closed, pendingRequestIds.contains(id) else { return }
+    diagnostic("request-deadline", id)
+    if lastError == nil { lastError = URLError(.timedOut) }
+    // Interrupt this connection's blocked send as well as response waiting.
+    // The normal recovery path retains the original operation and queries writes.
+    await disconnect()
+  }
   private func publish(_ payload: [String: Any]) async throws {
     let publishEpoch = epoch
     // Actor isolation does not keep HTTP requests ordered across send's await.
@@ -327,6 +360,20 @@ actor EasyWorkRemoteSession {
     defer { publishingEpochs.remove(publishEpoch) }
     let frame = try crypto.seal(payload, sequence: sequence); sequence += 1
     try await transport.send(frame)
+    #if DEBUG
+    if !requestDeadlineFaultConsumed, let request = payload["envelope"] as? [String: Any],
+      EasyWorkRequestDeadlineAcceptance.matches(bundleIdentifier: Bundle.main.bundleIdentifier,
+        arguments: ProcessInfo.processInfo.arguments, environment: ProcessInfo.processInfo.environment,
+        target: target.dictionary, request: request) {
+      requestDeadlineFaultConsumed = true
+      diagnostic("request-send-callback-held", request["requestId"] as? String ?? "")
+      while !closed && epoch == publishEpoch && self.transport != nil {
+        try await Task.sleep(for: .milliseconds(25))
+      }
+      diagnostic("request-send-callback-released", request["requestId"] as? String ?? "")
+      throw URLError(.networkConnectionLost)
+    }
+    #endif
   }
   private func pump(_ route: any AgentTransport, channel: EasyWorkEnvelopeCrypto, epoch pumpEpoch: String) async {
     diagnostic("pump-start", pumpEpoch)
@@ -420,10 +467,23 @@ actor EasyWorkRemoteSession {
       try await connect()
       let route = activeCandidate
       let requestEpoch = epoch
+      let clock = ContinuousClock()
+      let deadline = clock.now.advanced(by: .seconds(30))
+      let requestDeadline = Task {
+        do { try await clock.sleep(until: deadline) }
+        catch { return }
+        await self.expireRequest(id, epoch: requestEpoch)
+      }
+      defer { requestDeadline.cancel() }
       do {
-        try await publish(["kind": "protocol", "envelope": request])
-        let deadline = Date().addingTimeInterval(30)
-        while responses[id] == nil && lastError == nil && !closed && Date() < deadline { try await Task.sleep(for: .milliseconds(25)) }
+        do { try await publish(["kind": "protocol", "envelope": request]) }
+        catch {
+          // A verified response may precede send's completion callback. Closing
+          // that blocked send must not discard the response or republish it.
+          guard responses[id] != nil else { throw error }
+        }
+        try Task.checkCancellation()
+        while responses[id] == nil && lastError == nil && !closed && clock.now < deadline { try await Task.sleep(for: .milliseconds(25)) }
         guard !closed else { throw CancellationError() }
         if let response = responses.removeValue(forKey: id) {
           guard response["ok"] as? Bool == true else {

@@ -344,11 +344,25 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     }
   }
   #if DEBUG
+  private var allowsEasyWorkNotificationObservation: Bool {
+    let process = ProcessInfo.processInfo
+    guard Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      let run = process.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"],
+      UUID(uuidString: run)?.uuidString.lowercased() == run else { return false }
+    if process.arguments.contains("-ui-testing") { return true }
+    let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+    guard process.arguments.contains("-easywork-local-dev"),
+      process.arguments.contains("-notification-observation-acceptance"),
+      let clients = store?.saved.clients.filter({ !$0.isDemo }), clients.count == 1,
+      let captured = clients[0].agentConnection?.target, captured.agentId == "easywork",
+      let encoded = try? encoder.encode(captured),
+      process.environment["EASYWORK_NOTIFICATION_OBSERVATION_TARGET_SHA256"] == HostService.hash(encoded) else { return false }
+    return true
+  }
   /// Read-only OS observation for the exact independent native examiner. No event/settings injection.
   private func startEasyWorkNotificationObservation() {
-    guard easyWorkObservationTask == nil, Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
-      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
-      let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"], UUID(uuidString: run)?.uuidString.lowercased() == run else { return }
+    guard easyWorkObservationTask == nil, allowsEasyWorkNotificationObservation,
+      let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"] else { return }
     let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Acceptance", isDirectory: true)
     let file = folder.appendingPathComponent("notification-observation-" + run + ".json")
     guard !FileManager.default.fileExists(atPath: file.path) else { return }
@@ -611,9 +625,7 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     let responseIsPush = response.notification.request.trigger is UNPushNotificationTrigger
     let responseHasEnvelope = info["notification"] != nil, responseHasPlainEvent = info["event"] != nil
     Task { @MainActor in
-      if Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
-        ProcessInfo.processInfo.arguments.contains("-ui-testing"),
-        let run = ProcessInfo.processInfo.environment["EASYWORK_NOTIFICATION_OBSERVATION_RUN"], UUID(uuidString: run)?.uuidString.lowercased() == run {
+      if Self.shared.allowsEasyWorkNotificationObservation {
         Self.shared.easyWorkActualNotificationResponse = ["identifier": responseIdentifier, "action": responseAction,
           "actualPushTrigger": responseIsPush, "encryptedEnvelopePresent": responseHasEnvelope,
           "plaintextEventPresent": responseHasPlainEvent]

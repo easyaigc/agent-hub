@@ -157,6 +157,7 @@ export class AttachmentReads {
     };
   }
   private async build(entry: Entry) {
+    let failure: unknown;
     const signal = AbortSignal.any([entry.controller.signal, AbortSignal.timeout(120_000)]);
     try {
       const root = await this.root();
@@ -196,7 +197,7 @@ export class AttachmentReads {
       signal.throwIfAborted();
       entry.prepared = prepared;
     } catch (error) {
-      entry.error = entry.controller.signal.aborted
+      failure = entry.controller.signal.aborted
         ? entry.controller.signal.reason
         : signal.aborted
           ? new RuntimeError(504, '视频准备超时，请重新打开')
@@ -204,7 +205,10 @@ export class AttachmentReads {
     } finally {
       entry.done = true;
       this.preparing--;
-      if (entry.error || entry.controller.signal.aborted) await this.retire(entry);
+      // Pollers may observe the original error only after the owned snapshot
+      // and reservation are retired. Otherwise a terminal 409 races its unlink.
+      if (failure || entry.controller.signal.aborted) await this.retire(entry);
+      entry.error = failure;
     }
   }
   private async retire(entry: Entry) {

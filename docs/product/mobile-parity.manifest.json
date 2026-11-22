@@ -25846,6 +25846,35 @@
         "scripts/easywork-request-deadline.test.mjs": "45ac3a95aada433d8ba39700afe5cd72fd510310a4bda60cc7e57fe8e348282f",
         "scripts/easywork-operation-recovery.test.mjs": "1ff58b9e362bda04dc7020bb2d1be2ac3526a8411a439ad97aca33924f64e757"
       }
+    },
+    {
+      "id": "host-bounded-message-projection-20261122",
+      "baseCommit": "efd81127",
+      "features": ["F17", "F18", "F19", "F28", "F47"],
+      "summary": "Bounded desktop message presentation reuse and cooperative supersession. Both mobile clients retain the existing Host contract; source/version validation and immutable receipts remain live. Synthetic boundary/performance evidence is distinct from target production CPU and native acceptance.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "2a9931259ebe6c19cbc067e930b9d8974225cd1669bbeb1c7fd85b0e5b61c67a",
+        "packages/codex-adapter/src/desktop-projection-cache.ts": "f892e6f8707c36dce77c1b9a4be51eb7bdbcd0221b3e02b0bf2c3924ab4a5092"
+      }
+    },
+    {
+      "id": "host-capture-failure-retirement-order-20261122",
+      "baseCommit": "608c26dd",
+      "features": ["F19", "F32", "F77"],
+      "summary": "On fixed-version capture failure, retire the owned private snapshot and reservation before publishing the original terminal error. Current source/version validation and stable read ID tombstones remain unchanged; deterministic retirement barrier and unchanged original mutation checks cover the Linux polling race.",
+      "files": {
+        "apps/host-agent/src/attachment-reads.ts": "ec9e9ad7d1a9418070a271fd93c4e5ff81dd575b3747bee6b53b30979c01638f"
+      }
+    },
+    {
+      "id": "host-projection-input-fingerprint-budget-20261122",
+      "baseCommit": "e6a177aa",
+      "features": ["F17", "F18", "F19", "F28"],
+      "summary": "Decline large or complex rich-message inputs before JSON fingerprint allocation; preserve the original full-content and chunked-media projection path without reducing media limits.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "60f4fae5d458d5d48044be3b37760950e954770a8b84cb1d707d0fed2d8ea70d",
+        "packages/codex-adapter/src/desktop-projection-cache.ts": "3404f8a4cfe4dd09d1e3c7e601373069d07116223164f762e4828a7cd0d1ee36"
+      }
     }
   ]
 }

@@ -14,6 +14,7 @@ import { diagnosticEvent } from './diagnostic-events.js';
 import { isDeepStrictEqual } from 'node:util';
 import { randomUUID, createHash } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
+import { DesktopProjectionCache, boundedProjectionInput } from './desktop-projection-cache.js';
 import { AttachmentFiles, AttachmentFileError, attachmentFileError } from './attachment-files.js';
 import { realpath } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
@@ -487,6 +488,7 @@ export class RuntimeSession {
   private sharedVersions = new Map<string, number>();
   private sharedLiveItems = new Map<string, Set<string>>();
   private restoring = new Map<string, Promise<ReturnType<RuntimeSession['history']>>>();
+  private desktopProjectionCache = new DesktopProjectionCache<Message>();
   private desktopReceiptHistoryReads = new Map<string, Promise<void>>();
   private desktopReceiptHistoryRetryAfter = new Map<string, number>();
   private acceptedReceiptHistoryReads = new Map<string, Promise<void>>();
@@ -1253,6 +1255,7 @@ export class RuntimeSession {
     this.sharedPinnedThreadIds.delete(threadId);
     this.sharedVersions.delete(threadId);
     this.sharedLiveItems.delete(threadId);
+    this.desktopProjectionCache.invalidate(threadId);
     this.state.threads = this.state.threads.filter((thread) => thread.id !== threadId);
     this.events = this.events.filter((event) => event.threadId !== threadId);
     for (const [id, approval] of this.approvals)
@@ -2158,6 +2161,7 @@ export class RuntimeSession {
     };
   }
   async refreshHistory(threadId: string, cursor?: string, windowed = false) {
+    this.desktopProjectionCache.invalidate(threadId);
     if (isDesktopHistoryCursor(cursor)) return this.hostHistoryPage(threadId, cursor);
     if (
       this.mode === 'shared-runtime' &&
@@ -3861,7 +3865,8 @@ export class RuntimeSession {
     thread: Thread,
     item: unknown,
     indexes?: Map<string, number>,
-  ): Promise<void> {
+    valid: () => boolean = () => true,
+  ): Promise<{ message: Message; referenceText: string } | undefined> {
     const rendered = renderItem(item);
     if (this.mode === 'desktop-runtime') rendered.id = historyIdentity(rendered.id, rendered.runId);
     const questions = desktopQuestions([item]);
@@ -3901,7 +3906,9 @@ export class RuntimeSession {
       indexes?.set(message.id, thread.messages.length);
       thread.messages.push(message);
     }
-    await this.projectMessageAttachments(thread, message, rendered.paths, item);
+    const referenceText = message.text;
+    await this.projectMessageAttachments(thread, message, rendered.paths, item, undefined, valid);
+    return { message, referenceText };
   }
 
   private registerMessageReferences(
@@ -4173,6 +4180,7 @@ export class RuntimeSession {
     paths: string[],
     item: unknown,
     directory?: string,
+    valid: () => boolean = () => true,
   ): Promise<void> {
     const wire = object(item);
     const originalLinks = messageLinks(message.text);
@@ -4210,6 +4218,7 @@ export class RuntimeSession {
       this.options.root;
     const resolvedPaths = new Map<string, string>();
     for (const path of paths) {
+      if (!valid()) return;
       try {
         const requested = resolve(root, path);
         const reference =
@@ -4250,6 +4259,7 @@ export class RuntimeSession {
     if (message.kind === 'imageGeneration' && typeof wire.result === 'string')
       media.push({ type: 'image', data: wire.result, mimeType: 'image/png' });
     for (const entry of media) {
+      if (!valid()) return;
       if (entry.type !== 'image') continue;
       const url =
         string(entry.imageUrl) ||
@@ -4271,6 +4281,7 @@ export class RuntimeSession {
       for (let offset = 0; offset < bytes.length; offset += 1024 * 1024) {
         hash.update(bytes.subarray(offset, offset + 1024 * 1024));
         await setImmediate();
+        if (!valid()) return;
       }
       const sha256 = hash.digest('hex');
       let attachment = this.state.attachments.find(
@@ -6346,11 +6357,21 @@ export class RuntimeSession {
             const version = job.version;
             const original = this.thread(id);
             const thread = { ...original, messages: original.messages };
-            await this.projectDesktopMessages(
-              thread,
-              job.state,
-              () => !this.closed && this.desktopProjections.get(id) === job,
-            );
+            try {
+              await this.projectDesktopMessages(
+                thread,
+                job.state,
+                () =>
+                  !this.closed &&
+                  this.desktopProjections.get(id) === job &&
+                  job.version === version,
+              );
+            } catch (error) {
+              // A failed old filesystem read cannot reject the replacement
+              // snapshot. Current-version failures still invalidate live proof.
+              if (version !== job.version) continue;
+              throw error;
+            }
             if (this.closed || this.desktopProjections.get(id) !== job) break;
             if (version !== job.version) continue;
             if (this.runtime instanceof DesktopRuntime && this.runtime.ipc.hasOwner(id)) {
@@ -6416,11 +6437,80 @@ export class RuntimeSession {
           ),
         ),
     );
+    // Receipt text/attachments can replace an owner's user item. Build the
+    // dependency index once per snapshot, rather than scanning all receipts per hit.
+    const receipts = new Map(
+      this.state.receipts
+        .filter((v) => v.threadId === thread.id)
+        .map((v) => [v.clientMessageId, v.reply]),
+    );
+    const attachmentIds = new Set(
+      this.state.attachments.filter((file) => file.threadId === thread.id).map((file) => file.id),
+    );
+    const context = JSON.stringify([
+      thread.desktopDirectory,
+      thread.historyDirectory,
+      thread.projectId,
+      this.state.projects.find((project) => project.id === thread.projectId)?.roots,
+      this.options.root,
+      this.readingTarget(),
+    ]);
+    const upsert = async (item: Record<string, unknown>) => {
+      if (!valid()) return;
+      // Native resources are checked on every snapshot. Besides source/version
+      // changes, an overloaded file service must remain a visible projection failure.
+      const fileBacked = [...list(item.content), ...list(item.changes), item].some(
+        (entry) => string(object(entry).path) || string(object(entry).savedPath),
+      );
+      if (fileBacked) {
+        await this.upsert(thread, item, indexes, valid);
+        return;
+      }
+      // Rendering a short plain reply is cheaper than hashing and cloning it.
+      // Reserve reuse for richer/longer content; do not tax the common text path.
+      if (
+        item.type === 'agentMessage' &&
+        string(item.text).length < 2048 &&
+        !string(item.text).includes('[') &&
+        !['content', 'changes', 'path', 'savedPath', 'result', 'contentItems', 'output'].some(
+          (key) => Object.hasOwn(item, key),
+        )
+      ) {
+        await this.upsert(thread, item, indexes, valid);
+        return;
+      }
+      const key = JSON.stringify([thread.id, item.runId, item.id]);
+      const receipt = item.type === 'userMessage' ? receipts.get(string(item.clientId)) : undefined;
+      if (!boundedProjectionInput([context, item, receipt])) {
+        await this.upsert(thread, item, indexes, valid);
+        return;
+      }
+      const fingerprint = createHash('sha256')
+        .update(JSON.stringify([context, item, receipt]))
+        .digest('hex');
+      const cached = this.desktopProjectionCache.get(key, fingerprint);
+      if (cached && cached.message.attachments.every((file) => attachmentIds.has(file.id))) {
+        const message = cached.message;
+        this.registerMessageReferences(thread, { ...message, text: cached.referenceText });
+        const index = indexes.get(message.id);
+        if (index === undefined) {
+          indexes.set(message.id, thread.messages.length);
+          thread.messages.push(message);
+        } else thread.messages[index] = message;
+        return;
+      }
+      const result = await this.upsert(thread, item, indexes, valid);
+      if (!result || !valid()) return;
+      this.desktopProjectionCache.set(key, thread.id, fingerprint, result);
+    };
     let projected = 0;
     for (const turn of turns) {
       for (const item of list(turn.items)) {
         if (!valid()) return;
-        if (++projected % 32 === 0) await setImmediate();
+        if (++projected % 32 === 0) {
+          await setImmediate();
+          if (!valid()) return;
+        }
         if (turn.turnId === thread.desktopInitializationTurnId) continue;
         if (['todo-list', 'planImplementation', 'steered'].includes(string(object(item).type)))
           continue;
@@ -6431,18 +6521,14 @@ export class RuntimeSession {
         if (!wire) continue;
         if (wire.type === 'steeringUserMessage') {
           if (!string(wire.serverUserMessageId)) continue;
-          await this.upsert(
-            thread,
-            {
-              type: 'userMessage',
-              id: wire.serverUserMessageId || wire.id,
-              clientId: wire.serverClientUserMessageId || wire.clientUserMessageId,
-              content: wire.input,
-              status: wire.status === 'accepted' ? 'completed' : 'inProgress',
-              runId: turn.turnId,
-            },
-            indexes,
-          );
+          await upsert({
+            type: 'userMessage',
+            id: wire.serverUserMessageId || wire.id,
+            clientId: wire.serverClientUserMessageId || wire.clientUserMessageId,
+            content: wire.input,
+            status: wire.status === 'accepted' ? 'completed' : 'inProgress',
+            runId: turn.turnId,
+          });
           continue;
         }
         const completed = object(turn.agentMessageCompletedAtMsById);
@@ -6466,25 +6552,22 @@ export class RuntimeSession {
               : wire.status === 'inProgress' && turn.status !== 'inProgress'
                 ? turn.status
                 : wire.status;
-        await this.upsert(
-          thread,
-          { ...wire, runId: turn.turnId, ...(typeof status === 'string' ? { status } : {}) },
-          indexes,
-        );
+        await upsert({
+          ...wire,
+          runId: turn.turnId,
+          ...(typeof status === 'string' ? { status } : {}),
+        });
       }
       if (turn.status === 'failed' && string(turn.turnId))
-        await this.upsert(
-          thread,
-          {
-            id: `turn-failure-${string(turn.turnId)}`,
-            type: 'turnFailure',
-            text: string(object(turn.error).message) || '任务执行失败，电脑未提供错误详情。',
-            status: 'failed',
-            runId: turn.turnId,
-          },
-          indexes,
-        );
+        await upsert({
+          id: `turn-failure-${string(turn.turnId)}`,
+          type: 'turnFailure',
+          text: string(object(turn.error).message) || '任务执行失败，电脑未提供错误详情。',
+          status: 'failed',
+          runId: turn.turnId,
+        });
     }
+    if (!valid()) return;
     thread.messages.unshift(
       ...retainedDesktopHistory(
         previous,
@@ -6605,6 +6688,7 @@ export class RuntimeSession {
     this.closed = true;
     for (const job of this.desktopProjections.values()) job.resolve();
     this.desktopProjections.clear();
+    this.desktopProjectionCache.clear();
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     let failure: unknown;
     for (const close of [

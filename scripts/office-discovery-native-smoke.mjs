@@ -31,7 +31,7 @@ typealias HostDiscoveryNetwork = CodexDirectConnection.Network
 struct CodexHostDescriptor: Sendable { var target: Target; var fingerprint: String; var name: String; var endpoints: [String]; func candidates() throws -> [Candidate] { [] } }
 struct EasyWorkHostDescriptor: Sendable { var target: Target; var publicKey: String; var fingerprint: String; var displayName: String }
 struct AgentConnection { var target: Target; var credentialRef: String; var candidates: [Candidate] }
-struct Client { var id: String; var codexDirect: CodexDirectConnection?; var online: Bool; var agentConnection: AgentConnection? = nil; var isDemo=false }
+struct Client { var cachedNetworks: [HostDiscoveryNetwork]? = nil; var authenticatedDiscoveryNetworks: [HostDiscoveryNetwork] { codexDirect?.discoveryNetworks ?? cachedNetworks ?? [] }; var id: String; var codexDirect: CodexDirectConnection?; var online: Bool; var agentConnection: AgentConnection? = nil; var isDemo=false }
 struct Saved { var clients: [Client] }
 @MainActor final class SessionStore { var saved: Saved; var updates=0; var learned: [String]=[]; var observed: String?; init(_ c: [Client]) { saved=Saved(clients:c) }; func updateCodexDiscovery(_ c: Client, host: CodexHostDescriptor, reachableEndpoint: String, verifiedObservedEndpoint: String? = nil) -> Bool { updates += 1; learned=host.endpoints; observed=verifiedObservedEndpoint; return true } }
 struct EasyWorkCredential: Codable { struct Binding: Codable { var target: Target; var desktopPublicKey: String }; var binding: Binding }
@@ -70,6 +70,17 @@ enum EasyWorkPairing { static func readHost(endpoint:String, timeout:Double) asy
   // Starting with no learned/current local scope cannot read a legacy manual
   // default or guess a /24 from an endpoint.
   discovery.start(store); precondition(!discovery.searching && discovery.total == 0 && discovery.scopes.isEmpty)
+  // A saved EasyWork-only observation must seed the same scanner and priority
+  // path; no Codex connection or guessed local range is available in this case.
+  store.saved.clients[0].codexDirect=nil
+  store.saved.clients[0].agentConnection=AgentConnection(target:Target(hostId:"synthetic"),credentialRef:"test",candidates:[])
+  store.saved.clients[0].cachedNetworks=[.init(address:"10.200.42.10",cidr:"10.200.42.10/32")]
+  await Probes.shared.reset("normal"); discovery.start(store)
+  while discovery.searching { try await Task.sleep(nanoseconds:10_000_000) }
+  let easyworkOnly=await Probes.shared.snapshot()
+  precondition(discovery.total == 2 && easyworkOnly.1.count == 2 && easyworkOnly.1.allSatisfy { $0.contains("10.200.42.10:") })
+  store.saved.clients[0]=saved
+  print("PASS EasyWork-only cached observation feeds the common scanner without a Codex record")
   func learned(_ cidr:String, address:String="10.200.42.10") { store.saved.clients[0].codexDirect?.discoveryNetworks=[HostDiscoveryNetwork(address:address,cidr:cidr)] }
   learned("10.200.42.0/24")
   await Probes.shared.reset("conflict"); discovery.start(store)
@@ -113,7 +124,7 @@ try {
     file,
     fixture
       .replace('/*SCOPE*/', block('struct OfficeDiscoveryScope:'))
-      .replace('/*NETWORK*/', block('extension CodexDirectConnection.Network {'))
+      .replace('/*NETWORK*/', block('extension HostDiscoveryNetwork {'))
       .replace('/*LOCAL*/', block('enum LocalDiscoveryNetworks {'))
       .replace('/*CLASS*/', block('@MainActor final class OfficeHostDiscovery:')),
   );

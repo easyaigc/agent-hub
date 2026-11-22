@@ -1,5 +1,6 @@
 import AuthenticationServices
 import CryptoKit
+import Darwin
 import Foundation
 import SwiftUI
 import VisionKit
@@ -189,7 +190,34 @@ enum AgentCache {
   }
   static func encode(_ value: SavedSession) throws -> Data { try seal(value) }
   static func decode(_ data: Data) throws -> SavedSession {
-    try open(data, as: SavedSession.self)
+    let state = try open(data, as: SavedSession.self)
+    #if DEBUG && targetEnvironment(simulator)
+    let env = ProcessInfo.processInfo.environment
+    if Bundle.main.bundleIdentifier == "com.easyai.agenthub.inc01acceptance",
+      let caseId = env["INC01_COLD_CASE_ID"], UUID(uuidString: caseId) != nil,
+      ProcessInfo.processInfo.arguments.contains("-inc01-cold-proof=" + caseId),
+      let targetJSON = env["INC01_EXPECTED_TARGET"],
+      let target = try? JSONDecoder().decode(AgentRuntimeTarget.self, from: Data(targetJSON.utf8)) {
+      let matches = state.clients.filter { $0.agentConnection?.target == target }
+      let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Acceptance", isDirectory: true)
+      let output = directory.appendingPathComponent("inc01-cold-discovery-proof.json")
+      let proof: [String: Any] = ["version": 1, "caseId": caseId, "phase": "cold-decode",
+        "encrypted": data.starts(with: prefix), "inputSHA256": HostService.hash(data),
+        "fullTargetMatched": matches.count == 1,
+        "noCodexRecords": !state.clients.contains(where: { $0.codexDirect != nil }),
+        "discoveryNetworks": (matches.count == 1 ? matches[0].authenticatedDiscoveryNetworks : []).map { ["address": $0.address, "cidr": $0.cidr] }]
+      if let bytes = try? JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys]) {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let fd = Darwin.open(output.path, O_WRONLY | O_CREAT | O_EXCL, mode_t(0o600))
+        if fd >= 0 {
+          let file = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+          try? file.write(contentsOf: bytes)
+          try? file.close()
+        }
+      }
+    }
+    #endif
+    return state
   }
 }
 
@@ -238,10 +266,15 @@ extension SessionStore {
     // path preference. A previous Relay consumer must close before this check.
     let incomingConnection = AgentConnection(target: target, candidates: candidates, preference: .automatic, credentialRef: ref)
     let validation = try EasyWorkRemoteSession(connection: incomingConnection, credential: credential)
+    var learnedNetworks: [HostDiscoveryNetwork]?
     do {
       let context = try easyWorkObject(await validation.request("runtime/context", [:]))
       let actual = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] as Any))
       guard actual == binding.target else { throw HostServiceError.wrongHost }
+      if let raw = context["discoveryNetworks"],
+        let networks = try? AuthenticatedHostDiscoveryNetworks.read(easyWorkJSON(raw), target: target) {
+        learnedNetworks = networks
+      }
       #if DEBUG && targetEnvironment(simulator)
       // Opt-in evidence from the normal authenticated native pairing path only.
       // Never export credentials, private keys, tokens or alternate transport data.
@@ -277,6 +310,7 @@ extension SessionStore {
         connection.candidates = authenticated + connection.candidates.filter { !endpoints.contains($0.endpoint) }
         client.agentConnection = connection
       }
+      if let learnedNetworks { client.hostDiscoveryObservation = HostDiscoveryObservation(connection: connection, networks: learnedNetworks) }
       await validation.close()
     }
     catch { await validation.close(); throw error }
@@ -319,6 +353,7 @@ struct EasyWorkConnectionForm: View {
   @State private var pairingStatus: String?
   @State private var token = ""
   @StateObject private var discovery = EasyWorkDiscovery()
+  @ObservedObject private var officeDiscovery = OfficeHostDiscovery.shared
   @State private var scanning = false
   @State private var manualAddress = ""
   @State private var busy = false
@@ -441,12 +476,19 @@ struct EasyWorkConnectionForm: View {
   }
   private var discoveryRows: [EasyWorkDiscovery.Host] {
     let saved = store.saved.clients.filter { !$0.isDemo && $0.agentConnection?.target.agentId == "easywork" }
+    let office = officeDiscovery.easyworkHosts
+    let foundHosts = office + discovery.hosts.filter { host in
+      !office.contains { $0.endpoint == host.endpoint || host.deviceId != nil && $0.deviceId == host.deviceId }
+    }
     return saved.map { client in
-      let found = discovery.hosts.first { $0.knownClientId == client.id || $0.deviceId == client.agentConnection?.target.hostId }
+      let found = foundHosts.first { $0.knownClientId == client.id || $0.deviceId == client.agentConnection?.target.hostId }
+      let observed = office.contains { $0.deviceId == client.agentConnection?.target.hostId && $0.endpoint == found?.endpoint }
+      let connection = client.online ? L10n.tr("已连接") : L10n.tr("未连接 · ") + store.connectionLabel(for: client)
       return EasyWorkDiscovery.Host(id: client.id, name: client.name,
         endpoint: found?.endpoint ?? client.endpoint ?? "", knownClientId: client.id,
-        detail: client.online ? L10n.tr("已连接") : L10n.tr("未连接 · ") + store.connectionLabel(for: client), deviceId: client.agentConnection?.target.hostId)
-    } + discovery.hosts.filter { host in !saved.contains { $0.id == host.knownClientId || $0.agentConnection?.target.hostId == host.deviceId } }
+        detail: observed ? L10n.tr("本轮已发现") + " · " + connection : connection,
+        deviceId: client.agentConnection?.target.hostId, observedDescriptor: found?.observedDescriptor)
+    } + foundHosts.filter { host in !saved.contains { $0.id == host.knownClientId || $0.agentConnection?.target.hostId == host.deviceId } }
   }
   @ViewBuilder private var discoveredHosts: some View {
     OfficeDiscoverySection(store: store)

@@ -1667,3 +1667,5 @@ Keep the typed-parent-tool Adapter path unchanged. A separate explicit capabilit
 2026-11-21 F59：EasyWork 独立文件继续由共同 UploadCenter 管理本地 URL 与持久状态，Adapter 仅映射具名 resource 方法及认证 context 的可选 v1 容量。新准备受协商额度，既有操作优先查询原传输和不可变写回执；不为切换额度或重启重新提交。桌面容量与暂存/发布空间准入由其文件服务负责。公共领域接口及 Codex 路径保持，Android 未改；候选、辅助与实际验收分列唯一计划。
 
 F59 哈希内存修复：iOS/macOS 共用的 UploadCenter 对每个 256 KiB 读取、摘要更新与计数使用自动释放池；wire、摘要、操作 ID、偏移及旧续传语义不变。Android 逻辑未改；macOS 辅助内存检查不代表 iOS 真实内存验收。
+
+INC01 候选将已认证网络范围提升为共同 Host 观察：两个 Host 复用 `interfaceDiscoveryNetworks` 和 `DiscoveryNetworksSnapshot`，EasyWork 通过既有加密 runtime/context 投影；App 共同解析/扫描与原连接元数据回填，不复制业务协议。实际验收/交付仅见专项唯一台账，详见 [协议边界](design/unified-host-protocol.md#inc01已认证的网络范围学习)。

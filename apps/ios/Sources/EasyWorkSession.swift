@@ -225,6 +225,7 @@ actor EasyWorkRemoteSession {
     "notification/status", "notification/events",
   ]
   private static let subscriptionMethods: Set<String> = ["thread/subscribe", "thread/unsubscribe", "notification/register", "notification/unregister", "notification/preferences"]
+  private var authenticatedNetworks: [HostDiscoveryNetwork]?
   private(set) var epoch = UUID().uuidString
   private(set) var eventSequence = 0
   #if DEBUG
@@ -268,7 +269,10 @@ actor EasyWorkRemoteSession {
     updateCandidates(EasyWorkAuthenticatedConnectionCandidates.merging(candidates, into: connection.candidates))
   }
   func connectionMetadata() -> AgentConnectionMetadata {
-    AgentConnectionMetadata(title: activeTransportTitle(), updatedConnection: connection)
+    AgentConnectionMetadata(title: activeTransportTitle(), updatedConnection: connection, discoveryNetworks: authenticatedNetworks)
+  }
+  func rememberAuthenticatedNetworks(_ networks: [HostDiscoveryNetwork]?) {
+    authenticatedNetworks = networks
   }
   func close() async { closed = true; await disconnect() }
   private func disconnect() async {

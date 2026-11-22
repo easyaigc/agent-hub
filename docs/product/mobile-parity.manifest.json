@@ -4391,6 +4391,13 @@
     ],
     "EasyWorkOriginalInflightAcceptance": [
       "apps/ios/NativeTests/EasyWorkInflightRecoveryNativeTests.swift"
+    ],
+    "TrustedHostNetworks": [
+      "packages/protocol/src/discovery-networks.ts",
+      "packages/protocol/schemas/codex-host-discovery-v1.schema.json",
+      "apps/ios/Sources/CodexDiscovery.swift",
+      "apps/ios/Sources/Models.swift",
+      "apps/ios/Sources/SessionStore.swift"
     ]
   },
   "groups": [
@@ -4717,11 +4724,12 @@
         "AndroidBoundedPopupMenuOwner",
         "AndroidExactPreferencePlatformSelection",
         "AndroidExclusiveNativePreference",
-        "AndroidOwnedAxAndMenuPixels"
+        "AndroidOwnedAxAndMenuPixels",
+        "TrustedHostNetworks"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 31,
+      "revision": 32,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4731,7 +4739,7 @@
         "android": "not-verified"
       },
       "androidStages": ["A5"],
-      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 2026-10-29 PAR48 actual native: voice7=3pass4knownfail, exact owned pre-assert Window/layout/AX captured; local close and two successful synthetic late-return methods pass. API37 Chinese-light/English-dark exclusive native preference2pass with actual save/form reopen. Four voice failures, per-menu pixels/API26/TalkBack/cold-process/physical/realDEV/full iOS remain pending; empty-default protection only, no full feature verification. Source50：测试诊断与同Popup四态像素证据增量；实际范围和失败见 fiftieth-stage-owned-ax-native.json、fiftieth-stage-p8-menu-pixels-native.json。完整功能验收不关闭。 Source63: Android queued reading writes are revoked on Session reset; actual Store and owner diagnostics plus API34 popup helper are integrated source-only. New SDK/Native/complete interaction acceptance pending; iOS product unchanged and old failures remain. Source64: Android discovery/HTTP/connection-form ownership now joins actual IO and native stop terminals before migration; reading fixture unknown-worker retention and cleanup outcomes are corrected. Source composed only; fresh SDK/Native/complete UI remain pending; iOS product unchanged. Source65: inert private-claim graph and exact fixture coordinator exit integrated; API26 composite diagnostic default-off/non-eligible, P9 53-method inventory corrected. Composed SDK/three APK verified; all new Native/UI/DEV pending. F49/F50 guards only; F52 remote delivery pending; iOS unchanged. Source66: migration fixture uses prepared restore with unchanged original metadata/vault; graph accepts only optional false read-target guard strengthened to true, never weakening or non-Boolean, with all other fields strict.16 graph assertions added to fresh native full migration case. Source65 actual failure preserved; composed SDK and API33 six warm methods plus16 first-case graph vectors passed,540 actual calls/18 tars and strict original B/old failing fixture protection independently reviewed. Cold/UI/realDEV pending; iOS unchanged. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。 2026-11-08 双端直连地址接纳专用 .mesh.51easyai.com 后缀，归为 VPN 并使用原顺序；连接仍核对配对证书指纹、完整目标和桌面公钥，远程 issuer 与原操作保持独立，当前原生及真实路径验收见阶段126。 2026-11-21 办公室子网发现的新增范围、原生与真实网络验证状态只见唯一台账 F06-office-subnet-discovery；Android入口待对齐，不改变原限定通过。 2026-11-22 自动办公室发现修正候选：已鉴权独立networks从原连接学习真实接口范围，随原target/pin/记录持久保存；正常前台学习及实际LAN自动扫描，无手填范围，网络失败不引导重新授权。中文/重命名Host接口、完整大响应及停止/换址边界分别核验；实际手机自动学习后全电脑TS退出仍待验，117手填及独立15历史不替代新场景。Android入口待对齐，EasyWork独立范围生产者未实现。"
+      "sourceNotes": " P8并行七组/28功能矩阵已建；独立Node密文向量、10项JVM回执/传输边界与3项描述Schema仅辅助。原EasyWork真实DEV保留原归属，七组均未封存；当前集成源逐文件匹配单列，不沿用旧完成率。 2026-10-29 PAR48 actual native: voice7=3pass4knownfail, exact owned pre-assert Window/layout/AX captured; local close and two successful synthetic late-return methods pass. API37 Chinese-light/English-dark exclusive native preference2pass with actual save/form reopen. Four voice failures, per-menu pixels/API26/TalkBack/cold-process/physical/realDEV/full iOS remain pending; empty-default protection only, no full feature verification. Source50：测试诊断与同Popup四态像素证据增量；实际范围和失败见 fiftieth-stage-owned-ax-native.json、fiftieth-stage-p8-menu-pixels-native.json。完整功能验收不关闭。 Source63: Android queued reading writes are revoked on Session reset; actual Store and owner diagnostics plus API34 popup helper are integrated source-only. New SDK/Native/complete interaction acceptance pending; iOS product unchanged and old failures remain. Source64: Android discovery/HTTP/connection-form ownership now joins actual IO and native stop terminals before migration; reading fixture unknown-worker retention and cleanup outcomes are corrected. Source composed only; fresh SDK/Native/complete UI remain pending; iOS product unchanged. Source65: inert private-claim graph and exact fixture coordinator exit integrated; API26 composite diagnostic default-off/non-eligible, P9 53-method inventory corrected. Composed SDK/three APK verified; all new Native/UI/DEV pending. F49/F50 guards only; F52 remote delivery pending; iOS unchanged. Source66: migration fixture uses prepared restore with unchanged original metadata/vault; graph accepts only optional false read-target guard strengthened to true, never weakening or non-Boolean, with all other fields strict.16 graph assertions added to fresh native full migration case. Source65 actual failure preserved; composed SDK and API33 six warm methods plus16 first-case graph vectors passed,540 actual calls/18 tars and strict original B/old failing fixture protection independently reviewed. Cold/UI/realDEV pending; iOS unchanged. 2026-11-04消费者恢复整合：iOS接回已批准设备grant、固定原刷新操作回执及有能力声明的LAN刷新；网关暂态与设备撤销分开，自动撤销提示按连接身份去重；原队列未知结果只查原ID，过期追加不显示已提交。Android本组代码不改，未增加双端整项或物理验收。辅助与构建结果见docs/acceptance/easywork-mobile-integration-20261104.md。 2026-11-08 双端直连地址接纳专用 .mesh.51easyai.com 后缀，归为 VPN 并使用原顺序；连接仍核对配对证书指纹、完整目标和桌面公钥，远程 issuer 与原操作保持独立，当前原生及真实路径验收见阶段126。 2026-11-21 办公室子网发现的新增范围、原生与真实网络验证状态只见唯一台账 F06-office-subnet-discovery；Android入口待对齐，不改变原限定通过。 2026-11-22 自动办公室发现修正候选：已鉴权独立networks从原连接学习真实接口范围，随原target/pin/记录持久保存；正常前台学习及实际LAN自动扫描，无手填范围，网络失败不引导重新授权。中文/重命名Host接口、完整大响应及停止/换址边界分别核验；实际手机自动学习后全电脑TS退出仍待验，117手填及独立15历史不替代新场景。Android入口待对齐，EasyWork独立范围生产者未实现。 INC01候选：EasyWork已认证runtime/context提供与Codex同一DiscoveryNetworksSnapshot，两个Host调用同一网卡/掩码解析实现；App共同解析与按完整目标持久保存，普通发现页显示真实本轮命中。旧端缺字段保留缓存，未通过公开/host学习可信范围。新增范围已完成原生模拟器和真实Electron验收：加密冷恢复、实际本轮命中、停止/草稿及桌面零输入独立核对；首轮测试器滚动失败与同绑定续跑分别留证。交付/合并及后续当前状态只见专项唯一台账F06-easywork-authenticated-discovery-networks；Android尚未消费新可选字段，原配对/连接与原验收不变。 INC01持久化纠偏：网络观察独立保存在Client本地记录，并校验完整target、证书指纹集合与credentialRef；Connection v1严格四字段及原编码不扩展。观察通过适配元数据与原CAS回填，原缓存继续可读，新字段不要求旧端升级。"
     },
     {
       "id": "F07",
@@ -25874,6 +25882,31 @@
       "files": {
         "packages/codex-adapter/src/runtime-session.ts": "60f4fae5d458d5d48044be3b37760950e954770a8b84cb1d707d0fed2d8ea70d",
         "packages/codex-adapter/src/desktop-projection-cache.ts": "3404f8a4cfe4dd09d1e3c7e601373069d07116223164f762e4828a7cd0d1ee36"
+      }
+    },
+    {
+      "id": "easywork-authenticated-discovery-networks-inc01-20261122",
+      "baseCommit": "6ec06d6c",
+      "features": ["F06", "F08", "F10"],
+      "summary": "Use shared interface-mask policy and authenticated network snapshot for EasyWork discovery, target-scoped persistence and actual scan observations; Android optional metadata consumption remains separate.",
+      "files": {
+        "packages/protocol/src/discovery-networks.ts": "d288b2c86bc229339e5c82f95422b795d63a46b7d7806833c8e0c0f6337a9076",
+        "packages/protocol/schemas/codex-host-discovery-v1.schema.json": "ce2ec8cc562056b4c856562f594ad3854a9f424df6cbe35468620d46014cafe0",
+        "apps/host-agent/src/direct-endpoints.ts": "d94a06e4033eb6b34863d56e77b7a786b963ebfc3d91dfb38cca07bbe2489cfa",
+        "apps/ios/Sources/AgentClient.swift": "be5e86a4c998b293900ac220b2d8a43d31624de4603959168f433bfb1f852d16",
+        "apps/ios/Sources/CodexDiscovery.swift": "9a7974c70b0b38476ed86d4d060d02afc12aed0372a35fb2292387e1635979d9",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "5a1c10e6132e7e83a280a3bfcf3d4bef57957ea79bd24029b8b01389c4f3fc77",
+        "apps/ios/Sources/EasyWorkSession.swift": "6dda519f86b00792c622dbdc5c9ee147d5e2439f37667bd792893ff4795484ba",
+        "apps/ios/Sources/EasyWorkPairing.swift": "fa99a8aa3136054fad7a4d0ebad3d19d402b297fab2b8af154886da37bf60887",
+        "apps/ios/Sources/Models.swift": "e8ce5129f9d91ea394217e4ec21b32b0a8e5005cc96fccfc9dced9ea1aebf014",
+        "apps/ios/Sources/Sheets.swift": "8ed869c53c2fcb310e1988ad33ba10015c7b233577b84d74532e2ab12dccc863",
+        "apps/ios/Tests/CodexManageUITests.swift": "b1204e1a47afb2f084f04e5fa525d804f85e571018360d3dc447b79ea3eb542c",
+        "scripts/easywork-authenticated-candidates.test.mjs": "df65e5a0ce02a30737bc4f9343ebea12f824ff0e98fee3e859c4639d9f0df08a",
+        "scripts/codex-discovery-native-smoke.mjs": "11b68ba03feb80ab7288c8a1736b0d7b3df35a10deb58c86c2151804e4c08cd9",
+        "scripts/easywork-discovery-native-smoke.mjs": "fd220fe0d3867afa4f9ac2075281847fc1ad3ac7a8a782c23450c051015ef7b6",
+        "apps/ios/Sources/SessionStore.swift": "9b61ff4d6a999ff1b9c80b31ab43405814eeae17afc78109c008b993ae8015cc",
+        "scripts/check-agent-contract.mjs": "b9cfb0d615d1129564e1be13212a8ac3173fb9774a80eff77edbc60c8b62a6e6",
+        "scripts/easywork-operation-recovery.test.mjs": "3bf9449a6a7ef67defd876990bb695d8a7b0ead8cb3ec81598befc50c47221b5"
       }
     },
     {

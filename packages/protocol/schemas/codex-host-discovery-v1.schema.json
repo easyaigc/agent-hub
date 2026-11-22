@@ -218,21 +218,21 @@
     },
     "discoveryNetworks": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["version", "target", "networks"],
       "properties": {
         "version": {
           "const": 1
         },
         "target": {
-          "$ref": "#/definitions/target"
+          "$ref": "#/definitions/discoveryTarget"
         },
         "networks": {
           "type": "array",
           "uniqueItems": true,
           "items": {
             "type": "object",
-            "additionalProperties": false,
+            "additionalProperties": true,
             "required": ["address", "cidr"],
             "properties": {
               "address": {
@@ -247,6 +247,36 @@
               }
             }
           }
+        }
+      }
+    },
+    "discoveryTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"],
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "account": {
+          "$ref": "#/definitions/account"
         }
       }
     }

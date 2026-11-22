@@ -165,6 +165,7 @@ try {
     block(shared, 'struct AgentRuntimeTarget:'),
     block(client, 'struct AgentConnectionCandidate:'),
     block(client, 'enum AgentConnectionPreference:'),
+    block(codexDiscovery, 'struct HostDiscoveryNetwork:'),
     block(client, 'struct AgentConnection:'),
     block(transport, 'struct EasyWorkTarget:'),
     block(transport, 'struct EasyWorkDeviceBindingAuthorization:'),
@@ -193,7 +194,7 @@ import Darwin
 import Combine
 import Network
 ${declarations}
-enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, message(String) }
+enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, hostKeyRequired, message(String), rejected(Int, String) }
 enum HostService {
 ${block(host, '  static func baseURL(')}
 ${block(host, '  static func request(')}

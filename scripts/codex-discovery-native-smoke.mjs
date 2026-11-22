@@ -213,13 +213,15 @@ try {
       '\n' +
       block(easywork, '  static func directCandidates(') +
       ' }',
+    block(discovery, 'struct HostDiscoveryNetwork:'),
+    block(discovery, 'enum AuthenticatedHostDiscoveryNetworks {'),
     discovery.slice(
       discovery.indexOf('struct CodexDirectConnection:'),
       discovery.indexOf('struct VPNPeerSnapshot:'),
     ),
     block(discovery, 'struct VPNPeerSnapshot:'),
     block(discovery, 'struct OfficeDiscoveryScope:'),
-    block(discovery, 'extension CodexDirectConnection.Network {'),
+    block(discovery, 'extension HostDiscoveryNetwork {'),
     block(discovery, 'enum LocalDiscoveryNetworks {'),
     block(discovery, 'enum CodexPrivateCredential {'),
     'enum SharedMobileRules { ' + block(facade, '  static func scope(') + ' }',
@@ -299,12 +301,36 @@ precondition(legacyRoundtrip.discoveryNetworks?.count == 40)
 let scopeSession = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: endpoint, fingerprint: offer.fingerprint), delegateQueue: nil)
 defer { scopeSession.invalidateAndCancel() }
 let scopeBase = URL(string:endpoint)!
-for mode in ["old", "version", "malformed", "target", "public", "extra", "revoked"] {
+for mode in ["old", "version", "malformed", "target", "public", "revoked"] {
   _ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/" + mode),token:offer.token!))
   let unsupported = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
   precondition(unsupported == nil, "Unexpected networks for " + mode)
 }
 _ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/valid"),token:offer.token!))
+// Unknown fields in this read-only observation are ignored, never copied
+// into the retained network DTO or interpreted as connection authorization.
+_ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/extra"),token:offer.token!))
+let extraNetworks = try await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
+precondition(extraNetworks?.count == 40)
+let retainedNetworkJSON = String(decoding:try JSONEncoder().encode(extraNetworks),as:UTF8.self)
+precondition(!retainedNetworkJSON.contains("token") && !retainedNetworkJSON.contains("must-not-be-exported"))
+_ = try await scopeSession.data(for:HostService.request(scopeBase.appendingPathComponent("fixture-network-mode/valid"),token:offer.token!))
+// The exact same production decoder must accept authenticated EasyWork
+// observations and reject nested identity/metadata drift without a second DTO.
+let easyTarget = AgentRuntimeTarget(agentId:"easywork",hostId:"easy-host",workspaceId:"easy-workspace",runtimeId:"local",account:AgentAccount(authority:"https://test.invalid",subject:"one"))
+let easyJSON = try JSONSerialization.jsonObject(with:JSONEncoder().encode(easyTarget))
+var easyObservation: [String:Any] = ["version":1,"target":easyJSON,"networks":[["address":"10.22.17.9","cidr":"10.22.16.0/20"]],"futureOptional":"ignored"]
+let easyNetworks = try AuthenticatedHostDiscoveryNetworks.read(JSONSerialization.data(withJSONObject:easyObservation),target:easyTarget)
+precondition(easyNetworks == [.init(address:"10.22.17.9",cidr:"10.22.16.0/20")])
+var wrongEasyTarget=easyTarget; wrongEasyTarget.account?.subject="other"
+do { _ = try AuthenticatedHostDiscoveryNetworks.read(JSONSerialization.data(withJSONObject:easyObservation),target:wrongEasyTarget); fatalError("wrong account learned") } catch {}
+easyObservation["networks"] = [["address":"10.22.17.9","cidr":"192.168.1.0/24"]]
+do { _ = try AuthenticatedHostDiscoveryNetworks.read(JSONSerialization.data(withJSONObject:easyObservation),target:easyTarget); fatalError("wrong range learned") } catch {}
+easyObservation["networks"] = []
+let emptyEasyNetworks = try AuthenticatedHostDiscoveryNetworks.read(JSONSerialization.data(withJSONObject:easyObservation),target:easyTarget)
+precondition(emptyEasyNetworks.isEmpty)
+do { _ = try AuthenticatedHostDiscoveryNetworks.read(Data("{}".utf8),target:easyTarget); fatalError("missing old field replaced cache") } catch {}
+print("PASS shared authenticated EasyWork snapshot, complete identity/account, unknown optional fields, invalid/absent metadata and authoritative empty observation")
 let networkSnapshot = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:automatic.0.token!,host:automatic.0)
 precondition(networkSnapshot?.count == 40)
 let unauthenticated = await CodexDiscoveryAPI.networks(scopeSession,base:scopeBase,token:"",host:automatic.0)

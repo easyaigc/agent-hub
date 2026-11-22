@@ -89,3 +89,19 @@ Host 拥有本机执行权限和原桌面服务；Relay 保持身份、绑定、
 当前主协调会话维护唯一台账；审计会话保留不可变发现、来源摘要和操作回执，复核实际差异与验收证据后给出结论。审计发现的当前处理状态回填原台账，不另建平行进度源。未处理的重要偏差须明确列出负责人、影响和下一步，不能用“已收到建议”结项。
 
 本规范不改变既有提交、合并、部署、跨电脑沟通的授权范围；F75／A6 的原暂停要求保持。每个结束阶段及时回收本任务无依赖资源，保护其他现场与持久服务。
+
+## INC01：已认证的网络范围学习
+
+实现边界：候选已实现，验收与合并状态只在 [唯一台账](../plans/ios-easywork-alignment-20261112/README.md) 的 `F06-easywork-authenticated-discovery-networks` 维护。
+
+Codex 的已认证 `GET /v1/discovery/networks` 与 EasyWork 的加密 `runtime/context.discoveryNetworks` 映射到共同 `DiscoveryNetworksSnapshot`（version、完整 target、networks），共用 `interfaceDiscoveryNetworks`。精确范围来自实际 IPv4 网卡掩码；隧道、虚拟桥、非 RFC1918 与异常掩码不成为范围来源。原地址广告、VPN 路由和授权不因该观察变化。
+
+EasyWork 原绑定、设备密钥、grant/DPoP 与 `runtime:read` 在入口先行核对；dispatcher 仅在已装配生产者时追加可选字段，无新增命令或写入回执。公共 `/host` 和 Bonjour 仍只提供候选，不能学习可信范围。
+
+iOS 两端共用解析与扫描；EasyWork 通过现有连接元数据传递观察，经原 captured/current 以及缓存观察快照比较回填 Client 的独立本地观察；该观察按完整目标、credentialRef 与证书指纹集合隔离。严格 Connection 领域 DTO 的四字段及 Schema 不变，新 Client 字段被旧端忽略，旧缓存缺字段继续可读。未知字段兼容读取，已认证空列表表示新观察为空；缺失、损坏或错误目标的可选数据不替换旧缓存。原完整 context 目标错误仍拒绝。删除或重新配对记录同时删除旧观察。
+
+普通 EasyWork 页面合并本轮真实扫描结果与原已保存行，用既有“本轮已发现”提示已收到匹配目标的当前扫描结果；停止保留本轮结果，重新查找在实际再次命中前不冒充已发现。相同目标的证书/公钥校验保留。
+
+验收仅覆盖新增范围：模拟器正常连接学习、持久与冷恢复、真实扫描命中/停止/草稿；真实 Electron 独立核网卡范围和零模型输入。原 Codex 扫描、旧发送与已合交付按其原范围复用。Android 当前不消费此可选观察，既有连接和原验收保持。
+
+INC01 的只读观察兼容未知扩展字段，但只投影已验证的 `address/cidr` 与原目标；响应中额外的 token 等字段不进入连接、授权或持久缓存。公开描述和命令输入的严格校验保持。可选生产者读取失败时省略观察字段，保留原 context 与既有缓存，不冒充真实空范围。

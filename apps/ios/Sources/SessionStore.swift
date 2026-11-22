@@ -3287,9 +3287,17 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard managementRevisions[host.id] == managementRevision else { return }
       if let metadata = connectionMetadata {
         connectionRoutes[host.id] = metadata.title
-        if let index = saved.clients.firstIndex(where: { $0.id == host.id }),
-          let update = metadata.connectionUpdate(captured: host.agentConnection, current: saved.clients[index].agentConnection) {
-          saved.clients[index].agentConnection = update
+        if let index = saved.clients.firstIndex(where: { $0.id == host.id }) {
+          let current = saved.clients[index].agentConnection
+          let update = metadata.connectionUpdate(captured: host.agentConnection, current: current)
+          // Preserve a newer observation or concurrent edit exactly as we do
+          // for the connection. Missing/invalid metadata never clears cache.
+          if saved.clients[index].hostDiscoveryObservation == host.hostDiscoveryObservation,
+            let networks = metadata.networksUpdate(captured: host.agentConnection, current: current),
+            let scope = update ?? current {
+            saved.clients[index].hostDiscoveryObservation = HostDiscoveryObservation(connection: scope, networks: networks)
+          }
+          if let update { saved.clients[index].agentConnection = update }
         }
       }
       if previous?.readTarget == result.readTarget {

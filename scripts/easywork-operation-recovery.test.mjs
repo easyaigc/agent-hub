@@ -20,7 +20,12 @@ const reads = declaration(
   'private static let readMethods:',
   'private static let subscriptionMethods:',
 );
-const subs = declaration('private static let subscriptionMethods:', 'private(set) var epoch');
+// Extract only the actual method set. Unrelated session state may be added
+// before epoch without becoming part of this controlled recovery harness.
+const subs = source.match(
+  /private static let subscriptionMethods:\s*Set<String>\s*=\s*\[[\s\S]*?\]/,
+)?.[0];
+assert.ok(subs, 'missing production subscription method set');
 const strings = (s) => [...s.matchAll(/"([^"\n]+)"/g)].map((x) => x[1]).sort();
 test('fixture matches actual Swift recovery sets', () => {
   assert.deepEqual(

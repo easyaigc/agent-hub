@@ -683,6 +683,12 @@ struct EasyWorkAgentClient: AgentClient {
     if let candidates = try? EasyWorkAuthenticatedConnectionCandidates.read(context, target: confirmed) {
       await channel.rememberAuthenticatedCandidates(candidates)
     }
+    let networks = context["discoveryNetworks"].flatMap {
+      try? AuthenticatedHostDiscoveryNetworks.read(easyWorkJSON($0), target: client.agentConnection?.target)
+    }
+    // Absence is no new observation, not an empty inventory. Retire this
+    // session's pending observation so old ranges cannot be rebound to new pins.
+    await channel.rememberAuthenticatedNetworks(networks)
     let capabilities = context["capabilities"] as? [String] ?? []
     try await EasyWorkReadingCapabilities.shared.remember(channel, capabilities: capabilities)
     let projects = try object(await channel.request("project/list", [:]))["projects"] as? [[String: Any]] ?? []

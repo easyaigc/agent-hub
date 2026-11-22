@@ -1010,6 +1010,19 @@ final class CodexManageUITests: XCTestCase {
     continueAfterFailure = false
     observeEasyWorkExaminer(name)
     if name.contains("testEasyWorkRealDEVDeviceGrant"),
+      (Bundle.main.bundleIdentifier ?? "").hasPrefix("com.easyai.agenthub.inc01acceptance") {
+      guard let encoded = ProcessInfo.processInfo.environment["EASYWORK_GRANT_EXAMINER_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "inc01-trusted-discovery",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.inc01acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else {
+        throw NSError(domain: "INC01Scope", code: 3)
+      }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.inc01acceptance")
+      return
+    }
+    if name.contains("testEasyWorkRealDEVDeviceGrant"),
       let encoded = ProcessInfo.processInfo.environment["EASYWORK_GRANT_EXAMINER_CONFIG_JSON"],
       let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
       value["readingSecondResume"] as? Bool == true {
@@ -1846,6 +1859,15 @@ final class CodexManageUITests: XCTestCase {
     else if let path = environment["EASYWORK_GRANT_EXAMINER_CONFIG"] { configData = try Data(contentsOf: URL(fileURLWithPath: path)) }
     else { throw XCTSkip("Dedicated EWDAP examiner required") }
     let config = try XCTUnwrap(JSONSerialization.jsonObject(with: configData) as? [String: Any])
+    if (Bundle.main.bundleIdentifier ?? "").hasPrefix("com.easyai.agenthub.inc01acceptance") || config["targetBundleIdentifier"] as? String == "com.easyai.agenthub.inc01acceptance" || config["scenario"] as? String == "inc01-trusted-discovery" {
+      guard config["targetBundleIdentifier"] as? String == "com.easyai.agenthub.inc01acceptance",
+        config["scenario"] as? String == "inc01-trusted-discovery",
+        config["newModelInputsAuthorized"] as? Int == 0,
+        let owned = config["ownedSimulator"] as? String,
+        owned == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else {
+        throw NSError(domain: "INC01Scope", code: 2)
+      }
+    }
     var voiceSourceInteractionOptions: Any?
     if ["voice-pending-migration-source","voice-pending-migration-export-existing"].contains(config["scenario"] as? String ?? "") {
       #if targetEnvironment(simulator)
@@ -2036,10 +2058,71 @@ final class CodexManageUITests: XCTestCase {
       return
     }
     XCTAssertFalse(app.buttons["登录 EasyAI"].exists)
-    shot("native-ios-device-authorization-pending")
+    if config["scenario"] as? String != "inc01-trusted-discovery" { shot("native-ios-device-authorization-pending") }
     try await control("desktop.device-claim-approve")
     let online = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND label CONTAINS 'EasyWork'"), object: app.buttons["client-switch"])
     XCTAssertEqual(XCTWaiter.wait(for: [online], timeout: 90), .completed, app.debugDescription)
+    }
+    if config["scenario"] as? String == "inc01-trusted-discovery" {
+      #if targetEnvironment(simulator)
+      guard config["newModelInputsAuthorized"] as? Int == 0,
+        config["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"],
+        let caseId = config["coldCaseId"] as? String, UUID(uuidString: caseId) != nil,
+        let expectedTarget = config["expectedTarget"] as? [String: Any],
+        let expectedEndpoint = config["expectedEndpoint"] as? String, !expectedEndpoint.isEmpty else {
+        throw NSError(domain: "INC01Scope", code: 1)
+      }
+      // Pairing above requests exactly one device offer after the real desktop is ready.
+      // This case creates an unsent synthetic draft and never starts a model turn.
+      let draft = "INC01_UNSENT_DISCOVERY_DRAFT"
+      if config["reuseExistingClient"] as? Bool != true {
+        XCTAssertTrue(app.buttons["new-chat"].waitForExistence(timeout: 30))
+        app.buttons["new-chat"].tap()
+        XCTAssertTrue(app.buttons["choose-projectless"].waitForExistence(timeout: 15))
+        app.buttons["choose-projectless"].tap()
+        XCTAssertTrue(composer.waitForExistence(timeout: 45))
+        composer.tap(); typeComposerText(draft)
+        if app.buttons["composer-dismiss-keyboard"].isHittable { app.buttons["composer-dismiss-keyboard"].tap() }
+        XCTAssertEqual(composer.value as? String, draft)
+        app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-inc01-cold-proof=" + caseId]
+        app.launchEnvironment = ["INC01_COLD_CASE_ID": caseId, "INC01_EXPECTED_TARGET": String(decoding: try JSONSerialization.data(withJSONObject: expectedTarget), as: UTF8.self)]; app.launchChineseTest()
+      }
+      XCTAssertTrue(composer.waitForExistence(timeout: 60))
+      XCTAssertEqual(composer.value as? String, draft, "Cold launch must preserve the unsent draft")
+      if app.buttons["composer-dismiss-keyboard"].isHittable { app.buttons["composer-dismiss-keyboard"].tap() }
+      XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30)); app.buttons["client-switch"].tap()
+      if !app.navigationBars["客户端"].waitForExistence(timeout: 5) {
+        XCTAssertTrue(app.buttons["client-switch"].isHittable); app.buttons["client-switch"].tap()
+      }
+      let clients = app.collectionViews.firstMatch
+      for _ in 0..<5 where !app.buttons["add-client"].exists {
+        XCTAssertTrue(clients.waitForExistence(timeout: 5)); clients.swipeUp()
+      }
+      XCTAssertTrue(app.buttons["add-client"].waitForExistence(timeout: 15)); app.buttons["add-client"].tap()
+      XCTAssertTrue(app.buttons["EasyWork"].firstMatch.waitForExistence(timeout: 15)); app.buttons["EasyWork"].firstMatch.tap()
+      let progress = app.staticTexts["office-discovery-progress"]
+      XCTAssertTrue(progress.waitForExistence(timeout: 30), "A network must be available for automatic discovery")
+      let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND value == %@ AND label CONTAINS %@", "easywork-discovered-", expectedEndpoint, "本轮已发现")).firstMatch
+      XCTAssertTrue(row.waitForExistence(timeout: 120), "The exact real EasyWork endpoint must be found in this scan")
+      shot("inc01-real-easywork-discovery")
+      let stop = app.buttons["office-discovery-stop"]
+      XCTAssertTrue(stop.waitForExistence(timeout: 10))
+      for _ in 0..<6 where !stop.isHittable { app.swipeUp() }
+      XCTAssertTrue(stop.isHittable); stop.tap()
+      XCTAssertTrue(app.buttons["office-discovery-retry"].waitForExistence(timeout: 15))
+      XCTAssertTrue(row.exists); shot("inc01-discovery-stopped")
+      app.buttons["cancel-client-form"].tap()
+      if app.buttons["完成"].isHittable { app.buttons["完成"].tap() }
+      XCTAssertTrue(composer.waitForExistence(timeout: 30))
+      XCTAssertEqual(composer.value as? String, draft, "Stopping discovery must retain the original draft")
+      let after = try await evidence()
+      let requests = (after["requests"] as? [[String: Any]] ?? []).compactMap { $0["request"] as? [String: Any] }
+      XCTAssertFalse(requests.contains { $0["method"] as? String == "turn/start" }, "No model input is permitted")
+      shot("inc01-draft-after-discovery")
+      return
+      #else
+      throw XCTSkip("INC01 requires the task-owned simulator")
+      #endif
     }
     if config["scenario"] as? String == "voice-pending-migration-export-existing" {
       guard config["reuseExistingClient"] as? Bool == true, config["newVoiceCapturesAuthorized"] as? Int == 0 else { throw NSError(domain:"EasyWorkVoiceMigrationSource",code:13) }

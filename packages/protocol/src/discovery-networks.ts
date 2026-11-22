@@ -11,6 +11,33 @@ export interface DiscoveryNetworksSnapshot {
   networks: DiscoveryNetwork[];
 }
 
+/** The shared LAN policy for Host adapters; tunnel routes are not LAN evidence. */
+export function interfaceDiscoveryNetworks(
+  interfaces: Record<
+    string,
+    readonly { address: string; netmask: string; internal: boolean; family: string }[] | undefined
+  >,
+): DiscoveryNetwork[] {
+  const result: DiscoveryNetwork[] = [];
+  const seen = new Set<string>();
+  for (const [name, entries] of Object.entries(interfaces)) {
+    if (
+      /^(utun|tun|tap|tailscale|wg|ppp|ipsec|bridge|docker|veth|vethernet|vmnet|vbox|virtualbox host-only|awdl|llw)/i.test(
+        name,
+      )
+    )
+      continue;
+    for (const entry of entries ?? []) {
+      if (entry.internal || entry.family !== 'IPv4') continue;
+      const network = discoveryNetwork(entry.address, entry.netmask);
+      if (!network || seen.has(network.address + '/' + network.cidr)) continue;
+      seen.add(network.address + '/' + network.cidr);
+      result.push(network);
+    }
+  }
+  return result;
+}
+
 /** Return only the exact, contiguous RFC1918 interface network. Never infer /24. */
 export function discoveryNetwork(address: string, netmask: string): DiscoveryNetwork | undefined {
   const ipv4 = (text: string): number | undefined => {

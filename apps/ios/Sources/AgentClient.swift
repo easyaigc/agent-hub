@@ -28,6 +28,16 @@ struct AgentConnection: Codable, Equatable, Sendable {
 struct AgentConnectionMetadata: Sendable {
   var title: String?
   var updatedConnection: AgentConnection? = nil
+  var discoveryNetworks: [HostDiscoveryNetwork]? = nil
+
+  func networksUpdate(captured: AgentConnection?, current: AgentConnection?) -> [HostDiscoveryNetwork]? {
+    guard let captured, current == captured, let updatedConnection, let discoveryNetworks,
+      updatedConnection.target == captured.target,
+      updatedConnection.preference == captured.preference,
+      updatedConnection.credentialRef == captured.credentialRef,
+      updatedConnection.candidates.count <= 96 else { return nil }
+    return discoveryNetworks
+  }
 
   func connectionUpdate(captured: AgentConnection?, current: AgentConnection?) -> AgentConnection? {
     guard let captured, current == captured, let updatedConnection,

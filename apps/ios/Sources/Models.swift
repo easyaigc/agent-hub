@@ -2,6 +2,25 @@ import Foundation
 import CryptoKit
 import MobileCore
 
+/// Local read observation, outside the strict versioned Connection wire DTO.
+/// The scope follows the peer identity and trust pins, never an endpoint address.
+struct HostDiscoveryObservation: Codable, Equatable, Sendable {
+  var target: AgentRuntimeTarget
+  var credentialRef: String
+  var peerFingerprints: [String]
+  var networks: [HostDiscoveryNetwork]
+  init(connection: AgentConnection, networks: [HostDiscoveryNetwork]) {
+    target = connection.target; credentialRef = connection.credentialRef
+    peerFingerprints = Self.pins(connection); self.networks = networks
+  }
+  func matches(_ connection: AgentConnection) -> Bool {
+    target == connection.target && credentialRef == connection.credentialRef && peerFingerprints == Self.pins(connection)
+  }
+  private static func pins(_ connection: AgentConnection) -> [String] {
+    Array(Set(connection.candidates.compactMap { $0.peerFingerprint?.lowercased() })).sorted()
+  }
+}
+
 struct Client: Identifiable, Codable, Equatable, Sendable {
   let id: String
   var name: String
@@ -13,6 +32,13 @@ struct Client: Identifiable, Codable, Equatable, Sendable {
   var readingTarget: AgentRuntimeTarget? = nil
   var codexDirect: CodexDirectConnection? = nil
   var migrationNeedsVerification: Bool? = nil
+  var hostDiscoveryObservation: HostDiscoveryObservation? = nil
+  var authenticatedDiscoveryNetworks: [HostDiscoveryNetwork] {
+    if let networks = codexDirect?.discoveryNetworks { return networks }
+    guard let connection = agentConnection, let observation = hostDiscoveryObservation,
+      observation.matches(connection) else { return [] }
+    return observation.networks
+  }
 }
 
 struct Project: Identifiable, Codable, Equatable {

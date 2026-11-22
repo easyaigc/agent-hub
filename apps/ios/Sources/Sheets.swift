@@ -1167,7 +1167,7 @@ struct OfficeDiscoverySection: View {
         }
         .task { discovery.activate(store) }
         .onDisappear { discovery.deactivate() }
-        .onChange(of: store.saved.clients.map { $0.codexDirect?.discoveryNetworks }) { _, _ in discovery.updateScopes(store) }
+        .onChange(of: store.saved.clients.map { $0.authenticatedDiscoveryNetworks }) { _, _ in discovery.updateScopes(store) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { discovery.activate(store) } else { discovery.deactivate() }
         }

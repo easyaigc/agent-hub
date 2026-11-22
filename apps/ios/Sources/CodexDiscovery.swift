@@ -30,8 +30,24 @@ enum CodexPrivateCredential {
   }
 }
 
+struct HostDiscoveryNetwork: Codable, Equatable, Sendable { var address: String; var cidr: String }
+
+/// Both adapters decode the same authenticated network snapshot. Optional
+/// metadata rejection never revokes the underlying connection or clears cache.
+enum AuthenticatedHostDiscoveryNetworks {
+  static func read(_ data: Data, target: AgentRuntimeTarget?) throws -> [HostDiscoveryNetwork] {
+    guard let target, let wire = String(data: data, encoding: .utf8),
+      CodexDiscoveryContract.shared.validateNamed(json: wire, definition: "discoveryNetworks") == nil else { throw HostServiceError.invalidResponse }
+    struct Snapshot: Decodable { var version: Int; var target: AgentRuntimeTarget; var networks: [HostDiscoveryNetwork] }
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: data)
+    guard snapshot.version == 1, snapshot.target == target else { throw HostServiceError.wrongHost }
+    guard snapshot.networks.allSatisfy({ $0.scope != nil }) else { throw HostServiceError.invalidResponse }
+    return snapshot.networks
+  }
+}
+
 struct CodexDirectConnection: Codable, Equatable, Sendable {
-  struct Network: Codable, Equatable, Sendable { var address: String; var cidr: String }
+  typealias Network = HostDiscoveryNetwork
   var target: AgentRuntimeTarget
   var candidates: [AgentConnectionCandidate]
   var fingerprint: String
@@ -44,7 +60,6 @@ struct CodexDirectConnection: Codable, Equatable, Sendable {
   var observedRoute: String? { observedEndpoint.flatMap { try? EasyWorkPairing.localEndpoint($0).absoluteString } }
   var systemRoutes: [String] { (systemEndpoints ?? []).prefix(4).compactMap { CodexRouteRules.shared.systemEndpoint(value: $0) } }
 }
-typealias HostDiscoveryNetwork = CodexDirectConnection.Network
 struct CodexHostDescriptor: Codable, Sendable {
   var version: Int
   var agentId: String
@@ -262,16 +277,8 @@ enum CodexDiscoveryAPI {
       // Keep the same route-specific TLS delegate and request cancellation;
       // the public /host reader retains its separate 64 KiB limit.
       let (data, response) = try await session.data(for: HostService.request(url.url!, token: token), delegate: session.delegate as? URLSessionTaskDelegate)
-      guard (response as? HTTPURLResponse)?.statusCode == 200,
-        let wire = String(data: data, encoding: .utf8), CodexDiscoveryContract.shared.validateNamed(json: wire, definition: "discoveryNetworks") == nil else { return nil }
-      struct Snapshot: Decodable { var version: Int; var target: AgentRuntimeTarget; var networks: [HostDiscoveryNetwork] }
-      let snapshot = try JSONDecoder().decode(Snapshot.self, from: data)
-      guard snapshot.version == 1, snapshot.target == host.target else { return nil }
-      // The authenticated contract is independent of the public descriptor's
-      // 32-advertisement limit. The Host applies the same LAN eligibility rules
-      // before returning each real interface address and mask-derived CIDR.
-      guard snapshot.networks.allSatisfy({ $0.scope != nil }) else { return nil }
-      return snapshot.networks
+      guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+      return try AuthenticatedHostDiscoveryNetworks.read(data, target: host.target)
     } catch { return nil } // 404/old version/offline is not an empty replacement or authorization loss.
   }
   static func systemEndpoints(_ session: URLSession, base: URL, token: String, target: AgentRuntimeTarget) async -> [String] {
@@ -855,7 +862,7 @@ struct OfficeDiscoveryScope: Equatable, Sendable {
   }
 }
 
-extension CodexDirectConnection.Network {
+extension HostDiscoveryNetwork {
   var scope: OfficeDiscoveryScope? {
     guard let value = try? OfficeDiscoveryScope(cidr), value.contains(address: address) else { return nil }
     return value
@@ -921,7 +928,7 @@ enum LocalDiscoveryNetworks {
   }
   func deactivate() { active = false; monitor?.cancel(); monitor = nil; stop() }
   private func availableScopes(_ store: SessionStore) -> [OfficeDiscoveryScope] {
-    let learned = store.saved.clients.filter { !$0.isDemo }.flatMap { $0.codexDirect?.discoveryNetworks ?? [] }
+    let learned = store.saved.clients.filter { !$0.isDemo }.flatMap { $0.authenticatedDiscoveryNetworks }
     return OfficeDiscoveryScope.unique((localNetworks() + learned).compactMap(\.scope))
   }
   func updateScopes(_ store: SessionStore) {
@@ -944,7 +951,7 @@ enum LocalDiscoveryNetworks {
     searching = true; total = scopes.reduce(0) { $0 + $1.addressCount * 2 }
     let captured = scopes
     var seenAddresses = Set<String>()
-    let priority = store.saved.clients.flatMap { $0.codexDirect?.discoveryNetworks ?? [] }.map(\.address)
+    let priority = store.saved.clients.flatMap { $0.authenticatedDiscoveryNetworks }.map(\.address)
       .filter { address in captured.contains { $0.contains(address: address) } && seenAddresses.insert(address).inserted }
     task = Task { [weak self, weak store] in
       guard let self, let store else { return }

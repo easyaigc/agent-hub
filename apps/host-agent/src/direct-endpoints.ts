@@ -6,7 +6,7 @@ import { networkInterfaces, type NetworkInterfaceInfo } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import {
-  discoveryNetwork,
+  interfaceDiscoveryNetworks,
   type DiscoveryNetwork,
   type VPNDiscoveryPeer,
 } from '@codex-manage/protocol';
@@ -54,29 +54,7 @@ export class SystemDirectAddressProvider implements DirectAddressProvider {
     private readonly interfaces: () => NodeJS.Dict<NetworkInterfaceInfo[]> = networkInterfaces,
   ) {}
   networks(): DiscoveryNetwork[] {
-    const result: DiscoveryNetwork[] = [];
-    const seen = new Set<string>();
-    for (const [name, entries] of Object.entries(this.interfaces())) {
-      // Tunnel and host-only virtual interfaces are not office LAN scope
-      // authorities. Their addresses remain available to the old route paths.
-      if (
-        /^(utun|tun|tap|tailscale|wg|ppp|ipsec|bridge|docker|veth|vethernet|vmnet|vbox|virtualbox host-only|awdl|llw)/i.test(
-          name,
-        )
-      )
-        continue;
-      for (const entry of entries ?? []) {
-        // Preserve the existing private-address eligibility for localized or
-        // user-renamed adapters; an English display name is not a LAN proof.
-        if (entry.internal || entry.family !== 'IPv4' || !isLocalLanAddress(entry.address))
-          continue;
-        const network = discoveryNetwork(entry.address, entry.netmask);
-        if (!network || seen.has(network.address + '/' + network.cidr)) continue;
-        seen.add(network.address + '/' + network.cidr);
-        result.push(network);
-      }
-    }
-    return result;
+    return interfaceDiscoveryNetworks(this.interfaces());
   }
   async addresses(): Promise<readonly DirectAddress[]> {
     return Object.entries(this.interfaces()).flatMap(([name, entries]) =>

@@ -25,17 +25,20 @@ test(
   { skip: process.platform !== 'darwin' },
   async (t) => {
     const source = async (name) => readFile(`apps/ios/Sources/${name}.swift`, 'utf8');
-    const [client, easy, discovery, host, transport, models, failures] = await Promise.all(
-      [
-        'AgentClient',
-        'EasyWorkAgentClient',
-        'EasyWorkDiscovery',
-        'HostService',
-        'EasyWorkTransport',
-        'NotificationModels',
-        'OperationFailure',
-      ].map(source),
-    );
+    const [client, easy, discovery, host, transport, models, failures, networks, cacheModels] =
+      await Promise.all(
+        [
+          'AgentClient',
+          'EasyWorkAgentClient',
+          'EasyWorkDiscovery',
+          'HostService',
+          'EasyWorkTransport',
+          'NotificationModels',
+          'OperationFailure',
+          'CodexDiscovery',
+          'Models',
+        ].map(source),
+      );
     const dir = await mkdtemp(path.join(os.tmpdir(), 'easywork-candidates-'));
     t.after(() => rm(dir, { recursive: true, force: true }));
     const decl = (s, m) => declaration(s, m);
@@ -53,8 +56,10 @@ ${decl(models, 'struct AgentAccount:')}
 ${decl(models, 'struct AgentRuntimeTarget:')}
 ${decl(client, 'struct AgentConnectionCandidate:')}
 ${decl(client, 'enum AgentConnectionPreference:')}
+${decl(networks, 'struct HostDiscoveryNetwork:')}
 ${decl(client, 'struct AgentConnection:')}
 ${decl(client, 'struct AgentConnectionMetadata:')}
+${decl(cacheModels, 'struct HostDiscoveryObservation:')}
 ${decl(transport, 'struct EasyWorkTarget:')}
 ${decl(transport, 'func easyWorkJSON(')}
 ${decl(discovery, 'struct EasyWorkEndpointHint:')}
@@ -98,6 +103,23 @@ ${decl(easy, 'enum EasyWorkAuthenticatedConnectionCandidates {')}
   concurrent = original; concurrent.credentialRef = "other"; precondition(metadata.connectionUpdate(captured:original,current:concurrent) == nil)
   concurrent = original; concurrent.target.workspaceId = "other"; precondition(metadata.connectionUpdate(captured:original,current:concurrent) == nil)
   for variant in 0..<3 { var bad = updated; if variant == 0 { bad.target.workspaceId = "other" }; if variant == 1 { bad.credentialRef = "other" }; if variant == 2 { bad.preference = .lanOnly }; precondition(AgentConnectionMetadata(title:nil, updatedConnection:bad).connectionUpdate(captured:original,current:original) == nil) }
+  // Local observations stay outside strict Connection wire encoding.
+  let legacyConnection = try JSONDecoder().decode(AgentConnection.self, from:JSONEncoder().encode(original))
+  precondition(legacyConnection == original)
+  let learnedNetworks: [HostDiscoveryNetwork] = [.init(address:"10.22.17.9",cidr:"10.22.16.0/20")]
+  let learnedMetadata = AgentConnectionMetadata(title:nil,updatedConnection:original,discoveryNetworks:learnedNetworks)
+  precondition(learnedMetadata.networksUpdate(captured:original,current:original) == learnedNetworks)
+  precondition(AgentConnectionMetadata(title:nil,updatedConnection:original).networksUpdate(captured:original,current:original) == nil)
+  precondition(AgentConnectionMetadata(title:nil,updatedConnection:original,discoveryNetworks:[]).networksUpdate(captured:original,current:original) == [])
+  let observation = HostDiscoveryObservation(connection:original,networks:learnedNetworks)
+  precondition(observation.matches(original))
+  let persistedObservation = try JSONDecoder().decode(HostDiscoveryObservation.self,from:JSONEncoder().encode(observation))
+  precondition(persistedObservation == observation)
+  concurrent = original; concurrent.target.account?.subject="other"; precondition(!observation.matches(concurrent))
+  precondition(learnedMetadata.networksUpdate(captured:original,current:concurrent) == nil)
+  concurrent = original; concurrent.credentialRef="other"; precondition(!observation.matches(concurrent))
+  concurrent = original; concurrent.candidates[0].peerFingerprint=String(repeating:"b",count:64); precondition(!observation.matches(concurrent))
+  concurrent = original; concurrent.candidates[0].endpoint="https://192.168.9.10"; precondition(observation.matches(concurrent))
   print("candidate boundary passed")
  }
 }`;

@@ -1635,7 +1635,12 @@ for (const asynchronous of [false, true])
 test('legacy wrong-owner v1 history is retained and never protected or adopted at startup', async (t) => {
   const f = await fixture(t, 'legacy-owner');
   const platform = await f.platform();
-  for (const name of ['runtime-persistence', 'runtime-diagnostics', 'cpu-stages']) {
+  for (const name of [
+    'runtime-persistence',
+    'runtime-diagnostics',
+    'cpu-stages',
+    'persistence-snapshots',
+  ]) {
     const input = await readFile(join(source, name + '.ts'), 'utf8');
     let output = ts.transpileModule(input, {
       compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },

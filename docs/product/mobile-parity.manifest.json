@@ -25928,6 +25928,18 @@
         "packages/codex-adapter/src/runtime-session.ts": "df3b0d0d2e7b824c5f5ef5aa7138ce77e1f7f01d3f625515f9ddb4f0aa88fa56",
         "scripts/windows-private-state-native.test.mjs": "62a8dce06ff82cbe1b78890a9a6f247e690dbf9318803ebc7dc5454b57bc3590"
       }
+    },
+    {
+      "id": "host-background-persistence-reuse-20261123",
+      "baseCommit": "135199ed",
+      "features": ["F17", "F18", "F19", "F28", "F47"],
+      "summary": "Reuse exact unchanged background metadata and history while preserving live ledger/nonce checks, private history byte checks, synchronous command/read/close barriers and full content; actual target CPU acceptance remains separate.",
+      "files": {
+        "packages/codex-adapter/src/cpu-stages.ts": "67c61d252fedc180b7f2a2a327e913f51accf69dfbb29d1874cc4b5a20b1333c",
+        "packages/codex-adapter/src/persistence-snapshots.ts": "0c26ececf296e9bc1fa9ef5d0dcd75ca48df57d2d0fc0bb544cf2030d0c6ff31",
+        "packages/codex-adapter/src/runtime-persistence.ts": "279969b604ce277abba535e16a8c92f4f5cfe29b995b2dc9654c95d649d8cccc",
+        "scripts/windows-private-state-native.test.mjs": "c6d733ef0c6f61874e91671c73d68e5b50c707e76244aa8c1fcb67a74ad79763"
+      }
     }
   ]
 }

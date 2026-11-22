@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-23：macOS可替换后台持久化复用精确未变内容，保留同步屏障、实时完整账本与历史字节校验。私有实采和合成基准分开，目标CPU复测仍由原部署负责人负责，见[设计及边界](design/background-persistence-performance.md)。
+
 2026-11-23：增加 macOS Host 内部 Worker 的显式私有 CPU 采集，不开放网络 Inspector 或领域命令。r4 目标持续高 CPU 验收失败；新工具交付和真实主因确认分列，详见[设计及操作边界](design/host-cpu-profile.md)。
 
 2026-11-22：原桌面快照投影在 Adapter 内按输入与上下文指纹复用有界呈现结果，过时任务在异步边界退出。缓存只保存呈现，不保存授权或上游快照；固定版本附件捕获失败也先完成原私有快照与预算回收，再公布原错误，避免轮询越过清理。领域协议、回执与队列不变，详见[投影性能设计](design/desktop-projection-performance.md)。

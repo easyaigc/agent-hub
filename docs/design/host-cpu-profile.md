@@ -1,5 +1,7 @@
 # macOS Host 有界 CPU 采集
 
+后续修复以私有实采为依据，后台持久化增量见[精确内容复用](background-persistence-performance.md)。工具交付、修复辅助检查和目标机CPU验收分别记录；本页不包含原始profile或本机路径。
+
 ## 状态和边界
 
 2026-11-23：投影优化 r4 的目标实机持续 CPU 验收未通过。原生 sample 仍出现 GC、JSON、UTF-8 和 SHA256；嵌套栈不能证明具体 JS 调用或各路径 CPU 占比。此增量提供诊断，不宣称已修复持续高 CPU。真实剩余主因须由部署负责人在原 Host 上采集后判断。

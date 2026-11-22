@@ -1,4 +1,5 @@
 import { beginCpuStage } from './cpu-stages.js';
+import { PersistenceSnapshots } from './persistence-snapshots.js';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
@@ -114,6 +115,9 @@ function privateBytes(file: string): Buffer {
 
 /** Command recovery is durable immediately; replaceable history never sits on its write path. */
 export class RuntimePersistence<State extends RuntimeState> {
+  private readonly snapshots = new PersistenceSnapshots();
+  private backgroundNoopSeen = false;
+  private snapshotIneligibleHead: string | undefined;
   private readonly historyDirectory: string;
   private readonly pending = new Map<string, CachedThread>();
   private readonly references = new Map<string, unknown[]>();
@@ -175,12 +179,24 @@ export class RuntimePersistence<State extends RuntimeState> {
     return join(this.historyDirectory, digest + '.json');
   }
 
-  private atomicWrite(file: string, value: unknown, durable = false, replaceable = false): void {
+  private atomicWrite(
+    file: string,
+    value: unknown,
+    durable = false,
+    replaceable = false,
+    snapshotKey?: string,
+  ): void {
     const temporary = file + '.' + randomUUID() + '.tmp';
     let owned = false;
     let published = false;
     let stage = 'serialize';
     try {
+      const prepareStateSnapshot =
+        this.backgroundNoopSeen && this.snapshotIneligibleHead !== this.durableHead;
+      const snapshot =
+        snapshotKey && (snapshotKey !== 'state' || prepareStateSnapshot)
+          ? this.snapshots.capture(value)
+          : undefined;
       const json = serialize(value);
       if (
         replaceable &&
@@ -194,7 +210,19 @@ export class RuntimePersistence<State extends RuntimeState> {
         // saveState already rechecked the real writer nonce and complete file
         // bytes. Also retain the current private-file boundary before a no-op.
         assertPrivateFile(file);
+        if (snapshotKey === 'state') {
+          this.backgroundNoopSeen = true;
+          if (prepareStateSnapshot && !snapshot) this.snapshotIneligibleHead = this.durableHead;
+          this.snapshots.remember(snapshotKey, file, snapshot, this.durableHead);
+        }
         return;
+      }
+      // Capture before dependency callbacks can mutate the live input. Only
+      // background history uses this; command/read/close barriers stay unchanged.
+      const snapshotHash = snapshotKey !== 'state' && snapshot ? digest(json) : '';
+      if (file === this.file) {
+        this.backgroundNoopSeen = false;
+        this.snapshotIneligibleHead = undefined;
       }
       // Any failed new write invalidates cached durability, even if its bytes
       // equal the last save (including a publish followed by fsync failure).
@@ -231,6 +259,8 @@ export class RuntimePersistence<State extends RuntimeState> {
         }
       }
       if (file === this.file && durable) this.durableHead = digest(json);
+      if (snapshotKey && snapshotKey !== 'state')
+        this.snapshots.remember(snapshotKey, file, snapshot, snapshotHash);
     } catch (error) {
       throw new RuntimePersistenceError(stage, error);
     } finally {
@@ -486,7 +516,7 @@ export class RuntimePersistence<State extends RuntimeState> {
           return;
         }
         try {
-          this.saveState(this.backgroundState(), true);
+          this.saveState(this.backgroundState(), true, true);
         } catch (error) {
           this.report('background-save', error, ++this.backgroundAttempt);
           if (this.backgroundAttempt >= this.delays.length)
@@ -703,15 +733,36 @@ export class RuntimePersistence<State extends RuntimeState> {
     };
   }
 
-  private saveState(state: State, replaceable: boolean): void {
+  private saveState(state: State, replaceable: boolean, background = false): void {
     const endCpuStage = beginCpuStage('persistence.save');
     try {
+      if (!background) {
+        this.backgroundNoopSeen = false;
+        this.snapshotIneligibleHead = undefined;
+      }
       if (this.closed) throw new RuntimePersistenceError('closed', undefined);
       this.writeVersion++;
       this.hostId = state.hostId;
       this.assertReplyWriter();
-      this.atomicWrite(this.file, this.persistedState(state), true, replaceable);
-      this.ledgerHead = digest(readFileSync(this.file));
+      const metadata = this.persistedState(state);
+      const reuse = background && (this.options.platform ?? process.platform) === 'darwin';
+      if (
+        reuse &&
+        this.writer &&
+        this.durableHead !== undefined &&
+        this.ledgerHead === this.durableHead &&
+        this.snapshots.matches('state', metadata, this.file)
+      ) {
+        // No publication occurred: the original entry ledger/nonce check and
+        // current private file/identity still apply; no readback of an own write.
+        assertPrivateFile(this.file);
+        beginCpuStage('persistence.state.reuse')?.();
+      } else {
+        if (this.snapshots.has('state')) this.backgroundNoopSeen = false;
+        this.snapshots.forget('state');
+        this.atomicWrite(this.file, metadata, true, replaceable, reuse ? 'state' : undefined);
+        this.ledgerHead = digest(readFileSync(this.file));
+      }
       for (const thread of state.threads) {
         if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
         this.references.set(thread.id, thread.messages);
@@ -765,13 +816,29 @@ export class RuntimePersistence<State extends RuntimeState> {
     );
   }
 
-  private writeHistory(thread: CachedThread): void {
-    this.atomicWrite(this.historyFile(thread.id), {
+  private writeHistory(thread: CachedThread, background = false): void {
+    const file = this.historyFile(thread.id);
+    const value = {
       version: 1,
       hostId: this.hostId,
       threadId: thread.id,
       messages: thread.messages,
-    });
+    };
+    // Continuous metadata changes keep the original history write path. Only
+    // prepare history snapshots after observing a stable background ledger,
+    // avoiding snapshot allocation on every genuinely changing state.
+    const key =
+      background &&
+      this.backgroundNoopSeen &&
+      (this.options.platform ?? process.platform) === 'darwin'
+        ? 'history:' + file
+        : undefined;
+    if (key && this.snapshots.matches(key, value, file, true)) {
+      beginCpuStage('persistence.history.reuse')?.();
+      return;
+    }
+    if (key) this.snapshots.forget(key);
+    this.atomicWrite(file, value, false, false, key);
   }
 
   private drainOne(): void {
@@ -791,7 +858,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       return;
     }
     try {
-      this.writeHistory(thread);
+      this.writeHistory(thread, true);
       this.pending.delete(id);
       this.failures.delete(id);
     } catch (error) {
@@ -850,6 +917,7 @@ export class RuntimePersistence<State extends RuntimeState> {
   close(replyWorkFenced = false): void {
     if (this.closed) return;
     this.closed = true;
+    this.snapshots.clear();
     this.writeVersion++;
     this.wakePublications();
     if (this.backgroundTimer) clearTimeout(this.backgroundTimer);

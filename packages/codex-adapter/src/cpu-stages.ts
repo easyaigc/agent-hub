@@ -2,6 +2,9 @@ import { PerformanceObserver } from 'node:perf_hooks';
 
 /** Fixed labels only: never pass paths, targets, text or operation identifiers. */
 export type CpuStage =
+  | 'persistence.state.reuse'
+  | 'persistence.history.reuse'
+  | 'persistence.snapshot.declined'
   | 'persistence.serialize'
   | 'persistence.sha256'
   | 'persistence.save'

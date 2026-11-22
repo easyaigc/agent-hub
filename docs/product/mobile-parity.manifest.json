@@ -25875,6 +25875,26 @@
         "packages/codex-adapter/src/runtime-session.ts": "60f4fae5d458d5d48044be3b37760950e954770a8b84cb1d707d0fed2d8ea70d",
         "packages/codex-adapter/src/desktop-projection-cache.ts": "3404f8a4cfe4dd09d1e3c7e601373069d07116223164f762e4828a7cd0d1ee36"
       }
+    },
+    {
+      "id": "host-local-cpu-profile-20261123",
+      "baseCommit": "6ec06d6c",
+      "features": ["F17", "F18", "F19", "F28", "F47"],
+      "summary": "Add opt-in private macOS Main CPU sampling without a network debugger or model input; fixed-label timing preserves persistence and authorization. r4 sustained CPU acceptance failed; actual target profile remains required.",
+      "files": {
+        "apps/host-agent/src/cpu-profile-control.ts": "f724355f252e7b7cb700f40f23d26693f7d5c576481a54d81f9decd69ba1f016",
+        "apps/host-agent/src/cpu-profile-files.ts": "ef40e03ac9ec423880cee52b07df03687bac5c3973d5171cd7be901b4e2e93be",
+        "apps/host-agent/src/cpu-profile-worker.ts": "246b0050dc6ccac82dec71b2fe2d5621cb91e0204527b5a247372e4b5cd28b64",
+        "apps/host-agent/src/read-json.ts": "59995075813d96dc1e3e8787b857d038ba9e59b4eba3372c0452f023cad2d792",
+        "apps/host-agent/src/runtime-server.ts": "fa9d1ecf727b4f16ac7da6b6c9da951de66bdc58f3a1805c3940cfe4faec7817",
+        "packages/codex-adapter/src/attachment-files.ts": "12a7514bcb4616ae65c198112f29f1a1f95fceac78447f8c0db6b5b6e6b4c9b9",
+        "packages/codex-adapter/src/cpu-stages.ts": "8e76b3324b848fb1858c64f11e4e04a49c8c10e749aa8504b9b2bb089ca6813d",
+        "packages/codex-adapter/src/desktop-ipc.ts": "869dff9072684562e376812fb1a45fb19d4c2a48be65da5c602d4996f87096e3",
+        "packages/codex-adapter/src/index.ts": "d48252fc5bfe959cc8d5635ddd6bafd4e043d40cf2c1194538344e2260f971d8",
+        "packages/codex-adapter/src/runtime-persistence.ts": "4ab7f487e07a4fcb9ea0861f9fb418f9f28a0d885972d42e381658ccb10fcc82",
+        "packages/codex-adapter/src/runtime-session.ts": "df3b0d0d2e7b824c5f5ef5aa7138ce77e1f7f01d3f625515f9ddb4f0aa88fa56",
+        "scripts/windows-private-state-native.test.mjs": "62a8dce06ff82cbe1b78890a9a6f247e690dbf9318803ebc7dc5454b57bc3590"
+      }
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { beginCpuStage } from './cpu-stages.js';
 import { createHash } from 'node:crypto';
 import { open, realpath, stat } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
@@ -253,9 +254,14 @@ export class AttachmentFiles {
     exactPaths: readonly string[] = [],
     fixedPath = false,
   ): Promise<Metadata> {
-    return this.retryMetadata(path, 'inspect', (originalFile) =>
-      this.inspectVersion(path, roots, exactPaths, fixedPath, originalFile),
-    );
+    const endCpuStage = beginCpuStage('files.inspect');
+    try {
+      return await this.retryMetadata(path, 'inspect', (originalFile) =>
+        this.inspectVersion(path, roots, exactPaths, fixedPath, originalFile),
+      );
+    } finally {
+      endCpuStage?.();
+    }
   }
 
   private async inspectVersion(

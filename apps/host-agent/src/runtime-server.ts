@@ -1,3 +1,4 @@
+import { startOptionalCpuProfile } from './cpu-profile-control.js';
 import { parseUsageTarget, usageTargetKey, usageTarget } from '@codex-manage/protocol';
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createServer as httpsServer } from 'node:https';
@@ -189,6 +190,7 @@ export async function startRuntimeServer() {
     name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
   });
   const diagnostics = startRuntimeDiagnostics(directory, session.hostId, mode);
+  const closeCpuProfile = startOptionalCpuProfile(directory, session.hostId);
   const domSuggestions = new DesktopDomSuggestions(
     session,
     mode === 'desktop-runtime' ? process.env.CODEX_DESKTOP_DOM_BRIDGE_CONFIG : undefined,
@@ -1918,6 +1920,7 @@ export async function startRuntimeServer() {
     let failure: unknown;
     clearInterval(voiceExpiryTimer);
     for (const dispose of [
+      closeCpuProfile,
       () => {
         void attachmentReads.close().catch(() => {});
       },

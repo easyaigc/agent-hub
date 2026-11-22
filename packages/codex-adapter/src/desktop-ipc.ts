@@ -1,3 +1,4 @@
+import { beginCpuStage } from './cpu-stages.js';
 import { historyIdentity } from './desktop-history-identity.js';
 import { subagentDisplayLabel } from './runtime.js';
 import { diagnosticEvent } from './diagnostic-events.js';
@@ -367,7 +368,14 @@ export class DesktopIpc {
     this.socket = socket;
     const frames = new DesktopFrameDecoder(
       (body) => {
-        this.receive(object(JSON.parse(body.toString('utf8'))));
+        const end = beginCpuStage('desktop.frame.parse');
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = object(JSON.parse(body.toString('utf8')));
+        } finally {
+          end?.();
+        }
+        this.receive(parsed);
       },
       {
         ...this.frameOptions,

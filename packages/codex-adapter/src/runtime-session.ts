@@ -1,3 +1,4 @@
+import { beginCpuStage } from './cpu-stages.js';
 import {
   parentLineageCapability,
   parentLineageAssociation,
@@ -4182,149 +4183,159 @@ export class RuntimeSession {
     directory?: string,
     valid: () => boolean = () => true,
   ): Promise<void> {
-    const wire = object(item);
-    const originalLinks = messageLinks(message.text);
-    if (message.role === 'assistant' && message.kind === 'agentMessage')
-      message.text = mobileVisualizationLinks(message.text);
-    const links = messageLinks(message.text);
-    // Only the newly recognized visualization paths supplement upstream paths.
-    paths = [
-      ...new Set([
-        ...paths,
-        ...links.flatMap((link) => {
-          if (originalLinks.some((old) => old.reference === link.reference)) return [];
-          const path = localMessagePath(link.reference);
-          return path ? [path] : [];
-        }),
-      ]),
-    ];
-    this.registerMessageReferences(thread, message, directory, links);
-    if (this.runtime instanceof DesktopRuntime) {
-      // A Markdown reference is not a native attachment. Register its original
-      // message provenance above, but do no filesystem work until it is opened.
-      // Only explicit upstream media/file fields are prepared for presentation.
+    const endCpuStage = beginCpuStage('desktop.attachments');
+    try {
+      const wire = object(item);
+      const originalLinks = messageLinks(message.text);
+      if (message.role === 'assistant' && message.kind === 'agentMessage')
+        message.text = mobileVisualizationLinks(message.text);
+      const links = messageLinks(message.text);
+      // Only the newly recognized visualization paths supplement upstream paths.
       paths = [
-        ...list(wire.content).map((entry) => string(object(entry).path)),
-        ...list(wire.changes).map((entry) => string(object(entry).path)),
-        string(wire.path),
-        string(wire.savedPath),
-      ].filter(Boolean);
-    }
-    const attachments = message.attachments;
-    const root =
-      directory ??
-      thread.desktopDirectory ??
-      this.state.projects.find((project) => project.id === thread.projectId)?.roots[0] ??
-      this.options.root;
-    const resolvedPaths = new Map<string, string>();
-    for (const path of paths) {
-      if (!valid()) return;
-      try {
-        const requested = resolve(root, path);
-        const reference =
-          this.runtime instanceof DesktopRuntime &&
-          message.role === 'assistant' &&
-          message.kind === 'agentMessage'
-            ? links.find((link) => {
-                const local = localMessagePath(link.reference);
-                return local && resolve(root, local) === requested;
-              })?.reference
-            : undefined;
-        const attachment = await this.registerMessageFile(thread, message.id, requested, reference);
-        resolvedPaths.set(requested, attachment.path);
-        if (!attachments.some((v) => v.id === attachment.id))
-          attachments.push(this.cleanAttachment(attachment));
-      } catch (error) {
-        appendRuntimeDiagnostic(
-          this.options.directory,
-          {
-            scope: 'attachment',
-            stage: 'register',
+        ...new Set([
+          ...paths,
+          ...links.flatMap((link) => {
+            if (originalLinks.some((old) => old.reference === link.reference)) return [];
+            const path = localMessagePath(link.reference);
+            return path ? [path] : [];
+          }),
+        ]),
+      ];
+      this.registerMessageReferences(thread, message, directory, links);
+      if (this.runtime instanceof DesktopRuntime) {
+        // A Markdown reference is not a native attachment. Register its original
+        // message provenance above, but do no filesystem work until it is opened.
+        // Only explicit upstream media/file fields are prepared for presentation.
+        paths = [
+          ...list(wire.content).map((entry) => string(object(entry).path)),
+          ...list(wire.changes).map((entry) => string(object(entry).path)),
+          string(wire.path),
+          string(wire.savedPath),
+        ].filter(Boolean);
+      }
+      const attachments = message.attachments;
+      const root =
+        directory ??
+        thread.desktopDirectory ??
+        this.state.projects.find((project) => project.id === thread.projectId)?.roots[0] ??
+        this.options.root;
+      const resolvedPaths = new Map<string, string>();
+      for (const path of paths) {
+        if (!valid()) return;
+        try {
+          const requested = resolve(root, path);
+          const reference =
+            this.runtime instanceof DesktopRuntime &&
+            message.role === 'assistant' &&
+            message.kind === 'agentMessage'
+              ? links.find((link) => {
+                  const local = localMessagePath(link.reference);
+                  return local && resolve(root, local) === requested;
+                })?.reference
+              : undefined;
+          const attachment = await this.registerMessageFile(
+            thread,
+            message.id,
+            requested,
+            reference,
+          );
+          resolvedPaths.set(requested, attachment.path);
+          if (!attachments.some((v) => v.id === attachment.id))
+            attachments.push(this.cleanAttachment(attachment));
+        } catch (error) {
+          appendRuntimeDiagnostic(
+            this.options.directory,
+            {
+              scope: 'attachment',
+              stage: 'register',
+              hostId: this.hostId,
+              threadId: thread.id,
+              messageId: message.id,
+              path: resolve(root, path),
+            },
+            error,
+          );
+          if (error instanceof AttachmentFileError && error.status === 503)
+            throw new RuntimeError(error.status, error.message, error.code);
+        }
+      }
+      const media = [
+        ...list(object(wire.result).content),
+        ...list(wire.contentItems),
+        ...list(wire.output),
+      ].map(object);
+      if (message.kind === 'imageGeneration' && typeof wire.result === 'string')
+        media.push({ type: 'image', data: wire.result, mimeType: 'image/png' });
+      for (const entry of media) {
+        if (!valid()) return;
+        if (entry.type !== 'image') continue;
+        const url =
+          string(entry.imageUrl) ||
+          string(entry.image_url) ||
+          string(object(entry.image_url).url) ||
+          string(entry.url);
+        const dataURI = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(url);
+        const encoded = string(entry.data) || dataURI?.[2] || '';
+        const mediaType = string(entry.mimeType) || dataURI?.[1] || '';
+        if (
+          !/^image\/(png|jpeg|webp)$/.test(mediaType) ||
+          !encoded ||
+          encoded.length > 28 * 1024 * 1024
+        )
+          continue;
+        const bytes = Buffer.from(encoded, 'base64');
+        if (!bytes.length || bytes.length > 20 * 1024 * 1024) continue;
+        const hash = createHash('sha256');
+        for (let offset = 0; offset < bytes.length; offset += 1024 * 1024) {
+          hash.update(bytes.subarray(offset, offset + 1024 * 1024));
+          await setImmediate();
+          if (!valid()) return;
+        }
+        const sha256 = hash.digest('hex');
+        let attachment = this.state.attachments.find(
+          (v) => v.threadId === thread.id && v.sha256 === sha256,
+        );
+        if (!attachment) {
+          const id = randomUUID();
+          const name = `image-${message.id.replace(/[^a-z0-9-]/gi, '').slice(0, 48)}.${mediaType === 'image/jpeg' ? 'jpg' : mediaType.split('/')[1]}`;
+          const path = join(this.attachmentDirectory, id + extname(name));
+          const file = await openPrivateFile(path, 'wx');
+          try {
+            await file.writeFile(bytes);
+          } finally {
+            await file.close();
+          }
+          attachment = {
+            id,
             hostId: this.hostId,
             threadId: thread.id,
-            messageId: message.id,
-            path: resolve(root, path),
-          },
-          error,
-        );
-        if (error instanceof AttachmentFileError && error.status === 503)
-          throw new RuntimeError(error.status, error.message, error.code);
-      }
-    }
-    const media = [
-      ...list(object(wire.result).content),
-      ...list(wire.contentItems),
-      ...list(wire.output),
-    ].map(object);
-    if (message.kind === 'imageGeneration' && typeof wire.result === 'string')
-      media.push({ type: 'image', data: wire.result, mimeType: 'image/png' });
-    for (const entry of media) {
-      if (!valid()) return;
-      if (entry.type !== 'image') continue;
-      const url =
-        string(entry.imageUrl) ||
-        string(entry.image_url) ||
-        string(object(entry.image_url).url) ||
-        string(entry.url);
-      const dataURI = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(url);
-      const encoded = string(entry.data) || dataURI?.[2] || '';
-      const mediaType = string(entry.mimeType) || dataURI?.[1] || '';
-      if (
-        !/^image\/(png|jpeg|webp)$/.test(mediaType) ||
-        !encoded ||
-        encoded.length > 28 * 1024 * 1024
-      )
-        continue;
-      const bytes = Buffer.from(encoded, 'base64');
-      if (!bytes.length || bytes.length > 20 * 1024 * 1024) continue;
-      const hash = createHash('sha256');
-      for (let offset = 0; offset < bytes.length; offset += 1024 * 1024) {
-        hash.update(bytes.subarray(offset, offset + 1024 * 1024));
-        await setImmediate();
-        if (!valid()) return;
-      }
-      const sha256 = hash.digest('hex');
-      let attachment = this.state.attachments.find(
-        (v) => v.threadId === thread.id && v.sha256 === sha256,
-      );
-      if (!attachment) {
-        const id = randomUUID();
-        const name = `image-${message.id.replace(/[^a-z0-9-]/gi, '').slice(0, 48)}.${mediaType === 'image/jpeg' ? 'jpg' : mediaType.split('/')[1]}`;
-        const path = join(this.attachmentDirectory, id + extname(name));
-        const file = await openPrivateFile(path, 'wx');
-        try {
-          await file.writeFile(bytes);
-        } finally {
-          await file.close();
+            name,
+            mediaType,
+            sizeBytes: bytes.length,
+            sha256,
+            path,
+          };
+          this.state.attachments.push(attachment);
         }
-        attachment = {
-          id,
-          hostId: this.hostId,
-          threadId: thread.id,
-          name,
-          mediaType,
-          sizeBytes: bytes.length,
-          sha256,
-          path,
-        };
-        this.state.attachments.push(attachment);
+        if (!attachments.some((v) => v.id === attachment.id))
+          attachments.push(this.cleanAttachment(attachment));
       }
-      if (!attachments.some((v) => v.id === attachment.id))
-        attachments.push(this.cleanAttachment(attachment));
-    }
-    for (const link of [...links].reverse()) {
-      const local = localMessagePath(link.reference);
-      if (!local) continue;
-      const path = resolvedPaths.get(resolve(root, local));
-      // Select the exact version inspected for this message, not an older same-path digest.
-      const file = attachments.find((file) =>
-        this.state.attachments.some((stored) => stored.id === file.id && stored.path === path),
-      );
-      if (file)
-        message.text =
-          message.text.slice(0, link.start) +
-          `codex-attachment://${file.id}` +
-          message.text.slice(link.end);
+      for (const link of [...links].reverse()) {
+        const local = localMessagePath(link.reference);
+        if (!local) continue;
+        const path = resolvedPaths.get(resolve(root, local));
+        // Select the exact version inspected for this message, not an older same-path digest.
+        const file = attachments.find((file) =>
+          this.state.attachments.some((stored) => stored.id === file.id && stored.path === path),
+        );
+        if (file)
+          message.text =
+            message.text.slice(0, link.start) +
+            `codex-attachment://${file.id}` +
+            message.text.slice(link.end);
+      }
+    } finally {
+      endCpuStage?.();
     }
   }
 
@@ -6423,164 +6434,170 @@ export class RuntimeSession {
     state: Record<string, unknown>,
     valid: () => boolean = () => true,
   ): Promise<void> {
-    if (this.runtime instanceof DesktopRuntime) this.runtime.followSubagents(thread.id, state);
-    const turns = desktopTurns(state);
-    const previous = thread.messages;
-    thread.messages = [];
-    const indexes = new Map<string, number>();
-    const initializationIds = new Set(
-      turns
-        .filter((turn) => turn.turnId === thread.desktopInitializationTurnId)
-        .flatMap((turn) =>
-          list(turn.items).map((item) =>
-            historyIdentity(string(object(item).id), string(turn.turnId)),
+    const endCpuStage = beginCpuStage('desktop.projection');
+    try {
+      if (this.runtime instanceof DesktopRuntime) this.runtime.followSubagents(thread.id, state);
+      const turns = desktopTurns(state);
+      const previous = thread.messages;
+      thread.messages = [];
+      const indexes = new Map<string, number>();
+      const initializationIds = new Set(
+        turns
+          .filter((turn) => turn.turnId === thread.desktopInitializationTurnId)
+          .flatMap((turn) =>
+            list(turn.items).map((item) =>
+              historyIdentity(string(object(item).id), string(turn.turnId)),
+            ),
           ),
-        ),
-    );
-    // Receipt text/attachments can replace an owner's user item. Build the
-    // dependency index once per snapshot, rather than scanning all receipts per hit.
-    const receipts = new Map(
-      this.state.receipts
-        .filter((v) => v.threadId === thread.id)
-        .map((v) => [v.clientMessageId, v.reply]),
-    );
-    const attachmentIds = new Set(
-      this.state.attachments.filter((file) => file.threadId === thread.id).map((file) => file.id),
-    );
-    const context = JSON.stringify([
-      thread.desktopDirectory,
-      thread.historyDirectory,
-      thread.projectId,
-      this.state.projects.find((project) => project.id === thread.projectId)?.roots,
-      this.options.root,
-      this.readingTarget(),
-    ]);
-    const upsert = async (item: Record<string, unknown>) => {
-      if (!valid()) return;
-      // Native resources are checked on every snapshot. Besides source/version
-      // changes, an overloaded file service must remain a visible projection failure.
-      const fileBacked = [...list(item.content), ...list(item.changes), item].some(
-        (entry) => string(object(entry).path) || string(object(entry).savedPath),
       );
-      if (fileBacked) {
-        await this.upsert(thread, item, indexes, valid);
-        return;
-      }
-      // Rendering a short plain reply is cheaper than hashing and cloning it.
-      // Reserve reuse for richer/longer content; do not tax the common text path.
-      if (
-        item.type === 'agentMessage' &&
-        string(item.text).length < 2048 &&
-        !string(item.text).includes('[') &&
-        !['content', 'changes', 'path', 'savedPath', 'result', 'contentItems', 'output'].some(
-          (key) => Object.hasOwn(item, key),
-        )
-      ) {
-        await this.upsert(thread, item, indexes, valid);
-        return;
-      }
-      const key = JSON.stringify([thread.id, item.runId, item.id]);
-      const receipt = item.type === 'userMessage' ? receipts.get(string(item.clientId)) : undefined;
-      if (!boundedProjectionInput([context, item, receipt])) {
-        await this.upsert(thread, item, indexes, valid);
-        return;
-      }
-      const fingerprint = createHash('sha256')
-        .update(JSON.stringify([context, item, receipt]))
-        .digest('hex');
-      const cached = this.desktopProjectionCache.get(key, fingerprint);
-      if (cached && cached.message.attachments.every((file) => attachmentIds.has(file.id))) {
-        const message = cached.message;
-        this.registerMessageReferences(thread, { ...message, text: cached.referenceText });
-        const index = indexes.get(message.id);
-        if (index === undefined) {
-          indexes.set(message.id, thread.messages.length);
-          thread.messages.push(message);
-        } else thread.messages[index] = message;
-        return;
-      }
-      const result = await this.upsert(thread, item, indexes, valid);
-      if (!result || !valid()) return;
-      this.desktopProjectionCache.set(key, thread.id, fingerprint, result);
-    };
-    let projected = 0;
-    for (const turn of turns) {
-      for (const item of list(turn.items)) {
+      // Receipt text/attachments can replace an owner's user item. Build the
+      // dependency index once per snapshot, rather than scanning all receipts per hit.
+      const receipts = new Map(
+        this.state.receipts
+          .filter((v) => v.threadId === thread.id)
+          .map((v) => [v.clientMessageId, v.reply]),
+      );
+      const attachmentIds = new Set(
+        this.state.attachments.filter((file) => file.threadId === thread.id).map((file) => file.id),
+      );
+      const context = JSON.stringify([
+        thread.desktopDirectory,
+        thread.historyDirectory,
+        thread.projectId,
+        this.state.projects.find((project) => project.id === thread.projectId)?.roots,
+        this.options.root,
+        this.readingTarget(),
+      ]);
+      const upsert = async (item: Record<string, unknown>) => {
         if (!valid()) return;
-        if (++projected % 32 === 0) {
-          await setImmediate();
+        // Native resources are checked on every snapshot. Besides source/version
+        // changes, an overloaded file service must remain a visible projection failure.
+        const fileBacked = [...list(item.content), ...list(item.changes), item].some(
+          (entry) => string(object(entry).path) || string(object(entry).savedPath),
+        );
+        if (fileBacked) {
+          await this.upsert(thread, item, indexes, valid);
+          return;
+        }
+        // Rendering a short plain reply is cheaper than hashing and cloning it.
+        // Reserve reuse for richer/longer content; do not tax the common text path.
+        if (
+          item.type === 'agentMessage' &&
+          string(item.text).length < 2048 &&
+          !string(item.text).includes('[') &&
+          !['content', 'changes', 'path', 'savedPath', 'result', 'contentItems', 'output'].some(
+            (key) => Object.hasOwn(item, key),
+          )
+        ) {
+          await this.upsert(thread, item, indexes, valid);
+          return;
+        }
+        const key = JSON.stringify([thread.id, item.runId, item.id]);
+        const receipt =
+          item.type === 'userMessage' ? receipts.get(string(item.clientId)) : undefined;
+        if (!boundedProjectionInput([context, item, receipt])) {
+          await this.upsert(thread, item, indexes, valid);
+          return;
+        }
+        const fingerprint = createHash('sha256')
+          .update(JSON.stringify([context, item, receipt]))
+          .digest('hex');
+        const cached = this.desktopProjectionCache.get(key, fingerprint);
+        if (cached && cached.message.attachments.every((file) => attachmentIds.has(file.id))) {
+          const message = cached.message;
+          this.registerMessageReferences(thread, { ...message, text: cached.referenceText });
+          const index = indexes.get(message.id);
+          if (index === undefined) {
+            indexes.set(message.id, thread.messages.length);
+            thread.messages.push(message);
+          } else thread.messages[index] = message;
+          return;
+        }
+        const result = await this.upsert(thread, item, indexes, valid);
+        if (!result || !valid()) return;
+        this.desktopProjectionCache.set(key, thread.id, fingerprint, result);
+      };
+      let projected = 0;
+      for (const turn of turns) {
+        for (const item of list(turn.items)) {
           if (!valid()) return;
-        }
-        if (turn.turnId === thread.desktopInitializationTurnId) continue;
-        if (['todo-list', 'planImplementation', 'steered'].includes(string(object(item).type)))
-          continue;
-        const wire =
-          this.runtime instanceof DesktopRuntime
-            ? this.runtime.projectSubagent(object(item), state)
-            : object(item);
-        if (!wire) continue;
-        if (wire.type === 'steeringUserMessage') {
-          if (!string(wire.serverUserMessageId)) continue;
-          await upsert({
-            type: 'userMessage',
-            id: wire.serverUserMessageId || wire.id,
-            clientId: wire.serverClientUserMessageId || wire.clientUserMessageId,
-            content: wire.input,
-            status: wire.status === 'accepted' ? 'completed' : 'inProgress',
-            runId: turn.turnId,
-          });
-          continue;
-        }
-        const completed = object(turn.agentMessageCompletedAtMsById);
-        const status =
-          wire.type === 'contextCompaction'
-            ? turn.status === 'completed' || wire.completed === true
-              ? 'completed'
-              : wire.completed === false
-                ? turn.status === 'inProgress'
+          if (++projected % 32 === 0) {
+            await setImmediate();
+            if (!valid()) return;
+          }
+          if (turn.turnId === thread.desktopInitializationTurnId) continue;
+          if (['todo-list', 'planImplementation', 'steered'].includes(string(object(item).type)))
+            continue;
+          const wire =
+            this.runtime instanceof DesktopRuntime
+              ? this.runtime.projectSubagent(object(item), state)
+              : object(item);
+          if (!wire) continue;
+          if (wire.type === 'steeringUserMessage') {
+            if (!string(wire.serverUserMessageId)) continue;
+            await upsert({
+              type: 'userMessage',
+              id: wire.serverUserMessageId || wire.id,
+              clientId: wire.serverClientUserMessageId || wire.clientUserMessageId,
+              content: wire.input,
+              status: wire.status === 'accepted' ? 'completed' : 'inProgress',
+              runId: turn.turnId,
+            });
+            continue;
+          }
+          const completed = object(turn.agentMessageCompletedAtMsById);
+          const status =
+            wire.type === 'contextCompaction'
+              ? turn.status === 'completed' || wire.completed === true
+                ? 'completed'
+                : wire.completed === false
+                  ? turn.status === 'inProgress'
+                    ? 'inProgress'
+                    : ['interrupted', 'failed'].includes(string(turn.status))
+                      ? turn.status
+                      : 'unknown'
+                  : wire.status
+              : ['agentMessage', 'plan'].includes(string(wire.type))
+                ? turn.status === 'inProgress' && !Object.hasOwn(completed, string(wire.id))
                   ? 'inProgress'
                   : ['interrupted', 'failed'].includes(string(turn.status))
                     ? turn.status
-                    : 'unknown'
-                : wire.status
-            : ['agentMessage', 'plan'].includes(string(wire.type))
-              ? turn.status === 'inProgress' && !Object.hasOwn(completed, string(wire.id))
-                ? 'inProgress'
-                : ['interrupted', 'failed'].includes(string(turn.status))
+                    : 'completed'
+                : wire.status === 'inProgress' && turn.status !== 'inProgress'
                   ? turn.status
-                  : 'completed'
-              : wire.status === 'inProgress' && turn.status !== 'inProgress'
-                ? turn.status
-                : wire.status;
-        await upsert({
-          ...wire,
-          runId: turn.turnId,
-          ...(typeof status === 'string' ? { status } : {}),
-        });
+                  : wire.status;
+          await upsert({
+            ...wire,
+            runId: turn.turnId,
+            ...(typeof status === 'string' ? { status } : {}),
+          });
+        }
+        if (turn.status === 'failed' && string(turn.turnId))
+          await upsert({
+            id: `turn-failure-${string(turn.turnId)}`,
+            type: 'turnFailure',
+            text: string(object(turn.error).message) || '任务执行失败，电脑未提供错误详情。',
+            status: 'failed',
+            runId: turn.turnId,
+          });
       }
-      if (turn.status === 'failed' && string(turn.turnId))
-        await upsert({
-          id: `turn-failure-${string(turn.turnId)}`,
-          type: 'turnFailure',
-          text: string(object(turn.error).message) || '任务执行失败，电脑未提供错误详情。',
-          status: 'failed',
-          runId: turn.turnId,
-        });
-    }
-    if (!valid()) return;
-    thread.messages.unshift(
-      ...retainedDesktopHistory(
-        previous,
-        thread.messages,
-        initializationIds,
-        new Set(
-          turns
-            .filter((turn) => turn.status === 'completed')
-            .map((turn) => string(turn.turnId))
-            .filter(Boolean),
+      if (!valid()) return;
+      thread.messages.unshift(
+        ...retainedDesktopHistory(
+          previous,
+          thread.messages,
+          initializationIds,
+          new Set(
+            turns
+              .filter((turn) => turn.status === 'completed')
+              .map((turn) => string(turn.turnId))
+              .filter(Boolean),
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      endCpuStage?.();
+    }
   }
   async poll(
     after: number,

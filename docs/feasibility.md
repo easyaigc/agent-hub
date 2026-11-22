@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-23：增加 macOS Host 内部 Worker 的显式私有 CPU 采集，不开放网络 Inspector 或领域命令。r4 目标持续高 CPU 验收失败；新工具交付和真实主因确认分列，详见[设计及操作边界](design/host-cpu-profile.md)。
+
 2026-11-22：Host 投影优化的隔离回归与合成 CPU 对照只证明所测热路径；目标已运行进程的 CPU、内存与真实 owner 行为仍须按实际部署指纹复测，不能据静态路径或基准认定持续高 CPU 已根治。见[性能验证边界](design/desktop-projection-performance.md)。
 
 2026-11-22 F06/F08 自动发现修正候选：取消正常页手填范围，使用手机实际 LAN 掩码及原已配对 Host 的独立已鉴权 networks 接口自动学习并持久保存；正常前台连接即可学习，关联地址优先、范围完整惰性扫描。电脑全部退出 Tailscale 后使用已学范围，首次学习需一条原可信路径可达。网络错误保留实际分类，仅明确认证拒绝才引导重新授权；原凭据、记录、草稿和未知写入不变。Android／EasyWork 独立范围提供适配及原手机升级验收未因此通过；旧117证据仍限原手填场景。[契约与边界](design/office-subnet-discovery.md)，当前状态只见[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。

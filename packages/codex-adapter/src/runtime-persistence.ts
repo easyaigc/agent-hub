@@ -1,3 +1,4 @@
+import { beginCpuStage } from './cpu-stages.js';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
@@ -65,7 +66,22 @@ export interface ReplyLedgerCheckpoint {
   operations: { threadId: string; clientMessageId: string; fingerprint: string }[];
 }
 
-const digest = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
+const digest = (bytes: string | Buffer) => {
+  const end = beginCpuStage('persistence.sha256');
+  try {
+    return createHash('sha256').update(bytes).digest('hex');
+  } finally {
+    end?.();
+  }
+};
+function serialize(value: unknown): string {
+  const end = beginCpuStage('persistence.serialize');
+  try {
+    return JSON.stringify(value);
+  } finally {
+    end?.();
+  }
+}
 function targetKey(value: unknown): string {
   try {
     return machineRuntimeTargetKey(parseNotificationTarget(value));
@@ -165,7 +181,7 @@ export class RuntimePersistence<State extends RuntimeState> {
     let published = false;
     let stage = 'serialize';
     try {
-      const json = JSON.stringify(value);
+      const json = serialize(value);
       if (
         replaceable &&
         durable &&
@@ -529,7 +545,7 @@ export class RuntimePersistence<State extends RuntimeState> {
     let stage = 'serialize';
     let handle: Awaited<ReturnType<typeof openPrivateFile>> | undefined;
     try {
-      const json = JSON.stringify(value);
+      const json = serialize(value);
       if (file === this.file) {
         this.assertReplyWriter();
         if (
@@ -688,22 +704,27 @@ export class RuntimePersistence<State extends RuntimeState> {
   }
 
   private saveState(state: State, replaceable: boolean): void {
-    if (this.closed) throw new RuntimePersistenceError('closed', undefined);
-    this.writeVersion++;
-    this.hostId = state.hostId;
-    this.assertReplyWriter();
-    this.atomicWrite(this.file, this.persistedState(state), true, replaceable);
-    this.ledgerHead = digest(readFileSync(this.file));
-    for (const thread of state.threads) {
-      if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
-      this.references.set(thread.id, thread.messages);
+    const endCpuStage = beginCpuStage('persistence.save');
+    try {
+      if (this.closed) throw new RuntimePersistenceError('closed', undefined);
+      this.writeVersion++;
+      this.hostId = state.hostId;
+      this.assertReplyWriter();
+      this.atomicWrite(this.file, this.persistedState(state), true, replaceable);
+      this.ledgerHead = digest(readFileSync(this.file));
+      for (const thread of state.threads) {
+        if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
+        this.references.set(thread.id, thread.messages);
+      }
+      if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
+      this.backgroundTimer = undefined;
+      this.backgroundDueAt = 0;
+      this.backgroundState = undefined;
+      this.backgroundAttempt = 0;
+      this.backgroundRetryAfter = 0;
+    } finally {
+      endCpuStage?.();
     }
-    if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
-    this.backgroundTimer = undefined;
-    this.backgroundDueAt = 0;
-    this.backgroundState = undefined;
-    this.backgroundAttempt = 0;
-    this.backgroundRetryAfter = 0;
   }
 
   dirty(thread: CachedThread): void {

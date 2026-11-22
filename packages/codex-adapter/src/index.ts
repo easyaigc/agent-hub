@@ -100,3 +100,5 @@ export { withWindowsProcessCreation } from './windows-process.js';
 export { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
 
 export { appendRuntimeDiagnostic, startRuntimeDiagnostics } from './runtime-diagnostics.js';
+
+export { beginCpuStage, startCpuStages } from './cpu-stages.js';

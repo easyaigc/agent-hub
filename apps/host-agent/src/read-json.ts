@@ -1,3 +1,4 @@
+import { beginCpuStage } from '@codex-manage/codex-adapter';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { promisify } from 'node:util';
 import { gzip } from 'node:zlib';
@@ -26,7 +27,13 @@ export async function sendReadJSON(
   value: unknown,
 ): Promise<void> {
   if (response.destroyed) return;
-  let bytes = Buffer.from(JSON.stringify(value));
+  const end = beginCpuStage('http.read.serialize');
+  let bytes: Buffer;
+  try {
+    bytes = Buffer.from(JSON.stringify(value));
+  } finally {
+    end?.();
+  }
   let encoding: string | undefined;
   if (bytes.length >= 1024 && acceptsGzip(request.headers['accept-encoding'])) {
     // Fast compression avoids adding noticeable CPU latency to each streaming update.

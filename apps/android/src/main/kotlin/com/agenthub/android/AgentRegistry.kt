@@ -22,6 +22,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest)=provider(client).second.workspaceArchiveStatus(client,request)
     override suspend fun chatAction(client: MobileClient,request: ChatActionRequest)=provider(client).second.chatAction(client,request)
     override suspend fun chatActionStatus(client: MobileClient,threadId: String,operationId: String)=provider(client).second.chatActionStatus(client,threadId,operationId)
+    override suspend fun receiveComputerFile(client:MobileClient,file:IncomingComputerFile,directory:java.io.File,current:()->Boolean,progress:(Long)->Unit)=provider(client).second.receiveComputerFile(client,file,directory,current,progress)
     override suspend fun computerFiles(client: MobileClient)=provider(client).second.computerFiles(client)
     override suspend fun prepareComputerFile(client: MobileClient,file: ComputerFileManifest)=provider(client).second.prepareComputerFile(client,file)
     override suspend fun computerFile(client: MobileClient,id: String)=provider(client).second.computerFile(client,id)

@@ -102,6 +102,7 @@ interface AgentCommands {
     suspend fun uploadCapability(client:MobileClient,manifest:NativeUploadManifest):NativeUploadCapability? = null
     suspend fun uploadRequest(client:MobileClient,manifest:NativeUploadManifest,action:NativeUploadAction,
         offset:Long=0,bytes:ByteArray?=null):NativeUploadReceipt = error("此连接未开放续传协议")
+    suspend fun receiveComputerFile(client:MobileClient,file:IncomingComputerFile,directory:java.io.File,current:()->Boolean,progress:(Long)->Unit):java.io.File = error("此连接尚未支持独立收件。")
     suspend fun computerFiles(client: MobileClient): ComputerFileCatalog = error("此连接尚未支持文件互传，请更新电脑连接程序。")
     suspend fun prepareComputerFile(client: MobileClient,file: ComputerFileManifest): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")
     suspend fun computerFile(client: MobileClient,id: String): ComputerFileReceipt = error("此连接尚未支持文件互传，请更新电脑连接程序。")

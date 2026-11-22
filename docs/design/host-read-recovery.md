@@ -1,6 +1,6 @@
 # Host 只读操作与恢复映射
 
-本审查依据[统一 Host 协议规范](unified-host-protocol.md)，覆盖 F09 连接恢复及 F72 文档链接读取。实现、模拟器与真实桌面结果和交付只记录在[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)。F75、A6 的暂停范围保持；本次不展开 Git 页面开发或整项验收。
+本审查依据[统一 Host 协议规范](unified-host-protocol.md)，覆盖 F09 连接恢复及 F72 文档链接读取。当前功能状态只见[唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)；本文件及[历史验收记录](../plans/ios-easywork-alignment-20261112/README.md)保留规格和证据。F75、A6 的暂停范围保持。
 
 ## 实际调用链
 
@@ -22,6 +22,7 @@
 - Thread subscribe／unsubscribe 与通知 register／unregister／preferences 属于原订阅管理，保持既有恢复规则；不得据其绕过命令账本的实现称为无副作用读取。
 - `command/status`、`thread/open-status` 是查询原操作的特殊入口。桌面保留原匹配与核对逻辑，不把它们简化为普通 dispatcher 调用。
 - 写入与未知操作继续保存稳定 ID 和不可变意图，丢结果后只查询原回执；缺失或不确定结果不允许再次发送。原管理类适配器自行核对的例外保留。
+- 文档在用户流程中属于读取，但 EasyWork 的 `resource/resolve` 和 `resource/resolve-document-link` 会分配并发布传输，均按 `original-receipt-only` 恢复。双端丢失回复后只核对原 `command/status`，不重发解析；普通 `resource/read` 和 `resource/download` 仍为读取。方法名称或只读界面不能替代服务端实际副作用判断。
 - 授权范围不由恢复分类推导。完整目标、证书、设备绑定、EasyWork account／grant／DPoP、目录与文档来源校验不变。兼容旧端，不重算旧操作指纹或迁移原账本。
 
 ## 原录音结果恢复

@@ -86,7 +86,7 @@ import kotlinx.coroutines.delay
                         }
                         if(row.capability?.remoteCancel==true&&!row.cancelRequested)
                             TextButton(onClick={center.control(row.key,"cancel")},modifier=Modifier.testTag("upload-cancel-${row.key}")){Text(productText("取消电脑上传"))}
-                        else if(row.capability?.remoteCancel==false)Text(productText("此类上传暂不支持取消电脑操作；结束等待仅影响手机。"),style=MaterialTheme.typography.bodySmall)
+                        else if(row.capability?.remoteCancel==false)Text(productText("此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。"),style=MaterialTheme.typography.bodySmall)
                     }
                 }
             }

@@ -2292,4 +2292,17 @@
     <string name="product_7c9691192f1b73408bbe4c0c" formatted="false">"Continue"</string>
     <string name="product_88fea643d3c2ce9312865d96" formatted="false">"To upload again, remove the attachment and add it again."</string>
     <string name="product_b1e8f61afbdc131e67633a6f" formatted="false">"Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing."</string>
+    <string name="product_7e564575eb7d5eb28b690562" formatted="false">"Share"</string>
+    <string name="product_d1323e380ed5f2d21cf6c64f" formatted="false">"Copy saved path"</string>
+    <string name="product_92f20b9fa474151931b9bead" formatted="false">"Received"</string>
+    <string name="product_d990ac1da322744b9bb6cff9" formatted="false">"The received copy failed verification. Keep the original file."</string>
+    <string name="product_0d0b9696c41842cd93943694" formatted="false">"Receive file"</string>
+    <string name="product_ef02dc0b24599dfa1796af48" formatted="false">"The file is saved. Refresh the original transfer to check its acknowledgment."</string>
+    <string name="product_19493b19f50d980fbc2593c3" formatted="false">"Receiving file…"</string>
+    <string name="product_1006e892fc2363013b0e8843" formatted="false">"This computer cannot confirm cancellation. Stop waiting only affects this phone."</string>
+    <string name="product_ad6da33a99ad27eda9f50075" formatted="false">"This connection does not support receiving standalone files yet."</string>
+    <string name="product_b6ee391b4ed1e19276638f9d" formatted="false">"Standalone uploading is unavailable on this connection. You can receive files offered by the computer."</string>
+    <string name="product_9eaccfc694fc680fb4bd7610" formatted="false">"Computer → phone"</string>
+    <string name="product_ed8560311d6661efcbbdaab1" formatted="false">"The computer has no files waiting to be received."</string>
+    <string name="product_020a1ca9c17d81b1632d7338" formatted="false">"The computer did not provide a standalone incoming file list."</string>
 </resources>

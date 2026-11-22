@@ -111,9 +111,10 @@ private fun usageWindowSummary(metric:JSONObject,now:Long,translate:(String)->St
     }
     LaunchedEffect(usage,identity,foreground,active){if(foreground && active)usage.poll(client)}
     if(details) {
+    val detailNow=usageDetailTime(identity,foreground,data)
     LaunchedEffect(usage,identity,foreground) { if(foreground)usage.poll(client) }
     AlertDialog(onDismissRequest={details=false},title={Text(text.tr("当前客户端额度"))},text={
-        Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.testTag("usage-details-content").verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text(client.name)
             data.optJSONObject("source")?.let { source ->
                 if(!source.isNull("scopeLabel"))Text(text.tr("额度来源")+"："+source.optString("scopeLabel"))
@@ -127,6 +128,8 @@ private fun usageWindowSummary(metric:JSONObject,now:Long,translate:(String)->St
                 val metric=metrics.getJSONObject(i)
                 HorizontalDivider()
                 Text(usageMetricTitle(metric))
+                UsageDetailMetric(metric,detailNow)
+                // Keep the original provider reading alongside the remaining projection.
                 SelectionContainerCompat(usageMetricText(metric){key->text.tr(key)})
                 if(metric.optString("state")=="unavailable")Text(text.tr(UsageReadRules.reasonKey(metric.optString("value"))),fontSize=12.sp)
                 val applies=metric.getJSONObject("appliesTo")

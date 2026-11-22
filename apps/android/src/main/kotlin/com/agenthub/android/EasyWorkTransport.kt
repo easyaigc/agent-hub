@@ -2,6 +2,7 @@ package com.agenthub.android
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.trySendBlocking
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -140,11 +141,16 @@ object EasyWorkHttp {
 
 typealias EasyWorkRequestHeaders = suspend (String,String,ByteArray?)->Map<String,String>
 
+/** Only the numeric peer close code is diagnostic; never retain its arbitrary reason text. */
+internal class EasyWorkChannelClosed(val closeCode: Int): IOException("EasyWork channel closed ($closeCode)")
+
 class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map<String,String> = emptyMap(),private val ownerContext: CoroutineContext=EmptyCoroutineContext): AgentFrameTransport {
     private val endpoint=CodexEndpoints.local(candidate.endpoint)
     private val client=EasyWorkHttp.client(endpoint,candidate.peerFingerprint ?: error("缺少配对证书"))
     private val input=Channel<ByteArray>(64)
     private val buffered=AtomicLong()
+    private val observedFrames=AtomicLong()
+    private val diagnosticId=java.util.UUID.randomUUID().toString()
     private val ready=CompletableDeferred<Unit>()
     @Volatile private var closed=false
     private val socket: WebSocket
@@ -155,17 +161,36 @@ class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map
             override fun onOpen(webSocket: WebSocket,response: Response) { ready.complete(Unit) }
             override fun onMessage(webSocket: WebSocket,text: String) = accept(text.toByteArray(Charsets.UTF_8))
             override fun onMessage(webSocket: WebSocket,bytes: ByteString) = accept(bytes.toByteArray())
+            override fun onClosing(webSocket: WebSocket,code: Int,reason: String) {
+                fail(HostReadError("电脑通道已关闭",EasyWorkChannelClosed(code),true),"peer-closing",code)
+                // Complete the peer's close handshake. 1005 denotes an empty close frame
+                // and cannot itself be sent on the wire.
+                webSocket.close(if(code==1005)1000 else code,null)
+            }
             override fun onFailure(webSocket: WebSocket,t: Throwable,response: Response?) { fail(HostReadError("正在重新连接电脑",t,true)) }
-            override fun onClosed(webSocket: WebSocket,code: Int,reason: String) { fail(HostReadError("电脑通道已关闭",transient=true)) }
+            override fun onClosed(webSocket: WebSocket,code: Int,reason: String) { fail(HostReadError("电脑通道已关闭",transient=true),"peer-closed",code) }
         })
     }
     private fun accept(bytes: ByteArray) {
-        if(bytes.size>EasyWorkHttp.MAX_FRAME) { fail(IllegalStateException("电脑消息超过接收上限"));socket.cancel();return }
-        if(buffered.addAndGet(bytes.size.toLong())>2L*EasyWorkHttp.MAX_FRAME||input.trySend(bytes).isFailure) {
-            buffered.addAndGet(-bytes.size.toLong());fail(IllegalStateException("电脑消息超过接收上限"));socket.cancel()
+        observedFrames.incrementAndGet()
+        if(bytes.size>EasyWorkHttp.MAX_FRAME) { fail(IllegalStateException("电脑消息超过接收上限"),"frame-size-limit");socket.cancel();return }
+        val byteLimit=buffered.addAndGet(bytes.size.toLong())>2L*EasyWorkHttp.MAX_FRAME
+        // OkHttp invokes this on its reader worker. Apply bounded backpressure
+        // instead of dropping a valid burst when the consumer briefly lags.
+        // close() cancels input before cancelling the socket, releasing this wait.
+        val offered=if(byteLimit)null else input.trySendBlocking(bytes)
+        if(byteLimit||checkNotNull(offered).isFailure) {
+            buffered.addAndGet(-bytes.size.toLong())
+            fail(IllegalStateException("电脑消息超过接收上限"),if(byteLimit)"frame-byte-limit" else "input-closed")
+            socket.cancel()
         }
     }
-    private fun fail(error: Throwable) { ready.completeExceptionally(error);input.close(error) }
+    private fun fail(error: Throwable,kind: String="socket-failure",closeCode: Int?=null) {
+        // Debug-only, bounded lifecycle metadata. Never log frames, peer reasons,
+        // credentials, binding IDs, endpoints or arbitrary exception messages.
+        if(BuildConfig.DEBUG)android.util.Log.i("EasyWorkChannel","id=$diagnosticId kind=$kind frames=${observedFrames.get()} bufferedBytes=${buffered.get()} closeCode=${closeCode?:0}")
+        ready.completeExceptionally(error);input.close(error)
+    }
     override suspend fun send(bytes: ByteArray) {
         require(bytes.size<=EasyWorkHttp.MAX_FRAME);withTimeout(8_000) { ready.await() }
         check(!closed&&socket.send(String(bytes,Charsets.UTF_8))) { "电脑通道已关闭" }

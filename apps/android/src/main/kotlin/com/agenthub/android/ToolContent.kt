@@ -47,6 +47,7 @@ internal fun MobileMessage.timelineMessage() = TimelineMessage(id,role,text,kind
     }
 }
 @Composable private fun ToolItem(message: MobileMessage,single: Boolean) {
+    if(message.kind=="subAgent") { EasyWorkSubagentContent(message,message.id,MaterialTheme.colorScheme.background==Color.Black);SubagentHistoryAction(message);return }
     var expanded by rememberSaveable(message.id) { mutableStateOf(false) }
     val colors=MaterialTheme.colorScheme; val clipboard=LocalClipboardManager.current;val t=currentProductText()
     val style=ToolPresentation.style(message.kind); val title=ToolPresentation.localizedTitle(message.timelineMessage(),single,currentToolText())
@@ -63,7 +64,7 @@ internal fun MobileMessage.timelineMessage() = TimelineMessage(id,role,text,kind
         if(expanded) Column(Modifier.fillMaxWidth().padding(bottom=8.dp).clip(RoundedCornerShape(12.dp)).background(MobileDesign.toolDetail(dark)).border(1.dp,colors.onSurface.copy(alpha=.1f),RoundedCornerShape(12.dp)).padding(12.dp).testTag("tool-detail-${message.id}"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text(productText(style.detailTitle),fontSize=15.sp,color=colors.onSurfaceVariant)
             Row(Modifier.padding(end=LocalMessageActionEndInset.current),verticalAlignment=Alignment.Top) {
-                Text((if(message.kind=="commandExecution") "$ " else "")+message.text,Modifier.weight(1f),fontFamily=FontFamily.Monospace,fontSize=15.sp,maxLines=2)
+                Text((if(message.kind=="commandExecution") "$ " else "")+message.text,Modifier.weight(1f),fontFamily=FontFamily.Monospace,fontSize=15.sp)
                 IconAction("copy",productText(if(message.kind=="commandExecution") "复制命令" else "复制工具详情"),"tool-copy-${message.id}") { clipboard.setText(AnnotatedString(if(message.kind=="commandExecution") message.text else message.detail.orEmpty())) }
             }
             if(message.detail.isNullOrEmpty()) Text(productText(if(message.status=="inProgress") "等待工具输出…" else "暂无详细输出"),fontSize=12.sp,color=colors.onSurfaceVariant)

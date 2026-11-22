@@ -2292,4 +2292,17 @@
     <string name="product_7c9691192f1b73408bbe4c0c" formatted="false">"继续"</string>
     <string name="product_88fea643d3c2ce9312865d96" formatted="false">"要重新上传，请移除后重新添加附件。"</string>
     <string name="product_b1e8f61afbdc131e67633a6f" formatted="false">"连接或原回执待确认；保留原ID和文件，继续前先查询。"</string>
+    <string name="product_7e564575eb7d5eb28b690562" formatted="false">"分享"</string>
+    <string name="product_d1323e380ed5f2d21cf6c64f" formatted="false">"复制保存路径"</string>
+    <string name="product_92f20b9fa474151931b9bead" formatted="false">"已接收"</string>
+    <string name="product_d990ac1da322744b9bb6cff9" formatted="false">"手机收件副本校验失败，请保留原文件。"</string>
+    <string name="product_0d0b9696c41842cd93943694" formatted="false">"接收文件"</string>
+    <string name="product_ef02dc0b24599dfa1796af48" formatted="false">"文件已保存；电脑接收确认待查询，请刷新原传输。"</string>
+    <string name="product_19493b19f50d980fbc2593c3" formatted="false">"正在接收文件…"</string>
+    <string name="product_1006e892fc2363013b0e8843" formatted="false">"此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。"</string>
+    <string name="product_ad6da33a99ad27eda9f50075" formatted="false">"此连接尚未支持独立收件。"</string>
+    <string name="product_b6ee391b4ed1e19276638f9d" formatted="false">"此连接暂不支持独立上传，可接收电脑提供的文件。"</string>
+    <string name="product_9eaccfc694fc680fb4bd7610" formatted="false">"电脑 → 手机"</string>
+    <string name="product_ed8560311d6661efcbbdaab1" formatted="false">"电脑暂无待接收文件。"</string>
+    <string name="product_020a1ca9c17d81b1632d7338" formatted="false">"电脑未提供独立收件目录。"</string>
 </resources>

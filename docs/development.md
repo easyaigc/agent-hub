@@ -1,5 +1,7 @@
 # 开发指南
 
+本文维护开发与分发规格，并保留原始证据和历史说明，不独立维护当前功能或验收状态。全项目iOS/Android当前实现与适用验收只见[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)；下方带日期的执行结果及旧台账引用仅代表原记录范围。
+
 ## R2 固定独立原生 DEV target（源码候选）
 
 `R2RealDEV` scheme 只构建新的 Debug `R2RealDEVApp` / `R2RealDEVNativeTests`，固定 bundle 为 `com.easyai.agenthub.easyworkacceptance.r2task20261112`，模块与旧 Acceptance 分开。真实 App/Store/provider/UI 沿用；只有该 target 定义 `R2_REAL_DEV_ACCEPTANCE`。不采用旧 AppGroup/APNS/time-sensitive/扩展或旧容器/凭据，默认 Keychain 组归自己的新 bundle。

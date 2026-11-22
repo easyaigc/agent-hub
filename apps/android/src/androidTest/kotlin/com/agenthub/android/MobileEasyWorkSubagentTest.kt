@@ -45,6 +45,40 @@ class MobileEasyWorkSubagentTest {
         val client=MobileClient(connection.target.hostId,"Synthetic native subagent",connection.target,"https://relay.invalid",true,"easywork-runtime",false,agentConnection=connection)
         try { block(EasyWorkAgentClient(EasyWorkChannels { remote }),client,remote,peer,requests) } finally { remote.close() }
     }
+    @Test fun completeChildReadUsesSharedProjectionAndAuthenticatedResourceThread()=runBlocking {
+        val original=snapshot("fallback")
+        val parts=JSONArray().put(JSONObject().put("type","text").put("text","HEAD"+"正文".repeat(10000)+"TAIL"))
+            .put(JSONObject().put("type","reasoning").put("text","Reasoning original"))
+            .put(JSONObject().put("type","tool-call").put("toolName","Read").put("args",JSONObject().put("path","original.txt")).put("result",JSONObject().put("text","Original tool output")))
+            .put(JSONObject().put("type","plan-artifact").put("markdown","# Original plan"))
+            .put(JSONObject().put("type","attachment").put("resourceId","original-file").put("sha256","a".repeat(64)).put("size",3).put("name","child.txt").put("contentType","text/plain"))
+            .put(JSONObject().put("type","future-extension").put("original","kept"))
+        original.getJSONArray("subagentRunTrees").getJSONObject(0).getJSONArray("runs").getJSONObject(0)
+            .put("checkpoint",JSONObject().put("subagentTranscript",JSONObject().put("messages",JSONArray().put(JSONObject().put("id","child-message").put("role","assistant").put("content",parts)))))
+        fixture(frame(original)) { adapter,client,_,_,requests ->
+            val child=adapter.subagentHistory(client,MobileSubagentHistoryRequest("thread","subagent:child"))
+            assertEquals("Original task",child.messages.first().text)
+            assertTrue(child.messages.any { it.text.startsWith("HEAD") && it.text.endsWith("TAIL") })
+            assertTrue(child.messages.any { it.kind=="reasoning" && it.detail=="Reasoning original" })
+            assertTrue(child.messages.any { it.kind=="plan" && it.text=="# Original plan" })
+            assertTrue(child.messages.any { it.detail?.contains("Original tool output")==true })
+            assertTrue(child.messages.any { it.blocks?.contains("future-extension")==true })
+            val file=child.messages.flatMap { it.attachments }.single()
+            assertEquals(client.id,file.hostId);assertEquals("thread",file.threadId)
+            assertEquals(listOf("thread/sync"),requests)
+        }
+    }
+    @Test fun snapshotWithSeveralAsyncQuestionsKeepsRunningAndAllOriginalRequests()=runBlocking {
+        fun question(id: String)=JSONObject().put("threadId","thread").put("runId","root").put("sessionId","session")
+            .put("toolCallId",id).put("async",true).put("status","pending").put("questions",JSONArray().put(JSONObject().put("header","q").put("question","Original prompt")))
+        val snapshot=snapshot("child").put("pendingQuestion",question("one")).put("questionStates",JSONArray().put(question("one")).put(question("two")))
+        fixture(frame(snapshot)) { adapter,client,_,_,_ ->
+            val history=adapter.history(client,"thread",null)
+            assertEquals("running",history.runtime!!.state)
+            assertEquals(2,history.runtime!!.approvals.size)
+            assertTrue(history.runtime!!.approvals.all { it.interactionMode=="async" && it.turnId=="root" })
+        }
+    }
     @Test fun authenticatedLatestHistoryPreservesFullChildWithoutChangingParent()=runBlocking {
         val body="HEAD"+"原文🧭".repeat(20000)+"MIDDLE"+"full ".repeat(12000)+"TAIL"
         fixture(frame(snapshot(body))) { adapter,client,_,_,requests->

@@ -16,8 +16,6 @@
     "queue/status",
     "resource/download",
     "resource/read",
-    "resource/resolve",
-    "resource/resolve-document-link",
     "resource/transfer-list",
     "resource/upload-status",
     "runtime/context",
@@ -49,6 +47,8 @@
     "turn/start",
     "turn/steer",
     "plan/action",
+    "resource/resolve",
+    "resource/resolve-document-link",
     "resource/upload-complete",
     "thread/manage",
     "workspace/manage",
@@ -89,7 +89,7 @@
     },
     {
       "method": "resource/resolve-document-link",
-      "kind": "read",
+      "kind": "original-receipt-only",
       "params": {
         "version": 1,
         "target": {

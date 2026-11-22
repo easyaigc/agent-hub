@@ -326,7 +326,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     }
     val async=approval.interactionMode=="async"
     val answers=approval.questions.associate { question ->
-        question.id to approvalQuestionAnswers(selected[question.id].orEmpty(),questionText(question),async)
+        question.id to approvalQuestionAnswers(selected[question.id].orEmpty(),questionText(question),async && session.selectedClient.scope?.agentId!="easywork")
     }
     ExecutionCard(if(async) "" else productText(if(approval.kind=="question") "需要回复" else "需要审批"),"approval-${approval.id}",compact=compact) {
         if(async) Text(productText(if(session.runtime?.turnId==approval.turnId) "任务仍在继续，可随时回答或跳过" else "任务已结束，回答将继续此对话"),fontSize=12.sp,modifier=Modifier.testTag("async-question-status"))
@@ -342,7 +342,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                 val choiceState=productText(if(chosen)"已选择" else "未选择")
                 val select={
                     selected[question.id]=if(question.multiple) { if(chosen) selected[question.id].orEmpty()-option.label else selected[question.id].orEmpty()+option.label } else listOf(option.label)
-                    if(async) changeQuestionText(question,"")
+                    if(async && session.selectedClient.scope?.agentId!="easywork") changeQuestionText(question,"")
                 }
                 val choice=if(question.multiple) Modifier.toggleable(chosen,enabled=editable,role=Role.Checkbox) { select() }
                     else Modifier.selectable(chosen,enabled=editable,role=Role.RadioButton,onClick=select)
@@ -511,6 +511,12 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                 Text(currentModel+" · "+(session.currentEffort?.let { effortLabel(it) } ?: productText("跟随电脑")),Modifier.padding(16.dp))
             }
             Text(productText("以下选择用于下次发送，发送前不会修改电脑当前设置。"),Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        session.runtime?.generationSpeed?.let { report ->
+            GenerationSection(productText("最近一次回复速度")) {
+                Text(productText("请求速度")+" · "+speedLabel(report.requested),Modifier.padding(16.dp).testTag("last-requested-speed"))
+                Text(productText("实际速度")+" · "+(if(report.status=="reported")speedLabel(report.actual) else productText("未确认")),Modifier.padding(16.dp).testTag("last-actual-speed"))
+            }
         }
         GenerationSection(productText("选择模型")) {
             val selected=settings.model ?: session.runtime?.settings?.model ?: session.selectedModel?.id ?: ""

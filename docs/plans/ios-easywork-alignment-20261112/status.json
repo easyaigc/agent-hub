@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "auditDate": "2026-11-21",
   "timeZone": "Asia/Shanghai",
-  "nature": "current-execution-ledger-with-frozen-initial-audit",
+  "nature": "historical-evidence-snapshot-current-authority-is-../android-ios-alignment-20261107/progress.md",
   "source": {
     "agentHubCachedMain": "f8bca2e0b8bb1c86168e957bf4a07fe3314283ea",
     "currentHEAD": "fdfb23f415ac027c6f81573410ececef355e77a7",

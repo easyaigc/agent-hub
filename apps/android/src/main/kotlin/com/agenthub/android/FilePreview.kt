@@ -89,10 +89,11 @@ internal fun loadPreviewDocument(file: File): NativePreviewDocument {
     return NativePreviewDocument(source,renderSource,digest,blocks,headings,blocks.map(::plain))
 }
 
+private data class PreviewReadingPosition(val index: Int=0,val offset: Int=0,val sourceOffset: Int=0,val source: Boolean=false)
 private object PreviewReadingPositions {
-    private val positions=linkedMapOf<String,Pair<Int,Int>>()
-    fun get(key: String)=positions[key]?: (0 to 0)
-    fun save(key: String,index: Int,offset: Int) { positions[key]=index to offset;if(positions.size>128)positions.remove(positions.keys.first()) }
+    private val positions=linkedMapOf<String,PreviewReadingPosition>()
+    fun get(key: String)=positions[key]?:PreviewReadingPosition()
+    fun save(key: String,value: PreviewReadingPosition) { positions[key]=value;if(positions.size>128)positions.remove(positions.keys.first()) }
 }
 
 private class PreviewSurfaceLease(var active: Boolean=true)
@@ -109,10 +110,10 @@ private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null 
     DisposableEffect(lease) { onDispose { lease.active=false;linkRead.owner=null;linkRead.job?.cancel() } }
     val resolver by rememberUpdatedState(resolveDocument)
     fun alive()=lease.active&&runCatching { isCurrent() }.getOrDefault(false)
-    val readingScope=remember(resource) { resource.local.canonicalPath }
+    val readingScope=remember(resource) { resource.readingIdentity ?: resource.local.canonicalPath }
     var failure by remember(resource) { mutableStateOf<String?>(null) }
     var document by remember(resource) { mutableStateOf<NativePreviewDocument?>(null) }
-    var source by remember(resource) { mutableStateOf(false) };var outline by remember(resource) { mutableStateOf(false) }
+    var outline by remember(resource) { mutableStateOf(false) }
     var searching by remember(resource) { mutableStateOf(false) };var query by remember(resource) { mutableStateOf("") }
     var matches by remember(resource) { mutableStateOf<List<Int>>(emptyList()) };var hit by remember(resource) { mutableIntStateOf(0) }
     var linkError by remember(resource) { mutableStateOf<String?>(null) }
@@ -135,10 +136,12 @@ private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null 
             failure=error.message?.takeIf { it in setOf("文件较大，请使用其他应用打开或分享原文件。","暂不支持此文件的文本编码，请使用其他应用打开或分享原文件。","文档结构较复杂，请使用其他应用打开或分享原文件。","表格较大，请使用其他应用打开或分享原文件。") } ?: "暂时无法预览文件，请重试。"
         } catch(_: OutOfMemoryError) { failure="文档结构较复杂，请使用其他应用打开或分享原文件。" }
     }
-    val readingKey=readingScope+":"+(document?.digest?:"loading")
+    val readingKey=PreviewReadingIdentity.content(readingScope,document?.digest?:"loading")
     val saved=remember(readingKey) { PreviewReadingPositions.get(readingKey) }
-    val list=remember(readingKey) { LazyListState(saved.first,saved.second) }
-    val sourcePosition=remember(readingKey) { NativeSourcePosition() }
+    val list=remember(readingKey) { LazyListState(saved.index,saved.offset) }
+    val sourcePosition=remember(readingKey) { NativeSourcePosition(saved.sourceOffset) }
+    var source by remember(readingKey) { mutableStateOf(saved.source) }
+    val currentSource by rememberUpdatedState(source)
     LaunchedEffect(document,resource.initialAnchor) {
         val value=document ?: return@LaunchedEffect
         val anchor=resource.initialAnchor ?: return@LaunchedEffect
@@ -149,7 +152,7 @@ private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null 
         }
     }
     val persistable=document!=null
-    DisposableEffect(readingKey,list) { onDispose { if(persistable)PreviewReadingPositions.save(readingKey,list.firstVisibleItemIndex,list.firstVisibleItemScrollOffset) } }
+    DisposableEffect(readingKey,list) { onDispose { if(persistable)PreviewReadingPositions.save(readingKey,PreviewReadingPosition(list.firstVisibleItemIndex,list.firstVisibleItemScrollOffset,sourcePosition.offset,currentSource)) } }
     LaunchedEffect(query,document) {
         matches=emptyList();hit=0
         if(query.isEmpty())return@LaunchedEffect
@@ -186,7 +189,7 @@ private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null 
                 val load=resolver
                 val value=document
                 when {
-                    MessageLinkDestination.resolve(reference.replace(" ","%20")).kind!="computerFile" -> linkError="此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。"
+                    !MessageLinkDestination.documentReference(reference) -> linkError="此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。"
                     load==null||resource.sourceFile==null -> linkError="当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。"
                     value==null -> linkError="暂时无法预览文件，请重试。"
                     documentDepth>=16 -> linkError="文档结构较复杂，请使用其他应用打开或分享原文件。"
@@ -260,6 +263,7 @@ private class PreviewDocumentLinkRead { var owner: Any?=null;var job: Job?=null 
                         val savedOffset=sourcePosition.offset
                         TextView(it).apply {
                             typeface=Typeface.MONOSPACE;textSize=16f;setTextIsSelectable(true);movementMethod=ScrollingMovementMethod.getInstance();setPadding(32,24,32,24)
+                            setOnScrollChangeListener { _,_,y,_,_ -> sourcePosition.offset=y }
                             doOnLayout {view->if(view.isAttachedToWindow&&alive()&&document===value)view.scrollTo(0,savedOffset)}
                         }
                     },onReset=null,onRelease={view->sourcePosition.offset=view.scrollY},

@@ -23,6 +23,7 @@ import com.agenthub.core.ToolPresentation
 
 /** Display-only child row. Preview limits never modify the original detail. */
 @Composable internal fun EasyWorkSubagentContent(message: MobileMessage,targetKey: String,dark: Boolean) {
+    if(LocalSubagentHistoryAvailable.current) return
     var expanded by rememberSaveable(targetKey,message.id) { mutableStateOf(false) }
     val detail=message.detail.orEmpty()
     val text=currentProductText()

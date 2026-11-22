@@ -134,7 +134,7 @@ private data class ParsedMarkdown(val source: String, val document: Node)
         is TableBlock -> MarkdownTable(node, tag)
         is ThematicBreak -> HorizontalDivider(Modifier.padding(vertical=4.dp))
         is HtmlBlock -> NativeNoticeReadText(tag,node.literal, fontFamily=FontFamily.Monospace, fontSize=13.sp)
-        else -> Column { NativeNoticeReadText(tag,rememberInline(node,tag), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag));MessageLinkWait(tag) }
+        else -> Column { NativeNoticeReadText(tag,rememberInline(node,tag), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag));NativeMessageMediaCards(node,tag);MessageLinkWait(tag) }
     }
 }
 // Container blocks render their children and must not first flatten the entire

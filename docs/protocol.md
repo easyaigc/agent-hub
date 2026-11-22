@@ -1,8 +1,10 @@
 # 应用协议与领域契约
 
-2026-11-22 F06/F08 自动发现修正候选：取消正常页手填范围，使用手机实际 LAN 掩码及原已配对 Host 的独立已鉴权 networks 接口自动学习并持久保存；正常前台连接即可学习，关联地址优先、范围完整惰性扫描。电脑全部退出 Tailscale 后使用已学范围，首次学习需一条原可信路径可达。网络错误保留实际分类，仅明确认证拒绝才引导重新授权；原凭据、记录、草稿和未知写入不变。Android／EasyWork 独立范围提供适配及原手机升级验收未因此通过；旧117证据仍限原手填场景。[契约与边界](design/office-subnet-discovery.md)，当前结果只见唯一台账。
+EasyWork 文件解析恢复：`resource/resolve` 与 `resource/resolve-document-link` 会分配文件传输，按具名写操作处理。沿用稳定 `requestId` 作为默认操作 ID、完整目标及设备作用域和原方法／参数指纹；电脑保存分配前状态及原响应。Android 丢失回复后只查询原 `command/status`，验证原身份及指纹后使用原响应；旧电脑无回执、仍在提交或结果不确定时保留未知，不再次分配。普通 `resource/read`／`resource/download` 读取规则不变，也不从同名历史传输猜测原结果。当前实现及验收只见下方唯一清单链接。
 
-2026-11-21 F06/F08：iOS 新增显式办公室私网范围发现，完整扫描 CIDR 的可用地址，不使用 VPN peer 的32条裁剪；仅固定端口的公开描述读取，原目标/证书/公钥与授权保持。Android 对应入口待实现；已完成独立15的真实蜂窝子网发现/首次授权与同记录冷恢复，原用户手机升级保留与新主线组合仍独立验收，未改 WAN/ACL。设计见 [办公室子网发现](design/office-subnet-discovery.md)，当前状态只见唯一台账 `F06-office-subnet-discovery`。
+2026-11-22 F06/F08 自动发现修正候选：取消正常页手填范围，使用手机实际 LAN 掩码及原已配对 Host 的独立已鉴权 networks 接口自动学习并持久保存；正常前台连接即可学习，关联地址优先、范围完整惰性扫描。电脑全部退出 Tailscale 后使用已学范围，首次学习需一条原可信路径可达。网络错误保留实际分类，仅明确认证拒绝才引导重新授权；原凭据、记录、草稿和未知写入不变。Android／EasyWork 独立范围提供适配及原手机升级验收未因此通过；旧117证据仍限原手填场景。[契约与边界](design/office-subnet-discovery.md)，当前状态只见[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。
+
+2026-11-21 F06/F08：iOS 新增显式办公室私网范围发现，完整扫描 CIDR 的可用地址，不使用 VPN peer 的32条裁剪；仅固定端口的公开描述读取，原目标/证书/公钥与授权保持。Android 对应入口待实现；已完成独立15的真实蜂窝子网发现/首次授权与同记录冷恢复，原用户手机升级保留与新主线组合仍独立验收，未改 WAN/ACL。设计见 [办公室子网发现](design/office-subnet-discovery.md)，当前状态只见[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)的F06。
 
 App 私有连接状态增加向后可选的 `observedEndpoint`：经完整目标和原证书核对的实际地址独立于 Host v1 的32条广告及原候选合并容量，冷恢复仍固定原 pin；旧存储缺字段可读，不改变 Host/VPN wire。
 

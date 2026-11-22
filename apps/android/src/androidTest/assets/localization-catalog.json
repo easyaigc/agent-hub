@@ -2291,7 +2291,20 @@
     "移除已结束任务卡": "Dismiss",
     "继续": "Continue",
     "要重新上传，请移除后重新添加附件。": "To upload again, remove the attachment and add it again.",
-    "连接或原回执待确认；保留原ID和文件，继续前先查询。": "Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing."
+    "连接或原回执待确认；保留原ID和文件，继续前先查询。": "Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing.",
+    "分享": "Share",
+    "复制保存路径": "Copy saved path",
+    "已接收": "Received",
+    "手机收件副本校验失败，请保留原文件。": "The received copy failed verification. Keep the original file.",
+    "接收文件": "Receive file",
+    "文件已保存；电脑接收确认待查询，请刷新原传输。": "The file is saved. Refresh the original transfer to check its acknowledgment.",
+    "正在接收文件…": "Receiving file…",
+    "此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。": "This computer cannot confirm cancellation. Stop waiting only affects this phone.",
+    "此连接尚未支持独立收件。": "This connection does not support receiving standalone files yet.",
+    "此连接暂不支持独立上传，可接收电脑提供的文件。": "Standalone uploading is unavailable on this connection. You can receive files offered by the computer.",
+    "电脑 → 手机": "Computer → phone",
+    "电脑暂无待接收文件。": "The computer has no files waiting to be received.",
+    "电脑未提供独立收件目录。": "The computer did not provide a standalone incoming file list."
   },
   "zh-Hans": {
     "在电脑上打开": "在电脑上打开",
@@ -4585,6 +4598,19 @@
     "移除已结束任务卡": "移除已结束任务卡",
     "继续": "继续",
     "要重新上传，请移除后重新添加附件。": "要重新上传，请移除后重新添加附件。",
-    "连接或原回执待确认；保留原ID和文件，继续前先查询。": "连接或原回执待确认；保留原ID和文件，继续前先查询。"
+    "连接或原回执待确认；保留原ID和文件，继续前先查询。": "连接或原回执待确认；保留原ID和文件，继续前先查询。",
+    "分享": "分享",
+    "复制保存路径": "复制保存路径",
+    "已接收": "已接收",
+    "手机收件副本校验失败，请保留原文件。": "手机收件副本校验失败，请保留原文件。",
+    "接收文件": "接收文件",
+    "文件已保存；电脑接收确认待查询，请刷新原传输。": "文件已保存；电脑接收确认待查询，请刷新原传输。",
+    "正在接收文件…": "正在接收文件…",
+    "此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。": "此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。",
+    "此连接尚未支持独立收件。": "此连接尚未支持独立收件。",
+    "此连接暂不支持独立上传，可接收电脑提供的文件。": "此连接暂不支持独立上传，可接收电脑提供的文件。",
+    "电脑 → 手机": "电脑 → 手机",
+    "电脑暂无待接收文件。": "电脑暂无待接收文件。",
+    "电脑未提供独立收件目录。": "电脑未提供独立收件目录。"
   }
 }

@@ -656,7 +656,7 @@ import com.agenthub.core.*
         if(!atBottom && maxHeight>=72.dp) Surface(shape=CircleShape,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,modifier=Modifier.align(Alignment.BottomEnd).padding(12.dp)) { IconAction("down",productText("回到最新"),"scroll-latest") { scope.launch { list.animateScrollToItem(list.layoutInfo.totalItemsCount-1) } } }
     }
 }
-@Composable private fun MessageContent(session: MobileSession,message: MobileMessage,dark: Boolean,targetKey: String,reading: NativeVisiblePhoneReading?=null,onReadingMarker: (Rect)->Unit={}) = MessageLinkOpening(session,message) {
+@Composable internal fun MessageContent(session: MobileSession,message: MobileMessage,dark: Boolean,targetKey: String,reading: NativeVisiblePhoneReading?=null,onReadingMarker: (Rect)->Unit={}) = MessageLinkOpening(session,message) {
     val colors=MaterialTheme.colorScheme
     if(message.role=="user") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End) {
         UserMessageBubble(message,targetKey,dark) { AttachmentNames(message) }

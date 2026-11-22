@@ -7,6 +7,28 @@ import java.net.URLDecoder
 internal data class MessageLinkDestination(val kind: String, val attachmentId: String? = null) {
     companion object {
         private val canonicalUUID=Regex("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
+        /** Peer resolves traversal against its grant root; never normalize or drop the exact reference here. */
+        fun documentReference(reference: String): Boolean = reference.toByteArray().size in 1..8192 &&
+            reference.isNotBlank() && reference.none { it.isISOControl() } &&
+            resolve(reference.replace(" ","%20")).kind=="computerFile" &&
+            (Regex("^[A-Za-z]:[/\\\\]").containsMatchIn(reference) ||
+                runCatching { URI(reference.replace(" ","%20")).rawPath?.isNotEmpty()==true }.getOrDefault(false))
+        // This association is only a candidate. The adapter must revalidate it against the original message
+        // and the immutable downloaded digest before using a fresh document grant.
+        fun originalDocumentReference(text: String,file: MobileFile): String? {
+            val found=mutableSetOf<String>()
+            val pending=java.util.ArrayDeque<org.commonmark.node.Node>()
+            pending.add(NativeMarkdown.parse(text))
+            while(pending.isNotEmpty()) {
+                val node=pending.removeLast()
+                val reference=(node as? org.commonmark.node.Link)?.destination
+                if(reference!=null&&documentReference(reference)&&
+                    android.net.Uri.parse(reference).lastPathSegment==file.name)found.add(reference)
+                var child=node.firstChild
+                while(child!=null) { pending.add(child);child=child.next }
+            }
+            return found.singleOrNull()
+        }
         fun sameAttachmentId(actual: String,reference: String?): Boolean = actual==reference ||
             reference!=null&&canonicalUUID.matches(actual)&&canonicalUUID.matches(reference)&&actual.equals(reference,ignoreCase=true)
         fun resolve(reference: String): MessageLinkDestination {

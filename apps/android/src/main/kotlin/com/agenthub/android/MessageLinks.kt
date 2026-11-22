@@ -22,19 +22,22 @@ internal enum class MessageResourceAction { Preview, Share }
 internal val LocalMessageResourceOpen=staticCompositionLocalOf<((String,String,MessageResourceAction)->Unit)?> { null }
 internal val LocalOpeningMessageAnchor=staticCompositionLocalOf<String?> { null }
 internal val LocalMessageDownloadProgress=staticCompositionLocalOf<ResourceDownloadProgress?> { null }
-private class MessageResourceJob { var value: Job?=null;var active=true;var progressOwner: Any?=null }
+private class MessageResourceJob { var value: Job?=null;var thumbnail: Job?=null;var active=true;var progressOwner: Any?=null }
 private data class MessageLinkFailure(val text: String,val appOwned: Boolean=true,val status: Int?=null)
-private data class ResourcePresentation(val key: String,val selection: Long,val connection: Long,val message: String,val resources: List<String>)
-private class MessageResourcePreview(val resource: MobileSession.PreparedMessageResource,val reference: String,val attachmentIdentity: String?)
+private data class ResourcePresentation(val key: String,val selection: Long,val connection: Long,val thread: String?,val message: String,val resources: List<String>)
+private fun resourcePresentation(owner: MobileSession.MessageLinkContext)=ResourcePresentation(owner.key,owner.selection,owner.connection,
+    owner.resourceThread,owner.message.replyMessageId?:owner.message.id,owner.message.attachments.map { it.resourceIdentity })
+private class MessageResourcePreview(val resource: MobileSession.PreparedMessageResource,val reference: String,val attachmentIdentity: String?,val owner: MobileSession.MessageLinkContext)
 
 /** All message links are handled here, including unsupported schemes. Never forwards Host auth. */
 @Composable internal fun MessageLinkOpening(session: MobileSession,message: MobileMessage,content: @Composable ()->Unit) {
     val context=LocalContext.current
     val clipboard=LocalClipboardManager.current
-    val owner=session.messageLinkContext(message)
-    val presentation=ResourcePresentation(owner.key,owner.selection,owner.connection,message.id,message.attachments.map { it.resourceIdentity })
+    val owner=LocalSubagentMessageContext.current?:session.messageLinkContext(message)
+    val presentation=resourcePresentation(owner)
     val tasks=rememberCoroutineScope()
     val read=remember(owner) { MessageResourceJob() }
+    val mediaSnapshots=remember(owner) { NativeMessageMediaSnapshots() }
     var selected by remember(owner) { mutableStateOf<String?>(null) }
     var failure by remember(owner) { mutableStateOf<MessageLinkFailure?>(null) }
     var loading by remember(owner) { mutableStateOf<String?>(null) }
@@ -50,10 +53,10 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
         val pinned=if(holdsSource)pinnable?.pin()else null
         onDispose { pinned?.release() }
     }
-    DisposableEffect(owner) { onDispose { read.active=false;read.progressOwner=null;read.value?.cancel() } }
+    DisposableEffect(owner) { onDispose { read.active=false;read.progressOwner=null;read.value?.cancel();read.thumbnail?.cancel() } }
     val shareTitle by rememberUpdatedState(productText("保存或分享文件"))
-    val openResource: (String,String,MessageResourceAction)->Unit=remember(owner) { { reference,anchor,action->
-        if(read.active&&session.messageLinkCurrent(owner)&&loading==null) {
+    val openOwnedResource: (MobileSession.MessageLinkContext,String,String,MessageResourceAction)->Unit=remember(owner,presentation) { { requestOwner,reference,anchor,action->
+        if(read.active&&session.messageLinkCurrent(requestOwner)&&loading==null) {
             selected=reference;failure=null
             val destination=MessageLinkDestination.resolve(reference)
             try {
@@ -66,23 +69,34 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
                         val progressOwner=Any();read.progressOwner=progressOwner
                         read.value=tasks.launch(Dispatchers.Main.immediate) {
                             try {
-                                val result=session.prepareMessageResource(owner,reference,File(context.cacheDir,"resources")) { value ->
+                                val result=session.prepareMessageResource(requestOwner,reference,File(context.cacheDir,"resources")) { value ->
                                     tasks.launch(Dispatchers.Main.immediate) {
-                                        if(read.progressOwner===progressOwner&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor)downloadProgress=value
+                                        if(read.progressOwner===progressOwner&&read.active&&session.messageLinkCurrent(requestOwner)&&loading==anchor)downloadProgress=value
                                     }
                                 }
-                                if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) {
+                                if(isActive&&read.active&&session.messageLinkCurrent(requestOwner)&&loading==anchor) {
                                     when(action) {
-                                        MessageResourceAction.Preview -> preview=MessageResourcePreview(result,reference,
-                                            if(destination.kind=="attachment")owner.message.attachments.firstOrNull {
+                                        MessageResourceAction.Preview -> {
+                                            val opened=MessageResourcePreview(result,reference,
+                                            if(destination.kind=="attachment")requestOwner.message.attachments.firstOrNull {
                                                 MessageLinkDestination.sameAttachmentId(it.id,destination.attachmentId)
-                                            }?.resourceIdentity else null)
+                                            }?.resourceIdentity else null,requestOwner)
+                                            preview=opened
+                                            read.thumbnail?.cancel()
+                                            // Optional local work must never keep the normal preview/download busy.
+                                            if(result.mediaType.startsWith("image/"))read.thumbnail=tasks.launch {
+                                                NativeMessageMediaThumbnails.publishOpened(
+                                                    decode={ NativeMessageMediaThumbnails.decode(result.local) },
+                                                    current={ read.active&&preview===opened&&session.messageLinkCurrent(requestOwner) },
+                                                    publish={ mediaSnapshots.put(reference,it) })
+                                            }
+                                        }
                                         MessageResourceAction.Share -> NativeResourceIntents.launch(context,result,true,shareTitle)
                                     }
                                 }
                             } catch(cancel: CancellationException) { throw cancel }
                               catch(error: Exception) {
-                                if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) {
+                                if(isActive&&read.active&&session.messageLinkCurrent(requestOwner)&&loading==anchor) {
                                     val native=error as? CodexCommandError
                                     failure=when(error) {
                                         is android.content.ActivityNotFoundException,is SecurityException -> MessageLinkFailure("手机上没有可打开此链接的应用。")
@@ -90,7 +104,7 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
                                         else -> MessageLinkFailure(error.message ?: "读取电脑资源失败，请重试。",native?.appOwnedCopy ?: (error.message==null),native?.status)
                                     }
                                 }
-                            } finally { if(isActive&&read.active&&session.messageLinkCurrent(owner)&&loading==anchor) { loading=null;downloadProgress=null;read.progressOwner=null;read.value=null } }
+                            } finally { if(isActive&&read.active&&session.messageLinkCurrent(requestOwner)&&loading==anchor) { loading=null;downloadProgress=null;read.progressOwner=null;read.value=null } }
                         }
                     }
                     else -> failure=MessageLinkFailure("手机暂不支持此类链接，可复制后在对应应用中打开。")
@@ -100,8 +114,11 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
               catch(_: IllegalArgumentException) { failure=MessageLinkFailure("手机暂不支持此类链接，可复制后在对应应用中打开。") }
         }
     } }
+    val openResource: (String,String,MessageResourceAction)->Unit=remember(owner,openOwnedResource) { { reference,anchor,action ->
+        openOwnedResource(owner,reference,anchor,action)
+    } }
     val openLink: (String,String)->Unit=remember(openResource) { { reference,anchor->openResource(reference,anchor,MessageResourceAction.Preview) } }
-    CompositionLocalProvider(LocalMessageLinkOpen provides openLink,LocalMessageResourceOpen provides openResource,
+    CompositionLocalProvider(LocalNativeMessageMediaSnapshots provides mediaSnapshots,LocalMessageLinkOpen provides openLink,LocalMessageResourceOpen provides openResource,
         LocalOpeningMessageAnchor provides loading,LocalMessageDownloadProgress provides downloadProgress,content=content)
     failure?.let { error->
         val text=if(!error.appOwned) error.text else if(error.status!=null)productText("电脑请求失败（%@）",error.status) else productText(error.text)
@@ -112,26 +129,24 @@ private class MessageResourcePreview(val resource: MobileSession.PreparedMessage
     }
     preview?.let { opened->key(opened) {
         NativeResourcePreview(opened.resource,close={ if(preview===opened) {
-            preview=null;read.progressOwner=null;read.value?.cancel();read.value=null;loading=null;downloadProgress=null
+            preview=null;read.progressOwner=null;read.value?.cancel();read.value=null;read.thumbnail?.cancel();read.thumbnail=null;loading=null;downloadProgress=null
         } },current={
-            val now=session.messageLinkContext(session.messages.firstOrNull { it.id==message.id } ?: message)
-            read.active&&preview===opened&&ResourcePresentation(now.key,now.selection,now.connection,now.message.id,now.message.attachments.map { it.resourceIdentity })==presentation &&
-                session.messages.any { it.id==message.id }
+            val now=session.resolveMessageResourceOwner(opened.owner)
+            read.active&&preview===opened&&now!=null&&resourcePresentation(now)==presentation
         },retry={
-            if(read.active&&preview===opened&&loading==null&&session.messageLinkCurrent(owner)) {
-                val reference=if(opened.attachmentIdentity==null)opened.reference else owner.message.attachments
+            val now=session.resolveMessageResourceOwner(opened.owner)
+            if(read.active&&preview===opened&&loading==null&&now!=null&&resourcePresentation(now)==presentation) {
+                val reference=if(opened.attachmentIdentity==null)opened.reference else now.message.attachments
                     .singleOrNull {it.resourceIdentity==opened.attachmentIdentity}?.let {file->
                         Uri.Builder().scheme("codex-attachment").authority("open").appendQueryParameter("id",file.id).build().toString()
                     }
-                if(reference!=null)openResource(reference,"resource-preview-retry",MessageResourceAction.Preview)
+                if(reference!=null)openOwnedResource(now,reference,"resource-preview-retry",MessageResourceAction.Preview)
                 else {selected=opened.reference;preview=null;failure=MessageLinkFailure("此文件尚未由电脑提供，请刷新对话后重试。")}
             }
         },refreshing=loading!=null,resolveDocument={ source,reference,digest,progress ->
-            val latest=session.messages.firstOrNull { it.id==message.id }
+            val now=session.resolveMessageResourceOwner(opened.owner)
                 ?: throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-            val now=session.messageLinkContext(latest)
-            val currentPresentation=ResourcePresentation(now.key,now.selection,now.connection,now.message.id,now.message.attachments.map { it.resourceIdentity })
-            if(!read.active||preview!==opened||currentPresentation!=presentation||!session.messageLinkCurrent(now))
+            if(!read.active||preview!==opened||resourcePresentation(now)!=presentation)
                 throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
             session.prepareDocumentResource(now,source,reference,digest,File(context.cacheDir,"resources"),progress)
         })

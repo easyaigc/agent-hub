@@ -12,12 +12,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.agenthub.core.ToolPresentation
 
+internal val LocalSubagentMessageContext=staticCompositionLocalOf<MobileSession.MessageLinkContext?> {null}
+
+internal val LocalSubagentHistoryAvailable=staticCompositionLocalOf {false}
+
 private val LocalSubagentHistoryOpen=staticCompositionLocalOf<((MobileMessage)->Unit)?> {null}
 
 @Composable internal fun SubagentHistoryAction(message: MobileMessage) {
     val open=LocalSubagentHistoryOpen.current
     if(open!=null && message.kind=="subAgent") TextButton(onClick={open(message)},
-        modifier=Modifier.heightIn(min=48.dp).testTag("subagent-history-${message.id}")) { Text(productText("查看完整过程")) }
+        modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("subagent-history-${message.id}")) {
+        ProductIcon("person",Modifier.size(18.dp),MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(productText("子 Agent")+" · "+message.text,Modifier.weight(1f),maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Text(productText(ToolPresentation.status(message.status)),style=MaterialTheme.typography.labelSmall)
+        ProductIcon("chevron",Modifier.size(12.dp),MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 @Composable internal fun NativeSubagentHistoryHost(session: MobileSession,content: @Composable ()->Unit) {
@@ -25,7 +34,7 @@ private val LocalSubagentHistoryOpen=staticCompositionLocalOf<((MobileMessage)->
     val open: ((MobileMessage)->Unit)?=if(session.supportsSubagentHistory) {message ->
         session.captureSubagentHistory(message)?.let {session.coverPanelNotices();selection=it}
     } else null
-    CompositionLocalProvider(LocalSubagentHistoryOpen provides open) {content()}
+    CompositionLocalProvider(LocalSubagentHistoryOpen provides open,LocalSubagentHistoryAvailable provides (open!=null)) {content()}
     selection?.let { owner ->
         val valid=session.subagentHistoryCurrent(owner)
         LaunchedEffect(owner,valid) {if(!valid && selection===owner)selection=null}
@@ -47,7 +56,7 @@ private val LocalSubagentHistoryOpen=staticCompositionLocalOf<((MobileMessage)->
     LaunchedEffect(model) {model.refresh()}
     DisposableEffect(model) {onDispose {model.close()}}
     // Child records are read-only. Never inherit a parent's attachment/open callback.
-    CompositionLocalProvider(LocalSubagentHistoryOpen provides null,LocalMessageResourceOpen provides null,
+    CompositionLocalProvider(LocalSubagentHistoryOpen provides null,LocalSubagentHistoryAvailable provides false,LocalMessageResourceOpen provides null,
         LocalMessageLinkOpen provides null,LocalMarkdownLinkHandler provides null) {
         Dialog(onDismissRequest=close) {
             Surface(shape=MaterialTheme.shapes.large) {
@@ -92,14 +101,20 @@ private val LocalSubagentHistoryOpen=staticCompositionLocalOf<((MobileMessage)->
                     model.error?.let {Text(productText(if(lineage)parentLineageFailureKey(model.failureStatus) else it),modifier=Modifier.testTag("subagent-history-error"),color=MaterialTheme.colorScheme.error)}
                     LazyColumn(Modifier.weight(1f).testTag("subagent-history-body"),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                         items(model.messages,key={it.id}) { message ->
-                            Column(Modifier.fillMaxWidth().testTag("subagent-history-message-${message.id}")) {
-                                if(message.role=="tool")ToolGroup("subagent-${owner.messageId}-${message.id}",listOf(message))
-                                else Column {
-                                    Text(if(message.role=="user")productText("你")else "Codex",style=MaterialTheme.typography.labelSmall)
-                                    SelectionContainer {MarkdownContent(message.text,"subagent-history-markdown-${message.id}")}
+                            val page=model.page
+                            val resourceThread=if(owner.client.scope?.agentId=="easywork")owner.parentThreadId else page?.childId
+                            val context=remember(owner,model,page,message,model.requestGeneration) {
+                                MessageResourceOwnerResolver.captureChild(
+                                    MobileSession.MessageLinkContext(owner.key,owner.selection,owner.connection,message,resourceThread),model,page) {
+                                    if(parentLineage)session.parentLineageCurrent(owner)else session.subagentHistoryCurrent(owner)
                                 }
-                                (message.files+message.attachments.map {it.name}).distinct().forEach {
-                                    Text(it,style=MaterialTheme.typography.bodySmall)
+                            }
+                            CompositionLocalProvider(LocalSubagentMessageContext provides context) {
+                                Column(Modifier.fillMaxWidth().testTag("subagent-history-message-${message.id}")) {
+                                    if(message.role=="tool" && message.kind!="turnFailure") MessageLinkOpening(session,message) {
+                                        ToolGroup("subagent-${owner.messageId}-${message.id}",listOf(message));MessageResourceCards(message)
+                                    } else MessageContent(session,message,MaterialTheme.colorScheme.background==androidx.compose.ui.graphics.Color.Black,
+                                        "${owner.key}:subagent:${page?.childId}")
                                 }
                             }
                         }

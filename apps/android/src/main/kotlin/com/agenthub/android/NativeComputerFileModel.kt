@@ -63,7 +63,7 @@ internal class NativeComputerFileModel(private val context: Context,val client: 
     private var epoch=0L
     val isCurrent get()=current()
     val maximum get()=minOf(catalog?.maxFileBytes?:ComputerFileCodec.MAX_FILE_BYTES,ComputerFileCodec.MAX_FILE_BYTES)
-    val canChoose get()=isCurrent&&!busy&&available&&journalUsable&&catalog!=null&&!ComputerFileFdOwners.hasUnresolved()
+    val canChoose get()=catalog?.uploadAvailable!=false&&isCurrent&&!busy&&available&&journalUsable&&catalog!=null&&!ComputerFileFdOwners.hasUnresolved()
     private fun message(failure: Throwable)=ComputerFileCopy.message(failure)
     fun received(file: PendingComputerFile)=file.phase==ComputerFilePhase.COMPLETED||ComputerFileCopy.receiptSavePending(file.error)||knownReceived.containsKey(file.id)
     private fun visible(ticket: Long)=epoch==ticket&&isCurrent
@@ -156,6 +156,25 @@ internal class NativeComputerFileModel(private val context: Context,val client: 
         try {reload(store,ticket)}catch(failure: Exception) {
             if(visible(ticket)){journalUsable=false;if(error==null)error=ComputerFileCopy.REFRESH_FAILED}
         }
+    }
+    val receivedFiles=mutableStateMapOf<String,java.io.File>()
+    fun receive(file:IncomingComputerFile)=start {_,ticket->
+        require(catalog?.incomingFiles?.any {it.sameFile(file)}==true)
+        activity="正在接收文件…";activityFile=file.name;total=file.sizeBytes;progress=0
+        val directory=withContext(Dispatchers.IO) {
+            // Reuse the app's existing read-only FileProvider root; never use a remote path.
+            var parent=context.cacheDir
+            for(component in listOf("resources","incoming-files-v1",target.key)) {
+                val next=java.io.File(parent,component);val path=next.toPath()
+                if(java.nio.file.Files.exists(path,java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                    require(java.nio.file.Files.isDirectory(path,java.nio.file.LinkOption.NOFOLLOW_LINKS)&&!java.nio.file.Files.isSymbolicLink(path))
+                else java.nio.file.Files.createDirectory(path)
+                parent=next
+            }
+            parent
+        }
+        val result=commands.receiveComputerFile(client,file,directory,{visible(ticket)},progress(ticket))
+        if(visible(ticket)){receivedFiles[file.snapshotKey]=result;error=null}
     }
     private suspend fun deliver(store: NativeComputerFileStore,id: String,ticket: Long) {
         ComputerFileFdOwners.requireReleased()

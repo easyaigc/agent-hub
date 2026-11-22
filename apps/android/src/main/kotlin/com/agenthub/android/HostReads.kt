@@ -33,7 +33,8 @@ data class MobileThread(val id: String, val hostId: String, val title: String, v
     val showsUnread get() = unread && state !in listOf("running", "waiting-for-approval")
 }
 data class MobileFile(val id: String, val name: String, val mediaType: String, val sizeBytes: Long,
-    val hostId: String, val threadId: String, val sha256: String,val resourceId: String?=null) {
+    val hostId: String, val threadId: String, val sha256: String,val resourceId: String?=null,
+    val documentSource: DocumentFileSource?=null,val documentMessageSource: DocumentMessageSource?=null) {
     val resourceIdentity get()=resourceId ?: id
 }
 data class MobileWorkspace(val hostId: String, val name: String, val mode: String,

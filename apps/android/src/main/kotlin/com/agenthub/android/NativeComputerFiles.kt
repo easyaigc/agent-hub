@@ -21,7 +21,8 @@ data class ComputerFileReceipt(val file: ComputerFileManifest,val phase: String,
     fun json()=file.json().put("phase",phase).put("destinationPath",destinationPath).put("createdAt",createdAt)
 }
 data class ComputerFileCatalog(val hostId: String,val destinationDirectory: String,
-    val maxFileBytes: Long?,val files: List<ComputerFileReceipt>)
+    val maxFileBytes: Long?,val files: List<ComputerFileReceipt>,val incomingFiles:List<IncomingComputerFile>?=null,
+    val uploadAvailable:Boolean=true)
 class ComputerFileUpload(val file: ComputerFileManifest,private val reader: (OutputStream,()->Boolean,(Long)->Unit)->Unit) {
     internal var uploadRange:((Long,Int)->ByteArray)?=null
     fun copyTo(output: OutputStream,active: ()->Boolean,progress: (Long)->Unit) = reader(output,active,progress)
@@ -72,12 +73,19 @@ internal object ComputerFileCodec {
 }
 internal data class ComputerFileTarget(val scope: TargetScope,val certificate: String?) {
     val key=ComputerFileCodec.hash(("computer-files-v1\u0000"+RuntimeIdentity.readingKey(scope,null)).toByteArray(Charsets.UTF_8))
-    fun matches(client: MobileClient)=!client.isDemo&&client.id==scope.hostId&&RuntimeIdentity.matches(scope,client.scope)&&
+    fun matches(client: MobileClient)=!client.isDemo&&clientIdentityMatches(client,scope)&&RuntimeIdentity.matches(scope,client.scope)&&
         client.codexDirect?.fingerprint==certificate
     fun json()=JSONObject().put("scope",CodexCommandCodec.target(scope)).put("certificate",certificate?:JSONObject.NULL)
     companion object {
+        // EasyWork uses the full authenticated target hash for its local client ID.
+        // Keep the existing Codex identity and journal keys unchanged.
+        private fun clientIdentityMatches(client: MobileClient,scope: TargetScope): Boolean =
+            if(scope.agentId=="easywork")client.migrationEasyWork==null&&client.codexDirect==null&&
+                client.id=="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())&&
+                client.agentConnection?.let {RuntimeIdentity.matches(scope,it.target)}==true
+            else client.id==scope.hostId
         fun capture(client: MobileClient): ComputerFileTarget {
-            val scope=requireNotNull(client.scope);require(scope.hostId==client.id&&!client.isDemo)
+            val scope=requireNotNull(client.scope);require(clientIdentityMatches(client,scope)&&!client.isDemo)
             require(client.agentConnection==null||RuntimeIdentity.matches(scope,client.agentConnection.target))
             CodexCommandCodec.validate(CodexCommandCodec.target(scope),"target")
             val certificate=client.codexDirect?.fingerprint?.also {require(it.isNotEmpty()&&it.length<=8192)}
@@ -107,7 +115,7 @@ internal object ComputerFileCopy {
     )
     fun display(key: String)=legacyCopy[key]?:key
     fun receiptSavePending(key: String?)=key==RECEIPT_SAVE_PENDING||key=="电脑已确认接收；手机回执保存状态待核对，原件仍保留。请查询原结果核对。"
-    val errors=legacyCopy.keys+setOf(LOCAL_SAVE_PENDING,LOCAL_BUSY,UNKNOWN,RESOURCES_PENDING,RECEIPT_SAVE_PENDING,CLEANUP_PENDING,CONFIRMATION_CONFLICT,REFRESH_FAILED,"此电脑尚未支持文件互传，请更新电脑连接程序。","此连接尚未支持文件互传，请更新电脑连接程序。",
+    val errors=legacyCopy.keys+setOf("文件已保存；电脑接收确认待查询，请刷新原传输。","手机收件副本校验失败，请保留原文件。","文件完整性校验失败","电脑未提供独立收件目录。",LOCAL_SAVE_PENDING,LOCAL_BUSY,UNKNOWN,RESOURCES_PENDING,RECEIPT_SAVE_PENDING,CLEANUP_PENDING,CONFIRMATION_CONFLICT,REFRESH_FAILED,"此电脑尚未支持文件互传，请更新电脑连接程序。","此连接尚未支持文件互传，请更新电脑连接程序。",
         "一次最多选择 32 个文件。","保存的文件不属于当前电脑目标。","原件读取未完成，已保存的内容保留在手机。",
         "手机保存的原件校验失败，请保留原记录。","手机保存的待传文件已达到额度，请先核对已有传输。",
         "手机存储空间不足，未开始传输。","本地等待已结束；远端操作未取消。已清理的原件不会恢复，剩余内容和原回执需继续核对。",

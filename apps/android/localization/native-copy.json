@@ -1960,6 +1960,71 @@
       "key": "连接或原回执待确认；保留原ID和文件，继续前先查询。",
       "en": "Waiting for the connection or upload confirmation. Your files are kept. Check the upload before continuing.",
       "zhHans": "连接或原回执待确认；保留原ID和文件，继续前先查询。"
+    },
+    {
+      "key": "分享",
+      "en": "Share",
+      "zhHans": "分享"
+    },
+    {
+      "key": "复制保存路径",
+      "en": "Copy saved path",
+      "zhHans": "复制保存路径"
+    },
+    {
+      "key": "已接收",
+      "en": "Received",
+      "zhHans": "已接收"
+    },
+    {
+      "key": "手机收件副本校验失败，请保留原文件。",
+      "en": "The received copy failed verification. Keep the original file.",
+      "zhHans": "手机收件副本校验失败，请保留原文件。"
+    },
+    {
+      "key": "接收文件",
+      "en": "Receive file",
+      "zhHans": "接收文件"
+    },
+    {
+      "key": "文件已保存；电脑接收确认待查询，请刷新原传输。",
+      "en": "The file is saved. Refresh the original transfer to check its acknowledgment.",
+      "zhHans": "文件已保存；电脑接收确认待查询，请刷新原传输。"
+    },
+    {
+      "key": "正在接收文件…",
+      "en": "Receiving file…",
+      "zhHans": "正在接收文件…"
+    },
+    {
+      "key": "此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。",
+      "en": "This computer cannot confirm cancellation. Stop waiting only affects this phone.",
+      "zhHans": "此电脑尚不支持同步取消；电脑取消待确认，结束等待仅影响手机。"
+    },
+    {
+      "key": "此连接尚未支持独立收件。",
+      "en": "This connection does not support receiving standalone files yet.",
+      "zhHans": "此连接尚未支持独立收件。"
+    },
+    {
+      "key": "此连接暂不支持独立上传，可接收电脑提供的文件。",
+      "en": "Standalone uploading is unavailable on this connection. You can receive files offered by the computer.",
+      "zhHans": "此连接暂不支持独立上传，可接收电脑提供的文件。"
+    },
+    {
+      "key": "电脑 → 手机",
+      "en": "Computer → phone",
+      "zhHans": "电脑 → 手机"
+    },
+    {
+      "key": "电脑暂无待接收文件。",
+      "en": "The computer has no files waiting to be received.",
+      "zhHans": "电脑暂无待接收文件。"
+    },
+    {
+      "key": "电脑未提供独立收件目录。",
+      "en": "The computer did not provide a standalone incoming file list.",
+      "zhHans": "电脑未提供独立收件目录。"
     }
   ]
 }

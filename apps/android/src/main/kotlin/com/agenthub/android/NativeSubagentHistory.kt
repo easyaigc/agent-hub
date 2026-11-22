@@ -75,7 +75,9 @@ internal class NativeSubagentHistoryModel(private val scope: CoroutineScope,priv
     var unavailable by mutableStateOf(false);private set
     var failureStatus by mutableStateOf<Int?>(null);private set
     private var generation=0L
+    val requestGeneration get()=generation
     private var closed=false
+    val isClosed get()=closed
     private var job: Job?=null
     fun refresh() = load(null)
     fun choose(id: String) {

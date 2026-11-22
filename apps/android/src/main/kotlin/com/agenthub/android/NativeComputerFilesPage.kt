@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
                     modifier=Modifier.fillMaxWidth().testTag("choose-transfer-files")) {
                     ProductIcon("file-upload");Spacer(Modifier.width(8.dp));Text(t.tr("选择文件上传"))
                 }
-                Text(t.tr("手机 → 电脑 · 同名文件会保留独立副本。"),style=MaterialTheme.typography.bodySmall)
+                Text(t.tr(if(model.catalog?.uploadAvailable==false)"此连接暂不支持独立上传，可接收电脑提供的文件。" else "手机 → 电脑 · 同名文件会保留独立副本。"),style=MaterialTheme.typography.bodySmall)
                 Text(t.tr("当前电脑目标最多保留 32 个待完成文件，累计本地额度：%@。",size(NativeComputerFileStore.MAX_TOTAL_BYTES)),style=MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick={model.refresh()},enabled=current&&!model.busy,modifier=Modifier.testTag("refresh-transfer-files")) {
                     ProductIcon("refresh");Spacer(Modifier.width(8.dp));Text(t.tr("刷新传输记录"))
@@ -60,6 +60,25 @@ import androidx.compose.ui.unit.dp
                 if(ComputerFileFdOwners.hasUnresolved())Text(t.tr(ComputerFileCopy.RESOURCES_PENDING),Modifier.testTag("file-transfer-resource-pending"),color=MaterialTheme.colorScheme.error)
                 model.error?.let {Text(t.tr(it),Modifier.testTag("file-transfer-error"),color=MaterialTheme.colorScheme.error)}
                 model.detail?.let {Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}
+            }
+        }
+        model.catalog?.incomingFiles?.let {incoming->
+            item("incoming-title") {Text(t.tr("电脑 → 手机"),style=MaterialTheme.typography.titleMedium)}
+            if(incoming.isEmpty())item("incoming-empty") {Text(t.tr("电脑暂无待接收文件。"))}
+            items(incoming,key={"incoming-"+it.id}) {file->
+                Column(Modifier.fillMaxWidth().testTag("incoming-transfer-${file.id}"),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text(file.name);Text(size(file.sizeBytes),style=MaterialTheme.typography.bodySmall)
+                    Text(t.tr(when(file.phase){"completed"->"已接收";"cancelled"->"已取消";"failed"->"接收失败";else->"待接收"}),style=MaterialTheme.typography.bodySmall)
+                    TextButton(onClick={model.receive(file)},enabled=current&&!model.busy&&file.phase !in setOf("failed","cancelled"),
+                        modifier=Modifier.testTag("receive-transfer-${file.id}")) {Text(t.tr("接收文件"))}
+                    model.receivedFiles[file.snapshotKey]?.let {local->
+                        SelectionContainer {Text(local.path,style=MaterialTheme.typography.bodySmall)}
+                        NativeReceivedFileActions(MobileSession.PreparedMessageResource(file.name,file.mediaType,local),file.id,current={
+                            model.isCurrent&&model.receivedFiles[file.snapshotKey]==local
+                        },enabled=!model.busy)
+                    }
+                    HorizontalDivider()
+                }
             }
         }
         if(model.pending.isNotEmpty())item("pending-title") {Text(t.tr("待完成"),style=MaterialTheme.typography.titleMedium)}

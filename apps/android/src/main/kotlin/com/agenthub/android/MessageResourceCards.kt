@@ -1,6 +1,9 @@
 package com.agenthub.android
 
 import android.net.Uri
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.Image
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
@@ -36,10 +39,14 @@ import androidx.compose.ui.unit.sp
         Surface(Modifier.fillMaxWidth().padding(top=6.dp,end=LocalMessageActionEndInset.current).testTag("resource-card-"+file.id),
             shape=RoundedCornerShape(12.dp),color=colors.surface) {
             Column(Modifier.padding(10.dp)) {
+                LocalNativeMessageMediaSnapshots.current?.images?.get(reference)?.takeIf { file.mediaType.startsWith("image/") }?.let { thumbnail ->
+                    Image(thumbnail.asImageBitmap(),file.name,Modifier.fillMaxWidth().heightIn(max=220.dp).testTag("resource-card-thumbnail-"+file.id),contentScale=ContentScale.Fit)
+                }
                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick={ open?.invoke(reference,anchor,MessageResourceAction.Preview) },enabled=enabled,
                         modifier=Modifier.weight(1f).heightIn(min=48.dp).testTag("resource-card-preview-"+file.id),contentPadding=PaddingValues(0.dp)) {
-                        ProductIcon(if(file.mediaType.startsWith("image/"))"photo" else "doc",Modifier.size(20.dp),color=colors.onSurface)
+                        if(file.mediaType.startsWith("video/"))Text("▶",Modifier.size(20.dp),color=colors.onSurface)
+                        else ProductIcon(when { file.mediaType.startsWith("image/")->"photo";file.mediaType.startsWith("audio/")->"mic";else->"doc" },Modifier.size(20.dp),color=colors.onSurface)
                         Spacer(Modifier.width(8.dp))
                         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(2.dp)) {
                             Text(file.name,Modifier.fillMaxWidth().testTag("resource-card-name-"+file.id),fontSize=12.sp,

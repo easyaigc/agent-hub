@@ -297,8 +297,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun computerFileReadingClient(): MobileClient? {
         val client=selectedClient
         val target=client.agentConnection?.target?:client.scope?:client.codexDirect?.target?:return null
-        if(client.isDemo||target.hostId!=client.id)return null
-        return client.copy(scope=target)
+        if(client.isDemo)return null
+        val resolved=client.copy(scope=target)
+        return runCatching { ComputerFileTarget.capture(resolved);resolved }.getOrNull()
     }
     internal val canOpenComputerFiles get()=storage!=null&&localReady&&!migrationPaused&&!migrationRawPreparing&&
         migrationRawOwner==null&&computerFileReadingClient()!=null
@@ -1850,6 +1851,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             val key=client.cacheKey(null)
             connectionReadFailures.keys.retainAll(realClients.map {it.cacheKey(null)}.toSet()+key)
             val causes=generateSequence(failure as Throwable) {it.cause}.take(12).map {it.javaClass.name}.toList()
+            val closeCode=generateSequence(failure as Throwable) {it.cause}.take(12)
+                .filterIsInstance<EasyWorkChannelClosed>().firstOrNull()?.closeCode
             val sites=generateSequence(failure as Throwable) {it.cause}.take(4).map {cause ->
                 val frames=cause.stackTrace.asSequence().take(8).filter {frame ->
                     frame.className.length in 1..200 && frame.methodName.length in 1..120 &&
@@ -1860,6 +1863,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 JSONObject().put("frames",JSONArray(frames))
             }.toList()
             connectionReadFailures[key]=JSONObject().put("version",1).put("stage",source)
+                .put("transportCloseCode",closeCode)
                 .put("throwSites",JSONArray(sites))
                 .put("observedAtElapsedMs",android.os.SystemClock.elapsedRealtime()).put("exceptionClasses",JSONArray(causes))
                 .put("classifiedTransient",transient).put("ignoredAfterNewerSuccess",transient && successAtStart!=null &&
@@ -2573,9 +2577,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     internal class SubagentHistoryOwner(val client: MobileClient,val parentThreadId: String,val messageId: String,
         val key: String,val selection: Long,val navigation: Long,val connection: Long,val anchor: MobileMessage?=null)
     internal val supportsSubagentHistory get()=localReady && foreground && selectedClient.online && !selectedClient.isDemo &&
-        selectedClient.scope?.agentId=="codex" && selectedClient.agentConnection==null && selectedThread.isNotEmpty() &&
-        !selectedThread.startsWith("draft-") && "subagents:history:read:v1" in workspace?.capabilities.orEmpty()
-    internal val supportsParentLineageHistory get()=supportsSubagentHistory &&
+        selectedThread.isNotEmpty() && !selectedThread.startsWith("draft-") &&
+        ((selectedClient.scope?.agentId=="codex" && selectedClient.agentConnection==null && "subagents:history:read:v1" in workspace?.capabilities.orEmpty()) ||
+            (selectedClient.scope?.agentId=="easywork" && selectedClient.agentConnection!=null && workspace?.mode=="easywork-runtime"))
+    internal val supportsParentLineageHistory get()=supportsSubagentHistory && selectedClient.scope?.agentId=="codex" &&
         "subagents:history:parent-lineage:v1" in workspace?.capabilities.orEmpty()
     internal fun captureSubagentHistory(message: MobileMessage): SubagentHistoryOwner? {
         if(!supportsSubagentHistory || message.kind!="subAgent" || messages.none {it.id==message.id && it.kind=="subAgent"})return null
@@ -2600,19 +2605,17 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             result.association==(if(lineage)"parent-thread-lineage" else "typed-tool"))
         return result
     }
-    internal data class MessageLinkContext(val key: String,val selection: Long,val connection: Long,val message: MobileMessage)
-    internal fun messageLinkContext(message: MobileMessage)=MessageLinkContext(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0,message)
-    internal fun messageLinkCurrent(context: MessageLinkContext)=context.key==targetKey&&context.selection==selectionRevision&&
-        context.connection==(revisions[selectedClient.id] ?: 0)&&messages.any { it==context.message }
-    // An already verified immutable document survives ordinary status/text updates. Its parent,
-    // original attachment versions and complete navigation/connection owner must still exist.
-    private fun documentLinkCurrent(context: MessageLinkContext)=context.key==targetKey&&context.selection==selectionRevision&&
-        context.connection==(revisions[selectedClient.id] ?: 0)&&messages.any {
-            it.id==context.message.id&&it.role==context.message.role&&it.kind==context.message.kind&&
-                it.attachments==context.message.attachments&&it.files==context.message.files
-        }
+    internal data class MessageLinkContext(val key: String,val selection: Long,val connection: Long,val message: MobileMessage,
+        val resourceThread: String?=null,val subagentCurrent: (() -> Boolean)?=null)
+    internal fun messageLinkContext(message: MobileMessage)=MessageLinkContext(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0,message,selectedThread)
+    internal fun resolveMessageResourceOwner(owner: MessageLinkContext,immutable: Boolean=true): MessageLinkContext? =
+        MessageResourceOwnerResolver.resolve(owner,targetKey,selectionRevision,revisions[selectedClient.id] ?: 0,selectedThread,messages,immutable)
+    internal fun messageLinkCurrent(context: MessageLinkContext)=resolveMessageResourceOwner(context,false)!=null
+    // Immutable main-chat previews survive ordinary status/text changes; child owners remain strict.
+    private fun documentLinkCurrent(context: MessageLinkContext)=resolveMessageResourceOwner(context)!=null
     internal data class PreparedMessageResource(val name: String,val mediaType: String,val local: java.io.File,
-        val sourceFile: MobileFile?=null,val initialAnchor: String?=null,val initialReference: String?=null)
+        val sourceFile: MobileFile?=null,val initialAnchor: String?=null,val initialReference: String?=null,
+        val readingIdentity: String?=null)
     private suspend fun downloadMessageResource(owner: MessageLinkContext,client: MobileClient,file: MobileFile,cache: java.io.File,
         progress: ResourceDownloadProgressHandler?,current: ()->Boolean={messageLinkCurrent(owner)}): PreparedMessageResource {
         val snapshot=commands.downloadResourceWithProgress(client,file,cache,progress)
@@ -2621,39 +2624,64 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(!CodexResources.verifyLocalSnapshot(snapshot.local,snapshot.file))
             throw CodexCommandError("下载文件完整性校验失败",appOwnedCopy=true)
         if(!current())throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-        return PreparedMessageResource(snapshot.file.name,snapshot.file.mediaType,snapshot.local,snapshot.file)
+        return PreparedMessageResource(snapshot.file.name,snapshot.file.mediaType,snapshot.local,snapshot.file,
+            readingIdentity=MessageResourceOwnerResolver.readingIdentity(owner,snapshot.file))
     }
     internal suspend fun prepareDocumentResource(owner: MessageLinkContext,source: PreparedMessageResource,reference: String,
         sourceSha256: String,cache: java.io.File,progress: ResourceDownloadProgressHandler?=null): PreparedMessageResource {
         if(!documentLinkCurrent(owner))throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
         val file=source.sourceFile ?: throw CodexCommandError("当前连接程序不支持文档内文件链接，请更新电脑连接程序后重试。",appOwnedCopy=true)
-        val client=selectedClient;val thread=selectedThread
+        val client=selectedClient;val thread=owner.resourceThread?:selectedThread
         if(file.hostId!=client.id||file.threadId!=thread||sourceSha256!=file.sha256||
             !CodexResources.verifyLocalSnapshot(source.local,file))
             throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
         if(!documentLinkCurrent(owner))throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-        val resolved=commands.resolveDocumentFile(client,file,reference,sourceSha256)
+        require(MessageLinkDestination.documentReference(reference)) { "不是有效的文档文件链接" }
+        val authorized=if(client.scope?.agentId=="easywork"&&file.documentSource==null&&file.documentMessageSource==null) {
+            val original=MessageLinkDestination.originalDocumentReference(owner.message.text,file)
+                ?: throw CodexCommandError("此文件尚未由电脑提供，请刷新对话后重试。",appOwnedCopy=true)
+            val refreshed=commands.resolveMessageFile(client,thread,owner.message.id,original)
+            if(!documentLinkCurrent(owner)||refreshed.hostId!=file.hostId||refreshed.threadId!=file.threadId||
+                refreshed.name!=file.name||refreshed.sha256!=file.sha256||refreshed.sizeBytes!=file.sizeBytes)
+                throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+            refreshed
+        } else file
+        currentCoroutineContext().ensureActive()
+        val resolved=commands.resolveDocumentFile(client,authorized,reference,sourceSha256)
+        currentCoroutineContext().ensureActive()
         if(!documentLinkCurrent(owner)||resolved.hostId!=client.id||resolved.threadId!=thread)
             throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
         val result=downloadMessageResource(owner,client,resolved,cache,progress){documentLinkCurrent(owner)}
         if(!CodexResources.verifyLocalSnapshot(source.local,file)||!documentLinkCurrent(owner))
             throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-        return result.copy(initialAnchor=android.net.Uri.parse(reference).fragment,initialReference=reference)
+        return result.copy(initialAnchor=android.net.Uri.parse(reference).fragment,initialReference=reference,
+            readingIdentity=source.readingIdentity?.let { PreviewReadingIdentity.child(it,reference) })
     }
     internal suspend fun prepareMessageResource(owner: MessageLinkContext,reference: String,cache: java.io.File,
         progress: ResourceDownloadProgressHandler?=null): PreparedMessageResource {
         if(!messageLinkCurrent(owner))throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-        val client=selectedClient;val thread=selectedThread
+        val client=selectedClient;val thread=owner.resourceThread?:selectedThread
         val destination=MessageLinkDestination.resolve(reference)
         val file=when(destination.kind) {
             "attachment" -> owner.message.attachments.firstOrNull { candidate->
                 MessageLinkDestination.sameAttachmentId(candidate.id,destination.attachmentId)
             } ?: throw CodexCommandError("此文件尚未由电脑提供，请刷新对话后重试。",appOwnedCopy=true)
-            "computerFile" -> commands.resolveMessageFile(client,thread,owner.message.id,reference)
+            "computerFile" -> commands.resolveMessageFile(client,thread,if(owner.subagentCurrent!=null)owner.message.replyMessageId?:owner.message.id else owner.message.id,reference)
             else -> throw CodexCommandError("手机暂不支持此类链接，可复制后在对应应用中打开。",appOwnedCopy=true)
         }
         if(!messageLinkCurrent(owner)||file.hostId!=client.id||file.threadId!=thread)throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
-        return downloadMessageResource(owner,client,file,cache,progress)
+        val result=downloadMessageResource(owner,client,file,cache,progress)
+        currentCoroutineContext().ensureActive()
+        val stableTarget=client.scope?.let { ThreadReadingIdentity.key(it,thread) } ?: (client.id+":"+thread)
+        val originalReference=if(destination.kind=="attachment")
+            file.documentMessageSource?.reference ?: MessageLinkDestination.originalDocumentReference(owner.message.text,file)
+                ?: PreviewReadingIdentity.attachment(file)
+            else reference
+        val resourceMessage=if(owner.subagentCurrent!=null)owner.message.replyMessageId?:owner.message.id else owner.message.id
+        val originalMessage=if(client.scope?.agentId=="easywork")EasyWorkDocumentFileResolution.originalMessageId(resourceMessage) else resourceMessage
+        return result.copy(readingIdentity=PreviewReadingIdentity.message(stableTarget,originalMessage,originalReference),
+            initialAnchor=if(destination.kind=="computerFile")android.net.Uri.parse(reference).fragment else null,
+            initialReference=reference)
     }
     private fun startEvents(initialReadGraceMillis: Long=0) {
         if(selectedClient.migrationEasyWork!=null)return

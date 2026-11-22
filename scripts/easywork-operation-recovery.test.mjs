@@ -27,6 +27,16 @@ test('fixture matches actual Swift recovery sets', () => {
     [...fixture.readQueries, ...fixture.originalReceiptQueries].sort(),
   );
   assert.deepEqual(strings(subs), [...fixture.subscriptionManagement].sort());
+  for (const method of ['resource/resolve', 'resource/resolve-document-link']) {
+    assert.ok(!fixture.readQueries.includes(method));
+    assert.ok(fixture.writeExamples.includes(method));
+  }
+  for (const item of fixture.cases) {
+    assert.equal(
+      item.kind,
+      fixture.readQueries.includes(item.method) ? 'read' : 'original-receipt-only',
+    );
+  }
 });
 test(
   'actual requestData recovers reads and never republishes writes',
@@ -59,7 +69,7 @@ actor Harness {
  var pendingRequestIds = Set<String>(); var responses: [String: [String: Any]] = [:]
  var lastError: Error?; var closed = false; var epoch = "epoch"; var activeCandidate = "route"
  let target = EasyWorkTarget(); let mobileDeviceId = "device"; let connection = Connection()
- var published: [Data] = []; var connects = 0; var disconnects = 0; var status = 0
+ var published: [Data] = []; var connects = 0; var disconnects = 0; var status = 0; var expectedOperationId = "same-id"
  let failure: String; let failTwice: Bool
  init(_ failure: String, _ failTwice: Bool) { self.failure = failure; self.failTwice = failTwice }
  func diagnostic(_ a: String, _ b: String = "") {}
@@ -73,11 +83,13 @@ actor Harness {
    }
    responses[request["requestId"] as! String] = ["ok": true, "result": ["fresh": true]]
  }
- func request(_ method: String, _ params: [String: Any]) async throws -> Data { precondition(method == "command/status" && params["commandId"] as? String == "original"); status += 1; return try easyWorkJSON(NSNull()) }
+ func request(_ method: String, _ params: [String: Any]) async throws -> Data { precondition(method == "command/status" && params["commandId"] as? String == expectedOperationId); status += 1; return try easyWorkJSON(NSNull()) }
  ${verified}
  ${expiry}
  ${method}
  func verify(_ method: String, _ params: Data, _ shouldSucceed: Bool, _ expectedStatus: Int) async throws {
+   let values = try easyWorkObject(params)
+   expectedOperationId = values["clientOperationId"] as? String ?? values["clientRequestId"] as? String ?? values["operationId"] as? String ?? values["guidanceId"] as? String ?? "same-id"
    do { let result = try await requestData(method, params: params, id: "same-id"); precondition(shouldSucceed); let value = try easyWorkObject(result); precondition(value["fresh"] as? Bool == true) }
    catch { precondition(!shouldSucceed, "unexpected error: \\(error)") }
    let sent = try easyWorkObject(published[0]); precondition(sent["method"] as? String == method && sent["requestId"] as? String == "same-id"); let sentTarget = try easyWorkJSON(sent["target"]!); let expectedTarget = try easyWorkJSON(target.dictionary); let sentParams = try easyWorkJSON(sent["params"]!); precondition(sentTarget == expectedTarget && sentParams == params);
@@ -88,8 +100,10 @@ actor Harness {
 @main struct Main { static func main() async throws {
  let fixture = try easyWorkObject(Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
  for item in fixture["cases"] as! [[String: Any]] { for fault in ["throw", "timeout"] { for failTwice in [false, true] {
-   let h = Harness(fault, failTwice); try await h.verify(item["method"] as! String, try easyWorkJSON(item["params"]!), !failTwice, 0)
+   let read = item["kind"] as? String == "read"
+   let h = Harness(fault, failTwice); try await h.verify(item["method"] as! String, try easyWorkJSON(item["params"]!), read && !failTwice, read ? 0 : 1)
  } } }
+ for fault in ["throw", "timeout"] { let h = Harness(fault, false); try await h.verify("resource/resolve", try easyWorkJSON(["threadId": "thread", "reference": "./child.txt"]), false, 1) }
  for method in ["turn/start", "future/unknown"] { let h = Harness("throw", false); try await h.verify(method, try easyWorkJSON(["clientOperationId": "original"]), false, 1) }
  print("requestData scenarios passed")
 } }

@@ -195,7 +195,12 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                         return if(nullableQueue)queueResult(v) else result(v)
                     }
                     throw lastError?:HostReadError("电脑操作结果未确认",transient=true)
-                } catch(e: EasyWorkRejection) { throw e }
+                } catch(e: EasyWorkRejection) {
+                    // The method is already whitelisted. Never log arbitrary peer error
+                    // text or codes; hashes let a diagnostic match known contract codes.
+                    if(BuildConfig.DEBUG)android.util.Log.i("EasyWorkRPC","kind=rejected method=$method requestSHA=${easyHash(id.toByteArray()).take(16)} codeSHA=${easyHash(e.code.orEmpty().toByteArray())}")
+                    throw e
+                }
                 catch(e: EasyWorkDeviceAuthorizationError) { throw e }
                 catch(cancel: CancellationException) { throw cancel }
                 catch(e: Exception) {
@@ -261,8 +266,8 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         return threadSequences[threadId]?:after
     }
     companion object {
-        private val READ_METHODS=setOf("usage/read","runtime/context","runtime/summary","project/list","thread/list","thread/search","thread/read","thread/history","thread/suggestion/read","thread/sync","thread/subscribe","thread/unsubscribe","model/list","queue/list","queue/status","filesystem/access-status","filesystem/roots","filesystem/list-directories","filesystem/list-entries","voice/readiness","resource/read","resource/download","resource/resolve","resource/transfer-list","resource/upload-status","command/status","thread/open-status","notification/status","notification/events")
-        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete","thread/open","notification/register","notification/preferences","notification/unregister")
+        private val READ_METHODS=setOf("usage/read","runtime/context","runtime/summary","project/list","thread/list","thread/search","thread/read","thread/history","thread/suggestion/read","thread/sync","thread/subscribe","thread/unsubscribe","model/list","queue/list","queue/status","filesystem/access-status","filesystem/roots","filesystem/list-directories","filesystem/list-entries","voice/readiness","resource/read","resource/download","resource/transfer-list","resource/upload-status","command/status","thread/open-status","notification/status","notification/events")
+        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/resolve","resource/resolve-document-link","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete","resource/transfer-cancel","thread/open","notification/register","notification/preferences","notification/unregister")
     }
 }
 class EasyWorkRejection(message: String,val code: String?=null): Exception(message)

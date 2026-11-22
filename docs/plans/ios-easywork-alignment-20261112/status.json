@@ -6063,8 +6063,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 528,
-  "updatedAt": "2026-11-23T04:23:15+08:00",
+  "revision": 530,
+  "updatedAt": "2026-11-23T04:50:33+08:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -18097,6 +18097,33 @@
           "sha256": "c52f7ad2333fdb0becaff4bd46a84599bbbd11b1607f218894973c54bf278d3d"
         }
       ]
+    },
+    "INC02-HUB-PR247-MAIN-MERGED-20261123": {
+      "kind": "exact-match-review",
+      "sourceCommit": "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+      "sourceTree": "Featurec0f89276 + reviewed upstreamfac2 integrationdb9dad49; actual Gitea main independently verified and all iOS/shared media/Host read-service bytes match accepted feature candidate",
+      "packageSha256": "20e9c78a535d83f7c1d4b5b87ab351b65f7c2b8da3ebb311dea3b38779684e56",
+      "environment": "Gitea BCAI/agent-hub-app/main actual remote SHA plus original native/real Electron accepted candidate; Desktop merge pending",
+      "mobileEnvironment": "simulator",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-hub-delivery-review.json",
+      "sha256": "cecca150d4ec5e331f8e6f15cc567306e7ea2f72ff58fe47293c6b9ccfe40869",
+      "scope": "Hub PR247 actual merged2026-11-23T04:30:27+08:00. Integration source ancestor and exact unchanged media/native inputs independently verified. Upstream status/base deeply equal so preserveR528 facts; keep both manifest appends. New background-persistence build/tests and affected retirement/runtime boundaries passed without repeating accepted native scenes. Desktop formal candidate gates still running; no two-mainline or formal deployment completion yet."
+    },
+    "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123": {
+      "kind": "exact-match-review",
+      "sourceCommit": "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+      "sourceTree": "Hub featurec0f89276 + integrationdb9dad49 merged PR247/main dd3809e6; Desktop PR86/masterbb73f848 tree9ffd. All accepted native/common/media-service inputs unchanged; Desktop checked TS/tests per-file identical, design doc only difference.",
+      "packageSha256": "20e9c78a535d83f7c1d4b5b87ab351b65f7c2b8da3ebb311dea3b38779684e56",
+      "environment": "Actual Gitea Hub main + Desktop master checked independently via remote SHA and Git objects; prior owned native Simulator/real Electron accepted scope reused",
+      "mobileEnvironment": "simulator",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-both-mainlines-review.json",
+      "sha256": "9bdd165beef5e73478015a46a1d68e10a3159a0c309e06383a4e6dc4f5cbc322",
+      "scope": "Hub PR247 merged2026-11-23T04:30:27+08:00; Desktop PR86 merged04:45:26+08:00. Exact accepted production/native inputs match; Desktop official candidate17 batches and required hook passed, automatic repeats due incomplete input closure accurately recorded. No new product test from merge verification; no formal release118/Windows/Android/physical/two-real-Host promotion. Owned runtime resources and Desktop tree/branch reclaimed; remaining Hub checkout serves only final ledger documentation.",
+      "runtimeArchive": {
+        "path": "private ios-easywork-progressive-video-20261123/f77-acceptance-app.tar.gz",
+        "sha256": "367b4ff410cfeb583d5ecaeced35c59190091041cb5f91faa4c2b7f1feaf9264",
+        "verification": "119 regular archive members fully read by coordinator; contained executable SHA and own bundle match accepted installed runtime"
+      }
     }
   },
   "openItems": [
@@ -29567,6 +29594,24 @@
       "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
       "newProductAcceptancePasses": 1,
       "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 529,
+      "date": "2026-11-23",
+      "kind": "inc02-hub-pr247-actual-main-delivered-desktop-pending",
+      "scope": "Hub actual main and exact accepted source match independently verified; upstream CPU persistence merged with no native media change and focused checks passed. Desktop formal candidate running, no broad closure. Global audit frozen intervals remain unchanged.",
+      "evidenceRefs": ["INC02-HUB-PR247-MAIN-MERGED-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 530,
+      "date": "2026-11-23",
+      "kind": "inc02-both-mainlines-closed-and-current-derived-progress",
+      "scope": "Actual PR247 main and PR86 master independently verified. Current registered F77 scope closed/integrated-not-deployed; original formal118 unchanged. Preserve frozen commit ranges/counts and initial gap descriptions as history, replace current media/discovery actions with completed facts. Incremental view now derives2/2 development closures and2 remaining proof/release tasks from the same plans, plus four actual PR rows. No new acceptance rerun.",
+      "evidenceRefs": ["INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
     }
   ],
   "maintenanceValidation": {
@@ -32548,10 +32593,11 @@
       "evidenceRefs": ["INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123"]
     },
     {
-      "component": "INC02 F77 real-accepted candidate",
-      "baseCommit": "135199ed2947ededee3933c6cad183332b11ef82",
-      "verification": "Actual macOS Electron plus native iOS Simulator accepted; exact source/executable/report bound. No formal release or pending platform promotion. Two source PR merges remain.",
-      "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"]
+      "component": "INC02 F77 actual two-mainline delivery",
+      "baseCommit": "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+      "verification": "两仓实际主线已包含准确验收输入；原生模拟器/真实 Electron 证据匹配复用，不表示正式包部署。保留一份已读回校验的验收 App 归档；运行资源及无消费者编译输出已回收。",
+      "evidenceRefs": ["INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"],
+      "desktopCommit": "bb73f848735fba6fe1c2ccd647a82ef619503c39"
     }
   ],
   "sourcePinHistory": [
@@ -41854,6 +41900,36 @@
       "scope": "INC01 authenticated EasyWork network observation; exact added scope accepted; no formal app deployment",
       "evidenceRef": "INC01-TWO-MAINLINES-MERGED-20261123",
       "mergedAt": "2026-11-23T02:05:50+08:00"
+    },
+    "BCAI/agent-hub-app#247": {
+      "state": "merged",
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/247",
+      "baseBranch": "main",
+      "headCommit": "db9dad49ce2483f5b97749105313c8b2eae3c0d9",
+      "mergeCommit": "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+      "checkedMainCommit": "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+      "mergedAt": "2026-11-23T04:30:27+08:00",
+      "evidenceRef": "INC02-HUB-PR247-MAIN-MERGED-20261123",
+      "repository": "BCAI/agent-hub-app",
+      "number": 247,
+      "checkedAt": "2026-11-23T04:50:33+08:00",
+      "sourceDeleted": true,
+      "scope": "INC02 shared iOS/EasyWork range adapter and cancellation boundary; macOS/Simulator accepted, not formal deployment"
+    },
+    "BCAI/comfy-desktop#86": {
+      "repository": "BCAI/comfy-desktop",
+      "number": 86,
+      "state": "merged",
+      "url": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/86",
+      "baseBranch": "master",
+      "headCommit": "bb73f848735fba6fe1c2ccd647a82ef619503c39",
+      "mergeCommit": "bb73f848735fba6fe1c2ccd647a82ef619503c39",
+      "checkedMainCommit": "bb73f848735fba6fe1c2ccd647a82ef619503c39",
+      "mergedAt": "2026-11-23T04:45:26+08:00",
+      "checkedAt": "2026-11-23T04:50:33+08:00",
+      "sourceDeleted": true,
+      "evidenceRef": "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123",
+      "scope": "INC02 macOS EasyWork progressive video provider; original native scope reused, not formal deployment"
     }
   },
   "deliveryWorkflow": {
@@ -41981,7 +42057,7 @@
       "plannedScope": "integration-extension",
       "development": {
         "state": "implemented-scoped",
-        "scope": "Current macOS fixed snapshot/lease/ETag/range/cancel and bounded complete-video iOS adapter implemented with common player. New Windows range capability withheld pending ACL; Linux not exercised, Android independent.",
+        "scope": "已实现 macOS EasyWork 固定版本快照、租约、ETag、范围读取/取消，以及 iOS 视频分段落盘和完整分享；共同播放器沿用。Windows 私有 ACL 尚未实现，不声明渐进能力；Linux 未独立验收，Android 独立。",
         "evidenceRefs": [
           "INCREMENTAL-SOURCE-AUDIT-20261122",
           "INC02-CORE-CHECKS-20261123",
@@ -41990,29 +42066,42 @@
       },
       "acceptance": {
         "state": "current-passed",
-        "scope": "Current macOS EasyWork plus native iOS Simulator scope passed; existing common thread context exit reused by exact source. No new two-Host matrix, Windows/Android/physical or recipient-save claim. See evidence for real vs auxiliary boundaries.",
-        "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
-        "currentEvidence": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"]
+        "scope": "本次 macOS EasyWork＋原生 iOS 模拟器范围已通过；MEDIA01 未变的线程切换退出按准确源复用。未新增双真实 Host 切换、Windows/Android/真机或分享接收方保存结论。",
+        "evidenceRefs": [
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123",
+          "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"
+        ],
+        "currentEvidence": [
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123",
+          "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"
+        ]
       },
       "delivery": {
-        "state": "candidate-not-integrated",
-        "note": "Real accepted candidate pending actual Gitea Hub main and Desktop master PR merges; formal118 unchanged."
+        "state": "integrated-not-deployed",
+        "note": "已合 Hub PR247/main dd3809e6、Desktop PR86/master bb73f848；本次 Mac/模拟器范围已交付。正式 iOS 118 仍为 6f65，未发布新的正式包。"
       },
       "execution": {
-        "state": "in-progress",
-        "ownerRole": "current coordinator with Terra check/test executor"
+        "state": "closed",
+        "ownerRole": "current coordinator with Terra delivery executor",
+        "scope": "current macOS EasyWork/native Simulator functional scope delivered; remaining platform/release work explicitly separate"
       },
-      "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
+      "nextAction": "本轮登记范围已闭合，不重复 F77 已过验收。后续按 R509 继续 INC03（F76 原交付对账）和 INC04（原回执权限/后续正式包收口）；Windows ACL、Android 等范围保持单列。",
       "functionalDeliverableIds": ["F77-easywork-progressive-video"],
       "incrementalPlanId": "INC02",
       "globalDefinition": "docs/product/mobile-parity.manifest.json#F77",
-      "sourceCommits": ["1be178e5fad75a06d449f9ecefa9c570233206e3"],
+      "sourceCommits": [
+        "1be178e5fad75a06d449f9ecefa9c570233206e3",
+        "c0f89276f50894a2cdb2d00f38e287287151cc2a",
+        "db9dad49ce2483f5b97749105313c8b2eae3c0d9",
+        "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+        "bb73f848735fba6fe1c2ccd647a82ef619503c39"
+      ],
       "existingWorkRefs": [
         "MEDIA01 scoped current physical player",
         "MEDIA01 current isolated Gitea delivery"
       ],
       "originalEvidencePaths": ["docs/acceptance/mobile-parity.md"],
-      "updatedAt": "2026-11-23T04:23:15+08:00"
+      "updatedAt": "2026-11-23T04:50:33+08:00"
     }
   ],
   "extensionDeliverables": [
@@ -42038,10 +42127,10 @@
       "behavior": "EasyWork电脑视频边加载边播放，拖到未缓存位置，切全屏后连续播放并安全退出",
       "developmentState": "implemented-scoped",
       "acceptanceState": "current-passed",
-      "deliveryState": "candidate-not-integrated",
-      "executionState": "in-progress",
+      "deliveryState": "integrated-not-deployed",
+      "executionState": "closed",
       "acceptanceCriteria": "模拟器实际AVPlayer首次/未缓存seek/内联全屏连续/冷恢复；固定版本ETag与Range/206/Content-Range校验，同版续租、过期、版本或target冲突有界结束；退出及切目标取消原readId，真实Electron独立核读取范围/lease释放，完整版本才允许分享。旧Host继续完整下载，零模型输入。",
-      "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
+      "nextAction": "本轮登记范围已闭合，不重复 F77 已过验收。后续按 R509 继续 INC03（F76 原交付对账）和 INC04（原回执权限/后续正式包收口）；Windows ACL、Android 等范围保持单列。",
       "owner": "当前主协调会话",
       "evidenceRefs": [
         "INCREMENTAL-SOURCE-AUDIT-20261122",
@@ -42049,12 +42138,19 @@
         "INC02-CORE-CHECKS-20261123",
         "INC02-REAL-FIRST-FRAME-20261123",
         "INC02-REAL-POSITIVE-PLAYBACK-20261123",
-        "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"
+        "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123",
+        "INC02-HUB-PR247-MAIN-MERGED-20261123",
+        "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"
       ],
-      "sourceCommits": ["1be178e5fad75a06d449f9ecefa9c570233206e3"],
+      "sourceCommits": [
+        "1be178e5fad75a06d449f9ecefa9c570233206e3",
+        "c0f89276f50894a2cdb2d00f38e287287151cc2a",
+        "dd3809e6256490ebb03c0fff2456d4b945e1b833",
+        "bb73f848735fba6fe1c2ccd647a82ef619503c39"
+      ],
       "existingWorkRef": "MEDIA01",
       "incrementalPlanId": "INC02",
-      "updatedAt": "2026-11-23T04:23:15+08:00",
+      "updatedAt": "2026-11-23T04:50:33+08:00",
       "designRef": "docs/design/easywork-progressive-video.md",
       "candidateScope": "Mac/POSIX fixed-version snapshot adapter and shared iOS player path; bounded original whole-file transfer/receipt for video sharing. Windows new range ACL capability and Android player remain outside this accepted environment and are not declared available.",
       "currentAssertions": {
@@ -42063,11 +42159,12 @@
         "naturalExpiryAndSameVersionRenewal": "real-passed-with-actual-ten-minute-clock",
         "closeAndSnapshots": "real-original-cancel-confirmed-and-no-snapshot-files",
         "contextExit": "reuse-only-original-MEDIA01-thread-context-scope; not-two-real-Hosts",
-        "remaining": "Two actual Gitea mainline merges and code/worktree closeout; no new functional test planned for accepted scope",
+        "remaining": "No remaining development/native acceptance/source-merge work in the registered Mac/Simulator scope; formal rollout and unclaimed platforms separate",
         "evidenceRefs": [
           "INC02-REAL-FIRST-FRAME-20261123",
           "INC02-REAL-POSITIVE-PLAYBACK-20261123",
-          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123",
+          "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"
         ],
         "controlledSourceConflict": "real409-native-bounded-error-original-owned-source-hash-restored"
       },
@@ -42080,7 +42177,11 @@
         "physical device",
         "formal release118 upgrade",
         "share recipient save"
-      ]
+      ],
+      "hubPullRequest": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/247",
+      "acceptanceBasis": "merged-pr",
+      "pullRequests": ["BCAI/agent-hub-app#247", "BCAI/comfy-desktop#86"],
+      "desktopPullRequest": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/86"
     }
   ],
   "alignmentRefresh": {
@@ -42442,11 +42543,17 @@
           "b18f4708d37bcb97072390f33aee4d997a7d031e"
         ],
         "functionalDeliverableIds": ["F32-ordinary-preview", "F77-easywork-progressive-video"],
-        "assessment": "F77共同播放器已在主线；EasyWork prepareMediaRead仍为默认nil、桌面无固定版本snapshot/lease/range，登记INC02。原图片/完整下载和MEDIA01旧播放器证据复用其原范围。",
+        "assessment": "冻结盘点的EasyWork渐进读取缺口已由INC02补齐：Mac桌面与iOS Adapter沿同一snapshot/lease/ETag/range/cancel契约，模拟器/真实Electron新增范围通过，Hub PR247与Desktop PR86已合主线。MEDIA01未变范围复用；不把Windows ACL、Android或新双Host矩阵标为通过。",
         "optimizations": [
+          "既有图片/视频入口与共同播放器按准确未变范围复用",
+          "EasyWork固定版本渐进读取及大视频完整下载分享已按Mac/模拟器登记范围交付"
+        ],
+        "initialAssessmentAtFreeze": "F77共同播放器已在主线；EasyWork prepareMediaRead仍为默认nil、桌面无固定版本snapshot/lease/range，登记INC02。原图片/完整下载和MEDIA01旧播放器证据复用其原范围。",
+        "initialOptimizationsAtFreeze": [
           "恢复消息内图片/视频预览",
           "共用渐进视频播放器已入主线，EasyWork分段适配缺口单列F77"
-        ]
+        ],
+        "currentEvidenceRefs": ["INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"]
       },
       {
         "id": "discovery",
@@ -58419,19 +58526,27 @@
         "order": 2,
         "title": "EasyWork视频渐进读取适配",
         "kind": "development-gap",
-        "state": "in-progress",
+        "state": "completed",
         "featureIds": ["F77"],
         "deliverableIds": ["F77-easywork-progressive-video"],
         "sourceCommits": ["1be178e5fad75a06d449f9ecefa9c570233206e3"],
         "implementation": "复用现有attachment-reads固定版本snapshot/lease/range/cancel领域契约，Host/Adapter约束真实资源和授权后声明attachments:range-read:v1；EasyWorkAgentClient override共用读取方法，保留旧端完整下载，不复制播放器。",
-        "acceptance": "按F77具体功能条件在模拟器和真实Electron核冷/热首播、未缓存seek、内联/全屏、同版续租/过期/版本冲突/目标切换/取消释放、完整后分享；复用MEDIA01旧播放器范围，零模型。",
+        "acceptance": "新增原生模拟器＋真实 Electron 首帧、未缓存拖动、内联/全屏连续、热/冷重开、完整摘要/原完成回执/系统分享面板、实际十分钟过期/同版换读、取消及无快照、受控源变化409均通过。未变的 MEDIA01 线程切换退出按原范围复用；错误完整目标和准备中取消的新引擎向量仍记辅助，不冒充新增双真实Host矩阵。",
         "completion": "桌面与App能力协商/固定版本读取交付，全部新增断言通过并按功能PR合主线，回填MEDIA01关联及F77扩展行，回收本阶段资源。",
         "dependsOn": [],
         "owner": "当前主协调会话",
-        "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
+        "nextAction": "本轮登记范围已闭合，不重复 F77 已过验收。后续按 R509 继续 INC03（F76 原交付对账）和 INC04（原回执权限/后续正式包收口）；Windows ACL、Android 等范围保持单列。",
         "designRef": "docs/design/easywork-progressive-video.md",
-        "latestEvidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
-        "acceptanceStatus": "current-scoped-passed-pending-two-mainline-merges"
+        "latestEvidenceRefs": [
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123",
+          "INC02-HUB-PR247-MAIN-MERGED-20261123",
+          "INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"
+        ],
+        "acceptanceStatus": "current-scoped-passed-and-both-actual-mainlines-merged",
+        "deliveredPRRefs": ["BCAI/agent-hub-app#247", "BCAI/comfy-desktop#86"],
+        "completedAt": "2026-11-23T04:50:33+08:00",
+        "registeredScope": "macOS EasyWork and native iOS Simulator; exact existing common thread-context lifecycle reused; no other platform or new two-real-Host matrix",
+        "originalAcceptancePlanAtR509": "按F77具体功能条件在模拟器和真实Electron核冷/热首播、未缓存seek、内联/全屏、同版续租/过期/版本冲突/目标切换/取消释放、完整后分享；复用MEDIA01旧播放器范围，零模型。"
       },
       {
         "id": "INC03",
@@ -58716,7 +58831,8 @@
           "behavior": "从实际局域网和已配对可信Host自动学习可发现网络，替代正常页手填范围",
           "commits": ["e1b34ef8546c3c87d1d5d4f2de8e6197ecbd584d"],
           "existingDeliverableIds": ["F06-office-subnet-discovery"],
-          "easyworkAction": "Codex和共享扫描已合PR238；EasyWork只配对自身的可信网段元数据仍缺，按INC01补齐。"
+          "easyworkAction": "冻结时EasyWork可信网段缺口已由INC01补齐并合Hub PR245/Desktop PR85；正常学习、冷恢复、本轮扫描新增范围已通过，原Codex PR238范围不重跑。",
+          "initialEasyworkActionAtFreeze": "Codex和共享扫描已合PR238；EasyWork只配对自身的可信网段元数据仍缺，按INC01补齐。"
         },
         {
           "behavior": "按真实连接错误给恢复入口：网络/超时保持重试，只有401才恢复授权",
@@ -58738,6 +58854,26 @@
           "easyworkAction": "iOS和Desktop网关/DB链已具备；INC04核实际grant组合和后续发布，118尚不含此源增量。"
         }
       ]
-    }
+    },
+    "currentExecutionScope": "本轮范围为 macOS EasyWork＋原生 iOS 模拟器。INC01 可信网段自动学习、INC02 视频渐进读取两项开发缺口已验收并双仓合并；Windows/Android、未验目标矩阵及正式发布分别记录。",
+    "countsScope": "Frozen source audit classification counts only; current completion/remaining derives from plans and actual mergedPullRequests, not these historical counts.",
+    "deliveryPRRefs": [
+      {
+        "planId": "INC01",
+        "pullRequestRef": "BCAI/agent-hub-app#245"
+      },
+      {
+        "planId": "INC01",
+        "pullRequestRef": "BCAI/comfy-desktop#85"
+      },
+      {
+        "planId": "INC02",
+        "pullRequestRef": "BCAI/agent-hub-app#247"
+      },
+      {
+        "planId": "INC02",
+        "pullRequestRef": "BCAI/comfy-desktop#86"
+      }
+    ]
   }
 }

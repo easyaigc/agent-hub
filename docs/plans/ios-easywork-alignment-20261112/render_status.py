@@ -277,8 +277,20 @@ def render_incremental_alignment(data, banner):
     freeze = refresh["sourceFreeze"]
     release = refresh["releaseBaseline"]
     definitions = data["stateDefinitions"]
+    development_plans = [p for p in refresh["plans"] if p["kind"] == "development-gap"]
+    completed_development = sum(p["state"] == "completed" for p in development_plans)
+    remaining_reconciliation = sum(p["state"] != "completed" for p in refresh["plans"]
+                                   if p["kind"] != "development-gap")
+    delivery_rows = []
+    for item in refresh.get("deliveryPRRefs", []):
+        pr = data["mergedPullRequests"][item["pullRequestRef"]]
+        delivery_rows.append((item["planId"], "[" + item["pullRequestRef"] + "](" + pr["url"] + ")",
+                              pr["baseBranch"], pr["mergeCommit"], pr["mergedAt"]))
     lines = ["# 新增提交、EasyWork 对齐与后续计划", "", banner,
              "本页及逐提交页都由同一 status.json 生成。首次盘点、源码合入、历史验收与发布包是不同事实。", "",
+             "## 当前执行结果", "", refresh.get("currentExecutionScope", "以下仅表示本轮登记范围，其他平台及正式发布单独记录。"), "",
+             f"开发缺口计划 {len(development_plans)} 项，已完成 {completed_development} 项，剩余 {len(development_plans) - completed_development} 项；原证明/发布收口任务尚余 {remaining_reconciliation} 项。数量由下方计划状态生成，不将冻结审计时发现的缺口重复列为当前待开发。", "",
+             table(["计划", "已合并PR", "目标主线", "该交付合并提交", "实际合并时间"], delivery_rows), "",
              "## 对齐时间与准确版本", "",
              table(["口径", "时间 / 提交", "边界"], [
                  ("计划建立", refresh["planEstablishedAt"], "唯一计划开始日期"),
@@ -297,7 +309,7 @@ def render_incremental_alignment(data, banner):
                  for item in refresh["recentNetDelta"]["changes"]]), "",
              "## 逐提交盘点与去重口径", "", refresh["method"], "",
              f"Hub 完整可达区间 {freeze['hub']['commitCount']} 个提交；iOS相关路径 {refresh['counts']['iosScopedCommits']} 个，其中非合并生产修改 {refresh['counts']['iosNonMergeProductionCommits']} 个；Host初筛 {refresh['counts']['hostInitiallyScopedCommits']} 个，与iOS有重叠。EasyWork完整区间 {freeze['desktop']['commitCount']} 个。归并 {len(refresh['featureGroups'])} 个主题（含验收基础设施），这些数量不能相加当功能数。完整 SHA、日期、路径和归组见 [逐提交盘点](commit-audit.md)。", "",
-             f"本轮确认{refresh['counts']['actualDevelopmentGaps']}项明确开发缺口，另有{refresh['counts']['additionalReconciliationAndReleaseTasks']}项原证明/发布收口；登记它们不会回退此前已合PR且范围匹配的功能验收。", "",
+             f"冻结审计时确认{refresh['counts']['actualDevelopmentGaps']}项明确开发缺口，另有{refresh['counts']['additionalReconciliationAndReleaseTasks']}项原证明/发布收口；当前执行结果见本页顶部，既有合并且范围匹配的功能验收继续复用。", "",
              table(["主题", "功能与优化", "原唯一功能", "EasyWork处理"], [
                  (g["id"], g["behavior"] + "；" + "；".join(g.get("optimizations", [])), "、".join(g["functionalDeliverableIds"]) or "支持检查/本轮扩展", g["assessment"])
                  for g in refresh["featureGroups"]]), "",

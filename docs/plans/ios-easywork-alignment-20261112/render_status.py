@@ -169,8 +169,176 @@ def render_execution_focus(data, banner):
     return "\n".join(lines)
 
 
+
+def validate_incremental_alignment(data):
+    refresh = data.get("alignmentRefresh")
+    if not refresh:
+        return  # Older ledger snapshots remain readable.
+    require(refresh["schemaVersion"] == 1, "Unknown incremental audit schema")
+    baseline = {f["id"] for f in data["features"]}
+    extensions = data["extensionFeatures"]
+    extension_ids = {f["id"] for f in extensions}
+    require(len(extension_ids) == len(extensions) and not baseline & extension_ids,
+            "Extension IDs must be unique and separate from the baseline")
+    review = refresh["scopeReview"]
+    require(review["baselineCount"] == len(baseline) == 75,
+            "Incremental audit must preserve the original denominator")
+    require(set(review["additionalIds"]) == extension_ids
+            and review["extensionCount"] == len(extension_ids), "Unreviewed extension scope")
+    registry = data["evidenceRegistry"]
+    for feature in extensions:
+        for dimension in ("development", "acceptance", "delivery", "execution"):
+            record = feature[dimension]
+            require(record["state"] in data["stateDefinitions"][dimension],
+                    f"{feature['id']}: invalid extension {dimension}")
+            require(set(record.get("evidenceRefs", [])) <= registry.keys(),
+                    f"{feature['id']}: unknown extension evidence")
+        passed = feature["acceptance"]["state"] in {"current-passed", "matched-reuse"}
+        refs = feature["acceptance"]["currentEvidence"]
+        require(set(refs) <= registry.keys(), "Unknown current extension evidence")
+        if passed:
+            require(bool(refs) and feature["development"]["state"] == "implemented-scoped",
+                    "Extension pass requires implementation and evidence")
+            for ref in refs:
+                evidence = registry[ref]
+                require(evidence["kind"] in {"real-dev", "exact-match-review"},
+                        "Source audit cannot close extension acceptance")
+                require(all(evidence.get(key) for key in (
+                    "sourceCommit", "packageSha256", "environment", "scope", "path", "sha256")),
+                    "Incomplete extension acceptance proof")
+                allowed = {"simulator", "not-required"} if data["acceptancePolicy"].get("mobileEnvironment") == "simulator" else {"simulator", "physical", "not-required"}
+                require(evidence.get("mobileEnvironment") in allowed,
+                        "Extension acceptance environment mismatch")
+        if feature["execution"]["state"] == "closed":
+            require(passed, "Extension cannot close without acceptance")
+        require(bool(feature["nextAction"].strip()), "Missing extension next action")
+    deliverables = data["functionalDeliverables"] + data["extensionDeliverables"]
+    deliverable_ids = {d["id"] for d in deliverables}
+    require(len(deliverable_ids) == len(deliverables), "Duplicate extension deliverable")
+    require({fid for d in data["extensionDeliverables"] for fid in d["featureIds"]} == extension_ids,
+            "Extension deliverables must cover exactly the extension scope")
+    for item in data["extensionDeliverables"]:
+        require(set(item["evidenceRefs"]) <= registry.keys(), "Unknown extension deliverable evidence")
+        for dimension in ("development", "acceptance", "delivery", "execution"):
+            require(item[dimension + "State"] in data["stateDefinitions"][dimension],
+                    "Invalid extension deliverable state")
+        require(all(item.get(key) for key in ("behavior", "acceptanceCriteria", "nextAction", "owner")),
+                "Incomplete concrete extension deliverable")
+        if item["acceptanceState"] in {"current-passed", "matched-reuse"}:
+            require(all(next(f for f in extensions if f["id"] == fid)["acceptance"]["state"]
+                        in {"current-passed", "matched-reuse"} for fid in item["featureIds"]),
+                    "Extension deliverable pass requires evidenced parent acceptance")
+        require(item["executionState"] != "closed" or all(
+            next(f for f in extensions if f["id"] == fid)["execution"]["state"] == "closed"
+            for fid in item["featureIds"]), "Closed extension deliverable requires closed parent")
+    plans = refresh["plans"]
+    plan_ids = {p["id"] for p in plans}
+    require(len(plan_ids) == len(plans), "Duplicate incremental plan ID")
+    for plan in plans:
+        require(set(plan["featureIds"]) <= baseline | extension_ids
+                and set(plan["deliverableIds"]) <= deliverable_ids,
+                "Unknown incremental plan function")
+        require(set(plan["dependsOn"]) <= plan_ids and plan["id"] not in plan["dependsOn"],
+                "Invalid incremental dependency")
+        require(all(plan.get(key) for key in ("implementation", "acceptance", "completion")),
+                "Incomplete incremental plan")
+    require(refresh["counts"]["actualDevelopmentGaps"] == sum(
+        plan["kind"] == "development-gap" for plan in plans), "Development gap count mismatch")
+    require(refresh["counts"]["additionalReconciliationAndReleaseTasks"] == sum(
+        plan["kind"] != "development-gap" for plan in plans), "Reconciliation count mismatch")
+    groups = refresh["featureGroups"]
+    group_ids = {g["id"] for g in groups}
+    require(len(group_ids) == len(groups) == refresh["counts"]["deduplicatedThemes"],
+            "Incremental theme count mismatch")
+    for group in groups:
+        require(set(group["functionalDeliverableIds"]) <= deliverable_ids,
+                "Unknown theme deliverable")
+    for repository, key in (("hub", "hubCommits"), ("desktop", "desktopCommits")):
+        commits = refresh[key]
+        shas = {c["sha"] for c in commits}
+        require(len(shas) == len(commits) == refresh["sourceFreeze"][repository]["commitCount"],
+                "Commit audit coverage mismatch")
+        require(all(re.fullmatch(r"[a-f0-9]{40}", sha) for sha in shas), "Invalid commit SHA")
+        require(refresh["sourceFreeze"][repository]["commit"] in shas,
+                "Commit audit must include frozen tip")
+        for commit in commits:
+            require(all(commit.get(k) is not None for k in ("subject", "committedAt", "changedPaths", "basis")),
+                    "Incomplete commit audit record")
+            if repository == "hub":
+                require(set(commit["groupIds"]) <= group_ids, "Unknown commit theme")
+        if repository == "hub":
+            require(all(set(g["commitShas"]) <= shas for g in groups), "Theme commit outside audit range")
+    require(refresh["counts"]["newProductAcceptancePasses"] == 0,
+            "Static incremental audit does not create product acceptance")
+
+
+def render_incremental_alignment(data, banner):
+    refresh = data["alignmentRefresh"]
+    freeze = refresh["sourceFreeze"]
+    release = refresh["releaseBaseline"]
+    definitions = data["stateDefinitions"]
+    lines = ["# 新增提交、EasyWork 对齐与后续计划", "", banner,
+             "本页及逐提交页都由同一 status.json 生成。首次盘点、源码合入、历史验收与发布包是不同事实。", "",
+             "## 对齐时间与准确版本", "",
+             table(["口径", "时间 / 提交", "边界"], [
+                 ("计划建立", refresh["planEstablishedAt"], "唯一计划开始日期"),
+                 ("首次源码快照", refresh["initialSourceCommittedAt"] + " / " + refresh["initialSourceCommit"], "首次审计并非统一验收提交"),
+                 ("原本地台账", str(refresh["previousLocalLedger"]["revision"]) + " / " + refresh["previousLocalLedger"]["updatedAt"], "更新时点不能代表源码已全量对齐"),
+                 ("本次承接主线台账", str(refresh["incorporatedMainLedger"]["revision"]) + " / " + refresh["incorporatedMainLedger"]["updatedAt"], "保留新增发布和失败记录"),
+                 ("Hub main 冻结", freeze["hub"]["committedAt"] + " / " + freeze["hub"]["commit"], "已 fetch 远端，按可达提交盘点"),
+                 ("EasyWork master 冻结", freeze["desktop"]["committedAt"] + " / " + freeze["desktop"]["commit"], "源码状态；未称当前安装指纹"),
+                 (release["version"] + "发布记录", release["sourceCommit"], release["scope"]),
+             ]), "",
+             "正式包 SHA-256：`" + release["packageSha256"] + "`。晚于此包的源变化：`" + release["pendingSourceCommit"] + "`；仅影响本轮两个原文件解析方法的恢复分类及共同向量，后续发布需纳入，不改写118原记录。", "",
+             "## 最近一次收尾后的实际净变化", "", refresh["recentNetDelta"]["scope"], "",
+             f"R503之后有{refresh['recentNetDelta']['reachableCommitCount']}个可达提交；限定生产路径净变更{len(refresh['recentNetDelta']['changedPaths'])}个文件，主要行为如下。", "",
+             table(["行为变化", "源提交", "原功能", "EasyWork下一步"], [
+                 (item["behavior"], "、".join(item["commits"]), "、".join(item["existingDeliverableIds"]), item["easyworkAction"])
+                 for item in refresh["recentNetDelta"]["changes"]]), "",
+             "## 逐提交盘点与去重口径", "", refresh["method"], "",
+             f"Hub 完整可达区间 {freeze['hub']['commitCount']} 个提交；iOS相关路径 {refresh['counts']['iosScopedCommits']} 个，其中非合并生产修改 {refresh['counts']['iosNonMergeProductionCommits']} 个；Host初筛 {refresh['counts']['hostInitiallyScopedCommits']} 个，与iOS有重叠。EasyWork完整区间 {freeze['desktop']['commitCount']} 个。归并 {len(refresh['featureGroups'])} 个主题（含验收基础设施），这些数量不能相加当功能数。完整 SHA、日期、路径和归组见 [逐提交盘点](commit-audit.md)。", "",
+             f"本轮确认{refresh['counts']['actualDevelopmentGaps']}项明确开发缺口，另有{refresh['counts']['additionalReconciliationAndReleaseTasks']}项原证明/发布收口；登记它们不会回退此前已合PR且范围匹配的功能验收。", "",
+             table(["主题", "功能与优化", "原唯一功能", "EasyWork处理"], [
+                 (g["id"], g["behavior"] + "；" + "；".join(g.get("optimizations", [])), "、".join(g["functionalDeliverableIds"]) or "支持检查/本轮扩展", g["assessment"])
+                 for g in refresh["featureGroups"]]), "",
+             "## 新增F76/F77（原75项分母保留）", "", refresh["scopeReview"]["rule"], "",
+             table(["新增功能", "开发", "验收", "交付", "执行 / 下一步"], [
+                 (f["id"] + " " + f["name"], definitions["development"][f["development"]["state"]] + "：" + f["development"]["scope"],
+                  definitions["acceptance"][f["acceptance"]["state"]] + "：" + f["acceptance"]["scope"],
+                  definitions["delivery"][f["delivery"]["state"]] + "：" + f["delivery"]["note"],
+                  definitions["execution"][f["execution"]["state"]] + "：" + f["nextAction"]) for f in data["extensionFeatures"]]), "",
+             table(["具体唯一功能", "用户操作", "验收条件", "原范围 / 下一步"], [
+                 (d["id"], d["behavior"], d["acceptanceCriteria"], d["nextAction"]) for d in data["extensionDeliverables"]]), "",
+             "## 后续开发、模拟器验收与合并顺序", "",
+             "每项沿稳定ID开发、验收、合并；桌面使用真实Electron独立核对，iOS只用模拟器。先查原交付与准确范围，已通过的不重跑。此处是排期，没有启动新验收或部署。", ""]
+    for plan in sorted(refresh["plans"], key=lambda p: p["order"]):
+        lines += ["### " + plan["id"] + " · " + plan["title"], "",
+                  "范围：" + "、".join(plan["featureIds"]) + "；唯一功能：" + "、".join(plan["deliverableIds"]) + "。状态：" + plan["state"] + "。", "",
+                  "开发/核对：" + plan["implementation"], "", "验收/复用：" + plan["acceptance"], "",
+                  "完成条件：" + plan["completion"], ""]
+    lines += ["## 关键生产调用链", ""]
+    for name, records in refresh["mappingEvidence"].items():
+        lines += ["### " + name, "", table(["冻结源码", "生产位置", "核对结果"], [
+            (record["sha"], record["path"] + ":" + ",".join(map(str, record.get("lines", []))), record["detail"])
+            for record in records]), ""]
+    lines += ["## 本轮证据边界", "", *["- " + item for item in refresh["knownLimitations"]], ""]
+    audit = ["# Git 提交逐项盘点", "", banner,
+             "同一台账的只读索引。所有提交已由可达祖先关系确认在冻结主线；合并/文档/测试不另计功能，逐行记录不代表逐提交新增验收。完整路径留在JSON，表中显示实际组件便于浏览。", ""]
+    for repository, key in (("hub", "hubCommits"), ("desktop", "desktopCommits")):
+        frozen = freeze[repository]
+        audit += ["## " + frozen["repository"] + " / " + frozen["branch"], "",
+                  "区间（左开右闭）：`" + frozen["rangeBaseExclusive"] + ".." + frozen["commit"] + "`。", "",
+                  table(["提交 / 日期", "功能或优化 / 提交说明", "主题与处理", "实际组件"], [
+                      ("[" + c["sha"] + "](https://git.51easyai.com/" + frozen["repository"] + "/commit/" + c["sha"] + ") / " + c["committedAt"],
+                       c["subject"], "、".join(c.get("groupIds", c.get("featureGroups", []))) + " / " + c["disposition"] + "：" + c["basis"],
+                       "、".join(sorted({"/".join(path.split("/")[:2]) for path in c["changedPaths"]})) or "无首父文件差异")
+                      for c in refresh[key]]), ""]
+    return {"incremental-alignment.md": "\n".join(lines), "commit-audit.md": "\n".join(audit)}
+
+
 def validate(data):
     validate_functional_deliverables(data)
+    validate_incremental_alignment(data)
     require(data["schemaVersion"] == 2, "Unsupported ledger schema")
     features = data["features"]
     require(len(features) == 75, "Expected 75 existing F IDs; a scope change needs an explicit schema review")
@@ -363,6 +531,11 @@ def render(data):
     views = {"progress.md": "\n".join(progress), "checklist.md": "\n".join(checklist)}
     if "executionFocus" in data:
         views["core-acceptance.md"] = render_execution_focus(data, banner)
+    if data.get("alignmentRefresh"):
+        views.update(render_incremental_alignment(data, banner))
+        for name in ("progress.md", "checklist.md", "core-acceptance.md"):
+            if name in views:
+                views[name] += "\n\n新增提交与F76/F77扩展、EasyWork待补能力和后续计划见 [增量对齐](incremental-alignment.md)；原75项统计口径保留。\n"
     return views
 
 

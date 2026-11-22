@@ -1,0 +1,182 @@
+# 新增提交、EasyWork 对齐与后续计划
+
+> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 509，更新 2026-11-22T13:33:39+08:00。台账 SHA-256：`3eb6605953a7820914e64a0f5947200f7baae201e91a66b38bb2a9487dca9a2f`。
+
+本页及逐提交页都由同一 status.json 生成。首次盘点、源码合入、历史验收与发布包是不同事实。
+
+## 对齐时间与准确版本
+
+| 口径                 | 时间 / 提交                                                          | 边界                                                                                      |
+| -------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 计划建立             | 2026-11-12                                                           | 唯一计划开始日期                                                                          |
+| 首次源码快照         | 2026-11-09T20:22:51+08:00 / 276bf420b8545b9c1389fac857586c469bc8eff9 | 首次审计并非统一验收提交                                                                  |
+| 原本地台账           | 503 / 2026-11-22T00:10:10.197878+08:00                               | 更新时点不能代表源码已全量对齐                                                            |
+| 本次承接主线台账     | 508 / 2026-11-21T19:27:20.242739+00:00                               | 保留新增发布和失败记录                                                                    |
+| Hub main 冻结        | 2026-11-22T08:25:38+08:00 / 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | 已 fetch 远端，按可达提交盘点                                                             |
+| EasyWork master 冻结 | 2026-11-22T08:47:39+08:00 / 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | 源码状态；未称当前安装指纹                                                                |
+| iOS 118发布记录      | 6f65e484a1f3c1d8a27e28b7796a7038db0d2e23                             | 引用R508正式HTTPS入口已发布记录；本次未访问线上或确认手机安装。8ff源码与118产品输入不同。 |
+
+正式包 SHA-256：`163004a41a60721c69c00c2670c0cee9c472faac046154ac28da559417d31433`。晚于此包的源变化：`4ffeb603bfcebc87ae8330dd87912ac96934151f`；仅影响本轮两个原文件解析方法的恢复分类及共同向量，后续发布需纳入，不改写118原记录。
+
+## 最近一次收尾后的实际净变化
+
+R503收尾后到本轮冻结main的净差异；其余早期功能为补收索引和复用原交付。以下3项行为不等于3项待开发。
+
+R503之后有50个可达提交；限定生产路径净变更10个文件，主要行为如下。
+
+| 行为变化                                                           | 源提交                                   | 原功能                                                              | EasyWork下一步                                                                   |
+| ------------------------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 从实际局域网和已配对可信Host自动学习可发现网络，替代正常页手填范围 | e1b34ef8546c3c87d1d5d4f2de8e6197ecbd584d | F06-office-subnet-discovery                                         | Codex和共享扫描已合PR238；EasyWork只配对自身的可信网段元数据仍缺，按INC01补齐。  |
+| 按真实连接错误给恢复入口：网络/超时保持重试，只有401才恢复授权     | e1b34ef8546c3c87d1d5d4f2de8e6197ecbd584d | F07-authorization-error-recovery-matrix、F08-registered-scope       | App共享路径已有，关联原合并范围复用，不额外建立重复开发任务。                    |
+| 两类原文件解析断线后查询同一操作回执，未知结果不重发               | 4ffeb603bfcebc87ae8330dd87912ac96934151f | F72-document-links、F72-document-candidate、F43-immutable-operation | iOS和Desktop网关/DB链已具备；INC04核实际grant组合和后续发布，118尚不含此源增量。 |
+
+## 逐提交盘点与去重口径
+
+按冻结远端可达祖先区间枚举全部提交；每项保存首父路径/归组和排除原因。iOS非合并生产差异及Host/Adapter相关上下文由独立资料核验执行方读取；合并不重复计功能，4ff合并自带行为变化另列。历史大集成未宣称逐行全语义/本轮真实验收；关键新缺口由实际装配调用链复核。
+
+Hub 完整可达区间 409 个提交；iOS相关路径 270 个，其中非合并生产修改 58 个；Host初筛 92 个，与iOS有重叠。EasyWork完整区间 151 个。归并 22 个主题（含验收基础设施），这些数量不能相加当功能数。完整 SHA、日期、路径和归组见 [逐提交盘点](commit-audit.md)。
+
+本轮确认2项明确开发缺口，另有2项原证明/发布收口；登记它们不会回退此前已合PR且范围匹配的功能验收。
+
+| 主题                      | 功能与优化                                                                                                                                                            | 原唯一功能                                                                                                                                           | EasyWork处理                                                                                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| creation                  | 创建、首条发送与目的地选择；新建目的地选择与无项目首聊；首条创建/附件原操作ID及目标在冷恢复后保持                                                                     | F26-registered-scope、F27-registered-scope、F29-registered-scope、F45-registered-scope、F46-registered-scope                                         | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| receipt                   | 原回执、离线与有限等待；回执查询绑定原thread，停止确认必须为boolean；明确终态拒绝与UNKNOWN分开显示，离线控制/发送/回复等待有界结束；文件解析原结果查询而非盲目重发    | F44-query-original、F44-network-recovery、F44-bounded-offline-wait-and-unknown-ack、F43-immutable-operation、F48-failure-next-step                   | 原操作去重已有交付；4ffeb603新增文件解析original-receipt-only分类，Desktop网关/DB已支持。INC04核特定权限组合与发布增量，不重写command/status。                 |
+| stream                    | 历史、流、父子运行与恢复；后台冷启恢复会话和任务缓存；桌面版本流兼容、快照恢复与父系/子任务完整历史；大历史增量同步沿原F68交付                                        | F17-older-page、F18-stream、F18-snapshot-recovery、F18-event-reset-child-recovery、F20-child-history、F68-incremental-cache                          | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| usage                     | 额度及用量展示；按目标读取用量/额度；稳定已配对身份与共享用量，本地化和迁移边界                                                                                       | F73-registered-scope                                                                                                                                 | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| download                  | 附件下载与真实进度；真实下载字节进度与速度；普通预览和完整文件保存/分享原结论保持                                                                                     | F32-ordinary-preview、F32-download-progress、F32-share-export                                                                                        | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| upload                    | 附件与独立文件传输、容量和取消；可续传分块上传及失败保留原文件/草稿；停止上传核电脑真实取消回执；独立EasyWork收件、流式大文件与实际容量协商；文件摘要控制临时内存占用 | F31-ordinary-upload、F31-upload-failure、F31-stop-upload-on-computer、F59-file-upload、F59-file-download、F59-transfer-resume、F59-large-file-upload | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| dev-preview               | F76 开发服务预览（独立于 F72 文档阅读）；共同开发预览引擎及原生页面/API/HMR/关闭；EasyWork已接入具名创建/关闭和绑定短期票据；独立收录F76                              | F76-direct-dev-preview                                                                                                                               | 新增F76身份漏收录；共同引擎和macOS EasyWork直连已实现且有限范围已验收。INC03只收敛原证明与当前能力边界，不重新开发整项。                                       |
+| composer                  | 输入框长按粘贴与附件选择对比；聚焦输入框长按仍可粘贴；深色模式附件选中对比度修复                                                                                      | F29-registered-scope、F31-image-upload                                                                                                               | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| open                      | 手机具名打开桌面聊天；手机具名打开EasyWork原聊天；原owner回执及持久状态恢复；与历史可读分开                                                                           | F28-desktop-open                                                                                                                                     | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| connection                | EasyWork 已认证路由与传输兼容；已认证连接候选及路由保留；封包/游标整数兼容与Unicode行分隔传输；网络故障/超时保留重试，仅真实401进入授权恢复                           | F08-registered-scope、F07-authorization-recovery                                                                                                     | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| ui                        | 工具详情、项目路径与启动视觉；结构化工具明细和项目路径在视口内换行；克制品牌启动页与原生enabled可用状态                                                               | F20-tool-details                                                                                                                                     | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| guidance                  | 迟到追加被拒绝时的反馈；任务结束后迟到追加明确显示拒绝原因                                                                                                            | F38-finished-run-guard                                                                                                                               | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| document                  | 文档相对链接与取消阅读保护；EasyWork文档相对链接及取消阅读保护；原文件链接/阅读来源校验及解析回复丢失后的原回执恢复                                                   | F72-markdown-read、F72-document-links、F72-document-candidate                                                                                        | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| approval                  | 原命令审批和异步问题；EasyWork原工具审批回执校验；异步问题非阻塞投影与回答状态；桌面自填答案保留原空白/换行，仍拒绝纯空白                                             | F41-registered-scope、F42-candidate-question-fix、F58-registered-scope                                                                               | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| compression-speed         | 上下文压缩与运行速度；实时上下文压缩状态；显示准确Run的请求速度与实际速度，陈旧回调按当前模型目录校验                                                                 | F22-compression、F36-generation-speed                                                                                                                | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| voice                     | 录音原结果查询与恢复；原录音识别结果只读恢复；用户手动重试仍查询原结果，不重复转写                                                                                    | F64-audio-transcription                                                                                                                              | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| media                     | 消息图片与视频预览、渐进播放；恢复消息内图片/视频预览；共用渐进视频播放器已入主线，EasyWork分段适配缺口单列F77                                                        | F32-ordinary-preview、F77-easywork-progressive-video                                                                                                 | F77共同播放器已在主线；EasyWork prepareMediaRead仍为默认nil、桌面无固定版本snapshot/lease/range，登记INC02。原图片/完整下载和MEDIA01旧播放器证据复用其原范围。 |
+| discovery                 | 办公室网络自动发现及授权恢复；办公室手填范围已被实际局域网和可信Codex Host网段自动学习替代；优先原地址、完整且可取消的范围扫描；EasyWork单独学习远端可信范围仍缺      | F06-office-subnet-discovery、F07-authorization-error-recovery-matrix、F06-easywork-authenticated-discovery-networks                                  | Codex自动网络学习PR238与共享错误区分已合入；EasyWork独立可信网络范围学习仍缺，登记INC01；旧PR235手填范围已被正常自动学习替代，历史证据保留。                   |
+| notifications             | 通知与已读状态；共享通知控制器和原生真实拉取记录；逐电脑设置、后台收件、点击准确目标与去重/撤回沿原功能交付                                                           | F51-notification-settings、F52-background-notification、F54-notification-open                                                                        | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| acceptance-infrastructure | 隔离验收及依赖注入辅助；隔离iOS DEV、具名模拟器复用正常单一存储；授权HTTP依赖隔离及精确只读验收对象；这些是辅助工作而非新用户功能                                     | 支持检查/本轮扩展                                                                                                                                    | 关联原具体功能与合并范围；沿用原交付，只对明确新增或受影响范围补验。                                                                                           |
+| dispatch                  | 提升原队列项到当前轮并核对准确原owner/消息；同轮提升准确原队列消息，保留原owner/Turn/消息身份及回执                                                                   | F37-execute-original-item、F38-live-guidance                                                                                                         | 已有共同具名调度及EasyWork映射；复用原功能交付，不计新缺口。                                                                                                   |
+| plans                     | 兼容桌面更多实际计划形态，阅读、批准与调整；兼容实际桌面计划数据形态，保持原阅读/批准/调整流程                                                                        | F40-read-plan、F40-approve-adjust-plan、F40-collapse-plan                                                                                            | 适配层计划解析优化；已有F40原交付，沿用原范围。                                                                                                                |
+
+## 新增F76/F77（原75项分母保留）
+
+附加扩展记录独立四维状态，不改原75分母、16EW或32AC历史计数；全局77功能定义引用manifest，Android独立。
+
+| 新增功能         | 开发                                                                                                                           | 验收                                                                                                                       | 交付                                                                                            | 执行 / 下一步                                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F76 开发服务预览 | 已实现（登记范围）：共同引擎，macOS Codex Host及EasyWork LAN直连HTTP/WS/HMR/streaming与具名关闭                                | 历史部分通过，剩余未验收：原Electron+iOS模拟器限定直连场景已过；完整PV/普通消息入口及当前装配未逐项复核                    | 已集成，未部署：Hub c953d1e4已在冻结main，Desktop PR66 46c33a3d已在冻结master；本次未核正式安装 | 待执行（未在进行）：INC03：登记原合入和限定通过，范围匹配直接复用；只有实际新增或改变行为才补受影响验收，不因原报告缺普通入口截图重复测试。未支持通道列共同后续。                                 |
+| F77 视频渐进播放 | 部分实现，仍有开发缺口：共同iOS播放器及Codex固定版本读取已存在；EasyWork Host/Adapter/client分段适配未实现，原完整下载回退保留 | 历史部分通过，剩余未验收：MEDIA01已有播放器/Host限定证据保持；EasyWork渐进播放当前未验收，35d/实体17次不升级为EasyWork通过 | 当前组合的集成/部署未核实：共同播放器1be178e5已在冻结main；EasyWork渐进协议未交付               | 待执行（未在进行）：INC02：补共同固定版本snapshot/lease/range/cancel领域映射与EasyWork override，复用现有AVPlayer页面；模拟器和真实Electron核首次播放、未缓存seek、续租/过期/版本冲突及退出释放。 |
+
+| 具体唯一功能                   | 用户操作                                                                 | 验收条件                                                                                                                                                                                                                                                         | 原范围 / 下一步                                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| F76-direct-dev-preview         | 从聊天开发服务链接打开原生预览，看页面/API和实时热更新，关闭后释放会话   | 原11/15 macOS Electron+iOS模拟器直连页面/API/HMR/关闭证明按原scope复用；匹配共同引擎、能力、target/thread/设备/票据、runtime:control和正常入口。Relay-only/Windows/上游HTTPS/外部浏览器等无上游支持的能力保留共同限制。                                          | INC03：已合且范围匹配沿原验收复用；只对实际新差异补验，不以缺截图重跑既有预览。                                        |
+| F77-easywork-progressive-video | EasyWork电脑视频边加载边播放，拖到未缓存位置，切全屏后连续播放并安全退出 | 模拟器实际AVPlayer首次/未缓存seek/内联全屏连续/冷恢复；固定版本ETag与Range/206/Content-Range校验，同版续租、过期、版本或target冲突有界结束；退出及切目标取消原readId，真实Electron独立核读取范围/lease释放，完整版本才允许分享。旧Host继续完整下载，零模型输入。 | INC02；先EasyWork固定版本资源快照/租约/范围/取消与能力协商，再override共同AgentClient，沿MEDIA01跟进，保持F75/A6暂停。 |
+
+## 后续开发、模拟器验收与合并顺序
+
+每项沿稳定ID开发、验收、合并；桌面使用真实Electron独立核对，iOS只用模拟器。先查原交付与准确范围，已通过的不重跑。此处是排期，没有启动新验收或部署。
+
+### INC01 · EasyWork已认证网络范围自动学习
+
+范围：F06、F08、F10；唯一功能：F06-easywork-authenticated-discovery-networks。状态：planned。
+
+开发/核对：EasyWork Host从真实网卡/掩码导出符合共同DiscoveryNetworksSnapshot的可选元数据，经现有认证runtime/context映射；App提取到共同目标缓存和OfficeHostDiscovery。无第三套业务协议，不把公开/host或mDNS当可信范围。
+
+验收/复用：模拟器正常连接学习、范围持久化、冷启发现原目标、旧端缺字段/404/离线回退、错误目标/pin拒绝、取消不丢原聊天草稿；真实Electron独立核完整target/实际CIDR/零新输入。复用PR238扫描及通用连接错误验收。
+
+完成条件：Host/Adapter和iOS影响代码按共同契约完成，定向检查+模拟器/真实Electron断言通过，关联两仓准确PR/merge，回填原ID并阶段清理。
+
+### INC02 · EasyWork视频渐进读取适配
+
+范围：F77；唯一功能：F77-easywork-progressive-video。状态：planned。
+
+开发/核对：复用现有attachment-reads固定版本snapshot/lease/range/cancel领域契约，Host/Adapter约束真实资源和授权后声明attachments:range-read:v1；EasyWorkAgentClient override共用读取方法，保留旧端完整下载，不复制播放器。
+
+验收/复用：按F77具体功能条件在模拟器和真实Electron核冷/热首播、未缓存seek、内联/全屏、同版续租/过期/版本冲突/目标切换/取消释放、完整后分享；复用MEDIA01旧播放器范围，零模型。
+
+完成条件：桌面与App能力协商/固定版本读取交付，全部新增断言通过并按功能PR合主线，回填MEDIA01关联及F77扩展行，回收本阶段资源。
+
+### INC03 · 收录F76原交付并匹配当前适用范围
+
+范围：F76；唯一功能：F76-direct-dev-preview。状态：planned。
+
+开发/核对：已有macOS直连预览引擎、EasyWork创建/关闭适配及原生页不重写；关联原证明、Hub主线提交和Desktop PR66，范围匹配直接复用原验收。只有实际新增或改变行为影响该范围，才安排对应补验。
+
+验收/复用：承接原11/15 Electron+模拟器及已合主线的限定交付。原原始报告DEBUG入口的证据边界保留，但不因缺少另一张普通入口截图重复测试。将来若入口或装配实际变化，仅对该差异及受影响的链接打开/API/HMR/关闭和目标/设备/票据边界补模拟器、桌面验证；零模型。
+
+完成条件：原PR66/Hub提交/原证据与F76唯一ID关联，明确现有可复用范围和上游共同限制；无实际新差异即可完成本项对账，不新增重复开发或验收门槛。
+
+### INC04 · 原文件解析回执与正式版本增量收口
+
+范围：F32、F43、F44、F72；唯一功能：F72-document-links、F72-document-candidate、F43-immutable-operation、F44-query-original。状态：planned。
+
+开发/核对：两种resolve会准备传输，Swift已归original-receipt-only；Desktop已由认证网关前置command/status并DB持久化。核files:read与runtime:read实际grant组合，旧端/未知结果只查询原ID，不静默扩权或重放。无需新增RPC。
+
+验收/复用：先复用原回执交付/已合PR范围；仅在原证据未覆盖此resolve或实际授权组合时补模拟器丢响应→查询同一ID→terminal/uncertain/冷恢复，独立Electron核零重复解析/输入和迟到不覆盖新阅读。
+
+完成条件：源码与特定权限组合核对、需要的增量验收及后续正式包来源记录齐全。正式118仍按6f65原输入，4ff修复安排进入后续包；本次不部署或覆盖118历史。
+
+## 关键生产调用链
+
+### network
+
+| 冻结源码                                 | 生产位置                                                                               | 核对结果                                                                                                                                                                                                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/CodexDiscovery.swift:255,264,269,275,865,884,895,923,944,955,980,1002 | Codex networks GET validates version and full target; nil on 404/offline. Local getifaddrs obtains en Wi-Fi/Ethernet mask; availableScopes combines local networks and saved codexDirect networks, scans Codex and EasyWork. EasyWork known target/key/pin checked. |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/SessionStore.swift:3119,3124                                          | Codex cached networks retained and local mask may be learned after verified matching read.                                                                                                                                                                          |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/direct-endpoints.ts:9,45,50,61                     | SystemDirectAddressProvider returns host and networkKind, not CIDR/netmask metadata.                                                                                                                                                                                |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/host-discovery.ts:4,91                             | mDNS browsing returns candidate addresses, explicitly not trusted task targets.                                                                                                                                                                                     |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/embedded-lan-host.ts:153,160,166,344,385,396       | LAN HTTPS /host discovery and authorized WSS via device grant/DPoP; no matching authenticated networks endpoint found.                                                                                                                                              |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-runtime-bridge.ts:280,288                   | runtime/context exposes connectionCandidates and capabilities; inspected path does not expose netmask-derived networks.                                                                                                                                             |
+
+### resolveRecovery
+
+| 冻结源码                                 | 生产位置                                                                                        | 核对结果                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/desktop-encrypted-host.ts:21,143,150,157,158,159,168        | LAN and Relay share authenticated/confirmed bound channel, full target, authorizeRequest, then command service before runtime dispatch.                                                                                                                                                    |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | packages/remote-access/src/command-receipts.ts:51,58,70,124,127,134,140,148,154,160,175,191,270 | command/status intercepted and reads original device/target/id keyed receipt; resolve classified original-receipt-only, same ID hash conflict rejected; saves submitting, completed, failed or uncertain; pending joined; existing response returned and unknown not dispatched again.     |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | packages/agent-protocol/src/operation-recovery.ts:2,43,46,52                                    | Both resolve methods absent from safe reads and fall back to original-receipt-only.                                                                                                                                                                                                        |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/index.ts:4266                                                             | normal application supplies services.remoteCommandRepository; application-services.ts:7580 creates DB repository; packages/db/src/repositories/remote-command-repository.ts:22-44 persists records. Fallback createRemoteCommandService without repository uses memory only.               |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/desktop-device-authorization.ts:271,287,292,297,308         | Resolve requires files:read; command/status requires runtime:read. A hypothetical files:read-only grant cannot query status unless authorized runtime:read too; verify issued grant combinations, do not loosen authority silently.                                                        |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-resource-requests.ts:98,139                          | Both resolve paths prepare transfers; filesystem permission applies to document resolution. Receipt is warranted despite read-like naming.                                                                                                                                                 |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/EasyWorkSession.swift:215,224,437,440,442,445,455,475,568,571,578,583          | Both resolve methods omitted from safe reads; reconnect queries command/status with original request ID fallback; completed/failed adopted only after target, device, ID, method and requestHash match; null or uncertain stops without republish. Failed returns authenticated rejection. |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/EasyWorkDocumentFileResolution.swift:16,22,24,26                               | Document lookup validates target/source/response and cancels before publishing late child.                                                                                                                                                                                                 |
+
+### F76
+
+| 冻结源码                                 | 生产位置                                                                                                | 核对结果                                                                                                                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-runtime-bridge.ts:273,276,280,288                            | Named create/close and conditional runtime capabilities.                                                                                                                                             |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts:41                                   | Four capabilities only when service available.                                                                                                                                                       |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-dev-previews.ts:23,38,53,56,69,82,93,105,124,146,164,187,203 | Shared DevPreviews engine; macOS/enabled gating; bound target/device; separate random token, per-thread scope, revocation and binding recheck, runtime:control; session service is finite/temporary. |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/embedded-lan-host.ts:344,352,357                                    | Registered /v1/dev-previews/connect WSS upgrade on LAN endpoint with local-address/no-origin admission.                                                                                              |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | packages/agent-hub-dev-preview/source-manifest.json:1                                                   | Bundled engine from Hub 2d05a918b245595d01870d7ec8a0d8b23634d22b; source/output SHA-256 manifest is an input pin, not current run evidence.                                                          |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/EasyWorkDevPreview.swift:6,8,9,13,16,19,23,31                                          | Checks capability, creates operation with original id, validates target/thread, uses pinned TLS WSS with separate ticket.                                                                            |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/DevServicePreview.swift:131,190,261                                                    | Shared native preview page chooses EasyWork preparation.                                                                                                                                             |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | docs/acceptance/dev-service-preview-easywork-20261115.md:1                                              | Historical Electron plus iOS simulator real limited direct-path acceptance; no production deployment, physical network or production grant claim.                                                    |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | docs/acceptance/dev-service-preview-main-merge-20261115.md:1                                            | Main integration records separate real Electron + simulator result; old candidate and main merge results retain separate fingerprints.                                                               |
+
+### F77
+
+| 冻结源码                                 | 生产位置                                                                           | 核对结果                                                                                                                                                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | packages/protocol/src/attachment-reads.ts:4,5,9                                    | Common optional range-read v1 defines preparing/ready fixed attachment and lease.                                                                                                                  |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/MediaPlayback.swift:35,44,45,61,66,72,88,94,95,99,103,109,414,466 | Shared player obtains authorized snapshot/lease; validates target, attachment and ETag, If-Match + Range and 206/Content-Range; cancels by read ID.                                                |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/AgentClient.swift:231,280,559                                     | AgentClient default prepareMediaRead returns nil; Codex client overrides using HostService. No EasyWork override found in EasyWorkAgentClient.                                                     |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | apps/ios/Sources/EasyWorkAgentClient.swift:1423,1433,1436,1438,1440,1446,1455      | download calls resource/read, loops chunks into Data, completes transfer and verifies complete file. Offset/length do not constitute versioned snapshot/lease video range contract.                |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts:35,75,80        | No attachments:range-read:v1 capability in runtime capability list; ordinary transfer capabilities present.                                                                                        |
+| 65e6df123746189a5c0fbcfc560e239a0f1d6b20 | apps/desktop/src/main/remote-access/remote-resource-requests.ts:10,146,156,166     | Named resource read/download and offsets present, but no corresponding version-pinned snapshot preparation, lease, cancellation/read ID, or shared range capability found in inspected dispatcher. |
+| 8ff4ccb52de09c45aa635eb6feddae5a782a6f6e | docs/acceptance/mobile-video-streaming-20261121.md:129,131,133,151,161             | 35d physical iPhone 17 executions for original Host/player candidate; bounded evidence, not EasyWork Host or latest integrated deployment. Source fingerprint 35d is not a Git commit.             |
+
+## 本轮证据边界
+
+- Git主线提交可证明已合入，不能单独证明任意目标的部署或当前全范围验收。
+- 原具体功能的PR合入且范围匹配时按人类规则沿用原验收；不因没有本轮重跑将其回退。
+- 本次仅更新盘点与计划，不执行模拟器/实体/模型、重新配对、跨机消息或部署。F75/A6保持暂停，Android任务不接管。
+- 线上118依据既有发布证据，不冒称本次实时线上核验或原手机已安装。
+- Desktop另核异步问题自填答案原文保留和上游promptSuggestion/source来源标识；分别归原F58/F69，未凭新上游方法推定新增手机远程RPC。项目Git相关提交仅索引，F75/A6不恢复。

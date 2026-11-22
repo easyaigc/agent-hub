@@ -1,16 +1,14 @@
-# iOS × EasyWork 历史进度投影
+# 当前唯一进度总表
 
-本页仅保留原专项的规格、原始证据和历史快照，不是另一份当前状态清单。全项目iOS/Android当前实现与适用验收只见[唯一完整功能清单](../android-ios-alignment-20261107/progress.md)。下方表格、数量及“当前／本轮／下一步”均按原记录时点理解，原字段与记录保留，不据此更新旧台账。
+> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 509，更新 2026-11-22T13:33:39+08:00。台账 SHA-256：`3eb6605953a7820914e64a0f5947200f7baae201e91a66b38bb2a9487dca9a2f`。
 
-> 历史自动生成快照，保留原始字段与指纹；原数据来源：[status.json](status.json)，修订 508，更新 2026-11-21T19:27:20.242739+00:00。台账 SHA-256：`ceff3c3426134c004dd954ae8dca9b9ba0ede4a4e7df123039cbe7c633bea33f`。
+本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。
 
-本表保留原专项台账的历史只读投影；原状态定义和当时的更新流程见 [历史维护规则](maintenance.md)，不再据此维护当前功能状态。
+当前共 75 个父功能：52 个对接、15 个手机共用、8 个范围外。对接范围有 37 个开放父项、0 个历史限定通过未复用（待匹配 0，本次匹配未成立 0）、15 个按当前范围关闭。开放数不等于未开发数。
 
-该历史快照共 75 个父功能：52 个对接、15 个手机共用、8 个范围外。对接范围有 37 个开放父项、0 个历史限定通过未复用（待匹配 0，本次匹配未成立 0）、15 个按当前范围关闭。开放数不等于未开发数。
+当前执行顺序和剩余验收动作见 [核心使用验收与剩余对接盘点](core-acceptance.md)。
 
-该快照记录的执行顺序和剩余验收动作见 [核心使用验收与剩余对接盘点](core-acceptance.md)。
-
-## 历史源码与运行边界
+## 当前源码与运行边界
 
 commit 是已有提交；tree 是隔离候选的内容快照，不表示已合主线或已部署。逐功能对齐和验收范围仍按下方事项及功能清单判断。
 
@@ -391,7 +389,7 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 | EW15 项目Git只读详情            | F75                             | 暂停/暂缓          | 保持暂停；恢复该范围后再核源码与Git快照矩阵。                                                                                                                                                                                                                                                                                       |
 | EW16 统一分发与最终逐环境收口   | 全部                            | 待执行（未在进行） | 根据全部适用功能和场景逐机收口，未验/失败/暂停显式披露。                                                                                                                                                                                                                                                                            |
 
-## 历史验收场景记录
+## 当前验收场景状态
 
 | 状态                     | 场景组数 |
 | ------------------------ | -------- |
@@ -407,7 +405,6 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 
 | 修订 | 日期       | 变化                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 501  | 2026-11-21 | 51 accumulated current-pin entries archived intact into sourcePinHistory; current table now7 role-specific pins: original E022 recovery, sharedbroker dependency, two untouched independent MEDIA01 pins, delivered iOS source, original720 cfc/779 installed rollback, delivered Desktop source/ownedruntime ended. Superseded candidates/pending states no longer appear as current. All11 acceptance/delivery/0pending and original evidence/paused scopes unchanged.                                                                                                                                    |
 | 502  | 2026-11-21 | Main PR235/74e95ba advanced during docs236 CI. Preserve all office code/19evidence/newFD/source integration and Root11 closed facts. Root divergent483..486 retain IDs/content/sourceRevision, nowcanonical497..500; entry/currentpins normalization kept, no old evidence lost. Only docs differ from newmain; no new model/mobile/physical acceptance.                                                                                                                                                                                                                                                    |
 | 503  | 2026-11-22 | Main docs237 adds four office formal receipts and actual merged source/signed117/HTTPS stage. Preserve its FD/sourceDeleted/owner limitations exactly; Root11 closed/resource/entry/currentpins unchanged. Office history497 retained; divergentRoot497..501 now498..502 with sourceRevision/canonicalRevisionHistory, no evidence lost. Main product code unchanged from74e95. Formal API proves no server-requiredCI: pure docs use meaningful local checks/accepted code reuse and normalmerge, workflowpending not passed. Prior requiredCI wording corrected, no policy bypass/config/status mutation. |
 | 504  | 2026-11-22 | F06/F08 scope reopened from manual117 to automatic authenticated learning and error classification; preserve all previous product/history proofs and other work. New source candidate/Host auxiliary only, no original phone upgrade or automatic cross-network acceptance yet.                                                                                                                                                                                                                                                                                                                             |
@@ -415,6 +412,7 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 | 506  | 2026-11-22 | PR238 actual merged with both exact-head contexts successful; six-component actual runtime closure frozen, separate15 installed118 preserving observed normal record. No new physical automatic or original-phone acceptance pass. Existing main sync and official frozen prerelease now independently verified; source deployment still pending.                                                                                                                                                                                                                                                           |
 | 507  | 2026-11-22 | Official Source Host and formal118 existing HTTPS delivery deployed; original Tail install pointer now118 with all Serve fields unchanged. Independent15 test initialization awaits on-device XCTest UI Automation passcode; no new automatic learning/scan/cold recovery test entered. Original phone installation/five records/old authorization/drafts remain unverified. Zero new product acceptance passes.                                                                                                                                                                                            |
 | 508  | 2026-11-22 | Corrected source empty-pgrep PID equality claim while preserving original immutable deployment receipt. New current-process observation predates activation and supports no original App lifecycle commands; full before/after PID-set equality remains unproven. Pure metadata correction; product/118 inputs and previous effective validation unchanged. Independent15 and original phone acceptance remain pending.                                                                                                                                                                                     |
+| 509  | 2026-11-22 | 承接远端R508原事实；登记11/12计划及11/9原快照和当前两仓远端冻结。逐提交盘点、补F76/F77独立身份、仅两项真实EasyWork能力缺口，以及原证明匹配/解析回执发布增量，不改原75分母、不重复原通过。                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## 候选代码审查问题
 
@@ -463,3 +461,5 @@ Host收尾任务另有 68 项 Node 辅助测试通过，失败 0、跳过 0；�
 | ------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------- |
 | DEV01-SHARE 系统分享/Action/剪贴板大文件流式交接 | 已开发，待集成 | V3流式所有权/固定创建清单及已登记五项修复已独立复核，待组合与完整App/真实Electron验收；旧草稿兼容新增问题单列D3-06。 |
 | DEV01-CREATE 新建聊天首条大附件与原创建操作恢复  | 已开发，待集成 | V3流式所有权/固定创建清单及已登记五项修复已独立复核，待组合与完整App/真实Electron验收；旧草稿兼容新增问题单列D3-06。 |
+
+新增提交与F76/F77扩展、EasyWork待补能力和后续计划见 [增量对齐](incremental-alignment.md)；原75项统计口径保留。

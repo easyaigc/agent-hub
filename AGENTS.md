@@ -25,6 +25,12 @@
 - 产品/设计文档、manifest、features JSON和验收档案只保留规格、生成兼容数据、来源、原始证据和历史，不独立维护当前实现/验收状态清单或完成率。详细提交与过程放后台证据，当前功能状态只回填唯一清单。
 - 其他工作树如需镜像，应保持同一清单内容并核对实际同步结果，不作为独立维护入口；不假定远端自动生效。更新清单和规则不恢复已暂停的开发、验收或五线调度。
 
+## iOS × EasyWork 专项唯一台账（本轮用户再次明确）
+
+- 本任务仍以 `docs/plans/ios-easywork-alignment-20261112/README.md` 为入口，`status.json` 为唯一可编辑的对齐计划与进度事实源；每次继续先读 `maintenance.md`。此前“历史冻结”说明不能回退本轮人类指示和已回填事实。
+- 全项目双端清单保留用户功能索引和既有平台验收结论；本轮 EasyWork 扩展、提交与验收计划引用专项台账，不另维护完成数，也不接管 Android 或恢复 F75/A6。
+- F01–F75 保留原分母；新增 F76/F77 在同一 JSON 的扩展记录维护。提交索引与新增计划视图从该 JSON 生成；完成后执行 `render_status.py --write` 和 `--check`。原功能已合PR且范围匹配时复用原验收，只补新增或受影响范围，本轮 iOS验收仍限定模拟器。
+
 ## Implementation boundaries
 
 - Host Agent owns computer-local Codex access. Relay must not run Codex or own its login credentials.

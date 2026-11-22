@@ -14,6 +14,11 @@ if (process.platform !== 'darwin') {
   process.exit(0);
 }
 const current = readFileSync(join(root, sourcePath), 'utf8');
+const connectionModels = between(
+  readFileSync(join(root, 'apps/ios/Sources/AgentClient.swift'), 'utf8'),
+  'struct AgentConnectionCandidate:',
+  'struct AgentConnection:',
+);
 const targetSource = readFileSync(join(root, 'apps/ios/Sources/EasyWorkTransport.swift'), 'utf8');
 const targetDeclaration = between(
   targetSource,
@@ -54,6 +59,13 @@ function between(source, begin, end) {
 }
 
 function program(source) {
+  const recoveryPolicy = source.includes('  nonisolated static func recoveryExcludedCandidate(')
+    ? between(
+        source,
+        '  nonisolated static func recoveryExcludedCandidate(',
+        '  nonisolated static func verifiedWriteResult(',
+      )
+    : '';
   let request = between(source, '  private func requestData(', '  func synchronizedThread(');
   // Only the production thirty-second duration is shortened. Ordering, expiry,
   // transport close, operation IDs and original-receipt checks are unchanged.
@@ -84,6 +96,7 @@ struct EasyWorkDeviceAuthorizationFailure: Error {}
 struct EasyWorkRemoteRejection: Error { let code: String?; let message: String }
 ${accountDeclaration}
 ${targetDeclaration}
+${connectionModels}
 func fixtureTarget() -> EasyWorkTarget { EasyWorkTarget(account: AgentAccount(authority: "https://account.example", subject: "owner"), desktopDeviceId: "fixture-host", workspaceId: "fixture-workspace", runtimeId: "local") }
 enum HostService { static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() } }
 func easyWorkJSON(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .fragmentsAllowed]) }
@@ -95,8 +108,7 @@ actor BlockedTransport {
 }
 ${gate}
 actor Client {
-  enum Preference { case automatic, lanOnly }
-  struct Connection { var preference = Preference.lanOnly }
+  struct Connection { var preference = AgentConnectionPreference.lanOnly; let candidates: [AgentConnectionCandidate] = [] }
   let connection = Connection()
   let target = fixtureTarget()
   let mobileDeviceId = "fixture-mobile"
@@ -148,6 +160,7 @@ actor Client {
   nonisolated func request(_ method: String, _ params: [String: Any], id: String = UUID().uuidString) async throws -> Data {
     try await requestData(method, params: easyWorkJSON(params), id: id)
   }
+${recoveryPolicy}
 ${verify}
 ${expiry}
 ${request}

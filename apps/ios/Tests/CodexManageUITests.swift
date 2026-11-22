@@ -1263,6 +1263,12 @@ final class CodexManageUITests: XCTestCase {
     if name.contains("testCodexM5ReconnectAfterRestoreRealDEV") {
       app = XCUIApplication(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest(); return
     }
+    if name.contains("testConnectActualCodexForExistingReadOnlyCases") {
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.p4motion")
+      app.launchArguments = ["-ui-testing", "-restore-testing"]
+      app.launchChineseTest()
+      return
+    }
     app = XCUIApplication()
     if name.contains("testHistoryFileReferencesReadOnlyDEV") { return }
     if name.contains("testThermal") { return }
@@ -19793,4 +19799,258 @@ final class AutomaticDiscoveryIsolatedSimulatorTests: XCTestCase {
     #endif
   }
 
+}
+
+// P4 incremental coverage only. Uses a dedicated simulator and real Settings.
+extension StartupBrandUITests {
+  private func motionShot(_ name: String) {
+    let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
+  }
+
+  func testSystemReduceMotionStartup() throws {
+    continueAfterFailure = false
+    let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    settings.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    settings.launch()
+    let accessibility = settings.buttons["com.apple.settings.accessibility"]
+    for _ in 0..<16 {
+      if accessibility.exists && accessibility.isHittable { break }
+      let from = settings.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.70))
+      let to = settings.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
+      from.press(forDuration: 0.1, thenDragTo: to)
+    }
+    XCTAssertTrue(accessibility.waitForExistence(timeout: 5), settings.debugDescription)
+    accessibility.tap()
+    let motion = settings.staticTexts.matching(NSPredicate(format: "label IN %@", ["Motion", "动态效果"])).firstMatch
+    XCTAssertTrue(motion.waitForExistence(timeout: 5), settings.debugDescription)
+    motion.tap()
+    let toggle = settings.switches.matching(NSPredicate(format: "label IN %@", ["Reduce Motion", "减弱动态效果"])).firstMatch
+    XCTAssertTrue(toggle.waitForExistence(timeout: 5), settings.debugDescription)
+    let wasOn = toggle.value as? String == "1"
+    if !wasOn { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
+    let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == '1'"), object: toggle)
+    XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
+    motionShot("system-reduce-motion-enabled")
+    defer {
+      settings.activate()
+      if !wasOn && toggle.exists && toggle.value as? String == "1" { toggle.tap() }
+    }
+    let app = XCUIApplication()
+    app.launchArguments = ["-startup-brand-acceptance", "-startup-motion-acceptance", "-AppleLanguages", "(en)"]
+    app.launch()
+    let observation = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "reduce=", "animate=")).firstMatch
+    XCTAssertTrue(observation.waitForExistence(timeout: 6))
+    XCTAssertTrue(observation.label.contains("active:reduce=true:animate=false"), observation.label)
+    XCTAssertFalse(app.activityIndicators.firstMatch.exists, "Reduce Motion removes the decorative spinner")
+    for index in 0..<3 {
+      motionShot("system-reduce-motion-static-\(index)")
+      Thread.sleep(forTimeInterval: 0.7)
+    }
+    app.terminate()
+  }
+
+  func testStartupBackgroundPausesAndForegroundResumes() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-startup-brand-acceptance", "-startup-motion-acceptance", "-AppleLanguages", "(en)"]
+    app.launch()
+    let observation = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "reduce=", "animate=")).firstMatch
+    XCTAssertTrue(observation.waitForExistence(timeout: 6))
+    XCTAssertTrue(observation.label.contains("active:reduce=false:animate=true"), observation.label)
+    motionShot("startup-active-before-background")
+    XCUIDevice.shared.press(.home)
+    XCTAssertTrue(app.wait(for: .runningBackground, timeout: 3))
+    Thread.sleep(forTimeInterval: 0.7)
+    app.activate()
+    XCTAssertTrue(observation.waitForExistence(timeout: 3))
+    let trace = observation.label
+    XCTAssertTrue(trace.contains("background:reduce=false:animate=false"), trace)
+    XCTAssertTrue(trace.hasSuffix("active:reduce=false:animate=true;"), trace)
+    motionShot("startup-background-trace-and-resumed")
+    app.terminate()
+  }
+}
+
+
+// Compile into the existing CodexManage UI test target when an owned, already
+// paired simulator App and a current real Host source are ready. This driver
+// never installs bindings, fabricates reports, changes settings or sends input.
+final class ExistingRealRunSpeedUITests: XCTestCase {
+  @MainActor func testExistingCompletedRunSpeedPresentation() throws {
+    continueAfterFailure = false
+    let environment = ProcessInfo.processInfo.environment
+    let path = try XCTUnwrap(environment["P4_REAL_READ_CONFIG"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as? [String: String])
+    let bundle = try XCTUnwrap(config["appBundleId"])
+    XCTAssertEqual(bundle, "com.easyai.agenthub.p4motion", "Only the independent P4 acceptance App is allowed")
+    let client = try XCTUnwrap(config["clientId"])
+    let thread = try XCTUnwrap(config["threadId"])
+    let run = try XCTUnwrap(config["runId"])
+    XCTAssertFalse(run.isEmpty)
+    // The external real observer must independently bind this exact latest Run
+    // before and after the native window. A caller assertion alone is not proof.
+    XCTAssertFalse(try XCTUnwrap(config["realReadAdmissionSha256"]).isEmpty)
+    let requested = try XCTUnwrap(config["requestedLabel"])
+    let actual = try XCTUnwrap(config["actualLabel"])
+    let app = XCUIApplication(bundleIdentifier: bundle)
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-p4-f36-read-proof", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)"]
+    app.launch()
+    defer { app.terminate() }
+    let clients = app.buttons["client-switch"]
+    XCTAssertTrue(clients.waitForExistence(timeout: 30)); clients.tap()
+    let exactClient = app.buttons["client-" + client]
+    XCTAssertTrue(exactClient.waitForExistence(timeout: 10)); exactClient.tap()
+    let row = app.buttons["recent-thread-" + thread]
+    if !row.isHittable {
+      let sidebar = app.buttons["open-sidebar"]
+      XCTAssertTrue(sidebar.waitForExistence(timeout: 10)); sidebar.tap()
+    }
+    XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+    let generation = app.buttons["generation-settings"]
+    XCTAssertTrue(generation.waitForExistence(timeout: 30))
+    let originalSelection = generation.label
+    for index in 0..<2 {
+      generation.tap()
+      XCTAssertTrue(app.buttons["generation-done"].waitForExistence(timeout: 10))
+      let requestValue = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "last-requested-speed", "请求速度、" + requested)).firstMatch
+      let actualValue = app.staticTexts.matching(NSPredicate(format: "identifier == %@ AND label == %@", "last-actual-speed", "实际速度、" + actual)).firstMatch
+      XCTAssertTrue(requestValue.waitForExistence(timeout: 10), app.debugDescription)
+      XCTAssertTrue(actualValue.waitForExistence(timeout: 10), app.debugDescription)
+      let attachment = XCTAttachment(screenshot: app.screenshot())
+      attachment.name = "existing-real-run-speed-\(index)"
+      attachment.lifetime = .keepAlways; add(attachment)
+      app.buttons["generation-done"].tap()
+      XCTAssertEqual(generation.label, originalSelection, "Actual report must not overwrite the next-send selection")
+    }
+    let context = XCTAttachment(string: "Run=\(run); thread=\(thread); client=\(client); request=\(requested); actual=\(actual). Same-Run proof requires the external original-wire receipts.")
+    context.name = "existing-run-binding-to-external-observer"; context.lifetime = .keepAlways; add(context)
+  }
+}
+
+extension ExistingRealRunSpeedUITests {
+  @MainActor func testExistingComputerVideoSourceFirstFrame() throws {
+    continueAfterFailure = false
+    let path = try XCTUnwrap(ProcessInfo.processInfo.environment["P4_REAL_READ_CONFIG"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as? [String: String])
+    let bundle = try XCTUnwrap(config["appBundleId"])
+    XCTAssertEqual(bundle, "com.easyai.agenthub.p4motion")
+    let client = try XCTUnwrap(config["clientId"])
+    let thread = try XCTUnwrap(config["threadId"])
+    let label = try XCTUnwrap(config["mediaEntryLabel"])
+    XCTAssertFalse(label.isEmpty)
+    XCTAssertFalse(try XCTUnwrap(config["realReadAdmissionSha256"]).isEmpty)
+    let app = XCUIApplication(bundleIdentifier: bundle)
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-media-streaming-acceptance", "-app-language", "zh-Hans", "-AppleLanguages", "(zh-Hans)"]
+    app.launch(); defer { app.terminate() }
+    let clients = app.buttons["client-switch"]
+    XCTAssertTrue(clients.waitForExistence(timeout: 30)); clients.tap()
+    let exact = app.buttons["client-" + client]
+    // The real picker is a partial-height, virtualized CollectionView.
+    // Reveal the exact existing client without editing/removing any row.
+    for _ in 0..<6 {
+      if exact.exists && exact.isHittable { break }
+      let list = app.collectionViews.firstMatch
+      XCTAssertTrue(list.waitForExistence(timeout: 5)); list.swipeUp()
+    }
+    XCTAssertTrue(exact.waitForExistence(timeout: 10)); exact.tap()
+    let row = app.buttons["recent-thread-" + thread]
+    if !row.isHittable {
+      let sidebar = app.buttons["open-sidebar"]
+      XCTAssertTrue(sidebar.waitForExistence(timeout: 10)); sidebar.tap()
+    }
+    XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+    // Exact official Provider message, through the production history search.
+    let sourceMessage = try XCTUnwrap(config["sourceMessageId"])
+    let query = try XCTUnwrap(config["sourceSearchQuery"])
+    XCTAssertFalse(sourceMessage.isEmpty); XCTAssertFalse(query.isEmpty)
+    app.buttons["chat-menu"].tap()
+    let searchEntry = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "chat-search", "在聊天中查找")).firstMatch
+    XCTAssertTrue(searchEntry.waitForExistence(timeout: 10)); searchEntry.tap()
+    let search = app.textFields["chat-search-query"]
+    XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText(query)
+    let original = app.buttons["chat-search-result-" + sourceMessage]
+    XCTAssertTrue(original.waitForExistence(timeout: 60), app.debugDescription); original.tap()
+    let located = app.descendants(matching: .any)["chat-search-located-" + sourceMessage].firstMatch
+    XCTAssertTrue(located.waitForExistence(timeout: 15), app.debugDescription)
+    let full = app.buttons["完整消息"]
+    XCTAssertTrue(full.waitForExistence(timeout: 10), app.debugDescription); full.tap()
+    let link = app.links.matching(NSPredicate(format: "label == %@", label)).firstMatch
+    let fallback = app.staticTexts.matching(NSPredicate(format: "label == %@", label)).firstMatch
+    let timeline = app.scrollViews["message-list"]
+    for _ in 0..<12 where !(link.exists && link.isHittable) && !(fallback.exists && fallback.isHittable) {
+      let element = link.exists ? link : fallback
+      if element.exists && element.frame.minY < timeline.frame.minY { timeline.swipeDown() }
+      else { timeline.swipeUp() }
+    }
+    let sourceShot = XCTAttachment(screenshot: app.screenshot())
+    sourceShot.name = "original-provider-message-file-link"; sourceShot.lifetime = .keepAlways; add(sourceShot)
+    if link.exists && link.isHittable { link.tap() }
+    else { XCTAssertTrue(fallback.isHittable, app.debugDescription); fallback.tap() }
+    let frame = app.descendants(matching: .any)["media-player-first-frame"].firstMatch
+    XCTAssertTrue(frame.waitForExistence(timeout: 45), app.debugDescription)
+    XCTAssertTrue(app.descendants(matching: .any)["media-player-mode"].firstMatch.label.contains("streaming"))
+    XCTAssertFalse(app.descendants(matching: .any)["media-player-error"].firstMatch.exists)
+    let shot = XCTAttachment(screenshot: app.screenshot())
+    shot.name = "existing-real-computer-source-first-frame"; shot.lifetime = .keepAlways; add(shot)
+    app.buttons["media-player-close"].tap()
+    XCTAssertTrue(frame.waitForNonExistence(timeout: 10))
+    // Range/source/lease cleanup must be independently proved by the real Host
+    // observer. Closing a view alone is not evidence of transport cancellation.
+  }
+}
+
+extension ExistingRealRunSpeedUITests {
+  @MainActor func testPairActualEasyWorkForExistingReadOnlyCases() throws {
+    continueAfterFailure = false
+    let path = try XCTUnwrap(ProcessInfo.processInfo.environment["P4_REAL_PAIRING_CONFIG"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as? [String: String])
+    XCTAssertEqual(config["appBundleId"], "com.easyai.agenthub.p4motion")
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.p4motion")
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-p4-native-pairing-proof"]
+    app.launchEnvironment = ["EASYWORK_DEV_LAN_OFFER": try XCTUnwrap(config["pairingUri"])]
+    app.launchChineseTest(); defer { app.terminate() }
+    // Same visible-button path as P3's actual 44.396-second normal pairing.
+    // Wait for each presented sheet rather than matching hidden descendants.
+    let initial = app.buttons["添加客户端"]
+    if initial.waitForExistence(timeout: 20) { initial.tap() }
+    else {
+      let add = app.buttons["add-client"]
+      if !add.isHittable {
+        let clients = app.buttons["client-switch"]
+        XCTAssertTrue(clients.waitForExistence(timeout: 15)); clients.tap()
+      }
+      XCTAssertTrue(add.waitForExistence(timeout: 15)); XCTAssertTrue(add.isHittable); add.tap()
+    }
+    let easywork = app.buttons["EasyWork"]
+    XCTAssertTrue(easywork.waitForExistence(timeout: 15)); easywork.tap()
+    let method = app.buttons["easywork-connection-method"]
+    XCTAssertTrue(method.waitForExistence(timeout: 15)); method.tap()
+    let choice = app.buttons["扫码连接"]
+    XCTAssertTrue(choice.waitForExistence(timeout: 10)); choice.tap()
+    let pair = app.buttons["easywork-pair-lan"]
+    XCTAssertTrue(pair.waitForExistence(timeout: 10)); XCTAssertTrue(pair.isEnabled); pair.tap()
+    let error = app.staticTexts["easywork-pair-error"]
+    let done = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !pair.exists || error.exists }, object: app)
+    XCTAssertEqual(XCTWaiter.wait(for: [done], timeout: 100), .completed)
+    XCTAssertFalse(error.exists, "Owned automatic LAN pairing must complete normally")
+    // Native public proof comes from the production authenticated context check.
+    // No chat/model/transfer operation is issued by this case.
+    XCUIDevice.shared.press(.home)
+    XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5))
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testConnectActualCodexForExistingReadOnlyCases() throws {
+    let path = try XCTUnwrap(ProcessInfo.processInfo.environment["P4_REAL_CODEX_CONNECTION_CONFIG"])
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+    connectLive(fixture, supportsCreation: false)
+    // connectLive only establishes the existing authenticated production target.
+    // It does not create a thread or send input. No fixture server is started.
+    XCUIDevice.shared.press(.home)
+    XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5))
+  }
 }

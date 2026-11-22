@@ -46,7 +46,7 @@ data class NativeUploadManifest(val file: ComputerFileManifest,val purpose: Stri
     }
 }
 data class NativeUploadCapability(val maxChunkBytes:Int,val remoteCancel:Boolean,val protocol:String) {
-    init {require(maxChunkBytes in 1..1024*1024&&protocol in setOf("codex-upload-v1","easywork-attachment-v1"))}
+    init {require(maxChunkBytes in 1..1024*1024&&protocol in setOf("codex-upload-v1","easywork-attachment-v1","easywork-file-transfer-v1"))}
 }
 enum class NativeUploadAction { PREPARE, STATUS, CHUNK, COMPLETE, CANCEL }
 data class NativeUploadReceipt(val manifest:NativeUploadManifest,val phase:String,val committedBytes:Long,

@@ -6,14 +6,15 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const source = await readFile('apps/ios/Sources/EasyWorkSession.swift', 'utf8');
+const connectionSource = await readFile('apps/ios/Sources/AgentClient.swift', 'utf8');
 const fixture = JSON.parse(
   await readFile('packages/protocol/fixtures/mobile/operation-recovery-v1.json', 'utf8'),
 );
-function declaration(start, end) {
-  const a = source.indexOf(start),
-    b = source.indexOf(end, a);
+function declaration(start, end, input = source) {
+  const a = input.indexOf(start),
+    b = input.indexOf(end, a);
   assert.ok(a >= 0 && b > a, `missing ${start}`);
-  return source.slice(a, b);
+  return input.slice(a, b);
 }
 const reads = declaration(
   'private static let readMethods:',
@@ -52,6 +53,10 @@ test(
       'nonisolated static func verifiedWriteResult(',
       '  private func requestData(',
     );
+    const recoveryPolicy = declaration(
+      '  nonisolated static func recoveryExcludedCandidate(',
+      '  nonisolated static func verifiedWriteResult(',
+    );
     const expiry = declaration('private func expireRequest(', '  private func publish(');
     const harness = `import Foundation
 func easyWorkJSON(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .fragmentsAllowed]) }
@@ -62,7 +67,8 @@ struct EasyWorkDeviceAuthorizationFailure: Error {}
 enum L10n { static func tr(_ s: String) -> String { s } }
 enum HostService { static func hash(_ data: Data) -> String { "unused" } }
 struct EasyWorkTarget { let dictionary: [String: Any] = ["account": ["authority": "https://account.example", "subject": "owner"], "desktopDeviceId": "desktop", "workspaceId": "workspace", "runtimeId": "runtime"] }
-struct Connection { enum Preference { case automatic, direct }; let preference: Preference = .direct }
+${declaration('struct AgentConnectionCandidate:', 'struct AgentConnection:', connectionSource)}
+struct Connection { let preference = AgentConnectionPreference.lanOnly; let candidates: [AgentConnectionCandidate] = [] }
 actor Harness {
  ${reads}
  ${subs}
@@ -84,6 +90,7 @@ actor Harness {
    responses[request["requestId"] as! String] = ["ok": true, "result": ["fresh": true]]
  }
  func request(_ method: String, _ params: [String: Any]) async throws -> Data { precondition(method == "command/status" && params["commandId"] as? String == expectedOperationId); status += 1; return try easyWorkJSON(NSNull()) }
+ ${recoveryPolicy}
  ${verified}
  ${expiry}
  ${method}

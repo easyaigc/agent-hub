@@ -41,21 +41,24 @@ internal object EasyWorkFileTransfers {
         return reply
     }
     fun uploadTransfer(value:JSONObject,m:NativeUploadManifest,device:String,completed:Boolean=false):JSONObject {
-        val t=value.getJSONObject("transfer")
-        require(t.getString("transferId")==m.id&&t.getString("threadId")==m.threadId&&t.getString("mobileDeviceId")==device&&
-            t.getString("direction")=="mobile-to-desktop"&&t.getString("purpose")=="attachment"&&t.getString("name")==m.file.name&&
+        val t=value.getJSONObject("transfer");val independent=m.purpose=="file-transfer"
+        require(m.purpose in setOf("attachment","file-transfer"))
+        require(t.getString("transferId")==m.id&&(if(independent)t.isNull("threadId") else t.getString("threadId")==m.threadId)&&t.getString("mobileDeviceId")==device&&
+            t.getString("direction")=="mobile-to-desktop"&&t.getString("purpose")==(if(independent)"transfer" else "attachment")&&t.getString("name")==m.file.name&&
             t.getString("contentType")==m.file.mediaType&&uploadLong(t.get("size"))==m.file.sizeBytes)
         // Legacy attachment receipts may omit this optional echo. Never accept a conflicting echo;
         // final publication still requires the complete file digest and exact original identity.
-        if(t.has("expectedSha256"))require(t.get("expectedSha256")==m.file.sha256)
+        if(independent||t.has("expectedSha256"))require(t.get("expectedSha256")==m.file.sha256)
         val n=uploadLong(t.get("transferredBytes"));require(n in 0..m.file.sizeBytes)
         require(t.getString("status") in setOf("waiting","transferring","verifying","completed","cancelled"))
         if(completed||t.getString("status")=="completed")require(t.getString("status")=="completed"&&n==m.file.sizeBytes&&t.getString("sha256")==m.file.sha256)
         return t
     }
-    fun uploadReceipt(value:JSONObject,m:NativeUploadManifest,device:String):NativeUploadReceipt {
+    fun uploadReceipt(value:JSONObject,m:NativeUploadManifest,device:String,chunk:Int=CHUNK):NativeUploadReceipt {
         val t=uploadTransfer(value,m,device);val completed=t.getString("status")=="completed"
-        val result=if(completed) {
+        val result=if(completed&&m.purpose=="file-transfer") {
+            EasyWorkIndependentUploads.receipt(t,m.file.hostId,device,"").json()
+        } else if(completed) {
             val id=t.getString("resourceId");require(id.isNotBlank())
             value.optJSONObject("attachment")?.let {a->
                 require(a.getString("id")==m.id&&a.getString("resourceId")==id&&a.getString("name")==m.file.name&&a.getString("contentType")==m.file.mediaType&&
@@ -67,7 +70,7 @@ internal object EasyWorkFileTransfers {
         val now=Instant.now().toString()
         return NativeUploadReceipt.decode(JSONObject().put("version",1).put("manifest",m.json())
             .put("phase",when(t.getString("status")){"completed"->"completed";"cancelled"->"cancelled";"verifying"->"verifying";else->"uploading"})
-            .put("committedBytes",uploadLong(t.get("transferredBytes"))).put("maxChunkBytes",CHUNK)
+            .put("committedBytes",uploadLong(t.get("transferredBytes"))).put("maxChunkBytes",chunk)
             .put("createdAt",now).put("updatedAt",now).put("result",result?:JSONObject.NULL),m)
     }
     fun record(v:JSONObject,host:String,device:String):IncomingComputerFile {
@@ -78,16 +81,18 @@ internal object EasyWorkFileTransfers {
         val n=uploadLong(v.get("transferredBytes"));require(n<=f.sizeBytes&&(f.phase!="completed"||n==f.sizeBytes))
         return f
     }
-    fun catalog(v:JSONObject,host:String,device:String):ComputerFileCatalog {
+    fun catalog(v:JSONObject,host:String,device:String,limits:EasyWorkFileLimits=EasyWorkFileLimits(EasyWorkFileLimits.LEGACY,CHUNK,false)):ComputerFileCatalog {
         val directory=ComputerFileCodec.text(v.get("destinationDirectory"),16384)
-        val maximum=if(v.isNull("maxFileBytes"))null else uploadLong(v.get("maxFileBytes")).also {require(it>0)}
+        val maximum=limits.catalogMaximum(v)
         val records=v.getJSONArray("transfers");require(records.length()<=ComputerFileCodec.MAX_CATALOG)
         val incoming=records.objects().filter {it.optString("purpose")=="transfer"&&it.optString("direction")=="desktop-to-mobile"&&it.isNull("threadId")}
             .map {record(it,host,device)}
         require(incoming.map {it.id}.distinct().size==incoming.size)
-        // EasyWork's existing independent-upload methods are not implemented on Android.
-        // Preserve Codex upload unchanged and expose the actual receive capability separately.
-        return ComputerFileCatalog(host,directory,maximum,emptyList(),incoming,uploadAvailable=false)
+        val outgoing=records.objects().filter {it.optString("purpose")=="transfer"&&it.optString("direction")=="mobile-to-desktop"&&
+            it.isNull("threadId")&&it.optString("status") in setOf("waiting","transferring","verifying","completed")}
+            .map {EasyWorkIndependentUploads.receipt(it,host,device,directory)}
+        require(outgoing.map {it.file.id}.distinct().size==outgoing.size)
+        return ComputerFileCatalog(host,directory,maximum,outgoing,incoming,uploadAvailable=true)
     }
     fun chunk(v:JSONObject,f:IncomingComputerFile,offset:Long,length:Int):ByteArray {
         require(length in 1..CHUNK&&offset>=0&&offset<f.sizeBytes&&length<=f.sizeBytes-offset)

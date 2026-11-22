@@ -138,6 +138,12 @@ private struct AppStartupBrandView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var colorScheme
     @State private var breathing = false
+    #if DEBUG
+    @State private var motionAcceptanceTrace = ""
+    private var motionAcceptanceEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("-startup-motion-acceptance")
+    }
+    #endif
 
     private var animates: Bool { !reduceMotion && scenePhase == .active }
     private let blue = Color(red: 0.02, green: 0.54, blue: 0.98)
@@ -186,12 +192,35 @@ private struct AppStartupBrandView: View {
                 .accessibilityElement(children: .combine)
             }
         }
+        #if DEBUG
+        .overlay(alignment: .topLeading) {
+            if motionAcceptanceEnabled {
+                Text(motionAcceptanceTrace).font(.caption2)
+                    .accessibilityIdentifier("startup-motion-observation")
+            }
+        }
+        #endif
         .accessibilityIdentifier("app-startup-loading")
         .onAppear { updateBreathing() }
         .onChange(of: animates) { _, _ in updateBreathing() }
+        #if DEBUG
+        .onChange(of: scenePhase) { _, _ in recordMotionAcceptance() }
+        #endif
     }
 
+    #if DEBUG
+    private func recordMotionAcceptance() {
+        // Observe the real system environment; never inject motion or scene state.
+        guard motionAcceptanceEnabled else { return }
+        let phase = scenePhase == .active ? "active" : scenePhase == .background ? "background" : "inactive"
+        motionAcceptanceTrace += "\(phase):reduce=\(reduceMotion):animate=\(animates);"
+    }
+    #endif
+
     private func updateBreathing() {
+        #if DEBUG
+        recordMotionAcceptance()
+        #endif
         // Reset without animation before replacing an infinite animation (including foreground recovery).
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true

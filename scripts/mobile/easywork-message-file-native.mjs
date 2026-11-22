@@ -20,11 +20,20 @@ const start = source.indexOf('enum EasyWorkMessageFileResolution {');
 const end = source.indexOf('enum EasyWorkHistoricalAttachment {', start);
 if (start < 0 || end <= start) throw new Error('Production message-file boundary not found');
 const fixture = await readFile(fixturePath, 'utf8');
+const historyStart = source.indexOf(
+  '    if cursor == nil, let pattern = try? NSRegularExpression(pattern:',
+);
+const historyEnd = source.indexOf('    let plan = snapshot["currentPlan"]', historyStart);
+if (historyStart < 0 || historyEnd <= historyStart)
+  throw new Error('Production history link projection not found');
+const historyProjection = source.slice(historyStart, historyEnd);
 const combined = join(output, 'message-file-boundary.swift');
 const executable = join(output, 'message-file-boundary');
 await writeFile(
   combined,
-  fixture.replace('@main struct', source.slice(start, end) + '\n@main struct'),
+  fixture
+    .replace('/* PRODUCTION_HISTORY_LINK_PROJECTION */', historyProjection)
+    .replace('@main struct', source.slice(start, end) + '\n@main struct'),
   { mode: 0o600 },
 );
 execFileSync('xcrun', ['swiftc', '-parse-as-library', combined, '-o', executable], {

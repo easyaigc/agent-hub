@@ -72,6 +72,7 @@ internal object ComputerFileCodec {
     }
 }
 internal data class ComputerFileTarget(val scope: TargetScope,val certificate: String?) {
+    val clientId get()=if(scope.agentId=="easywork")"easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray()) else scope.hostId
     val key=ComputerFileCodec.hash(("computer-files-v1\u0000"+RuntimeIdentity.readingKey(scope,null)).toByteArray(Charsets.UTF_8))
     fun matches(client: MobileClient)=!client.isDemo&&clientIdentityMatches(client,scope)&&RuntimeIdentity.matches(scope,client.scope)&&
         client.codexDirect?.fingerprint==certificate
@@ -122,7 +123,7 @@ internal object ComputerFileCopy {
         "电脑仍在等待或处理原传输；请继续查询，不会重新上传。","电脑尚无原传输回执；请保留手机上的剩余内容并继续查询，不会重新上传。",
         "电脑目标已变化，请关闭后重新打开文件互传。","电脑返回的文件回执不匹配。",
         "请选择名称不含路径或系统保留字符的非空普通文件。","请选择额度以内、大小明确且非空的普通文件。",
-        "文件在读取时发生变化，请重新选择。")
+        "文件在读取时发生变化，请重新选择。","本次传输超过电脑支持的文件大小；原文件和原记录已保留。")
     fun message(failure: Throwable): String {
         if(ComputerFileFdOwners.hasUnresolved()||failure is ComputerFileResourceCloseUnknown||failure.suppressed.any {it is ComputerFileResourceCloseUnknown})return RESOURCES_PENDING
         if(failure is NativeVoiceRawGate.Busy||failure is java.nio.channels.OverlappingFileLockException)return LOCAL_BUSY

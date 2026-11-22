@@ -921,7 +921,12 @@ struct EasyWorkAgentClient: AgentClient {
             if let cached = resolvedReferences[reference] { value = cached }
             else { value = try await channel.request("resource/resolve", ["threadId": threadId, "reference": reference]); resolvedReferences[reference] = value }
             let resolved = try object(value)
-            if let file = resource(client, threadId: threadId, data: try object(resolved["attachment"] ?? [:])) {
+            if var file = resource(client, threadId: threadId, data: try object(resolved["attachment"] ?? [:])) {
+              // Preserve this original message/link even when resource bytes are memoized.
+              // Opening a relative link still requires the Host's validated document grant.
+              file.documentMessageSource = DocumentMessageSource(
+                messageId: EasyWorkMessageFileResolution.originalMessageId(messages[index].replyMessageId ?? messages[index].id),
+                reference: reference)
               if !files.contains(where: { $0.id == file.id }) { files.append(file) }
               var destination = URLComponents()
               destination.scheme = "codex-attachment"; destination.host = "open"
@@ -972,6 +977,33 @@ struct EasyWorkAgentClient: AgentClient {
     if let latest = snapshot["latestRun"] as? [String: Any], let status = latest["status"] as? String, ["failed", "cancelled", "interrupted"].contains(status), active == nil { receipts.append(DeliveryReceipt(clientMessageId: latest["id"] as? String ?? "", hostId: client.id, threadId: threadId, state: status, turnId: latest["id"] as? String, error: latest["error"] as? String)) }
     let controlTurn = ["paused", "pausing", "resuming"].contains(control?["phase"] as? String ?? "") ? control?["runId"] as? String : nil
     let runtime = cursor == nil ? ThreadRuntime(state: state, turnId: active?["runId"] as? String ?? active?["id"] as? String ?? controlTurn, plan: steps, error: active == nil ? latest?["error"] as? String : nil, approvals: approvals, receipts: receipts, canControl: true, collaborationMode: (active?["agentRunMode"] as? String ?? preferences["agentRunMode"] as? String) == "plan" ? "plan" : "default", proposedPlan: proposed, generationSettings: settings, suggestionSourceTurnId: state == "idle" ? snapshot["suggestionSourceTurnId"] as? String : nil, generationSpeed: RunGenerationSpeedReport.project(latest)) : nil
+    #if DEBUG && targetEnvironment(simulator)
+    // Bounded public evidence from this real authenticated read; no extra request.
+    if cursor == nil, Bundle.main.bundleIdentifier == "com.easyai.agenthub.p4motion",
+       ProcessInfo.processInfo.arguments.contains("-p4-f36-read-proof"),
+       let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+       let target = client.agentConnection?.target,
+       let publicTarget = try? JSONSerialization.jsonObject(with: JSONEncoder().encode(target)) {
+      var proof: [String: Any] = [
+        "version": 1, "source": "actual native authenticated thread read",
+        "clientId": client.id, "threadId": threadId, "target": publicTarget,
+        "latestRunId": latest?["id"] as? String ?? "",
+        "latestRunStatus": latest?["status"] as? String ?? "",
+        "observedAt": ISO8601DateFormatter().string(from: Date())
+      ]
+      if let report = runtime?.generationSpeed,
+         let projected = try? JSONSerialization.jsonObject(with: JSONEncoder().encode(report)) {
+        proof["generationSpeed"] = projected
+      }
+      if let data = try? easyWorkJSON(proof) {
+        let directory = root.appendingPathComponent("Acceptance", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let path = directory.appendingPathComponent("p4-speed-" + HostService.hash(Data(threadId.utf8)) + ".json")
+        try? data.write(to: path, options: [.atomic, .completeFileProtectionUnlessOpen])
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+      }
+    }
+    #endif
     var summary = conversation(client, thread); summary.state = state
     if cursor == nil, client.readingScopeId != nil, try await EasyWorkReadingCapabilities.shared.supports(channel) {
       let reading = try await EasyWorkReading.read(channel, client: client, threadId: threadId)

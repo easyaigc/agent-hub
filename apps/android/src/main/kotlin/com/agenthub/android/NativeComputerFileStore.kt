@@ -113,7 +113,8 @@ internal class NativeComputerFileStore private constructor(private val context: 
         val media=context.contentResolver.getType(uri)?.takeIf {ComputerFileCodec.validMediaType(it)}?:"application/octet-stream"
         val captured=ComputerFileFdOwners.source({requireNotNull(context.contentResolver.openFileDescriptor(uri,"r",signal))}) {fd->
             val before=Os.fstat(fd.fileDescriptor);val size=before.st_size
-            require(OsConstants.S_ISREG(before.st_mode)&&size in 1..maximum&&(declared==null||declared==size)) {"请选择额度以内、大小明确且非空的普通文件。"}
+            require(OsConstants.S_ISREG(before.st_mode)&&size>0&&(declared==null||declared==size)) {"请选择额度以内、大小明确且非空的普通文件。"}
+            require(size<=maximum) {"本次传输超过电脑支持的文件大小；原文件和原记录已保留。"}
             check(active()) {"本地等待已结束；远端操作未取消。已清理的原件不会恢复，剩余内容和原回执需继续核对。"}
             describe(name,size)
             transaction(create=true) {
@@ -174,7 +175,7 @@ internal class NativeComputerFileStore private constructor(private val context: 
     }
     fun apply(receipt: ComputerFileReceipt): PendingComputerFile? = transaction(absent={null}) {
         val current=rows();val row=current.singleOrNull {it.id==receipt.file.id}?:return@transaction null
-        receipt.validate(row.manifest(target.scope.hostId))
+        receipt.validate(row.manifest(target.clientId))
         // A prepared/404 query cannot prove that an earlier content request did not run.
         if(row.phase==ComputerFilePhase.COMPLETED) {
             if(receipt.phase=="completed")require(row.receipt==receipt) {ComputerFileCopy.CONFIRMATION_CONFLICT}
@@ -196,7 +197,7 @@ internal class NativeComputerFileStore private constructor(private val context: 
             save(current.filterNot {it.id==id})
         }}catch(failure: Throwable){throw ComputerFileRetirementFailure(terminalBarrierConfirmed,failure)}
     }
-    fun upload(row: PendingComputerFile)=ComputerFileUpload(row.manifest(target.scope.hostId)) {output,active,progress->
+    fun upload(row: PendingComputerFile)=ComputerFileUpload(row.manifest(target.clientId)) {output,active,progress->
         var total=0L;val hash=MessageDigest.getInstance("SHA-256")
         row.chunks.forEachIndexed {index,chunk->
             root.requireRawWriterOwner();check(active()) {"本地等待已结束；远端操作未取消。已清理的原件不会恢复，剩余内容和原回执需继续核对。"}
@@ -211,7 +212,7 @@ internal class NativeComputerFileStore private constructor(private val context: 
         require(offset>=0&&length in 1..1024*1024&&offset+length<=row.sizeBytes)
         root.requireRawWriterOwner()
         val current=transaction {rows().single {it.id==row.id}}
-        require(current.manifest(target.scope.hostId)==row.manifest(target.scope.hostId))
+        require(current.manifest(target.clientId)==row.manifest(target.clientId))
         val out=ByteArray(length);var written=0;var start=0L
         row.chunks.forEachIndexed {index,chunk->
             val end=start+chunk.bytes

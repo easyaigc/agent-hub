@@ -242,6 +242,29 @@ extension SessionStore {
       let context = try easyWorkObject(await validation.request("runtime/context", [:]))
       let actual = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] as Any))
       guard actual == binding.target else { throw HostServiceError.wrongHost }
+      #if DEBUG && targetEnvironment(simulator)
+      // Opt-in evidence from the normal authenticated native pairing path only.
+      // Never export credentials, private keys, tokens or alternate transport data.
+      if Bundle.main.bundleIdentifier == "com.easyai.agenthub.p4motion",
+         ProcessInfo.processInfo.arguments.contains("-p4-native-pairing-proof"),
+         binding.mobileDeviceId == identity.deviceId, binding.mobilePublicKey == identity.publicKey,
+         let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+         let publicTarget = try? JSONSerialization.jsonObject(with: JSONEncoder().encode(target)),
+         let proof = try? easyWorkJSON([
+          "version": 1, "source": "actual native App identity/connection public metadata",
+          "appBundleId": Bundle.main.bundleIdentifier ?? "", "clientId": id,
+          "mobileDeviceId": identity.deviceId, "bindingId": binding.bindingId,
+          "publicKeySHA256": HostService.hash(Data(identity.publicKey.utf8)),
+          "target": publicTarget, "authenticatedContextVerified": true,
+          "observedAt": ISO8601DateFormatter().string(from: Date())
+         ]) {
+        let directory = root.appendingPathComponent("Acceptance", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let path = directory.appendingPathComponent("p4-native-pairing-public.json")
+        try? proof.write(to: path, options: [.atomic, .completeFileProtectionUnlessOpen])
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+      }
+      #endif
       if grantRef != nil {
         let routes = context["connectionCandidates"] as? [[String: Any]] ?? []
         guard routes.count <= 32 else { throw HostServiceError.invalidResponse }

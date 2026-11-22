@@ -41,15 +41,15 @@ internal object NativeComputerFileJournal {
             val row=PendingComputerFile(id,v.get("name") as String,v.get("mediaType") as String,ComputerFileCodec.integer(v.get("sizeBytes")),
                 if(v.get("sha256")==JSONObject.NULL)null else v.get("sha256") as String,parsed,ComputerFilePhase.valueOf(v.get("phase") as String),
                 if(v.get("error")==JSONObject.NULL)null else ComputerFileCodec.text(v.get("error"),8192).also {require(it in ComputerFileCopy.errors)},
-                if(v.get("receipt")==JSONObject.NULL)null else ComputerFileCodec.receipt(v.getJSONObject("receipt"),scope.hostId))
+                if(v.get("receipt")==JSONObject.NULL)null else ComputerFileCodec.receipt(v.getJSONObject("receipt"),target.clientId))
             ComputerFileCodec.validName(row.name)
             require(ComputerFileCodec.validMediaType(row.mediaType)&&row.sizeBytes in 1..ComputerFileCodec.MAX_FILE_BYTES)
             require(row.chunks.sumOf {it.bytes.toLong()}<=row.sizeBytes)
-            if(row.sha256!=null) {row.manifest(scope.hostId);require(row.chunks.sumOf {it.bytes.toLong()}==row.sizeBytes)}
+            if(row.sha256!=null) {row.manifest(target.clientId);require(row.chunks.sumOf {it.bytes.toLong()}==row.sizeBytes)}
             if(row.phase in setOf(ComputerFilePhase.READY,ComputerFilePhase.UNKNOWN,ComputerFilePhase.COMPLETED))require(row.sha256!=null)
             require(row.receipt==null||row.phase==ComputerFilePhase.COMPLETED)
             require((row.phase==ComputerFilePhase.COMPLETED)==(row.receipt?.phase=="completed"))
-            row.receipt?.validate(row.manifest(scope.hostId));row
+            row.receipt?.validate(row.manifest(target.clientId));row
         }
         require(result.map {it.id}.distinct().size==result.size&&result.sumOf {it.chunks.size}<=MAX_CHUNKS&&
             result.sumOf {it.sizeBytes}<=NativeComputerFileStore.MAX_TOTAL_BYTES)

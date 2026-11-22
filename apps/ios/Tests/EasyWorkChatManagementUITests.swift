@@ -2975,7 +2975,7 @@ final class EasyWorkExistingChildHistoryUITests: XCTestCase {
 final class EasyWorkOwnedDevicePairingUITests: XCTestCase {
   @MainActor func testPairOwnedDeviceThroughOfficialForm() throws {
     continueAfterFailure = false
-    guard let offer = ProcessInfo.processInfo.environment["EASYWORK_OWN_DEVICE_OFFER"], offer.hasPrefix("easywork://pair?") else { throw XCTSkip("Dedicated EWDAP offer required") }
+    guard let offer = ProcessInfo.processInfo.environment["EASYWORK_OWN_DEVICE_OFFER"], offer.hasPrefix("easywork-host://pair?") else { throw XCTSkip("Dedicated EWDAP offer required") }
     let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
     app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev"]
     app.launchEnvironment["EASYWORK_DEV_LAN_OFFER"] = offer
@@ -2986,8 +2986,11 @@ final class EasyWorkOwnedDevicePairingUITests: XCTestCase {
     if initial.waitForExistence(timeout: 20) { initial.tap() }
     else {
       let add = app.buttons["add-client"]
-      if !add.exists { let sidebar = app.buttons["open-sidebar"]; XCTAssertTrue(sidebar.waitForExistence(timeout: 15)); sidebar.tap() }
-      XCTAssertTrue(add.waitForExistence(timeout: 15)); add.tap()
+      if !add.isHittable {
+        let picker = app.buttons["client-switch"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 15)); picker.tap()
+      }
+      XCTAssertTrue(add.waitForExistence(timeout: 15)); XCTAssertTrue(add.isHittable); add.tap()
     }
     let easywork = app.buttons["EasyWork"]
     XCTAssertTrue(easywork.waitForExistence(timeout: 15)); easywork.tap()
@@ -3001,6 +3004,468 @@ final class EasyWorkOwnedDevicePairingUITests: XCTestCase {
     let done = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in !connect.exists || error.exists }, object: app)
     XCTAssertEqual(XCTWaiter.wait(for: [done], timeout: 100), .completed)
     XCTAssertFalse(error.exists, "Owned EWDAP pairing failed")
+  }
+}
+#endif
+
+#if targetEnvironment(simulator)
+/// Incremental real-source UI driver. Root/P5 opens the exact owned App/parent first.
+/// No fixture launch, pairing, draft edit, model input, or history pagination.
+final class P3ExistingReadingIncrementUITests: XCTestCase {
+  private struct Case: Decodable {
+    let bundleId: String
+    let expectedTargetMarker: String
+    let threadId: String
+    let threadTitle: String?
+    let newModelInputsAuthorized: Int
+    let messageId: String?
+    let expectedChildText: String?
+    let documentButtonId: String?
+    let documentLinkLabel: String?
+    let rootDocumentTitle: String?
+    let relativeLinkLabel: String?
+    let childDocumentTitle: String?
+    let childText: String?
+  }
+
+  @MainActor private func existingApp() throws -> (XCUIApplication, Case) {
+    continueAfterFailure = false
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_EXISTING_READING_CASE"],
+      "Requires the private Root/P5 real-source binding; no automatic fixture fallback")
+    let value = try JSONDecoder().decode(Case.self, from: Data(raw.utf8))
+    guard value.bundleId == "com.easyai.agenthub.easyworkacceptance"
+        || value.bundleId.hasPrefix("com.easyai.agenthub.acceptance.p3."),
+      UUID(uuidString: value.threadId) != nil,
+      value.expectedTargetMarker.split(separator: "|", omittingEmptySubsequences: false).count >= 3,
+      value.expectedTargetMarker.split(separator: "|", omittingEmptySubsequences: false)[1] == Substring(value.threadId),
+      value.newModelInputsAuthorized == 0 else {
+      throw NSError(domain: "P3ReadingBinding", code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "Exact owned bundle/target/parent and zero model input required"])
+    }
+    let app = XCUIApplication(bundleIdentifier: value.bundleId)
+    let recovery = ProcessInfo.processInfo.environment["P3_READ_RECOVERY_MODE"] == "1"
+    if recovery {
+      let digest = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_READ_RECOVERY_TARGET_SHA256"])
+      guard digest.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else { throw NSError(domain: "P3RecoveryTargetDigest", code: 1) }
+      if app.state != .notRunning { app.terminate() }
+      app.launchEnvironment["EASYWORK_DROP_READ_COMPLETION_METHOD"] = "resource/resolve-document-link"
+      app.launchEnvironment["EASYWORK_DROP_READ_SCOPE_ID"] = value.threadId
+      app.launchEnvironment["EASYWORK_DROP_READ_TARGET_SHA256"] = digest
+    }
+    // XCTest may terminate its UI target at the end of the previous run.
+    // Restore only this exact owned App; never seed a fixture or replace state.
+    if app.state == .notRunning {
+      app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+      if recovery { app.launchArguments += ["-read-recovery-acceptance", "-native-queue-dev"] }
+      app.launch()
+    } else if app.state != .runningForeground { app.activate() }
+    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 20))
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    XCTAssertTrue(target.waitForExistence(timeout: 15))
+    let marker = target.value as? String
+    let scopedMarker = recovery ? marker.map { $0.components(separatedBy: "|").prefix(3).joined(separator: "|") } : marker
+    XCTAssertEqual(scopedMarker, value.expectedTargetMarker,
+      "Full target/thread/cache marker must match; diagnostic queue suffix grants no input permission")
+    return (app, value)
+  }
+
+  @MainActor private func shot(_ app: XCUIApplication, _ name: String) {
+    let item = XCTAttachment(screenshot: app.screenshot())
+    item.name = "p3-" + name; item.lifetime = .keepAlways; add(item)
+  }
+
+  /// Fresh task-owned simulator only. Ordinary manual connection stores the
+  /// Host key in the App Keychain; XCTest receives it through a private env.
+  @MainActor func testBootstrapExactCodexSource() throws {
+    continueAfterFailure = false
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_CODEX_BOOTSTRAP_PRIVATE"])
+    let c = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: String])
+    let host = try XCTUnwrap(c["hostId"]), thread = try XCTUnwrap(c["threadId"])
+    let endpoint = try XCTUnwrap(c["endpoint"]), token = try XCTUnwrap(c["token"])
+    guard host == "13c81542-48e3-4df2-ab46-d45357b631a2", UUID(uuidString: thread) != nil,
+      endpoint == "https://127.0.0.1:56318", !token.isEmpty else {
+      throw NSError(domain: "P3BootstrapBinding", code: 1)
+    }
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev",
+      "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    let monitor = addUIInterruptionMonitor(withDescription: "P3 owned App network access") { alert in
+      let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "无线局域网与蜂窝网络", "无线局域网与蜂窝数据"])).firstMatch
+      guard allow.exists else { return false }; allow.tap(); return true
+    }
+    defer { removeUIInterruptionMonitor(monitor) }
+    let picker = app.buttons["client-switch"]
+    XCTAssertTrue(picker.waitForExistence(timeout: 35)); picker.tap()
+    // Never overwrite/re-authorize an existing connection after an unknown result.
+    XCTAssertFalse(app.buttons["client-" + host].exists, "Bootstrap is permitted once on the new owned simulator")
+    let add = app.buttons["add-client"]
+    XCTAssertTrue(add.waitForExistence(timeout: 10)); add.tap()
+    let manual = app.segmentedControls["codex-connection-method"].buttons["手动连接"]
+    XCTAssertTrue(manual.waitForExistence(timeout: 15)); manual.tap()
+    let name = app.textFields["client-name"], address = app.textFields["client-address"]
+    XCTAssertTrue(address.waitForExistence(timeout: 10))
+    name.tap(); name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (name.value as? String ?? "").count)); name.typeText("P3 原保存记录 Host13")
+    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    address.tap(); address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (address.value as? String ?? "").count)); address.typeText(endpoint)
+    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    let key = app.secureTextFields["client-token"]
+    key.tap(); key.typeText(token)
+    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    app.buttons["connect-client"].tap()
+    XCTAssertTrue(key.waitForNonExistence(timeout: 60), "Normal manual connection must complete; do not retry unknown authorization")
+    XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 20))
+    app.buttons["open-sidebar"].tap()
+    let rows = app.buttons.matching(NSPredicate(format: "identifier IN %@", ["thread-" + thread, "recent-thread-" + thread, "pinned-thread-" + thread]))
+    let list = app.scrollViews["sidebar-list"]
+    if !rows.firstMatch.isHittable, let title = c["threadTitle"] {
+      app.buttons["sidebar-search-toggle"].tap()
+      let search = app.textFields["sidebar-search"]
+      XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText(title)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+    }
+    for _ in 0..<12 where !rows.firstMatch.isHittable { list.swipeUp() }
+    guard rows.firstMatch.exists && rows.firstMatch.isHittable else {
+      // Screenshot only after the secret field has been removed.
+      shot(app, "original-parent-not-in-sidebar")
+      throw NSError(domain: "P3OriginalParentNavigation", code: 1)
+    }
+    rows.firstMatch.tap()
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value BEGINSWITH %@", host + "|" + thread + "|"), object: target)
+    XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 30), .completed)
+    let marker = try XCTUnwrap(target.value as? String)
+    let item = XCTAttachment(data: Data(marker.utf8), uniformTypeIdentifier: "public.plain-text")
+    item.name = "p3-exact-selected-target-marker"; item.lifetime = .keepAlways; self.add(item)
+    shot(app, "original-parent-selected-zero-model-input")
+  }
+
+  @MainActor func testNavigateExistingCodexSource() throws {
+    continueAfterFailure = false
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_EXISTING_READING_CASE"])
+    let c = try JSONDecoder().decode(Case.self, from: Data(raw.utf8))
+    guard c.bundleId == "com.easyai.agenthub.easyworkacceptance", c.newModelInputsAuthorized == 0 else {
+      throw NSError(domain: "P3ReadOnlyNavigation", code: 1)
+    }
+    let app = XCUIApplication(bundleIdentifier: c.bundleId)
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    XCTAssertTrue(target.waitForExistence(timeout: 20))
+    let wantedClient = try XCTUnwrap(c.expectedTargetMarker.components(separatedBy: "|").first)
+    if !(target.value as? String ?? "").hasPrefix(wantedClient + "|") {
+      app.buttons["client-switch"].tap()
+      let client = app.buttons["client-" + wantedClient]
+      XCTAssertTrue(client.waitForExistence(timeout: 15)); XCTAssertTrue(client.isHittable); client.tap()
+    }
+    let sidebar = app.buttons["open-sidebar"]
+    XCTAssertTrue(sidebar.waitForExistence(timeout: 30)); sidebar.tap()
+    let rows = app.buttons.matching(NSPredicate(format: "identifier IN %@", ["thread-" + c.threadId, "recent-thread-" + c.threadId, "pinned-thread-" + c.threadId]))
+    let list = app.scrollViews["sidebar-list"]
+    if !rows.firstMatch.isHittable, let title = c.threadTitle {
+      let toggle = app.buttons["sidebar-search-toggle"]
+      XCTAssertTrue(toggle.waitForExistence(timeout: 15))
+      var previous = CGRect.null
+      let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        guard toggle.exists, toggle.isHittable, app.frame.contains(toggle.frame) else { return false }
+        let current = toggle.frame; defer { previous = current }; return current == previous
+      }, object: toggle)
+      XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed)
+      toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      let search = app.textFields["sidebar-search"]
+      XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText(title)
+    } else if !rows.firstMatch.isHittable, app.buttons["sidebar-more-recent"].isHittable {
+      app.buttons["sidebar-more-recent"].tap()
+    }
+    for _ in 0..<8 where !rows.firstMatch.isHittable { list.swipeUp() }
+    shot(app, "existing-exact-source-navigation-result")
+    if rows.firstMatch.isHittable { rows.firstMatch.tap() }
+    else {
+      // Reading an archived original is not unarchiving or desktop reopening it.
+      app.buttons["close-sidebar"].tap(); app.buttons["chat-menu"].tap()
+      let archived = app.buttons["archived-chats"]
+      XCTAssertTrue(archived.waitForExistence(timeout: 10)); archived.tap()
+      let row = app.buttons["archived-chat-" + c.threadId]
+      for _ in 0..<12 where !row.isHittable { app.swipeUp() }
+      XCTAssertTrue(row.waitForExistence(timeout: 15)); XCTAssertTrue(row.isHittable); row.tap()
+    }
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", c.expectedTargetMarker), object: target)
+    XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 30), .completed)
+    shot(app, "existing-exact-original-source-selected")
+  }
+
+  /// Separate cleanup only: never arms or republishes the parent read scenario.
+  @MainActor func testRestoreOriginalCodexRouteOnly() throws {
+    continueAfterFailure = false
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_ROUTE_CLEANUP_CASE"])
+    let c = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: String])
+    let aID = try XCTUnwrap(c["clientId"]), original = try XCTUnwrap(c["originalEndpoint"])
+    let delayed = try XCTUnwrap(c["delayedEndpoint"]), bID = try XCTUnwrap(c["secondClientId"])
+    let bMarker = try XCTUnwrap(c["secondTargetMarker"])
+    let app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.easyworkacceptance")
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    func tap(_ e: XCUIElement) throws {
+      guard e.waitForExistence(timeout: 15) else { throw NSError(domain: "P3RouteCleanup", code: 1) }
+      if e.isHittable { e.tap(); return }
+      // The actual source screenshot shows this named header, while XCTest
+      // reports its long clipped AX title as non-hittable. Use only its measured
+      // visible rectangle, with the exact current A identity and no alert.
+      let marker = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+      let visible = e.frame.intersection(app.frame)
+      let geometry = XCTAttachment(string: "identifier=" + e.identifier + ";frame=" + String(describing: e.frame) + ";visible=" + String(describing: visible))
+      geometry.name = "p3-route-header-native-geometry"; geometry.lifetime = .keepAlways; add(geometry)
+      guard e.identifier == "client-switch", (marker.value as? String ?? "").hasPrefix(aID + "|"),
+        !app.alerts.firstMatch.exists, visible.width >= 44, visible.height >= 32,
+        visible.minY >= 0, visible.maxY <= 200 else {
+        shot(app, "restore-only-control-unavailable")
+        throw NSError(domain: "P3RouteCleanup", code: 2)
+      }
+      shot(app, "restore-only-measured-header-before-native-tap")
+      app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: visible.midX, dy: visible.midY)).tap()
+    }
+    func openRoute() throws -> XCUIElement {
+      try tap(app.buttons["client-switch"])
+      try tap(app.buttons["edit-client-" + aID])
+      let field = app.textFields["client-address"]
+      XCTAssertTrue(field.waitForExistence(timeout: 15)); return field
+    }
+    shot(app, "restore-only-initial-native-state")
+    var address = try openRoute()
+    let before = try XCTUnwrap(address.value as? String)
+    guard before == original || before == delayed else { throw NSError(domain: "P3RefuseUnrelatedRoute", code: 1) }
+    if before != original {
+      try tap(address)
+      address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: before.count)); address.typeText(original)
+      XCTAssertEqual(address.value as? String, original)
+      if app.buttons["完成输入"].exists { try tap(app.buttons["完成输入"]) }
+      try tap(app.buttons["save-client"])
+      XCTAssertTrue(address.waitForNonExistence(timeout: 45))
+    } else { try tap(app.buttons["cancel-client-form"]) }
+    // A fresh normal App process must read the saved route using its own store/key.
+    app.terminate(); app.launch()
+    address = try openRoute()
+    XCTAssertEqual(address.value as? String, original)
+    shot(app, "restore-only-cold-saved-original-route")
+    try tap(app.buttons["cancel-client-form"])
+    if !app.buttons["client-" + bID].isHittable { try tap(app.buttons["client-switch"]) }
+    try tap(app.buttons["client-" + bID])
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", bMarker), object: target)
+    XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 30), .completed)
+    shot(app, "restore-only-real-b-selected-no-further-codex-source-use")
+    let proof: [String: Any] = ["routeBefore": before, "savedRouteAfterColdLaunch": original,
+      "clientId": aID, "finalTargetMarker": bMarker, "coldSavedRouteVerified": true,
+      "scenarioReplayed": false, "pairingRepeated": false, "newModels": 0]
+    let bytes = try JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys])
+    let item = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.json")
+    item.name = "p3-explicit-native-route-cleanup-proof"; item.lifetime = .keepAlways; add(item)
+  }
+
+  /// Holds genuine completed upstream bytes; no replacement response or model input.
+  @MainActor func testParentReadLateAfterComputerSwitch() async throws {
+    continueAfterFailure = true // Always attempt restoring the task App's original route.
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_EXISTING_READING_CASE"])
+    let a = try JSONDecoder().decode(Case.self, from: Data(raw.utf8))
+    let privateRaw = try XCTUnwrap(ProcessInfo.processInfo.environment["P3_LATE_READ_CASE"])
+    let c = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(privateRaw.utf8)) as? [String: String])
+    let aID = try XCTUnwrap(a.expectedTargetMarker.components(separatedBy: "|").first)
+    let bID = try XCTUnwrap(c["secondClientId"]), bMarker = try XCTUnwrap(c["secondTargetMarker"])
+    let original = try XCTUnwrap(c["originalEndpoint"]), delayed = try XCTUnwrap(c["delayedEndpoint"])
+    let controlBase = try XCTUnwrap(c["controlBase"]), controlToken = try XCTUnwrap(c["controlToken"])
+    guard a.bundleId == "com.easyai.agenthub.easyworkacceptance", a.newModelInputsAuthorized == 0,
+      aID != bID, bMarker.hasPrefix(bID + "|"),
+      URL(string: delayed)?.host == "127.0.0.1", URL(string: delayed)?.scheme == "https",
+      URL(string: controlBase)?.host == "127.0.0.1" else { throw NSError(domain: "P3LateBinding", code: 1) }
+    let app = XCUIApplication(bundleIdentifier: a.bundleId)
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+    app.launch()
+    func require(_ value: Bool, _ label: String) throws {
+      guard value else { throw NSError(domain: "P3LateRead", code: 1, userInfo: [NSLocalizedDescriptionKey: label]) }
+    }
+    func tap(_ e: XCUIElement) throws {
+      try require(e.waitForExistence(timeout: 15), "Named control missing")
+      var previous = CGRect.null
+      let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        guard e.exists, e.isHittable, app.frame.contains(e.frame) else { return false }
+        let now = e.frame; defer { previous = now }; return previous == now
+      }, object: e)
+      try require(XCTWaiter.wait(for: [settled], timeout: 10) == .completed, "Named control not settled")
+      e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    }
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    func selected(_ marker: String) throws {
+      let match = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", marker), object: target)
+      try require(XCTWaiter.wait(for: [match], timeout: 30) == .completed, "Full current target differs")
+    }
+    func select(_ id: String, _ marker: String) throws {
+      if !app.navigationBars["客户端"].exists { try tap(app.buttons["client-switch"]) }
+      try tap(app.buttons["client-" + id]); try selected(marker)
+    }
+    func endpoint(_ next: String) throws {
+      if app.buttons["cancel-client-form"].exists { try tap(app.buttons["cancel-client-form"]) }
+      if !app.navigationBars["客户端"].exists { try tap(app.buttons["client-switch"]) }
+      try tap(app.buttons["edit-client-" + aID])
+      let address = app.textFields["client-address"]
+      try require(address.waitForExistence(timeout: 10), "Original route form missing")
+      let before = address.value as? String ?? ""
+      try require(before == original || before == delayed, "Refuse changing any unrelated route")
+      if before != next {
+        try tap(address)
+        address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: before.count)); address.typeText(next)
+        try require(address.value as? String == next, "Route field differs before save")
+        if app.buttons["完成输入"].exists { try tap(app.buttons["完成输入"]) }
+        try tap(app.buttons["save-client"])
+        try require(address.waitForNonExistence(timeout: 45), "Route save not confirmed")
+      } else { try tap(app.buttons["cancel-client-form"]) }
+      if app.navigationBars["客户端"].exists { try tap(app.navigationBars["客户端"].buttons["完成"]) }
+    }
+    func gate(_ action: String) async throws -> [String: Any] {
+      try require(["status", "arm", "release"].contains(action), "Observer action rejected")
+      let url = try XCTUnwrap(URL(string: controlBase + "/" + action))
+      var request = URLRequest(url: url); request.httpMethod = action == "status" ? "GET" : "POST"
+      request.setValue("Bearer " + controlToken, forHTTPHeaderField: "Authorization")
+      let (bytes, response) = try await URLSession.shared.data(for: request)
+      try require((response as? HTTPURLResponse)?.statusCode == 200, "Private read observer rejected")
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+    }
+    let composer = app.descendants(matching: .any).matching(identifier: "composer-input").firstMatch
+    var primary: Error?, editAttempted = false
+    do {
+      try select(bID, bMarker); try require(composer.waitForExistence(timeout: 15), "B composer missing")
+      let bDraft = composer.value as? String
+      try select(aID, a.expectedTargetMarker); let aDraft = composer.value as? String
+      editAttempted = true; try endpoint(delayed); try selected(a.expectedTargetMarker)
+      let message = try XCTUnwrap(a.messageId), row = app.buttons["subagent-" + message]
+      let list = app.scrollViews["message-list"]
+      for _ in 0..<20 where !row.isHittable { list.swipeDown(velocity: .fast) }
+      try tap(row)
+      let entry = app.buttons["subagent-parent-lineage"]
+      try require(entry.waitForExistence(timeout: 35), "Actual typed-unavailable entry missing")
+      _ = try await gate("arm"); try tap(entry)
+      var status = try await gate("status"), until = Date().addingTimeInterval(25)
+      while status["held"] as? Bool != true && Date() < until {
+        try await Task.sleep(for: .milliseconds(100)); status = try await gate("status")
+      }
+      try require(status["held"] as? Bool == true, "No genuine upstream-completed response held")
+      shot(app, "late-read-genuine-response-held")
+      try tap(app.buttons["subagent-detail-close"])
+      try select(bID, bMarker); try require(composer.value as? String == bDraft, "B draft changed before release")
+      shot(app, "late-read-switched-to-real-b")
+      try select(aID, a.expectedTargetMarker); try require(composer.value as? String == aDraft, "A draft changed on return")
+      _ = try await gate("release")
+      status = try await gate("status"); until = Date().addingTimeInterval(5)
+      while status["released"] as? Bool != true && Date() < until {
+        try await Task.sleep(for: .milliseconds(100)); status = try await gate("status")
+      }
+      try require(status["released"] as? Bool == true, "Original response release unconfirmed")
+      for _ in 0..<20 {
+        try require(!app.scrollViews["subagent-detail-" + message].exists, "Old response reopened original sheet")
+        try require(target.value as? String == a.expectedTargetMarker, "Old response replaced current target")
+        try require(composer.value as? String == aDraft, "Old response replaced A draft")
+        try await Task.sleep(for: .milliseconds(100))
+      }
+      shot(app, "late-read-a-b-a-after-original-release")
+      try select(bID, bMarker); try require(composer.value as? String == bDraft, "Old A response changed B draft")
+      try select(aID, a.expectedTargetMarker)
+      let bytes = try JSONSerialization.data(withJSONObject: status, options: [.sortedKeys])
+      let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.json")
+      attachment.name = "p3-real-upstream-delay-witness"; attachment.lifetime = .keepAlways; add(attachment)
+    } catch { primary = error; shot(app, "late-read-primary-failure") }
+    // Release only this observer's original held read and restore only our A route.
+    do {
+      if app.buttons["subagent-detail-close"].exists { try tap(app.buttons["subagent-detail-close"]) }
+      let status = try await gate("status")
+      if status["held"] as? Bool == true { _ = try await gate("release") }
+      if editAttempted { try endpoint(original) }
+      try select(bID, bMarker)
+      shot(app, "late-read-original-route-restored-real-b-selected")
+    } catch { XCTFail("P3 original route cleanup unresolved: " + error.localizedDescription) }
+    if let primary { XCTFail("P3 late read scenario failed: " + primary.localizedDescription) }
+  }
+
+  @MainActor func testExistingCodexParentLineageEntry() throws {
+    let (app, value) = try existingApp()
+    let message = try XCTUnwrap(value.messageId)
+    let expected = try XCTUnwrap(value.expectedChildText)
+    XCTAssertFalse(message.isEmpty); XCTAssertFalse(expected.isEmpty)
+    let row = app.buttons["subagent-" + message]
+    let timeline = app.scrollViews["message-list"]
+    XCTAssertTrue(timeline.waitForExistence(timeout: 20))
+    // Navigate the already-loaded parent window to its exact original card.
+    // This is setup, not a history/pagination acceptance rerun.
+    for _ in 0..<20 where !row.isHittable { timeline.swipeDown(velocity: .fast) }
+    XCTAssertTrue(row.waitForExistence(timeout: 15)); XCTAssertTrue(row.isHittable)
+    shot(app, "actual-original-parent-card")
+    row.tap()
+    defer {
+      if app.buttons["subagent-detail-close"].exists { app.buttons["subagent-detail-close"].tap() }
+    }
+    let entry = app.buttons["subagent-parent-lineage"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 35),
+      "Must exercise the new parent-lineage entry after typed history is unavailable")
+    shot(app, "actual-parent-lineage-entry")
+    entry.tap()
+    let sheet = app.scrollViews["subagent-detail-" + message]
+    XCTAssertTrue(sheet.waitForExistence(timeout: 15))
+    let text = sheet.staticTexts.matching(NSPredicate(format: "label == %@", expected)).firstMatch
+    XCTAssertTrue(text.waitForExistence(timeout: 35), "Exact original desktop child block must render")
+    XCTAssertFalse(app.staticTexts["subagent-history-error"].exists)
+    XCTAssertTrue(app.buttons["subagent-history-refresh"].exists,
+      "Successful typed history is not evidence for the parent-lineage entry")
+    shot(app, "actual-parent-lineage-original-block")
+  }
+
+  @MainActor func testExistingEasyWorkRelativeLinkAndReturn() throws {
+    let (app, value) = try existingApp()
+    let opener: XCUIElement
+    if let id = value.documentButtonId {
+      XCTAssertNil(value.documentLinkLabel, "Select one exact original entry")
+      opener = app.buttons[id]
+    } else {
+      let label = try XCTUnwrap(value.documentLinkLabel)
+      XCTAssertFalse(label.isEmpty)
+      let links = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label))
+      XCTAssertTrue(links.firstMatch.waitForExistence(timeout: 15))
+      XCTAssertEqual(links.count, 1, "Original message link must have one unambiguous native match")
+      opener = links.firstMatch
+    }
+    let rootTitle = try XCTUnwrap(value.rootDocumentTitle)
+    let childTitle = try XCTUnwrap(value.childDocumentTitle)
+    let label = try XCTUnwrap(value.relativeLinkLabel)
+    let expected = try XCTUnwrap(value.childText)
+    XCTAssertNotEqual(rootTitle, childTitle); XCTAssertFalse(expected.isEmpty)
+    XCTAssertTrue(opener.waitForExistence(timeout: 15)); XCTAssertTrue(opener.isHittable)
+    opener.tap()
+    defer {
+      if app.navigationBars[childTitle].exists {
+        app.navigationBars[childTitle].buttons["file-preview-close"].tap()
+      }
+      if app.navigationBars[rootTitle].exists {
+        app.navigationBars[rootTitle].buttons["file-preview-close"].tap()
+      }
+    }
+    XCTAssertTrue(app.navigationBars[rootTitle].waitForExistence(timeout: 30))
+    let link = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+    XCTAssertTrue(link.waitForExistence(timeout: 15)); XCTAssertTrue(link.isHittable)
+    let previousY = link.frame.minY
+    shot(app, "actual-source-relative-link")
+    link.tap()
+    XCTAssertTrue(app.navigationBars[childTitle].waitForExistence(timeout: 45))
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", expected)).firstMatch.waitForExistence(timeout: 15))
+    shot(app, "actual-relative-child")
+    app.navigationBars[childTitle].buttons["file-preview-close"].tap()
+    XCTAssertTrue(app.navigationBars[rootTitle].waitForExistence(timeout: 15))
+    XCTAssertTrue(link.waitForExistence(timeout: 15)); XCTAssertTrue(link.isHittable)
+    XCTAssertEqual(link.frame.minY, previousY, accuracy: 16)
+    shot(app, "actual-original-document-return")
+    app.navigationBars[rootTitle].buttons["file-preview-close"].tap()
+    let target = app.descendants(matching: .any).matching(identifier: "agent-dev-target").firstMatch
+    XCTAssertTrue(target.waitForExistence(timeout: 15))
+    XCTAssertEqual((target.value as? String)?.components(separatedBy: "|").prefix(3).joined(separator: "|"), value.expectedTargetMarker)
+    shot(app, "actual-original-chat-return")
+    // For lost-completion cases, UI success is only one component. Root must
+    // independently require command/status for the dropped ID and original Host receipt.
   }
 }
 #endif

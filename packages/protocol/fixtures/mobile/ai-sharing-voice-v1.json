@@ -800,6 +800,174 @@
         "expiresAt": "2026-10-18T00:00:00Z"
       },
       "expected": true
+    },
+    {
+      "name": "original-awaiting-audio",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000,
+        "phase": "awaiting-audio",
+        "text": null,
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "original-failed",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000,
+        "phase": "failed",
+        "text": null,
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "original-outcome-unknown",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000,
+        "phase": "outcome-unknown",
+        "text": null,
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": true
+    },
+    {
+      "name": "receipt-invalid-text",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000,
+        "phase": "completed",
+        "text": null,
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": false
+    },
+    {
+      "name": "receipt-invalid-sizeBytes",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000,
+        "phase": "completed",
+        "text": "fixture transcript, not real transcription evidence",
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": false
+    },
+    {
+      "name": "receipt-invalid-durationMs",
+      "manifest": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "receipt": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": "1000",
+        "phase": "completed",
+        "text": "fixture transcript, not real transcription evidence",
+        "error": null,
+        "expiresAt": "2026-10-18T00:00:00Z"
+      },
+      "expected": false
     }
   ],
   "manifests": [
@@ -1057,6 +1225,216 @@
         "operationId": "12345678-1234-1234-1234-123456789abc",
         "mediaType": "audio/wav",
         "sizeBytes": 32044.0,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": true
+    },
+    {
+      "name": "sizeBytes-minimum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 44,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": true
+    },
+    {
+      "name": "sizeBytes-below-minimum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 43,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": false
+    },
+    {
+      "name": "sizeBytes-maximum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 12582912,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": true
+    },
+    {
+      "name": "sizeBytes-over-maximum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 12582913,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": false
+    },
+    {
+      "name": "sizeBytes-boolean",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": true,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": false
+    },
+    {
+      "name": "sizeBytes-string",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": "32044",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": false
+    },
+    {
+      "name": "sizeBytes-fraction",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044.5,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000
+      },
+      "expected": false
+    },
+    {
+      "name": "durationMs-minimum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1
+      },
+      "expected": true
+    },
+    {
+      "name": "durationMs-zero",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 0
+      },
+      "expected": false
+    },
+    {
+      "name": "durationMs-maximum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 300000
+      },
+      "expected": true
+    },
+    {
+      "name": "durationMs-over-maximum",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 300001
+      },
+      "expected": false
+    },
+    {
+      "name": "durationMs-boolean",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": true
+      },
+      "expected": false
+    },
+    {
+      "name": "durationMs-string",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": "1000"
+      },
+      "expected": false
+    },
+    {
+      "name": "durationMs-fraction",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": "fixture-thread",
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "durationMs": 1000.5
+      },
+      "expected": false
+    },
+    {
+      "name": "threadId-null-thread",
+      "value": {
+        "hostId": "fixture-host",
+        "threadId": null,
+        "draftId": "fixture-draft",
+        "operationId": "12345678-1234-1234-1234-123456789abc",
+        "mediaType": "audio/wav",
+        "sizeBytes": 32044,
         "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "durationMs": 1000
       },

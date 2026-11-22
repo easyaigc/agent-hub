@@ -55,6 +55,7 @@ internal fun interface NativeVoiceSealAudioCommittedCheckpoint {
 
 /** Only this installation can decrypt sealed audio. A provisional WAV can be recovered after process death before any upload. */
 class VoiceRecordingStore(context: Context,private val storage: NativeSessionStorage) {
+    private val acceptanceContext=context.applicationContext
     private var audioCommittedCheckpoint: NativeVoiceSealAudioCommittedCheckpoint?=null
     /** Only an internal, independent debug acceptance caller may observe/interject at this boundary. */
     internal constructor(context: Context,storage: NativeSessionStorage,checkpoint: NativeVoiceSealAudioCommittedCheckpoint):
@@ -95,10 +96,17 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
         val catalog=NativeVoiceDiscardCatalog.read(storage)
         (index()+catalog.keys).distinct().filter { id->val current=decode(read(id));current.manifest==null&&!terminal(current,catalog) }
     }
-    suspend fun begin(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String): PendingVoiceRecording = withContext(Dispatchers.IO) {
-        val newId=UUID.randomUUID().toString()
+    suspend fun begin(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String): PendingVoiceRecording =
+        registerOriginal(scope,certificate,draftKey,draftId,threadId,text,UUID.randomUUID().toString())
+    /** Acceptance-only fixed NEW operation; the ordinary encrypted registration/seal path is shared. */
+    internal suspend fun beginFileAcceptance(original: VoiceDraft,operationId: String): PendingVoiceRecording {
+        requireNativeVoiceFileAcceptance(acceptanceContext);validId(operationId)
+        return registerOriginal(original.scope,original.certificate,original.key,original.draftId,original.threadId,original.text,operationId)
+    }
+    private suspend fun registerOriginal(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String,newId: String): PendingVoiceRecording = withContext(Dispatchers.IO) {
         rawWriter(newId).use {
         storage.operationTransaction {
+            require(newId !in index() && storage.read(key(newId))==null && !file(newId).exists()) { "Original recording already exists; reconcile, never replay" }
             val catalog=NativeVoiceDiscardCatalog.read(storage)
             val recovery=NativeVoiceLocalResults.read(storage).filterNot {it.applied}.map {it.recordingId}
             val ids=(index()+recovery).distinct().filterNot {val original=decode(read(it));terminal(original,catalog)||NativeVoiceLocalResults.resolved(storage,original)}

@@ -28,23 +28,25 @@ internal class ImportedVoiceReceiptOnly: IllegalStateException(MESSAGE) {
     companion object {const val MESSAGE="迁入的原录音仅核对原回执，音频已保留。"}
 }
 
-/** Only an explicit finish/retry calls this flow. Unknown uploads are queried, never replayed. */
+/** A fresh finish may submit once. Recovery only reads the authoritative original receipt. */
 class VoiceTranscriptionFlow(private val commands: AgentCommands,private val store: VoiceRecordingStore) {
-    suspend fun transcribe(client: MobileClient,pending: PendingVoiceRecording,allowed: ()->Boolean): String {
+    suspend fun transcribe(client: MobileClient,pending: PendingVoiceRecording,queryOnly: Boolean=false,allowed: ()->Boolean): String {
         val current=store.current(pending)
         val request=current.manifest ?: error("原录音尚未完成")
         val bytes=store.bytes(current);request.verify(bytes)
         fun guard() { check(allowed()) { "共享许可、录音目标或草稿已变化，原录音已保留" } }
+        val recover=queryOnly || current.prepareAttempted || current.audioAttempted || current.migrationReadOnly
         guard()
         var receipt=try { commands.voiceStatus(client,request) }
         catch(e: CodexCommandError) {
-            if(e.status!=404 || current.audioAttempted || current.migrationReadOnly) throw e
+            if(e.status!=404 || recover) throw e
             guard();store.mark(pending,prepareAttempted=true);guard()
             commands.prepareVoice(client,request)
         }
         guard()
         if(receipt.phase=="awaiting-audio") {
             if(current.migrationReadOnly)throw ImportedVoiceReceiptOnly()
+            check(!recover) { "原转写结果尚未确认，录音已保留；仅查询原结果，不会再次上传。" }
             // The original Host authoritatively still awaits these exact bytes.
             // It commits the transcribing receipt before upstream I/O.
             store.mark(pending,prepareAttempted=true,audioAttempted=true);guard()

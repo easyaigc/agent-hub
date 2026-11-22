@@ -91,6 +91,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     // A fresh phone capture cannot retire or abandon a provisional/in-flight original recording.
     val canRerecordWithSystem get()=provider==Provider.DESKTOP && phase==Phase.FAILED && !discarding && !discardFailed && !cancelling && !savedFileBusy && !savedFileClosing && localAllowed?.invoke()==true && capture==null &&
         (pending?.manifest!=null || pending==null && registration==null)
+    internal var fileAcceptance: NativeVoiceFileAcceptance?=null
     internal var localResultPort: NativeVoiceLocalResultPort?=null
     internal var savedFileFactory: ()->NativeSavedVoiceSpeech = { VoskSavedVoiceSpeech(context) }
     internal var savedFileLocale by mutableStateOf(when(java.util.Locale.getDefault().language){"zh"->"zh-CN";"en"->"en-US";else->""});private set
@@ -184,6 +185,16 @@ class VoiceInputController(private val context: Context,private val store: Voice
                 val ready=commands().voiceReadiness(original.client);checkCurrent(id)
                 if(!ready.available)throw ready.reason?.let { IllegalStateException(it) } ?: NativeVoiceFailure("电脑转写暂不可用，请检查 Codex 登录。原草稿已保留。")
                 localCheck(ready.maxBytes>=44 && ready.maxDurationMs>0,"电脑未提供有效的录音限制")
+                fileAcceptance?.let { fileInput ->
+                    requireNativeVoiceFileAcceptance(context);checkCurrent(id)
+                    val saved=fileInput.capture(original,store);checkCurrent(id)
+                    require(saved.scope.matches(original.scope) && saved.certificate==original.certificate &&
+                        saved.draftKey==original.key && saved.draftId==original.draftId && saved.threadId==original.threadId &&
+                        saved.originalText==original.text && saved.manifest!=null && !saved.prepareAttempted && !saved.audioAttempted && !saved.migrationReadOnly)
+                    require(saved.manifest.sizeBytes<=ready.maxBytes && saved.manifest.durationMs<=ready.maxDurationMs)
+                    pending=saved;capturedAudioAvailable=true;phase=Phase.LISTENING
+                    return@launch
+                }
                 if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) {
                     val result=CompletableDeferred<Boolean>();waiting=result;permissionRequest=id
                     val granted=result.await();waiting=null;permissionRequest=null;checkCurrent(id)
@@ -291,6 +302,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
         }
         if(phase==Phase.FAILED && !hasRetryableRecording)return // A restored unsealed original is never repaired/submitted by Retry.
         if(phase !in listOf(Phase.LISTENING,Phase.FAILED)) return
+        val queryOnly=phase==Phase.FAILED
         val original=draft ?: return;val id=generation;phase=Phase.FINISHING;error=null;errorCopyKey=null;monitor?.cancel()
         work=tasks.launch {
             try {
@@ -303,7 +315,8 @@ class VoiceInputController(private val context: Context,private val store: Voice
                 localCheck(capturedAudioAvailable,"尚无可重试的录音，请重新录音。")
                 val sealed=if(record.manifest==null) store.seal(record) else record
                 pending=sealed;checkCurrent(id)
-                val text=VoiceTranscriptionFlow(commands(),store).transcribe(original.client,sealed) { generation==id && allowed?.invoke()==true }
+                val text=VoiceTranscriptionFlow(commands(),store).transcribe(original.client,sealed,queryOnly=queryOnly) { generation==id && allowed?.invoke()==true }
+                fileAcceptance?.let { boundary -> requireNativeVoiceFileAcceptance(context);boundary.completed(sealed,queryOnly) }
                 checkCurrent(id)
                 localCheck(apply?.invoke(original,text)==true,"原草稿已变化，转写结果和录音已保留。")
                 store.remove(sealed)

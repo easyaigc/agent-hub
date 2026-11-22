@@ -44,7 +44,9 @@ class NativeMigrationVoiceTest {
         val generation=NativeMigrationActivation(ui.activity,destination).activate(receipt);val current=destination.reopen(ui.activity);val fresh=VoiceRecordingStore(ui.activity,current)
         val restored=fresh.restore(original.scope,original.certificate,original.draftKey,original.originalText)!!;assertTrue(restored.migrationReadOnly&&restored.prepareAttempted&&restored.audioAttempted);assertEquals(original.manifest,restored.manifest);assertArrayEquals(wave(),fresh.bytes(restored))
         val imported=JSONObject(current.read("voice-recording:${original.id}")!!);assertTrue(imported.remove("migrationReadOnly") as Boolean);assertEquals(body(value,original.id).toString(),imported.toString())
-        current.write("later-edit","original later draft");val after=MigrationActivationFixtures.tree(current);assertEquals(generation,NativeMigrationActivation(ui.activity,destination).activate(receipt));assertEquals(after,MigrationActivationFixtures.tree(current));assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
+        current.write("later-edit","original later draft");val after=MigrationActivationFixtures.tree(current)
+        rejected{NativeMigrationActivation(ui.activity,destination).activate(receipt)} // Retired handles cannot publish into the imported generation.
+        assertEquals(after,MigrationActivationFixtures.tree(current));assertEquals(generation,NativeMigrationActivation(ui.activity,current).activate(receipt));assertEquals(after,MigrationActivationFixtures.tree(current));assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
         rejected{owned.storage.migrationTypedArchiveSnapshot({emptySet()},64)}
     }
     @Test fun legacyInlineAndChunkedAudioKeepExactOriginalsWithoutReadTimeRewrite()=runBlocking{
@@ -98,7 +100,8 @@ class NativeMigrationVoiceTest {
         };assertEquals(sourceBefore,MigrationActivationFixtures.tree(owned.storage))
     }
     @Test fun importedVoiceNeverPreparesOrUploadsEvenWhenOriginalReceiptIsMissingOrAwaitingAudio()=runBlocking{
-        val original=recording();val destination=owned.storage.child(ui.activity,"voice-readonly");NativeMigrationActivation(ui.activity,destination).activate(stage(destination,raw()));val current=destination.reopen(ui.activity);val store=VoiceRecordingStore(ui.activity,current)
+        val original=recording();val sourceArchive=raw() // Capture the source before creating an unregistered destination child.
+        val destination=owned.storage.child(ui.activity,"voice-readonly");NativeMigrationActivation(ui.activity,destination).activate(stage(destination,sourceArchive));val current=destination.reopen(ui.activity);val store=VoiceRecordingStore(ui.activity,current)
         val restored=store.restore(original.scope,original.certificate,original.draftKey,original.originalText)!!;var reads=0;var writes=0;var phase="missing"
         val commands=object: CodexCommands by NativeCodexCommands({""}){
             override suspend fun voiceStatus(client: MobileClient,request: VoiceManifest): VoiceReceipt {reads++;if(phase=="missing")throw CodexCommandError("Synthetic missing",404);return VoiceReceipt(request,phase,if(phase=="completed")"original returned text"else null,null,"2030-01-01T00:00:00Z")}

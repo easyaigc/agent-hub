@@ -5,7 +5,7 @@ import com.agenthub.core.TargetScope
 import org.json.JSONObject
 
 /** Client-local presentation identity is distinct from the authenticated computer target.
- * F59's Codex-only ComputerFileTarget stays unchanged. No credentials are stored here. */
+ * ComputerFileTarget preserves the existing scope and Codex journal keys. No credentials are stored here. */
 internal data class NativeUploadTarget(val clientId:String,val scope:TargetScope,val certificate:String?) {
     init {
         require(clientId.isNotBlank()&&clientId.length<=512)
@@ -21,8 +21,8 @@ internal data class NativeUploadTarget(val clientId:String,val scope:TargetScope
     fun json()=JSONObject().put("clientId",clientId).put("scope",CodexCommandCodec.target(scope))
         .put("certificate",certificate?:JSONObject.NULL)
     fun computerFileTarget():ComputerFileTarget {
-        require(scope.agentId=="codex"&&clientId==scope.hostId)
-        return ComputerFileTarget(scope,certificate)
+        require(scope.agentId in setOf("codex","easywork"))
+        return ComputerFileTarget(scope,certificate).also {require(it.clientId==clientId)}
     }
     companion object {
         fun capture(client:MobileClient):NativeUploadTarget {

@@ -2,7 +2,7 @@
 
 生效：2026-11-20。依据用户确认的 iOS × EasyWork 对接方向：复用现有 App 能力，由 EasyWork Host 与 Codex Host 接入同一套领域协议。本文规定后续实现与审查边界；规范写入不代表现有代码已经全部符合或通过验收。
 
-本任务的计划和当前进度仍只维护在 [历史验收记录](../plans/ios-easywork-alignment-20261112/README.md) 的 `status.json`。本文不另建功能进度表。版本演进同时遵守 [兼容规范](compatibility.md)。
+本项目完整的当前功能及双端实现、模拟器和真机验收状态，只维护在 [唯一完整功能清单](../plans/android-ios-alignment-20261107/progress.md)。[旧 EasyWork 计划](../plans/ios-easywork-alignment-20261112/README.md) 及其 `status.json` 仅保留历史来源与验收证据，不作为当前状态入口。本文不另建功能进度表。版本演进同时遵守 [兼容规范](compatibility.md)。
 
 ## 共同契约的基准
 
@@ -30,6 +30,7 @@ Host 拥有本机执行权限和原桌面服务；Relay 保持身份、绑定、
 - 同一操作的分类有共同来源。Swift、TypeScript 与其他语言需要静态集合时，从共同定义受控生成或以共同向量检查其映射；不得长期独立维护互不核对的读写白名单。
 - 只读重取使用原目标及明确的读取契约。写入必须在提交前保存稳定操作 ID、不可变原目标／参数／指纹；同 ID 同意图查询原结果，不同意图拒绝。
 - 超时、断连、缺失记录和结果不确定不得自动解释为未写入。先核原回执和权威状态；只有契约明确允许的证据及原授权条件满足时，才进入对应恢复动作。传输层不能自行决定重发输入。
+- 自动重连只有一条已授权路径时，保留该路径供正常握手及原回执查询；仅存在不同端点的替代路径时才排除失败候选。重连不改变原操作 ID、目标、设备授权、证书或参数指纹，不授予再次发送原写操作的许可。
 - 排队接受、指令处理完成、模型执行结束和失败／停止分别投影。结束手机等待不声称取消远端；迟到结果不能覆盖新草稿、新操作或另一个目标。
 - 控制操作继续绑定原 Thread、Turn／Run、队列消息或审批请求。原 owner 丢失、过期和错目标按相同领域原因拒绝，不以历史缓存恢复控制权限。
 
@@ -42,6 +43,25 @@ Host 拥有本机执行权限和原桌面服务；Relay 保持身份、绑定、
 - 公共 Markdown、输入按钮、草稿清理、首次发送、未知结果、文件限制等不得仅按 `agentId == "easywork"` 选择业务规则。平台／上游差异由窄能力、明确状态或适配策略描述，并复用同一消费路径。
 - 对现有客户端名称分支逐项核语义和既有保护，按受影响流程渐进收敛。不得通过删除检查、隐藏功能、丢弃旧数据或未经核对的一次性替换消除分支。
 - 大小限制区分 Host 宣告的业务上限、旧实现的流式／内存限制和渲染预算。旧实现限制须如实记录并保留安全门禁；不能仅删常量冒充流式能力完成。
+
+## F59／F64 的有限生产映射
+
+本节说明现有复用入口与审查边界；不替代唯一清单中的实现和验收结论。独立文件传输和录音转写都不提交聊天 Turn。
+
+| 共同操作           | Codex Host 已有入口                                                                               | EasyWork Host／Adapter 映射                                                                                                        | App 公共消费                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 上传能力与原传输   | `/v1/uploads/capabilities`、`/v1/uploads` 及其 `chunk`／`complete`／`cancel` → `ResumableUploads` | 认证的 `runtime/context` 能力与限制；`resource/upload`／`upload-status`／`upload-chunk`／`upload-complete`／`transfer-cancel`      | Android `AgentRegistry`／`AgentCommands.uploadCapability`／`uploadRequest` → `NativeUploadCenter`；iOS `AgentClient.uploadRequest` → 共用上传流程 |
+| 独立文件结果       | `/v1/file-transfers` → `FileTransfers`                                                            | `resource/transfer-list`／`resource/upload-status`；上游 `purpose=transfer` 映射领域 `file-transfer`，不套用聊天附件的 Thread 条件 | 双端公共文件互传流程；Adapter 投影原名、大小、摘要、路径与完成状态                                                                                |
+| 转写就绪           | `/v1/voice/readiness` → `VoiceTranscriptions`                                                     | `voice/readiness` → `RemoteVoiceTranscriptions`／`RemoteVoiceInputPort`；从认证上下文投影 Host 身份                                | `AgentCommands.voiceReadiness`／`AgentClient.voiceReadiness`                                                                                      |
+| 原录音、音频与结果 | POST／GET `/v1/voice/transcriptions`、POST `/v1/voice/transcriptions/audio`                       | `voice/prepare`／`voice/status`／`voice/upload`；不回退到一次性 `voice/transcribe`                                                 | Android `VoiceTranscriptionFlow`／`VoiceCodec`／`VoiceRecordingStore`；iOS 公共录音及原结果恢复入口                                               |
+
+- 上传清单与稳定 ID 在首次远端写入前保存。EasyWork 的传输、分块和完成 ID 沿用原映射，不能因改用公共接口重算旧意图。未知结果先核原传输及原命令回执；完成与取消竞态使用权威原结果，不重新发布文件。
+- Android 独立文件清单中的 `hostId` 沿用本地客户端标识；转写 Manifest 使用认证后的物理 Host 标识。Adapter 显式映射两者，完整领域目标仍由认证信封及公共目标规则校验，不交换这些标识或改写既有清单。
+- EasyWork 的 `resources:transfer-limits:v1` 与 `resourceTransferLimits.version=1` 从认证上下文协商。文件上限的显式 `null` 表示未配置业务上限，缺失、布尔、小数、非正数及超出安全整数范围均不等价于 `null`；未声明能力的旧端继续使用原 20 MiB 保护。分块采用 Host 上限与 Adapter 有界实现保护中的较小值。独立文件上限、聊天附件上限及渲染预算分别处理。
+- 转写就绪的共同 DTO 只含 `hostId`、`available`、`reason`、`maxBytes`、`maxDurationMs`。EasyWork wire 的 `diagnostics` 留在 Adapter 边界；适配器须明确投影共同字段并核对认证目标，再交严格 Schema 校验，不能透传整份 wire JSON 或放宽共同 Schema 来接纳上游诊断字段。旧端缺少有效录音限制时保留不可用错误，不补造上限或触发录音／上传。
+- 转写 Manifest 仍按 `voice-transcription.ts` 与 KMP `VoiceTranscriptionRules` 核对原 Host／Thread／草稿／操作 ID、WAV、字节数、时长和 SHA-256。原结果恢复入口不能重新准备或上传；缺失、过期、鉴权失败、未知结果和解码失败须分别处理，不把所有错误当作“从未提交”。完成回执不能跨目标或覆盖新草稿。
+- `ai-sharing-voice-v1.json` 是现有 Node／Schema、KMP 及 Swift 边界检查共同使用的合成向量来源，覆盖严格 Manifest、原目标／原内容、状态与文本类型。向量通过不证明真实上传、ASR、原生界面或桌面集成通过。
+- 兼容差异必须明示：当前 Codex 语音 HTTP 使用历史 `hostId/id` 入口，服务持久作用域与 EasyWork 的完整 runtime／设备作用域不同。App 保存并核对完整本地目标不能单独证明两个 Host 持久作用域相同；扩展该边界前应单独评审旧端、旧回执与迁移，不在客户端静默补造目标字段。
 
 ## 兼容与安全不变量
 

@@ -9,6 +9,22 @@ import java.util.UUID
 
 /** Only this adapter knows EasyWork protocol v2 method names and provider content parts. */
 class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,AgentCommands,AgentTaskNotifications {
+    override suspend fun voiceReadiness(client: MobileClient): VoiceReadiness {
+        val c=channel(client);EasyWorkVoice.host(client,c.target.scope()) // Reject wrong full target before even a read.
+        return EasyWorkVoice.readiness(client,c.target.scope(),c.request("voice/readiness"))
+    }
+    override suspend fun voiceStatus(client: MobileClient,request: VoiceManifest): VoiceReceipt {
+        val c=channel(client)
+        return EasyWorkVoice.status(client,c.target.scope(),request) { method,params,id -> c.request(method,params,id) }
+    }
+    override suspend fun prepareVoice(client: MobileClient,request: VoiceManifest): VoiceReceipt {
+        val c=channel(client)
+        return EasyWorkVoice.prepare(client,c.target.scope(),request) { method,params,id -> c.request(method,params,id) }
+    }
+    override suspend fun uploadVoice(client: MobileClient,request: VoiceManifest,bytes: ByteArray): VoiceReceipt {
+        val c=channel(client)
+        return EasyWorkVoice.upload(client,c.target.scope(),request,bytes) { method,params,id -> c.request(method,params,id) }
+    }
     private val pushRegistrationCapabilities=object:LinkedHashMap<String,Boolean>(16,.75f,true) {
         override fun removeEldestEntry(eldest:MutableMap.MutableEntry<String,Boolean>?)=size>32
     }
@@ -364,7 +380,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         val c=channel(client);val context=c.request("runtime/context")
         require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target&&sameScope(c.target.scope(),client.scope))
         check("file-transfers" in context.getJSONArray("capabilities").strings()) {"此连接尚未支持文件互传，请更新电脑连接程序。"}
-        return EasyWorkFileTransfers.catalog(c.request("resource/transfer-list"),client.id,c.uploadMobileDeviceId)
+        return EasyWorkFileTransfers.catalog(c.request("resource/transfer-list"),client.id,c.uploadMobileDeviceId,EasyWorkFileLimits.decode(context))
     }
     override suspend fun receiveComputerFile(client:MobileClient,file:IncomingComputerFile,directory:File,current:()->Boolean,progress:(Long)->Unit):File {
         val c=channel(client)
@@ -382,7 +398,68 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
             reply
         }
     }
+    private suspend fun independentContext(client:MobileClient,c:EasyWorkRemoteSession):JSONObject {
+        val context=c.request("runtime/context")
+        require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target&&sameScope(c.target.scope(),client.scope))
+        check("file-transfers" in context.getJSONArray("capabilities").strings()) {"此连接尚未支持文件互传，请更新电脑连接程序。"}
+        return context
+    }
+    override suspend fun prepareComputerFile(client:MobileClient,file:ComputerFileManifest):ComputerFileReceipt {
+        require(file.hostId==client.id);ComputerFileCodec.manifest(file.json())
+        val c=channel(client);val limits=EasyWorkFileLimits.decode(independentContext(client,c))
+        val m=NativeUploadManifest(file,"file-transfer")
+        EasyWorkIndependentUploads.prepare(m,c.uploadMobileDeviceId,c.target,limits) {method,params,id->c.request(method,params,id?:UUID.randomUUID().toString())}
+        return computerFile(client,file.id).also {it.validate(file)}
+    }
+    override suspend fun computerFile(client:MobileClient,id:String):ComputerFileReceipt {
+        ComputerFileCodec.uuid(id);val c=channel(client)
+        require(sameScope(c.target.scope(),client.scope))
+        val value=c.request("resource/upload-status",JSONObject().put("transferId",id))
+        val t=value.getJSONObject("transfer");require(t.getString("transferId")==id)
+        // Status must stay readable even if the peer changes its advertised quotas.
+        val directory=c.request("resource/transfer-list").getString("destinationDirectory")
+        return EasyWorkIndependentUploads.receipt(t,client.id,c.uploadMobileDeviceId,directory)
+    }
+    override suspend fun uploadComputerFile(client:MobileClient,source:ComputerFileUpload,progress:(Long)->Unit):ComputerFileReceipt {
+        // Production uses AgentRegistry + NativeUploadCenter. Never fall back to whole-file memory.
+        error("独立上传需要公共上传中心与有界原件读取接口；原文件和记录已保留。")
+    }
+    private suspend fun independentUploadRequest(client:MobileClient,m:NativeUploadManifest,action:NativeUploadAction,offset:Long,bytes:ByteArray?):NativeUploadReceipt {
+        m.validate();require(m.file.hostId==client.id)
+        val c=channel(client);require(sameScope(c.target.scope(),client.scope));val device=c.uploadMobileDeviceId
+        var chunk=EasyWorkFileTransfers.CHUNK
+        var final:JSONObject?=null
+        when(action) {
+            NativeUploadAction.PREPARE->{
+                val limits=EasyWorkFileLimits.decode(independentContext(client,c));chunk=limits.chunk
+                final=EasyWorkIndependentUploads.prepare(m,device,c.target,limits) {method,params,id->c.request(method,params,id?:UUID.randomUUID().toString())}
+            }
+            NativeUploadAction.CHUNK->{
+                chunk=EasyWorkFileLimits.decode(independentContext(client,c)).chunk
+                require(bytes!=null&&bytes.isNotEmpty()&&bytes.size<=chunk&&offset>=0&&offset<=m.file.sizeBytes-bytes.size)
+                val value=c.request("resource/upload-chunk",JSONObject().put("transferId",m.id).put("offset",offset).put("dataBase64",easyBase64(bytes)),"file-chunk-${m.id}-$offset")
+                require(uploadLong(value.get("nextOffset"))==offset+bytes.size&&value.get("complete") is Boolean&&value.getBoolean("complete")==(offset+bytes.size==m.file.sizeBytes))
+            }
+            NativeUploadAction.COMPLETE->{final=c.request("resource/upload-complete",JSONObject().put("transferId",m.id),"file-complete-${m.id}");EasyWorkFileTransfers.uploadTransfer(final!!,m,device,true)}
+            NativeUploadAction.CANCEL->{
+                val context=independentContext(client,c)
+                final=EasyWorkFileTransfers.cancel(m,device,context.getJSONArray("capabilities").strings().toSet()) {method,params,id->c.request(method,params,id)}
+            }
+            NativeUploadAction.STATUS->{
+                val context=independentContext(client,c)
+                // Invalid optional negotiation must not hide an existing original receipt.
+                chunk=try {EasyWorkFileLimits.decode(context).chunk}catch(_:IllegalArgumentException){EasyWorkFileTransfers.CHUNK}
+                catch(_:org.json.JSONException){EasyWorkFileTransfers.CHUNK}
+            }
+        }
+        return EasyWorkFileTransfers.uploadReceipt(final?:c.request("resource/upload-status",JSONObject().put("transferId",m.id)),m,device,chunk)
+    }
     override suspend fun uploadCapability(client:MobileClient,manifest:NativeUploadManifest):NativeUploadCapability? {
+        if(manifest.purpose=="file-transfer") {
+            manifest.validate();require(manifest.file.hostId==client.id)
+            val c=channel(client);val limits=EasyWorkFileLimits.decode(independentContext(client,c))
+            return NativeUploadCapability(limits.chunk,true,"easywork-file-transfer-v1")
+        }
         if(manifest.purpose!="attachment"||manifest.file.sizeBytes==0L)return null // Preserve original zero-byte path without inventing resume support.
         val c=channel(client);val context=c.request("runtime/context")
         require(EasyWorkTarget.decode(context.getJSONObject("target"))==c.target&&sameScope(c.target.scope(),client.scope))
@@ -390,6 +467,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return NativeUploadCapability(192*1024,"file-transfers" in context.getJSONArray("capabilities").strings(),"easywork-attachment-v1")
     }
     override suspend fun uploadRequest(client:MobileClient,m:NativeUploadManifest,action:NativeUploadAction,offset:Long,bytes:ByteArray?):NativeUploadReceipt {
+        if(m.purpose=="file-transfer")return independentUploadRequest(client,m,action,offset,bytes)
         m.validate();require(m.purpose=="attachment"&&m.file.hostId==client.id&&m.file.sizeBytes<=20*1024*1024)
         val c=channel(client);require(sameScope(c.target.scope(),client.scope));val device=c.uploadMobileDeviceId
         fun transfer(value:JSONObject,completed:Boolean=false)=EasyWorkFileTransfers.uploadTransfer(value,m,device,completed)

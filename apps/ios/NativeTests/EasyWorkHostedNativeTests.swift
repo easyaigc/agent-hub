@@ -19,6 +19,31 @@ import Security
 #error("Build this driver with the independent EasyWork acceptance bundle or the default local compiler target")
 #endif
 
+final class EasyWorkReconnectPolicyTests: XCTestCase {
+  func testOriginalPinnedRouteSurvivesWhenNoDistinctRecoveryPathExists() {
+    let original = AgentConnectionCandidate(id: "original", transportId: "lan-wss",
+      endpoint: "wss://computer.invalid:44329", peerFingerprint: "original-pinned-certificate")
+    let sameEndpoint = AgentConnectionCandidate(id: "alias", transportId: "lan-wss",
+      endpoint: original.endpoint, peerFingerprint: original.peerFingerprint)
+    let relay = AgentConnectionCandidate(id: "relay", transportId: "relay-http",
+      endpoint: "https://relay.invalid/mailbox", peerFingerprint: nil)
+    XCTAssertNil(EasyWorkRemoteSession.recoveryExcludedCandidate(original.id,
+      preference: .automatic, candidates: [original]))
+    XCTAssertNil(EasyWorkRemoteSession.recoveryExcludedCandidate(original.id,
+      preference: .automatic, candidates: [original, sameEndpoint]))
+    XCTAssertEqual(EasyWorkRemoteSession.recoveryExcludedCandidate(original.id,
+      preference: .automatic, candidates: [original, relay]), original.id)
+    for preference in [AgentConnectionPreference.lanOnly, .relayOnly] {
+      XCTAssertNil(EasyWorkRemoteSession.recoveryExcludedCandidate(original.id,
+        preference: preference, candidates: [original, relay]))
+    }
+    XCTAssertNil(EasyWorkRemoteSession.recoveryExcludedCandidate("not-saved",
+      preference: .automatic, candidates: [original, relay]))
+    XCTAssertNil(EasyWorkRemoteSession.recoveryExcludedCandidate(nil,
+      preference: .automatic, candidates: [original, relay]))
+  }
+}
+
 @MainActor private final class NativeButtonState: ObservableObject {
   @Published var text = ""
   @Published var permitted = true
@@ -16115,3 +16140,60 @@ extension EasyWorkHostedNativeTests {
     await EasyWorkSessions.shared.remove(client.id)
   }
 }
+
+#if targetEnvironment(simulator)
+/// Public witness from this newly paired App's own Keychain and real encrypted session.
+/// Does not create identities, pair again, or export credentials.
+final class P3NativeReadingBindingTests: XCTestCase {
+  @MainActor func testExistingNativeBindingAuthenticatedContext() async throws {
+    let env = ProcessInfo.processInfo.environment
+    let run = try XCTUnwrap(env["EASYWORK_HOSTED_NATIVE_CASE"])
+    guard UUID(uuidString: run) != nil, Bundle.main.bundleIdentifier == "com.easyai.agenthub.easyworkacceptance",
+      SessionStore.hostedEasyWorkAcceptanceEnabled,
+      env["P3_NATIVE_READING_BINDING_CASE"] == run else { throw HostServiceError.wrongHost }
+    let raw = try XCTUnwrap(env["P3_NATIVE_EXPECTED_TARGET"])
+    let expected = try JSONDecoder().decode(AgentRuntimeTarget.self, from: Data(raw.utf8))
+    guard expected.agentId == "easywork" else { throw HostServiceError.wrongHost }
+    let deadline = Date().addingTimeInterval(20)
+    while SessionStore.hostedEasyWorkAcceptanceStore == nil && Date() < deadline { try await Task.sleep(for: .milliseconds(50)) }
+    let store = try XCTUnwrap(SessionStore.hostedEasyWorkAcceptanceStore)
+    guard !store.localRecoveryRequired,
+      let client = store.saved.clients.first(where: { $0.agentConnection?.target == expected }),
+      let connection = client.agentConnection else { throw HostServiceError.wrongHost }
+    let identityRaw = try XCTUnwrap(CredentialVault.existingToken("easywork-device-identity"))
+    let credentialRaw = try XCTUnwrap(CredentialVault.existingToken(connection.credentialRef))
+    let identity = try JSONDecoder().decode(EasyWorkIdentity.self, from: Data(identityRaw.utf8))
+    let credential = try JSONDecoder().decode(EasyWorkCredential.self, from: Data(credentialRaw.utf8))
+    guard credential.binding.mobileDeviceId == identity.deviceId,
+      credential.binding.mobilePublicKey == identity.publicKey, credential.binding.status == "active" else { throw HostServiceError.wrongHost }
+    let channel = try await EasyWorkSessions.shared.session(client)
+    do {
+      let data = try await channel.request("runtime/context", [:])
+      let context = try easyWorkObject(data)
+      let returned = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+      let liveTarget = await channel.target
+      guard returned == liveTarget, returned == credential.binding.target,
+        returned.desktopDeviceId == expected.hostId, returned.workspaceId == expected.workspaceId,
+        returned.runtimeId == expected.runtimeId, returned.account == expected.account else { throw HostServiceError.wrongHost }
+      let target = try JSONSerialization.jsonObject(with: JSONEncoder().encode(expected))
+      let proof: [String: Any] = ["taskId": "mobile-increment-20261122-01a1cd5e", "lane": "P3",
+        "caseId": run, "appBundleId": Bundle.main.bundleIdentifier!, "simulator": "36A6CFCA-9708-4072-993C-66DF9C051EA0",
+        "source": "actual native App identity/connection public metadata", "authenticatedContextVerified": true,
+        "mobileDeviceId": identity.deviceId, "bindingId": credential.binding.bindingId,
+        "publicKeySHA256": HostService.hash(Data(identity.publicKey.utf8)), "target": target,
+        "peerFingerprints": connection.candidates.compactMap(\.peerFingerprint),
+        "contextSHA256": HostService.hash(data), "newModels": 0, "credentialsExported": false,
+        "clientId": client.id, "selectedClientId": store.client?.id ?? "",
+        "selectedThreadId": store.selectedThreadId ?? "",
+        "targetMarker": [store.client?.id ?? "", store.selectedThreadId ?? "", store.targetKey].joined(separator: "|")]
+      let bytes = try JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys])
+      let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("P3-native-reading-binding-" + run + ".json")
+      try bytes.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+      let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.json")
+      attachment.name = "p3-native-authenticated-reading-binding"; attachment.lifetime = .keepAlways; add(attachment)
+      await channel.close()
+    } catch { await channel.close(); throw error }
+  }
+}
+#endif

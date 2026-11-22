@@ -25697,6 +25697,155 @@
         "scripts/verify-host-runtime.mjs": "701f9cd16317aa8d8b83dd4839abcf42c6639044ddcd70bbd0cbb833b30b6830",
         "scripts/verify-host-runtime.test.mjs": "0c07e86e564619f1f7c72146fff6b52e78d487e1c86540f018340f8bd5fa12d5"
       }
+    },
+    {
+      "id": "android-independent-transfer-20261122-increment",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F30", "F31", "F59"],
+      "summary": "EasyWork standalone purpose, negotiated limits, bounded original-ID upload and transfer receipts reuse shared native upload/file lifecycle; this record tracks source only, not live acceptance.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/EasyWorkIndependentUploadsBoundaryTest.kt": "4f8f40427d21f8c5e5a7df2c3a3822c45bdad8a45e8a0ca446726c055dfd53e2",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/P1EasyWorkIndependentUploadLiveTest.kt": "e7d3efdf258eaedddef9c3af19fe063f92d108cdc9b489ec6c0f67aade97f038",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkFileTransfers.kt": "b689b817db774b41e2a9ff4c3c6d35018728fa66ddf13087db97f3425b6121f3",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkIndependentUploads.kt": "a725c9763cc5b72858fc3dff25832abfe7b0807a9a8e6a95e7a559119fd2e33b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileJournal.kt": "fa9d31b7a459743fb7bbb0af73aa98f492b38ffefa21b078512df83dd06112fb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFileStore.kt": "67239bd258174d3afb895da61cfb4cfbe092386eff5c29cd5ff217112e4fc054",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeComputerFiles.kt": "1fb347e96c79497c17c8ae6edb7b70787dabd8af95430a56e9e3a8a81a62292d",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeUploadContract.kt": "fc1f792b393aa5450d5580139a2d75495c1df62380d7964a374c7e0aad9c128f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeUploadTarget.kt": "ecd8993c477ad1c3ba62c9a24e8cb120c5ad9166d88cdb8e36c970841489c029"
+      }
+    },
+    {
+      "id": "android-shared-easywork-ports-20261122-increment",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F31", "F59", "F64"],
+      "summary": "Register existing named upload and voice operations through production AgentRegistry adapters; preserve authenticated complete target, stable receipts and existing transport write recovery. Source provenance only.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "eb720290b826fcd678769c70078800e28c2a871ef19f890a36f8eb0b74e9edac",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "29d22e9cfd0406787facd4481d97ca87188ba20737d7d00f6ce9b999a9002042"
+      }
+    },
+    {
+      "id": "android-original-voice-20261122-readiness-continuation",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F64"],
+      "summary": "Physical authenticated Host projection and explicit five-field readiness DTO keep strict shared validation; common recovery is original-receipt-only. Debug file input and same379c pre-capture continuation require original fences plus fresh independent zero-write/missing-receipt proof and matching original source/target/certificate/device/audio. Guarded first submit and cold query are separate; real ASR acceptance remains pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkVoiceTest.kt": "5973319974c2e128b532db182d03f3c05071f018777517d4e622c7ee37363cb7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/P2EasyWorkVoiceRecoveryLiveTest.kt": "e1147a94131f801480ec398231cc2009de1ae86ccff42631ec023767b2407176",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkVoice.kt": "84898d701afc345916cc6a1d96157867b369b8cedee0b1cd0e1b8869dbcba434",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceFileAcceptance.kt": "58e20b1984bd08bde3bc6339cbede2881f22e6aaf42d38f70297708510a47adf",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "5da5f8534130a1d394b802fae751fd83cdb12c4b4e9f0c638ec40c25698e06f0",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "4c3a7910907711370329ea55f80ea6bf1f4a91000ff8bc4ca0d5c56cdd1e9873",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceTranscription.kt": "1d5305cbc719266360fe625de32a8612896c9c94ab85ea33e1a73ffcecda63e4"
+      }
+    },
+    {
+      "id": "ios-startup-and-existing-read-drivers-20261122-increment",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F01", "F36", "F77"],
+      "summary": "Debug-only real startup-motion observation and native test drivers for scoped startup motion, existing Run requested/actual speed and actual Codex video source; normal pairing helpers prepare owned clients without model input. Source hashes do not add acceptance claims. Current conclusions remain in the sole dual-platform checklist.",
+      "files": {
+        "apps/ios/Sources/CodexManageApp.swift": "cb4d7b159f3b824f858550585a36c33271407b1e3209bb0fa88f7ed4dad3cbe2",
+        "apps/ios/Tests/CodexManageUITests.swift": "0d219ef9ffa3d84941370f436026857a007a39a0eea51033322d978b17aac51e"
+      }
+    },
+    {
+      "id": "ios-original-lineage-document-drivers-20261122-increment",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F20", "F32", "F72"],
+      "summary": "Native drivers read exact original parent lineage and document links/results via normal owned clients, preserving original IDs, draft and late-result boundaries; only individually accepted assertions belong in the canonical checklist.",
+      "files": {
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "b3bdb512eb9ea0a64bf8038d50accc8717f627fab332ceb121e4567b39469d69"
+      }
+    },
+    {
+      "id": "shared-voice-vectors-20261122-increment",
+      "baseCommit": "8ff4ccb52de09c45aa635eb6feddae5a782a6f6e",
+      "features": ["F64"],
+      "summary": "Expand common synthetic manifest, receipt and sharing-permission vectors consumed by existing Node/KMP/Swift boundary checks. Vectors and hashes are auxiliary source provenance, not real upload, ASR or native acceptance.",
+      "files": {
+        "packages/protocol/fixtures/mobile/ai-sharing-voice-v1.json": "b1c6fd2aee290f9de559f961c8a7e41cf020cc4d5985ca9a089eb4f14747a337"
+      }
+    },
+    {
+      "id": "ios-final-native-pair-speed-proof-20261122",
+      "baseCommit": "8514890c6ee55c796c52ce61d9b5bd3734399796",
+      "features": ["F06", "F36", "F77"],
+      "summary": "Reviewed P4 a3ed9a0f adds DEBUG simulator opt-in PUBLIC proof from normal authenticated pairing and existing thread reads, and read-only same-Run speed/video UI drivers. No credentials, extra model input or normal product rule change. Current accepted scope is maintained only in the canonical dual-platform checklist.",
+      "files": {
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "53e1a4728134e424baed2162ea459a0413cc8e37253529b674018e762be57faf",
+        "apps/ios/Sources/EasyWorkPairing.swift": "88277f7d492869301c3b7065d5aa09b968a051c9a3f73a0351f36666db4fa209",
+        "apps/ios/Tests/CodexManageUITests.swift": "5af108ad548a7bb532d45844943d7f6b49b4521ff1c97f4be0a9a8084ee64bd0"
+      }
+    },
+    {
+      "id": "ios-final-existing-reading-proof-20261122",
+      "baseCommit": "8514890c6ee55c796c52ce61d9b5bd3734399796",
+      "features": ["F06", "F20", "F32", "F72"],
+      "summary": "Reviewed P3 e372719f test sources observe actual existing native binding, parent reads, switch cancellation and document lifecycle; no synthetic session or model input. Historical bundle failures/cleanup and exact accepted assertions stay distinct from source provenance.",
+      "files": {
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "20ac07845f9379512de65683493513dcf13a91ff7d0536da5364fbff71329cf7",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "d8be68016a6b1e4866541025b95f8adfa6dd66cf1a062dd2ad9c674f93997307"
+      }
+    },
+    {
+      "id": "android-migration-voice-fixture-authority-20261122",
+      "baseCommit": "8514890c6ee55c796c52ce61d9b5bd3734399796",
+      "features": ["F55", "F64"],
+      "summary": "TEST ONLY: assert retired migration handle rejection and idempotence via CURRENT reopened handle while preserving later edits/snapshots; freeze source export before creating destination child. All imported original-ID query-only, permission, zero-write and exact audio assertions remain. This source correction does not replace installed e205 bytes or rerun accepted live voice.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceTest.kt": "7d9758dcee87e27a7902dc8bf6a1f4c7c06d66fd2b318ef9448054d4a441db40"
+      }
+    },
+    {
+      "id": "ios-original-message-document-provenance-20261122",
+      "baseCommit": "5ef38e142ceb1c29eeb9c4e1711e15b68c22f940",
+      "features": ["F32", "F72"],
+      "summary": "Reviewed P3 96bbc5af: production history attachments retain canonical original message/reference per reply even when resource bytes share one memoized resolve. The regression extracts that production projection. Current relative-document native failure remains explicit in the sole canonical checklist; no passing live-link claim.",
+      "files": {
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "efc36a56d9baefaa3fcc9d6e24495c07d69bfb10cd06e70d7146c71dd062f709",
+        "scripts/mobile/easywork-message-file-native.mjs": "c4622bad3867944107852ad1d801245f7b90f7bbe240aa67ab4966b449c998c9",
+        "scripts/mobile/easywork-message-file-native.swift": "ee723c6e7333cfe4260776bceb20f5b0a9429a10b3440585bbdada0c5e93244b"
+      }
+    },
+    {
+      "id": "ios-document-return-target-proof-20261122",
+      "baseCommit": "5ef38e142ceb1c29eeb9c4e1711e15b68c22f940",
+      "features": ["F32", "F72"],
+      "summary": "Reviewed P3 487396e5 adds the bounded original-chat return and complete target assertion after closing original document. Test source provenance does not imply the currently failing relative-link native case passed.",
+      "files": {
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "75a599f2bb9aa4dc27b8d57b55b23eb7aaf9e3fc3e9b212460ebab89222489dd"
+      }
+    },
+    {
+      "id": "ios-real-provider-video-entry-proof-20261122",
+      "baseCommit": "5ef38e142ceb1c29eeb9c4e1711e15b68c22f940",
+      "features": ["F77"],
+      "summary": "Reviewed P4 2673ba8d uses native production history search to locate the exact original Provider message/video and exercises existing streaming first-frame/close evidence. Original failed attempts remain preserved; current accepted scope and remaining EasyWork streaming gap live only in the canonical dual-platform checklist.",
+      "files": {
+        "apps/ios/Tests/CodexManageUITests.swift": "a11f642c58418159986e76a41941068208de2754af1dbd830559092b55f505fe"
+      }
+    },
+    {
+      "id": "ios-sole-pinned-original-receipt-recovery-20261122",
+      "baseCommit": "bfd0c1828c885f4749fa8723df8512193c063157",
+      "features": ["F06", "F32", "F72"],
+      "summary": "Reviewed P3 41008074: preserve the sole authorized route for normal reconnect and original receipt queries; exclude only automatic candidates with a distinct endpoint alternative. Original operation ID/target/certificate/device validation and no-write-replay remain. Native source tests cover sole route, endpoint alias, distinct alternative, explicit preferences, unknown and absent failed IDs. Actual native scope stays in the canonical checklist.",
+      "files": {
+        "apps/ios/Sources/EasyWorkSession.swift": "0e2a7869df9f05ccf36aef63b986ca11e5cef0fed2a2d134ee6fcd68368cd9d2",
+        "apps/ios/NativeTests/EasyWorkHostedNativeTests.swift": "2158268a53d7f1b912505f4121ebb10a1570be27fc35616a115c70d56551842f"
+      }
+    },
+    {
+      "id": "ios-real-request-policy-extracted-fixtures-20261122",
+      "baseCommit": "bfd0c1828c885f4749fa8723df8512193c063157",
+      "features": ["F06", "F32", "F72"],
+      "summary": "The deadline and operation recovery fixtures extract the actual production reconnect helper plus AgentClient candidate/preference types, rather than duplicating policy or weakening requestData assertions. Both affected auxiliary tests passed first on these current source inputs.",
+      "files": {
+        "scripts/easywork-request-deadline.test.mjs": "45ac3a95aada433d8ba39700afe5cd72fd510310a4bda60cc7e57fe8e348282f",
+        "scripts/easywork-operation-recovery.test.mjs": "1ff58b9e362bda04dc7020bb2d1be2ac3526a8411a439ad97aca33924f64e757"
+      }
     }
   ]
 }

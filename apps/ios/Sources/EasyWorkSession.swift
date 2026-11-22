@@ -437,6 +437,15 @@ actor EasyWorkRemoteSession {
   nonisolated func request(_ method: String, _ params: [String: Any], id: String = UUID().uuidString) async throws -> Data {
     try await requestData(method, params: easyWorkJSON(params), id: id)
   }
+  nonisolated static func recoveryExcludedCandidate(_ failedId: String?,
+      preference: AgentConnectionPreference, candidates: [AgentConnectionCandidate]) -> String? {
+    guard preference == .automatic, let failedId,
+      let failed = candidates.first(where: { $0.id == failedId }),
+      candidates.contains(where: { $0.id != failedId && $0.endpoint != failed.endpoint }) else { return nil }
+    // A single pinned path must remain available for querying the original receipt.
+    // Reconnecting still uses the normal target, certificate and device checks.
+    return failedId
+  }
   nonisolated static func verifiedWriteResult(_ record: [String: Any], target: EasyWorkTarget,
       mobileDeviceId: String, operationId: String, method: String, params: [String: Any]) throws -> Data {
     guard ["completed", "failed"].contains(record["state"] as? String ?? "") else {
@@ -563,8 +572,8 @@ actor EasyWorkRemoteSession {
         // the operation has already run or requires explicit status reconciliation.
         if epoch == requestEpoch { await disconnect() }
         if attempt == 0 {
-          if connection.preference == .automatic { try await connect(excluding: route) }
-          else { try await connect() }
+          try await connect(excluding: Self.recoveryExcludedCandidate(route,
+            preference: connection.preference, candidates: connection.candidates))
           if !Self.readMethods.contains(method) && !Self.subscriptionMethods.contains(method) {
             let values = try easyWorkObject(params)
             let operationId = values["clientOperationId"] as? String ?? values["clientRequestId"] as? String ?? values["operationId"] as? String ?? values["guidanceId"] as? String ?? id

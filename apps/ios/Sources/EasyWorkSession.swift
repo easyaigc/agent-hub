@@ -220,7 +220,7 @@ actor EasyWorkRemoteSession {
     "thread/fork-options", "thread/fork-status", "workspace/manage-status", "thread/read-state", "thread/read-state-list",
     "model/list", "queue/list", "queue/status",
     "filesystem/access-status", "filesystem/roots", "filesystem/list-directories", "filesystem/list-entries",
-    "voice/readiness", "voice/status", "resource/read", "resource/download", "resource/transfer-list",
+    "voice/readiness", "voice/status", "resource/read", "resource/download", "resource/read-cancel", "resource/transfer-list",
     "resource/upload-status", "command/status",
     "notification/status", "notification/events",
   ]

@@ -1699,6 +1699,7 @@ struct RootView: View {
     .environmentObject(voiceSessions)
     .environment(\.mediaPlayback, mediaPlayback)
     .background(MediaPlaybackWindowProbe(coordinator: mediaPlayback).frame(width: 0, height: 0))
+    .easyWorkMediaAcceptance(store: store, coordinator: mediaPlayback)
     .onAppear {
       mediaPlayback.readingCover = { [weak gate = readingCovers] owner, context, active in
         if active { _ = gate?.begin(owner, context: context) }

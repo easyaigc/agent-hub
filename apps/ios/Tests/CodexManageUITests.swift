@@ -1009,6 +1009,61 @@ final class CodexManageUITests: XCTestCase {
   override func setUpWithError() throws {
     continueAfterFailure = false
     observeEasyWorkExaminer(name)
+    if name.contains("testF77SourceConflict") {
+      guard let encoded = ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "f77-source-conflict",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else { throw NSError(domain: "F77Scope", code: 9) }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.f77acceptance")
+      return
+    }
+    if name.contains("testF77PlaybackActions") {
+      guard let encoded = ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "f77-playback-actions",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else { throw NSError(domain: "F77Scope", code: 7) }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.f77acceptance")
+      return
+    }
+    if name.contains("testF77FirstFrame") {
+      guard let encoded = ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "f77-first-frame",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else { throw NSError(domain: "F77Scope", code: 5) }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.f77acceptance")
+      return
+    }
+    if name.contains("testF77ImportSyntheticVideo") {
+      guard let encoded = ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "f77-media-import",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else {
+        throw NSError(domain: "F77Scope", code: 3)
+      }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.f77acceptance")
+      return
+    }
+    if name.contains("testEasyWorkRealDEVDeviceGrant"),
+      (Bundle.main.bundleIdentifier ?? "").hasPrefix("com.easyai.agenthub.f77acceptance") {
+      guard let encoded = ProcessInfo.processInfo.environment["EASYWORK_GRANT_EXAMINER_CONFIG_JSON"],
+        let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any],
+        value["scenario"] as? String == "f77-media-pair",
+        value["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        value["newModelInputsAuthorized"] as? Int == 0,
+        value["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else {
+        throw NSError(domain: "F77Scope", code: 1)
+      }
+      app = XCUIApplication(bundleIdentifier: "com.easyai.agenthub.f77acceptance")
+      return
+    }
     if name.contains("testEasyWorkRealDEVDeviceGrant"),
       (Bundle.main.bundleIdentifier ?? "").hasPrefix("com.easyai.agenthub.inc01acceptance") {
       guard let encoded = ProcessInfo.processInfo.environment["EASYWORK_GRANT_EXAMINER_CONFIG_JSON"],
@@ -1852,6 +1907,114 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertFalse(app.buttons["easywork-pair-lan"].isEnabled)
     shot("easywork-real-scan-form", fullScreen: true)
   }
+  @MainActor func testF77SourceConflict() throws {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let source = try XCTUnwrap(config["source"] as? [String: Any])
+    guard source["newModelInputsAuthorized"] as? Int == 0,
+      let caseId = source["caseId"] as? String, UUID(uuidString: caseId) != nil else { throw NSError(domain: "F77Scope", code: 10) }
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-f77-media-acceptance", "-media-streaming-acceptance"]
+    app.launchEnvironment = ["F77_MEDIA_SOURCE_JSON": String(decoding: try JSONSerialization.data(withJSONObject: source), as: UTF8.self)]
+    app.launchChineseTest()
+    let entry = app.buttons["f77-media-entry"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 45)); entry.tap()
+    XCTAssertTrue(app.staticTexts["media-player-error"].waitForExistence(timeout: 120), "Changed source must end with a visible error")
+    XCTAssertFalse(app.staticTexts["media-player-first-frame"].exists)
+    shot("f77-controlled-source-conflict")
+    app.buttons["media-player-close"].tap()
+  }
+
+  @MainActor func testF77PlaybackActions() async throws {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let source = try XCTUnwrap(config["source"] as? [String: Any])
+    guard source["newModelInputsAuthorized"] as? Int == 0,
+      let caseId = source["caseId"] as? String, UUID(uuidString: caseId) != nil else { throw NSError(domain: "F77Scope", code: 8) }
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-f77-media-acceptance", "-media-streaming-acceptance"]
+    app.launchEnvironment = ["F77_MEDIA_SOURCE_JSON": String(decoding: try JSONSerialization.data(withJSONObject: source), as: UTF8.self)]
+    app.launchChineseTest()
+    let entry = app.buttons["f77-media-entry"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 45)); entry.tap()
+    XCTAssertTrue(app.staticTexts["media-player-first-frame"].waitForExistence(timeout: 120))
+    let slider = app.sliders["media-player-seek"]
+    XCTAssertTrue(slider.waitForExistence(timeout: 20)); slider.adjust(toNormalizedSliderPosition: 0.65)
+    try await Task.sleep(for: .seconds(5))
+    XCTAssertFalse(app.staticTexts["media-player-error"].exists); shot("f77-seek")
+    let fullscreen = app.buttons["media-player-fullscreen"]
+    XCTAssertTrue(fullscreen.waitForExistence(timeout: 10)); fullscreen.tap()
+    XCTAssertTrue(app.buttons["media-player-exit-fullscreen"].waitForExistence(timeout: 10)); shot("f77-fullscreen")
+    app.buttons["media-player-exit-fullscreen"].tap()
+    let download = app.buttons["media-player-download"]
+    XCTAssertTrue(download.waitForExistence(timeout: 10)); download.tap()
+    let share = app.buttons["media-player-share"]
+    XCTAssertTrue(share.waitForExistence(timeout: 300), "Complete download and original receipt required before sharing")
+    XCTAssertFalse(app.staticTexts["media-player-download-error"].exists); shot("f77-download-complete")
+    share.tap()
+    XCTAssertTrue(app.otherElements["ActivityListView"].waitForExistence(timeout: 20) || app.buttons["拷贝"].exists || app.buttons["Copy"].exists, "System share sheet must open")
+    shot("f77-system-share")
+    app.swipeDown()
+    if app.buttons["media-player-close"].exists { app.buttons["media-player-close"].tap() }
+    XCTAssertTrue(entry.waitForExistence(timeout: 20)); entry.tap()
+    XCTAssertTrue(app.staticTexts["media-player-first-frame"].waitForExistence(timeout: 120)); shot("f77-reopen")
+    app.buttons["media-player-close"].tap()
+    app.terminate(); app.launchChineseTest()
+    XCTAssertTrue(entry.waitForExistence(timeout: 45)); entry.tap()
+    XCTAssertTrue(app.staticTexts["media-player-first-frame"].waitForExistence(timeout: 120)); shot("f77-cold-reopen")
+    let retain = app.buttons["f77-probe-retain"]
+    XCTAssertTrue(retain.waitForExistence(timeout: 10)); retain.tap()
+    let status = app.staticTexts["f77-probe-status"]
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "读取已保留"), object: status)
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 120), .completed)
+    let started = Date(); print("F77_TTL_START_UTC=" + ISO8601DateFormatter().string(from: started))
+    while Date().timeIntervalSince(started) < 605 {
+      try await Task.sleep(for: .seconds(10))
+      XCTAssertFalse(app.staticTexts["media-player-error"].exists)
+    }
+    app.buttons["f77-probe-check"].tap()
+    let expired = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "原读取已过期"), object: status)
+    XCTAssertEqual(XCTWaiter.wait(for: [expired], timeout: 30), .completed); shot("f77-real-ttl")
+    app.buttons["f77-probe-release"].tap()
+    let released = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "独立读取已释放"), object: status)
+    XCTAssertEqual(XCTWaiter.wait(for: [released], timeout: 30), .completed)
+    app.buttons["media-player-close"].tap()
+  }
+
+  @MainActor func testF77FirstFrame() throws {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let source = try XCTUnwrap(config["source"] as? [String: Any])
+    guard source["newModelInputsAuthorized"] as? Int == 0,
+      let caseId = source["caseId"] as? String, UUID(uuidString: caseId) != nil else { throw NSError(domain: "F77Scope", code: 6) }
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-f77-media-acceptance", "-media-streaming-acceptance"]
+    app.launchEnvironment = ["F77_MEDIA_SOURCE_JSON": String(decoding: try JSONSerialization.data(withJSONObject: source), as: UTF8.self)]
+    app.launchChineseTest()
+    let entry = app.buttons["f77-media-entry"]
+    XCTAssertTrue(entry.waitForExistence(timeout: 45)); entry.tap()
+    XCTAssertTrue(app.staticTexts["media-player-first-frame"].waitForExistence(timeout: 120), "Actual player must render a first frame")
+    XCTAssertFalse(app.staticTexts["media-player-error"].exists)
+    print("F77_FIRST_FRAME_UTC=" + ISO8601DateFormatter().string(from: Date()))
+    shot("f77-first-frame")
+  }
+
+  @MainActor func testF77ImportSyntheticVideo() throws {
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["F77_TEST_CONFIG_JSON"])
+    let config = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
+    let source = try XCTUnwrap(config["importSource"] as? [String: Any])
+    let caseId = try XCTUnwrap(source["caseId"] as? String)
+    let target = try XCTUnwrap(source["target"] as? [String: Any])
+    guard UUID(uuidString: caseId) != nil, source["newModelInputsAuthorized"] as? Int == 0 else { throw NSError(domain: "F77Scope", code: 4) }
+    app.launchArguments = ["-ui-testing", "-restore-testing", "-easywork-local-dev", "-f77-media-import"]
+    app.launchEnvironment = ["F77_IMPORT_JSON": String(decoding: try JSONSerialization.data(withJSONObject: source), as: UTF8.self),
+      "F77_IMPORT_TARGET_JSON": String(decoding: try JSONSerialization.data(withJSONObject: target), as: UTF8.self),
+      "F77_IMPORT_CASE_ID": caseId, "F77_NEW_MODEL_INPUTS_AUTHORIZED": "0"]
+    app.launchChineseTest()
+    let button = app.buttons["f77-import"]
+    XCTAssertTrue(button.waitForExistence(timeout: 45)); XCTAssertTrue(button.isEnabled); button.tap()
+    let status = app.staticTexts["f77-import-status"]
+    let done = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "导入完成"), object: status)
+    XCTAssertEqual(XCTWaiter.wait(for: [done], timeout: 90), .completed, "Import did not complete; inspect original intent and receipt before any recovery")
+  }
+
   @MainActor func testEasyWorkRealDEVDeviceGrant() async throws {
     let environment = ProcessInfo.processInfo.environment
     let configData: Data
@@ -1867,6 +2030,13 @@ final class CodexManageUITests: XCTestCase {
         owned == ProcessInfo.processInfo.environment["SIMULATOR_UDID"] else {
         throw NSError(domain: "INC01Scope", code: 2)
       }
+    }
+    if (Bundle.main.bundleIdentifier ?? "").hasPrefix("com.easyai.agenthub.f77acceptance") || config["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance" || config["scenario"] as? String == "f77-media-pair" {
+      guard config["targetBundleIdentifier"] as? String == "com.easyai.agenthub.f77acceptance",
+        config["scenario"] as? String == "f77-media-pair",
+        config["newModelInputsAuthorized"] as? Int == 0,
+        config["ownedSimulator"] as? String == ProcessInfo.processInfo.environment["SIMULATOR_UDID"],
+        config["reuseExistingClient"] as? Bool != true else { throw NSError(domain: "F77Scope", code: 2) }
     }
     var voiceSourceInteractionOptions: Any?
     if ["voice-pending-migration-source","voice-pending-migration-export-existing"].contains(config["scenario"] as? String ?? "") {
@@ -2058,11 +2228,12 @@ final class CodexManageUITests: XCTestCase {
       return
     }
     XCTAssertFalse(app.buttons["登录 EasyAI"].exists)
-    if config["scenario"] as? String != "inc01-trusted-discovery" { shot("native-ios-device-authorization-pending") }
+    if !["inc01-trusted-discovery", "f77-media-pair"].contains(config["scenario"] as? String ?? "") { shot("native-ios-device-authorization-pending") }
     try await control("desktop.device-claim-approve")
     let online = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND label CONTAINS 'EasyWork'"), object: app.buttons["client-switch"])
     XCTAssertEqual(XCTWaiter.wait(for: [online], timeout: 90), .completed, app.debugDescription)
     }
+    if config["scenario"] as? String == "f77-media-pair" { return }
     if config["scenario"] as? String == "inc01-trusted-discovery" {
       #if targetEnvironment(simulator)
       guard config["newModelInputsAuthorized"] as? Int == 0,

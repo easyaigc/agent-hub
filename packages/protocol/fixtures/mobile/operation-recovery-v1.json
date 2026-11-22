@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scope": "Existing named Host operation recovery mapping; no new endpoint, permission or write replay authorization. Queries still validate exact runtime/resource target.",
+  "scope": "Named Host recovery mapping. Optional range-v1 and scoped read-cancel affect temporary reads only; capability, target and permission checks remain strict. Resolve/completion writes retain original-receipt-only recovery. Unknown methods never gain replay permission.",
   "readQueries": [
     "filesystem/access-status",
     "filesystem/list-directories",
@@ -16,6 +16,7 @@
     "queue/status",
     "resource/download",
     "resource/read",
+    "resource/read-cancel",
     "resource/transfer-list",
     "resource/upload-status",
     "runtime/context",

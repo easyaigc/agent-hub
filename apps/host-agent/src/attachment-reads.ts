@@ -224,7 +224,32 @@ export class AttachmentReads {
   }
   async cancel(id: string, scope: string, threadId: string, sourceId: string) {
     const entry = this.entries.get(id.toLowerCase());
-    if (!entry || this.closed) throw new RuntimeError(410, '视频读取已过期，请重新打开');
+    if (this.closed) throw new RuntimeError(410, '视频读取已过期，请重新打开');
+    if (!entry) {
+      if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id))
+        throw new RuntimeError(400, '视频读取标识无效');
+      if (this.entries.size >= 256) throw new RuntimeError(503, '视频准备繁忙，请稍后重试');
+      const controller = new AbortController();
+      controller.abort(new RuntimeError(410, '视频读取已取消'));
+      // A cancel can overtake preparation during authorization/dispatch.
+      // The bounded scoped tombstone prevents a late poll from reopening it.
+      this.entries.set(id.toLowerCase(), {
+        id: id.toLowerCase(),
+        scope,
+        threadId,
+        sourceId,
+        expires: Date.now() + lifetime,
+        controller,
+        work: Promise.resolve(),
+        done: true,
+        active: 0,
+        reads: new Set(),
+        bytes: 0,
+        total: null,
+        reserved: 0,
+      });
+      throw new RuntimeError(410, '视频读取已过期，请重新打开');
+    }
     if (entry.scope !== scope || entry.threadId !== threadId || entry.sourceId !== sourceId)
       throw new RuntimeError(403, '视频读取不属于当前目标或资源');
     entry.controller.abort(new RuntimeError(410, '视频读取已取消'));

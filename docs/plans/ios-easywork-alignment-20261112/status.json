@@ -6063,8 +6063,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 517,
-  "updatedAt": "2026-11-23T01:32:11+08:00",
+  "revision": 528,
+  "updatedAt": "2026-11-23T04:23:15+08:00",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -17744,7 +17744,7 @@
       "scope": "Connection v1 strict four-field wire preserved; Client observation scopes full target, credentialRef and certificate set. Captured/current observation and connection guards reject stale updates. First draft corrected before real pairing/acceptance."
     },
     "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123": {
-      "kind": "real-dev",
+      "kind": "auxiliary-check",
       "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
       "sourceTree": "uncommitted R3 candidate 3e572cdd3f1b326f818a4714f7188669db2fea5dde25b81400eeaf7b280ccba1; production ForegroundReadiness e385853eabd5e1e42f3cf4f8419886f30f5dbe750ee30a23f8c32956ab423c6b",
       "packageSha256": "7a69c80cebc2e12296dbc88a97db7277e264fe0e47fb6d579e598ac1843a7f27",
@@ -17758,7 +17758,8 @@
         "effort": "medium",
         "actualVerified": true,
         "source": "exact official turn_context, independently inspected; no service tier exposed"
-      }
+      },
+      "verificationLayer": "actual native code with controlled fixtures; not real Host/Electron product acceptance"
     },
     "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123": {
       "kind": "real-dev",
@@ -17811,6 +17812,291 @@
         "actualRuntimeMetadata": "not exposed by collaboration tool",
         "speed": "not exposed"
       }
+    },
+    "LIFE01-R4-IOS-PREVIEW-NORMAL-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R4 App7d143460...; R4/R5 Preview same fa231253b0935c0ae159edbbab823ff703489826559039944570c7cc854b6479",
+      "packageSha256": "1733be25acf29eea7afc5faac950464870b91177ffc00b0ff65dfa3c9891649f",
+      "mobileEnvironment": "simulator",
+      "environment": "iOS26 task-exclusive simulator, production preview engine/thin HTTP/Vite, native persistent DevPreviewUITests; no Electron",
+      "path": "private life01-20261122/ios-tests/preview-r4-retry-work/latest-report.json",
+      "sha256": "0c0afaff141c0ac5bd9aff04c78cf1b4cf264585a5c0d0c483c91764c3cd646d",
+      "scope": "Normal preview page→Home paused→Continue reload→API/HMR→close and revoked access passed1/1; html2/api1/upgrades2, no cookie leak, origin rejected. Matches R5 preview dependency scope: Preview fa231253..., Root35235f31..., Coree32c43fa... unchanged; R5 Store failed-state guard does not execute in standalone preview entry. Does not close creating-background/unknown system-UI or other Host combinations."
+    },
+    "LIFE01-R5-IOS-31S-20CYCLES-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R5 production Storeebd0b8c5..., Root35235f31...; actual stress Appdc4c195c... separately recorded",
+      "packageSha256": "dc4c195c89dd5ba7ba2d4966026ec5b3ebc4486c88c9a67da72a60b1ec6519a3",
+      "mobileEnvironment": "simulator",
+      "environment": "iOS26 isolated stress bundle, actual Home/return and synthetic loopback 250ms event fixture",
+      "path": "private life01-20261122/ios-tests/r5-20-cycles.log",
+      "sha256": "5e79295e6326350b7d3f2513ebaaf4d356ec6255ccdf042955c8fc0ef9c52d68",
+      "scope": "One31s background and20actual Home returns passed1/1. eventStarts267/maxHTTP1/endactive0/historyReads23/reply0/desktopOpen0. These are HTTP fixture counters, not internal owner/socket counts, real long-poll budget or EasyWork subscriptions. R5 production source; distinct stress bundle binary hashes in original XCTest.",
+      "testPackageSha256": "335238c3ccfbf6efab4c260ab1a197e98742f41761e2ce0e6bcd041250297efd"
+    },
+    "LIFE01-R5-IOS-ACTUAL-INACTIVE-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R5 Root35235f31b05b655651928c2690c7f6bc0ad9c02b117cdc06b038edd80ed7c5cc; observer-only copy",
+      "packageSha256": "76da3d64e96865dfe3d19845ef40768002416ecae3eab7f21e870ca3ea182507",
+      "mobileEnvironment": "simulator",
+      "environment": "iOS26 simulator actual system Control Center; test-only Root phase observer strips to exact R5 Root",
+      "path": "private life01-20261122/ios-tests/r5-inactive-phase.log",
+      "sha256": "2e4c2d77032344061766ff082716b0ce2735f7888fa2e4fa42c951ed210c2562",
+      "scope": "Observed inactive276557.6665→active276563.1835 without background; native UI1/1 retains chat/text draft, reply/open0, maxHTTP1. No independent handshake/read-ack/voice-protection evidence; not full T01. Duplicate rejected runner did not execute; primary stdout overlapped, independent phase file+xcresult retained.",
+      "testPackageSha256": "56a2ccc908d4b7ce8233a75a4871f5453783d884c0ff15bb06e14bcf5e19edff"
+    },
+    "LIFE01-ANDROID-T14-AND-GET-OWNER-RED-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "old AndroidR3 rules, rebuilt artifact; AndroidR4 separate source directory frozen later",
+      "packageSha256": "86b28b7a014fa72457d25767dd632f93170e8c9f90928ca80bf1647ab46da83a",
+      "mobileEnvironment": "simulator",
+      "environment": "Android native actual RemoteSession/MobileSession with synthetic encrypted peer and loopback only",
+      "path": "private life01-20261122/android-t14/instrument.log",
+      "sha256": "1401966f6ac13b758cf5ffc3cf1abc89f2ac64a97df05fe8db12e7fab4534259",
+      "scope": "Real old-candidate failures: noncooperative factory leaves two waiters unfinished beyond32s; separate owner-red.log has two actual pending GETs whose occupied state remains>3s after real Home. Canonicalized captured-write waiter test passed1/1, and cancellable4candidate30s test passed. JSON-key-order-only test failure retained separately. Main repair uses independent result/watchdog/route owner and cancels only workspace/history GET waiters; new AndroidR4 source awaiting regression.",
+      "verificationLayer": "actual native code with controlled fixtures; not real Host/Electron product acceptance"
+    },
+    "LIFE01-WORKSPACE-104-REMAINDER-CHECKS-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "uncommitted candidate; exact pins retained in task evidence",
+      "packageSha256": "not-a-runtime-package",
+      "mobileEnvironment": "not-required",
+      "environment": "Node24.22.3/pnpm11.19/Xcode explicit developer dir; main WIP workspace, source changed during staged execution",
+      "path": "private life01-20261122/workspace-checks/r3/results.jsonl",
+      "sha256": "133c0fc321f0b524a88d61b47f8a7d10ec59756c2929398e54230c124cdd4b81",
+      "scope": "104 commands after parity executed individually, all exit0,1104.274s total; platform skips remain. Full pnpm check repeatedly stopped at stale changed-file digest, so not claimed single full-chain exit0. Final scoped native checks and R522 fmt/parity/ledger/diff results are separately registered; global format found one unrelated concurrent untracked document. Dedicated fixtures/simulator and owned outputs released; shared dependencies retained."
+    },
+    "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R5 uncommitted Storeebd0b8c5.../Previewfa231253... exact source under independent native test host",
+      "packageSha256": "4b274418de53e0d957fd42a73ce3e5b8375d713e53c25e3e16f4a6ff6a5bb4e6",
+      "mobileEnvironment": "simulator",
+      "environment": "iOS26 native XCTest host, direct production source with synthetic loopback services, not GUI/Electron",
+      "path": "private life01-20261122/ios-tests/r5-native.log",
+      "sha256": "ba99d1d91e6c0a57334e0edaab426dbdb82aa130fa253a31020e08ae62c4548e",
+      "scope": "2/2: actual401→failed→background/foreground secondworkspace held preservesfailed, and create-await→pause8s→latecreate→close404 remainsblocked. R4 failed-phase red retained; actual GUI preview normal is a separateR4 record. R6 adds wrong workspace rejection; matching prior2 source paths remains to review.",
+      "verificationLayer": "actual native code with controlled fixtures; not real Host/Electron product acceptance"
+    },
+    "INC01-TWO-MAINLINES-MERGED-20261123": {
+      "kind": "source-review",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "packageSha256": "520067d2fffdc5afdcb4266efee9b0f7f37148f2c0f668ac1e7dc9ae932ae8f4",
+      "environment": "Gitea Hub main / Desktop master actual merged; no formal package deployment",
+      "mobileEnvironment": "not-required",
+      "path": "private ios-easywork-inc01-20261122/coordinator-delivery-review.json",
+      "sha256": "43680309f0b84ee1813b54a53563c5f31c5a609ad1142566701f5de573adb966",
+      "scope": "Hub PR245/main135199ed (featureab054b73, integrationc77b8f54), Desktop PR85/master96f5890f verified. Accepted product bytes unchanged, generated docs and integration types/lint passed. Simulator/real Electron evidence INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123 reused; no whole parent/Android/physical pass. Formal original failed and later recovery records both retained with original full elapsed basis; some automatic Unit batches repeated by mandatory incomplete-closure policy."
+    },
+    "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "MobileSession b6722095697a88568cd554860551ce5c7c95a7bae489739db046c0c04ebc6aa2; EasyWorkSession a59bd61d9bdf94de162e47df5221a5a2d84ebc612ac83556b4203677da37871c; full1906file inventory c8e6a81e36e6bd08baa53b57f900492258445bab87e5d73db0de1e6c507cfad8",
+      "packageSha256": "eecbfaef46cb724b9b4e9007166d4ca02b97b4b833b47f8aa4a751a3e3b3d49b",
+      "mobileEnvironment": "simulator",
+      "environment": "Android API36 isolated1536MiB emulator; actual MainActivity/MobileSession/RemoteSession, loopback and encrypted synthetic peers",
+      "path": "private life01-20261122/android-r4-tests/summary.txt",
+      "sha256": "002649ddd36f764a4a14559722393e4e4606002420d907952fad994b95617851",
+      "scope": "18 results = critical4 + affected11 + cold-process2 stages + preconfirmation1. Real30s deadline, late factory fencing, captured write1, background GET cancellation/new owner, proof order/401/wrong target/four clients, Home31s/20/config, slow catalog independent reads; actual cold draft/bytes preserve and stale proof denied. No real Host/Electron or full transport/version acceptance. Original red/test-key-order/build errors preserved. All owned build/emulator/ports released.",
+      "testPackageSha256": "8d0646a9704d1d627772c4c4bf9702beb45373d6b50b2c8404a15bf29f0f8f75",
+      "preconfirmationTestPackageSha256": "6c6bf2e21f52cb22a5d0bce7b7fb5245cac04c40732a6ded5a0643805ea7b9a3",
+      "packageFingerprintType": "whole APK SHA256",
+      "verificationLayer": "controlled native integration and UI boundary checks"
+    },
+    "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123": {
+      "kind": "evidence-index",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R6 production manifest0839f4ad62c0dbcc5ea4ab9c46e6663978f3b512e7bf4bcafba7f61b1f6b83a3; Storee19f310ea182f741e8dbe7fa0b761b153537b9e9b167ab1367842a4932a22c11; notification5b65ddfaa836352baba295cd0baa51febd3f97a058b5df47391eddd864ab77b9",
+      "packageSha256": "450a686edfe2fa62d7295dd1ea5f2a654c066b82b9fe36b15b1e696366dfa93e",
+      "mobileEnvironment": "simulator",
+      "environment": "iOS26 isolated simulator, Xcode27, Node24; exact source and per-scene actual packages",
+      "path": "private life01-20261122/ios-tests/ios-evidence-index.json",
+      "sha256": "da088fcccc4eb789463507024817cdea3b61da4c758d859655ef9d532dec9dc8",
+      "scope": "R6 pnpm build passed,1847production inputs exact. Native3 + wrong history1 + T14 three actual30s cases; separate UI inactive/Home20/preview/notification/usage and storage two-process facts. Each assertion has its own source/package; index is not an aggregate product pass. Original red, preparation failures and unverified scopes retained.",
+      "packageFingerprintType": "production App main executable SHA256",
+      "mobileCoreBinarySha256": "e32c43fa706d234f8e47e5c4e234852ffa0b1c127c0f9283080301613b715310"
+    },
+    "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R6 Storee19f310... Previewfa231253...; exact sources in final native test inventory",
+      "packageSha256": "76184a845cb54c978383468443c7d39a5099b855344a2071e143e3a461ccd896",
+      "mobileEnvironment": "simulator",
+      "environment": "Native independent source host, three synthetic services",
+      "path": "private life01-20261122/ios-tests/r6-native.log",
+      "sha256": "0b2148769be3abb60a102b06a3a2f26990d234dd752fff4e9067e9416b85715f",
+      "scope": "3/3:401 failed retained with workspace held; creating/pause8s/latecreate/close404 never resumes; sameHost wrongworkspace refused before cache/proof update. Separate wrong-history native1/1 opens1/history1/reply0 with cached canControltrue; shim strips to exactR6 Store. No liveHost/Electron acceptance.",
+      "packageFingerprintType": "XCTest executable SHA256",
+      "wrongHistoryTestSha256": "45a3bd21c97acc075f3a6b6c57bfd499b0c7a8ff0038793301b0b007218e8c0e"
+    },
+    "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "Actual EasyWorkSession9336c176425b6c39ead8e8a2cb7d34bfb3b45e542db914deb516989e65838e77; test8a0acd12acf6a688e61d6a6d54bdc0df63f4ab6e8e5679a60cc490ce5fff9bb5",
+      "packageSha256": "f9abcb09d430be34b57fc5a0f1feb3feaf63c9cb4d918d62a5912d9d883e0963",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual Swift RemoteSession with registered in-memory encrypted peer/public synthetic vector",
+      "path": "private life01-20261122/ios-tests/r6-t14.log",
+      "sha256": "031d7ef467ca30e44e3466f84cb1507716dbb4981ab5b37878e2532ebf614f84",
+      "scope": "3/3: cancelled first reader does not cancel same-producer other read/captured write; noncooperative old factory cutoff30.471s then new owner succeeds/old retires; fourcandidate total30.363s. No deadline shortened, no real EasyWork LAN/Relay interoperation.",
+      "packageFingerprintType": "XCTest executable SHA256"
+    },
+    "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R6 Storee19f310... test53357eaa50f6b5dd01f5d9741a51931b4a0e5f075fce5806bddd750a8793d424",
+      "packageSha256": "611bd9eba4f49427a089d63e4a09f6f2c710a3094dd8329c7c76cb4d1cb0247f",
+      "mobileEnvironment": "simulator",
+      "environment": "Task-owned native iOS storage host; actual SessionStore/importData/persistence, synthetic content, no Host/network",
+      "path": "private life01-20261122/ios-tests/r6-draft-restore.log",
+      "sha256": "d35dbe27c30ceff21d55aafb6b721e84d049118dbb535a75de29383bc197dfb4",
+      "scope": "Two distinct native processes12395→12571 preserve full target/text/attachment manifest and exact bytes SHA d506d640cf180ddd76fd6e752dbcd9afbfbf589750821d7c8e5dd59aca5e379a; cold control denied. Exposes only original persist method via shim that strips toR6. Does not verify UI scroll/early pages, uploads or liveHost. Failed old debug panel/admission attempts remain separate nonpasses.",
+      "testPackageSha256": "e0deb7c8089e29935e6020cb6ef2188dec8b73fd2bab70fc22243d31cd2a791a",
+      "packageFingerprintType": "native storage host executable SHA256",
+      "verificationLayer": "native storage only; real files/keychain and process restart"
+    },
+    "LIFE01-IOS-R6-NOTIFICATION-PREFERENCES-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R6 TaskNotifications5b65ddfaa836352baba295cd0baa51febd3f97a058b5df47391eddd864ab77b9",
+      "packageSha256": "35bc8f506a8c53638c5f31236456e5cd6116b883d56f0bf5f5ab972f1498c14e",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual simulator UI and task-owned default AppGroup; isolated directory seam separately",
+      "path": "private life01-20261122/ios-tests/r6-notification.log",
+      "sha256": "858142d267131531f4978a7f85932b8fc7eaf274ded277de3240081eb445f627",
+      "scope": "3/3: default group and isolated seam each have valid preferences/completedtrue before and after restart; original DEBUG reset case also passes after narrowing reset to preferences file. R5reset failure preserved; OS internal mapping cause not independently proven. No APNs/event dedup/discovery acceptance.",
+      "testPackageSha256": "28fd8521b942976429a207c8dcd94d78eeaa8d59a9285e2f430f9b0f71e3fb41",
+      "packageFingerprintType": "UI App executable SHA256",
+      "verificationLayer": "native preference UI/storage only"
+    },
+    "LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R6 ordinary UI input; test8d85e93544a94edfd24dbd9b1a471e47bb2f171f962416ff35fc2c60dc3cfe07",
+      "packageSha256": "1f118d81f21cf9963229d1e449983d967faf8d797c5b70b28fee892a4ff2f3d5",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual native quota detail UI, built-in synthetic usage fixture",
+      "path": "private life01-20261122/ios-tests/r6-t11-usage.log",
+      "sha256": "db55bdd3a57019d51026955ef1ae59c9cdb91e7071cff00aec38019a51b4a911",
+      "scope": "1/1 realHome2s returns to same35% detail snapshot; no proof of global online flag or actual businessPOST count. Git/subagent panels, upload and sealed transcription recovery not newly verified.",
+      "testPackageSha256": "86541d987c8f38d69fec1ec4a2b36b2be64c7a9d8e4982b9eccef5b59569b058",
+      "packageFingerprintType": "UI App executable SHA256",
+      "verificationLayer": "native page snapshot only"
+    },
+    "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "R3 original-profile recovery, original immutable intent/receipt kept; official root-final-read separately correlates receipt turn",
+      "packageSha256": "966c5ed5faada29eec046c58ef87f437c1e3863e215615b28fc2a0af35f61e79",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual local Codex Host desktop-runtime through task-only credential/catalog proxy, native iOS profile upgrade; independent official saved thread read",
+      "path": "private life01-20261122/ios-tests/r3-original-profile-recovery.json",
+      "sha256": "ed3be8d43fe1462474db561aef3cfdd552c3b0c50abcdd1c24cd0ee32cd446b2",
+      "scope": "prepare1/submit1, one completed recorded turn/user1/assistant1; same original operation confirmed after upgrade/cold/Home without resend. Task thread archived and independently found in official archive list. Proxy substitutes only credential/catalog scope and rejects unrelated writes. GUI owner, physical Provider/prediction counts, original real catalog auth and complete unknown-result/queue cases unverified. R3 recovery package only, not claimedR6fullcombination.",
+      "packageFingerprintType": "R3 recovery App executable SHA256",
+      "desktopGui": "CUA explicitly denies com.openai.codex; no bypass"
+    },
+    "LIFE01-RESOURCE-CLOSEOUT-AND-SOURCE-ARCHIVES-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "iOS R6 and Android R4 uncommitted candidates; source-only archives and exact file inventories verified before snapshot release",
+      "packageSha256": null,
+      "mobileEnvironment": "not-required",
+      "environment": "Local task-owned source snapshots/resources only; no shared service or dependency cleanup",
+      "path": "private life01-20261122/resource-closeout-final.json",
+      "sha256": "30db15d48cc4dba74c48c6157502a8dcd4bdff26604ba3214df468ce2e2e8e5c",
+      "scope": "Owned runtime/build resources and duplicate snapshots released; source archives and minimal operation/test/failure evidence retained under explicit release condition. No functionality acceptance or delivery claimed.",
+      "sourceArchives": [
+        {
+          "label": "ios-r6",
+          "sha256": "44b693c8f1d010fde405ab7d9ee828fe941e221f38a2256ed5f7ed90adb7fb27",
+          "files": 1856
+        },
+        {
+          "label": "android-r4",
+          "sha256": "be6e7c4c784a1448aedae117ce8ffea55ced818a6aee548cf6c64b533d7b9b33",
+          "files": 1906
+        }
+      ],
+      "sourceDeltaSha256": "f45c19096d3c7f0a531088910cc579385b8d3d1dccec685aa3a8e989160eced3"
+    },
+    "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "Final iOS R6/Android R4 source pins unchanged; R522 scoped documentation validation and R523 metadata closeout",
+      "packageSha256": "not-a-runtime-package",
+      "mobileEnvironment": "not-required",
+      "environment": "Node24.22.3/pnpm11.19; local owned test agents completed; formal archive plus independent read-only official metadata",
+      "path": "private life01-20261122/final-validation-closeout.json",
+      "sha256": "f62415a5c868b0b482c3771859754d2e0d438c5d3b9a90c013fa6e5dc8037d4a",
+      "scope": "Task scoped17-file format, parity, canonical rendering and diff whitespace checks exit0. Global format exit1 solely on unrelated concurrent untracked document; unchanged. Prior104 commands passed individually, no successful single full pnpm check claimed. Ten local test subagents formally archived and independently verified; product synthetic chat separately archived. No product acceptance promotion.",
+      "sourceDeltaSha256": "f45c19096d3c7f0a531088910cc579385b8d3d1dccec685aa3a8e989160eced3"
+    },
+    "INC02-CANDIDATE-SHARED-READS-20261123": {
+      "kind": "source-review",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "sourceTree": "Uncommitted INC02 v3 candidate on Hub135199ed/Desktop96f5890f. Formatter and final check inputs recorded separately; no merged feature commit yet.",
+      "packageSha256": "current F77 acceptance package not built or installed yet",
+      "environment": "two task-owned reused worktrees; iOS generic build and boundary checks, no F77 Simulator/Electron execution yet",
+      "mobileEnvironment": "not-required",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-candidate-review-v3.json",
+      "sha256": "3cbec5ae8d5775ad5e12e190252a7b80dd4d571f1f8b89d20d6598629e066652",
+      "scope": "Shared range-v1 profile, fixed snapshots/ETag/lease/cancel, strict original grants and client projection; bounded complete-video file IO with original completion ID/body. Both Hosts retain unknown-cancel scoped tombstones. Dedicated simulator-only real-resource entry contains no desktop message/model input. Initial source-registration/max-lines/default-ID errors retained and repaired; v3 iOS build and five focused JS boundaries passed, final Desktop types/unit still running. No new real acceptance pass. Windows range ACL support absent; old complete download retained; Android not implemented."
+    },
+    "INC02-CORE-CHECKS-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "sourceTree": "Hub per-file candidate hashes and Desktop staged tree c4b4cf7e524c63446d52c6fccce1110175498eb4 in core-checks; no merged INC02 commit",
+      "packageSha256": "49b23c03862fd8ff6f57508bbdc37e0b7615c39cad2b9e5ac357d7d2b17dd831",
+      "environment": "macOS task-owned checkouts, generic arm64 iOS Simulator compile, real-DEV native package still preparing",
+      "mobileEnvironment": "not-required",
+      "path": "private ios-easywork-progressive-video-20261123/core-checks.json",
+      "sha256": "93120ec33092647b8ca682cf1e9723d44610ae9bdaabf81099c9a193a21e865b",
+      "scope": "Generic pnpm build:ios, workspace build, 5 focused shared cancellation/recovery boundaries, parity and ledger check passed. Desktop official staged lint/boundary/types passed; seven direct unit files 104/104 passed with Electron ABI restored. Production types reused exact input cache c66be935ed57, test types rerun. Earlier compile/lint/type failures retained, first ten preliminary unit passes not final-input proof. Full pnpm check and native Simulator/real Electron F77 acceptance not completed. Subsequent guarded test-driver changes require updated fingerprint and affected checks; no product acceptance promoted."
+    },
+    "INC02-REAL-FIRST-FRAME-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "sourceTree": "INC02 uncommitted production candidate; current own-bundle executable independently hashed after real first-frame XCTest. New test-only driver development does not upgrade pending assertions.",
+      "packageSha256": "20e9c78a535d83f7c1d4b5b87ab351b65f7c2b8da3ebb311dea3b38779684e56",
+      "environment": "Owned iPhone16Pro iOS26 Simulator 48B1023D; com.easyai.agenthub.f77acceptance; real Electron original DEV01 target; no model input",
+      "mobileEnvironment": "simulator",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-first-frame-review.json",
+      "sha256": "cbe000ee3b3ca78458150bc03b4239fb4b23651c1e4a69fee911fc9ad8b3d19a",
+      "scope": "Only real progressive first-frame passed: xcresult1pass/0fail/0skip independently verified and actual burnt-in0.600s frame viewed. Same original binding/source; registered36281606-byte synthetic file SHA verified. After-test actual24 range responses have conservative3145752-byte upper bound, less than full file; not exact first-frame byte use. Strict client206/etag/contentRange guards active; fixed observer does not expose raw response headers, no reconstruction. Remaining real seek/fullscreen/download/share/cold/target/TTL/cancel assertions and merges pending."
+    },
+    "INC02-REAL-POSITIVE-PLAYBACK-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "sourceTree": "INC02 candidate same installed executable SHA; Desktop staged treec4b4cf7e524c63446d52c6fccce1110175498eb4; no merged INC02 yet",
+      "packageSha256": "20e9c78a535d83f7c1d4b5b87ab351b65f7c2b8da3ebb311dea3b38779684e56",
+      "environment": "Owned native iPhone16Pro iOS26 Simulator48B1023D; real Electron original DEV01 target; synthetic video only, zero model input",
+      "mobileEnvironment": "simulator",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-actions-review.json",
+      "sha256": "aa038043a6ec22451ab63bd621c95f3e0c62a4857d837ed0defd622dbfbb20fb",
+      "scope": "Positive actions xcresult1pass/0fail/0skip independently verified; seek into formerly unread high range, fullscreen8:27->8:30 motion without restart, complete36281606-byte download/hash and one original completed receipt, native share panel, hot reopen and cold reopen passed. Actual >605s probe expired410 while inline still playing10:13; same-version old-read cancellation then new ready/ranges with equalETag observed. UI close cancelled current read and actual snapshot files absent. Not a claim of recipient save, two real Hosts, synthetic fault coverage, full check or merge. PreTTL248 rows include only cold-start session, not earlier fullscreen events."
+    },
+    "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "sourceTree": "INC02 final uncommitted candidate; exact runtime files efa8802b2f5b15609b1ea8f4d6b1bd64e9229e86073ef439690e05be0133880d; Desktop production stagedc4b4, docs-only current9ffd7df0b88097edd53462c9ae8a64e4dd4fd1b6",
+      "packageSha256": "20e9c78a535d83f7c1d4b5b87ab351b65f7c2b8da3ebb311dea3b38779684e56",
+      "environment": "Owned native iOS26 arm64 Simulator plus real macOS Electron DEV01; actual original target/once approved new device; synthetic video, zero model inputs",
+      "mobileEnvironment": "simulator",
+      "path": "private ios-easywork-progressive-video-20261123/coordinator-final-acceptance-review.json",
+      "sha256": "06d5109a37158937e46897dceaa5a0b1749046b8f73f483906ae2af495ad68bb",
+      "scope": "Current macOS EasyWork/iOS Simulator functional scope accepted. Real first-frame before full fetch, uncached seek, fullscreen/inline motion, hot/cold reopen, complete36MB hash+one original completion receipt/system share panel, actual ten-minute old-read410 and same-ETag renewed reads, original cancel/no snapshot files. Controlled unique-source mutation returned409 and bounded native error, restored original SHA. Common MEDIA01 thread-context exit matched only, not two real Hosts; new wrong-target/in-flight engine vectors remain auxiliary. Independent Desktop DB17/38/750/87 unchanged, quick_checkok, no model inputs; GUI only real app/original chat/online device. Runtime stopped, five ports released, own new binding revoked and Simulator removed; preexisting resources preserved. Checks split after initial ledger format failure; late test-only conflict addition separately compiled/executed/parity checked. Not Windows/Linux/Android/physical/formal-release acceptance.",
+      "supportingEvidence": [
+        {
+          "path": "private ios-easywork-progressive-video-20261123/f77-acceptance-summary.json",
+          "sha256": "c52f7ad2333fdb0becaff4bd46a84599bbbd11b1607f218894973c54bf278d3d"
+        }
+      ]
     }
   },
   "openItems": [
@@ -19692,22 +19978,38 @@
       "relatedFeatureIds": ["F08", "F17", "F28", "F43", "F48", "F52"],
       "extensionFeatureIds": ["F76"],
       "kind": "user-requested-foreground-lifecycle-repair",
-      "developmentState": "partial",
+      "developmentState": "pending-integration",
       "acceptanceState": "not-accepted-current-scope",
       "deliveryState": "candidate-not-integrated",
-      "executionState": "in-progress",
-      "owner": "当前主会话负责实现和证据复核；Terra medium执行双端原生及工作区检查",
+      "executionState": "planned",
+      "owner": "主会话已完成本轮本地实现、受控原生和证据收尾；完整互通/版本及未验子项由主会话接续",
       "evidenceRefs": [
         "LIFE01-ASTRA-ULTRA-FINAL-PLAN-20261122",
         "LIFE01-SWIFT-PRODUCER-AUX-AND-CANDIDATE-20261123",
         "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
         "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
-        "LIFE01-R3-IOS-PREVIEW-RESUME-FAILURE-20261123"
+        "LIFE01-R3-IOS-PREVIEW-RESUME-FAILURE-20261123",
+        "LIFE01-R4-IOS-PREVIEW-NORMAL-20261123",
+        "LIFE01-R5-IOS-31S-20CYCLES-20261123",
+        "LIFE01-R5-IOS-ACTUAL-INACTIVE-20261123",
+        "LIFE01-ANDROID-T14-AND-GET-OWNER-RED-20261123",
+        "LIFE01-WORKSPACE-104-REMAINDER-CHECKS-20261123",
+        "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
+        "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+        "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+        "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+        "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123",
+        "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123",
+        "LIFE01-IOS-R6-NOTIFICATION-PREFERENCES-20261123",
+        "LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123",
+        "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123",
+        "LIFE01-RESOURCE-CLOSEOUT-AND-SOURCE-ARCHIVES-20261123",
+        "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123"
       ],
-      "ios": "R3双端生产候选已存在且编译通过；iOS原位升级/冷启动/Home后保留同一合成聊天与答复，同一原操作confirmed；Android R3受控原生7/7及JVM148/148。当前矩阵尚未完整验收，未合主线或部署。",
+      "ios": "R6候选构建及准确输入已核，实际inactive/Home31s/20轮、正常预览、错误目标拒绝、总建连截止、原生冷草稿附件与通知偏好等已分别留证。原生fixture/单元为辅助，普通UI/存储与真实Codex原操作仅在登记范围成立；完整T01–T14、真实EasyWork及所有版本/通道未关闭。",
       "desktop": "BG1/BG2不要求Host升级；BG2必须修手机适配层共享建连与请求取消归属。BG3当前/旧Host无预览status，正常继续与未知安全结束分档；后续tombstone增强不在本次完成条件。未联系其他电脑或部署。",
-      "nextAction": "先完成已冻结R4 iOS预览红绿复测和固定包生命周期/短暂inactive；Android补T03四客户端必要范围；完整pnpm check已越过受影响摘要失败点逐项继续。最后回填全部T行的已验子项与真实缺口，保留原失败，不宣称整体验收通过。",
-      "updatedAt": "2026-11-23T01:12:42+08:00",
+      "nextAction": "本轮本地阶段已结束，源码留工作区待集成；后续先取得可归属的真实EasyWork Host/Electron验收绑定及旧App/Host构建，再补各行remaining。T11其他只读面板/上传转写和阅读位置亦未验。缺失GUI证据不得以正式历史读取替代；不重发已完成的原合成操作。提交/PR/部署尚未获指令，A6/F75暂停保持。",
+      "updatedAt": "2026-11-23",
       "plan": "docs/plans/mobile-foreground-connection-20261122.md",
       "planState": "final-reviewed",
       "reviewExecution": {
@@ -19730,93 +20032,210 @@
       },
       "statusScope": "本事项四维只描述新增修复范围；关联父F原四维与既有证据按原登记范围保留。A6/F75暂停保持。",
       "phaseStates": {
-        "BG1": "implemented-candidate-under-acceptance",
-        "BG2": "implemented-candidate-under-acceptance",
-        "BG3": "r4-fix-awaiting-regression-after-r3-failure",
-        "BG4": "in-progress"
+        "BG0": "final-plan-reviewed",
+        "BG1": "implemented-candidate-native-slices-verified",
+        "BG2": "implemented-candidate-controlled-red-green-verified",
+        "BG3": "implemented-candidate-preview-and-preferences-scoped-verified",
+        "BG4": "partial-matrix-remaining-not-running",
+        "BG5": "source-and-evidence-saved-not-integrated"
       },
       "acceptanceMatrix": [
         {
           "id": "T01",
-          "state": "not-run-for-current-candidate",
-          "evidenceRefs": []
+          "state": "partially-passed",
+          "evidenceRefs": [
+            "LIFE01-R5-IOS-ACTUAL-INACTIVE-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "iOS实际ControlCenter inactive→active且无background、文字/聊天保留；仅普通UI范围。",
+          "remaining": [
+            "独立握手/订阅/设备注册计数",
+            "inactive可见已读/手势/真实音频保护",
+            "适用Agent/通道组合"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T02",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123"],
-          "scope": "仅Android最终资源包已登记子项；缺口与R3源/包分列，不宣称iOS/真实Host/Electron全范围通过。"
+          "evidenceRefs": [
+            "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
+            "LIFE01-R5-IOS-31S-20CYCLES-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "双端实际Home短停/31s及恢复子项；iOS250ms事件fixture、Androidloopback，不冒称真实原长轮询。",
+          "remaining": ["真实Host长轮询及所有原回执恢复", "各传输组合真实失效/必要重连"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T03",
-          "state": "not-run-for-current-candidate",
-          "evidenceRefs": []
+          "state": "partially-passed",
+          "evidenceRefs": [
+            "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123"
+          ],
+          "scope": "Android真实native四客户端/非选目标零新增读通过；iOS实际401 failed保持及旧四标记方法级证据分列。",
+          "remaining": ["iOS最终候选完整四客户端组合", "各真实Agent/Host组合"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T04",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123"],
-          "scope": "仅当前R3 Android受控子项；范围及缺口见证据。iOS/真实Host/Electron组合不据此通过。"
+          "evidenceRefs": [
+            "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123"
+          ],
+          "scope": "Android慢workspace>30s直接history/receipt进展及后台GET占位红绿、共享单读超时边界辅助通过。",
+          "remaining": [
+            "iOS慢workspace>8/>30与独立事件/回执联动",
+            "真实共享通道/在途写与精确UI预算联测"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T05",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123"],
-          "scope": "仅当前R3 Android受控子项；范围及缺口见证据。iOS/真实Host/Electron组合不据此通过。"
+          "evidenceRefs": [
+            "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
+            "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "Android401/错runtime缓存控制拒绝；iOS错误workspace/history完整target拒绝且保留原缓存。",
+          "remaining": ["真实Host停机/撤权/TLS/不兼容全矩阵", "各恢复入口无重放的真实互通"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T06",
-          "state": "not-run-for-current-candidate",
-          "evidenceRefs": []
+          "state": "partially-passed",
+          "evidenceRefs": [
+            "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "真实本机Codex原操作1次提交/1条完成记录；原位升级、只查原ID和独立归档核对；受控代理边界明确。",
+          "remaining": [
+            "真实Electron GUI owner及独立物理执行计数",
+            "Provider/自动预测次数",
+            "全部发送/队列/创建/打开未知分支及迟到新稿"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T07",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123"],
-          "scope": "仅Android最终资源包已登记子项；缺口与R3源/包分列，不宣称iOS/真实Host/Electron全范围通过。"
+          "evidenceRefs": [
+            "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123"
+          ],
+          "scope": "双端真实原生存储独立进程恢复文字/完整target/附件原字节，冷缓存不授控制；iOS旧UI面板准备失败单列。",
+          "remaining": ["早期页/阅读位置/分页围栏", "真实Host附件与普通用户导入全路径"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T08",
           "state": "partially-passed",
           "evidenceRefs": [
             "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
-            "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123"
+            "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
+            "LIFE01-R5-IOS-31S-20CYCLES-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
           ],
-          "scope": "仅Android最终资源包已登记子项；缺口与R3源/包分列，不宣称iOS/真实Host/Electron全范围通过。"
+          "scope": "双端20轮/Home31s；iOS HTTP最大并发1；Android配置重建和实际默认网切换，回环仍可达。",
+          "remaining": [
+            "外部Host真实断网重连",
+            "内部owner/listener/socket精确峰值与长期趋势",
+            "目标/偏好/凭据全部交叉排列"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T09",
-          "state": "failed",
-          "evidenceRefs": ["LIFE01-R3-IOS-PREVIEW-RESUME-FAILURE-20261123"],
-          "scope": "R3正常继续实测失败，R4修复待复测；create-await晚到404安全阻断为另一个模型级辅助子项，不能覆盖正常恢复失败。"
+          "state": "partially-passed",
+          "evidenceRefs": [
+            "LIFE01-R3-IOS-PREVIEW-RESUME-FAILURE-20261123",
+            "LIFE01-R4-IOS-PREVIEW-NORMAL-20261123",
+            "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
+            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "正常原生预览暂停/继续/API/HMR/撤销；迟到create/close404安全阻断；Cookie故障注入约8.3秒和旧view回调通过，层级分列。",
+          "remaining": [
+            "真实Electron/各Host及通道",
+            "系统后台发生在create-await/close-unknown的完整UI组合"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T10",
-          "state": "not-run-for-current-candidate",
-          "evidenceRefs": []
+          "state": "partially-passed",
+          "evidenceRefs": [
+            "LIFE01-IOS-R6-NOTIFICATION-PREFERENCES-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "默认AppGroup/隔离seam/DEBUG reset偏好冷恢复3项通过；原失败与系统映射未证说明保留。",
+          "remaining": ["同事件展示去重/授权不重复及发现扫描", "实际APNs到达及设备特有条件"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T11",
-          "state": "not-run-for-current-candidate",
-          "evidenceRefs": []
+          "state": "partially-passed",
+          "evidenceRefs": ["LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123"],
+          "scope": "额度合成详情真实Home后35%快照保留；其他既有上传/转写辅助检查不升级为本次原生通过。",
+          "remaining": [
+            "Git/子Agent等页面及全局在线断言",
+            "上传前缀/封存转写原ID后台恢复",
+            "播放器影响匹配及真实业务POST独立计数"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T12",
-          "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123"],
-          "scope": "仅Android最终资源包已登记子项；缺口与R3源/包分列，不宣称iOS/真实Host/Electron全范围通过。"
+          "state": "not-run-for-current-candidate",
+          "evidenceRefs": [
+            "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
+            "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123"
+          ],
+          "scope": "仅历史局部原位升级/冷恢复证据；最终候选旧新Host/旧App/回退矩阵未执行。",
+          "remaining": [
+            "新App×已部署旧Host/当前Host",
+            "旧App×当前Host及升级/回退安装",
+            "授权/草稿/原操作保留的完整版本组合"
+          ],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T13",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123"],
-          "scope": "仅当前R3 Android受控子项；范围及缺口见证据。iOS/真实Host/Electron组合不据此通过。"
+          "evidenceRefs": [
+            "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+          ],
+          "scope": "Android两类证明到达顺序/空事件healthreceipt不解锁及停止/审批/队列/新建门禁；iOS错目标/failed及冷缓存控制拒绝分列。",
+          "remaining": ["iOS完整四状态与全部副作用时序", "真实Host/Electron原owner和所有能力组合"],
+          "fullProductScopeAccepted": false
         },
         {
           "id": "T14",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123"],
-          "scope": "仅当前R3 Android受控子项；范围及缺口见证据。iOS/真实Host/Electron组合不据此通过。"
+          "evidenceRefs": [
+            "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
+            "LIFE01-ANDROID-T14-AND-GET-OWNER-RED-20261123",
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123"
+          ],
+          "scope": "双端真实RemoteSession与合成加密peer：取消首读/另一读与捕获写、实际30秒截止、非合作旧factory隔离均通过；不代表真实LAN/Relay互通。",
+          "remaining": [
+            "真实EasyWork LAN WSS/Relay与目标Host组合",
+            "生产级实际网络下占位/底层资源与原写回执核对"
+          ],
+          "fullProductScopeAccepted": false
         }
       ],
       "testExecution": {
@@ -19825,7 +20244,8 @@
           "effort": "medium"
         },
         "actualVerified": "准确任务官方turn_context已由主会话独立核对；本机子Agent，不是跨电脑对话",
-        "speed": "接口无速度参数，运行记录无service tier；未宣称最高速度生效"
+        "speed": "接口无速度参数，运行记录无service tier；未宣称最高速度生效",
+        "finalAuxiliaryChecks": "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123"
       },
       "modelAccounting": {
         "newBusinessRootInputs": 1,
@@ -19834,11 +20254,77 @@
         "observedCompletedTurns": 1,
         "providerRequestCount": "not-measured",
         "automaticPredictionCount": "not-measured",
-        "scope": "本机Codex合成任务；原操作只读恢复，不计入旧EasyWork专属累计计数",
+        "scope": "本机Codex一次必要合成输入；不计入EasyWork旧专属累计计数，未通过恢复重发",
         "duplicateInputObserved": false,
         "desktopGui": "CUA explicitly denies Codex.app; not observed; official read_thread and saved rollout only",
         "taskThreadArchived": true,
         "archiveIndependentVerification": "root independently found exact task thread in official archived list; minimal confirmation retained privately"
+      },
+      "candidateSources": {
+        "baseCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+        "sourceState": "uncommitted WIP, not a new commit or deployed release",
+        "ios": {
+          "sourceManifestSha256": "0839f4ad62c0dbcc5ea4ab9c46e6663978f3b512e7bf4bcafba7f61b1f6b83a3",
+          "productionFileCount": 1847,
+          "appExecutableSha256": "450a686edfe2fa62d7295dd1ea5f2a654c066b82b9fe36b15b1e696366dfa93e",
+          "coreBinarySha256": "e32c43fa706d234f8e47e5c4e234852ffa0b1c127c0f9283080301613b715310",
+          "files": {
+            "apps/ios/Sources/SessionStore.swift": "e19f310ea182f741e8dbe7fa0b761b153537b9e9b167ab1367842a4932a22c11",
+            "apps/ios/Sources/RootView.swift": "35235f31b05b655651928c2690c7f6bc0ad9c02b117cdc06b038edd80ed7c5cc",
+            "apps/ios/Sources/DevServicePreview.swift": "fa231253b0935c0ae159edbbab823ff703489826559039944570c7cc854b6479",
+            "apps/ios/Sources/TaskNotifications.swift": "5b65ddfaa836352baba295cd0baa51febd3f97a058b5df47391eddd864ab77b9",
+            "apps/ios/Sources/EasyWorkSession.swift": "9336c176425b6c39ead8e8a2cb7d34bfb3b45e542db914deb516989e65838e77",
+            "apps/ios/Sources/CodexDiscovery.swift": "86a900a331d727d2f1ebe80d114de6b36273fb94a47e7da80e8f1a7115ac2acb"
+          }
+        },
+        "android": {
+          "sourceInventorySha256": "c8e6a81e36e6bd08baa53b57f900492258445bab87e5d73db0de1e6c507cfad8",
+          "fileCount": 1906,
+          "apkSha256": "eecbfaef46cb724b9b4e9007166d4ca02b97b4b833b47f8aa4a751a3e3b3d49b",
+          "files": {
+            "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "b6722095697a88568cd554860551ce5c7c95a7bae489739db046c0c04ebc6aa2",
+            "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "a59bd61d9bdf94de162e47df5221a5a2d84ebc612ac83556b4203677da37871c",
+            "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "5ffb5c70a31c19ec7d4624bc22e81459b797360775b4563a5d90a3eb143dfbc3",
+            "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "38fb3e4b7686cc8f6522e61376eb98bb1f0824201a741d1f0d826aef3a10d8ad"
+          }
+        },
+        "shared": {
+          "source": "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ForegroundReadiness.kt",
+          "sha256": "e385853eabd5e1e42f3cf4f8419886f30f5dbe750ee30a23f8c32956ab423c6b",
+          "jvmAuxiliaryTests": 148,
+          "note": "R3 JVM148/148 source unchanged in final native candidates; not rerun merely for unchanged core"
+        }
+      },
+      "remainingEnvironmentConstraints": [
+        "真实EasyWork验收绑定/运行目标尚未为本任务建立并独立核实；其他在途环境不能直接冒作本任务通过",
+        "CUA明确禁止访问com.openai.codex，未取得桌面GUI owner证据；官方历史读取仅证明记录",
+        "旧已部署App/Host及回退安装的准确组合未取得当前通过"
+      ],
+      "localStageState": "completed-scoped; remaining matrix planned, not running",
+      "resourceCloseout": {
+        "state": "completed-owned-resources-released; verified-source-only-archives-and-minimum-evidence-retained",
+        "released": "任务专用Android AVD/模拟器/端口/构建输出；iOS模拟器/fixture/DerivedData/测试App；iOS R6及Android R4独立源码目录已逐文件归档读回后移除；无共享依赖随链接删除。单次产品测试聊天已官方归档且独立核实。",
+        "preserved": "主工作区/原WIP/正式Host/共享依赖与Gradle daemon保持；私有目录保留两个校验通过的source-only归档、逐文件清单、原始基线、必要原始失败/验收证据和不可变原操作回执。无活跃运行消费者。",
+        "sourceArchives": [
+          {
+            "label": "ios-r6",
+            "files": 1856,
+            "bytes": 9620774,
+            "sha256": "44b693c8f1d010fde405ab7d9ee828fe941e221f38a2256ed5f7ed90adb7fb27"
+          },
+          {
+            "label": "android-r4",
+            "files": 1906,
+            "bytes": 10088539,
+            "sha256": "be6e7c4c784a1448aedae117ce8ffea55ced818a6aee548cf6c64b533d7b9b33"
+          }
+        ],
+        "retentionOwner": "当前LIFE01主协调会话",
+        "retentionCondition": "准确改动及输入提交可恢复、证据归属完成交接后复核；不自动删除。共享正式环境不属清理范围。",
+        "sourceDeltaSha256": "f45c19096d3c7f0a531088910cc579385b8d3d1dccec685aa3a8e989160eced3",
+        "notCreated": "Git工作树/分支、PR、部署和远端协调聊天；本机测试使用子Agent，无另建独立协调聊天。",
+        "archivedLocalTestAgents": 10,
+        "archiveVerification": "所属正式归档接口成功；官方threads元数据只读独立确认10条archived=1。当前主会话保留。"
       }
     }
   ],
@@ -28963,6 +29449,124 @@
       "evidenceRefs": ["INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123"],
       "newProductAcceptancePasses": 1,
       "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 518,
+      "date": "2026-11-23",
+      "kind": "life01-native-progress-and-deeper-owner-red-repair",
+      "scope": "补记R4预览正常红绿、R5实际inactive/31s/20轮子项通过；真实FAILED保持2项native通过记录保留原xcresult。Android进一步真实T14/后台GET占位红测引出独立watchdog/route owner及GET waiter修复，候选待复验。完整check后104命令逐项exit0、含平台skip；整链早停和通知测试配置差异保留。A6/F75不变，业务合成输入仍1次，未提交推送部署。",
+      "evidenceRefs": [
+        "LIFE01-R4-IOS-PREVIEW-NORMAL-20261123",
+        "LIFE01-R5-IOS-31S-20CYCLES-20261123",
+        "LIFE01-R5-IOS-ACTUAL-INACTIVE-20261123",
+        "LIFE01-ANDROID-T14-AND-GET-OWNER-RED-20261123",
+        "LIFE01-WORKSPACE-104-REMAINDER-CHECKS-20261123"
+      ],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 519,
+      "date": "2026-11-23",
+      "kind": "life01-exact-ios-test-package-correction",
+      "scope": "将R5 inactive/stress证据的临时包引用和参考生产包改为执行方返回的准确实际观察/测试包64位SHA，不以生产包替代不同test bundle。补R5实际FAILED保持/late404两项native2/2，R6及AndroidR4仍在受影响复验。",
+      "evidenceRefs": [
+        "LIFE01-R5-IOS-ACTUAL-INACTIVE-20261123",
+        "LIFE01-R5-IOS-31S-20CYCLES-20261123",
+        "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123"
+      ],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 520,
+      "date": "2026-11-23",
+      "kind": "inc01-mainline-closure-and-inc02-start",
+      "scope": "INC01新增范围已验收并合入Hub PR245/main135199ed和Desktop PR85/master96f5890f；父功能与正式118/原720状态不扩签。原失败正式计划和恢复run分别保留，自动门禁部分Unit重跑如实记录；已清运行资源、具名两树构建输入接续F77。现按INC02实施有限读取/分享设计，尚无F77新验收。保留LIFE01并发事实。",
+      "evidenceRefs": ["INC01-TWO-MAINLINES-MERGED-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 521,
+      "date": "2026-11-23",
+      "kind": "life01-local-repair-and-scoped-native-matrix-closeout",
+      "scope": "本轮本地实现与受控验证结束：AndroidR4关键4+回归11+冷进程2阶段+确认前1；iOSR6源码构建/目标拒绝/实际30秒/存储双进程/通知偏好，R4/R5普通UI按准确依赖范围保留。全部T01–T14逐行登记已测与remaining；完整真实互通/权限/通道/版本矩阵未接受，执行转待执行而非保持假运行。单元/传输fixture证据标辅助，普通UI/真实存储/单次实际Codex原操作按窄范围留证，原失败保留。无新模型业务输入、提交/PR/部署，A6/F75暂停。",
+      "evidenceRefs": [
+        "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+        "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+        "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+        "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123",
+        "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123",
+        "LIFE01-IOS-R6-NOTIFICATION-PREFERENCES-20261123",
+        "LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123",
+        "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123"
+      ],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 522,
+      "date": "2026-11-23",
+      "kind": "life01-verified-source-preservation-and-resource-closeout",
+      "scope": "完成阶段资源收尾：两个source-only归档逐文件读回验证后移除独立源码重复目录，保留主工作区/原WIP和最小充分证据；校验任务源码差异与最终原生指纹一致。LIFE01当前开发/验收/交付/执行状态不变；完整矩阵remaining和并发INC事实保留。",
+      "evidenceRefs": ["LIFE01-RESOURCE-CLOSEOUT-AND-SOURCE-ARCHIVES-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 523,
+      "date": "2026-11-23",
+      "kind": "life01-final-validation-and-local-test-agent-archive",
+      "scope": "登记本任务17文件格式/移动parity/台账生成/差异空白检查通过；全仓格式因其他并发未跟踪文档失败，未改该文件。10条本机测试子Agent正式归档后独立核实；补保存持久预览回归差异。生产源码/原生包/完整矩阵remaining和其他任务事实不变，无提交/发布或新增业务模型输入。",
+      "evidenceRefs": ["LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 524,
+      "date": "2026-11-23",
+      "kind": "inc02-core-candidate-and-initial-check-repairs",
+      "scope": "F77 new adapter/snapshot/complete-transfer candidate now exists. Keep first failures and repairs; v3 iOS and five JS boundaries are auxiliary, final Desktop checks and all new real acceptance pending. Original MEDIA01, Android, formal118, old720 and paused items retain scope. Existing DEV01 profile plus its three installed packages remain needed unchanged for upcoming real acceptance.",
+      "evidenceRefs": ["INC02-CANDIDATE-SHARED-READS-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 525,
+      "date": "2026-11-23",
+      "kind": "inc02-core-checks-passed-native-acceptance-preparing",
+      "scope": "Record exact generic compile/104 Desktop unit checks and actual input reuse. Real F77 native/desktop results and full pnpm check remain pending; original failed build-for-testing without JAVA_HOME retained. Existing accepted INC01 and MEDIA01 scopes unchanged. No new product pass.",
+      "evidenceRefs": ["INC02-CORE-CHECKS-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 526,
+      "date": "2026-11-23",
+      "kind": "inc02-real-first-frame-scoped-pass",
+      "scope": "First real EasyWork native player frame independently verified, conservative transferred-byte bound below full file. Same once-registered resource and approved device. No new model input; remaining F77 assertions not promoted. Old INC01 live/live-retry cleanup actually completed with original lifecycle receipts retained.",
+      "evidenceRefs": ["INC02-REAL-FIRST-FRAME-20261123"],
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 527,
+      "date": "2026-11-23",
+      "kind": "inc02-positive-native-desktop-and-natural-lease-passed",
+      "scope": "Record independent positive native review plus actual natural renewal/expiry and original complete transfer. No recipient save or real dual-Host switch promotion; remaining controlled source fault/checks/merges stay open. Check uses frozen R526 snapshot, current canonical R527 changes status evidence only.",
+      "evidenceRefs": ["INC02-REAL-POSITIVE-PLAYBACK-20261123"],
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 528,
+      "date": "2026-11-23",
+      "kind": "inc02-macos-native-real-desktop-scope-accepted-awaiting-merge",
+      "scope": "New functional scope accepted after controlled409 with originalSHA restore, positive playback and actual lease evidence. Exact common thread-context reuse and auxiliary engine boundaries remain labelled. Original binding/profile/shared resources protected; unused runtime/pairing/backup/exports reclaimed, completed36MB asset retained by real references. Full check split-pass preserved. Gitea merges still pending; do not mark released.",
+      "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0
     }
   ],
   "maintenanceValidation": {
@@ -31942,6 +32546,12 @@
       "baseCommit": "6ec06d6ce897ae45071242887c9e6cf7de152fe2",
       "verification": "新增模拟器+真实Electron范围通过；Desktop48323446基准及准确差异/可执行包见证据。源码未提交/未合并，不替代正式118和旧720包。",
       "evidenceRefs": ["INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123"]
+    },
+    {
+      "component": "INC02 F77 real-accepted candidate",
+      "baseCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "verification": "Actual macOS Electron plus native iOS Simulator accepted; exact source/executable/report bound. No formal release or pending platform promotion. Two source PR merges remain.",
+      "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"]
     }
   ],
   "sourcePinHistory": [
@@ -40301,22 +40911,23 @@
       "phase": "extensions",
       "behavior": "只配对EasyWork也能从已认证电脑学习实际可发现网络，自动发现并保留原电脑/草稿",
       "acceptanceCriteria": "在既有runtime/context适配到共同DiscoveryNetworksSnapshot；严格完整target/pin/设备和读权限，CIDR来自实际网卡掩码；旧端缺字段/404/离线保留旧缓存，未知网络不成为授权或VPN路由。模拟器从正常发现入口学、保存、冷恢复、停止扫描；真实Electron独立核范围与零业务输入。",
-      "state": "accepted-scoped",
+      "state": "merged",
       "owner": "当前主协调会话",
-      "acceptanceBasis": "real-dev-incremental-scope",
+      "acceptanceBasis": "merged-pr",
       "evidenceRefs": [
         "INCREMENTAL-SOURCE-AUDIT-20261122",
         "INC01-SHARED-AUTHENTICATED-NETWORKS-CANDIDATE",
         "INC01-STRICT-CONNECTION-CACHE-OWNERSHIP-CORRECTION",
-        "INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123"
+        "INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123",
+        "INC01-TWO-MAINLINES-MERGED-20261123"
       ],
-      "pullRequests": [],
-      "nextAction": "新增范围已真实双端验收；仅完成两仓差异复核、正常PR合并与SHA核对，不重复已过测试。随后INC02/F77开发。",
-      "updatedAt": "2026-11-23T01:32:11+08:00",
+      "pullRequests": ["BCAI/agent-hub-app#245", "BCAI/comfy-desktop#85"],
+      "nextAction": "本新增范围已双仓合并并阶段收尾；不重复原验收。按INC02继续F77，正式118及原720运行包边界保持。",
+      "updatedAt": "2026-11-23T02:08:13+08:00",
       "developmentState": "implemented-scoped",
       "acceptanceState": "current-passed",
-      "deliveryState": "candidate-not-integrated",
-      "executionState": "in-progress",
+      "deliveryState": "integrated-not-deployed",
+      "executionState": "closed",
       "sourceGap": "Codex GET /v1/discovery/networks及App本机发现已实现；availableScopes只读取codexDirect.discoveryNetworks，EasyWork runtime/context没有对应网卡范围。",
       "relatedDeliverableIds": [
         "F06-office-subnet-discovery",
@@ -40334,7 +40945,12 @@
         "firstInvocation": "partial assertions, driver failure retained",
         "continuation": "same binding1passed0failed0skipped",
         "freshAcceptanceScope": "INC01 incremental only"
-      }
+      },
+      "sourceCommits": [
+        "ab054b73b4429eacc66186ec0499c5e7301aac37",
+        "135199ed2947ededee3933c6cad183332b11ef82",
+        "96f5890f817fec44979a4c780f2e0e10cdcd1b80"
+      ]
     }
   ],
   "mergedPullRequests": {
@@ -41208,6 +41824,36 @@
       },
       "scope": "Automatic trusted network learning and routed discovery; original target, pins, device authorization and immutable operations retained. Physical automatic and original-phone upgrade acceptance pending.",
       "evidenceRef": "OFFICE-AUTOMATIC-DISCOVERY-20261122-PR238-MERGED"
+    },
+    "BCAI/agent-hub-app#245": {
+      "repository": "BCAI/agent-hub-app",
+      "number": 245,
+      "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/245",
+      "baseBranch": "main",
+      "state": "merged",
+      "headCommit": "c77b8f54c0f601b5c1c7a80e91c6bd4e765079e9",
+      "mergeCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "checkedMainCommit": "135199ed2947ededee3933c6cad183332b11ef82",
+      "checkedAt": "2026-11-23T02:08:13+08:00",
+      "sourceDeleted": true,
+      "scope": "INC01 authenticated EasyWork network observation; exact added scope accepted; no formal app deployment",
+      "evidenceRef": "INC01-TWO-MAINLINES-MERGED-20261123",
+      "mergedAt": "2026-11-23T01:38:25+08:00"
+    },
+    "BCAI/comfy-desktop#85": {
+      "repository": "BCAI/comfy-desktop",
+      "number": 85,
+      "url": "https://git.51easyai.com/BCAI/comfy-desktop/pulls/85",
+      "baseBranch": "master",
+      "state": "merged",
+      "headCommit": "96f5890f817fec44979a4c780f2e0e10cdcd1b80",
+      "mergeCommit": "96f5890f817fec44979a4c780f2e0e10cdcd1b80",
+      "checkedMainCommit": "96f5890f817fec44979a4c780f2e0e10cdcd1b80",
+      "checkedAt": "2026-11-23T02:08:13+08:00",
+      "sourceDeleted": true,
+      "scope": "INC01 authenticated EasyWork network observation; exact added scope accepted; no formal app deployment",
+      "evidenceRef": "INC01-TWO-MAINLINES-MERGED-20261123",
+      "mergedAt": "2026-11-23T02:05:50+08:00"
     }
   },
   "deliveryWorkflow": {
@@ -41334,25 +41980,29 @@
       "name": "视频渐进播放",
       "plannedScope": "integration-extension",
       "development": {
-        "state": "partial",
-        "scope": "共同iOS播放器及Codex固定版本读取已存在；EasyWork Host/Adapter/client分段适配未实现，原完整下载回退保留",
-        "evidenceRefs": ["INCREMENTAL-SOURCE-AUDIT-20261122"]
+        "state": "implemented-scoped",
+        "scope": "Current macOS fixed snapshot/lease/ETag/range/cancel and bounded complete-video iOS adapter implemented with common player. New Windows range capability withheld pending ACL; Linux not exercised, Android independent.",
+        "evidenceRefs": [
+          "INCREMENTAL-SOURCE-AUDIT-20261122",
+          "INC02-CORE-CHECKS-20261123",
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"
+        ]
       },
       "acceptance": {
-        "state": "historical-partial",
-        "scope": "MEDIA01已有播放器/Host限定证据保持；EasyWork渐进播放当前未验收，35d/实体17次不升级为EasyWork通过",
-        "evidenceRefs": ["INCREMENTAL-SOURCE-AUDIT-20261122"],
-        "currentEvidence": []
+        "state": "current-passed",
+        "scope": "Current macOS EasyWork plus native iOS Simulator scope passed; existing common thread context exit reused by exact source. No new two-Host matrix, Windows/Android/physical or recipient-save claim. See evidence for real vs auxiliary boundaries.",
+        "evidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
+        "currentEvidence": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"]
       },
       "delivery": {
-        "state": "target-assembly-unverified",
-        "note": "共同播放器1be178e5已在冻结main；EasyWork渐进协议未交付"
+        "state": "candidate-not-integrated",
+        "note": "Real accepted candidate pending actual Gitea Hub main and Desktop master PR merges; formal118 unchanged."
       },
       "execution": {
-        "state": "planned",
-        "ownerRole": "当前主协调会话"
+        "state": "in-progress",
+        "ownerRole": "current coordinator with Terra check/test executor"
       },
-      "nextAction": "INC02：补共同固定版本snapshot/lease/range/cancel领域映射与EasyWork override，复用现有AVPlayer页面；模拟器和真实Electron核首次播放、未缓存seek、续租/过期/版本冲突及退出释放。",
+      "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
       "functionalDeliverableIds": ["F77-easywork-progressive-video"],
       "incrementalPlanId": "INC02",
       "globalDefinition": "docs/product/mobile-parity.manifest.json#F77",
@@ -41362,7 +42012,7 @@
         "MEDIA01 current isolated Gitea delivery"
       ],
       "originalEvidencePaths": ["docs/acceptance/mobile-parity.md"],
-      "updatedAt": "2026-11-22T13:33:39+08:00"
+      "updatedAt": "2026-11-23T04:23:15+08:00"
     }
   ],
   "extensionDeliverables": [
@@ -41386,17 +42036,51 @@
       "id": "F77-easywork-progressive-video",
       "featureIds": ["F77"],
       "behavior": "EasyWork电脑视频边加载边播放，拖到未缓存位置，切全屏后连续播放并安全退出",
-      "developmentState": "partial",
-      "acceptanceState": "not-accepted-current-scope",
-      "deliveryState": "target-assembly-unverified",
-      "executionState": "planned",
+      "developmentState": "implemented-scoped",
+      "acceptanceState": "current-passed",
+      "deliveryState": "candidate-not-integrated",
+      "executionState": "in-progress",
       "acceptanceCriteria": "模拟器实际AVPlayer首次/未缓存seek/内联全屏连续/冷恢复；固定版本ETag与Range/206/Content-Range校验，同版续租、过期、版本或target冲突有界结束；退出及切目标取消原readId，真实Electron独立核读取范围/lease释放，完整版本才允许分享。旧Host继续完整下载，零模型输入。",
-      "nextAction": "INC02；先EasyWork固定版本资源快照/租约/范围/取消与能力协商，再override共同AgentClient，沿MEDIA01跟进，保持F75/A6暂停。",
+      "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
       "owner": "当前主协调会话",
-      "evidenceRefs": ["INCREMENTAL-SOURCE-AUDIT-20261122"],
+      "evidenceRefs": [
+        "INCREMENTAL-SOURCE-AUDIT-20261122",
+        "INC02-CANDIDATE-SHARED-READS-20261123",
+        "INC02-CORE-CHECKS-20261123",
+        "INC02-REAL-FIRST-FRAME-20261123",
+        "INC02-REAL-POSITIVE-PLAYBACK-20261123",
+        "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"
+      ],
       "sourceCommits": ["1be178e5fad75a06d449f9ecefa9c570233206e3"],
       "existingWorkRef": "MEDIA01",
-      "incrementalPlanId": "INC02"
+      "incrementalPlanId": "INC02",
+      "updatedAt": "2026-11-23T04:23:15+08:00",
+      "designRef": "docs/design/easywork-progressive-video.md",
+      "candidateScope": "Mac/POSIX fixed-version snapshot adapter and shared iOS player path; bounded original whole-file transfer/receipt for video sharing. Windows new range ACL capability and Android player remain outside this accepted environment and are not declared available.",
+      "currentAssertions": {
+        "firstFrame": "real-passed-scoped",
+        "seekFullscreenShareHotCold": "real-passed-scoped",
+        "naturalExpiryAndSameVersionRenewal": "real-passed-with-actual-ten-minute-clock",
+        "closeAndSnapshots": "real-original-cancel-confirmed-and-no-snapshot-files",
+        "contextExit": "reuse-only-original-MEDIA01-thread-context-scope; not-two-real-Hosts",
+        "remaining": "Two actual Gitea mainline merges and code/worktree closeout; no new functional test planned for accepted scope",
+        "evidenceRefs": [
+          "INC02-REAL-FIRST-FRAME-20261123",
+          "INC02-REAL-POSITIVE-PLAYBACK-20261123",
+          "INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"
+        ],
+        "controlledSourceConflict": "real409-native-bounded-error-original-owned-source-hash-restored"
+      },
+      "acceptedEnvironment": "macOS EasyWork + owned native iOS26 Simulator",
+      "unclaimedScopes": [
+        "two-real-Host target-switch matrix",
+        "new Windows range ACL capability",
+        "Linux runtime verification",
+        "Android player",
+        "physical device",
+        "formal release118 upgrade",
+        "share recipient save"
+      ]
     }
   ],
   "alignmentRefresh": {
@@ -41777,11 +42461,11 @@
           "F07-authorization-error-recovery-matrix",
           "F06-easywork-authenticated-discovery-networks"
         ],
-        "assessment": "原冻结审计曾发现EasyWork独立范围生产者缺口；INC01候选已补齐并通过新增原生模拟器/真实Electron范围，待两仓PR合并。原PR238及错误区分范围沿用，不重测。",
+        "assessment": "冻结审计曾发现的EasyWork独立范围缺口已由INC01补齐，新增模拟器/真实Electron范围通过并合Hub PR245/Desktop PR85；原PR238等范围沿用。",
         "optimizations": [
           "办公室手填范围已被实际局域网和可信Codex Host网段自动学习替代",
           "优先原地址、完整且可取消的范围扫描",
-          "EasyWork可信范围共同观察已补候选；新增真实范围通过，交付沿INC01跟进"
+          "EasyWork可信范围共同观察、冷恢复和正常本轮发现已按新增范围验收并双仓合并"
         ]
       },
       {
@@ -57718,7 +58402,7 @@
         "order": 1,
         "title": "EasyWork已认证网络范围自动学习",
         "kind": "development-gap",
-        "state": "in-progress",
+        "state": "completed",
         "featureIds": ["F06", "F08", "F10"],
         "deliverableIds": ["F06-easywork-authenticated-discovery-networks"],
         "sourceCommits": ["e1b34ef8546c3c87d1d5d4f2de8e6197ecbd584d"],
@@ -57727,22 +58411,27 @@
         "completion": "Host/Adapter和iOS影响代码按共同契约完成，定向检查+模拟器/真实Electron断言通过，关联两仓准确PR/merge，回填原ID并阶段清理。",
         "dependsOn": [],
         "owner": "当前主协调会话",
-        "latestEvidenceRefs": ["INC01-SIMULATOR-REAL-DESKTOP-ACCEPTED-20261123"],
-        "nextAction": "开发和新增模拟器/真实Electron范围已通过；两仓待正常合并，完成后INC02。"
+        "latestEvidenceRefs": ["INC01-TWO-MAINLINES-MERGED-20261123"],
+        "nextAction": "新增范围已双仓合并、阶段运行资源回收；具名输入接续INC02，不重测。"
       },
       {
         "id": "INC02",
         "order": 2,
         "title": "EasyWork视频渐进读取适配",
         "kind": "development-gap",
-        "state": "planned",
+        "state": "in-progress",
         "featureIds": ["F77"],
         "deliverableIds": ["F77-easywork-progressive-video"],
         "sourceCommits": ["1be178e5fad75a06d449f9ecefa9c570233206e3"],
         "implementation": "复用现有attachment-reads固定版本snapshot/lease/range/cancel领域契约，Host/Adapter约束真实资源和授权后声明attachments:range-read:v1；EasyWorkAgentClient override共用读取方法，保留旧端完整下载，不复制播放器。",
         "acceptance": "按F77具体功能条件在模拟器和真实Electron核冷/热首播、未缓存seek、内联/全屏、同版续租/过期/版本冲突/目标切换/取消释放、完整后分享；复用MEDIA01旧播放器范围，零模型。",
         "completion": "桌面与App能力协商/固定版本读取交付，全部新增断言通过并按功能PR合主线，回填MEDIA01关联及F77扩展行，回收本阶段资源。",
-        "dependsOn": []
+        "dependsOn": [],
+        "owner": "当前主协调会话",
+        "nextAction": "Deliver exact accepted source to both Gitea mainlines via normal validated PRs; record actual SHAs and closeout. Reuse completed native scenarios without rerunning.",
+        "designRef": "docs/design/easywork-progressive-video.md",
+        "latestEvidenceRefs": ["INC02-SCOPED-NATIVE-REAL-DESKTOP-ACCEPTED-20261123"],
+        "acceptanceStatus": "current-scoped-passed-pending-two-mainline-merges"
       },
       {
         "id": "INC03",

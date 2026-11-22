@@ -1,4 +1,4 @@
-"""Validate the preserved historical ledger and render source views with the repo's Prettier."""
+"""Validate the canonical plan ledger and render views with the repo's Prettier."""
 
 import argparse
 from collections import Counter
@@ -447,7 +447,7 @@ def render(data):
     features = data["features"]
     label = lambda dimension, state: definitions[dimension][state]
     fingerprint = hashlib.sha256((ROOT / "status.json").read_bytes()).hexdigest()
-    banner = f"> 历史来源快照，勿手改；数据：[status.json](status.json)，修订 {data['revision']}，记录时间 {data['updatedAt']}。台账 SHA-256：`{fingerprint}`。\n> 下方状态与计划仅代表原记录时点；全项目当前功能及双端实现/验收只维护[唯一完整功能清单](../android-ios-alignment-20261107/progress.md)，不从本快照推导当前完成率。\n"
+    banner = f"> 自动生成，勿手改；唯一状态来源：[status.json](status.json)，修订 {data['revision']}，更新 {data['updatedAt']}。台账 SHA-256：`{fingerprint}`。\n"
     counts = []
     for dimension in ("development", "acceptance", "delivery", "execution"):
         counter = Counter(f[dimension]["state"] for f in features)
@@ -457,7 +457,7 @@ def render(data):
     unmatched = sum(f["acceptance"]["state"] == "historical-scope-unmatched" for f in active)
     closed = sum(f["acceptance"]["state"] in {"current-passed", "matched-reuse"} for f in active)
     open_count = len(active) - matched - unmatched - closed
-    progress = ["# 历史进度快照", "", banner,
+    progress = ["# 当前唯一进度总表", "", banner,
         "本表是台账的只读投影，不是另一套进度记录。状态定义和更新流程见 [维护规则](maintenance.md)。", "",
         f"当前共 {len(features)} 个父功能：{len(active)} 个对接、{sum(f['plannedScope']=='phone-only' for f in features)} 个手机共用、{sum(f['plannedScope']=='excluded' for f in features)} 个范围外。对接范围有 {open_count} 个开放父项、{matched + unmatched} 个历史限定通过未复用（待匹配 {matched}，本次匹配未成立 {unmatched}）、{closed} 个按当前范围关闭。开放数不等于未开发数。", ""]
     if "executionFocus" in data:
@@ -517,7 +517,7 @@ def render(data):
     if gaps:
         progress += ["## 仍有开发缺口的具体子项", "", table(["子项", "开发状态", "准确范围"], [
             (g["id"] + " " + g["name"], label("development", g["developmentState"]), g["scope"]) for g in gaps]), ""]
-    checklist = ["# 历史75项功能状态快照", "", banner,
+    checklist = ["# 75项功能状态清单", "", banner,
         "开发、验收、交付和执行为独立维度；不能互相替代。证据范围、原状态和来源提交完整保存在台账。", "",
         table(["ID / 功能", "开发状态", "验收状态", "交付状态", "执行状态", "包 / 事项", "下一步"], [
             (f["id"] + " " + f["name"], label("development", f["development"]["state"]), label("acceptance", f["acceptance"]["state"]), label("delivery", f["delivery"]["state"]), label("execution", f["execution"]["state"]), "/".join(f["packages"] + f["openItemIds"]) or "共用/范围外", f["nextAction"]) for f in features]), "",
@@ -571,7 +571,7 @@ def main():
             path.write_text(content)
         else:
             require(path.exists() and path.read_text() == content, f"Stale view: {name}; run --write")
-    print("OK: historical source ledger validated; 75 features, 16 work packages, 32 scenarios; views " + ("written" if args.write else "match"))
+    print("OK: canonical ledger validated; 75 features, 16 work packages, 32 scenarios; views " + ("written" if args.write else "match"))
 
 
 if __name__ == "__main__":

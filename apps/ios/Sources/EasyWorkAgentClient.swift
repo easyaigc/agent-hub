@@ -1439,7 +1439,31 @@ struct EasyWorkAgentClient: AgentClient {
     guard destination.standardizedFileURL.path==destination.resolvingSymlinksInPath().standardizedFileURL.path else { throw HostServiceError.invalidResponse }
     return destination
   }
+  private func mediaRequest(_ channel: EasyWorkRemoteSession) -> EasyWorkMediaReads.Request {
+    { method, params, operationId in
+      if let operationId { return try object(await channel.request(method, params, id: operationId)) }
+      return try object(await channel.request(method, params))
+    }
+  }
+  func prepareMediaRead(_ client: Client, file: RemoteAttachment, readId: String,
+    progress: @escaping @Sendable (Int64, Int64) -> Void) async throws -> MediaReadDescriptor? {
+    let channel = try await session(client)
+    return try await EasyWorkMediaReads.prepare(client, file: file, readId: readId, progress: progress, request: mediaRequest(channel))
+  }
+  func mediaBytes(_ client: Client, source: RemoteAttachment, read: MediaReadDescriptor,
+    offset: Int64, count: Int) async throws -> Data {
+    let channel = try await session(client)
+    return try await EasyWorkMediaReads.bytes(client, source: source, read: read, offset: offset, count: count, request: mediaRequest(channel))
+  }
+  @discardableResult func cancelMediaRead(_ client: Client, file: RemoteAttachment, readId: String) async -> Bool {
+    guard let channel = try? await session(client) else { return false }
+    return await EasyWorkMediaReads.cancel(client, file: file, readId: readId, request: mediaRequest(channel))
+  }
   func cachedDownload(_ client: Client,file:RemoteAttachment) async throws -> URL? {
+    if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType) {
+      if let local = try await Task.detached(priority: .utility, operation: { try EasyWorkMediaReads.cached(client, file: file) }).value { return local }
+      if file.sizeBytes > 20 * 1024 * 1024 { return nil }
+    }
     let destination=try downloadDestination(client,file:file)
     return await Task.detached(priority:.utility) {
       guard destination.standardizedFileURL.path==destination.resolvingSymlinksInPath().standardizedFileURL.path else { return nil as URL? }
@@ -1461,6 +1485,15 @@ struct EasyWorkAgentClient: AgentClient {
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL {
     try Task.checkCancellation()
     progress?(FileDownloadProgress())
+    if MediaPlaybackFormat.accepts(name: file.name, type: file.mediaType) {
+      if let local = try await cachedDownload(client, file: file) {
+        progress?(FileDownloadProgress(phase: .cached, receivedBytes: Int64(file.sizeBytes), totalBytes: Int64(file.sizeBytes)))
+        return local
+      }
+      let channel = try await session(client)
+      if let local = try await EasyWorkMediaReads.download(client, file: file, deviceId: await channel.mobileDeviceId,
+        progress: progress, request: mediaRequest(channel)) { return local }
+    }
     let destination=try downloadDestination(client,file:file),root=destination.deletingLastPathComponent()
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     if let cached=try await cachedDownload(client,file:file) {
@@ -1516,6 +1549,87 @@ extension EasyWorkAgentClient {
       await local.close(); await remote.close()
       return ids
     } catch { await local.close(); await remote.close(); throw error }
+  }
+}
+#endif
+
+#if DEBUG && targetEnvironment(simulator)
+extension EasyWorkAgentClient {
+  /// Task-specific acceptance adapter: only the named synthetic source and the
+  /// already authenticated client are eligible; no generic method forwarding.
+  func f77ImportSyntheticVideo(_ client: Client, target: AgentRuntimeTarget,
+    directory: String, threadId: String, caseId: String) async throws -> [String: Any] {
+    let env = ProcessInfo.processInfo.environment
+    guard Bundle.main.bundleIdentifier == "com.easyai.agenthub.f77acceptance",
+      ProcessInfo.processInfo.arguments.contains("-f77-media-import"),
+      env["F77_IMPORT_CASE_ID"] == caseId, UUID(uuidString: caseId) != nil,
+      env["F77_NEW_MODEL_INPUTS_AUTHORIZED"] == "0",
+      let expected = env["F77_IMPORT_TARGET_JSON"],
+      try JSONDecoder().decode(AgentRuntimeTarget.self, from: Data(expected.utf8)) == target,
+      client.agentConnection?.target == target, target.agentId == "easywork", target.account != nil,
+      !threadId.isEmpty, directory.hasPrefix("/"),
+      directory == (directory as NSString).standardizingPath,
+      (directory as NSString).lastPathComponent == "ios-easywork-progressive-video-20261123" else {
+      throw HostServiceError.wrongHost
+    }
+    let channel = try await session(client)
+    let context = try object(await channel.request("runtime/context", [:]))
+    let actual = try JSONDecoder().decode(EasyWorkTarget.self, from: easyWorkJSON(context["target"] ?? [:]))
+    guard AgentRuntimeTarget(agentId: "easywork", hostId: actual.desktopDeviceId,
+      workspaceId: actual.workspaceId, runtimeId: actual.runtimeId, account: actual.account) == target else {
+      throw HostServiceError.wrongHost
+    }
+    let access = try object(await channel.request("filesystem/access-status", [:]))["access"] as? [String: Any]
+    guard access?["status"] as? String == "granted" else { throw HostServiceError.invalidResponse }
+    let roots = try object(await channel.request("filesystem/roots", [:]))["roots"] as? [[String: Any]] ?? []
+    guard var selected = roots.filter({ entry in
+      guard let path = entry["displayPath"] as? String else { return false }
+      return directory == path || directory.hasPrefix(path.hasSuffix("/") ? path : path + "/")
+    }).max(by: { ($0["displayPath"] as? String ?? "").count < ($1["displayPath"] as? String ?? "").count }) else { throw HostServiceError.invalidResponse }
+    var visited = Set<String>()
+    while selected["displayPath"] as? String != directory {
+      guard let ref = selected["directoryRef"] as? String, visited.insert(ref).inserted else { throw HostServiceError.invalidResponse }
+      let entries = try object(await channel.request("filesystem/list-entries", ["directoryRef": ref]))
+      guard let next = (entries["directories"] as? [[String: Any]] ?? []).first(where: { entry in
+        guard let path = entry["displayPath"] as? String else { return false }
+        return directory == path || directory.hasPrefix(path + "/")
+      }) else { throw HostServiceError.invalidResponse }
+      selected = next
+    }
+    guard let ref = selected["directoryRef"] as? String else { throw HostServiceError.invalidResponse }
+    let listing = try object(await channel.request("filesystem/list-entries", ["directoryRef": ref]))
+    let matches = (listing["files"] as? [[String: Any]] ?? []).filter { $0["name"] as? String == "f77-synthetic.mp4" && $0["size"] as? Int == 36_281_606 }
+    guard matches.count == 1, let fileRef = matches.first?["fileRef"] as? String else { throw HostServiceError.invalidResponse }
+    let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    let folder = support.appendingPathComponent("F77Acceptance", isDirectory: true)
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+    let marker = folder.appendingPathComponent("import-intent-" + caseId)
+    let deviceId = await channel.mobileDeviceId
+    let body: [String: Any] = ["fileRef": fileRef, "purpose": "attachment", "threadId": threadId]
+    let intent: [String: Any] = ["method": "resource/import", "params": body, "caseId": caseId,
+      "target": try JSONSerialization.jsonObject(with: JSONEncoder().encode(target)), "mobileDeviceId": deviceId]
+    let intentData = try JSONSerialization.data(withJSONObject: intent, options: [.sortedKeys])
+    let fd = open(marker.path, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+    guard fd >= 0 else { throw HostServiceError.invalidResponse }
+    let written = intentData.withUnsafeBytes { raw in write(fd, raw.baseAddress, raw.count) }
+    let synced = fsync(fd); Darwin.close(fd)
+    guard written == intentData.count, synced == 0 else { throw HostServiceError.invalidResponse }
+    let result = try object(await channel.request("resource/import", body, id: caseId))
+    guard let transfer = result["transfer"] as? [String: Any],
+      let attachment = result["attachment"] as? [String: Any],
+      let id = attachment["resourceId"] as? String, !id.isEmpty,
+      attachment["name"] as? String == "f77-synthetic.mp4",
+      attachment["contentType"] as? String == "video/mp4", attachment["size"] as? Int == 36_281_606,
+      attachment["sha256"] as? String == "89bad3f17e5aedf21160c0f8620fb5df07588657cd4471cbbd1cb71111428536",
+      transfer["resourceId"] as? String == id, transfer["threadId"] as? String == threadId,
+      transfer["mobileDeviceId"] as? String == deviceId, transfer["purpose"] as? String == "attachment",
+      transfer["name"] as? String == attachment["name"] as? String,
+      transfer["size"] as? Int == attachment["size"] as? Int,
+      transfer["sha256"] as? String == attachment["sha256"] as? String else { throw HostServiceError.invalidResponse }
+    return ["version": 1, "caseId": caseId, "newModelInputsAuthorized": 0,
+      "target": try JSONSerialization.jsonObject(with: JSONEncoder().encode(target)), "threadId": threadId,
+      "resourceId": id, "name": attachment["name"]!, "mediaType": attachment["contentType"]!,
+      "sizeBytes": attachment["size"]!, "sha256": attachment["sha256"]!]
   }
 }
 #endif

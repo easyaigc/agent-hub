@@ -37,6 +37,16 @@ async function fixture(run) {
   }
 }
 
+test('cancel before preparation remembers the original scoped ID without starting source work', async () => {
+  await fixture(async (reads, calls) => {
+    await assert.rejects(reads.cancel(...target), { status: 410 });
+    await assert.rejects(reads.prepare(...target), { status: 410 });
+    await assert.rejects(reads.prepare(id, 'other-scope', 'thread', 'source'), { status: 403 });
+    assert.equal(calls(), 0);
+    assert.equal(reads.reserved, 0);
+  });
+});
+
 test('failure becomes visible only after snapshot and reservation retirement', async () => {
   await fixture(async (reads, calls) => {
     const entered = deferred();

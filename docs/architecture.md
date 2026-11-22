@@ -1671,3 +1671,5 @@ Keep the typed-parent-tool Adapter path unchanged. A separate explicit capabilit
 F59 哈希内存修复：iOS/macOS 共用的 UploadCenter 对每个 256 KiB 读取、摘要更新与计数使用自动释放池；wire、摘要、操作 ID、偏移及旧续传语义不变。Android 逻辑未改；macOS 辅助内存检查不代表 iOS 真实内存验收。
 
 INC01 候选将已认证网络范围提升为共同 Host 观察：两个 Host 复用 `interfaceDiscoveryNetworks` 和 `DiscoveryNetworksSnapshot`，EasyWork 通过既有加密 runtime/context 投影；App 共同解析/扫描与原连接元数据回填，不复制业务协议。实际验收/交付仅见专项唯一台账，详见 [协议边界](design/unified-host-protocol.md#inc01已认证的网络范围学习)。
+
+INC02 / F77 候选将 EasyWork 原具名资源读取的严格 range-v1 分支映射到共同固定版本播放器；视频完整下载有界落盘、全摘要和原回执后发布。两 Host 的未知读取消保留有界 scoped tombstone，防止取消越过准备时迟到工作重新打开；原领域状态、410、权限和写回执策略保持。设计见 [固定视频读取](design/easywork-progressive-video.md)，当前验收/交付只见 EasyWork 唯一台账。

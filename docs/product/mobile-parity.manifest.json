@@ -25992,6 +25992,30 @@
         "scripts/mobile/android-release.mjs": "bb7638af8c7633df94bdc58762f69feef63597755f5b958f7792a9176ca48f72",
         "scripts/mobile/android-release.test.mjs": "ac8a720f7abd6fe0bad809fa675a1c1c5afb8dd42a2472d93c6ea2b9f00eef55"
       }
+    },
+    {
+      "id": "host-persistence-retained-history-20261123",
+      "baseCommit": "95fd2613",
+      "features": ["F17", "F18", "F19", "F28", "F47"],
+      "summary": "Keep exact known history reusable across unrelated metadata changes, and reuse encoding/digest only within one write candidate; current private-file bytes, complete ledger, writer nonce and original command/read/close durability remain checked. Actual target CPU acceptance is recorded separately.",
+      "files": {
+        "packages/codex-adapter/src/runtime-persistence.ts": "a2464094326067511a59ac18210801735bd6c225897c984186a187fa0dcffecd",
+        "scripts/runtime-persistence-background.test.mjs": "df9a248da00f20bc9c8ad1d810d820c5a050323d7ead818103b5610e57e47da4",
+        "scripts/runtime-persistence-benchmark.mjs": "53185f47c44649972ade60eebf9a994146dbb887d6dd874bab9d2ace7992004f",
+        "scripts/fixtures/runtime-persistence-benchmark-child.mjs": "f2875826ceca99b45a43ae4f0365313e53aef77c2b1d3c51d08a559b57c93810"
+      }
+    },
+    {
+      "id": "host-title-stability-20261123",
+      "baseCommit": "576d5a70",
+      "features": ["F17", "F18", "F19", "F28", "F47"],
+      "summary": "Normalize catalog and live-owner title presentation to prevent formatting-only metadata churn; preserve real renames, model inputs, control and durability. macOS task-preserving live CPU comparison passed; Windows and native mobile acceptance remain separate.",
+      "files": {
+        "packages/codex-adapter/src/desktop-title.ts": "a37b0257707a3f4f82d1fcfaccaa999d5ff6ac44871d7e31a72280f40b92fe71",
+        "packages/codex-adapter/src/history-reader.ts": "4b623b0c21cdced47fa07df3f451ed496dffd2e7be1dd8c514fd0f396b7024d0",
+        "packages/codex-adapter/src/runtime-session.ts": "3d51df08f31336dcbd01157aba8097086232f98f990f7a90c5689ff0956b102d",
+        "scripts/runtime-persistence-background.test.mjs": "09ea1c2f614215435a79adcbe434c948ee1a23678909a731352e1c4acd525d8a"
+      }
     }
   ]
 }

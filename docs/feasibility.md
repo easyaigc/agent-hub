@@ -1,6 +1,8 @@
 # 技术可行性与 PoC 验收
 
-2026-11-23：macOS可替换后台持久化复用精确未变内容，保留同步屏障、实时完整账本与历史字节校验。私有实采和合成基准分开，目标CPU复测仍由原部署负责人负责，见[设计及边界](design/background-persistence-performance.md)。
+2026-11-23：目录和原owner统一标题展示格式，保留真实重命名、输入、控制与落盘契约。macOS保留任务的120秒实测CPU39.51%→31.71%；初次仅持久化候选的未通过、最终实机结果与跨平台限制分别记录，见[证据与验证边界](design/desktop-title-stability.md)。
+
+2026-11-23：macOS可替换后台持久化复用精确未变内容；已有历史快照不因无关元数据变化失效，同次候选共享UTF-8编码及摘要，新快照准入和同步屏障、实时完整账本与历史字节校验保留。私有实采和合成基准分开，目标CPU复测仍由原部署负责人负责，见[设计及边界](design/background-persistence-performance.md)。
 
 2026-11-23：增加 macOS Host 内部 Worker 的显式私有 CPU 采集，不开放网络 Inspector 或领域命令。r4 目标持续高 CPU 验收失败；新工具交付和真实主因确认分列，详见[设计及操作边界](design/host-cpu-profile.md)。
 

@@ -193,13 +193,15 @@ try {
   await delay(1600);
   assert.equal(store.status.historyPending, 0);
   shape.actualMetadataBytes = statSync(file).size;
-  const phase = async (name, ticks, mutate) => {
+  const phase = async (name, ticks, mutate, historyChanges = mutate) => {
     const before = snapshot();
     const stop = startCpuStages();
     const start = performance.now();
     for (let i = 0; i < ticks; i++) {
       if (mutate) {
         state.counter++;
+      }
+      if (historyChanges) {
         threads[0].messages[0].text =
           `changed synthetic tick ${state.counter} ` + 'z'.repeat(90000);
       }
@@ -208,7 +210,7 @@ try {
         return state;
       });
       counts.schedules++;
-      const dirtyThreads = mutate
+      const dirtyThreads = historyChanges
         ? [threads[0], threads[1 + (i % 2)]]
         : [threads[i % 3], threads[(i + 1) % 3]];
       for (const t of dirtyThreads) {
@@ -237,6 +239,9 @@ try {
   };
   const warmup = await phase('warmup', opts.warmupTicks, false);
   const steady = await phase('steady', opts.ticks, false);
+  const metadata = opts.metadataTicks
+    ? await phase('metadata', opts.metadataTicks, true, false)
+    : undefined;
   const changed = await phase('changed', opts.changeTicks, true);
   // Exercise synchronous read, command and close with real durability/fencing.
   const beforeFinal = snapshot();
@@ -270,6 +275,7 @@ try {
       shape,
       warmup,
       steady,
+      ...(metadata ? { metadata } : {}),
       changed,
       final: { counts: difference(snapshot(), beforeFinal), metrics: finalMetrics },
       maxRssKiB: process.resourceUsage().maxRSS,

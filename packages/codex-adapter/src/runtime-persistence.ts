@@ -198,6 +198,17 @@ export class RuntimePersistence<State extends RuntimeState> {
           ? this.snapshots.capture(value)
           : undefined;
       const json = serialize(value);
+      // Keep one immutable encoding and digest for this candidate only. Actual
+      // ledger reads and writer checks still happen independently on every save.
+      // A one-shot history write already has Node's native string write path;
+      // reserve a shared Buffer for candidates that also need a content digest.
+      const bytes =
+        (this.options.platform ?? process.platform) === 'darwin' &&
+        (file === this.file || snapshot !== undefined)
+          ? Buffer.from(json, 'utf8')
+          : json;
+      let candidateHash: string | undefined;
+      const hashCandidate = () => (candidateHash ??= digest(bytes));
       if (
         replaceable &&
         durable &&
@@ -205,7 +216,7 @@ export class RuntimePersistence<State extends RuntimeState> {
         this.writer &&
         this.durableHead !== undefined &&
         this.ledgerHead === this.durableHead &&
-        digest(json) === this.durableHead
+        hashCandidate() === this.durableHead
       ) {
         // saveState already rechecked the real writer nonce and complete file
         // bytes. Also retain the current private-file boundary before a no-op.
@@ -219,7 +230,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       }
       // Capture before dependency callbacks can mutate the live input. Only
       // background history uses this; command/read/close barriers stay unchanged.
-      const snapshotHash = snapshotKey !== 'state' && snapshot ? digest(json) : '';
+      const snapshotHash = snapshotKey !== 'state' && snapshot ? hashCandidate() : '';
       if (file === this.file) {
         this.backgroundNoopSeen = false;
         this.snapshotIneligibleHead = undefined;
@@ -231,7 +242,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       // Exclusive creation prevents cleanup from ever unlinking somebody else's file.
       writePrivateFileSync(temporary, '', { mode: 0o600, flag: 'wx' });
       owned = true;
-      writePrivateFileSync(temporary, json);
+      writePrivateFileSync(temporary, bytes);
       stage = 'protect';
       (this.options.protect ?? protectWindowsStateFile)(temporary);
       if (durable) {
@@ -248,7 +259,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       stage = 'publish';
       (this.options.rename ?? renamePrivateFileSync)(temporary, file);
       published = true;
-      if (file === this.file) this.ledgerHead = digest(json);
+      if (file === this.file) this.ledgerHead = hashCandidate();
       if (durable && (this.options.platform ?? process.platform) !== 'win32') {
         stage = 'directory-fsync';
         const fd = openSync(dirname(file), 'r');
@@ -258,7 +269,7 @@ export class RuntimePersistence<State extends RuntimeState> {
           closeSync(fd);
         }
       }
-      if (file === this.file && durable) this.durableHead = digest(json);
+      if (file === this.file && durable) this.durableHead = hashCandidate();
       if (snapshotKey && snapshotKey !== 'state')
         this.snapshots.remember(snapshotKey, file, snapshot, snapshotHash);
     } catch (error) {
@@ -824,13 +835,11 @@ export class RuntimePersistence<State extends RuntimeState> {
       threadId: thread.id,
       messages: thread.messages,
     };
-    // Continuous metadata changes keep the original history write path. Only
-    // prepare history snapshots after observing a stable background ledger,
-    // avoiding snapshot allocation on every genuinely changing state.
+    // A known history snapshot can remain exact when unrelated metadata changes.
+    // Still only capture new snapshots after a stable background ledger, avoiding
+    // repeated allocation on genuinely changing history and metadata.
     const key =
-      background &&
-      this.backgroundNoopSeen &&
-      (this.options.platform ?? process.platform) === 'darwin'
+      background && (this.options.platform ?? process.platform) === 'darwin'
         ? 'history:' + file
         : undefined;
     if (key && this.snapshots.matches(key, value, file, true)) {
@@ -838,7 +847,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       return;
     }
     if (key) this.snapshots.forget(key);
-    this.atomicWrite(file, value, false, false, key);
+    this.atomicWrite(file, value, false, false, this.backgroundNoopSeen ? key : undefined);
   }
 
   private drainOne(): void {

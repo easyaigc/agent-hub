@@ -8,6 +8,8 @@ import { tmpdir } from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
 import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
 import { startCpuStages } from '../packages/codex-adapter/dist/cpu-stages.js';
+import { CodexHistoryReader } from '../packages/codex-adapter/dist/history-reader.js';
+import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
 
 const target = {
   agentId: 'codex',
@@ -270,6 +272,124 @@ test('history no-op verifies real private bytes; same-array edits, removal and p
       },
     },
   );
+});
+
+test('retained history stays reusable when unrelated metadata changes, while changed or damaged history is published', async () => {
+  await fixture(async ({ store, state, background, history, historyFile, counts }) => {
+    await background();
+    await background();
+    await history();
+    const original = await readFile(historyFile());
+    state.receipts[0].state = 'submitted';
+    await background();
+    const before = counts();
+    await history();
+    assert.deepEqual(
+      counts(),
+      before,
+      'metadata changes must not republish identical known history',
+    );
+    assert.deepEqual(await readFile(historyFile()), original);
+
+    await writeFile(historyFile(), '{"unrelated":"corrupted"}', { mode: 0o600 });
+    await history();
+    assert.deepEqual(
+      await readFile(historyFile()),
+      original,
+      'current file bytes are still verified',
+    );
+    for (let tick = 0; tick < 3; tick++) {
+      state.counter = tick;
+      state.threads[0].messages[0].text = `real history change ${tick}`;
+      await background();
+      await history();
+      assert.equal(
+        JSON.parse(await readFile(historyFile())).messages[0].text,
+        `real history change ${tick}`,
+      );
+    }
+    store.saveRead(state);
+    assert.equal(
+      JSON.parse(await readFile(historyFile())).messages[0].text,
+      'real history change 2',
+    );
+  });
+});
+
+test('catalog and owner title presentation converge without republishing metadata; real renames remain visible', async () => {
+  await fixture(async ({ state, background, counts, file }) => {
+    const reader = Object.create(CodexHistoryReader.prototype);
+    reader.hostId = state.hostId;
+    reader.name = 'fixture';
+    reader.knownThreads = new Set();
+    reader.knownProjects = new Map();
+    reader.projectsForThread = () => ({ projectId: null, projectIds: [] });
+    const source = { id: state.threads[0].id, name: '**来自：示例电脑**\n  同一任务', preview: '' };
+    const catalogTitle = () =>
+      reader.mapWorkspace({ data: [] }, { data: [source] }).threads[0].title;
+    const session = Object.create(RuntimeSession.prototype);
+    session.desktopSuggestionSources = new Map();
+    session.completedDesktopSuggestionSource = () => undefined;
+    session.desktopReadReply = () => undefined;
+    const thread = state.threads[0];
+    const owner = (title) =>
+      session.desktopSummary(thread, {
+        title,
+        turns: [{ turnId: 'running-original-turn', status: 'inProgress', items: [] }],
+        threadRuntimeStatus: { type: 'active' },
+      });
+    thread.title = catalogTitle();
+    owner('来自：示例电脑 同一任务');
+    await background();
+    await background();
+    const before = counts();
+    for (let tick = 0; tick < 3; tick++) {
+      thread.title = catalogTitle();
+      await background();
+      owner('来自：示例电脑 同一任务');
+      await background();
+    }
+    assert.deepEqual(
+      counts(),
+      before,
+      'equivalent catalog/owner formatting must not churn saved state',
+    );
+    assert.equal(source.name, '**来自：示例电脑**\n  同一任务', 'native metadata is read-only');
+    assert.equal(thread.state, 'running');
+    assert.equal(thread.turnId, 'running-original-turn');
+    owner('真正重命名 🧪');
+    await background();
+    assert.equal(JSON.parse(await readFile(file)).threads[0].title, '真正重命名 🧪');
+    source.name = '更新后的目录标题';
+    thread.title = catalogTitle();
+    await background();
+    assert.equal(JSON.parse(await readFile(file)).threads[0].title, '更新后的目录标题');
+    for (const title of ['unpaired ** marker', '2 * 3 = 6', 'literal __name__', '中文 🧪']) {
+      source.name = title;
+      assert.equal(catalogTitle(), title, 'ordinary names and unpaired markers retain their text');
+    }
+  });
+});
+
+test('saved metadata retains exact UTF-8 JSON bytes and durability for non-ASCII and surrogate data', async () => {
+  await fixture(async ({ store, state, file, counts }) => {
+    state.extra = { text: '漢字 🧪', surrogate: '\ud800', escaped: '\u0000\n"\\' };
+    const before = counts();
+    store.save(state);
+    const raw = await readFile(file);
+    const persisted = JSON.parse(raw);
+    const expected = {
+      ...state,
+      replyLedger: persisted.replyLedger,
+      historyCacheVersion: 1,
+      threads: state.threads.map((thread) => ({ ...thread, messages: [] })),
+    };
+    assert.deepEqual(raw, Buffer.from(JSON.stringify(expected), 'utf8'));
+    assert.equal(counts().publishes, before.publishes + 1);
+    assert.equal(counts().barriers, before.barriers + 2);
+    store.saveRead(state);
+    assert.deepEqual(await readFile(file), raw);
+  });
 });
 
 test('snapshot eligibility does not reduce large-content persistence', async () => {

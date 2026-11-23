@@ -1,4 +1,5 @@
 import { beginCpuStage } from './cpu-stages.js';
+import { desktopTitle } from './desktop-title.js';
 import {
   parentLineageCapability,
   parentLineageAssociation,
@@ -6037,7 +6038,8 @@ export class RuntimeSession {
       })
     )
       thread.state = 'waiting-for-approval';
-    if (string(state.title)) thread.title = string(state.title);
+    const title = desktopTitle(string(state.title));
+    if (title) thread.title = title;
     return { turns, active, priorTurn };
   }
 

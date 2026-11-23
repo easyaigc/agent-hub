@@ -10,7 +10,14 @@ import { readFile } from 'node:fs/promises';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
-const opts = { ticks: 35, intervalMs: 850, coldMiB: 512, warmupTicks: 4, changeTicks: 3 };
+const opts = {
+  ticks: 35,
+  intervalMs: 850,
+  coldMiB: 512,
+  warmupTicks: 4,
+  changeTicks: 3,
+  metadataTicks: 0,
+};
 let output = resolve(root, '../persistence-benchmark.jsonl');
 let single;
 for (let i = 0; i < args.length; i++) {
@@ -24,10 +31,14 @@ for (let i = 0; i < args.length; i++) {
   else if (key === '--cold-mib') opts.coldMiB = Number(value);
   else if (key === '--warmup-ticks') opts.warmupTicks = Number(value);
   else if (key === '--change-ticks') opts.changeTicks = Number(value);
+  else if (key === '--metadata-ticks') opts.metadataTicks = Number(value);
   else throw Error(`Unknown option ${key}`);
 }
 for (const [key, value] of Object.entries(opts)) {
-  if (!Number.isSafeInteger(value) || value < (key === 'coldMiB' || key === 'warmupTicks' ? 0 : 1))
+  if (
+    !Number.isSafeInteger(value) ||
+    value < (['coldMiB', 'warmupTicks', 'metadataTicks'].includes(key) ? 0 : 1)
+  )
     throw Error(`Invalid ${key}`);
 }
 if (output === root || output.startsWith(root + '/'))

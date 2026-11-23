@@ -11,6 +11,7 @@ import { renderItem, type RenderItem } from './runtime.js';
 import { DesktopSidebar, desktopPinnedSection } from './desktop-sidebar.js';
 import { historyIdentity } from './desktop-history-identity.js';
 import { isDesktopHistoryCursor } from './desktop-history-cursor.js';
+import { desktopTitle } from './desktop-title.js';
 
 export const codexClientType: ClientType = { id: 'codex', name: 'Codex' };
 
@@ -530,9 +531,9 @@ export class CodexHistoryReader {
         hostId: this.hostId,
         ...this.projectsForThread(row),
         title:
-          typeof row.name === 'string' && row.name
-            ? row.name
-            : string(row.preview).slice(0, 120) || '未命名对话',
+          desktopTitle(
+            typeof row.name === 'string' && row.name ? row.name : string(row.preview).slice(0, 120),
+          ) || '未命名对话',
         state: 'unknown',
       };
     });

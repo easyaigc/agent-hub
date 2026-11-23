@@ -1,18 +1,18 @@
 {
   "name": "Agent Hub by EasyAI",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "bundleId": "com.easyai.agenthub",
   "sku": "agent-hub-ios",
   "appleId": "6821946521",
   "copyright": "2026 合肥博璀人工智能科技有限公司",
   "reviewContactEmail": "admin@51easyai.com",
   "releaseMode": "manual",
-  "releaseBuild": "52",
+  "releaseBuild": "118",
   "supportedLanguages": ["en", "zh-Hans"],
   "locale": "en-US",
-  "subtitle": "Your desktop Agents, on iPhone",
-  "keywords": "Agent,AI,desktop,remote,tasks,projects,chat,Codex,EasyWork,developer,productivity",
-  "description": "Agent Hub is a general-purpose mobile workspace for Agent clients on computers you own or are authorized to use. Connect your iPhone to supported desktop Agents, currently Codex and EasyWork, and keep projects, conversations and tasks within reach.\n\n• Switch between authorized computers and Agent clients.\n• Browse projects and conversations, task progress, tool activity and results.\n• Create conversations, continue tasks, and handle approvals and questions.\n• Send text, images and files. Use system dictation or computer-based transcription to edit a message draft before sending.\n• Receive task reminders when the computer and notification service are configured.\n• Connect a configured Task Hub service to manage projects, tasks, feedback, candidate artifacts and acceptance materials.\n• Keep local drafts, reading state and unresolved operations for connection recovery.\n• Use English or Simplified Chinese. Follow the system language or switch in Settings.\n\nSETUP\nA supported Agent desktop app and Agent Hub Host connection service must run on an authorized Mac or Windows computer. Direct LAN access needs no Agent Hub account; access across networks requires a separately configured trusted connection. Task Hub requires its own configured service and member credentials. Optional EasyAI relay access has a separate sign-in flow. Available features depend on the connected computer's capabilities and runtime state.\n\nTasks execute on your selected computer. Messages, attachments and recordings submitted for computer transcription may be processed by the third-party AI services configured on that computer. Provider accounts, charges, retention and processing are governed by those services. System dictation uses the available system service. Review the sharing disclosure and selected destination before sending.\n\nAgent Hub is an independent product, not an official OpenAI or Apple application.\nSupport: https://51easyai.com/agent-hub/support-en.html\nPrivacy: https://51easyai.com/agent-hub/privacy-en.html",
+  "subtitle": "Your agents. Within reach.",
+  "keywords": "agent,AI,desktop,remote,tasks,projects,chat,developer,productivity,files,workflow,coding",
+  "description": "Your desktop agents. Within reach.\n\nAgent Hub brings the projects, conversations and ongoing tasks on your authorized computers into one focused mobile workspace. Read the latest reply, review a result and pick up the next step with your work in context.\n\nONE WORKSPACE, ACROSS COMPUTERS\n• Switch between authorized computers and supported desktop agents.\n• Browse projects and conversations without losing your place.\n• Follow task progress, tool activity and results.\n• Create conversations, continue tasks, and handle approvals or questions.\n\nBUILT AROUND YOUR WORKFLOW\n• Choose models, reasoning and execution options when the connected computer supports them.\n• Send text, images and files, and follow file-transfer progress.\n• Preview downloaded documents, code and images.\n• Open configured development-service previews on the connected computer.\n• Turn system dictation or computer transcription into an editable draft.\n• Keep local drafts, reading state and unresolved operations for connection recovery.\n• Use English or Simplified Chinese, with system, light and dark appearance options.\n\nSET UP YOUR CONNECTION\nA supported desktop agent and the Agent Hub Host connection service must run on a computer you own or are authorized to use. Supported integrations currently include Codex and EasyWork. Available features depend on the connected computer's capabilities and runtime state.\n\nDirect LAN access requires no Agent Hub account. Access across networks requires a separately configured trusted connection. Relay pairing is approved on the signed-in desktop using its connection code. Optional Task Hub features require their own configured service and member credentials. Task reminders require a configured computer and notification service.\n\nTasks run on your selected computer. Messages, attachments and recordings submitted for computer transcription may be processed by the third-party AI services configured there. Their accounts, charges, retention and processing policies apply. System dictation uses the available system service. Review the sharing disclosure and destination before sending.\n\nAgent Hub is an independent product, not an official OpenAI or Apple application.\nSupport: https://51easyai.com/agent-hub/support-en.html\nPrivacy: https://51easyai.com/agent-hub/privacy-en.html",
   "supportUrl": "https://51easyai.com/agent-hub/support-en.html",
   "privacyPolicyUrl": "https://51easyai.com/agent-hub/privacy-en.html",
   "availabilityPolicy": {
@@ -22,5 +22,7 @@
     "selectedTerritoryCount": 174
   },
   "nameReason": "English Agent Hub name is reserved; a distinct English localized name was saved and reloaded in App Store Connect.",
-  "primaryLanguage": "en-US"
+  "primaryLanguage": "en-US",
+  "promotionalText": "Keep desktop agent work within reach. Projects, conversations, files and task progress in one focused mobile workspace.",
+  "submissionStatus": "waiting_for_review"
 }

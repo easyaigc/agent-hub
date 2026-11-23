@@ -131,3 +131,15 @@ Read `docs/README.md` inside that installed package first, then read the relevan
 
 This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
 <!-- END:turborepo-agent-rules -->
+
+<!-- staged-build-resource-closeout:v2:start -->
+
+## 分阶段资源回收与磁盘预检
+
+- 每次冻结、替换候选、完成独立测试或切换验收环境，按具体子阶段登记源码/提交、负责人、实际运行checkout、依赖、构建输出、下载包和证据路径。输入与锁、必要结果/失败诊断及恢复入口已保存，且当前与具名后续阶段无消费者的独占生成物，当场回收；不因父任务仍开发、旧task状态为running或目录叫frozen/preserved就整棵留下。
+- 代码/依赖与账号资料分开管理。旧source下的账号profile仍在用，不自动证明旧source/node_modules或旧编译产物在用；核实际脚本/命令、cwd、打开/映射文件与引用。真实账号、聊天、草稿、凭据、原始业务磁盘、未提交/未推送源码、正式/回滚交付及明确保留资料继续保护。原验收按已授权留存规则保留最小充分证明，不把所有中间副本整体备份一遍代替清理。
+- 新环境优先复用已核对版本的源码资产、锁与下载输入；隔离副本采用独立写入的APFS克隆等适当方式，避免重复复制多平台SDK、模型、安装镜像和整套依赖。不得用会相互写入的硬链接替代隔离，不删除跟踪资产制造脏工作树。Git、工作树、分支和跨聊天归档仍走其合法入口及原保护条件。
+- 大型复制、安装、编译或打包前，检查实际可用空间及本阶段预计新增量；不足时先释放本任务已闲置的安全资源，仍不足则保留可恢复现场、暂停新增的大规模写入并报告缺口，不停止他人任务或共享服务。遵守本机共用清理锁，长时只读核查不占着锁阻塞原负责人收尾。
+- 每阶段资源账本写具体保留用途、当前使用者、释放条件和负责人；条件满足即复核并回收。实际回收核文件/登记及卷级空间，APFS共享块与目录统计不能相加当收益。日常清理是补漏，不能替代本会话在阶段完成和最终交付前的主动收尾。
+
+<!-- staged-build-resource-closeout:v2:end -->

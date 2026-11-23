@@ -124,7 +124,11 @@
     "check:attachment-reads": "pnpm build && node --test scripts/attachment-range-http.test.mjs",
     "check:discovery-networks": "pnpm build && node --test scripts/discovery-networks.test.mjs && node scripts/office-discovery-native-smoke.mjs",
     "check:host-cpu-profile": "pnpm build && node --test --test-concurrency=1 scripts/host-cpu-profile.test.mjs",
-    "check:persistence-background": "pnpm build && node --test --test-concurrency=1 scripts/runtime-persistence-background.test.mjs"
+    "check:persistence-background": "pnpm build && node --test --test-concurrency=1 scripts/runtime-persistence-background.test.mjs",
+    "android:signing:init": "node scripts/mobile/android-release.mjs init",
+    "android:signing:info": "node scripts/mobile/android-release.mjs info",
+    "android:filing": "node scripts/mobile/android-release.mjs filing",
+    "build:android:release": "node scripts/mobile/android-release.mjs build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

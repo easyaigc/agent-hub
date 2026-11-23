@@ -11,11 +11,18 @@ val acceptanceBuild = providers.gradleProperty("agentHubAcceptance").map {
     it.toBoolean()
 }.getOrElse(false)
 val acceptanceScenario = providers.gradleProperty("agentHubAcceptanceScenario").getOrElse("default")
+val releaseBuild = providers.gradleProperty("agentHubReleaseBuild").orNull == "true"
+require(!releaseBuild || !acceptanceBuild) { "Release and acceptance builds must stay separate" }
+val releaseSigningNames = listOf("AGENT_HUB_ANDROID_KEYSTORE", "AGENT_HUB_ANDROID_STORE_PASSWORD",
+    "AGENT_HUB_ANDROID_KEY_ALIAS", "AGENT_HUB_ANDROID_KEY_PASSWORD")
+val releaseSigningValues = releaseSigningNames.associateWith { providers.environmentVariable(it).orNull }
+val releaseSigningReady = releaseSigningValues.values.all { !it.isNullOrBlank() }
 require(acceptanceScenario in setOf("default", "document-cold", "photo-cold", "camera-cold")) { "Unknown acceptance scenario" }
 require(acceptanceScenario == "default" || acceptanceBuild) { "Cold selection scope requires an acceptance build" }
 if (acceptanceScenario != "default") {
     layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(".build/native/android-${acceptanceScenario}"))
 }
+if (releaseBuild) layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(".build/native/android-release"))
 
 // Explicit public client options. Server credentials never enter an Android build.
 // No file means the shipped foreground path remains available without Firebase initialization.
@@ -62,7 +69,18 @@ android {
             }
             versionNameSuffix = if (acceptanceScenario != "default") "-${acceptanceScenario}-acceptance" else if (acceptanceBuild) "-acceptance" else "-dev"
         }
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = false
+            isDebuggable = false
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.create("formalRelease") {
+                    storeFile = rootProject.file(releaseSigningValues.getValue("AGENT_HUB_ANDROID_KEYSTORE")!!)
+                    storePassword = releaseSigningValues.getValue("AGENT_HUB_ANDROID_STORE_PASSWORD")
+                    keyAlias = releaseSigningValues.getValue("AGENT_HUB_ANDROID_KEY_ALIAS")
+                    keyPassword = releaseSigningValues.getValue("AGENT_HUB_ANDROID_KEY_PASSWORD")
+                }
+            }
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -71,6 +89,11 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     testOptions { animationsDisabled = true }
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("packages/protocol/fixtures/mobile"))
+}
+
+// A direct Gradle release must fail rather than silently emit an unsigned APK.
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    doFirst { check(releaseSigningReady) { "Formal signing is required. Run pnpm android:signing:init, then pnpm build:android:release." } }
 }
 
 dependencies {

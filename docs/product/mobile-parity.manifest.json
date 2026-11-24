@@ -26458,6 +26458,30 @@
       "files": {
         "packages/codex-adapter/src/runtime-session.ts": "9020fd82300db9193514f4c9212ceb650c811bbab1a7c923eb627ec7b23395bc"
       }
+    },
+    {
+      "id": "shared-runtime-restricted-conversation-20261124",
+      "baseCommit": "81d24e374c4b6c0db758598aaf21ad33dcfec86c",
+      "features": ["F17", "F18"],
+      "summary": "Distinguish project restrictions from recoverable connection loss on both native clients; share restricted history only when explicitly enabled on the Host. Android native device and isolated shared-runtime acceptance run separately.",
+      "files": {
+        "apps/android/src/androidTest/assets/localization-catalog.json": "ba1ad814a0943defc71cb8f55dd9dab89c99c5727f16037f4198d61a51281f43",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRestrictedHistoryLiveTest.kt": "96ca4cd92a6811c03a96420e5b1a874df78dfe0aed8334a9671197abd0681dc5",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "f87f1994389a0497b1917786269311629d763f9b9437e8287a0ab30ac9ace4b1",
+        "apps/android/src/main/kotlin/com/agenthub/android/ConversationSynchronization.kt": "d6a5b771172109c1285c03b97273d9fb69fb5c92da356c9266a271cd651260d9",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "c9bb992561c726581a253b081d44053986510b9fd178c31336ddb6ca53bfd52e",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "8577feb28f00f78caef92719bd964bcc2ab8403453f15db48921ad03df5575c7",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "556fb794ffd19decf50b82e6f77eabdffc704566bd795117b5807035c292cfaf",
+        "apps/android/src/main/res/values/product_strings.xml": "2118a1cfe00cbef9b4ec41cc8c38752e192a8e11f601b36be494eb6613380edd",
+        "apps/host-agent/src/runtime-server.ts": "24f27519f5a01ec5aa0542c973d4bcfbaa82248cec791e8de7613b8fb36e063a",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "cccdf77e97b5370788e7976cc78544925a5b3cfe42541479025f60e051542706",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "d8d50e4dac51f88a0f63314f1fa62e880bb95c72177121b432e23e262458f1ef",
+        "apps/ios/Sources/Models.swift": "c7867f73bb6b29b4c92d93e573600f3d4867639ce239e7de1f548af9fd9710b2",
+        "apps/ios/Sources/RootView.swift": "847fb2967cd25ce824a2312e052134eb3bf5d35fa7a65b11a5571f9c31d76c47",
+        "apps/ios/Sources/SessionStore.swift": "c86741c307f5e086704dbbf739dca46e669a667fc761355cced4fdaf8e01e268",
+        "packages/codex-adapter/src/runtime-session.ts": "acf0c5755c947bcac8e1dad281206d9dc9cb15b84a273a5508036cb7ba6c36ef",
+        "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "e3efa863e50c3c63964a245b084f2f5a4aa9e25182e4a3d1dbdf53e250c9db5a"
+      }
     }
   ]
 }

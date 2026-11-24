@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CodexRuntime, CodexRejection } from '../packages/codex-adapter/dist/runtime.js';
@@ -15,6 +15,7 @@ import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.j
 const connections = new Set(),
   calls = [];
 let historyMode = 'legacy';
+let catalogCwds = new Map();
 let metadataArchived = false,
   metadataProjectExists = true;
 const legacyTurns = () =>
@@ -108,7 +109,7 @@ server.on('upgrade', (request, socket) => {
             ? {
                 thread: {
                   id: message.params.threadId,
-                  cwd: directory,
+                  cwd: catalogCwds.get(message.params.threadId) ?? directory,
                   historyMode,
                   status: { type: 'active' },
                   turns: legacyTurns(),
@@ -119,7 +120,11 @@ server.on('upgrade', (request, socket) => {
         metadataArchived = true;
       if (message.method === 'thread/list')
         result = {
-          data: metadataArchived && message.params.archived ? [{ id: 'metadata-loaded' }] : [],
+          data: message.params.archived
+            ? metadataArchived
+              ? [{ id: 'metadata-loaded' }]
+              : []
+            : [...catalogCwds].map(([id, cwd]) => ({ id, cwd })),
           nextCursor: null,
         };
       if (message.method === 'project/delete') metadataProjectExists = false;
@@ -179,7 +184,7 @@ const url = 'ws://127.0.0.1:' + server.address().port;
 const directory = await mkdtemp(join(tmpdir(), 'shared-runtime-'));
 const first = new CodexRuntime({ mode: 'shared-runtime', sharedWebsocketUrl: url });
 const second = new CodexRuntime({ mode: 'shared-runtime', sharedWebsocketUrl: url });
-let broker, session;
+let broker, session, restrictedSession, authorizedSession;
 try {
   for (const value of ['ws://example.invalid:1234', url + '?secret=x', 'wss://127.0.0.1:1234']) {
     await assert.rejects(
@@ -320,6 +325,71 @@ try {
     ),
     'History refresh preserves verified streaming output and the terminal status',
   );
+  const root = join(directory, 'projects');
+  const outside = join(directory, 'other');
+  await mkdir(root);
+  await mkdir(outside);
+  const options = {
+    mode: 'shared-runtime',
+    sharedWebsocketUrl: url,
+    root,
+    name: 'Restricted history fixture',
+  };
+  catalogCwds = new Map([
+    ['old-outside', outside],
+    ['old-missing', join(root, 'missing')],
+    ['old-inside', root],
+  ]);
+  restrictedSession = new RuntimeSession({
+    ...options,
+    directory: join(directory, 'restricted'),
+    allowRestrictedSharedHistory: true,
+  });
+  authorizedSession = new RuntimeSession({
+    ...options,
+    directory: join(directory, 'approved'),
+    additionalSharedProjectRoots: [outside],
+  });
+  await restrictedSession.connect();
+  await authorizedSession.connect();
+  await assert.rejects(restrictedSession.refreshHistory('old-outside'), { status: 403 });
+  await restrictedSession.workspace();
+  await authorizedSession.workspace();
+  const missing = await restrictedSession.refreshHistory('old-missing');
+  assert.equal(missing.threadControlRestriction, 'project-directory-unavailable');
+  assert.equal(missing.runtime.canControl, false);
+  const beforeRestricted = calls.length;
+  historyMode = 'legacy';
+  const restricted = await restrictedSession.refreshHistory('old-outside');
+  assert.equal(restricted.threadControlRestriction, 'project-not-authorized');
+  assert.equal(restricted.runtime.canControl, false);
+  assert(restricted.messages.some((item) => item.text.includes('legacy history')));
+  assert(restricted.messages.every((item) => item.attachments.length === 0));
+  assert(
+    !calls
+      .slice(beforeRestricted)
+      .some((call) => ['thread/resume', 'turn/start', 'thread/items/list'].includes(call.method)),
+  );
+  historyMode = 'paginated';
+  const richRestricted = await restrictedSession.refreshHistory('old-outside');
+  assert(richRestricted.messages.some((item) => item.kind === 'commandExecution'));
+  const defaultDenied = await authorizedSession.refreshHistory('old-missing');
+  assert.equal(defaultDenied.synchronization.state, 'unavailable');
+  assert.equal(defaultDenied.messages.length, 0, 'The default must not read restricted history');
+  const startAuthorized = calls.length;
+  for (const id of ['old-outside', 'old-inside']) {
+    const page = await authorizedSession.refreshHistory(id);
+    assert.equal(page.runtime.canControl, true);
+    assert.equal(page.threadControlRestriction, undefined);
+    assert(
+      calls
+        .slice(startAuthorized)
+        .some((call) => call.method === 'thread/resume' && call.params.threadId === id),
+    );
+  }
+  console.log(
+    'Known restricted history (legacy and paginated), missing directory, default denial and authorized cold resume passed.',
+  );
   console.log(
     'Shared WS framing, connection isolation, immutable receipts, unknown no-replay, dual catalogs, legacy-to-paginated migration and stale-read/live-stop fencing passed.',
   );
@@ -328,6 +398,8 @@ try {
   second.close();
   broker?.close();
   await session?.close();
+  await restrictedSession?.close();
+  await authorizedSession?.close();
   for (const socket of connections) socket.destroy();
   await new Promise((done) => server.close(done));
   await rm(directory, { recursive: true, force: true });

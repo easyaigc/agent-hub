@@ -400,7 +400,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val unavailable=state=="unavailable" || client.mode=="desktop-runtime" && page.runtime?.canControl==false && page.runtime.state=="unknown"
         if(proofIsFresh && (historyFresh || !unavailable))conversationSnapshotRevisions[key]=(conversationSnapshotRevisions[key] ?: 0)+1
         usefulConversationProgress.accepted(conversationProgressKey(key,client),state in listOf("history","live-window"),page.synchronization?.checkedAt,unavailable,proofIsFresh)
+        val readOnly=page.readOnlyIssue()
         when {
+            readOnly!=null->conversationSyncIssues[key]=readOnly
+            conversationSyncIssues[key]?.readOnly==true && (!proofIsFresh || page.runtime?.canControl!=true)->Unit
             historyFresh->{
                 val liveWindow=state=="live-window"
                 conversationSyncIssues[key]=ConversationSyncIssue(if(liveWindow)
@@ -1749,8 +1752,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val chosen=client.copy(storageIdentity=identity.selecting(client,storageSelectionThread,storageSelectionProject,key))
         replaceClient(chosen);select(chosen);persistMetadata()
     }
-    val isWritable get() = currentChat?.archived!=true && SessionPolicies.writable(access)
-    val canCompose get() = localReady && currentChat?.archived!=true && codexStorageConflictMessage == null && (selectedClient.isDemo || "reply" in workspace?.capabilities.orEmpty())
+    val isWritable get() = conversationSyncIssue?.readOnly!=true && currentChat?.archived!=true && SessionPolicies.writable(access)
+    val canCompose get() = localReady && conversationSyncIssue?.readOnly!=true && currentChat?.archived!=true && codexStorageConflictMessage == null && (selectedClient.isDemo || "reply" in workspace?.capabilities.orEmpty())
     private val creationAccess get()=SessionAccess(selectedClient.isDemo,selectedClient.online && workspaceReady(selectedClient),
         if(workspaceReady(selectedClient))workspace?.runtimeConnected else false,workspace?.capabilities.orEmpty(),false,false,true,false,false)
     val canCreateThread get() = codexStorageConflictMessage == null && SessionPolicies.createThread(creationAccess) && workspaceReady(selectedClient) && selectedClient.online
@@ -2830,7 +2833,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 while(isActive && foreground && incomingEasyWorkLink==null && targetKey==key && selectionRevision==selection && (revisions[client.id] ?: 0)==revision) {
                     val active=runtime?.state=="running" || pendingRecords.isNotEmpty() || conversationSyncIssues[key]!=null
                     val now=android.os.SystemClock.elapsedRealtime()
-                    if(!historyLoading && OperationPolicies.historyCatchUpDue(now,
+                    if(conversationSyncIssues[key]?.readOnly!=true && !historyLoading && OperationPolicies.historyCatchUpDue(now,
                         usefulConversationProgress.lastUsefulAt(progressKey) ?: -1,attemptedAt ?: -1,active,graceUntil)) {
                         attemptedAt=now
                         loadHistory()?.join()
@@ -2913,7 +2916,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         }
                     }
                     failureStage="events-post-apply"
-                    if(currentBatch&&decision.reload && batch.snapshots.isEmpty()) { freshHistories[key]=false; refresh(); loadHistory() }
+                    if(currentBatch&&decision.reload && batch.snapshots.isEmpty() && conversationSyncIssues[key]?.readOnly!=true) { freshHistories[key]=false; refresh(); loadHistory() }
                     if(currentBatch&&batch.ready==true&&batch.snapshots.isNotEmpty()) {
                         recordConnectionSuccess(client)
                         replaceClient(selectedClient.copy(online=true))

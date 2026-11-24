@@ -4,7 +4,7 @@ import { createServer as httpServer, type IncomingMessage, type ServerResponse }
 import { createServer as httpsServer } from 'node:https';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { resolve, join, dirname, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import {
   RuntimeSession,
@@ -187,6 +187,25 @@ export async function startRuntimeServer() {
         }
       : {}),
     root: resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()),
+    allowRestrictedSharedHistory:
+      mode === 'shared-runtime' && process.env.HOST_AGENT_SHARED_RESTRICTED_HISTORY === '1',
+    additionalSharedProjectRoots:
+      mode === 'shared-runtime'
+        ? (() => {
+            const raw = process.env.HOST_AGENT_SHARED_PROJECT_ROOTS;
+            if (!raw) return [];
+            const roots: unknown = JSON.parse(raw);
+            if (
+              !Array.isArray(roots) ||
+              roots.length > 32 ||
+              !roots.every((root) => typeof root === 'string' && isAbsolute(root))
+            )
+              throw new Error(
+                'HOST_AGENT_SHARED_PROJECT_ROOTS requires a JSON array of absolute paths',
+              );
+            return roots as string[];
+          })()
+        : [],
     name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
   });
   const diagnostics = startRuntimeDiagnostics(directory, session.hostId, mode);

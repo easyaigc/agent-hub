@@ -244,14 +244,21 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   private var acceptedConversationSnapshot: AcceptedConversationSnapshot?
 
-  private struct ConversationSyncIssue: Equatable { var message: String; var historyFresh = false; var liveWindow = false }
+  private struct ConversationSyncIssue: Equatable { var message: String; var historyFresh = false; var liveWindow = false; var readOnly = false }
   @Published private var conversationSyncFailures: [String: ConversationSyncIssue] = [:]
   private var historySyncChecks: [String: String] = [:]
   var conversationSyncFailure: String? {
     guard let host = client, let id = selectedThreadId else { return nil }
     return conversationSyncFailures[cacheKey(host, threadId: id)]?.message
   }
+  var conversationReadOnly: Bool {
+    guard let host = client, let id = selectedThreadId else { return false }
+    return conversationSyncFailures[cacheKey(host, threadId: id)]?.readOnly == true
+  }
   var conversationSyncFailureTitle: String {
+    if conversationReadOnly, let host = client, let id = selectedThreadId {
+      return L10n.tr(conversationSyncFailures[cacheKey(host, threadId: id)]?.historyFresh == true ? "仅可查看历史" : "此对话暂不可用")
+    }
     if let host = client, let id = selectedThreadId,
       conversationSyncFailures[cacheKey(host, threadId: id)]?.liveWindow == true {
       return L10n.tr("实时进度已同步")
@@ -1793,9 +1800,9 @@ private var userRequestedWorkspaceGeneration: UUID?
       creationPending: pendingDesktopCreation != nil, importing: isImporting,
       running: isRunning, preferredReplyMode: replyMode)
   }
-  var isWritable: Bool { client?.migrationNeedsVerification != true && conversation?.archived != true && SessionPolicies.shared.writable(access: accessPolicy) }
+  var isWritable: Bool { !conversationReadOnly && client?.migrationNeedsVerification != true && conversation?.archived != true && SessionPolicies.shared.writable(access: accessPolicy) }
   var canCompose: Bool {
-    client?.migrationNeedsVerification != true && conversation?.archived != true && codexStorageConflictMessage == nil
+    !conversationReadOnly && client?.migrationNeedsVerification != true && conversation?.archived != true && codexStorageConflictMessage == nil
       && (client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("reply") == true)
       && (selectedThreadId != nil || project != nil || isProjectlessDraft)
   }
@@ -1811,7 +1818,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       projectlessDraft: false, canControl: false, testing: testMode)
     return SessionPolicies.shared.desktop(access: access, capability: name)
   }
-  var canConnectForReply: Bool { SessionPolicies.shared.connectForReply(access: accessPolicy) }
+  var canConnectForReply: Bool { !conversationReadOnly && SessionPolicies.shared.connectForReply(access: accessPolicy) }
 
 
   var forkSource: ThreadForkSource? {
@@ -4012,7 +4019,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           let key = cacheKey(host, threadId: id)
           let active = saved.runtimes?[key]?.state == "running" || saved.outbox?[key] != nil || conversationSyncFailures[key] != nil
           let now = Int64(ProcessInfo.processInfo.systemUptime * 1000)
-          if OperationPolicies.shared.historyCatchUpDue(now: now,
+          if conversationSyncFailures[key]?.readOnly != true && OperationPolicies.shared.historyCatchUpDue(now: now,
             lastUseful: lastSnapshotAt[key].map { Int64($0 * 1000) } ?? -1,
             lastAttempt: lastAttempt, active: active, graceUntil: Int64(initialCatchUpAfter * 1000)),
             loadingHistoryRequests[key, default: 0] == 0 {
@@ -4140,7 +4147,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           recordConnectionSuccess(host)
           // A reset already carries the selected snapshot. An extra history GET
           // doubles the most expensive read on a slow link without adding state.
-          if (decision.reload && batch.events.isEmpty) || suggestionNeedsFreshHistory { await loadHistory() }
+          if !conversationReadOnly && ((decision.reload && batch.events.isEmpty) || suggestionNeedsFreshHistory) { await loadHistory() }
         } catch {
           if Task.isCancelled || clientGeneration != generation || client?.id != host.id { break }
           if isReadCancellation(error) { continue }
@@ -4230,7 +4237,17 @@ private var userRequestedWorkspaceGeneration: UUID?
       && snapshot.runtime?.receipts.contains(where: {
         $0.noticeContext != "historical" && ["pending", "queued", "sending", "submitted", "accepted", "running", "uncertain"].contains($0.state)
       }) == false
-    if historyFresh, let checkedAt = snapshot.synchronization?.checkedAt {
+    if let restriction = snapshot.threadControlRestriction, !restriction.isEmpty {
+      let message: String
+      switch restriction {
+      case "project-not-authorized": message = L10n.tr("此项目尚未开放手机控制。请在电脑端为该项目开启授权。")
+      case "project-directory-unavailable": message = L10n.tr("电脑上的项目目录已不可用。请检查该目录。")
+      default: message = L10n.tr("电脑暂未开放此对话的手机控制。")
+      }
+      storeConversationSyncIssue(ConversationSyncIssue(message: message, historyFresh: historyFresh, readOnly: true), key: key)
+    } else if conversationSyncFailures[key]?.readOnly == true && snapshot.runtime?.canControl != true {
+      // A delayed ownerless event must not re-enable automatic retries.
+    } else if historyFresh, let checkedAt = snapshot.synchronization?.checkedAt {
       if archivedHistory || finishedHistory {
         // A freshly verified terminal turn needs no active stream. This does
         // not grant execution control or hide failures of actual history reads.

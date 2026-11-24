@@ -157,6 +157,10 @@ Host 保持 `desktop-runtime`：发送、停止、审批、创建、打开、原
 
 `shared-runtime` 的本次 DEV 实现通过显式 `CODEX_SHARED_SERVER_URL=ws://127.0.0.1:<port>` 直接连接同一个官方 App Server，一帧一个 JSON-RPC 消息；关闭 Host 只关闭自己的连接。原先 `app-server proxy` 是控制 socket 的字节转发，不能用于转换 WebSocket。未提供本机共享地址时失败，不另起执行服务。
 
+已列入桌面目录的对话若因项目路径超出授权范围、或原项目目录已不可用，Host 在快照顶层返回可选的 `threadControlRestriction`（`project-not-authorized` / `project-directory-unavailable`），并返回 `runtime.canControl=false`。新版手机显示明确原因，不安排实时恢复重试，仍可在“刷新历史”时重新检查。字段缺失保留既有同步与重试行为。
+
+`HOST_AGENT_SHARED_PROJECT_ROOTS` 可在电脑端显式配置允许共享执行的额外项目根目录，值为绝对路径的 JSON 数组。Host 按实际目录路径校验；此配置不扩大附件、上传或其他本地文件接口的根目录。`HOST_AGENT_SHARED_RESTRICTED_HISTORY=1` 另行选择允许已认证设备读取目录内已列出但不能控制的对话文字历史；默认不返回受限历史。只读分支不触发 `thread/resume`，也不创建附件下载授权。
+
 macOS DEV 的 `scripts/desktop-shared-runtime.mjs` 是原桌面的本地 executable override：保留初始化前的原生检查调用；正式执行服务由原 Electron 子进程环境启动，桌面 stdio 转接到该服务，Host 再用第二连接接入。工具上下文由原桌面自然提供，禁止从别的进程读取、复制或伪造工具管道和调用者身份。相同桌面的辅助连接复用同一服务，配置或归属不符则拒绝。本次启动器、发送／停止／审批／内置工具，以及后台保留、已完成、已停止对话的归档删除已完成真实原生模拟器验收，详情见 mobile-parity 验收记录。当前仍为隔离 macOS DEV，未安装为正式入口，不能据此声称其他平台和全部旧功能已通过。
 
 正式方案只保留用户原来的一个桌面应用实例及一个 Dock 图标，不额外打开同名应用。隔离 DEV 可以使用独立配置的第二实例，结束后必须退出；它不能成为正式运行依赖。发送、停止、审批、内置工具及后台保留／已完成／已停止对话的归档和删除必须逐项真实验收，通过前不更新正式 Host 或手机。

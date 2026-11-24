@@ -278,6 +278,11 @@
 "删除 " = "Delete ";
 "到期时间" = "Expires";
 "刷新传输记录" = "Refresh transfer records";
+"此对话暂不可用" = "Conversation unavailable";
+"仅可查看历史" = "History only";
+"此项目尚未开放手机控制。请在电脑端为该项目开启授权。" = "Mobile control is not enabled for this project. Enable access on the computer.";
+"电脑上的项目目录已不可用。请检查该目录。" = "The project folder is no longer available. Check it on the computer.";
+"电脑暂未开放此对话的手机控制。" = "The computer has restricted mobile control of this conversation.";
 "刷新历史" = "Refresh history";
 "刷新并采用最新版本" = "Refresh and adopt latest version";
 "刷新执行记录" = "Refresh execution records";

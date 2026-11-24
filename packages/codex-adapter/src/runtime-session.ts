@@ -488,6 +488,14 @@ export class RuntimeSession {
   private subagentReadParents = new Map<string, string>();
   private sharedPinnedThreadIds = new Set<string>();
   private sharedVersions = new Map<string, number>();
+  private sharedCatalogThreads = new Set<string>();
+  private sharedHistoryAccess = new Map<
+    string,
+    {
+      reason: 'project-not-authorized' | 'project-directory-unavailable';
+      checkedAt: string;
+    }
+  >();
   private sharedLiveItems = new Map<string, Set<string>>();
   private restoring = new Map<string, Promise<ReturnType<RuntimeSession['history']>>>();
   private desktopProjectionCache = new DesktopProjectionCache<Message>();
@@ -531,6 +539,8 @@ export class RuntimeSession {
     private readonly options: RuntimeOptions & {
       directory: string;
       root: string;
+      allowRestrictedSharedHistory?: boolean;
+      additionalSharedProjectRoots?: readonly string[];
       name: string;
       replyCheckpointFile?: string;
     },
@@ -760,6 +770,8 @@ export class RuntimeSession {
       this.approvals.clear();
       this.loaded.clear();
       this.sharedVersions.clear();
+      this.sharedCatalogThreads.clear();
+      this.sharedHistoryAccess.clear();
       this.sharedLiveItems.clear();
       this.startedTurns.clear();
       this.notificationTasks.clear();
@@ -1274,6 +1286,8 @@ export class RuntimeSession {
     if (this.mode !== 'shared-runtime') return;
     this.loaded.delete(threadId);
     this.sharedPinnedThreadIds.delete(threadId);
+    this.sharedCatalogThreads.delete(threadId);
+    this.sharedHistoryAccess.delete(threadId);
     this.sharedVersions.delete(threadId);
     this.sharedLiveItems.delete(threadId);
     this.desktopProjectionCache.invalidate(threadId);
@@ -1598,6 +1612,8 @@ export class RuntimeSession {
   }
   history(threadId: string, windowed = false, before?: string) {
     const thread = this.thread(threadId);
+    const readOnly =
+      this.mode === 'shared-runtime' ? this.sharedHistoryAccess.get(threadId) : undefined;
     const currentModel =
       this.runtime instanceof DesktopRuntime ? this.runtime.ipc.modelSettings(threadId) : undefined;
     const receipts = this.state.receipts.filter((value) => value.threadId === threadId);
@@ -1632,9 +1648,19 @@ export class RuntimeSession {
         ...summary,
         pendingAsyncQuestionCount: this.pendingAsyncQuestionCounts().get(threadId) ?? 0,
       },
-      messages: thread.messages,
-      nextCursor: thread.historyCursor ?? null,
+      messages: readOnly ? [] : thread.messages,
+      nextCursor: readOnly ? null : (thread.historyCursor ?? null),
       runtime: {
+        ...(this.mode === 'shared-runtime'
+          ? {
+              canControl:
+                this.ready &&
+                !readOnly &&
+                this.loaded.has(threadId) &&
+                !thread.archived &&
+                thread.state !== 'unknown',
+            }
+          : {}),
         ...(this.runtime instanceof DesktopRuntime
           ? {
               canControl: this.runtime.ipc.hasOwner(threadId),
@@ -1647,10 +1673,10 @@ export class RuntimeSession {
                   : null,
             }
           : {}),
-        state: thread.state,
-        turnId: thread.turnId,
-        plan: thread.plan,
-        proposedPlan: thread.proposedPlan ?? null,
+        state: readOnly ? 'unknown' : thread.state,
+        turnId: readOnly ? null : thread.turnId,
+        plan: readOnly ? [] : thread.plan,
+        proposedPlan: readOnly ? null : (thread.proposedPlan ?? null),
         collaborationMode: thread.collaborationMode ?? null,
         generationSettings: {
           model: currentModel?.model ?? thread.runtimeModel ?? null,
@@ -1659,7 +1685,7 @@ export class RuntimeSession {
           speed: thread.speed ?? null,
         },
         error: thread.error,
-        approvals: [...this.approvals.values()]
+        approvals: (readOnly ? [] : [...this.approvals.values()])
           .filter((v) => v.threadId === threadId)
           .map(
             ({
@@ -1672,12 +1698,26 @@ export class RuntimeSession {
               notificationRequestId: rest.notificationRequestId ?? String(wireId),
             }),
           ),
-        receipts: this.queueReceipts(threadId, receipts, recentReceipts),
+        receipts: readOnly ? [] : this.queueReceipts(threadId, receipts, recentReceipts),
       },
       epoch: this.epoch,
       cursor: this.seq,
       ...(windowed && this.runtime instanceof DesktopRuntime
         ? this.desktopWindow(thread, before)
+        : {}),
+      ...(readOnly
+        ? {
+            threadControlRestriction: readOnly.reason,
+            synchronization: {
+              state: this.options.allowRestrictedSharedHistory
+                ? ('history' as const)
+                : ('unavailable' as const),
+              checkedAt: readOnly.checkedAt,
+            },
+            ...(windowed
+              ? { historyWindow: { version: 1, kind: before ? 'earlier' : 'latest' } }
+              : {}),
+          }
         : {}),
     };
   }
@@ -1839,6 +1879,11 @@ export class RuntimeSession {
       for (const metadata of page.threads) {
         const id = string(metadata.id);
         if (!id) continue;
+        if (isAbsolute(string(metadata.cwd))) {
+          this.sharedCatalogThreads.add(id);
+          if (this.sharedCatalogThreads.size > 4096)
+            this.sharedCatalogThreads.delete(this.sharedCatalogThreads.values().next().value!);
+        }
         const current = this.state.threads.find((thread) => thread.id === id);
         const fields = {
           projectId: string(metadata.projectId) || null,
@@ -2248,10 +2293,12 @@ export class RuntimeSession {
     }
     const pending = this.restoring.get(threadId);
     if (pending) {
-      await this.readWithReplyFence(target, () => pending);
-      return cursor
+      const snapshot = await this.readWithReplyFence(target, () => pending);
+      return cursor || (target && this.mode === 'shared-runtime')
         ? this.openNow(threadId, cursor, target, windowed, admitUnknown, onHistoryPage)
-        : this.history(threadId);
+        : this.mode === 'shared-runtime' && snapshot.threadControlRestriction
+          ? snapshot
+          : this.history(threadId);
     }
     if (this.loaded.has(threadId))
       return this.openNow(threadId, cursor, target, windowed, admitUnknown, onHistoryPage);
@@ -2614,7 +2661,19 @@ export class RuntimeSession {
       );
       if (metadata.id !== threadId || !isAbsolute(string(metadata.cwd)))
         throw new RuntimeError(404, '共享服务没有返回准确对话');
-      this.allowedPath(resolve(string(metadata.cwd)));
+      const restriction = this.sharedDirectoryRestriction(string(metadata.cwd));
+      if (restriction) {
+        this.loaded.delete(threadId);
+        if (target || !this.sharedCatalogThreads.has(threadId))
+          throw this.sharedDirectoryError(restriction);
+        if (this.options.allowRestrictedSharedHistory)
+          return this.readRestrictedSharedHistory(runtime, threadId, restriction, cursor, windowed);
+        if (cursor) throw this.sharedDirectoryError(restriction);
+        this.recordSharedRestriction(threadId, restriction);
+        // Listing a conversation identifies it, but does not authorize reading
+        // its contents. Do not return previously cached records or attachments.
+        return { ...this.history(threadId, windowed), messages: [], nextCursor: null };
+      }
       if (!this.state.threads.some((v) => v.id === threadId))
         this.state.threads.push({
           id: threadId,
@@ -2673,7 +2732,20 @@ export class RuntimeSession {
               object(object(sharedRead.thread).status).type !== 'notLoaded'))
             ? sharedRead
             : await this.readWithReplyFence(target, () =>
-                runtime.call('thread/resume', { threadId: thread.codexId ?? threadId }),
+                (() => {
+                  if (sharedRead) {
+                    const checked = object(sharedRead.thread);
+                    if (checked.id !== threadId || !isAbsolute(string(checked.cwd)))
+                      throw new RuntimeError(
+                        409,
+                        '共享服务返回了不同的对话',
+                        'HOST_THREAD_TARGET_CHANGED',
+                      );
+                    const restriction = this.sharedDirectoryRestriction(string(checked.cwd));
+                    if (restriction) throw this.sharedDirectoryError(restriction);
+                  }
+                  return runtime.call('thread/resume', { threadId: thread.codexId ?? threadId });
+                })(),
               );
       } catch (error) {
         const neverSubmitted = !this.state.receipts.some(
@@ -2706,6 +2778,8 @@ export class RuntimeSession {
       }
       let turns = list(object(result.thread).turns).map(object);
       const metadata = object(result.thread);
+      if (this.mode === 'shared-runtime' && metadata.id !== threadId)
+        throw new RuntimeError(409, '共享服务返回了不同的对话', 'HOST_THREAD_TARGET_CHANGED');
       if (string(result.model ?? metadata.model))
         thread.runtimeModel = string(result.model ?? metadata.model);
       if (this.mode === 'shared-runtime' && Object.hasOwn(metadata, 'reasoningEffort'))
@@ -2760,6 +2834,7 @@ export class RuntimeSession {
         if (changed) {
           // Official events received while reading are newer than that snapshot.
           this.loaded.add(threadId);
+          this.sharedHistoryAccess.delete(threadId);
           this.save();
           return this.history(threadId);
         }
@@ -2804,6 +2879,7 @@ export class RuntimeSession {
         }
       }
       this.loaded.add(threadId);
+      this.sharedHistoryAccess.delete(threadId);
       this.save();
     }
     return this.history(threadId);
@@ -3646,6 +3722,150 @@ export class RuntimeSession {
       throw new RuntimeError(403, '文件超出电脑授权目录');
     return actual;
   }
+  private sharedDirectoryRestriction(cwd: string) {
+    let actual: string;
+    try {
+      actual = realpathSync(cwd);
+      if (!statSync(actual).isDirectory()) return 'project-directory-unavailable' as const;
+    } catch (error) {
+      if (['ENOENT', 'ENOTDIR'].includes(string(object(error).code)))
+        return 'project-directory-unavailable' as const;
+      throw error;
+    }
+    const roots = [
+      this.options.root,
+      this.options.directory,
+      ...(this.options.additionalSharedProjectRoots ?? []),
+    ];
+    for (const root of roots) {
+      try {
+        const actualRoot = realpathSync(root);
+        if (!statSync(actualRoot).isDirectory()) continue;
+        const rel = relative(actualRoot, actual);
+        if (
+          rel !== '..' &&
+          !rel.startsWith('..' + (process.platform === 'win32' ? '\\' : '/')) &&
+          !isAbsolute(rel)
+        )
+          return undefined;
+      } catch (error) {
+        if (!['ENOENT', 'ENOTDIR'].includes(string(object(error).code))) throw error;
+      }
+    }
+    return 'project-not-authorized' as const;
+  }
+  private sharedDirectoryError(
+    reason: NonNullable<ReturnType<RuntimeSession['sharedDirectoryRestriction']>>,
+  ) {
+    return reason === 'project-directory-unavailable'
+      ? new RuntimeError(409, '电脑上的项目目录已不可用', 'HOST_THREAD_DIRECTORY_UNAVAILABLE')
+      : new RuntimeError(403, '此项目尚未开放手机控制', 'HOST_THREAD_PROJECT_NOT_AUTHORIZED');
+  }
+  private async sharedThreadControlFence(threadId: string, target?: ReplyTarget) {
+    if (this.mode !== 'shared-runtime') return;
+    const runtime = this.runtime;
+    const epoch = this.epoch;
+    const metadata = object(
+      (
+        await this.readWithReplyFence(target, () =>
+          runtime.call('thread/read', { threadId, includeTurns: false }),
+        )
+      ).thread,
+    );
+    if (metadata.id !== threadId || !isAbsolute(string(metadata.cwd)))
+      throw new RuntimeError(404, '共享服务没有返回准确对话');
+    const check = () => {
+      if (!this.ready || this.runtime !== runtime || this.epoch !== epoch)
+        throw new RuntimeError(503, 'Codex 运行时已变化，请重试', 'CODEX_RUNTIME_DISCONNECTED');
+      if (this.thread(threadId).archived) throw new RuntimeError(409, '已归档的对话不能执行此操作');
+      const restriction = this.sharedDirectoryRestriction(string(metadata.cwd));
+      if (restriction) {
+        this.loaded.delete(threadId);
+        throw this.sharedDirectoryError(restriction);
+      }
+    };
+    check();
+    return check;
+  }
+  private recordSharedRestriction(
+    threadId: string,
+    reason: NonNullable<ReturnType<RuntimeSession['sharedDirectoryRestriction']>>,
+  ) {
+    const access = { reason, checkedAt: new Date().toISOString() };
+    this.sharedHistoryAccess.delete(threadId);
+    this.sharedHistoryAccess.set(threadId, access);
+    if (this.sharedHistoryAccess.size > 4096)
+      this.sharedHistoryAccess.delete(this.sharedHistoryAccess.keys().next().value!);
+  }
+  private async readRestrictedSharedHistory(
+    runtime: CodexRuntime,
+    threadId: string,
+    reason: NonNullable<ReturnType<RuntimeSession['sharedDirectoryRestriction']>>,
+    cursor?: string,
+    windowed = false,
+  ) {
+    const thread = this.thread(threadId);
+    const epoch = this.epoch;
+    // Legacy app servers expose persisted turns through thread/read only.
+    // Never call resume to read a project outside the control roots.
+    const metadata = object(
+      (
+        await runtime.call('thread/read', {
+          threadId,
+          includeTurns: true,
+        })
+      ).thread,
+    );
+    if (metadata.id !== threadId || !isAbsolute(string(metadata.cwd)))
+      throw new RuntimeError(409, '共享服务返回了不同的对话', 'HOST_THREAD_TARGET_CHANGED');
+    if (this.sharedDirectoryRestriction(string(metadata.cwd)) !== reason)
+      throw new RuntimeError(409, '项目状态已变化，请刷新历史');
+    const paginated = metadata.historyMode === 'paginated';
+    if (cursor && (!paginated || this.sharedHistoryAccess.get(threadId)?.reason !== reason))
+      throw new RuntimeError(409, '历史游标已变化，请刷新', 'HOST_HISTORY_CURSOR_EXPIRED');
+    const page = paginated
+      ? await runtime.call('thread/items/list', {
+          threadId,
+          limit: 100,
+          sortDirection: 'desc',
+          ...(cursor ? { cursor } : {}),
+        })
+      : {
+          data: list(metadata.turns)
+            .flatMap((value) => {
+              const turn = object(value);
+              return list(turn.items).map((item) => ({ turnId: turn.id, item }));
+            })
+            .reverse(),
+          nextCursor: null,
+        };
+    if (
+      !this.ready ||
+      this.runtime !== runtime ||
+      this.epoch !== epoch ||
+      !this.sharedCatalogThreads.has(threadId)
+    )
+      throw new RuntimeError(503, 'Codex 运行时已变化，请重试', 'CODEX_RUNTIME_DISCONNECTED');
+    const messages: Message[] = [];
+    const projected = { ...thread, messages };
+    for (const entry of list(page.data).reverse())
+      await this.upsert(
+        projected,
+        { ...object(object(entry).item), runId: object(entry).turnId },
+        undefined,
+        () => false,
+        false,
+      );
+    if (!this.ready || this.runtime !== runtime || this.epoch !== epoch)
+      throw new RuntimeError(503, 'Codex 运行时已变化，请重试', 'CODEX_RUNTIME_DISCONNECTED');
+    this.recordSharedRestriction(threadId, reason);
+    return {
+      ...this.history(threadId, windowed, cursor),
+      messages,
+      nextCursor: string(page.nextCursor) || null,
+      ...(windowed ? { historyWindow: { version: 1, kind: cursor ? 'earlier' : 'latest' } } : {}),
+    };
+  }
   validateResumableUpload(manifest: UploadManifest) {
     if (manifest.hostId !== this.hostId) throw new RuntimeError(403, '电脑身份不一致');
     if (manifest.purpose === 'attachment') {
@@ -3887,6 +4107,7 @@ export class RuntimeSession {
     item: unknown,
     indexes?: Map<string, number>,
     valid: () => boolean = () => true,
+    includeAttachments = true,
   ): Promise<{ message: Message; referenceText: string } | undefined> {
     const rendered = renderItem(item);
     if (this.mode === 'desktop-runtime') rendered.id = historyIdentity(rendered.id, rendered.runId);
@@ -3904,7 +4125,7 @@ export class RuntimeSession {
       const receipt = this.state.receipts.find(
         (v) => v.threadId === thread.id && v.clientMessageId === clientId,
       );
-      if (receipt) {
+      if (receipt && includeAttachments) {
         rest.text = receipt.reply.text;
         for (const id of receipt.reply.attachmentIds) {
           const file = this.state.attachments.find((v) => v.id === id);
@@ -3928,7 +4149,8 @@ export class RuntimeSession {
       thread.messages.push(message);
     }
     const referenceText = message.text;
-    await this.projectMessageAttachments(thread, message, rendered.paths, item, undefined, valid);
+    if (includeAttachments)
+      await this.projectMessageAttachments(thread, message, rendered.paths, item, undefined, valid);
     return { message, referenceText };
   }
 
@@ -5364,6 +5586,7 @@ export class RuntimeSession {
       }
       this.assertReplyOpen(target);
       check('owner');
+      const checkSharedControl = await this.sharedThreadControlFence(thread.id, target);
       const result = await this.callWithOwnerRecovery(
         thread,
         reply.clientMessageId,
@@ -5399,6 +5622,7 @@ export class RuntimeSession {
               throw new RuntimeError(409, '回复附件实际字节已变化');
           }
           check('execution');
+          checkSharedControl?.();
           if (creation) {
             creation.boundaryAttempted = true;
             creation.boundary.beforeWrite(creation.checkpoint);
@@ -5493,6 +5717,9 @@ export class RuntimeSession {
     }
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
+        const checkSharedControl = await this.sharedThreadControlFence(threadId);
+        if (thread.turnId !== turnId) throw new RuntimeError(409, '任务已变化');
+        checkSharedControl?.();
         onSubmitted?.();
         await this.runtime.call('turn/interrupt', { threadId: thread.codexId ?? threadId, turnId });
         break;
@@ -5576,6 +5803,10 @@ export class RuntimeSession {
       for (const q of approval.questions.map(object))
         if (!answers[string(q.id)]?.length) throw new RuntimeError(400, '请回答所有问题');
     }
+    const checkSharedControl = await this.sharedThreadControlFence(threadId);
+    if (this.approvals.get(id) !== approval || this.thread(threadId).turnId !== turnId)
+      throw new RuntimeError(409, '审批已处理或已过期');
+    checkSharedControl?.();
     await this.runtime.respond(
       approval.wireId,
       approval.kind === 'question'
@@ -5848,6 +6079,11 @@ export class RuntimeSession {
     }
     const threadId = thread.id;
     if (this.mode === 'shared-runtime') {
+      if (
+        this.sharedHistoryAccess.has(threadId) &&
+        !['thread/deleted', 'thread/archived', 'thread/unarchived'].includes(method)
+      )
+        return;
       if (method === 'turn/started') this.sharedLiveItems.set(threadId, new Set());
       if (method.startsWith('item/')) {
         const id = string(params.itemId) || string(object(params.item).id);

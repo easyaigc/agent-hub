@@ -13,6 +13,23 @@
 | **Android** | [下载预览版 APK](https://github.com/easyaigc/agent-hub/releases/download/v0.1.0-android-preview.1/agent-hub-0.1.0-android-preview.1.apk)（Android 8.0+，开发签名） · [版本说明与校验值](https://github.com/easyaigc/agent-hub/releases/tag/v0.1.0-android-preview.1) | [Android 源码与构建说明](apps/android/README.md)                    |
 | **iOS**     | [从 App Store 下载](https://apps.apple.com/app/id6821946521)（目前已确认美国区可下载）                                                                                                                                                                               | [iOS 源码](apps/ios) · [本地构建与安装](#本地构建-ios)（iOS 17.0+） |
 
+## 使用方法
+
+在准备连接的电脑上打开 Codex、EasyWork 或其他具备本地安装配置能力的 Agent。点击下方代码块右上角的复制按钮，将整段提示词粘贴给 Agent 执行。Agent 负责电脑端配置，并逐步指导你完成手机端操作；需要本人完成的系统认证、登录或设备审批时，按提示操作。
+
+```text
+请帮我配置 Agent Hub，让手机可以连接并管理这台电脑上的 Agent 客户端。请实际完成电脑端安装与配置，再指导我完成手机端连接。
+
+1. 克隆 https://github.com/easyaigc/agent-hub.git；如果本机已有该项目，先核对来源、版本及未提交工作，复用合适的目录。阅读仓库 AGENTS.md、README.md、docs/runtime.md，以及 skills/codex-host-connect/SKILL.md 和相关接入说明，按当前操作系统与客户端选择已支持的安装方式，并按仓库要求准备依赖、使用 pnpm 构建。
+2. 检查本机 Codex／EasyWork 的安装、登录和运行状态。Codex 按接入 Skill 配置本地完整 Host，包括当前用户登录后自启、原桌面运行时连接、客户端发现、设备授权，以及当前平台已支持的新建、无项目新建、主动打开、历史阅读、发送续聊、实时状态、停止、审批、附件和聊天管理能力；EasyWork 按仓库说明使用桌面内置 Host。保留已有身份、密钥、配置和用户数据，逐项说明平台限制及尚未就绪的能力。
+3. 检查并安装或复用官方 Tailscale 客户端，将私有控制服务器（Headscale／自定义服务器）配置为 https://headscale.51easyai.com，指导我完成该服务要求的登录、设备注册和审批，确认电脑已加入目标私有网络。已有其他网络或服务配置时，先说明切换影响并保留恢复资料。按实际网络和 Host 支持配置可用的 HTTPS 入口并验证证书，不假定自建 Headscale 支持 Tailscale Serve 或自动提供 .ts.net 地址。
+4. 根据我的手机系统，提供本仓库 README 中的 Agent Hub 下载入口：iOS 使用 App Store，Android 使用预览版 APK；同时指导我安装官方 Tailscale 手机 App，在其自定义服务器设置中填写同一个 https://headscale.51easyai.com，完成登录、必要的设备审批和 VPN 授权，开启连接，确认手机与电脑在同一私有网络且可以互通。
+5. 指导我在 Agent Hub 中添加 Codex／EasyWork 客户端。优先使用当前支持的自动发现或扫码配对；跨网无法发现时，按对应客户端说明使用手动地址或连接码。说明每个字段的用途，提供实际电脑名称、Host HTTPS 地址和适用的目标标识；需要 Host Key 或客户端密钥时，只告知受保护的本机文件位置及填写方法，不把完整密钥输出到聊天或日志。Headscale 控制服务器地址填写在 Tailscale 中，不能作为 Agent Hub 的 Host 地址。
+6. 最后核对手机连接的是这台电脑及所选客户端，指导我查看项目和已有对话、新建测试对话、发送一条测试消息并查看实时回复，在电脑端核对同一结果；再检查其余适用功能。分别记录电脑配置、手机连接和实际功能验证结果；需要跨网络使用时，再验证手机切到蜂窝网络后的连接。遇到可恢复问题请先排查修复，确需本人操作时给出最小步骤，未验证的项目如实标明。
+```
+
+详细接入步骤见 [Codex 接入 Skill](skills/codex-host-connect/SKILL.md)、[EasyWork 接入说明](docs/integrations/easywork-ewdap-1/README.md)和[网络配置](skills/codex-host-connect/references/network.md)。
+
 ## 核心特点
 
 - **多客户端一键切换**：在不同电脑的 Codex、EasyWork 之间快速切换，每个客户端的项目、对话和草稿独立保存。

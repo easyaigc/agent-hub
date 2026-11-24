@@ -4453,6 +4453,11 @@
     "HistoryRecovery": [
       "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryRecovery.kt",
       "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryCacheRecovery.kt"
+    ],
+    "DesktopSharedControl": [
+      "packages/codex-adapter/src/desktop-ipc.ts",
+      "packages/codex-adapter/src/desktop-shared-control.ts",
+      "scripts/desktop-shared-control.test.mjs"
     ]
   },
   "groups": [
@@ -4727,7 +4732,8 @@
         "MobileManagementConflict",
         "AndroidPairedTlsReadonly",
         "AndroidMainIntegration",
-        "ForegroundRecovery"
+        "ForegroundRecovery",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S01", "S03"],
       "ui": ["UI01", "UI03"],
@@ -5313,7 +5319,8 @@
         "HostNativeCursorFrozenRfive",
         "CodexSnapshotSynchronization",
         "IOSReleaseCompatibility",
-        "HistoryRecovery"
+        "HistoryRecovery",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S02", "S11"],
       "ui": ["UI05"],
@@ -5382,7 +5389,8 @@
         "SharedCodexEventPolicy",
         "HostFilteredEventCursor",
         "MobileAcceptedSnapshotOrdering",
-        "EasyWorkOriginalInflightAcceptance"
+        "EasyWorkOriginalInflightAcceptance",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S05", "S11"],
       "ui": ["UI05"],
@@ -5858,7 +5866,8 @@
         "AndroidActionCopy",
         "IOSRecentProjects",
         "AndroidRecentProjects",
-        "DesktopStreamCompatibility"
+        "DesktopStreamCompatibility",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S03", "S13"],
       "ui": ["UI04", "UI02"],
@@ -5917,7 +5926,8 @@
         "AndroidMainIntegration",
         "DesktopStreamCompatibility",
         "EasyWork",
-        "AndroidDesktopOpen"
+        "AndroidDesktopOpen",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S03", "S13"],
       "ui": ["UI04"],
@@ -5976,7 +5986,8 @@
         "AndroidParallelEasyWorkAudit",
         "AndroidParallelAttachmentStorage",
         "DesktopStreamCompatibility",
-        "IOSReleaseCompatibility"
+        "IOSReleaseCompatibility",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S03", "S04"],
       "ui": ["UI04"],
@@ -6942,7 +6953,8 @@
         "AndroidPreNativeRecovery",
         "AndroidKnownNativeFailureAdmission",
         "AndroidOwnedProfileReadOnlyAdmission",
-        "AndroidPostSecondOwnedQaAdmission"
+        "AndroidPostSecondOwnedQaAdmission",
+        "DesktopSharedControl"
       ],
       "scenarios": ["S03", "S10", "S11"],
       "ui": ["UI04", "UI10"],
@@ -26481,6 +26493,17 @@
         "apps/ios/Sources/SessionStore.swift": "c86741c307f5e086704dbbf739dca46e669a667fc761355cced4fdaf8e01e268",
         "packages/codex-adapter/src/runtime-session.ts": "acf0c5755c947bcac8e1dad281206d9dc9cb15b84a273a5508036cb7ba6c36ef",
         "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "e3efa863e50c3c63964a245b084f2f5a4aa9e25182e4a3d1dbdf53e250c9db5a"
+      }
+    },
+    {
+      "id": "desktop-shared-control-transport-20261124",
+      "baseCommit": "138135cb7e07a24703df746cce4df8773ff5b698",
+      "features": ["F05", "F17", "F18", "F26", "F28", "F29", "F43"],
+      "summary": "When the original follower socket is absent/refused, verify the existing Electron-owned shared service and adapt loaded-thread observation/control without changing machine identity, credentials, speed defaults or immutable submissions. Source and auxiliary checks do not imply phone acceptance.",
+      "files": {
+        "packages/codex-adapter/src/desktop-ipc.ts": "e755602e2cfd332dd10b6a21f5c1f62ec9cb9092444d184d004e55162243394e",
+        "packages/codex-adapter/src/desktop-shared-control.ts": "3f811f69b67125541b5afec74097351eb3a08a4647aecd06ea26d5c425f6f0b2",
+        "scripts/desktop-shared-control.test.mjs": "13fdda9644aac9afb36efd3c5a6e1d40528113b91ed32bd7fed37ef8b8738b21"
       }
     }
   ]

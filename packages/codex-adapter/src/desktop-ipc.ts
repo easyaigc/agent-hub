@@ -11,6 +11,7 @@ import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { CodexHistoryReader } from './history-reader.js';
 import { DesktopInstallation } from './desktop-installation.js';
+import { DesktopSharedControl } from './desktop-shared-control.js';
 import {
   subagentActivityStatus,
   subagentIds,
@@ -411,9 +412,14 @@ export class DesktopIpc {
           cleanup();
           resolve();
         };
-        const failed = () => {
+        const failed = (error?: unknown) => {
           cleanup();
-          reject(new Error('Desktop IPC startup closed'));
+          const code = (error as NodeJS.ErrnoException | undefined)?.code;
+          reject(
+            Object.assign(new Error('Desktop IPC startup closed'), {
+              ...(code === 'ECONNREFUSED' || code === 'ENOENT' ? { code } : {}),
+            }),
+          );
         };
         const cleanup = () => {
           socket.removeListener('connect', connected);
@@ -1183,7 +1189,7 @@ export class DesktopRuntime {
   private subagentHistoryOffset = 0;
   private subagentsClosed = false;
   private parentSubagents = new WeakMap<WireObject, ParentSubagents>();
-  readonly ipc: DesktopIpc;
+  ipc: DesktopIpc | DesktopSharedControl;
   readonly reader: CodexHistoryReader;
   version = '';
   private connecting: Promise<void> | undefined;
@@ -1211,6 +1217,14 @@ export class DesktopRuntime {
     );
     this.installation = new DesktopInstallation(options, hostId);
     this.reader = new CodexHistoryReader(hostId, name, options.executable);
+    this.bindIpc();
+    // Metadata has its own subprocess and recovery fence. A failed read must
+    // not tear down a healthy execution owner or its live desktop snapshots.
+    this.reader.onDisconnect = () => {
+      if (!this.closed) this.onMetadataDisconnect();
+    };
+  }
+  private bindIpc(): void {
     this.ipc.onSnapshot = (threadId, state) => {
       // Child snapshots never become top-level chats or grant execution control.
       this.onEvent('desktop/snapshot', { threadId, state });
@@ -1225,11 +1239,6 @@ export class DesktopRuntime {
       this.onEvent('desktop/observation', { threadId, observation });
     this.ipc.onModelSettings = (threadId) => this.onEvent('desktop/model-settings', { threadId });
     this.ipc.onDisconnect = () => this.onDisconnect();
-    // Metadata has its own subprocess and recovery fence. A failed read must
-    // not tear down a healthy execution owner or its live desktop snapshots.
-    this.reader.onDisconnect = () => {
-      if (!this.closed) this.onMetadataDisconnect();
-    };
   }
   get ready(): boolean {
     return this.installation.available && this.ipc.ready && this.reader.ready;
@@ -1662,7 +1671,30 @@ export class DesktopRuntime {
     if (!this.reader.ready) await this.reader.connect();
     check();
     try {
-      if (!this.ipc.ready) await this.ipc.connect();
+      if (!this.ipc.ready) {
+        try {
+          await this.ipc.connect();
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException)?.code;
+          // A missing/refusing legacy endpoint is a transport change, not a
+          // reason to discard the original machine target or reader. Protocol
+          // and permission failures never authorize a fallback.
+          if (
+            !(this.ipc instanceof DesktopIpc) ||
+            process.platform !== 'darwin' ||
+            !this.options.sharedWebsocketUrl ||
+            !['ENOENT', 'ECONNREFUSED'].includes(code ?? '')
+          )
+            throw error;
+          this.ipc.close();
+          this.ipc = new DesktopSharedControl(
+            this.options.sharedWebsocketUrl,
+            installed.executable,
+          );
+          this.bindIpc();
+          await this.ipc.connect();
+        }
+      }
       check();
     } catch (error) {
       this.ipc.close();

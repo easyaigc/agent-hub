@@ -397,6 +397,10 @@
             }
           ]
         },
+        "threadControlRestriction": {
+          "type": "string",
+          "minLength": 1
+        },
         "historyRevision": {
           "oneOf": [
             {

@@ -1653,7 +1653,7 @@ struct RootView: View {
             if !accessibleEasyWorkToolbar { toolbarWithNativeGeometry }
           }
           .overlay(alignment: .bottom) {
-            if store.client != nil {
+            if store.client != nil && !store.conversationReadOnly {
               composer.environment(\.chatReadingCovers, readingCovers)
                 .environment(\.chatReadingContext, store.readingContextKey).background {
                 GeometryReader { size in
@@ -2237,8 +2237,10 @@ struct RootView: View {
                       Text(failure).lineLimit(3)
                     }
                     Spacer(minLength: 0)
-                    Button(L10n.tr("重试")) { Task { await store.retryConversationRead() } }
-                      .disabled(store.historyLoading).accessibilityIdentifier("conversation-sync-retry")
+                    if !store.conversationReadOnly {
+                      Button(L10n.tr("重试")) { Task { await store.retryConversationRead() } }
+                        .disabled(store.historyLoading).accessibilityIdentifier("conversation-sync-retry")
+                    }
                   }.font(.caption).padding(10).background(.regularMaterial)
                 }
               }

@@ -49,7 +49,7 @@ data class MobileHistory(val hostId: String, val threadId: String, val messages:
     val runtimePresent: Boolean = false, val runtime: MobileRuntime? = null, val epoch: String? = null, val cursor: Long? = null,
     val windowed: Boolean = false, val historyRevision: Long? = null,
     val historyWindowKind: String? = null, val synchronization: MobileHistorySynchronization? = null,
-    val readState: ThreadReadState? = null)
+    val readState: ThreadReadState? = null, val threadControlRestriction: String? = null)
 data class MobileHistorySynchronization(val state: String, val checkedAt: String? = null)
 
 /** Bounded pre-revision V9 compatibility only; it is not a history stability proof. */
@@ -131,7 +131,8 @@ object HostReadCodec {
         it.put("messages", JSONArray())
         return MobileHistory(host, thread, messages, it.optional("nextCursor"), scope,
             runtime?.optional("state") ?: "idle", runtime?.optional("turnId"), it.toString(), runtime != null,
-            runtime?.let { MobileRuntime.decode(it,host,thread) },it.optional("epoch"),if(it.has("cursor") && !it.isNull("cursor")) it.getLong("cursor") else null,windowed,revision,windowKind,synchronization,readingThread?.let(NativeThreadReadingWire::state))
+            runtime?.let { MobileRuntime.decode(it,host,thread) },it.optional("epoch"),if(it.has("cursor") && !it.isNull("cursor")) it.getLong("cursor") else null,windowed,revision,windowKind,synchronization,readingThread?.let(NativeThreadReadingWire::state),
+            (it.opt("threadControlRestriction") as? String)?.takeIf { it.isNotEmpty() })
     }
 }
 

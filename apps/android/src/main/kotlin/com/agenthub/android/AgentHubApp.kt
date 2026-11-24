@@ -156,11 +156,11 @@ import com.agenthub.core.*
                         // Keep natural control heights when the IME leaves a short
                         // viewport; every control can then be scrolled into view.
                         Column(Modifier.fillMaxWidth().verticalScroll(bottomScroll).testTag("bottom-controls")) {
-                            if (!session.selectedClient.isDemo && !session.canCompose) Text(productText(if(session.selectedClient.migrationEasyWork!=null) NativeMigrationEasyWorkGate.STATUS else if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。"),Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                            if (!session.selectedClient.isDemo && !session.canCompose && session.conversationSyncIssue?.readOnly!=true) Text(productText(if(session.selectedClient.migrationEasyWork!=null) NativeMigrationEasyWorkGate.STATUS else if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。"),Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
                             if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null,inlineToolApprovals=inlineToolApprovals,noticeVisibility=noticeBinding); GenerationControls(session,compactLayout=inlineToolApprovals) { openSheet("generation") } }
                             QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
                             StorageIdentityNotice(session)
-                            CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null,onAttachmentPreview={ if(it)session.coverPanelNotices();attachmentPreview=it }) { composerFocused=it } }
+                            if(session.conversationSyncIssue?.readOnly!=true) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null,onAttachmentPreview={ if(it)session.coverPanelNotices();attachmentPreview=it }) { composerFocused=it } }
                         }
                     }
                 }
@@ -516,14 +516,16 @@ import com.agenthub.core.*
     Row(Modifier.fillMaxWidth().background(colors.surface).padding(10.dp).testTag("conversation-sync-banner"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.Top) {
         ProductIcon("conversation-sync",Modifier.padding(top=2.dp).size(16.dp),colors.onSurfaceVariant)
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
-            Text(issue.title,Modifier.testTag("conversation-sync-failure"),fontSize=12.sp,fontWeight=FontWeight.SemiBold)
-            Text(issue.message,fontSize=12.sp,color=colors.onSurfaceVariant,maxLines=3,overflow=TextOverflow.Ellipsis)
+            Text(productText(issue.title),Modifier.testTag("conversation-sync-failure"),fontSize=12.sp,fontWeight=FontWeight.SemiBold)
+            Text(if(issue.readOnly) productText(issue.message) else issue.message,fontSize=12.sp,color=colors.onSurfaceVariant,maxLines=3,overflow=TextOverflow.Ellipsis)
         }
-        val enabled=!session.historyLoading
-        Box(Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("conversation-sync-retry").clickable(
+        if (!issue.readOnly) {
+          val enabled=!session.historyLoading
+          Box(Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("conversation-sync-retry").clickable(
             interactionSource=remember { androidx.compose.foundation.interaction.MutableInteractionSource() },indication=null,enabled=enabled,role=androidx.compose.ui.semantics.Role.Button,
             onClick={ session.loadHistory(userInitiated=true) }).padding(horizontal=8.dp),contentAlignment=Alignment.Center) {
             Text(productText("重试"),fontSize=12.sp,color=if(enabled)colors.onSurface else colors.onSurfaceVariant.copy(alpha=.5f))
+          }
         }
     }
 }

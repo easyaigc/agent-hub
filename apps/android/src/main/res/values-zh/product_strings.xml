@@ -280,6 +280,11 @@
     <string name="product_b5e1bb61b32e8e5273a4727b" formatted="false">"删除 "</string>
     <string name="product_9ca4b75d03266b03676668d7" formatted="false">"到期时间"</string>
     <string name="product_81f87a284eb188cd4f90468e" formatted="false">"刷新传输记录"</string>
+    <string name="product_4ea6291f2cfea4e072f32285" formatted="false">"此对话暂不可用"</string>
+    <string name="product_46b5def10ac3d53d2307821d" formatted="false">"仅可查看历史"</string>
+    <string name="product_763b2a0a84b0013a4bc7b059" formatted="false">"此项目尚未开放手机控制。请在电脑端为该项目开启授权。"</string>
+    <string name="product_d9c311a0eed4585204322c0f" formatted="false">"电脑上的项目目录已不可用。请检查该目录。"</string>
+    <string name="product_4e6b169df93606806d197f50" formatted="false">"电脑暂未开放此对话的手机控制。"</string>
     <string name="product_a2e016a613dbb634bdc8c0d6" formatted="false">"刷新历史"</string>
     <string name="product_c6cefa9e4d57fe3a73d7aa68" formatted="false">"刷新并采用最新版本"</string>
     <string name="product_348da32a18742f1b5c2b99e6" formatted="false">"刷新执行记录"</string>

@@ -525,6 +525,7 @@ struct HistorySnapshot: Codable {
   var cursor: Int?
   var historyWindow: HistoryWindow? = nil
   var synchronization: ConversationSynchronization? = nil
+  var threadControlRestriction: String? = nil
   var historyRevision: Int? = nil
 }
 

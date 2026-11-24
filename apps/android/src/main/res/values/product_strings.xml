@@ -280,6 +280,11 @@
     <string name="product_b5e1bb61b32e8e5273a4727b" formatted="false">"Delete "</string>
     <string name="product_9ca4b75d03266b03676668d7" formatted="false">"Expires"</string>
     <string name="product_81f87a284eb188cd4f90468e" formatted="false">"Refresh transfer records"</string>
+    <string name="product_4ea6291f2cfea4e072f32285" formatted="false">"Conversation unavailable"</string>
+    <string name="product_46b5def10ac3d53d2307821d" formatted="false">"History only"</string>
+    <string name="product_763b2a0a84b0013a4bc7b059" formatted="false">"Mobile control is not enabled for this project. Enable access on the computer."</string>
+    <string name="product_d9c311a0eed4585204322c0f" formatted="false">"The project folder is no longer available. Check it on the computer."</string>
+    <string name="product_4e6b169df93606806d197f50" formatted="false">"The computer has restricted mobile control of this conversation."</string>
     <string name="product_a2e016a613dbb634bdc8c0d6" formatted="false">"Refresh history"</string>
     <string name="product_c6cefa9e4d57fe3a73d7aa68" formatted="false">"Refresh and adopt latest version"</string>
     <string name="product_348da32a18742f1b5c2b99e6" formatted="false">"Refresh execution records"</string>

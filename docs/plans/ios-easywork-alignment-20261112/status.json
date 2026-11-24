@@ -6063,7 +6063,7 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 548,
+  "revision": 549,
   "updatedAt": "2026-11-24",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
@@ -18495,6 +18495,16 @@
       "iosSimulatorCloseoutSha256": "e942205dc4b7e1b3025583aac9543fa10dac618e04b434fe2e0784f1ceda6c81",
       "sourceInputManifestSha256": "ccfbf72dd3186eca9d4245137b06baf1b8678da266974abc4d1a49205ae324dd",
       "additionalSourceCloseoutSha256": "182f566ce4646e706ea12b911eae2e107d683b9aac9749e25e1d58a6827c310b"
+    },
+    "LIFE01-SOURCE-MAIN-INTEGRATION-AND-PUSH-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "7f22db2b3b5fe9419c0651bba8537e23f43463f7",
+      "sourceTree": "8d00ece0eebbd7da561c1fee6013dd95d73a6df2",
+      "mobileEnvironment": "not-required",
+      "environment": "Current repository actual Gitea origin/main; actual Terra medium official turn_context verified; Node24 complete combined workspace check",
+      "path": "private life01-completion-20261123/delivery/source-main-delivery-review.json",
+      "sha256": "172c5c5a8726c5e76cace6140fa8a5a3d09b0ff88a4d521e68f44686890a6e61",
+      "scope": "Actual local commit3bbf preserves68approvedLIFE01 files; source merge7f22 includes origin3998 and localmetadata73d9/11aa. Full combined pnpmcheck0 at immutable20stagedfile/tree and52mobile source scope; raw whole-workspace stability false from unrelated unstagedF69 doc, explicitly excluded and preserved. Normal push and independent remoteSHA/parents/tree/ancestry confirmed. Source integration only: original native/real scopes and unverified matrix stay unchanged, no package deployment. Subsequent R549 document record separately pushed; final documentation SHA kept in private receipt."
     }
   },
   "openItems": [
@@ -20376,11 +20386,11 @@
       "relatedFeatureIds": ["F08", "F17", "F28", "F43", "F48", "F52", "F02", "F73", "F55"],
       "extensionFeatureIds": ["F76"],
       "kind": "user-requested-foreground-lifecycle-repair",
-      "developmentState": "pending-integration",
+      "developmentState": "implemented-scoped",
       "acceptanceState": "historical-partial",
-      "deliveryState": "candidate-not-integrated",
-      "executionState": "in-progress",
-      "owner": "当前LIFE01主协调会话负责语义合并；本机Terra medium负责既定检查与提交推送",
+      "deliveryState": "integrated-not-deployed",
+      "executionState": "planned",
+      "owner": "当前LIFE01主协调会话；本轮提交推送按实际Terra medium执行并由主会话核远端",
       "evidenceRefs": [
         "LIFE01-ASTRA-ULTRA-FINAL-PLAN-20261122",
         "LIFE01-SWIFT-PRODUCER-AUX-AND-CANDIDATE-20261123",
@@ -20433,11 +20443,12 @@
         "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124",
         "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124",
         "LIFE01-R546-FINAL-STABLE-CHECK-AND-IOS-BUILD-20261124",
-        "LIFE01-FINAL-STAGE-RESOURCE-CLOSEOUT-20261124"
+        "LIFE01-FINAL-STAGE-RESOURCE-CLOSEOUT-20261124",
+        "LIFE01-SOURCE-MAIN-INTEGRATION-AND-PUSH-20261124"
       ],
-      "ios": "本地候选已接入生产调用链：前后台共享读、四客户端失败/迁移门禁、冷阅读及跨旧writer恢复修复。最终源/pbx原生五阶段、普通耗尽冷启、队列/预算/实际进程中断、修订/nooverlap及旧移除重加负向通过；真实EasyWork LAN/DEVRelay/预览/原ID上传及原设备回执各按实际指纹范围保留。R2只有模块级新增family零I/O，部分逐安装二进制指纹缺失明确登记。",
+      "ios": "已集成主线生产调用链：前后台共享读、四客户端失败/迁移门禁、冷阅读及跨旧writer恢复修复。最终源/pbx原生五阶段、普通耗尽冷启、队列/预算/实际进程中断、修订/nooverlap及旧移除重加负向通过；真实EasyWork LAN/DEVRelay/预览/原ID上传及原设备回执各按实际指纹范围保留。R2只有模块级新增family零I/O，部分逐安装二进制指纹缺失明确登记。",
       "desktop": "实际EasyWork当前bb73与历史651e4同profile只读兼容和切回已双端留证；最终Android78d对当前Host联验及原桌面completed记录复核完成，无新增模型输入。新设备查询原设备回执null是隔离负向，不当成原设备正向。原sole model root及iOS零模型元数据操作保留；正式发行签名/生产OIDC/公网VPN不由DEV证据代替。",
-      "nextAction": "本轮源码已提交3bbf7ffc；主协调会话合并origin/main3998d598的Host持久化/标题修复并保留73d9/11aa元数据读取恢复，组合完整check通过后正常提交合并并推送origin/main。未验的真实矩阵范围和部署结论保持。",
+      "nextAction": "LIFE01源码和远端Host持久化/标题修复已组合进入Gitea origin/main，未部署新手机包或Host。继续原矩阵真实网络停顿下在途写、底层资源峰值、预览未知态及正式发行组合等未验子项；F52/F54跳过与A6/F75等暂停保持。",
       "updatedAt": "2026-11-24",
       "plan": "docs/plans/mobile-foreground-connection-20261122.md",
       "planState": "final-reviewed",
@@ -20466,7 +20477,7 @@
         "BG2": "implemented-candidate-controlled-red-green-verified",
         "BG3": "implemented-candidate-preview-and-preferences-scoped-verified",
         "BG4": "scoped-native-real-desktop-version-tests-completed; explicit-broader-subcases-unverified",
-        "BG5": "local-source-commit-saved; integrating-current-Gitea-main-before-normal-push"
+        "BG5": "source-committed-and-integrated-into-Gitea-main; no-deployment"
       },
       "acceptanceMatrix": [
         {
@@ -20909,7 +20920,7 @@
         "Android actual inspection lease、iOS完整R2 App/Admission与部分逐安装包指纹未具备证据；R2模块零I/O和生产源/pbx证据分别保留。",
         "最终真实Host冷启只证明缓存/草稿/离线/canStopfalse；全部发送/新建/freshness断言由受控原生及早前真实停服的准确原范围分列，不升级本次实际Host冷态全权限通过。"
       ],
-      "localStageState": "user-authorized-main-delivery-in-progress",
+      "localStageState": "source-delivered-to-remote-main; broader-acceptance-remains-partial",
       "resourceCloseout": {
         "state": "completed-owned-resources-released; verified-source-only-archives-and-minimum-evidence-retained",
         "released": "任务专用Android AVD/模拟器/端口/构建输出；iOS模拟器/fixture/DerivedData/测试App；iOS R6及Android R4独立源码目录已逐文件归档读回后移除；无共享依赖随链接删除。单次产品测试聊天已官方归档且独立核实。",
@@ -20949,7 +20960,7 @@
         "testModel": "actual gpt-6.1-terra/medium independently verified from each exact official turn_context",
         "speedLimitation": "formal subagent API exposes no speed; no serviceTier in actual records",
         "modelInputPolicy": "原Codex单次输入封存不重发；真实EasyWork必要新任务先登记唯一不可变意图并协调双端归属。只读/回执不新增模型。",
-        "remainingStatus": "继续按矩阵明确剩余子项：真实网络停顿下在途原写/回执与内部owner-listener-socket占位、预览创建/关闭未知态真实UI、尚缺正式发行组合。当前源码尚未提交/合入/部署，不自动发布。F52/F54推送跳过、A6/F75等暂停保持；原工具拒绝不绕过。",
+        "remainingStatus": "LIFE01源码和远端Host持久化/标题修复已组合进入Gitea origin/main，未部署新手机包或Host。继续原矩阵真实网络停顿下在途写、底层资源峰值、预览未知态及正式发行组合等未验子项；F52/F54跳过与A6/F75等暂停保持。",
         "updatedAt": "2026-11-24",
         "localProgress": {
           "realEasyWork": "Final Android78d actual bb73 LAN/DEVRelay/history/body/Home and Host stop cold cache/draft offline then reconnect pass; no new model write. Actual cold proof only onlinefalse/canStopfalse, send/create/freshness not asserted. Earlier iOS actual same-code transport/preview/upload retained separately.",
@@ -20957,13 +20968,13 @@
           "compatibility": "Both new apps vs actual historical651e4 source Host and returncurrentbb73 passed scoped same-binding reads. Complete Android568e old-source/current candidate same-profile cycle passed with original journal; iOS complete6f65 Simulator build115 cycle and finalcurrent read passed before separate test-reset incident. Formal release binaries and all data assertions unverified.",
           "receiptBoundary": "Original same-device positive retained; final newEWDAP device actual LAN2/Relay1 old op status oktrue/null is expected isolation and original desktop remainscompleted. Initial positive test assumption fail preserved; no replay/no new root model input.",
           "rootGui": "independent actual EasyWork AX observed; Codex original CUA prohibition not bypassed",
-          "combinedSource": "Source03490954 + frozen LIFE01 WIP + mechanical localization supplement; source manifest pinned privately. Pure iOS build, Android168 JVM, native cold paging dual-platform and Android actual LAN/Relay original-receipt lifecycle slices passed; exact package scopes preserved.",
+          "combinedSource": "Source integration 7f22db2b3b5fe9419c0651bba8537e23f43463f7 combines complete LIFE01 commit3bbf with remote3998d598 and local metadata recovery73d9/11aa. Native52source hashes unchanged; Host runtime composition reviewed and full combined workspace check passed. This is source delivery, not a new deployed runtime proof.",
           "iosReadTimeout": "cc77 exact native original red-green2/2, producer3/3, cap/lateowner1/1 and persistent6/6; actual DEVRelay postHome read deltas separately passed. New passive-reader/terminal recovery candidate source scope tracked independently.",
           "upload": "Same original transfer600000 bytes completed; prepare1,four distinct offsets each1,complete1, independent SHA and bytes match. Native original failures/staged recovery separate, no model input/re-prepare/chunk0 replay.",
           "hostStop": "Both actual Host stop+Home31 controls/cache passed with earlier stated8.166s/conditional-label limits; historical651e4 read and current bb73 return independently witnessed on both devices. Root model turn remains1.",
           "androidActivityOwner": "Actual native original red-green,20 natural distinct Activities one physical pump, Home31/rotation and same-profile old/current cycle passed; final persistent main-tree owner3/3 verifies20 reopens, share/rotation once and synthetic capturedPOST once. Natural fresh notification and version-cycle attachment not promoted.",
           "iosTestIncident": "Original profile thirteen semantic fields plus marker/draft preserved; standalone exact readonly original status now1/1 found completed, one real Host GET, unchanged strict guard. Container UUID remapping reconciled; original reset incident not hidden.",
-          "workspaceChecks": "R546 stable complete pnpmcheck0 ~950.5s and normal pnpm build:ios0; before/after HEAD/fulltracked diff+selected pins unchanged. R547 documentation-only update separately passed renderer --write/--check, complete check:mobile-parity, scoped Prettier and git diff --check. Current52changed/untracked non-doc source SHA snapshot retained privately; no business code changes after fullcheck.",
+          "workspaceChecks": "R546 frozen mobile pnpmcheck0 and normal iosbuild0 retained under unchanged52native source files. Merge with remote3998d598 additionally passed complete pnpmcheck before normal push; approved20-file staged tree and all52mobile sources stayed unchanged, while one unrelated working-only F69 row changed and was explicitly excluded. Postdelivery record only changes canonical docs/views; renderer/format/parity checked separately.",
           "terminal401": "Both platforms final native terminal401/Home automatic-stop and real retry controls pass; iOS also discovery10s retry red-green. Current assertions are synthetic native boundaries, not all real revocation/TLS combinations.",
           "versions": "Final dual new-old-new-old-new retained early prefix/exhaustedcursor/revision/viewport and original data. Android old source568e APK02b; iOS6f65 App115. Formal signed binaries not claimed; original red and exact identity gaps retained.",
           "preview": "Actual EasyWork normal iOS LAN1/1 and independent two create/close ID pairs passed; task grant precisely revoked and original grants preserved; exclusive sim/controller/derived/site released.",
@@ -20986,11 +20997,11 @@
             "apps/ios/CodexManage.xcodeproj/project.pbxproj": "bf8b9772319e45a5372b90a682c2eb26245894e91063f8f4cdc625ddfc0dd4c6",
             "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt": "efa3cca3312d9bb7e308b9492b51ed387ed815497e2774795e353448b1d0af57"
           },
-          "state": "Exact final production source frozen fullcheck0 and normal iosbuild0; final native/real scopes passed as registered. WIP not committed/integrated/deployed; full14row cross-product not closed."
+          "state": "Native exact candidate source committed3bbf and integrated into remote main; full combined workspace check0. Existing native/real evidence retains original package/source scopes; no new deployment or whole14row acceptance."
         },
         "workflowInterruption": "Earlier3 agents officially interrupted/notLoaded after runtime update; duties reissued explicitTerra/medium and actual turn_context verified. Original3 archived through formal tool and independent metadata. Actual background processes/state reconciled, no blind replay. CUA removed; prior actual GUI evidence retained, no bypass.",
-        "currentWorkspaceHead": "3bbf7ffc77e1798e99cedb7489755af38124d7d9",
-        "currentWorkspaceHeadNote": "完整LIFE01源码和R547台账68文件本地提交；parent11aa保留原两个Host元数据读取修复。当前正在合并远端3998d598，尚未推送。",
+        "currentWorkspaceHead": "7f22db2b3b5fe9419c0651bba8537e23f43463f7",
+        "currentWorkspaceHeadNote": "Gitea main已推送并独立核同SHA；保存3bbf的LIFE01代码、73d9/11aa元数据读取恢复，以及3998d598的Host持久化/标题改动。后续文档交付记录单独提交，不改变源指纹。",
         "stageCloseout": {
           "archivedCompletedRecoveryThreads": [
             "01a2083e-52b5-78c0-b6ce-ec1d4c4bdb66",
@@ -21033,7 +21044,7 @@
           }
         },
         "storageAmendment": {
-          "state": "implemented-final-side-layout; scoped-native-real-smoke-green; not-integrated",
+          "state": "implemented-final-side-layout; scoped-native-real-smoke-green; source-in-main-not-deployed",
           "reviewEvidence": "LIFE01-T12-ASTRA-ULTRA-AMENDMENT-20261124",
           "readingCarrier": "persist real existing reader identity before companion; loaded nil/different marker invalidates prior index before new stamp",
           "publication": "one bounded independent encrypted body/index family in same authorized namespace/generation; same serial owner epoch, body then index, viewport small update",
@@ -21055,16 +21066,23 @@
           "sourceFiles": 68,
           "sourceParent": "11aa51b0167df92167f5a9be053f10722328a94a",
           "remoteMainAtFetch": "3998d598dfba4efce85794f308e885766771b77b",
-          "state": "local-committed-remote-integration-validation-pending",
+          "state": "source-merged-and-pushed-origin-main-verified",
           "localCommitEvidence": "private life01-completion-20261123/delivery/local-commit-receipt.json",
           "mergeReview": "private life01-completion-20261123/delivery/merge-resolution-review.json",
           "mergeReviewSha256": "453d189a7f45dca6884f3f85a0bc3f8d2f0a923f676653a9da4c1def7b557537",
           "actualExecutionModel": "gpt-6.1-terra / medium, official turn_context root verified",
           "speedLimitation": "formal entry has no speed parameter; actual service_tier null",
-          "nativeSourceReuse": "52non-doc source SHA unchanged from R547 before commit. Remote additions affect Host TS/docs; pure native App build and original native/real subcases retain exact source-only scopes. Full combined workspace check required for new integration."
+          "nativeSourceReuse": "52non-doc source SHA unchanged from R547 before commit. Remote additions affect Host TS/docs; pure native App build and original native/real subcases retain exact source-only scopes. Full combined workspace check required for new integration.",
+          "integrationCommit": "7f22db2b3b5fe9419c0651bba8537e23f43463f7",
+          "verifiedRemoteMainAtSourceDelivery": "7f22db2b3b5fe9419c0651bba8537e23f43463f7",
+          "scope": "source delivery only; no package deployment, formal released-binary matrix or new physical acceptance",
+          "followup": "This delivery record is a documentation-only followup; final record commit SHA is tracked in private delivery receipt to avoid self-reference.",
+          "evidenceRef": "LIFE01-SOURCE-MAIN-INTEGRATION-AND-PUSH-20261124",
+          "concurrentWork": "Other task F69 one-line working-only update preserved and excluded from both source and followup document commits.",
+          "validationScope": "Full pnpmcheck0 with approved staged tree and business source unchanged; concurrent unstagedF69 excluded, raw whole-workspace inputsStable=false preserved."
         }
       },
-      "android": "本地候选已接入生产调用链：单进程Activity重开复用、被动读门禁、独立加密阅读恢复及F55旧格式投影。最终78d包五阶段、合法EW本地ID缓存与新旧导出/读取、真实stream budget/冷启及最终实际EasyWork LAN/DEVRelay读取/Home/离线恢复通过限定子项。实际inspection lease和全权限冷态联验未扩签。"
+      "android": "已集成主线生产调用链：单进程Activity重开复用、被动读门禁、独立加密阅读恢复及F55旧格式投影。最终78d包五阶段、合法EW本地ID缓存与新旧导出/读取、真实stream budget/冷启及最终实际EasyWork LAN/DEVRelay读取/Home/离线恢复通过限定子项。实际inspection lease和全权限冷态联验未扩签。"
     }
   ],
   "acceptanceScenarios": [
@@ -30471,6 +30489,14 @@
       "date": "2026-11-24",
       "kind": "life01-user-authorized-main-delivery-preparation",
       "scope": "用户授权提交并推送远程主线；准确68文件已由实际Terra medium提交3bbf7ffc，工作区提交后干净。remote已前进3998d598，主会话完成六份文档/manifest语义合并；Host源码自动组合后逐字核对保留metadata恢复与标题规范化。当前组合检查和正常main推送待执行，不把本地提交当远端交付或新增矩阵通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 549,
+      "date": "2026-11-24",
+      "kind": "life01-source-integrated-and-pushed-to-gitea-main",
+      "scope": "组合完整检查通过，LIFE01代码3bbf与本地metadata恢复73d9/11aa及远端3998d598持久化/标题修复已正常合并推送Gitea main，独立远端SHA核对一致。源码进入主线只更新开发/交付状态，未验矩阵和部署/真机结论不升级；本修订为随后文档交付记录。",
       "newProductAcceptancePasses": 0,
       "newProductAcceptanceModelTurns": 0
     }

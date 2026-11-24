@@ -81,6 +81,42 @@ class NativeSessionStorage private constructor(context: Context, private val nam
     }
     private var inspection: NativeLocalInspectionFilesV2?=null
     internal val localInspectionOnly get()=inspection!=null
+    // Reading recovery is a new cache family, never an extension of a narrow
+    // inspection/migration/original-owner grant. Ordinary existing namespaces
+    // and keys still use the normal product capability.
+    internal val canUseReadingRecovery get()=!retiredWriter&&!existingReadOnly&&!migrationReadOnly&&
+        !localInspectionOnly&&ownedPolicy==null&&!strictMigration&&migrationPolicy==null
+    internal val readingRecoveryNamespace: String get() {
+        check(canUseReadingRecovery)
+        return namespace+":"+(writableGeneration.getOrThrow() ?: "base")
+    }
+    // Construct this path only after the capability check. It is outside the
+    // old closed migration inventory, but shares the real key and generation.
+    private val readingRecoveryHome={File(context.noBackupFilesDir,"ReadingRecovery-v1")}
+    private fun readingRecoveryFile(name: String,create: Boolean=false): AtomicFile {
+        check(canUseReadingRecovery)
+        require(name=="reading-recovery-v1"||name.matches(Regex("reading-recovery-v1:body:[a-f0-9-]{36}")))
+        val home=readingRecoveryHome();val directory=File(home,digest(readingRecoveryNamespace))
+        for(folder in listOf(home,directory)) {
+            if(java.nio.file.Files.exists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                require(java.nio.file.Files.isDirectory(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&!java.nio.file.Files.isSymbolicLink(folder.toPath()))
+            else if(create) {check(folder.mkdir());android.system.Os.chmod(folder.path,0x1c0)}
+        }
+        return atomic(directory,name)
+    }
+    private fun readingRecoveryRecord(name: String)="reading-cache:"+readingRecoveryNamespace+":"+name
+    internal fun readReadingRecovery(name: String): String? {
+        check(canUseReadingRecovery)
+        return ioLock.withLock {checkMigrationAccess();requireCurrentGeneration();decodeAtomic(readingRecoveryFile(name),readingRecoveryRecord(name))}
+    }
+    internal fun writeReadingRecovery(name: String,text: String) {
+        check(canUseReadingRecovery)
+        ioLock.withLock {requireWritable();encodeAtomic(readingRecoveryFile(name,true),readingRecoveryRecord(name),text)}
+    }
+    internal fun removeReadingRecovery(name: String) {
+        check(canUseReadingRecovery)
+        ioLock.withLock {requireWritable();readingRecoveryFile(name).delete()}
+    }
     internal val inspectionMutationAttempts=java.util.concurrent.atomic.AtomicInteger()
     internal fun rejectInspectionMutation(){if(localInspectionOnly){inspectionMutationAttempts.incrementAndGet();error("Read-only original inspection rejects mutation")}}
     internal fun assertLocalInspectionUnchanged(){check(localInspectionOnly);inspection!!.assertUnchanged()}

@@ -47,9 +47,9 @@ const end = source.indexOf('\nstruct EasyWorkEnvelopeCrypto {', start);
 assert(start >= 0 && end > start);
 const sessionSource = await readFile('apps/ios/Sources/EasyWorkSession.swift', 'utf8');
 const publishStart = sessionSource.indexOf('  private func publish(');
-const publishEnd = sessionSource.indexOf('  private func pump(', publishStart);
+const publishEnd = sessionSource.indexOf('  private func publishRead(', publishStart);
 assert(publishStart >= 0 && publishEnd > publishStart);
-const publishGate = sessionSource.match(/ {2}private var publishingEpochs[^\n]+/);
+const publishGate = sessionSource.match(/ {2}private var publishingOwners[^\n]+/);
 assert(publishGate);
 const acknowledged = new Set();
 const polls = [];
@@ -291,6 +291,8 @@ actor PublishFixture {
   private var crypto: FixtureCrypto? = FixtureCrypto()
   private var sequence = 1
   private var epoch = "fixture", closed = false
+  private var readPublishWaiters: Set<UUID> = []
+  private var sendingReads: Set<UUID> = []
 ${publishGate[0]}
   init(_ route: any AgentTransport) { transport = route }
 ${sessionSource.slice(publishStart, publishEnd)}

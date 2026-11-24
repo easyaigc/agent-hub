@@ -60,7 +60,7 @@ const parts = {
   verified: section(
     s,
     '  nonisolated static func verifiedWriteResult(',
-    '  private func requestData(',
+    '  private func verifySessionLiveness(',
   ).replace('nonisolated static', 'static'),
   independentFileLimits: section(
     e,

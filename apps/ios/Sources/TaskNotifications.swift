@@ -49,6 +49,8 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   private var synced: [String: String] = [:]
   private var registered: [String: String] = [:]
   private var active = true
+  private var foreground = true
+  private var monitorOwner = UUID()
   private var generation = UUID()
   private var pendingTap: TaskNotificationEvent?
   #if DEBUG
@@ -71,7 +73,9 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   override private init() {
     #if DEBUG
     if ProcessInfo.processInfo.arguments.contains("-ui-testing") && ProcessInfo.processInfo.arguments.contains("-reset-notification-settings") {
-      try? FileManager.default.removeItem(at: TaskNotificationShared.directory)
+      // Reset only the requested preference file. The directory can be the
+      // App Group container itself; deleting it also removes system metadata.
+      try? FileManager.default.removeItem(at: TaskNotificationShared.directory.appendingPathComponent("preferences.json"))
       preferences = TaskNotificationPreferences()
     }
     #endif
@@ -102,7 +106,11 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
     self.active = active
     TaskHubBusinessNotifications.shared.setActive(active)
     updateBadge()
-    if active { Task { await refreshPermission(); if preferences.enabled { registerAPNs() }; startMonitoring(); await drainRevocations() } }
+  }
+  func setForeground(_ value: Bool) {
+    guard foreground != value else { return }
+    foreground = value
+    if value { Task { await refreshPermission(); if preferences.enabled { registerAPNs() }; startMonitoring(); await drainRevocations() } }
     else { monitorTask?.cancel(); monitorTask = nil; hostMonitor.cancel(); revocationRetry?.cancel(); revocationRetry = nil }
   }
   func update(_ change: (inout TaskNotificationPreferences) -> Void) {
@@ -187,10 +195,11 @@ final class TaskNotificationController: NSObject, ObservableObject, UNUserNotifi
   }
   func hostIdentifier(_ client: Client) -> String { target(client).hostId }
   private func startMonitoring() {
-    guard active, preferences.enabled, store != nil else { return }
-    monitorTask?.cancel(); hostMonitor.cancel()
+    guard foreground, preferences.enabled, store != nil, monitorTask == nil else { return }
+    let owner = UUID(); monitorOwner = owner
     monitorTask = Task {
-      while !Task.isCancelled && active && preferences.enabled {
+      defer { if monitorOwner == owner { monitorTask = nil } }
+      while !Task.isCancelled && foreground && preferences.enabled {
         do { try await store?.waitForSidebarInteraction() } catch { return }
         let ids = Set(store?.saved.clients.filter { !$0.isDemo }.map(\.id) ?? [])
         hostMonitor.reconcile(ids) { [weak self] id in

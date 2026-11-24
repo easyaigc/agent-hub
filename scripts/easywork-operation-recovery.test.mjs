@@ -56,7 +56,7 @@ test(
     );
     const verified = declaration(
       'nonisolated static func verifiedWriteResult(',
-      '  private func requestData(',
+      '  private func verifySessionLiveness(',
     );
     const recoveryPolicy = declaration(
       '  nonisolated static func recoveryExcludedCandidate(',
@@ -66,7 +66,8 @@ test(
     const harness = `import Foundation
 func easyWorkJSON(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .fragmentsAllowed]) }
 func easyWorkObject(_ data: Data) throws -> [String: Any] { try JSONSerialization.jsonObject(with: data) as! [String: Any] }
-enum HostServiceError: Error { case message(String), rejected(Int,String), unavailable, invalidResponse }
+enum HostServiceError: Error { case message(String), rejected(Int,String), unavailable, invalidResponse, wrongHost }
+enum ReadPublishError: Error { case capacity }
 struct EasyWorkRemoteRejection: Error { let code: String?; let message: String }
 struct EasyWorkDeviceAuthorizationFailure: Error {}
 enum L10n { static func tr(_ s: String) -> String { s } }
@@ -79,6 +80,8 @@ actor Harness {
  ${subs}
  var pendingRequestIds = Set<String>(); var responses: [String: [String: Any]] = [:]
  var lastError: Error?; var closed = false; var epoch = "epoch"; var activeCandidate = "route"
+ var lastVerifiedTraffic: ContinuousClock.Instant?
+ func verifySessionLiveness(epoch: String) async -> Bool { false }
  let target = EasyWorkTarget(); let mobileDeviceId = "device"; let connection = Connection()
  var published: [Data] = []; var connects = 0; var disconnects = 0; var status = 0; var expectedOperationId = "same-id"
  let failure: String; let failTwice: Bool
@@ -94,6 +97,7 @@ actor Harness {
    }
    responses[request["requestId"] as! String] = ["ok": true, "result": ["fresh": true]]
  }
+ func publishRead(_ payload: [String: Any], id: String, deadline: ContinuousClock.Instant) async throws { try await publish(payload) }
  func request(_ method: String, _ params: [String: Any]) async throws -> Data { precondition(method == "command/status" && params["commandId"] as? String == expectedOperationId); status += 1; return try easyWorkJSON(NSNull()) }
  ${recoveryPolicy}
  ${verified}

@@ -30,6 +30,15 @@ final class DevPreviewUITests: XCTestCase {
     app.launch()
     let pageA = app.staticTexts["PAGE-\(nonce)-A"]
     XCTAssertTrue(pageA.waitForExistence(timeout: 40), "initial Vite page absent: \(app.debugDescription)")
+    XCUIDevice.shared.press(.home)
+    app.activate()
+    XCTAssertTrue(app.staticTexts["dev-preview-paused"].waitForExistence(timeout: 20), "background must retain the paused preview")
+    let resume = app.buttons["dev-preview-resume"]
+    XCTAssertTrue(resume.waitForExistence(timeout: 15))
+    let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: resume)
+    XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 20), .completed)
+    resume.tap()
+    XCTAssertTrue(pageA.waitForExistence(timeout: 40), "preview must resume after background: \(app.debugDescription)")
     for labels in [["Back", "后退"], ["Forward", "前进"], ["Reload", "刷新"]] {
       XCTAssertTrue(labels.contains { app.buttons[$0].exists }, "missing \(labels) control: \(app.debugDescription)")
     }

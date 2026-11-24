@@ -101,6 +101,7 @@ private struct RunningTaskIndicator: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let isVisible: Bool
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   @Environment(\.scenePhase) private var scenePhase
   @ScaledMetric(relativeTo: .callout) private var size = 17.0
 
@@ -225,10 +226,24 @@ private struct NativeUserScrollPhaseObserver:ViewModifier {
   private struct WeakAnchor { weak var view: UIView? }
   private var anchors: [String: WeakAnchor] = [:]
   private var pending: (height: CGFloat, offset: CGPoint, anchor: String?, viewportY: CGFloat?)?
+  private var pendingBookmark: HistoryViewportBookmark?
   private var anchorLink: CADisplayLink?
   private var anchorDriver: HistoryAnchorFrameDriver?
   private var settleDeadline: CFTimeInterval = 0
   private var settleMaximum: CFTimeInterval = 0
+  private var bookmarkTask: Task<Void, Never>?
+  func whenSettled(_ handler: @escaping @MainActor () -> Void) {
+    bookmarkTask?.cancel()
+    bookmarkTask = Task { [weak self] in
+      do {
+        repeat {
+          try await Task.sleep(for: .milliseconds(150))
+          guard let self, let scroll = self.scroll else { return }
+          if !scroll.isDragging && !scroll.isDecelerating { handler(); return }
+        } while !Task.isCancelled
+      } catch { }
+    }
+  }
 
   func registerAnchor(_ key: String, view: UIView) {
     anchors[key] = WeakAnchor(view: view)
@@ -285,14 +300,35 @@ private struct NativeUserScrollPhaseObserver:ViewModifier {
 
   func attach(to scroll: UIScrollView) {
     guard self.scroll !== scroll else { return }
+    let bookmark = pendingBookmark
     cancel(returnToTop: false)
     self.scroll = scroll
+    pendingBookmark = bookmark
     sizeObservation = scroll.observe(\.contentSize, options: [.new]) { [weak self] _, _ in
       MainActor.assumeIsolated { self?.restore() }
     }
     offsetObservation = scroll.observe(\.contentOffset, options: [.new]) { [weak self] _, _ in
       MainActor.assumeIsolated { self?.retainReleasedPull() }
     }
+  }
+
+  func bookmark(messageLimit: Int, followsLatest: Bool) -> HistoryViewportBookmark? {
+    guard let scroll else { return nil }
+    let top = scroll.contentOffset.y + scroll.adjustedContentInset.top
+    let bottom = scroll.contentOffset.y + scroll.bounds.height - scroll.adjustedContentInset.bottom
+    let visible = anchors.keys.compactMap { key -> (String, CGRect)? in
+      guard let rect = anchorRect(key, in: scroll), rect.maxY > top, rect.minY < bottom else { return nil }
+      return (key, rect)
+    }
+    guard let first = visible.min(by: { $0.1.minY < $1.1.minY }) else { return nil }
+    return HistoryViewportBookmark(anchorId: first.0, offset: Double(first.1.minY - scroll.contentOffset.y),
+      messageLimit: messageLimit, followsLatest: followsLatest)
+  }
+
+  func restoreBookmark(_ bookmark: HistoryViewportBookmark) {
+    guard bookmark.offset.isFinite, abs(bookmark.offset) <= 100_000 else { return }
+    pendingBookmark = bookmark
+    restore()
   }
 
   func holdReleasedPull() {
@@ -347,6 +383,19 @@ private struct NativeUserScrollPhaseObserver:ViewModifier {
   }
 
   private func restore(renewDeadline: Bool = true, recordTrace: Bool = true) {
+    if let bookmark = pendingBookmark, let scroll,
+      anchorRect(bookmark.anchorId, in: scroll) != nil {
+      pendingBookmark = nil
+      pending = (scroll.contentSize.height, scroll.contentOffset, bookmark.anchorId, CGFloat(bookmark.offset))
+      settleDeadline = CACurrentMediaTime() + 0.2
+      settleMaximum = CACurrentMediaTime() + 0.8
+      stopAnchorFrames()
+      let driver = HistoryAnchorFrameDriver(self)
+      anchorDriver = driver
+      let link = CADisplayLink(target: driver, selector: #selector(HistoryAnchorFrameDriver.frame(_:)))
+      anchorLink = link
+      link.add(to: .main, forMode: .common)
+    }
     guard let scroll, let pending else { return }
     if renewDeadline { settleDeadline = min(settleMaximum, CACurrentMediaTime() + 0.2) }
     #if DEBUG
@@ -378,6 +427,8 @@ private struct NativeUserScrollPhaseObserver:ViewModifier {
   }
 
   func cancel(returnToTop: Bool = true) {
+    bookmarkTask?.cancel(); bookmarkTask = nil
+    pendingBookmark = nil
     pending = nil
     stopAnchorFrames()
     if returnToTop { finishPull() } else { releasedPull = nil }
@@ -1505,6 +1556,7 @@ struct RootView: View {
   @State private var showsReplyRecords = false
   @State private var earlierHistoryRequest: UUID?
   @State private var earlierHistoryPosition = EarlierHistoryPosition()
+  @State private var restoredViewportTarget: String?
   @State private var earlierHistoryBottomSlack: CGFloat = 0
   #if DEBUG
   @State private var earlierLayoutFixtureSlack: CGFloat = 0
@@ -1526,6 +1578,9 @@ struct RootView: View {
   @Environment(\.colorScheme) private var inheritedColorScheme
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  @State private var connectionWasBackgrounded = false
+  private var networkForeground: Bool { scenePhase != .background }
 
   private var voice: VoiceInputController { voiceSessions.controller(for: store.targetKey) }
 
@@ -1563,6 +1618,7 @@ struct RootView: View {
         }
             .onChange(of: scenePhase) { _, phase in
           TaskNotificationController.shared.setActive(phase == .active)
+          TaskNotificationController.shared.setForeground(phase != .background)
           IndependentAcceptanceLifecycle.scene(phase)
         }
         .onReceive(TaskNotificationController.shared.$statuses) { _ in
@@ -1668,20 +1724,20 @@ struct RootView: View {
       }
       #endif
     }
-    .task(id: scenePhase == .active) {
-      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
+    .task(id: networkForeground) {
+      guard !hostedExaminerOwnsRefresh, networkForeground else { return }
       await EasyWorkKnownHosts.shared.run(store)
     }
     .task(id: scenePhase == .active && voicePreference == .desktop ? store.voiceReadinessScope : nil) {
       guard !hostedExaminerOwnsRefresh, scenePhase == .active, voicePreference == .desktop else { return }
       await store.monitorVoiceReadiness()
     }
-    .task(id: scenePhase == .active) {
-      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
+    .task(id: networkForeground) {
+      guard !hostedExaminerOwnsRefresh, networkForeground else { return }
       await CodexHostDiscovery.shared.run(store)
     }
-    .task(id: scenePhase == .active) {
-      guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
+    .task(id: networkForeground) {
+      guard !hostedExaminerOwnsRefresh, networkForeground else { return }
       await VPNHostDiscovery.shared.run(store)
     }
     .onChange(of: scenePhase) { _, phase in
@@ -1689,7 +1745,8 @@ struct RootView: View {
       if phase != .active { store.sidebarInteracting = false; taskHub.stop() }
       else { Task { await taskHub.refresh() } }
       TaskNotificationController.shared.setActive(phase == .active)
-      if phase != .active { EasyWorkKnownHosts.shared.stop(); CodexHostDiscovery.shared.stop(); VPNHostDiscovery.shared.stop() }
+      TaskNotificationController.shared.setForeground(phase != .background)
+      if phase == .background { EasyWorkKnownHosts.shared.stop(); CodexHostDiscovery.shared.stop(); VPNHostDiscovery.shared.stop() }
     }
     .onChange(of: businessNotifications.pendingNavigation?.id, initial: true) { _, eventId in
       if !hostedExaminerOwnsRefresh, eventId != nil { store.sheet = .taskHub }
@@ -1752,7 +1809,7 @@ struct RootView: View {
     .task {
       guard !hostedExaminerOwnsRefresh else { return }
       await store.recoverLocalAttachmentImports()
-      if store.client?.isDemo == false { await store.refresh() }
+      if store.client?.isDemo == false { store.prepareForegroundConnections() }
     }
     .task(id: scenePhase == .active) {
       guard !hostedExaminerOwnsRefresh, scenePhase == .active else { return }
@@ -1774,18 +1831,25 @@ struct RootView: View {
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
         if store.localRecoveryRequired { store.retryLocalRecovery() }
-        if !hostedExaminerOwnsRefresh {
+        if !hostedExaminerOwnsRefresh, connectionWasBackgrounded {
+          connectionWasBackgrounded = false
           store.prepareForegroundConnections()
-          if store.client?.isDemo == false { Task { await store.refresh() } }
         }
       }
       voiceSessions.handleScenePhase(phase)
       if phase == .background { voiceSessions.enterBackground() }
       if phase == .active { voiceSessions.recover() }
-      if phase != .active { store.suspendEvents(); store.persistForBackground() }
+      if phase == .background {
+        connectionWasBackgrounded = true
+        if let bookmark = earlierHistoryPosition.bookmark(messageLimit: visibleMessageLimit, followsLatest: followsLatest) {
+          store.rememberHistoryViewport(bookmark, for: store.targetKey)
+        }
+        store.enterConnectionBackground(); store.persistForBackground()
+      }
     }
     .onReceive(NotificationCenter.default.publisher(for: Notification.Name("CodexNetworkPathChanged"))) { _ in
-      if !hostedExaminerOwnsRefresh, scenePhase == .active { store.recoverNetworkReads(); voiceSessions.recover() }
+      if !hostedExaminerOwnsRefresh, networkForeground { store.recoverNetworkReads() }
+      if scenePhase == .active { voiceSessions.recover() }
     }
     .task(id: store.supportsProjectGit && scenePhase == .active ? store.currentProjectGitContext?.id : nil) {
       guard !hostedExaminerOwnsRefresh, scenePhase == .active, store.supportsProjectGit,
@@ -1808,12 +1872,13 @@ struct RootView: View {
       endChatActionTarget = nil
       showsReplyRecords = false
       latestMessageVisibility = nil
-      visibleMessageLimit = RootView.initialHistoryWindow
+      visibleMessageLimit = store.historyViewportBookmark.map { max(RootView.initialHistoryWindow, min($0.messageLimit, store.messages.count)) } ?? RootView.initialHistoryWindow
+      restoredViewportTarget = nil
       earlierHistoryRequest = nil
       earlierHistoryPosition.cancel()
       earlierHistoryBottomSlack = 0
       revealedEarlierHistory = false
-      followsLatest = true
+      followsLatest = store.historyViewportBookmark?.followsLatest ?? true
       userScrolling = false
       store.projectGitContext = nil
     }
@@ -2172,7 +2237,7 @@ struct RootView: View {
                       Text(failure).lineLimit(3)
                     }
                     Spacer(minLength: 0)
-                    Button(L10n.tr("重试")) { Task { await store.loadHistory() } }
+                    Button(L10n.tr("重试")) { Task { await store.retryConversationRead() } }
                       .disabled(store.historyLoading).accessibilityIdentifier("conversation-sync-retry")
                   }.font(.caption).padding(10).background(.regularMaterial)
                 }
@@ -2203,11 +2268,12 @@ struct RootView: View {
             }
             .simultaneousGesture(
               DragGesture().onChanged { _ in if !userScrolling { userScrolling = true } }
-                .onEnded { _ in userScrolling = false }
+                .onEnded { _ in userScrolling = false; saveSettledReadingPosition() }
             )
             .modifier(NativeUserScrollPhaseObserver(enabled:store.client?.agentConnection?.target.agentId=="easywork"){active,near in
               nativeUserScrolling=active
               if let near,followsLatest != near {followsLatest=near}
+              if !active { saveSettledReadingPosition() }
             })
             .task(id: readingVisibilityKey) {
               await Task.yield()
@@ -2219,8 +2285,15 @@ struct RootView: View {
               store.recordVisibleContent()
             }
             .onAppear {
-              followsLatest = true
-              proxy.scrollTo("bottom", anchor: .bottom)
+              if !restoreHistoryViewport(proxy) {
+                followsLatest = true
+                proxy.scrollTo("bottom", anchor: .bottom)
+              }
+            }
+            .task(id: target) {
+              await Task.yield()
+              guard !Task.isCancelled, store.targetKey == target else { return }
+              _ = restoreHistoryViewport(proxy)
             }
             .onChange(of: store.chatSearchJump?.token) { _, _ in
               guard let jump = store.chatSearchJump, jump.targetKey == store.targetKey,
@@ -2243,8 +2316,10 @@ struct RootView: View {
             }
             .onChange(of: store.selectedThreadId) { _, _ in
               nativeUserScrolling = false
-              followsLatest = true
-              proxy.scrollTo("bottom", anchor: .bottom)
+              if !restoreHistoryViewport(proxy) {
+                followsLatest = true
+                proxy.scrollTo("bottom", anchor: .bottom)
+              }
             }
             .onChange(of: store.messages.last?.id) { _, _ in
               if followsLatest { proxy.scrollTo("bottom", anchor: .bottom) }
@@ -2311,6 +2386,15 @@ struct RootView: View {
     }
   }
 
+  private func saveSettledReadingPosition() {
+    let key = store.targetKey
+    earlierHistoryPosition.whenSettled {
+      guard store.targetKey == key, scenePhase == .active,
+        let bookmark = earlierHistoryPosition.bookmark(messageLimit: visibleMessageLimit, followsLatest: followsLatest) else { return }
+      store.rememberHistoryViewport(bookmark, for: key)
+    }
+  }
+
   @ViewBuilder private func earlierHistoryControl(timeline: ChatTimeline) -> some View {
     if timeline.hasEarlierMessages || store.historyCursor != nil || earlierHistoryRequest != nil {
       AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
@@ -2340,6 +2424,27 @@ struct RootView: View {
         .frame(maxWidth: .infinity, minHeight: 28).padding(.bottom, 6)
         .accessibilityIdentifier("history-start")
     }
+  }
+
+  @MainActor private func restoreHistoryViewport(_ proxy: ScrollViewProxy) -> Bool {
+    let target = store.targetKey
+    guard let bookmark = store.historyViewportBookmark,
+      bookmark.offset.isFinite, abs(bookmark.offset) <= 100_000 else { return false }
+    if restoredViewportTarget == target { return true }
+    restoredViewportTarget = target
+    visibleMessageLimit = max(RootView.initialHistoryWindow, min(bookmark.messageLimit, store.messages.count))
+    followsLatest = bookmark.followsLatest
+    revealedEarlierHistory = visibleMessageLimit > RootView.initialHistoryWindow
+    Task { @MainActor in
+      await Task.yield()
+      guard store.targetKey == target, restoredViewportTarget == target else { return }
+      if bookmark.followsLatest { proxy.scrollTo("bottom", anchor: .bottom) }
+      else {
+        proxy.scrollTo(bookmark.anchorId, anchor: .top)
+        earlierHistoryPosition.restoreBookmark(bookmark)
+      }
+    }
+    return true
   }
 
   @MainActor private func loadEarlierHistory(timeline: ChatTimeline) async {
@@ -2616,7 +2721,7 @@ struct RootView: View {
         }.accessibilityIdentifier("open-settings")
         Spacer(minLength: 12)
         if let client = store.client {
-          UsageFooterButton(client: client, target: store.mobileReadingTarget(client), active: store.drawerOpen && store.sheet == nil) { store.sheet = .usage }
+          UsageFooterButton(client: client, target: store.mobileReadingTarget(client), active: store.drawerOpen && store.sheet == nil && store.allowsPassiveClientRead(client)) { store.sheet = .usage }
         }
         IconButton(symbol: "sidebar.left", label: L10n.tr("收起侧栏"), id: "close-sidebar", action: closeSidebar)
       }.padding(.top, 6).overlay(alignment: .top) { Divider().allowsHitTesting(false) }
@@ -2862,7 +2967,7 @@ struct RootView: View {
     case .projectGit:
       if let context = store.projectGitContext { ProjectGitDetailsView(context: context) }
     case .usage:
-      if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client)) }
+      if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client), active: store.allowsPassiveClientRead(client)) }
     case .chatSearch: ChatHistorySearchView(store: store, targetKey: store.targetKey)
     case .archivedChats: ArchivedChatsView(store: store)
     case .taskHub: TaskHubView(store: taskHub, openExecution: { navigation in try await store.openTaskExecution(navigation) }).presentationDetents([.large])

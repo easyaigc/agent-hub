@@ -6063,8 +6063,8 @@
       "functionalDeliverableIds": ["F75-project-git"]
     }
   ],
-  "revision": 530,
-  "updatedAt": "2026-11-23T04:50:33+08:00",
+  "revision": 548,
+  "updatedAt": "2026-11-24",
   "authority": {
     "scope": "仅iOS对接EasyWork的计划、差距、实施/集成/验收/交付状态；不接管Android独立进度或其他业务域",
     "effectiveAt": "2026-11-12",
@@ -18124,6 +18124,377 @@
         "sha256": "367b4ff410cfeb583d5ecaeced35c59190091041cb5f91faa4c2b7f1feaf9264",
         "verification": "119 regular archive members fully read by coordinator; contained executable SHA and own bundle match accepted installed runtime"
       }
+    },
+    "LIFE01-REAL-EASYWORK-ROOT-AND-DESKTOP-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "Original R4 mobile source + real EasyWork bb73f8487; final cold-cache candidates tested separately",
+      "packageSha256": "eecbfaef46cb724b9b4e9007166d4ca02b97b4b833b47f8aa4a751a3e3b3d49b",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual task-owned EasyWork Electron/Host bb73f8487 + Android API36 native production adapter; local DEV relay and LAN listener",
+      "scope": "Exactly one native root turn submission and one thread creation with original v2 IDs; independent completed root1, expected reply and model_sampling1 recorded. Model GLM-5.3, effort absent per actual catalog, default confirm_high_risk; physical Provider/automatic-prediction count not independently proved. Prepared model-selection failure was before any business dispatch. No replay.",
+      "path": "private life01-completion-20261123/current-host2/desktop-completed-original.json",
+      "sha256": "d1329d133b5f835a1ab76c71c0955886cb790bc1e83c10fb445536c113a87f4b"
+    },
+    "LIFE01-ROOT-REAL-EASYWORK-GUI-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "EasyWork Electron42.7.1; local bb73f8487 snapshot",
+      "packageSha256": "1c36c72d548c3bb28f937440e0c9688b1d6be39d7446718a1a826c1429753846",
+      "mobileEnvironment": "simulator",
+      "environment": "Exact task-owned Electron app path, root independent read-only CUA AX",
+      "scope": "Actual window displayed sole synthetic task prompt/reply and model/default; corroborates desktop observation for that task. Does not prove physical Provider request count or all T06 branches.",
+      "path": "private life01-completion-20261123/root-gui-observation.json",
+      "sha256": "0ca4e78398b8a6137b871341e26158aebf20527f36dbc2e8fe4541d7f4480113"
+    },
+    "LIFE01-DUAL-COLD-PAGING-RED-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "98841a6b62a28922ec234477eb19d7e3c2e6e744",
+      "sourceTree": "Original iOSR6/AndroidR4, affected paths and final candidate fingerprints separately recorded",
+      "packageSha256": "not-a-single-runtime-package",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent native iOS process and Android API36 processes with controlled read fixtures",
+      "scope": "Both original early-page/cursor cold regressions retained; initial iOS fixture crash was a separate test failure. New cache checkpoint repair is under final validation; no whole matrix promotion.",
+      "path": "private life01-completion-20261123/cold-history-red-summary.json",
+      "sha256": "87630d89bb2978a3a86b55ac6aafc069d6f3ea0cd398181d9d4bccd637d70e90"
+    },
+    "LIFE01-IOS-COMBINED-SHARED-READ-RED-GREEN-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Combined frozen03490954+LIFE01; EasyWorkSession f8530bb3 original -> cc77e99b candidate; all original native assertions preserved",
+      "packageSha256": "multiple exact native packages pinned in private iOS inventory",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual production encrypted RemoteSession + synthetic encrypted peer, iPhone17 iOS26 Simulator",
+      "scope": "Original2 red plus authenticated ack witness red retained. Candidate original2/2, producer deadline/retired factory3/3, cap16 and old publisher ownership1/1 passed. Slow read32.199s did not close shared route or disrupt captured write; verified response returned2.002s before blocked callback. Sixteen callbacks bounded,17th read refused without send/close; stale callbacks did not release newer write. Pure pnpm build:ios passed; not real-network evidence.",
+      "path": "private life01-completion-20261123/ios-read-timeout-fix/root-observed-results.json",
+      "sha256": "2b99abd0f994a91db37c333f4867ba27f366fd005a4158676c117912aba5093f"
+    },
+    "LIFE01-ANDROID-COMBINED-REAL-UPLOAD-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "0349095400a15e3e4b56fc30c70c87c9d47caf11",
+      "sourceTree": "Frozen combined source + mechanical localization supplement; source inventory0fd4f8dd",
+      "packageSha256": "b4a5606875fded1d19a62ffda2e68e6e72d06e6ace56cce870c85805137df7a2",
+      "mobileEnvironment": "simulator",
+      "environment": "Android API36 native production NativeUploadCenter + actual task-owned EasyWork Electron bb73, LAN WSS, DEV device authorization",
+      "scope": "Same original600000-byte synthetic transfer: prepare1, first196608-byte chunk then Home; query originalID and continue offsets196608/393216/589824 only, complete1. Native final resume4.779s1/1. Independent desktop bytes/SHA and each offset once verified, model execution still1. Original wrapper-observation timeout and ADB/instrumentation disconnect failures retained; not an uninterrupted end-to-end automation pass.",
+      "path": "private life01-completion-20261123/android/life01-upload-finished.json",
+      "sha256": "7b4587be5c088c8edfe43facbdcd1a91ee1eef4cd44fbb9c40b2f3a46c7927d9",
+      "independentDesktopPath": "private life01-completion-20261123/current-host2/desktop-upload-completed.json",
+      "independentDesktopSha256": "742dbc72560093336675911d2eeb4729dd833841848fb38f2764c528a566883e"
+    },
+    "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "0349095400a15e3e4b56fc30c70c87c9d47caf11",
+      "sourceTree": "Frozen combined source + mechanical localization supplement, actual input inventory0fd4f8dd",
+      "packageSha256": "b4a5606875fded1d19a62ffda2e68e6e72d06e6ace56cce870c85805137df7a2",
+      "mobileEnvironment": "simulator",
+      "environment": "Android API36, controlled loopback and synthetic encrypted peer; no real model input",
+      "scope": "168/168 JVM; native cold history prepare+separate process restore and cold draft/attachment slices; T03 four-client1/1, T13 proof/cache/foreground/preconfirmation4/4+proof ordering2/2, T10 notification registration/dedup2/2. Notification physical display, discovery, APNs and all live Host combinations not promoted.",
+      "path": "private life01-completion-20261123/android/combined-tested-source-manifest.json",
+      "sha256": "0fd4f8dd0bfcf8ae2716ab8d81ffbdef0a7de53e67834e7f90e631fb41ba25d2"
+    },
+    "LIFE01-DUAL-REAL-HOST-STOP-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Android combined App b4a56068; iOS combined production cc77 plus route-only DEBUG driver; exact native packages in private inventories",
+      "packageSha256": "multiple exact native packages, not a single binary",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent iOS26 Simulator and Android API36, actual task-owned EasyWork Electron bb73 stopped; supervisor/Electron/four ports independently confirmed down",
+      "scope": "Both actual Home31 then offline cache/draft/control slices1/1. Android original full target/thread/journal preserved, real send AX+decision/stop/create/configure disabled; foreground bounded notice8166ms, lower requests may still be in flight. Local canCompose remains valid editing; original60s wrong-predicate failure and separate diagnostic preserved. iOS cached marker/draft retained and send disabled about0.5s; conditional UI-status check not treated as full error-budget proof. No business/model input.",
+      "path": "private life01-completion-20261123/root-t05-summary.json",
+      "sha256": "1fba7d0a2ad0673ce2c26ff9424f48311f910bc4360167134217318d72c1ac38"
+    },
+    "LIFE01-DUAL-HISTORICAL-HOST-AND-CURRENT-RETURN-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "New iOS cc77 and Android combined candidate vs complete historical EasyWork651e4 and restored currentbb73, same task root/profile/identity",
+      "packageSha256": "per-case exact native source/package fingerprints in private indices",
+      "mobileEnvironment": "simulator",
+      "environment": "Actual task-owned Electron42.7.1/Host, LAN WSS and local DEV Relay; historical source DEV, not an installed release binary",
+      "scope": "Dual new-App historical Host original history and same-device receipts passed; original target/bindings unchanged. Historical Electron actual AX showed original prompt/reply. Returnbb73 native iOS1/1 and Android original reads passed. Old Host creates0/turn0; original DB completed root1. Original data preserved, no replay.",
+      "path": "private life01-completion-20261123/old-host/desktop-ios-read.json",
+      "sha256": "28773a0b4da6aec1799785f03ae727a6c5040395d0b45daee734e7dd09468185",
+      "androidWitnessSha256": "75b21c8845eb266a9be00c4d21ad5f65bb5c823a77789314ab595365104b8806",
+      "returnedIosWitnessSha256": "a0de42e445f4cbea0d3d06e7800966dc57125674578ef447a32447a418dc1294"
+    },
+    "LIFE01-IOS-ISOLATED-CONTROL-PROOFS-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Current production SessionStore9ffae1b7 plus counts/hash diagnostic only, code equality separately preserved",
+      "packageSha256": "private iOS evidence-index.json",
+      "mobileEnvironment": "simulator",
+      "environment": "Task-only native iOS test bundle and isolated per-case profile, synthetic HTTP Host",
+      "scope": "Isolated3/3 cover four proof states: no proof events/health/receipt actual writes0, local edit retained; thread-only send/stop/approval/queue each1 andcreate0; workspace-onlycreate1 other writes0; both proof entry gates open without repeat writes. Earlier same-profile3-case failures retained with actual synthetic queue/prepared creation pollution; product guards unchanged. Not real Host permission combinations.",
+      "path": "private life01-completion-20261123/ios/evidence-index.json",
+      "testSourceSha256": "1ced2cc77d11ca00316999a3a882ef761d65b634cde67dbffa18ef1f80f755ed"
+    },
+    "LIFE01-ANDROID-ACTIVITY-OWNER-RED-GREEN-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "MainActivity before5ffb5c70 ->ccf0a047, other frozen Android business source unchanged",
+      "packageSha256": "83b8946526957526bc759c3ec87c60f79619138289dc6397b8bbb23abf0b7ebe",
+      "mobileEnvironment": "simulator",
+      "environment": "Android API36 task profile, actual current EasyWork Host/DEV Relay and original binding",
+      "scope": "Old candidate native2-Activity identity assertion red; new candidate green5.473s,20 natural reopens with one Session/pool/remote/pump17.795s, real Home31 and rotation37.861s. Old full source568e variant and candidate same-profile read/journal version cycle passed in scoped read-only tests. Captured-write/fresh-Intent tests remain. Earlier two-pump unmatched response is actual; server ACK commit and exact original timeout cause unproved.",
+      "path": "private life01-completion-20261123/android-activity-owner-fix/root-scoped-results.json",
+      "sha256": "678b0adf876f07e1193c6bbf0904f8e9e33dbf2c8259778752297a83ee9e573d"
+    },
+    "LIFE01-IOS-FULL-OLD-SOURCE-VERSION-CYCLE-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "6f65e484a1f3c1d8a27e28b7796a7038db0d2e23",
+      "sourceTree": "Complete old source3548blobs exact ->currentcc77 ->old ->current; old Simulator build115, not formal118 IPA",
+      "packageSha256": "7a4fb7d0845e41c0d1e2455b16d7b75e5a23c3230cd8e34f617169cec3dff1ed",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent5EA task profile and same installed bundle, original Keychain retained, actual current Host",
+      "scope": "Four version loading stages4clients/1draft/1workspace/3messages, draft/outbox fingerprints retained, pending replies/creation/fork zero before install. Final current native original-thread/draft/same original create status11.315s1/1. Whole clients hash first changed then stable; cause unverified and full metadata bitwise preservation not claimed. Old normal UI/actual release binary not passed; later separate test accident recorded separately.",
+      "path": "private life01-completion-20261123/ios/version-cycle-evidence.json",
+      "sha256": "783aa5057686d619561f0b01d3464bfa8f7577a455feca17e42ee6a6e9c24447"
+    },
+    "LIFE01-IOS-TEST-RESET-INCIDENT-AND-SCOPED-RESTORE-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Private new UI case accidentally inherited default destructive setUp; shipping source not changed",
+      "packageSha256": "2b054c1b25121c8c0880b599a6dd1030f11bc8dd8bfdd3f0f11de4031a9e0ab9",
+      "mobileEnvironment": "simulator",
+      "environment": "Only independent5EA Acceptance test installation; formal App/physical iPhone/desktop original task unaffected",
+      "scope": "New old-UI case name missed read-only setUp skip, launched-ui-testing without-restore-testing, replacing test primary/legacy/backup with empty/demo. Original20:03 previous sealed snapshot7a1d20e1 preserved and copied back; safe existing exact read-only case later actually decrypted that exact source and recovered4clients/1draft/1workspace/3messages; original marker/draft/connection UI passed. Original create query produced no Host command/status and UI evidence timed out; full restore/query acceptance not claimed.5EA shut down, no rerun, no re-pair/recreate/model input. Entire original failure and before/after copies preserved.",
+      "path": "private life01-completion-20261123/ios/safe-recovery-evidence",
+      "recoveredSourceSha256": "7a1d20e12e45d66eb9d3655ff3468d3a8df691fbc256567bd33d18234506da9f"
+    },
+    "LIFE01-PASSIVE-READ-MIGRATION-RED-AND-DUAL-CANDIDATE-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Production iOS SessionStore9ffae1b7/UsageViews60c1032e original; root candidate source pins in parity manifest",
+      "packageSha256": "private ios/t03-evidence source and native result manifests",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent iOS B32 synthetic four-target profile, actual production Client values and HTTP reads, no model writes",
+      "scope": "Original native T03 red: D migrationNeedsVerification=true while A selected; actual refreshMobileUnread.workspace and UsageStore.read each dispatched before first manual B selection. Request-start trace and server timeline agree; not a storage-decoder test. Root dual-platform candidate adds passive lifecycle/current-binding/migration/FAILED gates without weakening identity or fresh control proof. Original iOS red and Android matching checks executing; no new pass yet.",
+      "path": "private life01-completion-20261123/ios/t03-evidence"
+    },
+    "LIFE01-TERMINAL-READERS-AND-EXPLICIT-RETRY-RED-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "1f74fcf38eee4ead21acc89165e4af73de4fd5ec",
+      "sourceTree": "Root terminal recovery candidate pins in parity manifest; original production call chains and exact failed packages preserved privately",
+      "packageSha256": "private native test package manifests",
+      "mobileEnvironment": "simulator",
+      "environment": "Separate iOS four-client synthetic native UI and Android real HTTP401 acceptance profile; no model writes",
+      "scope": "iOS first migration-gate candidate kept D reads0 but could not open list after C401; C events/history still retried. Root stops terminal automatic readers on both platforms. Android original new candidate then passed two5s no-retry windows including Home but explicit restored workspace could not restart events/history because validated success retainedFAILED. Root clears phase only after same-binding valid read, and both native retry buttons use explicit user reads. Original timeout/ANR retained; new native checks executing. Android prior four-target directory/usage one pass plus two visible-layout waits retained; final persistent owner3/3 passed with explicit acceptance/fresh-profile admission.",
+      "path": "private life01-completion-20261123/android/terminal-read-first.log"
+    },
+    "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "69bda3b8b74583f4c6e7c2cd8783437e89eac832",
+      "sourceTree": "MobileSession df594932 and AgentHubApp49e62204; final main-tree owner224fa8ca and terminal27d075ec regression sources",
+      "packageSha256": "private android final app518126be and runner32d25160 manifests",
+      "mobileEnvironment": "simulator",
+      "environment": "Task-only acceptance Android native emulator and actual loopback HTTP401; no real Host/model writes",
+      "scope": "Original0a8c stopped event/history through5s+Home5s but explicit restored workspace could not resume due staleFAILED; finaldf594 native red-green. Exact final guards: no flags5 assumptions, nativeForeground-only2 assumptions and no Activity launch observed; explicit owner20cycle1/1 and terminal2/2. Terminal actual button history2->3/events1->2, explicitrefresh history1->2/events1->8, fresh canStop proof and zeroPOST; synthetic scope only. Original native ANR and two passive summary visibility timeouts remain evidence, not silently passed.",
+      "path": "private life01-completion-20261123/android",
+      "testSources": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/Life01ActivityOwnerRegressionTest.kt": "224fa8ca69dac687b1ef39f167319b9619f981421261e8f5f7a8ba2db315aded",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/Life01TerminalReadTest.kt": "27d075ec86d53a477c18b590c03e7235ec68dc980fcaafbc6429eb136b0ff8a0"
+      }
+    },
+    "LIFE01-IOS-DISCOVERY-TERMINAL-RETRY-RED-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "69bda3b8b74583f4c6e7c2cd8783437e89eac832",
+      "sourceTree": "e98 SessionStore original final-read gate; CodexDiscovery before86a900a3 ->candidate68adf984",
+      "packageSha256": "private ios t03-e98 xcresult package manifest",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent B32 four-target native UI with real synthetic HTTP401",
+      "scope": "C401 events/history stayed0 and Dmigration reads0, but Cworkspace2->3 during6s stable window; unread trace onlyA/B. Actual discovery10s loop called refresh without terminal gate, matching request timing. Root candidate adds same passive read admission to discovery retry only; scan itself retained. Original exact request timeline preserved and final UI retry/Home retest executing. Earlier candidate also proved Home four states/Bphase and drafts, but attempted a history-only banner for a workspace-only failure; correct menu and separate history401 entry now used.",
+      "path": "private life01-completion-20261123/ios/t03-e98-requests.jsonl"
+    },
+    "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Root e98 SessionStore/68ad CodexDiscovery/8d913 RootView production snapshots equal to successful native test input; only DEBUG seed/trace/display seams in isolated bundle",
+      "packageSha256": "fb63869d75d1fc8eb8b6e86da8fd7455f05653cf50684e2484336ab14c07554f",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent B32 iPhone16/iOS26 native XCTest; four synthetic real HTTP targets, not a four-real-EasyWork-Host test",
+      "scope": "Original migration bypass, terminal401 event/history retries and discovery10s workspace retry red -> final native1/1 162.328s. Healthy A/B actual history, C401 stable count, Dmigration0; Home A required reads resume/Bphase+events/history preserved/C/D no new passive reads; two drafts retained. Workspace401 menu refresh and separate history401 actual retry button both restart history/events with zero business writes. Root independently confirmed xcresult1pass/0fail/device and source equality; prior test interaction failures and over-strong zero-all-B-reads expectation retained/documented, normal periodic directory reads remain allowed by final plan. Seed uses production typed objects after restore, not loader migration-decoding proof.",
+      "path": "private life01-completion-20261123/ios/t03-root-verified-inputs.json",
+      "sha256": "f042b20d410cad13c30c2d0456f62e8a8cef99d85432c41c31fe745bc9fa6fc6",
+      "testSourceSha256": "cb44e53dbb7d5910a5fc4caff1402471adff7f61430d2de59d2a179bc9c6054b"
+    },
+    "LIFE01-WORKSPACE-HARNESS-REPAIR-TAIL-AND-METADATA-SUPPLEMENT-20261123": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Full-chain started69bda input; concurrent main metadata recovery73d9 and coverage11aa reviewed/preserved, separately built and tested; native final discovery gate also separately matched",
+      "packageSha256": "not-a-mobile-binary",
+      "mobileEnvironment": "not-applicable",
+      "environment": "Node24.22.1 process-local DEVELOPER_DIR and JAVA_HOME17",
+      "scope": "Full pnpm check reached late easywork-ios-boundaries and failed because file-transfer static fixture extraction swallowed new session-liveness method. Root narrows only extraction endpoint; all original upload/hash/receipt/no-replay fixtures then exit0; exact remaining tailchain exit0. pnpm build8/8 valid cache hits plus metadata-recovery4/4 on11aa exit0. No single final-tree fullchain pass claimed yet. Final native build and final fullcheck pending stable source; logs and original errors retained.",
+      "path": "private life01-completion-20261123/check-tail-receipt.json"
+    },
+    "LIFE01-REAL-EASYWORK-PREVIEW-TWO-LEASES-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Exact iOS source aggregate29ff1fdd root independently recomputed, stable before/after; current real bb73 EasyWork task Host",
+      "packageSha256": "12c3de780d53f9f20f14cfb2b761602ec4eb4e21ce27bfe9781ef760d57636bf",
+      "mobileEnvironment": "simulator",
+      "environment": "Native iOS DevPreviewUITests C6C4 on actual EasyWork Electron/LAN; independent private Vite/controller; existing original thread, no model/task creation",
+      "scope": "Native1/1 31.824s Home pause/resume/API/HMR/close. Independent full observer projection proves two distinct create/close pairs in exact order, same binding/fulltarget/thread, matching responseID and closed=true, unexpected writes0. Vite html2/api1/ws2/noCookieLeak; HMR no extra HTML. New task LAN grant revoked through exact normal desktop UI and independently confirmed, original two grants/target/cert/messages retained. Root independently confirmed xcresult and sourceAggregate, original scope not unknown-create/close UI or Relay preview.",
+      "path": "private life01-completion-20261123/t09-preview/root-independent-review.json",
+      "sourceAggregateSha256": "29ff1fdd3dc08881411cb760a1207cc96af0386343e3a32993be8073ef3c0cec",
+      "summarySha256": "fa490d2ef388f44c4fa581f36dc559119f9abf308c12f83bd686b12f7c33aa17",
+      "cleanupWitnessSha256": "5c2e874523e0e1b88077c1e326a0c880732799c71a84623401e4036e7085f879"
+    },
+    "LIFE01-IOS-ORIGINAL-PROFILE-QUERY-RESTORE-VERIFIED-20261123": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Final e98/68ad/8d913 production plus isolated original readonly DEBUG query and booleans/hash audit; guard unchanged",
+      "packageSha256": "private query-audit evidence exact be95693e package SHA",
+      "mobileEnvironment": "simulator",
+      "environment": "Original5EA task profile and own binding, independent direct XCTestCase, no inherited reset setup; actual DEVRelay Host",
+      "scope": "Native original status query1/1 found completed for exact original operation/target, Host unique status delta1. Entry and all original UUID/host/workspace/runtime/account guards true. Original marker/draft before query and13 semantic load fields before/after equal prior recovered report. Earlier dataContainerUUID rotation alone was not reset; zero query before interrupted firstaudit independently reconciled. No pairing/create/send/replay. Current profile App left at audited package, data andsealed7a preserved,5EAshutdown.",
+      "path": "private life01-completion-20261123/ios/query-audit-host-receipt.json"
+    },
+    "LIFE01-R541-FROZEN-FULL-WORKSPACE-CHECK-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "R541 frozen inputs,11 major hashes and complete working diff stable before/after; before T12 storage amendment",
+      "packageSha256": "not-a-mobile-binary",
+      "mobileEnvironment": "not-applicable",
+      "environment": "Node24.22.1 scoped Xcode and JAVA_HOME17; no global changes",
+      "scope": "Complete pnpm check exit0, HEAD and full diff/input hashes stable. Earlier actual extraction/compiler/format failures retained; original file-transfer assertions fixed without weakening, metadata reader4/4 supplement separately passed. Pure pnpm build:ios exit0 stable source, executable0fbc/tree d222 separately pinned. This is valid pre-amendment regression baseline, not T12 compatibility pass or later storage source validation.",
+      "path": "private life01-completion-20261123/pnpm-check-stable.log",
+      "sha256": "0810a17f7918350e24df8cc39160504609ff5b98a9f0dc4307ca751329511753"
+    },
+    "LIFE01-DUAL-OLD-WRITER-READING-CACHE-DATA-LOSS-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Android current518126be/full old568e source variant; iOS e98 current/full old6f65 build115 source variant",
+      "packageSha256": "private dual T12 exact package/driver manifests; no formal release binary claim",
+      "mobileEnvironment": "simulator",
+      "environment": "Separate synthetic encrypted Android profile and iOS BB9F profile, real native app updates same package without data clear, loopback GET-only Host rejects writes",
+      "scope": "Both actual new->old->new permanently lose early pages/paging/viewport. Android early disappears andmetadata fields0; iOS40->20->20, cursor/revision/anchor lost while namespace retained. Drafts/attachment exactbytes/originalunknown ID/intent fingerprint/receipt remain, POST0/model0. Original red profiles stopped/sealed, no replay/restore. Android original pre-overwrite raw snapshots were not captured and are not claimed; stageproof plus after-export retained. iOS all3 raw stages captured. Root repair required, not accepted as missing oldUI feature.",
+      "path": "private life01-completion-20261123/android/t12-version-data and ios/t12-fixture"
+    },
+    "LIFE01-T12-ASTRA-ULTRA-AMENDMENT-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Limited T07/T12 amendment reviewed against exact current/old source; implementation not yet applied at ledger update",
+      "packageSha256": "not-a-mobile-binary",
+      "mobileEnvironment": "not-applicable",
+      "environment": "Local review agent actual gpt-6-astra/ultra independently read official turn_context, no speed parameter/verifiedtier",
+      "scope": "Reviewed final narrow carrier-before-index body/index storage, stable checkpoint/viewport write budget, iOS unknown-revision candidate rules and skip-before-I/O narrow owner gates. Same-target alone cannot prove remove/re-add continuity; iOS persist real readingScopeId, Android preserve/init true readerId, never materialize base readingTarget. Root owns implementation; tests remain required. No source mutation/model business task by reviewer.",
+      "path": "private life01-completion-20261123/t12-reading-recovery-astra-review.md",
+      "sha256": "36df8ab13b4babc4ab9a634d567e5dff71b592c17160f6a3bf5b07c0acd81c6b",
+      "verifiedReviewThread": "01a20915-4cb0-70a2-ae94-3c2b7c2d089f"
+    },
+    "LIFE01-IOS-REAL-EASYWORK-UPLOAD-BACKGROUND-SAME-ID-20261124": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "R541 frozen source plus private exact ACK-after3s timing seam and dedicated test view; production Uploads3991d46c and EasyWorkSessioncc77 pinned separately",
+      "packageSha256": "56ae9ac3e4dd7756f4e8cc24db9544bdf43a710c19793270427b48f20123e455",
+      "mobileEnvironment": "simulator",
+      "environment": "Native independent iOS Simulator + actual EasyWork bb73 Electron DEV Relay, same original transfer and synthetic8MiB file",
+      "scope": "Native1/1, root independently read xcresulttool summary and exact stable build/compile/test exit0. Actual Home asserted after first confirmed196608 bytes, one accepted relay offline/restart, foreground resumes sameID. Independent desktop size8388608/SHA b16bd32b101132fd0102461bc75ea65442c37293ac881ae953486c8ac26a7388; prepare1/complete1/43 strictly increasing unique offsets. No model write. Private ACK-after3s seam and dedicated view mean this does not sign ordinary file-import UI or no-instrumentation timing. New grant confirmed revoked, original two bindings/target/certificate/rootthread/run retained; exact synthetic files/records and task services cleaned.",
+      "path": "private life01-completion-20261123/t11-upload/evidence/runner-report.json",
+      "sha256": "4f0d7e12dd3ffcb1bf67f25f0b16859b1781d86bbd50a2c031b373286f4eaf92",
+      "summarySha256": "d9e0a3a006c4611bda696aa272b0e1fd4fb1b1f8f667b95ce0c005233bcc704d",
+      "desktopSha256": "1880bf849d8a7525231e7edb468883a162a84e975fea0902077869e8ae840864",
+      "cleanupSha256": "69fbbe2506c19aa3e14a61b383f8fe55772e42ee745190e8db1f7f68d341572e"
+    },
+    "LIFE01-T12-READING-EXPORT-ASTRA-FINAL-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Exact current Android F55 source and closed old writer/export/import; independent plan review, no App execution",
+      "packageSha256": "not-a-mobile-binary",
+      "mobileEnvironment": "not-applicable",
+      "environment": "Official turn_context independently verified actual gpt-6-astra/ultra in both review turns; no speed parameter/actual tier",
+      "scope": "F55 is existing production capability, not paused A6. Final narrow layout moves encrypted reading records physically outside legacy root inventory while retaining actual key/namespace/generation/queue; normal metadata stops new fields, portable projection validates then strips them and emits only old known history v1. Same lock capture, strict ordered subset/fullcontent/mode/revision constraints, no runtime/control/viewports, original8MiB budget. Root-family only task isolated prototype, sealed not auto migrated; out-of-scope legacy root retained and stops replacement. No code mutation/test/model business by reviewer.",
+      "path": "private life01-completion-20261123/t12-reading-export-astra-review.md",
+      "sha256": "61df3d8c402cbb7b66c1e8c601f5384eae9f4f256b304ef0bf8b5c139d3b7f61",
+      "verifiedReviewThread": "01a2094f-d9ff-74f3-a3e4-34b65ba731df",
+      "modelVerificationSha256": "8ec4cca44251b577c1a520775075afc248c250d1e6b315be46e33851297d3af5"
+    },
+    "LIFE01-ANDROID-EASYWORK-NATIVE-ID-CODEC-RED-GREEN-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "Final NativeHistoryRecovery31a86e3b/MobileSnapshotCodec efa3cca3/MobileSessione1c591 + exact native package",
+      "packageSha256": "78d44d999cfe7d4b5a77b667ac5824f27472ba9faee86eb25e656f78b555b0d9",
+      "mobileEnvironment": "simulator",
+      "environment": "Independent Android acceptance AVD, actual production NativeMigrationEasyWorkBusinessFixtures writers and complete legal synthetic EW target/credentials; old complete source App+old runner",
+      "scope": "Original legal EW native client.id=easywork-targethash differs from scope.hostId physicaldesktop. Cache/export wrongly fell through Codex equality and rejected. Root now uses existing old/current MobileSnapshotCodec native header in adapter, explicitly validates body target and attachment ownership. Same failed namespace now reads both original messages/viewport; cold actual Session has no fresh/control. capture/seal then actual old stageFile/stream reader/native decode and old export pass with all source hashes retained; wrongtarget/attachment body rehashed still reject. Final Codex5stage repeated exact new package all5pass. Source-variant old not official release; synthetic service is not actual EasyWork Electron.",
+      "path": "private life01-completion-20261123/android/t12-recovery-green/f55-ew-projection.log",
+      "originalRedSha256": "c94ae252c94ab724e1846c497c016ca2a5f63152426a57e7104aa59ffccc3750",
+      "regressionSourceSha256": "2550bc6b90b3da4909ecb3ab4bdf18cafd5d1554f823dc7c5bf3045681c0d89a",
+      "realHostFinalSmoke": "Completed final Android78d actualbb73 LAN/DEVRelay/HOME/cold read-only scope; see LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
+    },
+    "LIFE01-IOS-FINAL-READING-RECOVERY-NATIVE-20261124": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "uncommitted final LIFE01 candidate; exact source pins in continuation.candidateUnderTest",
+      "mobileEnvironment": "simulator",
+      "path": "private life01-completion-20261123/ios/t12-fixture/evidence-index.json",
+      "sha256": "7a53d01d59cddba41f52573039a7750b77da755c0cf1054bfe4ff971f794ecb7",
+      "scope": "Final790507/796d/ac067/05e and pbxbf8b native simulator: new-old115-new-old115-new five stages with raw40messages/cursor/rev7/viewport/intent/attachment assertions; plain runtime exhaustion cold; queue/100viewport;10 native contracts + separate disabled1; after-body/index actual process interruption followed by independent readers1/1 each. Eight extended original xcresults each1/1 cover revision8/no-overlap/held fresh proof/old same-target remove-readd SAME derived reader and R2 module only. Four old unregister POST403/effects0/model0. Raw1150file manifest verified by root, no mismatch. Exact per-install binary pins missing for some stages; snapshots606bbb/bfc1 are later build snapshots, not falsely assigned. Original red pbx exact identity unverified. Old actual App115 is a source variant, not formal118 release.",
+      "environment": "iOS26 isolated native XCTest/XCUI simulator; production sources and controlled GET fixture; no real Electron in these cases",
+      "rootSummarySha256": "42cc4fed3bf61fbedaa25304bec12d39b9f05710a20a6fbefee43a43611fda53",
+      "packageSha256": "per-scene fingerprints and explicit gaps in index; not a single universal package",
+      "verificationLayer": "native simulator with synthetic service; old actual App source variant"
+    },
+    "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "uncommitted final LIFE01 candidate; exact source pins in continuation.candidateUnderTest",
+      "mobileEnvironment": "simulator",
+      "path": "private life01-completion-20261123/android/t12-recovery-green/evidence-index.json",
+      "sha256": "12463f0b3edbc41b90f74b0c8a8d2b986c23c57cdd9bb3faf55df3daa3643700",
+      "scope": "Final31a86/efa3/e1c/504/e519 APK78d five-stage5/5; legal EW old/current export/read and strict target guard pass; final event stream4 snapshots body1 during stream/2 after Home and cold13messages+viewport, no model writes. Repeated identical GET+Home now body1->1; empty earlier cursor-only persists. Same-key queue stable checkpoint survives viewport coalescing. Actual owner quiesce/photo-local seal, concurrent capture lock, ordinary existing and strict migration factories pass. Earlier e3c side-layout9 boundaries and two actual process interruptions/readers are matched only to unchanged storage/publication paths; not an exact final APK whole rerun. Formal inspection lease not exercised. Old source APK02b is not formal release.",
+      "environment": "Android API36 task-isolated native instrumentation and synthetic encrypted/HTTP fixtures",
+      "rootReviewSha256": "946330e87cac74544907d359cdd23a9a5e9fa98dee79356fe19d6629751ee0fe",
+      "packageSha256": "78d44d999cfe7d4b5a77b667ac5824f27472ba9faee86eb25e656f78b555b0d9",
+      "verificationLayer": "native simulator; real EasyWork stage separately registered"
+    },
+    "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124": {
+      "kind": "real-dev",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "uncommitted final LIFE01 candidate; exact source pins in continuation.candidateUnderTest",
+      "mobileEnvironment": "simulator",
+      "path": "private life01-completion-20261123/final-real-easywork/root-independent-final-review.json",
+      "sha256": "a1236622186b191c01868627ed0b1943ed9a583d9c59aaa72982af4863ef0016",
+      "scope": "Final Android APK78d against actual EasyWork bb73 Electron/Host through LAN WSS and DEVRelay, original history/LIFE01 marker/body and Home draft pass; Host stopped cold cache/draft offline then actual restart reconnect. Cold raw evidence asserts onlinefalse and canStopfalse only: original run completed, no canCompose/create/freshness/cold UI claim. Fresh native EWDAP1 binding queries old device original operation: actual Host returns oktrue/resultnull LAN2/Relay1, independently original desktop receipt completed and run present. This is cross-device isolation negative pass; original same-device positive retained under unchanged status code. Initial positive assumption failed, broad test catch not used as independent proof. No new model write requests, existing bindings unchanged and exact new grant revoked. DEV issuer not production OIDC/public VPN.",
+      "environment": "actual local EasyWork bb73 desktop with preserved task account and original operation; API36 native acceptance App through LAN and localhost DEVRelay",
+      "packageSha256": "78d44d999cfe7d4b5a77b667ac5824f27472ba9faee86eb25e656f78b555b0d9",
+      "desktopEvidenceSha256": "16a66502502541498e9fb6f29c22131859e0a3602bba87b52de78cfe4b7d6953",
+      "scopeCorrectionSha256": "52806441b0562d40416ce3d817ea8d228fb7fe25c7223e5a54e5e0f7fd266cfe",
+      "assertionsSha256": "c3c2f389f87cbd5c4c22414d6c97d29d8cb5fe6f099017be221d2d28d1936859",
+      "execution": {
+        "actualModel": "gpt-6.1-terra",
+        "actualEffort": "medium",
+        "verified": "exact official turn_context; root-model-verification.json",
+        "serviceTier": "not exposed"
+      }
+    },
+    "LIFE01-R546-FINAL-STABLE-CHECK-AND-IOS-BUILD-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "uncommitted final LIFE01 candidate; exact source pins in continuation.candidateUnderTest",
+      "mobileEnvironment": "not-required",
+      "path": "private life01-completion-20261123/final-workspace-validation/r546-root-check-review.json",
+      "sha256": "497e47bec1172a88692bf17c1f45d2caec87f0a15b55bcc6081bca8cb084e101",
+      "scope": "Complete pnpm check exit0, approx950.5s; HEAD11aa, selected16files and whole workspace HEAD/status/staged+unstaged diff fingerprint893286 before/after stable. Normal pnpm build:ios exit0, no framework-skip or reuse override; build log/result pins retained. Universal simulator App main8b2d and rebuilt coref852 are compile outputs, not installed UI acceptance. First stale localization catalog check failure and R545 source-mutating fullcheck0 preserved as non-final evidence. Terra medium ran final full check; after usage-limit interruption root verified completed result and ran normal build, not labeled Terra build.",
+      "environment": "Node24 process PATH, Xcode explicit developer dir, OpenJDK17/shared cache; main WIP frozen through check/build",
+      "buildResultSha256": "f37db1d3eade791b334745d4fe12dc56e63a08f6055dd4f01e94144ab9c31893",
+      "packageSha256": "8b2d23cfc822d1ac38a34a5c1044b4efbb014a4644b4511da32448dbb67124d2"
+    },
+    "LIFE01-FINAL-STAGE-RESOURCE-CLOSEOUT-20261124": {
+      "kind": "auxiliary-check",
+      "sourceCommit": "11aa51b0167df92167f5a9be053f10722328a94a",
+      "sourceTree": "uncommitted final LIFE01 candidate; exact source pins in continuation.candidateUnderTest",
+      "mobileEnvironment": "not-required",
+      "path": "private life01-completion-20261123/source-closeout-inputs/closeout.json",
+      "sha256": "40cc29e06b76a433d58ae06653b7155912ab78c5f6a3874b68641c66a21e334b",
+      "scope": "All five task nonGit source copies/dependencies/build outputs released after source SHA unchanged, no open files/mount boundaries, source+lock recovery readback.3975 reachableGit blobs decoded SHA verified plus73 unique content files17.06MB and exact0f54 framework retained instead of whole trees. Android2 red AVD profiles AES256GCM archived on actual SMB, full auth decrypt/memberSHA-size-mode-xattr/source stability verified before local deletion; private key only local0600. iOS original red BB9F simulator deleted after raw1150manifest/old and redApp preservation. Other owned simulators/ports/services/worktree already released; unique EasyWork account profile preserved separately, original5EA/C4/5590/formalHost and rootWIP/shared caches protected. Four completed/failed helper responsibilities handed to root, formally archived and independently official metadata archived1. Root main retains remaining matrix ownership. Final inventory also released4 earlier task source copies (T11 upload/combined input/Android initial+baseline) with exact input/blob recovery manifest; only copied caches were discarded, opaque unique inputs including private env retained locally0600, no shared upload. Nine source copies total.",
+      "environment": "local task resources only; no cleanup of other worktrees/services",
+      "archiveReceiptSha256": "db4c5bb56379d03c28309c7f9a86c155e070ec587135cd48176d415a6bc80fb7",
+      "androidArchiveCloseoutSha256": "b14acc2e09685398aea66df37458786cd6f2d36d6ed5b44eef9b7f7e98f2f829",
+      "iosSimulatorCloseoutSha256": "e942205dc4b7e1b3025583aac9543fa10dac618e04b434fe2e0784f1ceda6c81",
+      "sourceInputManifestSha256": "ccfbf72dd3186eca9d4245137b06baf1b8678da266974abc4d1a49205ae324dd",
+      "additionalSourceCloseoutSha256": "182f566ce4646e706ea12b911eae2e107d683b9aac9749e25e1d58a6827c310b"
     }
   },
   "openItems": [
@@ -20002,14 +20373,14 @@
       "id": "LIFE01",
       "name": "手机前后台连接恢复与同类路径修复",
       "featureIds": ["F05", "F09", "F44", "F47"],
-      "relatedFeatureIds": ["F08", "F17", "F28", "F43", "F48", "F52"],
+      "relatedFeatureIds": ["F08", "F17", "F28", "F43", "F48", "F52", "F02", "F73", "F55"],
       "extensionFeatureIds": ["F76"],
       "kind": "user-requested-foreground-lifecycle-repair",
       "developmentState": "pending-integration",
-      "acceptanceState": "not-accepted-current-scope",
+      "acceptanceState": "historical-partial",
       "deliveryState": "candidate-not-integrated",
-      "executionState": "planned",
-      "owner": "主会话已完成本轮本地实现、受控原生和证据收尾；完整互通/版本及未验子项由主会话接续",
+      "executionState": "in-progress",
+      "owner": "当前LIFE01主协调会话负责语义合并；本机Terra medium负责既定检查与提交推送",
       "evidenceRefs": [
         "LIFE01-ASTRA-ULTRA-FINAL-PLAN-20261122",
         "LIFE01-SWIFT-PRODUCER-AUX-AND-CANDIDATE-20261123",
@@ -20031,12 +20402,43 @@
         "LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123",
         "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123",
         "LIFE01-RESOURCE-CLOSEOUT-AND-SOURCE-ARCHIVES-20261123",
-        "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123"
+        "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123",
+        "LIFE01-REAL-EASYWORK-ROOT-AND-DESKTOP-20261123",
+        "LIFE01-ROOT-REAL-EASYWORK-GUI-20261123",
+        "LIFE01-DUAL-COLD-PAGING-RED-20261123",
+        "LIFE01-IOS-COMBINED-SHARED-READ-RED-GREEN-20261123",
+        "LIFE01-ANDROID-COMBINED-REAL-UPLOAD-20261123",
+        "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123",
+        "LIFE01-DUAL-REAL-HOST-STOP-20261123",
+        "LIFE01-DUAL-HISTORICAL-HOST-AND-CURRENT-RETURN-20261123",
+        "LIFE01-IOS-ISOLATED-CONTROL-PROOFS-20261123",
+        "LIFE01-ANDROID-ACTIVITY-OWNER-RED-GREEN-20261123",
+        "LIFE01-IOS-FULL-OLD-SOURCE-VERSION-CYCLE-20261123",
+        "LIFE01-IOS-TEST-RESET-INCIDENT-AND-SCOPED-RESTORE-20261123",
+        "LIFE01-PASSIVE-READ-MIGRATION-RED-AND-DUAL-CANDIDATE-20261123",
+        "LIFE01-TERMINAL-READERS-AND-EXPLICIT-RETRY-RED-20261123",
+        "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123",
+        "LIFE01-IOS-DISCOVERY-TERMINAL-RETRY-RED-20261123",
+        "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123",
+        "LIFE01-WORKSPACE-HARNESS-REPAIR-TAIL-AND-METADATA-SUPPLEMENT-20261123",
+        "LIFE01-REAL-EASYWORK-PREVIEW-TWO-LEASES-20261123",
+        "LIFE01-IOS-ORIGINAL-PROFILE-QUERY-RESTORE-VERIFIED-20261123",
+        "LIFE01-R541-FROZEN-FULL-WORKSPACE-CHECK-20261124",
+        "LIFE01-DUAL-OLD-WRITER-READING-CACHE-DATA-LOSS-20261124",
+        "LIFE01-T12-ASTRA-ULTRA-AMENDMENT-20261124",
+        "LIFE01-IOS-REAL-EASYWORK-UPLOAD-BACKGROUND-SAME-ID-20261124",
+        "LIFE01-T12-READING-EXPORT-ASTRA-FINAL-20261124",
+        "LIFE01-ANDROID-EASYWORK-NATIVE-ID-CODEC-RED-GREEN-20261124",
+        "LIFE01-IOS-FINAL-READING-RECOVERY-NATIVE-20261124",
+        "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124",
+        "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124",
+        "LIFE01-R546-FINAL-STABLE-CHECK-AND-IOS-BUILD-20261124",
+        "LIFE01-FINAL-STAGE-RESOURCE-CLOSEOUT-20261124"
       ],
-      "ios": "R6候选构建及准确输入已核，实际inactive/Home31s/20轮、正常预览、错误目标拒绝、总建连截止、原生冷草稿附件与通知偏好等已分别留证。原生fixture/单元为辅助，普通UI/存储与真实Codex原操作仅在登记范围成立；完整T01–T14、真实EasyWork及所有版本/通道未关闭。",
-      "desktop": "BG1/BG2不要求Host升级；BG2必须修手机适配层共享建连与请求取消归属。BG3当前/旧Host无预览status，正常继续与未知安全结束分档；后续tombstone增强不在本次完成条件。未联系其他电脑或部署。",
-      "nextAction": "本轮本地阶段已结束，源码留工作区待集成；后续先取得可归属的真实EasyWork Host/Electron验收绑定及旧App/Host构建，再补各行remaining。T11其他只读面板/上传转写和阅读位置亦未验。缺失GUI证据不得以正式历史读取替代；不重发已完成的原合成操作。提交/PR/部署尚未获指令，A6/F75暂停保持。",
-      "updatedAt": "2026-11-23",
+      "ios": "本地候选已接入生产调用链：前后台共享读、四客户端失败/迁移门禁、冷阅读及跨旧writer恢复修复。最终源/pbx原生五阶段、普通耗尽冷启、队列/预算/实际进程中断、修订/nooverlap及旧移除重加负向通过；真实EasyWork LAN/DEVRelay/预览/原ID上传及原设备回执各按实际指纹范围保留。R2只有模块级新增family零I/O，部分逐安装二进制指纹缺失明确登记。",
+      "desktop": "实际EasyWork当前bb73与历史651e4同profile只读兼容和切回已双端留证；最终Android78d对当前Host联验及原桌面completed记录复核完成，无新增模型输入。新设备查询原设备回执null是隔离负向，不当成原设备正向。原sole model root及iOS零模型元数据操作保留；正式发行签名/生产OIDC/公网VPN不由DEV证据代替。",
+      "nextAction": "本轮源码已提交3bbf7ffc；主协调会话合并origin/main3998d598的Host持久化/标题修复并保留73d9/11aa元数据读取恢复，组合完整check通过后正常提交合并并推送origin/main。未验的真实矩阵范围和部署结论保持。",
+      "updatedAt": "2026-11-24",
       "plan": "docs/plans/mobile-foreground-connection-20261122.md",
       "planState": "final-reviewed",
       "reviewExecution": {
@@ -20063,8 +20465,8 @@
         "BG1": "implemented-candidate-native-slices-verified",
         "BG2": "implemented-candidate-controlled-red-green-verified",
         "BG3": "implemented-candidate-preview-and-preferences-scoped-verified",
-        "BG4": "partial-matrix-remaining-not-running",
-        "BG5": "source-and-evidence-saved-not-integrated"
+        "BG4": "scoped-native-real-desktop-version-tests-completed; explicit-broader-subcases-unverified",
+        "BG5": "local-source-commit-saved; integrating-current-Gitea-main-before-normal-push"
       },
       "acceptanceMatrix": [
         {
@@ -20089,11 +20491,20 @@
             "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
             "LIFE01-R5-IOS-31S-20CYCLES-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-DUAL-HISTORICAL-HOST-AND-CURRENT-RETURN-20261123",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
-          "scope": "双端实际Home短停/31s及恢复子项；iOS250ms事件fixture、Androidloopback，不冒称真实原长轮询。",
-          "remaining": ["真实Host长轮询及所有原回执恢复", "各传输组合真实失效/必要重连"],
-          "fullProductScopeAccepted": false
+          "scope": "双端Home短停/31s/20轮受控与真实EasyWork LAN/DEVRelay原ID读取分别按源和包留证；真实socket握手/占位计数未全证。",
+          "remaining": [
+            "All actual failure recovery/version paths are tracked by T05/T12; final per-platform/route original receipt cross-product and exact long-poll/socket occupancy remain unverified."
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Final cc77 source actual DEV EasyWork Relay post-Home snapshot delta sync1/read-state1; prior strict LAN delta1/1 and own same-device zero-model creation receipt Home/cold evidence separately pinned. No per-route handshake peak claim.",
+            "android": "Combined App actual EasyWork LAN/DEV Relay original root receipt and history; Home31s/20cycles passed. Native1/1 plus independently observed requests."
+          }
         },
         {
           "id": "T03",
@@ -20101,25 +20512,62 @@
           "evidenceRefs": [
             "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
-            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123"
+            "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
+            "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123",
+            "LIFE01-PASSIVE-READ-MIGRATION-RED-AND-DUAL-CANDIDATE-20261123",
+            "LIFE01-TERMINAL-READERS-AND-EXPLICIT-RETRY-RED-20261123",
+            "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123",
+            "LIFE01-IOS-DISCOVERY-TERMINAL-RETRY-RED-20261123",
+            "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123"
           ],
-          "scope": "Android真实native四客户端/非选目标零新增读通过；iOS实际401 failed保持及旧四标记方法级证据分列。",
-          "remaining": ["iOS最终候选完整四客户端组合", "各真实Agent/Host组合"],
-          "fullProductScopeAccepted": false
+          "scope": "双端四客户端的生产原生状态/被动读取门禁均取得受控增量通过；健康未选中必要目录/可见额度仍可读，禁止的是批量状态改写及失败/迁移端隐式重试。",
+          "remaining": [
+            "Complete actual Agent/transport four-target cross-product is not inferred from the synthetic native combination; actual single EasyWork Host/channel/version evidence is separately pinned."
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Final e98/68ad/8d913 exact native1/1: Home states/read gates, Bphase/no extra event/history owner, A/Bdraft, C401 stop and actual menu/banner retry all passed; original reds/harness failures retained.",
+            "android": "Final actual HTTP401 native two methods passed: automatic history/events stop through Home, explicit production refresh and actual retry-button recover both readers and fresh control proof. Exact final opt-in guard runs separately verified; passive four-target one UI pass plus original layout timeouts retained."
+          },
+          "currentRegression": {
+            "platform": "iOS",
+            "state": "original-native-red-final-controlled-native-green",
+            "source": "apps/ios/Sources/CodexDiscovery.swift",
+            "candidateSha256": "68adf984c4f3636372cadb2d31a8d92df1bd48f534a491b453347a17595775e6",
+            "scope": "Only automatic discovery-triggered workspace retry newly changed; actual scan remains."
+          },
+          "controlledNativeScopeAccepted": {
+            "ios": true,
+            "android": true
+          }
         },
         {
           "id": "T04",
           "state": "partially-passed",
           "evidenceRefs": [
             "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
-            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123"
+            "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
+            "LIFE01-IOS-COMBINED-SHARED-READ-RED-GREEN-20261123"
           ],
           "scope": "Android慢workspace>30s直接history/receipt进展及后台GET占位红绿、共享单读超时边界辅助通过。",
           "remaining": [
             "iOS慢workspace>8/>30与独立事件/回执联动",
             "真实共享通道/在途写与精确UI预算联测"
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "currentRegression": {
+            "platform": "iOS",
+            "source": "f8530bb3d4dff7d607c2c066ea67abb9dc3216bdc94e75ffd79b214b175a3166",
+            "state": "original-red-reproduced-candidate-native-green-real-channel-retest-pending",
+            "candidate": "cc77e99b93140f0863bcd5c36ea34adc00c77966784c957d4bb3d8526d1dbb77",
+            "evidence": "private life01-completion-20261123/ios combined-t14 original xcresults"
+          },
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Combined original slow-workspace >30s helper evidence plus cc77 encrypted-peer original2/2 red-green; healthy reads/captured write survive independent slow read; authenticated response before send callback returns bounded.",
+            "android": "Combined lifecycle/proof and original controlled slow workspace/shared timeout evidence matched only unchanged paths; actual Host bounded failure next."
+          }
         },
         {
           "id": "T05",
@@ -20129,26 +20577,47 @@
             "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
             "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-DUAL-REAL-HOST-STOP-20261123",
+            "LIFE01-DUAL-HISTORICAL-HOST-AND-CURRENT-RETURN-20261123",
+            "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123",
+            "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
           "scope": "Android401/错runtime缓存控制拒绝；iOS错误workspace/history完整target拒绝且保留原缓存。",
-          "remaining": ["真实Host停机/撤权/TLS/不兼容全矩阵", "各恢复入口无重放的真实互通"],
-          "fullProductScopeAccepted": false
+          "remaining": [
+            "Actual revocation/TLS/incompatible combinations and complete error/recovery entry matrix",
+            "Historical Host read and current Host restoration tracked by T12; no replay"
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Actual same-profile Host stop+Home31 cached marker/draft retained, send disabled~0.5s1/1; full error state budget not proved by conditional UI label.",
+            "android": "Actual same-profile Host stop+Home31 original target/thread/operation ID/cache/draft retained1/1; real AX send+decision/stop/create/configure disabled; UI ends waiting8166ms. Original canCompose predicate failure preserved as test error, not production bug.",
+            "iosTerminal401": "Final actual native HTTP401 no passive workspace/history/events through Home; explicit workspace menu and separate history retry recover, root-verified1/1. WrongTLS/revocation/full real Host error matrix remains separate.",
+            "finalAndroidColdScope": "Final actual Host cold onlinefalse/canStopfalse only; no fresh/create/send or cold UI asserted. Earlier actual stop+AX controls preserved at their exact source/package scope."
+          }
         },
         {
           "id": "T06",
           "state": "partially-passed",
           "evidenceRefs": [
             "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-IOS-ORIGINAL-PROFILE-QUERY-RESTORE-VERIFIED-20261123",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
           "scope": "真实本机Codex原操作1次提交/1条完成记录；原位升级、只查原ID和独立归档核对；受控代理边界明确。",
           "remaining": [
-            "真实Electron GUI owner及独立物理执行计数",
-            "Provider/自动预测次数",
-            "全部发送/队列/创建/打开未知分支及迟到新稿"
+            "Remaining send/queue/open/late-draft branches and physical Provider/automatic-prediction counts; Codex GUI blocked by prior explicit tool rejection remains separate, not bypassed."
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Independent iOS device zero-model empty create/status Home/cold and one archive; Android original model receipt null on iOS is expected device isolation. No Android credential sharing.",
+            "android": "Actual one root model task, immutable v2 intent and production NativeCodexFlow, desktop1 completed run + root actual GUI witness; create2 total includes iOS empty metadata, turn1/execution1.",
+            "finalDeviceIsolation": "Final new binding queries old op acrossLAN2/Relay1 oktrue/null; original desktopcompleted. Negative pass, not new own-op positive; no replay."
+          }
         },
         {
           "id": "T07",
@@ -20156,11 +20625,25 @@
           "evidenceRefs": [
             "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
-            "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123"
+            "LIFE01-IOS-R6-COLD-ATTACHMENT-STORAGE-20261123",
+            "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123",
+            "LIFE01-IOS-ORIGINAL-PROFILE-QUERY-RESTORE-VERIFIED-20261123",
+            "LIFE01-IOS-FINAL-READING-RECOVERY-NATIVE-20261124",
+            "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
           "scope": "双端真实原生存储独立进程恢复文字/完整target/附件原字节，冷缓存不授控制；iOS旧UI面板准备失败单列。",
-          "remaining": ["早期页/阅读位置/分页围栏", "真实Host附件与普通用户导入全路径"],
-          "fullProductScopeAccepted": false
+          "remaining": [
+            "普通导入/全功能权限UI不由阅读缓存及专用上传探针扩签；正式发行/物理设备组合见T12。"
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Cold early-page/exhausted-cursor/viewport original red -> R7 green -> combined native1/1; history source unchanged by cc77, reuse bounded to that path. Original attachments/native cold data evidence separate.",
+            "android": "Combined separate-process early-page13/cursor nil/viewport and cold originalID/target/draft/filebytes/grant-marker passed; no cold control proofs.",
+            "finalReading": "Final independent encrypted reading body/index production paths integrated in both candidate Apps; correct carrier invalidation, runtime plain prefix, iOS fresh proof disk promotion, stable requested-body queue and native EW ID codec repaired and verified. No runtime/control stored.",
+            "finalRealCold": "Final Android78d actual bb73 LAN/DEVRelay/history/body/Home and Host stop cold cache/draft offline then reconnect pass; no new model write. Actual cold proof only onlinefalse/canStopfalse, send/create/freshness not asserted. Earlier iOS actual same-code transport/preview/upload retained separately."
+          }
         },
         {
           "id": "T08",
@@ -20170,7 +20653,10 @@
             "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
             "LIFE01-R5-IOS-31S-20CYCLES-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-ANDROID-ACTIVITY-OWNER-RED-GREEN-20261123",
+            "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123",
+            "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124"
           ],
           "scope": "双端20轮/Home31s；iOS HTTP最大并发1；Android配置重建和实际默认网切换，回环仍可达。",
           "remaining": [
@@ -20178,7 +20664,17 @@
             "内部owner/listener/socket精确峰值与长期趋势",
             "目标/偏好/凭据全部交叉排列"
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "android": "Actual old/new pumps coexisted after natural Activity finish/reopen; candidateccf reuses Retained in-process runtime. Original red/candidate green,20 distinct Activities one physical pump, Home31/rotation passed. No A6 durable migration or ViewModel change.",
+            "remaining": "Natural fresh share and rotation once, captured production-loopback write once, and P9 cold reader passed as scoped native slices; persistent cleaned regression copied into main tree with stronger acceptance/fresh-profile guards, final check pending. Fresh natural notification and cross-version attachment assertions not claimed."
+          },
+          "persistentAndroidRegressions": {
+            "owner": "apps/android/src/androidTest/kotlin/com/agenthub/android/Life01ActivityOwnerRegressionTest.kt",
+            "terminal": "apps/android/src/androidTest/kotlin/com/agenthub/android/Life01TerminalReadTest.kt",
+            "scope": "Explicit isolated acceptance admission and default-profile protection; baseline guards skip without launch, final owner20 and terminal2 methods passed. Other share/capturedwrite bodies previously passed before only guard strengthening."
+          }
         },
         {
           "id": "T09",
@@ -20188,52 +20684,101 @@
             "LIFE01-R4-IOS-PREVIEW-NORMAL-20261123",
             "LIFE01-R5-IOS-NATIVE-FAILED-AND-LATE404-20261123",
             "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-REAL-EASYWORK-PREVIEW-TWO-LEASES-20261123"
           ],
-          "scope": "正常原生预览暂停/继续/API/HMR/撤销；迟到create/close404安全阻断；Cookie故障注入约8.3秒和旧view回调通过，层级分列。",
+          "scope": "iOS正常原生预览已有真实EasyWork Electron/LAN两组租约创建/关闭、Home恢复、API/HMR通过；受控未知create/close404及迟到分支原证据分列。",
           "remaining": [
-            "真实Electron/各Host及通道",
-            "系统后台发生在create-await/close-unknown的完整UI组合"
+            "Actual UI background during create-await/close-unknown remains distinct from normal recovered preview.",
+            "Android F76 UI not implemented, Relay preview not advertised by this LAN scope; not promoted or silently implemented."
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "realNormalScopeAccepted": true
         },
         {
           "id": "T10",
           "state": "partially-passed",
           "evidenceRefs": [
             "LIFE01-IOS-R6-NOTIFICATION-PREFERENCES-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123",
+            "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123"
           ],
           "scope": "默认AppGroup/隔离seam/DEBUG reset偏好冷恢复3项通过；原失败与系统映射未证说明保留。",
           "remaining": ["同事件展示去重/授权不重复及发现扫描", "实际APNs到达及设备特有条件"],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "Default preferences historical scope retained; new actual discovery10s terminal workspace retry red-green verified by complete native T03. Scan lifecycle/dedup/full real-discovery and paused push not promoted.",
+            "android": "Combined controlled registration/dedup2/2; same event pending/unknown receipt avoids duplicate claim across process. Not system display/APNs/discovery proof."
+          }
         },
         {
           "id": "T11",
           "state": "partially-passed",
-          "evidenceRefs": ["LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123"],
-          "scope": "额度合成详情真实Home后35%快照保留；其他既有上传/转写辅助检查不升级为本次原生通过。",
-          "remaining": [
-            "Git/子Agent等页面及全局在线断言",
-            "上传前缀/封存转写原ID后台恢复",
-            "播放器影响匹配及真实业务POST独立计数"
+          "evidenceRefs": [
+            "LIFE01-IOS-R6-USAGE-SNAPSHOT-20261123",
+            "LIFE01-ANDROID-COMBINED-REAL-UPLOAD-20261123",
+            "LIFE01-IOS-REAL-EASYWORK-UPLOAD-BACKGROUND-SAME-ID-20261124"
           ],
-          "fullProductScopeAccepted": false
+          "scope": "双端真实EasyWork原ID上传恢复及桌面文件SHA已取得限定原生证据；iOS实测Home/Relay离线重启使用明确ACK后3秒timing seam。额度既有快照范围保留。",
+          "remaining": [
+            "Ordinary iOS file-import UI and no-instrumentation timing are not promoted by dedicated upload probe.",
+            "Git/subAgent panels and global online assertions; player impact matching and remaining independent business POST accounting remain separate."
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-24",
+            "android": "Actual same-transfer600000-byte completed from prefix196608 with all four offsets once/prepare1/complete1, independent content SHA; original automation failures retained.",
+            "ios": "Actual native1/1: Home after196608-byte confirmation, oneRelay offline/restart, sameID8MiB completion; prepare1/complete1/43unique offsets and desktop exact SHA. Dedicated testview/ACK-after3s seam disclosed; original task grants/data preserved."
+          }
         },
         {
           "id": "T12",
-          "state": "not-run-for-current-candidate",
+          "state": "partially-passed",
           "evidenceRefs": [
             "LIFE01-ANDROID-FINAL-LIFECYCLE-SLICES-20261123",
-            "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123"
+            "LIFE01-CODEX-ORIGINAL-OP-RECOVERY-20261123",
+            "LIFE01-DUAL-HISTORICAL-HOST-AND-CURRENT-RETURN-20261123",
+            "LIFE01-IOS-FULL-OLD-SOURCE-VERSION-CYCLE-20261123",
+            "LIFE01-ANDROID-ACTIVITY-OWNER-RED-GREEN-20261123",
+            "LIFE01-DUAL-OLD-WRITER-READING-CACHE-DATA-LOSS-20261124",
+            "LIFE01-T12-ASTRA-ULTRA-AMENDMENT-20261124",
+            "LIFE01-T12-READING-EXPORT-ASTRA-FINAL-20261124",
+            "LIFE01-ANDROID-EASYWORK-NATIVE-ID-CODEC-RED-GREEN-20261124",
+            "LIFE01-IOS-FINAL-READING-RECOVERY-NATIVE-20261124",
+            "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124",
+            "LIFE01-R546-FINAL-STABLE-CHECK-AND-IOS-BUILD-20261124"
           ],
-          "scope": "仅历史局部原位升级/冷恢复证据；最终候选旧新Host/旧App/回退矩阵未执行。",
+          "scope": "双端完整旧源码重建包与当前候选同profile升级/回退、历史真实EasyWork Host651e4及当前bb73恢复已有分项证据；正式发布二进制及未覆盖数据类别不扩签。",
           "remaining": [
-            "新App×已部署旧Host/当前Host",
-            "旧App×当前Host及升级/回退安装",
-            "授权/草稿/原操作保留的完整版本组合"
+            "Formal released signed binaries/physical device combinations not replaced by complete source variants.",
+            "Android actual inspection lease and full iOS R2 App/Admission remain untested; R2 module-only negative is accepted only at module scope.",
+            "Some iOS scenes lack exact per-install binary fingerprint; exact production source/pbx/build/xcresult retained, no fingerprints invented."
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-24",
+            "ios": "26509 source final windowed full5-stage UI and original disk40/cursor/rev7/viewport/immutableinput/filebytes assertions passed. Earlier UI-green/disk20-red retained; promotion after fresh proof fixed in-memory equality vs old disk mismatch. Final requested-body coalescing candidate still under tests.",
+            "android": "Root prototype bc5c source full5-stage1/1each after original new-after-old red. Diagnostic cache13/apply13/validpaged then mergepaged=false12 proved runtime-present plain paging bug. Original driver unchanged green; all target/reader/draft/filebytes/unknownintent/receipt intact. Final side-layout and export not signed by that prototype.",
+            "iosFinalCandidate": "790507/796d exact pins: windowed5-stage original script passed; plain runtime/earlier exhaustion/latest/cold UI+disk40+nilcursor passed; queue coalescing/100 distinct viewport offsets10 native pass + real after-body/after-index crash followed by independent reader1/1each. READING_RECOVERY_DISABLED direct native1/1; R2/remote revision/nooverlap/legacy no-revision/old remove-readd remaining explicitly continued.",
+            "androidFinalCandidate": "Final31a86/efa3/e1c/504/e519 package78d44 exact5-stage new-old-new-old-new all1/1; legal EW body cold/no control and newfile-oldreader/oldexport passed. Source owner quiesce withphoto/local domains sealFile passed; capture blocked during real publication and read complete new snapshot; normal existing/migrationDecoder/existingQ04Owned/strict formal factories gate new family with unchanged files/key aliases. First permission/driver errors retained.",
+            "iosExtendedNegatives": "Final actual native revision7->8 and sameRev/nooverlap drop old prefix/cursor. Legacy ordinary20/noRevision+companion40 held real latest: original ordinary SHA unchanged,000 visible but send disabled/no earlier; release obeys fresh revision. Real old115 UI remove/readd carriernil then new derives SAME reader but oldbody does not revive before held proof. R2 actual macro MODULE only zero family/key/GC, not fullApp/Admission. Removal generated4 notification unregisterPOSTs403, actualeffects/model0; not allPOST0.",
+            "finalStableValidation": "R546 fullcheck0+normal iosbuild0 with source/docs unchanged; final real readonly Android78d againstbb73 complete, no new root input.",
+            "androidFinalStreaming": "Four production event snapshots body1, Homebody2, cold13+viewport; GETonly fixture/model0. Exact78d final package. Inspection real lease untested."
+          },
+          "currentRegression": {
+            "platform": "iOS/Android",
+            "state": "original-dual-old-writer/runtime-prefix/promotion/dirty/EW-codec-reds-final-native-green",
+            "cause": "Old source rewrites unknown metadata fields and ordinary history, deleting new reading checkpoints and early pages; separate normal drafts/attachment/operations remain intact.",
+            "noModelWrites": true
+          },
+          "nativeSourceVariantScopesAccepted": {
+            "ios": true,
+            "android": true
+          },
+          "formalReleasedBinaryScopeAccepted": false
         },
         {
           "id": "T13",
@@ -20242,11 +20787,25 @@
             "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
             "LIFE01-IOS-R6-NATIVE-TARGET-AND-PREVIEW-20261123",
-            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123"
+            "LIFE01-IOS-R6-EVIDENCE-INDEX-20261123",
+            "LIFE01-ANDROID-COMBINED-CONTROLLED-REGRESSION-20261123",
+            "LIFE01-IOS-ISOLATED-CONTROL-PROOFS-20261123",
+            "LIFE01-ANDROID-TERMINAL-READERS-NATIVE-RED-GREEN-20261123",
+            "LIFE01-IOS-FOUR-CLIENT-NATIVE-RED-GREEN-20261123",
+            "LIFE01-IOS-FINAL-READING-RECOVERY-NATIVE-20261124",
+            "LIFE01-ANDROID-FINAL-READING-EXPORT-NATIVE-20261124",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
           "scope": "Android两类证明到达顺序/空事件healthreceipt不解锁及停止/审批/队列/新建门禁；iOS错目标/failed及冷缓存控制拒绝分列。",
-          "remaining": ["iOS完整四状态与全部副作用时序", "真实Host/Electron原owner和所有能力组合"],
-          "fullProductScopeAccepted": false
+          "remaining": [
+            "Actual Host/Electron owner and all advertised permission combinations; controlled native fixture does not promote those."
+          ],
+          "fullProductScopeAccepted": false,
+          "continuationResults": {
+            "date": "2026-11-23",
+            "android": "Combined proof/cache/foreground/preconfirmation4/4 and arrival ordering2/2. Actual production gates with controlled loopback/peer; not all actual Host permission combinations.",
+            "ios": "Isolated native3/3 four-state proof gates and actual synthetic side-effect dispatch passed; dirty-profile failures retained as fixture contamination, not product fix."
+          }
         },
         {
           "id": "T14",
@@ -20255,14 +20814,34 @@
             "LIFE01-R3-ANDROID-CONTROLLED-NATIVE-20261123",
             "LIFE01-ANDROID-T14-AND-GET-OWNER-RED-20261123",
             "LIFE01-ANDROID-R4-NATIVE-REGRESSION-20261123",
-            "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123"
+            "LIFE01-IOS-R6-T14-ACTUAL-DEADLINE-20261123",
+            "LIFE01-IOS-COMBINED-SHARED-READ-RED-GREEN-20261123",
+            "LIFE01-FINAL-REAL-EASYWORK-READ-COLD-DEVICE-ISOLATION-20261124"
           ],
-          "scope": "双端真实RemoteSession与合成加密peer：取消首读/另一读与捕获写、实际30秒截止、非合作旧factory隔离均通过；不代表真实LAN/Relay互通。",
+          "scope": "真实RemoteSession＋合成加密peer截止/取消/写入隔离与真实EasyWork LAN/DEVRelay共享读/原回执分别通过限定子项；实际网络停顿下在途写与长期资源峰值仍未全证。",
           "remaining": [
-            "真实EasyWork LAN WSS/Relay与目标Host组合",
-            "生产级实际网络下占位/底层资源与原写回执核对"
+            "真实网络停顿与在途原写同时存在时的回执/发送去重和底层owner/socket峰值；已有真实只读通道结果不代替该注入场景。"
           ],
-          "fullProductScopeAccepted": false
+          "fullProductScopeAccepted": false,
+          "currentRegression": {
+            "platform": "iOS",
+            "source": "f8530bb3d4dff7d607c2c066ea67abb9dc3216bdc94e75ffd79b214b175a3166",
+            "state": "original-encrypted-peer-red-final-native-green; actual-LAN-DEVRelay-read-scopes-passed; real-stalled-write-unverified",
+            "candidate": "cc77e99b93140f0863bcd5c36ea34adc00c77966784c957d4bb3d8526d1dbb77",
+            "evidence": "private life01-completion-20261123/ios combined-t14 original xcresults"
+          },
+          "continuationResults": {
+            "date": "2026-11-23",
+            "ios": "cc77 actual production encrypted peer: original red-green2/2 + producer deadline3/3 + cap16/late-owner1/1; pure native build pass. Actual DEV Relay postHome proven separately.",
+            "android": "Combined real LAN and DEV Relay shared factory1/cancel first waiter/other read+same original receipt each1/1; not captured actual write under network stall."
+          },
+          "persistentRegressionSuite": {
+            "path": "apps/ios/Tests/Life01SessionOwnershipTests.swift",
+            "sourceSha256": "01135e2fc5f11494a534af5dbdcc997bdc0180b123e8601d2596e7c99bbde4cd",
+            "projectSha256": "0bc3685ffcc5b5100b7c7adcb831610d022d7da542fb847276da3cd5e9fc5fce",
+            "nativeResult": "6/6 on matching exact native source/project, root independently confirmed xcresult summary",
+            "scope": "Synthetic encrypted peer, dedicated Simulator native target; actual30s deadlines, strict cancellation, bounded slow read and send callback, cap16/late owner. P7 admission/production App source membership unchanged."
+          }
         }
       ],
       "testExecution": {
@@ -20272,7 +20851,8 @@
         },
         "actualVerified": "准确任务官方turn_context已由主会话独立核对；本机子Agent，不是跨电脑对话",
         "speed": "接口无速度参数，运行记录无service tier；未宣称最高速度生效",
-        "finalAuxiliaryChecks": "LIFE01-FINAL-VALIDATION-AND-AGENT-CLOSEOUT-20261123"
+        "finalAuxiliaryChecks": "LIFE01-R546-FINAL-STABLE-CHECK-AND-IOS-BUILD-20261124",
+        "executionLimitation": "Two Terra helpers hit usage limit after completed native tests/full check. Root took over independent evidence verification, normal build and source-copy cleanup; no replacement model or falsely claimed Terra build."
       },
       "modelAccounting": {
         "newBusinessRootInputs": 1,
@@ -20320,14 +20900,16 @@
           "sha256": "e385853eabd5e1e42f3cf4f8419886f30f5dbe750ee30a23f8c32956ab423c6b",
           "jvmAuxiliaryTests": 148,
           "note": "R3 JVM148/148 source unchanged in final native candidates; not rerun merely for unchanged core"
-        }
+        },
+        "scope": "Frozen original-stage candidate inputs retained for their evidence. Later source changes and matching packages are versioned in continuation candidateUnderTest, manifest changes and evidenceRegistry; these original hashes do not describe the latest source."
       },
       "remainingEnvironmentConstraints": [
-        "真实EasyWork验收绑定/运行目标尚未为本任务建立并独立核实；其他在途环境不能直接冒作本任务通过",
-        "CUA明确禁止访问com.openai.codex，未取得桌面GUI owner证据；官方历史读取仅证明记录",
-        "旧已部署App/Host及回退安装的准确组合未取得当前通过"
+        "当前新增均为原生模拟器，保留既有用户iOS真机及Android主线基线；正式发行签名/物理网络/生产OIDC/公网VPN不冒称已验。",
+        "当前实际EasyWork DEV授权、历史完整源码Host与旧App变体已联验；原Codex CUA明确拒绝不绕过。",
+        "Android actual inspection lease、iOS完整R2 App/Admission与部分逐安装包指纹未具备证据；R2模块零I/O和生产源/pbx证据分别保留。",
+        "最终真实Host冷启只证明缓存/草稿/离线/canStopfalse；全部发送/新建/freshness断言由受控原生及早前真实停服的准确原范围分列，不升级本次实际Host冷态全权限通过。"
       ],
-      "localStageState": "completed-scoped; remaining matrix planned, not running",
+      "localStageState": "user-authorized-main-delivery-in-progress",
       "resourceCloseout": {
         "state": "completed-owned-resources-released; verified-source-only-archives-and-minimum-evidence-retained",
         "released": "任务专用Android AVD/模拟器/端口/构建输出；iOS模拟器/fixture/DerivedData/测试App；iOS R6及Android R4独立源码目录已逐文件归档读回后移除；无共享依赖随链接删除。单次产品测试聊天已官方归档且独立核实。",
@@ -20351,8 +20933,138 @@
         "sourceDeltaSha256": "f45c19096d3c7f0a531088910cc579385b8d3d1dccec685aa3a8e989160eced3",
         "notCreated": "Git工作树/分支、PR、部署和远端协调聊天；本机测试使用子Agent，无另建独立协调聊天。",
         "archivedLocalTestAgents": 10,
-        "archiveVerification": "所属正式归档接口成功；官方threads元数据只读独立确认10条archived=1。当前主会话保留。"
-      }
+        "archiveVerification": "所属正式归档接口成功；官方threads元数据只读独立确认10条archived=1。当前主会话保留。",
+        "scope": "Historical completed pre-continuation native stage only. Current continuation has active task-owned Host and native test resources; current ownership/release conditions are tracked separately in continuation and private resource records."
+      },
+      "continuation": {
+        "startedAt": "2026-11-23T09:19:45.160296+00:00",
+        "authorization": "继续补齐剩余矩阵；双端同步，重点真实EasyWork/桌面/新旧兼容，必要修复与台账更新",
+        "privateEvidenceRoot": "private life01-completion-20261123",
+        "sourcePins": "本次开工10个原生产文件均匹配R6/R4；其他并发事实保留",
+        "testAgents": [
+          "life01_environment_recovered",
+          "life01_android_owner_verify",
+          "life01_ios_four_clients"
+        ],
+        "testModel": "actual gpt-6.1-terra/medium independently verified from each exact official turn_context",
+        "speedLimitation": "formal subagent API exposes no speed; no serviceTier in actual records",
+        "modelInputPolicy": "原Codex单次输入封存不重发；真实EasyWork必要新任务先登记唯一不可变意图并协调双端归属。只读/回执不新增模型。",
+        "remainingStatus": "继续按矩阵明确剩余子项：真实网络停顿下在途原写/回执与内部owner-listener-socket占位、预览创建/关闭未知态真实UI、尚缺正式发行组合。当前源码尚未提交/合入/部署，不自动发布。F52/F54推送跳过、A6/F75等暂停保持；原工具拒绝不绕过。",
+        "updatedAt": "2026-11-24",
+        "localProgress": {
+          "realEasyWork": "Final Android78d actual bb73 LAN/DEVRelay/history/body/Home and Host stop cold cache/draft offline then reconnect pass; no new model write. Actual cold proof only onlinefalse/canStopfalse, send/create/freshness not asserted. Earlier iOS actual same-code transport/preview/upload retained separately.",
+          "coldHistory": "Final independent encrypted reading body/index production paths integrated in both candidate Apps; correct carrier invalidation, runtime plain prefix, iOS fresh proof disk promotion, stable requested-body queue and native EW ID codec repaired and verified. No runtime/control stored.",
+          "compatibility": "Both new apps vs actual historical651e4 source Host and returncurrentbb73 passed scoped same-binding reads. Complete Android568e old-source/current candidate same-profile cycle passed with original journal; iOS complete6f65 Simulator build115 cycle and finalcurrent read passed before separate test-reset incident. Formal release binaries and all data assertions unverified.",
+          "receiptBoundary": "Original same-device positive retained; final newEWDAP device actual LAN2/Relay1 old op status oktrue/null is expected isolation and original desktop remainscompleted. Initial positive test assumption fail preserved; no replay/no new root model input.",
+          "rootGui": "independent actual EasyWork AX observed; Codex original CUA prohibition not bypassed",
+          "combinedSource": "Source03490954 + frozen LIFE01 WIP + mechanical localization supplement; source manifest pinned privately. Pure iOS build, Android168 JVM, native cold paging dual-platform and Android actual LAN/Relay original-receipt lifecycle slices passed; exact package scopes preserved.",
+          "iosReadTimeout": "cc77 exact native original red-green2/2, producer3/3, cap/lateowner1/1 and persistent6/6; actual DEVRelay postHome read deltas separately passed. New passive-reader/terminal recovery candidate source scope tracked independently.",
+          "upload": "Same original transfer600000 bytes completed; prepare1,four distinct offsets each1,complete1, independent SHA and bytes match. Native original failures/staged recovery separate, no model input/re-prepare/chunk0 replay.",
+          "hostStop": "Both actual Host stop+Home31 controls/cache passed with earlier stated8.166s/conditional-label limits; historical651e4 read and current bb73 return independently witnessed on both devices. Root model turn remains1.",
+          "androidActivityOwner": "Actual native original red-green,20 natural distinct Activities one physical pump, Home31/rotation and same-profile old/current cycle passed; final persistent main-tree owner3/3 verifies20 reopens, share/rotation once and synthetic capturedPOST once. Natural fresh notification and version-cycle attachment not promoted.",
+          "iosTestIncident": "Original profile thirteen semantic fields plus marker/draft preserved; standalone exact readonly original status now1/1 found completed, one real Host GET, unchanged strict guard. Container UUID remapping reconciled; original reset incident not hidden.",
+          "workspaceChecks": "R546 stable complete pnpmcheck0 ~950.5s and normal pnpm build:ios0; before/after HEAD/fulltracked diff+selected pins unchanged. R547 documentation-only update separately passed renderer --write/--check, complete check:mobile-parity, scoped Prettier and git diff --check. Current52changed/untracked non-doc source SHA snapshot retained privately; no business code changes after fullcheck.",
+          "terminal401": "Both platforms final native terminal401/Home automatic-stop and real retry controls pass; iOS also discovery10s retry red-green. Current assertions are synthetic native boundaries, not all real revocation/TLS combinations.",
+          "versions": "Final dual new-old-new-old-new retained early prefix/exhaustedcursor/revision/viewport and original data. Android old source568e APK02b; iOS6f65 App115. Formal signed binaries not claimed; original red and exact identity gaps retained.",
+          "preview": "Actual EasyWork normal iOS LAN1/1 and independent two create/close ID pairs passed; task grant precisely revoked and original grants preserved; exclusive sim/controller/derived/site released.",
+          "storageAndExport": "Android final side namespace-generation outside old root, legacy known-format v1 pure projection, same-lock seal/capture and conflict/oldreader/oldexport pass; native legal EW target mismatch red->green. Four export conflict/budget cases preserve source. No A6 scope expansion.",
+          "writeBudget": "Actual same-content latest/Home body1->1;4 real production event batches body1 during stream then2 at Home and cold13/viewport recovered. iOS100viewport/queue coalescing and dual real process interruption checks separately recorded.",
+          "resources": "Owned active services/AVDs/sims/worktree and9source/dependency/build copies released after exact input readback. Minimum exact private source inputs/locks, one0f54 framework and raw failures/binaries preserved;2Android red profiles encrypted SMB readback complete; unique EasyWork account and originalAndroid5590/iOS5EA/C4 profiles kept separately for original-operation recovery and retention review. Root/shared caches protected."
+        },
+        "candidateUnderTest": {
+          "date": "2026-11-24",
+          "kind": "final-dual-reading-recovery-and-provider-native-cache-codec",
+          "files": {
+            "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryRecovery.kt": "31a86e3b63bab9c6cc386dc527781313bc02fedd98d97f2776780ee280f0a935",
+            "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "504f117d2f431198d28e512dec15096f1dcc87425a968a99123c60b30d0d064b",
+            "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "e1c591220f23ebe6069dd9d99b95bdf00024628342af8ede0173f3f7722a5eb4",
+            "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "e519f958fd8c1207a54952d4f6a3e6624192bab0afccb7c34d60a504889ba38f",
+            "apps/ios/Sources/ReadingRecovery.swift": "796d22800387cf0ea3b6b5697dfc23d459411a85d3c4b21911f3237acaf7ef0b",
+            "apps/ios/Sources/SessionPersistence.swift": "ac067de4386dc92b16102fdbae64ac28a99ed5c6e756f7fe4123e483dfc30c62",
+            "apps/ios/Sources/SessionStore.swift": "790507653e5b8b83fabf3f15fe2cfb6e484d9c6926020540086a4392419b8f33",
+            "apps/ios/Sources/RootView.swift": "05e565d362451718776f25ede00a6e0225d2e727f53c028e7bd9af51afd5acf6",
+            "apps/ios/CodexManage.xcodeproj/project.pbxproj": "bf8b9772319e45a5372b90a682c2eb26245894e91063f8f4cdc625ddfc0dd4c6",
+            "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt": "efa3cca3312d9bb7e308b9492b51ed387ed815497e2774795e353448b1d0af57"
+          },
+          "state": "Exact final production source frozen fullcheck0 and normal iosbuild0; final native/real scopes passed as registered. WIP not committed/integrated/deployed; full14row cross-product not closed."
+        },
+        "workflowInterruption": "Earlier3 agents officially interrupted/notLoaded after runtime update; duties reissued explicitTerra/medium and actual turn_context verified. Original3 archived through formal tool and independent metadata. Actual background processes/state reconciled, no blind replay. CUA removed; prior actual GUI evidence retained, no bypass.",
+        "currentWorkspaceHead": "3bbf7ffc77e1798e99cedb7489755af38124d7d9",
+        "currentWorkspaceHeadNote": "完整LIFE01源码和R547台账68文件本地提交；parent11aa保留原两个Host元数据读取修复。当前正在合并远端3998d598，尚未推送。",
+        "stageCloseout": {
+          "archivedCompletedRecoveryThreads": [
+            "01a2083e-52b5-78c0-b6ce-ec1d4c4bdb66",
+            "01a2083e-f5de-73c3-b1f2-573b86f433fa",
+            "01a2084d-7b03-71f3-9018-d38d4d0b1260",
+            "01a20857-67f0-7c92-bd4a-70e02e573a35"
+          ],
+          "verification": "Prior completed threads and currentFinal separately verified; no helper remains responsible for unfinished work.",
+          "released": "T03 own Node and B32 sim/registration, t03 source/derived after minimal source/maps/locks/result preservation; Android synthetic5594 stage AVDs; old118 and combined-native output/own Gradle daemon stage closed.",
+          "preserved": "Historical intermediate statement; all current runtime/source-copy consumers closed per currentFinal. Original protected device profiles and unique account data remain.",
+          "evidence": "private completed-recovery-agent-closeout.json and per-agent cleanup receipts; volume figures are measured totals, not attributed savings.",
+          "t11AndCompletedHelpers": {
+            "receipt": "private life01-completion-20261123/t12-test-settings-and-completed-helpers-closeout.json",
+            "sha256": "099d214392037a90b498c3690aa60dbce6aac8564a14056641c3a655a2fcb82e",
+            "scope": "T11 accurate native/evidence preserved. Task Host/renderer/relay/controller, syntheticfiles/grants, owned dependency/build outputs and external detachedEasyWork worktree released by normal tools. Original account13050items moved independently under0700 private account-preserved with verified hashes/modes; retained until LIFE01 data-retention review. Environment helper and Astra reviewer archived via officialtool and independently SQLite archived1. Account tree after final readonly test is f27e1d5cb404c14b88a7688e3a6720858f5e3fdac4baf9c51833f6e1da22cc1d787e4c; original hash is historical, final recovery-index authoritative for restored profile."
+          },
+          "currentFinal": {
+            "state": "owned-runtime-and-nine-source-copies-released; exact-source-inputs-raw-evidence-and-account-retained",
+            "evidenceRef": "LIFE01-FINAL-STAGE-RESOURCE-CLOSEOUT-20261124",
+            "helperThreadsArchived": [
+              "01a20989-f6fd-7ea0-a48a-4d95e06a75dd",
+              "01a20853-6481-70f1-af74-e45fb2c0f5f3",
+              "01a2085e-c27c-78c2-a1f4-e4b1cecf363f",
+              "01a20964-9c32-7f81-b27a-ecdf2fc04469"
+            ],
+            "verified": "formal tool receipts plus independent official threads archived1",
+            "preserved": "Raw results/reds/old115App/redApp/oldAndroidAPK/finalAPK; exact source recovery inputs and0f54framework; encrypted red-profile archives with localprivatekey; unique account-preserved profile f27e tree; original5EA/C4/5590 and root/shared environment unchanged.",
+            "owner": "current LIFE01 root coordinator",
+            "releaseCondition": "Evidence/account recovery review before disposing retained unique data or archive/key; shared/main resources excluded from task cleanup",
+            "sourceCopySupplement": {
+              "path": "private life01-completion-20261123/source-closeout-inputs/supplement/closeout.json",
+              "sha256": "182f566ce4646e706ea12b911eae2e107d683b9aac9749e25e1d58a6827c310b",
+              "scope": "4 earlier-source copies removed; exact unique source+locks/private env localonly and reachableGit blobs readback verified; restore.py entry retained"
+            },
+            "rootFinalVerification": {
+              "path": "private life01-completion-20261123/final-workspace-validation/r547-final-closeout-review.json",
+              "sha256": "7ed6a577e86e6326e2a6053d99cd60d94515539c9b09cbdd5c64fb20be8003eb",
+              "scope": "root actual check exits0/current source pins/registered evidence hashes/nine source paths absent/BB9F absent/protected5EA-C4 present/five task ports released/lock free; no broader acceptance promotion"
+            }
+          }
+        },
+        "storageAmendment": {
+          "state": "implemented-final-side-layout; scoped-native-real-smoke-green; not-integrated",
+          "reviewEvidence": "LIFE01-T12-ASTRA-ULTRA-AMENDMENT-20261124",
+          "readingCarrier": "persist real existing reader identity before companion; loaded nil/different marker invalidates prior index before new stamp",
+          "publication": "one bounded independent encrypted body/index family in same authorized namespace/generation; same serial owner epoch, body then index, viewport small update",
+          "freshness": "cached reading only, remote overlap/mode/revision guard before paging; iOS unknown old page never borrows revision",
+          "owner": "skip before any new I/O in restricted reader/inspection/existingOwned/R2/P7/P9/migration permits, no whitelist widening",
+          "plan": "docs/plans/mobile-foreground-connection-20261122.md#2026-11-24-最终补修旧-writer-之后的阅读恢复",
+          "exportReviewEvidence": "LIFE01-T12-READING-EXPORT-ASTRA-FINAL-20261124",
+          "prototypeBoundary": "Earlier root-family was confined to uncommitted acceptance synthetic profiles. No production release/physical installation; original root-red and prototype green preserve original pins, not final side layout acceptance.",
+          "queueCoalescing": "requested/durable monotonic content version preserves pending stable-body intent across same-key viewport coalescing; batches only dirty-mark.",
+          "remaining": "Actual inspection lease and full R2 App/Admission not executed; formal release/physical combinations and per-install hash gaps explicitly retained.",
+          "writeBudgetCorrection": "Actual same-content latest/Home body1->1;4 real production event batches body1 during stream then2 at Home and cold13/viewport recovered. iOS100viewport/queue coalescing and dual real process interruption checks separately recorded.",
+          "providerCodec": "Local client identity is not physical scope.hostId for EasyWork. Adapter uses already-existing native snapshot marker; independent body target still strictly matches full client scope, attachments retain native host/thread validation. No new wire/cache export version or weakened Host target equality."
+        },
+        "mainDelivery": {
+          "authorization": "用户明确要求提交并推送到远程主线",
+          "remote": "origin / Gitea BCAI/agent-hub-app",
+          "targetBranch": "main",
+          "sourceCommit": "3bbf7ffc77e1798e99cedb7489755af38124d7d9",
+          "sourceFiles": 68,
+          "sourceParent": "11aa51b0167df92167f5a9be053f10722328a94a",
+          "remoteMainAtFetch": "3998d598dfba4efce85794f308e885766771b77b",
+          "state": "local-committed-remote-integration-validation-pending",
+          "localCommitEvidence": "private life01-completion-20261123/delivery/local-commit-receipt.json",
+          "mergeReview": "private life01-completion-20261123/delivery/merge-resolution-review.json",
+          "mergeReviewSha256": "453d189a7f45dca6884f3f85a0bc3f8d2f0a923f676653a9da4c1def7b557537",
+          "actualExecutionModel": "gpt-6.1-terra / medium, official turn_context root verified",
+          "speedLimitation": "formal entry has no speed parameter; actual service_tier null",
+          "nativeSourceReuse": "52non-doc source SHA unchanged from R547 before commit. Remote additions affect Host TS/docs; pure native App build and original native/real subcases retain exact source-only scopes. Full combined workspace check required for new integration."
+        }
+      },
+      "android": "本地候选已接入生产调用链：单进程Activity重开复用、被动读门禁、独立加密阅读恢复及F55旧格式投影。最终78d包五阶段、合法EW本地ID缓存与新旧导出/读取、真实stream budget/冷启及最终实际EasyWork LAN/DEVRelay读取/Home/离线恢复通过限定子项。实际inspection lease和全权限冷态联验未扩签。"
     }
   ],
   "acceptanceScenarios": [
@@ -29610,6 +30322,155 @@
       "kind": "inc02-both-mainlines-closed-and-current-derived-progress",
       "scope": "Actual PR247 main and PR86 master independently verified. Current registered F77 scope closed/integrated-not-deployed; original formal118 unchanged. Preserve frozen commit ranges/counts and initial gap descriptions as history, replace current media/discovery actions with completed facts. Incremental view now derives2/2 development closures and2 remaining proof/release tasks from the same plans, plus four actual PR rows. No new acceptance rerun.",
       "evidenceRefs": ["INC02-TWO-ACTUAL-MAINLINES-MERGED-20261123"],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 531,
+      "date": "2026-11-23",
+      "kind": "life01-remaining-matrix-continuation-start",
+      "scope": "人类明确要求继续补齐剩余验收，主会话恢复LIFE01执行状态；新本机3个Terra medium测试子Agent实际参数已独立核实，先准备真实EasyWork环境与双端剩余/native版本安装；未新增通过、提交或部署。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 532,
+      "date": "2026-11-23",
+      "kind": "life01-real-easywork-and-dual-cold-history-repair-checkpoint",
+      "scope": "新增真实独占EasyWork Electron/Host和双端不同device互通窄证据；Android仅一个根输入，经生产native已完成，root独立GUI核对。原模型选择准备失败0业务保留。两端冷分页覆盖/游标回退红已定位并修候选，共同151JVM通过，最终原生组合仍在测。跨device回执null符合安全契约，改测iOS自有零模型原操作。未合主线/部署，不扩签父项与全部矩阵。",
+      "evidenceRefs": [
+        "LIFE01-REAL-EASYWORK-ROOT-AND-DESKTOP-20261123",
+        "LIFE01-ROOT-REAL-EASYWORK-GUI-20261123",
+        "LIFE01-DUAL-COLD-PAGING-RED-20261123"
+      ],
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 1
+    },
+    {
+      "revision": 533,
+      "date": "2026-11-23",
+      "kind": "life01-combined-native-and-shared-read-regression",
+      "scope": "组合冷缓存双端通过、Android168JVM与真实EasyWork限定恢复；iOS组合共享读取超时回归原断言失败并修复候选复测中。唯一EasyWork模型输入1；iOS自有空创建零模型且已归档；上传同ID前缀保留，旧Host切换待串行。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 534,
+      "date": "2026-11-23",
+      "kind": "life01-ios-read-owner-red-green-and-android-real-prefix-completion",
+      "scope": "iOS原共享读超时/挂起回调2项转绿，producer3项及cap/旧owner1项通过；Android原ID真实上传完整字节/摘要与计数独立核验、组合T03/T10/T13受控补测。历史Host/双端真实Relay恢复仍继续。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 535,
+      "date": "2026-11-23",
+      "kind": "life01-platform-matrix-continuation-results",
+      "scope": "T02/T03/T04/T06/T07/T10/T11/T12/T13/T14逐端登记当前组合证据和局限；最终iOS真实DEV Relay后台后差值通过；Host窗口待双端就绪后串行，不以fixture/旧源替代真实互通。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 536,
+      "date": "2026-11-23",
+      "kind": "life01-real-dual-host-stop-and-persistent-regression-tests",
+      "scope": "双端真实停服Home31核心缓存/草稿/控制断言1/1；Android初次本地编辑谓词误用保留为测试失败，真实发送门禁通过。iOS六项长期原生回归保存并6/6，旧Host开始同profile启动，尚无兼容通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 537,
+      "date": "2026-11-23",
+      "kind": "life01-version-matrix-activity-owner-repair-and-safe-test-incident-accounting",
+      "scope": "历史Host双端互通与当前恢复、完整旧源码版本轮换、iOS四证明状态受控通过逐项留证；Android自然Activity再开双pool实证并修候选，20轮等原生绿。iOS独立测试资料误重置及限定恢复如实登记，未把事故/测试入口失败当产品兼容失败。按最新用户规则把前台技术流水移回既有验收档案并更新同功能六状态。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 538,
+      "date": "2026-11-23",
+      "kind": "life01-native-t03-red-and-dual-passive-read-admission-candidate",
+      "scope": "iOS四客户端真实原生红明确迁移标志仍为true却被未读与额度入口读取，已在双端补候选门禁；保留原红、健康可见读与所有暂停范围。Android新Intent/旋转/在途写等已取得限定通过，净化回归入主树待最终核验。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 539,
+      "date": "2026-11-23",
+      "kind": "life01-terminal-read-retry-red-and-dual-recovery-candidate",
+      "scope": "迁移待核门禁在iOS局部与Android四端受控复验成立；iOS401后重复读和Android显式retry残留FAILED实证继续修复，双端显式按钮保留真实重试/恢复入口。Android最终owner3法通过，原超时与ANR分列，未以源码或fixture扩签完整矩阵。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 540,
+      "date": "2026-11-23",
+      "kind": "life01-android-terminal-native-red-green-and-ios-discovery-retry-candidate",
+      "scope": "Android真实HTTP401停读/Home/业务显式refresh与实际retry按钮恢复均通过，最终opt-in准入与默认跳过真实核验。iOS迁移门禁与部分Home状态有效，继续实测发现CodexDiscovery十秒被动workspace绕过FAILED，已补窄候选并保留原红；不扩大为完整矩阵验收。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 541,
+      "date": "2026-11-23",
+      "kind": "life01-dual-terminal-four-client-native-red-green-and-stage-closeout",
+      "scope": "iOS最终四端原生组合1/1由主会话独立确认，双端401停读/Home/显式恢复与迁移保护已有限定通过；原错误、过强B零读测试假设和UI驱动失败分列保留。全量检查晚期harness已修、定点与尾链通过，新增main元数据恢复4项单独补验；真实预览和原profile query继续，四个已结束恢复对话正式归档并独立核实。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 542,
+      "date": "2026-11-24",
+      "kind": "life01-real-preview-original-query-and-dual-version-data-loss-amendment",
+      "scope": "真实EasyWork预览两组租约/桌面独立回执与原iOS只读查询均通过，R541完整冻结检查exit0；双端新旧回退实证丢早页/paging/viewport，资料和原unknown输入仍保留，不能以旧UI功能限制关闭。Astra6 ultra已审核有限存储补修，下一步由root实施并补原红绿。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 543,
+      "date": "2026-11-24",
+      "kind": "life01-real-ios-upload-and-reviewed-dual-reading-recovery-candidate",
+      "scope": "真实EasyWork iOS 8MiB同ID上传在Home/一次Relay离线重启后完成，独立桌面SHA与唯一chunk计数通过，明确私有timing seam；双端跨版本阅读恢复最终计划已落文档并接入候选，原红保留，原生五阶段与负向正在执行。结束真实环境阶段已回收任务服务/工作树，账号资料独立受保护，完成helper已正式归档。",
+      "newProductAcceptancePasses": 1,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 544,
+      "date": "2026-11-24",
+      "kind": "life01-dual-reading-runtime-and-disk-promotion-red-green-final-export-layout",
+      "scope": "Android实测恢复13后被带runtime的普通最新页误覆盖为12，补同代正重叠plainPaging后原五阶段全绿；iOS远端proof后内存40等于当前消息却未提升普通磁盘20，修复后原五阶段磁盘断言全过。Astra ultra补审确认F55既有导出受严格新记录/字段影响，最终侧目录+旧格式有界纯投影已接入，原root试验只作历史。最终双端pending-body coalescing与侧目录组合验收继续，不冒充最终包通过。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 545,
+      "date": "2026-11-24",
+      "kind": "life01-final-native-reading-scopes-and-real-dirty-budget-red-green",
+      "scope": "最终iOS窗口五阶段、普通runtime耗尽冷启、队列/100视口、两点实际进程中断及DISABLED模块均通过，各范围仍分列；Android最终side五阶段/9边界/两点中断和F55新封包旧reader/旧App导出已得分项。真实重复相同GET+Home体写1→2红已修，独立新namespace同进程1→1及bytes不变通过。首轮全检查仅生成本地化catalog过期失败，已生成新增一个缓存错误键；最终组合与明确剩余负向继续。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 546,
+      "date": "2026-11-24",
+      "kind": "life01-final-native-ew-identity-codec-and-extended-ios-old-new-negatives",
+      "scope": "实际合法EasyWork本地client ID不等于物理Host ID暴露缓存/导出Codex回退错误，复用旧今均有原生codec后原红数据转绿，完整target与附件守卫不放宽；新封包旧reader/旧EW导出及最终Codex五阶段通过。iOS旧端真实移除重加同派生reader、修订/无overlap/无revision普通页held证明与R2模块负向已补。原旧通知4次POST拒绝/0副作用明确分列。中间全check0运行时源变，等待R546稳定全链，真实最终包只读互通阶段不新增模型。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 547,
+      "date": "2026-11-24",
+      "kind": "life01-final-native-real-compatibility-stable-validation-and-closeout",
+      "scope": "最终双端跨旧writer五阶段与边界分项、Android合法EWID导出/旧reader及stream budget、最终真实EasyWork只读/离线恢复与新设备回执隔离完成；R546冻结全pnpmcheck0和正常iosbuild0，主会话独立核证。实际cold只签online/canStop，正式发行/inspection/fullR2和部分安装hash缺口保留，矩阵不整组关闭。九个独占源/依赖/输出副本和运行资源已释放，红现场加密归档/原始证据与独有账号保留，4辅助职责接管后正式归档。当前候选未提交合入或部署。",
+      "newProductAcceptancePasses": 0,
+      "newProductAcceptanceModelTurns": 0
+    },
+    {
+      "revision": 548,
+      "date": "2026-11-24",
+      "kind": "life01-user-authorized-main-delivery-preparation",
+      "scope": "用户授权提交并推送远程主线；准确68文件已由实际Terra medium提交3bbf7ffc，工作区提交后干净。remote已前进3998d598，主会话完成六份文档/manifest语义合并；Host源码自动组合后逐字核对保留metadata恢复与标题规范化。当前组合检查和正常main推送待执行，不把本地提交当远端交付或新增矩阵通过。",
       "newProductAcceptancePasses": 0,
       "newProductAcceptanceModelTurns": 0
     }

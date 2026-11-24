@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
 import com.agenthub.core.*
 
 @Composable fun AgentHubApp(session: MobileSession, onThemeChanged: (Boolean) -> Unit = {}) {
@@ -139,7 +140,7 @@ import com.agenthub.core.*
                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
                     else if (!session.hasClient) Onboarding { openSheet("add") }
                     else {
-                        if (!session.selectedClient.isDemo && !session.selectedClient.online) Text(session.selectedClient.connectionLabel,Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp).testTag("offline-cache"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                        if (!session.selectedClient.isDemo && (!session.selectedClient.online || session.connectionChecking)) Text(productText(session.foregroundConnectionLabel),Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp).testTag("offline-cache"),fontSize=12.sp,color=colors.onSurfaceVariant)
                         ConversationSyncBanner(session)
                         session.phoneReadingError?.let { original ->
                             Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).testTag("phone-reading-error")) {
@@ -243,7 +244,7 @@ import com.agenthub.core.*
         Box(Modifier.floatingProduct()) { IconAction("menu",productText("打开侧栏"),"open-sidebar",onClick=openSidebar) }
         Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {
         Row(Modifier.widthIn(max=MobileDesign.clientHeaderMaxWidth.dp).heightIn(min=48.dp).floatingProduct().testTag("client-selector").clickable(onClick=openClients).padding(horizontal=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-            if(session.hasClient && session.selectedClient.isConnecting) CircularProgressIndicator(Modifier.size(12.dp).testTag("client-connecting"),strokeWidth=1.5.dp)
+            if(session.hasClient && session.selectedClient.isConnecting && !session.connectionWaitEnded) CircularProgressIndicator(Modifier.size(12.dp).testTag("client-connecting"),strokeWidth=1.5.dp)
             else Box(Modifier.size(6.dp).clip(CircleShape).background(if(session.hasClient && session.selectedClient.online) Color(0xFF34C759) else colors.secondary))
             Column(Modifier.weight(1f,false),verticalArrangement=Arrangement.spacedBy(1.dp)) {
                 Text(if(session.hasClient) session.selectedClient.name else productText("添加电脑"),fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
@@ -521,7 +522,7 @@ import com.agenthub.core.*
         val enabled=!session.historyLoading
         Box(Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("conversation-sync-retry").clickable(
             interactionSource=remember { androidx.compose.foundation.interaction.MutableInteractionSource() },indication=null,enabled=enabled,role=androidx.compose.ui.semantics.Role.Button,
-            onClick={ session.loadHistory() }).padding(horizontal=8.dp),contentAlignment=Alignment.Center) {
+            onClick={ session.loadHistory(userInitiated=true) }).padding(horizontal=8.dp),contentAlignment=Alignment.Center) {
             Text(productText("重试"),fontSize=12.sp,color=if(enabled)colors.onSurface else colors.onSurfaceVariant.copy(alpha=.5f))
         }
     }
@@ -587,7 +588,11 @@ import com.agenthub.core.*
         if(!paging && messageCount>0 && (session.chatSearchJump==null||session.chatSearchJump?.token==appliedSearchToken) && (!initiallyLoaded || !list.canScrollForward)) {
             // BoxWithConstraints may subcompose this effect during measurement.
             // Request the next layout instead of forcing a nested measure pass.
-            list.requestScrollToItem(messageCount+if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0)
+            val bookmark=session.historyViewport(session.targetKey).takeIf { !initiallyLoaded && it?.followsLatest==false }
+            val anchor=bookmark?.let { saved -> timeline.rows.indexOfFirst { it.kind+":"+it.id==saved.anchorId }.takeIf { it>=0 } }
+            val control=if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0
+            if(anchor!=null) list.requestScrollToItem(anchor+control,bookmark!!.offset)
+            else list.requestScrollToItem(messageCount+control)
             initiallyLoaded=true
         }
     }
@@ -602,6 +607,19 @@ import com.agenthub.core.*
         }
     }
     val atBottom by remember { derivedStateOf { !list.canScrollForward } }
+    val latestTimeline by rememberUpdatedState(timeline)
+    LaunchedEffect(session.targetKey,list) {
+        val target=session.targetKey
+        snapshotFlow { Triple(list.firstVisibleItemIndex,list.firstVisibleItemScrollOffset,list.canScrollForward) to list.isScrollInProgress }.collect { (_,moving) ->
+            if(session.targetKey==target && session.usageForeground && initiallyLoaded && !paging) {
+                val rows=latestTimeline.rows.associateBy { row -> target+":"+row.kind+":"+row.id }
+                val item=list.layoutInfo.visibleItemsInfo.firstOrNull { it.key is String && it.key in rows }
+                val row=item?.let { rows[it.key] }
+                if(item!=null && row!=null) session.rememberHistoryViewport(target,NativeHistoryViewportBookmark(row.kind+":"+row.id,
+                    -item.offset,session.visibleMessageLimit,!list.canScrollForward),settled=!moving)
+            }
+        }
+    }
     BoxWithConstraints(modifier.fillMaxWidth()) {
         CompositionLocalProvider(LocalMessageActionEndInset provides 56.dp) {
         LazyColumn(Modifier.fillMaxSize().onGloballyPositioned { readingViewport=it.boundsInRoot() }.testTag("message-list").pointerInput(session.targetKey,density) {

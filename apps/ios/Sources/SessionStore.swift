@@ -209,6 +209,12 @@ final class SessionStore: ObservableObject {
   #endif
 
   private var eventTask: Task<Void, Never>?
+  private let foregroundReadiness = ForegroundReadiness()
+  private var foregroundWorkspaceTask: Task<Void, Never>?
+  private var foregroundHistoryTask: Task<Void, Never>?
+  private var foregroundBudgetTask: Task<Void, Never>?
+  @Published private var foregroundCheckTimedOut = false
+  private var connectionInBackground = false
   private var lastConnectionSuccess: [String: TimeInterval] = [:]
   // Preserve the actual failure for an explicit reconnect. Being offline alone
   // is not evidence that a saved device credential has been revoked.
@@ -265,11 +271,25 @@ private var userRequestedWorkspaceGeneration: UUID?
   private let testMode: Bool
   private let persistenceWriter: SessionPersistenceWriter<SavedSession, SessionHistoryPage>
   private var dirtyHistoryKeys: Set<String> = []
+  private let readingRecovery: ReadingRecovery
+  private let readingRecoveryFence = ReadingRecoveryFence()
+  private var readingRecoveryAllowed = ReadingRecovery.admitted
+  private var protectedReadingKeys: Set<String> = []
+  private var unverifiedRecoveryKeys: Set<String> = []
+  private var pendingReadingCheckpoints: [String: ReadingRecovery.Candidate] = [:]
+  private var stableReadingCheckpoints: Set<String> = []
+  private var pendingRecoveryInvalidations: [String: @Sendable () throws -> Void] = [:]
+  private var observedHistoryPaging: [String: HistoryPagingCheckpoint] = [:]
   private var draftSaveTask: Task<Void, Never>?
   private var draftSaveDeadlineTask: Task<Void, Never>?
-  private var clientGeneration = UUID() { didSet { suggestionReadAhead.cancel(); desktopSuggestionReader.clear(reason: "connection-generation") } }
+  private var clientGeneration = UUID() { didSet {
+    foregroundReadiness.invalidate()
+    foregroundWorkspaceTask?.cancel(); foregroundHistoryTask?.cancel(); foregroundBudgetTask?.cancel()
+    suggestionReadAhead.cancel(); desktopSuggestionReader.clear(reason: "connection-generation")
+  } }
   private var historyGeneration = UUID() { didSet { suggestionReadAhead.cancel(); desktopSuggestionReader.clear(reason: "navigation-generation") } }
   private var pagedHistoryGeneration: UUID?
+  private var restoredPagingKeys: [String: UUID] = [:]
   private var historyWindowRevisions: [String: Int] = [:]
   private var snapshotFence: (generation: UUID, key: String, value: ConversationSnapshotFence)?
   private func currentSnapshotFence() -> ConversationSnapshotFence {
@@ -368,6 +388,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     #endif
     let legacyURL = directory.appendingPathComponent("session.json")
     persistenceURL = legacyURL
+    readingRecovery = ReadingRecovery(directory: directory)
     persistenceWriter = SessionPersistenceWriter(legacyURL: persistenceURL,
       encodeState: { state in try state.clients.contains(where: { $0.agentConnection != nil }) ? AgentCache.encode(state) : JSONEncoder().encode(state) },
       decodeState: { try AgentCache.decode($0) },
@@ -408,6 +429,8 @@ private var userRequestedWorkspaceGeneration: UUID?
   private struct LocalRestoration: @unchecked Sendable {
     var saved: SavedSession
     var dirtyHistoryKeys: Set<String>
+    var recoveryKeys: Set<String> = []
+    var recoveryFailed = false
   }
 
   func restoreForStartup() async {
@@ -415,30 +438,36 @@ private var userRequestedWorkspaceGeneration: UUID?
       restoreLocalSession()
       return
     }
-    let writer = persistenceWriter, url = persistenceURL
+    let writer = persistenceWriter, url = persistenceURL, recovery = readingRecovery
     let applicationState = String(UIApplication.shared.applicationState.rawValue)
     let protectedDataAvailable = String(UIApplication.shared.isProtectedDataAvailable)
     do {
       let restored = try await Task.detached(priority: .userInitiated) {
-        try Self.readLocalSession(writer: writer, url: url,
+        try Self.readLocalSession(writer: writer, recovery: recovery, url: url,
           applicationState: applicationState, protectedDataAvailable: protectedDataAvailable)
       }.value
       saved = restored.saved
       dirtyHistoryKeys = restored.dirtyHistoryKeys
+      unverifiedRecoveryKeys = restored.recoveryKeys; protectedReadingKeys.formUnion(restored.recoveryKeys)
+      readingRecoveryAllowed = ReadingRecovery.admitted && !restored.recoveryFailed
+      for key in restored.recoveryKeys { readingRecoveryFence.published(readingRecoveryFence.ticket(key)) }
       finishLocalRestoration()
     } catch { localRecoveryRequired = true }
   }
 
   private func loadLocalSession() throws -> SavedSession {
-    let restored = try Self.readLocalSession(writer: persistenceWriter, url: persistenceURL,
+    let restored = try Self.readLocalSession(writer: persistenceWriter, recovery: readingRecovery, url: persistenceURL,
       applicationState: String(UIApplication.shared.applicationState.rawValue),
       protectedDataAvailable: String(UIApplication.shared.isProtectedDataAvailable))
     dirtyHistoryKeys = restored.dirtyHistoryKeys
+    unverifiedRecoveryKeys = restored.recoveryKeys; protectedReadingKeys.formUnion(restored.recoveryKeys)
+    readingRecoveryAllowed = ReadingRecovery.admitted && !restored.recoveryFailed
+    for key in restored.recoveryKeys { readingRecoveryFence.published(readingRecoveryFence.ticket(key)) }
     return restored.saved
   }
 
   nonisolated private static func readLocalSession(writer persistenceWriter: SessionPersistenceWriter<SavedSession, SessionHistoryPage>,
-    url persistenceURL: URL, applicationState: String, protectedDataAvailable: String) throws -> LocalRestoration {
+    recovery: ReadingRecovery, url persistenceURL: URL, applicationState: String, protectedDataAvailable: String) throws -> LocalRestoration {
     let started = ProcessInfo.processInfo.systemUptime
     #if R2_REAL_DEV_ACCEPTANCE
     try R2Admission.require()
@@ -489,6 +518,27 @@ private var userRequestedWorkspaceGeneration: UUID?
       loaded.historyCacheNamespace = UUID().uuidString
       dirtyHistoryKeys = Set(loaded.history.keys)
     }
+    var recoveryKeys = Set<String>(), recoveryFailed = false
+    if ReadingRecovery.admitted, let namespace = loaded.historyCacheNamespace {
+      do {
+        let original = loaded
+        let snapshots = try persistenceWriter.withHistory {
+          try recovery.restore(namespace: namespace, clients: original.clients, target: {
+            ReadingKeyContext($0, workspace: original.workspaces[$0.id]).machine
+          }, cacheKey: { Self.restoredReadingCacheKey($0, thread: $1, state: original) })
+        }
+        for (key, snapshot) in snapshots {
+          // An entire authenticated snapshot is a cached candidate. The old
+          // ordinary page has no revision and must never be spliced into it.
+          loaded.history[key] = snapshot.messages
+          if loaded.historyPaging == nil { loaded.historyPaging = [:] }
+          if loaded.historyViewports == nil { loaded.historyViewports = [:] }
+          loaded.historyPaging?[key] = snapshot.paging
+          loaded.historyViewports?[key] = snapshot.viewport
+          recoveryKeys.insert(key)
+        }
+      } catch { recoveryFailed = true }
+    }
     let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
     func digest<T: Encodable>(_ value: T) -> String {
       guard let bytes = try? encoder.encode(value) else { return "unavailable" }
@@ -511,11 +561,12 @@ private var userRequestedWorkspaceGeneration: UUID?
       "clientsSha256": digest(loaded.clients), "draftsSha256": digest(loaded.drafts),
       "submittedInputsSha256": digest(loaded.outbox),
     ])
-    return LocalRestoration(saved: loaded, dirtyHistoryKeys: dirtyHistoryKeys)
+    return LocalRestoration(saved: loaded, dirtyHistoryKeys: dirtyHistoryKeys, recoveryKeys: recoveryKeys, recoveryFailed: recoveryFailed)
   }
 
   @discardableResult func retryLocalRecovery() -> Bool {
     guard localRecoveryRequired else { return true }
+    readingRecoveryFence.invalidate()
     do {
       let restored = try loadLocalSession()
       saved = restored; localRecoveryRequired = false
@@ -525,6 +576,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   private func finishLocalRestoration() {
+    if !readingRecoveryAllowed, ReadingRecovery.admitted { error = L10n.tr("部分阅读缓存无法恢复，原文件已保留。") }
     if let id = saved.selectedClientId { NativeReadAcceptanceTiming.record("session-start", hostId: id) }
     if saved.historyCacheNamespace == nil { saved.historyCacheNamespace = UUID().uuidString }
     if saved.readingDeviceId == nil { saved.readingDeviceId = UUID().uuidString }
@@ -869,6 +921,17 @@ private var userRequestedWorkspaceGeneration: UUID?
       machine = host.agentConnection?.target ?? host.codexDirect?.target ?? workspace?.readTarget ?? fallback
     }
   }
+  nonisolated private static func restoredReadingCacheKey(_ host: Client, thread: String, state: SavedSession) -> String {
+    let machine = ReadingKeyContext(host, workspace: state.workspaces[host.id]).machine
+    guard !host.isDemo, machine.agentId == "codex" else {
+      return SharedMobileRules.cacheKey(host, threadId: thread, projectId: nil, workspace: state.workspaces[host.id])
+    }
+    let canonical = SharedMobileRules.machineCacheKey(machine, threadId: thread, projectId: nil)
+    let keys = Set(state.historyCacheKeys ?? []).union(state.history.keys).union(state.drafts.keys)
+    let candidates = CodexMachineStorage.compatibleCacheKeys(machine, threadId: thread, projectId: nil,
+      keys: Array(keys), legacyDirectTarget: host.codexDirect?.target ?? state.workspaces[host.id]?.readTarget)
+    return SharedMobileRules.preferredRuntimeKey(canonical, candidates: candidates, selectedLegacy: state.codexStorageAliases?[canonical])
+  }
   private func readingKey(_ host: Client, threadId: String?) -> String {
     let state = saved
     return readingKey(host, threadId: threadId,
@@ -1054,9 +1117,24 @@ private var userRequestedWorkspaceGeneration: UUID?
   func isConnecting(_ host: Client) -> Bool {
     host.migrationNeedsVerification != true && !host.isDemo && !host.online
       && connectionPhases[host.id] != .failed && connectionPhases[host.id] != .waiting
+      && !(host.id == client?.id && foregroundCheckTimedOut)
+  }
+  func allowsPassiveClientRead(_ host: Client) -> Bool {
+    guard !connectionInBackground, !host.isDemo, host.migrationNeedsVerification != true,
+      connectionPhases[host.id] != .failed else { return false }
+    return saved.clients.contains { current in
+      current.id == host.id && current.endpoint == host.endpoint
+        && current.agentConnection == host.agentConnection
+        && current.codexDirect?.fingerprint == host.codexDirect?.fingerprint
+        && current.migrationNeedsVerification != true
+    }
   }
   func connectionLabel(for host: Client) -> String {
     if host.migrationNeedsVerification == true { return L10n.tr("迁移后需重新配对") }
+    if host.id == client?.id, host.online, !connectionReady(host) {
+      return foregroundCheckTimedOut ? L10n.tr("连接未完成 · 查看缓存") : L10n.tr("同步中")
+    }
+    if host.id == client?.id, foregroundCheckTimedOut, connectionPhases[host.id] == .waiting { return L10n.tr("连接未完成 · 查看缓存") }
     if host.online { return L10n.tr("已连接") }
     if host.isDemo { return L10n.tr("离线 · 查看缓存") }
     switch connectionPhases[host.id] {
@@ -1065,10 +1143,130 @@ private var userRequestedWorkspaceGeneration: UUID?
     }
   }
   func prepareForegroundConnections() {
-    for index in saved.clients.indices where !saved.clients[index].isDemo {
-      saved.clients[index].online = false
-      connectionPhases[saved.clients[index].id] = .connecting
+    connectionInBackground = false
+    guard let host = client, !host.isDemo, host.migrationNeedsVerification != true,
+      connectionPhases[host.id] != .failed else { return }
+    foregroundCheckTimedOut = false
+    CodexControlRequestBudget.$readTimeout.withValue(30) { startEvents() }
+    foregroundWorkspaceTask?.cancel()
+    let generation = clientGeneration
+    foregroundWorkspaceTask = Task { [weak self] in
+      var delay = 1
+      while let self, !Task.isCancelled, !self.connectionInBackground,
+        self.clientGeneration == generation {
+        await CodexControlRequestBudget.$readTimeout.withValue(30) { await self.refresh(includeHistory: false) }
+        if self.workspaceReady(host) || self.connectionPhases[host.id] == .failed { return }
+        do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+        delay = min(delay * 2, 15)
+      }
     }
+    foregroundHistoryTask?.cancel()
+    foregroundHistoryTask = Task { [weak self] in
+      guard let self, self.clientGeneration == generation else { return }
+      if self.selectedThreadId != nil {
+        _ = await CodexControlRequestBudget.$readTimeout.withValue(30) { await self.loadHistory() }
+      }
+    }
+    foregroundBudgetTask?.cancel()
+    foregroundBudgetTask = Task { [weak self] in
+      do { try await Task.sleep(for: .seconds(8)) } catch { return }
+      guard let self, self.clientGeneration == generation,
+        !self.connectionInBackground, self.client?.id == host.id,
+        !self.connectionReady(host) else { return }
+      self.foregroundCheckTimedOut = true
+    }
+  }
+  func enterConnectionBackground() {
+    guard !connectionInBackground else { return }
+    connectionInBackground = true
+    foregroundReadiness.invalidate()
+    foregroundWorkspaceTask?.cancel(); foregroundHistoryTask?.cancel(); foregroundBudgetTask?.cancel()
+    objectWillChange.send()
+    suspendEvents()
+  }
+  private func proofScope(_ host: Client) -> String {
+    host.id + "|" + SharedMobileRules.machineCacheKey(mobileReadingTarget(host), threadId: nil, projectId: nil)
+      + "|" + (host.agentConnection?.credentialRef ?? "codex")
+  }
+  private func workspaceReady(_ host: Client) -> Bool {
+    host.isDemo || (!connectionInBackground && foregroundReadiness.workspaceReady(scope: proofScope(host)))
+  }
+  private func connectionReady(_ host: Client) -> Bool {
+    guard !host.isDemo else { return true }
+    guard !connectionInBackground else { return false }
+    if let thread = selectedThreadId, host.id == client?.id {
+      return foregroundReadiness.threadReady(scope: proofScope(host), threadId: thread)
+        && (runtime?.canControl == true || workspaceReady(host))
+    }
+    return workspaceReady(host)
+  }
+  private func confirmForegroundThread(_ host: Client, threadId: String, revision: Int64) {
+    guard !connectionInBackground else { return }
+    if foregroundReadiness.confirmThread(scope: proofScope(host), threadId: threadId, observedRevision: revision) {
+      foregroundCheckTimedOut = false
+      objectWillChange.send()
+    }
+  }
+  var historyViewportBookmark: HistoryViewportBookmark? { saved.historyViewports?[targetKey] }
+  func rememberHistoryViewport(_ value: HistoryViewportBookmark, for key: String) {
+    guard !value.anchorId.isEmpty, value.anchorId.count <= 1024, value.offset.isFinite,
+      abs(value.offset) <= 100_000, saved.history[key]?.isEmpty == false else { return }
+    if saved.historyViewports == nil { saved.historyViewports = [:] }
+    let firstNonFollow = !value.followsLatest && saved.historyViewports?[key]?.followsLatest != false
+    saved.historyViewports?[key] = value
+    queueReadingCheckpoint(key, stableBody: firstNonFollow)
+    // A settled bookmark publishes only its small index when the body covers
+    // its anchor. State success precedes all reader-family writes.
+    if pendingReadingCheckpoints[key] != nil { persist(reconcileUnread: false) }
+  }
+  private func stampReadingCarriers() {
+    guard readingRecoveryAllowed else { return }
+    for index in saved.clients.indices {
+      let host = saved.clients[index]
+      guard !host.isDemo, host.migrationNeedsVerification != true else { continue }
+      saved.clients[index].readingScopeId = readingClient(host).readingScopeId
+    }
+  }
+  private func queueReadingCheckpoint(_ key: String, stableBody: Bool = false) {
+    guard readingRecoveryAllowed, !unverifiedRecoveryKeys.contains(key),
+      let messages = saved.history[key], !messages.isEmpty,
+      let host = saved.clients.first(where: { host in
+        saved.workspaces[host.id]?.threads.contains(where: { cacheKey(host, threadId: $0.id) == key }) == true
+          || (host.id == client?.id && key == targetKey && selectedThreadId != nil)
+      }), !host.isDemo, host.migrationNeedsVerification != true else { return }
+    let thread = host.id == client?.id && key == targetKey ? selectedThreadId
+      : saved.workspaces[host.id]?.threads.first(where: { cacheKey(host, threadId: $0.id) == key })?.id
+    guard let thread, protectedReadingKeys.contains(key) || saved.historyViewports?[key]?.followsLatest == false else { return }
+    stampReadingCarriers()
+    guard let carrier = saved.clients.first(where: { $0.id == host.id })?.readingScopeId, !carrier.isEmpty else { return }
+    protectedReadingKeys.insert(key)
+    if stableBody { stableReadingCheckpoints.insert(key); readingRecoveryFence.requestBody(key) }
+    pendingReadingCheckpoints[key] = ReadingRecovery.Candidate(binding: .init(namespace: saved.historyCacheNamespace ?? "",
+      key: key, host: host.id, thread: thread, reader: carrier, target: mobileReadingTarget(host)), messages: messages,
+      paging: saved.historyPaging?[key] ?? observedHistoryPaging[key], viewport: saved.historyViewports?[key], ticket: readingRecoveryFence.ticket(key),
+      stableBody: stableReadingCheckpoints.contains(key))
+  }
+  private func restoreHistoryPaging(_ snapshot: HistorySnapshot, key: String) {
+    guard restoredPagingKeys[key] != historyGeneration, let cached = saved.historyPaging?[key] else { return }
+    restoredPagingKeys[key] = historyGeneration
+    let incoming = Set(snapshot.messages.map(\.id))
+    let overlap = (saved.history[key] ?? []).contains { incoming.contains($0.id) }
+    guard HistoryCacheRecovery.shared.canKeepPrefix(cachedWindowed: cached.windowed,
+      incomingWindowed: snapshot.historyWindow?.isWindowed == true,
+      cachedRevision: Int64(cached.revision ?? -1), incomingRevision: Int64(snapshot.historyRevision ?? -1), hasOverlap: overlap) else {
+      saved.historyPaging?.removeValue(forKey: key)
+      saved.historyViewports?.removeValue(forKey: key)
+      protectedReadingKeys.remove(key)
+      readingRecoveryFence.invalidate()
+      if readingRecoveryAllowed, let namespace = saved.historyCacheNamespace {
+        let recovery = readingRecovery
+        pendingRecoveryInvalidations[key] = { try recovery.discard(namespace: namespace, key: key) }
+      }
+      return
+    }
+    pagedHistoryGeneration = historyGeneration
+    historyCursor = cached.nextCursor
+    historyWindowRevisions[key] = cached.revision
   }
   private func recordConnectionSuccess(_ host: Client) {
     connectionFailures.removeValue(forKey: host.id)
@@ -1089,10 +1287,17 @@ private var userRequestedWorkspaceGeneration: UUID?
     // validated response from this Host disproves this request's offline inference.
     // Authentication, identity and protocol failures still fail closed.
     if transient, let startedAt, let success = lastConnectionSuccess[host.id], success > startedAt { return }
+    foregroundReadiness.invalidateScope(scope: proofScope(host))
     connectionFailures[host.id] = failure
     if host.id == client?.id { suggestionNeedsFreshHistory = transient }
     if let index = saved.clients.firstIndex(where: { $0.id == host.id }) { saved.clients[index].online = false }
     connectionPhases[host.id] = transient ? .waiting : .failed
+    if !transient, host.id == client?.id {
+      // Terminal authorization/identity errors require the explicit retry path.
+      // Stop only automatic readers; submitted operations retain their original receipts.
+      eventTask?.cancel(); eventRecoveryTask?.cancel(); replyRecoveryTask?.cancel()
+      foregroundWorkspaceTask?.cancel(); foregroundHistoryTask?.cancel(); foregroundBudgetTask?.cancel()
+    }
     #if DEBUG
     if host.id == client?.id {
       DesktopSuggestionDiagnostics.record(transient ? "transport-waiting" : "transport-failed",
@@ -1575,10 +1780,11 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   private var accessPolicy: SessionAccess {
     let workspace = saved.workspaces[client?.id ?? ""]
-    return SessionAccess(demo: client?.isDemo == true, online: client?.online == true,
-      runtimeConnected: (workspace?.agentConnectionState?.runtimeConnected).map { KotlinBoolean(bool: $0) },
+    let ready = client.map { connectionReady($0) } ?? false
+    return SessionAccess(demo: client?.isDemo == true, online: client?.online == true && ready,
+      runtimeConnected: (!ready ? false : runtime?.canControl == true ? true : workspace?.agentConnectionState?.runtimeConnected).map { KotlinBoolean(bool: $0) },
       capabilities: workspace?.capabilities ?? [], threadSelected: selectedThreadId != nil,
-      hasProject: project != nil, projectlessDraft: isProjectlessDraft, canControl: runtime?.canControl == true,
+      hasProject: project != nil, projectlessDraft: isProjectlessDraft, canControl: ready && runtime?.canControl == true,
       testing: testMode)
   }
   private var submissionPolicy: SubmissionState {
@@ -1588,12 +1794,16 @@ private var userRequestedWorkspaceGeneration: UUID?
       running: isRunning, preferredReplyMode: replyMode)
   }
   var isWritable: Bool { client?.migrationNeedsVerification != true && conversation?.archived != true && SessionPolicies.shared.writable(access: accessPolicy) }
-  var canCompose: Bool { client?.migrationNeedsVerification != true && conversation?.archived != true && codexStorageConflictMessage == nil && SessionPolicies.shared.compose(access: accessPolicy) }
-  var canCreateThread: Bool { SessionPolicies.shared.createThread(access: accessPolicy) }
-  var canCreateProject: Bool {
-    client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("projects:create") == true
+  var canCompose: Bool {
+    client?.migrationNeedsVerification != true && conversation?.archived != true && codexStorageConflictMessage == nil
+      && (client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("reply") == true)
+      && (selectedThreadId != nil || project != nil || isProjectlessDraft)
   }
-  var canCreateProjectless: Bool { SessionPolicies.shared.createProjectless(access: accessPolicy) }
+  var canCreateThread: Bool { client.map { workspaceReady($0) } == true && SessionPolicies.shared.createThread(access: accessPolicy) }
+  var canCreateProject: Bool {
+    client?.isDemo == true || (client.map { workspaceReady($0) } == true && saved.workspaces[client?.id ?? ""]?.capabilities?.contains("projects:create") == true)
+  }
+  var canCreateProjectless: Bool { client.map { workspaceReady($0) } == true && SessionPolicies.shared.createProjectless(access: accessPolicy) }
   private func hasDesktopCapability(_ name: String, hostId: String? = nil) -> Bool {
     let workspace = saved.workspaces[hostId ?? client?.id ?? ""]
     let access = SessionAccess(demo: false, online: false, runtimeConnected: nil,
@@ -2054,6 +2264,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard let client, client.online else {
       return L10n.tr("等待重新连接；草稿保存在此对话。")
     }
+    if !connectionReady(client) {
+      return foregroundCheckTimedOut ? L10n.tr("连接未完成 · 查看缓存") : L10n.tr("同步中")
+    }
     let workspace = saved.workspaces[client.id]
     if selectedThreadId == nil,
       workspace?.capabilities?.contains("runtime:control-required") == true, !isWritable {
@@ -2137,6 +2350,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     let workStart = HistoryScrollProbe.workStart()
     defer { HistoryScrollProbe.workEnd(6, workStart) }
     #endif
+    stampReadingCarriers()
     var snapshot = saved
     snapshot.drafts = drafts.values
     let encrypted = snapshot.clients.contains(where: { $0.agentConnection != nil })
@@ -2147,14 +2361,23 @@ private var userRequestedWorkspaceGeneration: UUID?
     snapshot.history = [:]
     var pages: [String: SessionHistoryPage] = [:]
     if includeHistory {
-      for key in dirtyHistoryKeys {
+      for key in dirtyHistoryKeys where !unverifiedRecoveryKeys.contains(key) {
         if let history = saved.history[key] {
           pages[(snapshot.historyCacheNamespace ?? "") + ":" + key] = SessionHistoryPage(targetKey: key, messages: history, encrypted: encrypted)
         }
       }
       dirtyHistoryKeys.removeAll()
     }
-    return SessionPersistenceSnapshot(state: snapshot, histories: pages)
+    var work = pendingRecoveryInvalidations
+    if includeHistory, readingRecoveryAllowed {
+      let recovery = readingRecovery, fence = readingRecoveryFence
+      for (key, candidate) in pendingReadingCheckpoints where work[key] == nil {
+        work[key] = { try recovery.checkpoint(candidate, fence: fence) }
+      }
+      pendingReadingCheckpoints.removeAll(); stableReadingCheckpoints.removeAll()
+    }
+    pendingRecoveryInvalidations.removeAll()
+    return SessionPersistenceSnapshot(state: snapshot, histories: pages, historyWork: work)
   }
 
   private func cancelDraftSave() {
@@ -2224,6 +2447,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
   func persistForBackground() {
     guard !localRecoveryRequired else { return }
+    for key in protectedReadingKeys { queueReadingCheckpoint(key, stableBody: true) }
     synchronizeMobileUnread()
     cancelDraftSave()
     let backgroundSave = SessionBackgroundSave()
@@ -2499,6 +2723,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       let data = try importedState.clients.contains(where: { $0.agentConnection != nil }) ? AgentCache.encode(importedState) : JSONEncoder().encode(importedState)
       try MobileUnreadBadge.reset()
       try voiceRestore?.publish()
+      readingRecoveryFence.invalidate(); pendingReadingCheckpoints.removeAll(); pendingRecoveryInvalidations.removeAll()
       try persistenceWriter.replaceLegacy(data)
     } catch {
       let migrationFailure = voiceRestore?.preserveEvidenceAfterFailure(error) ?? error
@@ -2507,7 +2732,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       for (account, data) in previousSecrets { if let data { try? TaskNotificationShared.setSecret(data, account: account) } else { TaskNotificationShared.removeSecret(account) } }
       throw migrationFailure
     }
-    eventTask?.cancel(); saved = importedState; discardUnverifiedEasyWorkReading(); drafts.values = saved.drafts; saved.drafts = [:]; captureCodexStorageKeys(); preserveCodexReaderScopeIds()
+    readingRecoveryFence.invalidate();pendingReadingCheckpoints.removeAll();protectedReadingKeys.removeAll();unverifiedRecoveryKeys.removeAll();eventTask?.cancel(); saved = importedState; discardUnverifiedEasyWorkReading(); drafts.values = saved.drafts; saved.drafts = [:]; captureCodexStorageKeys(); preserveCodexReaderScopeIds()
     saved.historyCacheNamespace = UUID().uuidString
     saved.historyCacheKeys = nil; saved.historyCacheEncrypted = nil
     dirtyHistoryKeys = Set(saved.history.keys)
@@ -2527,6 +2752,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   // A new connection configuration invalidates readers that captured the old one.
   // Otherwise a long-lived event reader can replace the newly selected transport.
   func invalidateAgentConnection(_ id: String) {
+    readingRecoveryFence.invalidate()
     guard client?.id == id else { return }
     clientGeneration = UUID()
     historyGeneration = UUID()
@@ -2660,6 +2886,18 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func removeClient(_ id: String) {
+    readingRecoveryFence.invalidate()
+    pendingReadingCheckpoints = pendingReadingCheckpoints.filter { $0.value.binding.host != id }
+    if readingRecoveryAllowed, let namespace = saved.historyCacheNamespace {
+      let recovery = readingRecovery
+      var retained = saved; retained.clients.removeAll { $0.id == id }
+      let original = retained
+      pendingRecoveryInvalidations["remove:" + id] = {
+        try recovery.reconcile(namespace: namespace, clients: original.clients,
+          target: { ReadingKeyContext($0, workspace: original.workspaces[$0.id]).machine },
+          cacheKey: { Self.restoredReadingCacheKey($0, thread: $1, state: original) })
+      }
+    }
     if let removed = saved.clients.first(where: { $0.id == id }) {
       Task {
         let revoked = await TaskNotificationController.shared.removedClient(removed)
@@ -3052,6 +3290,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     selectClient(id, refreshAutomatically: false)
     guard let host = client else { return }
     recordConnectionSuccess(host)
+    _ = foregroundReadiness.confirmWorkspace(scope: proofScope(host), observedRevision: foregroundReadiness.revision)
     let generation = clientGeneration
     let initialEvents = saved.workspaces[id]?.capabilities?.contains("events") == true && selectedThreadId != nil
     startEvents(initialReadGrace: initialEvents ? 8 : 0)
@@ -3222,6 +3461,8 @@ private var userRequestedWorkspaceGeneration: UUID?
     }
     let generation = clientGeneration
     if userInitiated { userRequestedWorkspaceGeneration = generation }
+    let foregroundRevision = foregroundReadiness.revision
+    let expectedReadTarget = readingClient(host).readingTarget
     if workspaceRefreshGeneration == generation {
       // Coalesce an explicit latest-history refresh behind the occupied reader.
       // Preserve its navigation; a later target must not inherit this request.
@@ -3280,6 +3521,8 @@ private var userRequestedWorkspaceGeneration: UUID?
       guard result.hostId == host.id, result.projects.allSatisfy({ $0.hostId == host.id }),
         result.threads.allSatisfy({ $0.hostId == host.id })
       else { throw HostServiceError.wrongHost }
+      if host.agentConnection == nil, let expected = expectedReadTarget, let received = result.readTarget,
+        expected != received { throw HostServiceError.wrongHost }
       if host.agentConnection == nil, let target = result.readTarget,
         target.hostId != host.id || target.agentId != (result.clientType?.id ?? "codex") {
         throw HostServiceError.wrongHost
@@ -3331,6 +3574,10 @@ private var userRequestedWorkspaceGeneration: UUID?
         saved.workspaces[host.id] = result
       }
       recordConnectionSuccess(host)
+      if !connectionInBackground,
+        foregroundReadiness.confirmWorkspace(scope: proofScope(host), observedRevision: foregroundRevision) {
+        objectWillChange.send()
+      }
       if let index = saved.clients.firstIndex(where: { $0.id == host.id }) {
         if saved.clients[index].name == L10n.tr("本机 Codex · 原桌面") {
           saved.clients[index].name = result.name
@@ -3389,8 +3636,9 @@ private var userRequestedWorkspaceGeneration: UUID?
   func refreshMobileUnread() async {
     guard !sidebarInteracting else { return }
     guard pendingConnection == nil else { return }
-    for host in saved.clients.filter({ !$0.isDemo }) {
+    for host in saved.clients.filter({ allowsPassiveClientRead($0) }) {
       if Task.isCancelled { return }
+      guard allowsPassiveClientRead(host) else { continue }
       if host.id == client?.id && (loading || historyLoading) { continue }
       do {
         let provider = try AgentClients.resolve(host)
@@ -3400,7 +3648,7 @@ private var userRequestedWorkspaceGeneration: UUID?
         try await waitForSidebarInteraction()
         try Task.checkCancellation()
         if host.id == client?.id && loading { continue }
-        guard saved.clients.contains(where: { $0.id == host.id && $0.endpoint == host.endpoint && $0.agentConnection == host.agentConnection }),
+        guard allowsPassiveClientRead(host),
           saved.workspaces[host.id]?.readTarget == previous?.readTarget else { continue }
         guard result.hostId == host.id, result.threads.allSatisfy({ $0.hostId == host.id }),
           result.projects.allSatisfy({ $0.hostId == host.id }),
@@ -3432,7 +3680,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   var supportsDesktopOpen: Bool {
-    guard let host = client, !host.isDemo, host.online, conversation?.archived != true,
+    guard let host = client, !host.isDemo, host.online, connectionReady(host), conversation?.archived != true,
       selectedThreadId != nil else { return false }
     return saved.workspaces[host.id]?.capabilities?.contains("desktop:open") == true
   }
@@ -3534,11 +3782,20 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   private func verifyReplyRuntime(_ host: Client, threadId: String, generation: UUID) async throws -> Bool {
+    let foregroundRevision = foregroundReadiness.revision
     let snapshot = try await AgentClients.resolve(host).history(readingClient(host), threadId: threadId, cursor: nil)
     try requireReplyTarget(host, threadId: threadId, generation: generation)
     guard snapshot.hostId == host.id, snapshot.threadId == threadId else { throw HostServiceError.wrongHost }
+    if let expected = readingClient(host).readingTarget, let received = snapshot.readTarget,
+      expected != received { throw HostServiceError.wrongHost }
     apply(snapshot)
+    if snapshot.runtime != nil { confirmForegroundThread(host, threadId: threadId, revision: foregroundRevision) }
     return snapshot.runtime?.canControl == true
+  }
+
+  func retryConversationRead() async {
+    let generation = clientGeneration
+    if await loadHistory(userInitiated: true), clientGeneration == generation { startEvents() }
   }
 
   @discardableResult
@@ -3547,8 +3804,10 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard let host = client, !host.isDemo, let id = threadId ?? selectedThreadId else { return false }
     guard selectedThreadId == id, threads.contains(where: { $0.id == id && $0.hostId == host.id }) else { return false }
     guard host.migrationNeedsVerification != true else { return false }
+    guard userInitiated || more || connectionPhases[host.id] != .failed else { return false }
     let generation = historyGeneration
     let key = cacheKey(host, threadId: id)
+    let foregroundRevision = foregroundReadiness.revision
     if more {
       guard historyCursor != nil, earlierHistoryReads[key] == nil else { return false }
       earlierHistoryReads[key] = generation
@@ -3605,6 +3864,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       if !more, !fence.accepts(readRevision: snapshotReadRevision,
         incomingEpoch: result.epoch ?? "", incomingCursor: Int64(result.cursor ?? -1)) { return false }
       recordConnectionSuccess(host)
+      if !more { restoreHistoryPaging(result, key: key) }
       let windowed = result.historyWindow?.isWindowed == true
       let knownRevisionMatches = result.historyRevision.map { historyWindowRevisions[key] == $0 } ?? false
       let legacyV9Page = windowed && result.historyRevision == nil
@@ -3617,12 +3877,19 @@ private var userRequestedWorkspaceGeneration: UUID?
           throw HostServiceError.message(L10n.tr("聊天历史已变化，请刷新后重试。"))
         }
       }
-      let preserve = SharedReadingPolicy.preserveHistoryPrefix(
+      let preservePolicy = SharedReadingPolicy.preserveHistoryPrefix(
         windowed: result.runtime == nil || windowed,
         hasPaged: pagedHistoryGeneration != nil, sameGeneration: pagedHistoryGeneration == generation,
         // Plain historical paging has no live-window revision contract.
         sameRevision: !windowed || knownRevisionMatches)
       let resultMessageIds = Set(result.messages.map(\.id))
+      // A valid non-windowed paging checkpoint also protects a read prefix when
+      // the latest page carries runtime metadata. Runtime presence is not a
+      // change to the server's paging mode or an exhausted cursor.
+      let preservePlainPaging = !windowed && saved.historyPaging?[key]?.windowed == false
+        && pagedHistoryGeneration == generation
+        && (saved.history[key] ?? []).contains { resultMessageIds.contains($0.id) }
+      let preserve = preservePolicy || preservePlainPaging
       let preserveLegacyV9 = windowed && result.historyRevision == nil && historyWindowRevisions[key] == nil && result.synchronization != nil
         && pagedHistoryGeneration == generation
         && (saved.history[key] ?? []).contains { resultMessageIds.contains($0.id) }
@@ -3633,6 +3900,7 @@ private var userRequestedWorkspaceGeneration: UUID?
         let prefix = result.messages.filter { ids.insert($0.id).inserted }
         beforePrepend?(prefix.count)
         saved.history[key] = prefix + existing
+        unverifiedRecoveryKeys.remove(key);readingRecoveryFence.changed(key)
         dirtyHistoryKeys.insert(key)
         pagedHistoryGeneration = generation
       } else if !more, preserve, result.historyWindow?.isWindowed != true {
@@ -3650,16 +3918,25 @@ private var userRequestedWorkspaceGeneration: UUID?
         apply(result, historyPage: more, beforePrepend: more ? beforePrepend : nil)
       }
       if result.historyWindow?.isWindowed == true, more { pagedHistoryGeneration = generation }
+      observedHistoryPaging[key] = HistoryPagingCheckpoint(nextCursor: result.nextCursor,
+        windowed: result.historyWindow?.isWindowed == true, revision: result.historyRevision)
+      if !more, result.runtime != nil { confirmForegroundThread(host, threadId: id, revision: foregroundRevision) }
       if more || !(preserve || preserveLegacyV9) {
         historyCursor = result.nextCursor
       }
+      if more || preserve || preserveLegacyV9 {
+        if saved.historyPaging == nil { saved.historyPaging = [:] }
+        saved.historyPaging?[key] = HistoryPagingCheckpoint(nextCursor: historyCursor,
+          windowed: result.historyWindow?.isWindowed == true, revision: result.historyRevision)
+        restoredPagingKeys[key] = generation
+      } else { saved.historyPaging?.removeValue(forKey: key) }
       if !more, let scope = nextTurnSuggestionScope { prepareNextTurnSuggestion(host, scope: scope) }
       #if DEBUG
       DesktopSuggestionTiming.mark("historyApplied", navigation: timingNavigation)
       #endif
       // apply() already schedules a coalesced save, also flushed on background.
       // Only the manual earlier-page merge above bypasses that save.
-      if more { persist() }
+      if more { protectedReadingKeys.insert(key); queueReadingCheckpoint(key, stableBody: true); persist() }
       return true
     } catch {
       guard !isReadCancellation(error), historyGeneration == generation,
@@ -3694,8 +3971,9 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   private func startReplyRecovery() {
+    guard !connectionInBackground else { return }
     guard pendingConnection == nil, let host = client, !host.isDemo else { return }
-    guard host.migrationNeedsVerification != true else { return }
+    guard host.migrationNeedsVerification != true, connectionPhases[host.id] != .failed else { return }
     let generation = clientGeneration
     // Receipt recovery must not wait for a history request, long poll or an
     // events capability. A stalled read can otherwise strand a completed send.
@@ -3714,9 +3992,10 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func startEvents(initialReadGrace: TimeInterval = 0) {
+    guard !connectionInBackground else { return }
     startReplyRecovery()
     guard pendingConnection == nil, let host = client, !host.isDemo else { return }
-    guard host.migrationNeedsVerification != true else { return }
+    guard host.migrationNeedsVerification != true, connectionPhases[host.id] != .failed else { return }
     let generation = clientGeneration
     guard eventTask == nil || eventTask?.isCancelled == true,
       saved.workspaces[host.id]?.capabilities?.contains("events") == true else { return }
@@ -3759,6 +4038,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       var delay = 1
       while !Task.isCancelled && clientGeneration == generation && client?.id == host.id {
         let startedAt = ProcessInfo.processInfo.systemUptime
+        let foregroundRevision = foregroundReadiness.revision
         do {
           guard let threadId = selectedThreadId else {
             epoch = ""
@@ -3836,6 +4116,9 @@ private var userRequestedWorkspaceGeneration: UUID?
             if decision.apply, fence.accepts(readRevision: snapshotReadRevision,
               incomingEpoch: event.snapshot.epoch ?? "", incomingCursor: Int64(event.snapshot.cursor ?? -1)) {
               apply(event.snapshot, proofIsFresh: batch.ready != false)
+              if event.snapshot.runtime != nil && batch.ready != false {
+                confirmForegroundThread(host, threadId: threadId, revision: foregroundRevision)
+              }
               snapshotReadRevision = fence.beginRead()
             }
           }
@@ -3860,6 +4143,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           if (decision.reload && batch.events.isEmpty) || suggestionNeedsFreshHistory { await loadHistory() }
         } catch {
           if Task.isCancelled || clientGeneration != generation || client?.id != host.id { break }
+          if isReadCancellation(error) { continue }
           recordConnectionFailure(error, host: host, displayError: false, startedAt: startedAt)
           try? await Task.sleep(for: .seconds(delay))
           delay = min(delay * 2, 15)
@@ -3878,11 +4162,13 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard let host = client, !host.isDemo,
       (eventTask != nil && eventTask?.isCancelled == false)
         || (replyRecoveryTask != nil && replyRecoveryTask?.isCancelled == false) else { return }
+    foregroundReadiness.invalidate()
+    objectWillChange.send()
     eventTask?.cancel()
     eventRecoveryTask?.cancel()
     replyRecoveryTask?.cancel()
     if let id = selectedThreadId { lastSnapshotAt.removeValue(forKey: cacheKey(host, threadId: id)) }
-    startEvents()
+    prepareForegroundConnections()
   }
   // BEGIN: history-state-publication
   // Cursor progress is durable transport metadata. Updating an existing full
@@ -3986,6 +4272,9 @@ private var userRequestedWorkspaceGeneration: UUID?
         saved.workspaces[snapshot.hostId]?.threads[index] = merged
       }
     }
+    if !historyPage, snapshot.hostId == client?.id, snapshot.threadId == selectedThreadId {
+      restoreHistoryPaging(snapshot, key: key)
+    }
     let isWindow = snapshot.historyWindow?.isWindowed == true
     let earlier = isWindow && (historyPage || snapshot.historyWindow?.kind == "earlier")
     let previous = saved.history[key] ?? []
@@ -3997,6 +4286,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     // Legacy V9 has no revision guarantee. Preserve only a positively anchored
     // prefix loaded in this reading generation, never treat nil == nil as a revision match.
     let incomingIds = Set(snapshot.messages.map(\.id))
+    let preservePlainPaging = !isWindow && saved.historyPaging?[key]?.windowed == false
+      && pagedHistoryGeneration == historyGeneration && client?.id == snapshot.hostId && selectedThreadId == snapshot.threadId
+      && previous.contains { incomingIds.contains($0.id) }
     let preserveLegacyV9 = isWindow && snapshot.historyRevision == nil && historyWindowRevisions[key] == nil && snapshot.synchronization != nil
       && pagedHistoryGeneration == historyGeneration && client?.id == snapshot.hostId && selectedThreadId == snapshot.threadId
       && previous.contains { incomingIds.contains($0.id) }
@@ -4016,7 +4308,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       beforePrepend?(prefix.count)
       updatedMessages = prefix
         + previous.map { replacements[$0.id] ?? $0 }
-    } else if preserve || preserveLegacyV9 {
+    } else if preserve || preserveLegacyV9 || preservePlainPaging {
       let ids = Set(snapshot.messages.map(\.id))
       let boundary = previous.firstIndex { ids.contains($0.id) } ?? previous.endIndex
       updatedMessages = Array(previous[..<boundary]) + snapshot.messages
@@ -4025,6 +4317,13 @@ private var userRequestedWorkspaceGeneration: UUID?
     // Do not invalidate the timeline or re-encrypt/rewrite an identical history page.
     if saved.history[key] == nil || updatedMessages != previous {
       saved.history[key] = updatedMessages
+      dirtyHistoryKeys.insert(key)
+      readingRecoveryFence.changed(key)
+    }
+    if proofIsFresh, unverifiedRecoveryKeys.remove(key) != nil {
+      // A coherent companion may already equal the newly validated merged
+      // messages, while the ordinary disk page still contains the old tail.
+      // Promote it once after proof; equality in memory is not disk equality.
       dirtyHistoryKeys.insert(key)
     }
     if let host = saved.clients.first(where: { $0.id == snapshot.hostId }) { reconcileReading(host, updatedThreadId: snapshot.threadId) }
@@ -5285,7 +5584,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     return (saved.workspaceManagement ?? []).filter { $0.hostId == host.id && $0.target == target }.reversed()
   }
   func canManageWorkspace(_ action: WorkspaceManagementAction) -> Bool {
-    client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains(action.capability) == true
+    client?.isDemo == true || (client.map { workspaceReady($0) } == true && saved.workspaces[client?.id ?? ""]?.capabilities?.contains(action.capability) == true)
   }
   private func workspaceArchivePendingIds(excluding operationId: String? = nil) -> Set<String> {
     Set(workspaceManagementOperations.filter { $0.action == .archiveThreads && $0.id != operationId }.flatMap {
@@ -5544,7 +5843,7 @@ extension SessionStore {
   private func canManageChatExcluding(_ thread: Conversation?, operationId: String?) -> Bool {
     guard let host = client, let thread else { return false }
     let busy = chatActionBusy[cacheKey(host, threadId: thread.id)].map { $0 != operationId } ?? false
-    return SharedMobileRules.chatCanManage(demo: host.isDemo, online: host.online, supported: supportsChatManagement,
+    return SharedMobileRules.chatCanManage(demo: host.isDemo, online: host.online && workspaceReady(host), supported: supportsChatManagement,
       knownTarget: thread.hostId == host.id && threads.contains { $0.id == thread.id && $0.hostId == thread.hostId },
       busy: busy || managementBusy,
       pending: pendingChatActions(thread.id).contains { $0.id != operationId && SharedMobileRules.chatActionBlocksInput($0.phase, waitingEnded: $0.waitingEnded == true) } || workspaceArchivePendingIds().contains(thread.id))

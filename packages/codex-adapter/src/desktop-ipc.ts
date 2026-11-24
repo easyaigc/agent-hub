@@ -1190,6 +1190,7 @@ export class DesktopRuntime {
   private closed = false;
   private readonly installation: DesktopInstallation;
   private metadataGeneration: string | undefined;
+  onMetadataDisconnect: () => void = () => {};
   onEvent: (method: string, params: WireObject) => void = () => {};
   onRequest: (id: string | number, method: string, params: WireObject) => void = () => {};
   onDisconnect: () => void = () => {};
@@ -1224,7 +1225,11 @@ export class DesktopRuntime {
       this.onEvent('desktop/observation', { threadId, observation });
     this.ipc.onModelSettings = (threadId) => this.onEvent('desktop/model-settings', { threadId });
     this.ipc.onDisconnect = () => this.onDisconnect();
-    this.reader.onDisconnect = () => this.ipc.close();
+    // Metadata has its own subprocess and recovery fence. A failed read must
+    // not tear down a healthy execution owner or its live desktop snapshots.
+    this.reader.onDisconnect = () => {
+      if (!this.closed) this.onMetadataDisconnect();
+    };
   }
   get ready(): boolean {
     return this.installation.available && this.ipc.ready && this.reader.ready;

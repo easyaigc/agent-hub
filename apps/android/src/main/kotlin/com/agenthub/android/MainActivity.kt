@@ -11,7 +11,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 open class MainActivity : ComponentActivity() {
-    companion object { const val P9_NOTIFICATION_COLD_HOOK = NativeChatNotificationColdStart.HOOK_VERSION }
+    companion object {
+        const val P9_NOTIFICATION_COLD_HOOK = NativeChatNotificationColdStart.HOOK_VERSION
+        // A finished Activity is not a process shutdown. Keep the existing
+        // runtime so reopening cannot start another reader of the same mailbox.
+        private var processRuntime: Retained? = null
+    }
     private data class Ingress(val intent: android.content.Intent,val id: String)
     private data class Retained(val session: MobileSession,val migration: NativeMigrationController,val ingress: java.util.ArrayDeque<Ingress>,val nativeRuntime: Boolean=true)
     private var nativeRuntime=true
@@ -48,6 +53,7 @@ open class MainActivity : ComponentActivity() {
                 create={store->MobileSession(store).also {configurePrivateSession(it);it.migrationController=migration}},
                 beforeCommit={check(!isDestroyed&&!isChangingConfigurations)})
             session=fresh
+            rememberProcessRuntime(previous=original)
             configureRuntime(fresh,fresh.migrationStorage,migrationRestore=true);fresh.resumeSelectionsAfterMigration();renderSession()
             if(started)startRuntime();drainMigrationIngress()
         }
@@ -84,8 +90,8 @@ open class MainActivity : ComponentActivity() {
     }
     internal lateinit var readNetworkMonitor: NativeReadNetworkMonitor
         private set
-    // Activity-owned native state is retained on rotation. Durable repository
-    // and process restoration are introduced at A6 with explicit migration.
+    // Rotation and Activity reopen reuse one live process runtime. Process
+    // death still uses the existing storage restoration; no migration is added.
     internal lateinit var session: MobileSession
         private set
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,10 +136,23 @@ open class MainActivity : ComponentActivity() {
         NativeChatNotificationColdStart.noteDefaultStorage(context)
         return InitialSession(MobileSession(NativeSessionStorage(context)))
     }
+    private fun reusableProcessRuntime(): Retained? = processRuntime?.takeIf {
+        javaClass==MainActivity::class.java && NativeNaturalLaunch.canRetain(this,true) &&
+            NativeChatNotificationColdStart.active==null
+    }
+    private fun rememberProcessRuntime(previous: MobileSession?=null) {
+        // Isolated subclasses and admitted cold-start fixtures keep their own
+        // owners. Never replace the ordinary runtime with an acceptance swap.
+        if(javaClass!=MainActivity::class.java || !nativeRuntime ||
+            !NativeNaturalLaunch.canRetain(this,startupReady) || NativeChatNotificationColdStart.bound(session))return
+        if(previous!=null && processRuntime?.session!==previous)return
+        processRuntime=Retained(session,migration,deferredIngress,nativeRuntime)
+    }
     private fun finishCreation(savedInstanceState: Bundle?) {
         NativeReadAcceptanceTiming.configure(runtimeContext(),intent)
         @Suppress("DEPRECATION")
-        val retainedState=lastCustomNonConfigurationInstance
+        val configurationRetained=lastCustomNonConfigurationInstance
+        val retainedState=configurationRetained ?: reusableProcessRuntime()
         val retained=(retainedState as? Retained)?.session ?: retainedState as? MobileSession
         val cold=NativeChatNotificationColdStart.selectForActivity(runtimeContext(),intent,retained,savedInstanceState!=null)
         migration=(retainedState as? Retained)?.migration ?: NativeMigrationController(runtimeContext())
@@ -160,11 +179,14 @@ open class MainActivity : ComponentActivity() {
         if(nativeRuntime) {
         session.configureExternalInbox(runtimeContext());session.configurePhotoPicker(runtimeContext());session.configureCameraCapture(runtimeContext());session.configureDocumentPicker(runtimeContext());session.configureRecentPhotos(runtimeContext(),NativeChatNotificationColdStart.recentPhotoSource(runtimeContext(),session) ?: NativeRecentPhotos(runtimeContext()))
         }
-        if(retained==null)intent?.let(::receive)
+        // A new Activity can carry a new share/notification Intent even when
+        // it reuses the process runtime. Rotation must not dispatch it again.
+        if(configurationRetained==null)intent?.let(::receive)
         if (retained == null&&initial?.needsRestore!=false) session.restore()
         enableEdgeToEdge()
         renderSession();migration.attach(migrationLifecycle)
         startupReady=true;NativeNaturalLaunch.created(this)
+        if(initial!=null || processRuntime?.session===session)rememberProcessRuntime()
     }
     private fun renderSession() {
         setContent {
@@ -213,7 +235,7 @@ open class MainActivity : ComponentActivity() {
         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)
     }
     override fun onStart() {super.onStart();started=true;if(startupReady)startRuntime()}
-    override fun onStop() {started=false;if(!startupReady){super.onStop();return}; if(::readNetworkMonitor.isInitialized)readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
+    override fun onStop() {started=false;if(!startupReady){super.onStop();return}; if(::readNetworkMonitor.isInitialized)readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); if(!isChangingConfigurations)session.leaveForeground(); super.onStop() }
     @Deprecated("Native retained state until the repository-backed ViewModel is introduced")
     override fun onRetainCustomNonConfigurationInstance(): Any? = if(NativeNaturalLaunch.canRetain(this,startupReady))Retained(session,migration,deferredIngress,nativeRuntime)else null
     override fun onDestroy(){NativeNaturalLaunch.destroyed(this);if(startupReady)migration.detach(migrationLifecycle);super.onDestroy()}

@@ -195,12 +195,16 @@ final class CodexHostRoutes: @unchecked Sendable {
     // an old connection keeps delivering small amounts of data indefinitely.
     if let type = request.value(forHTTPHeaderField: "Content-Type"),
       !type.lowercased().hasPrefix("application/json") { return try await read() }
-    return try await CodexControlRequestBudget.perform(timeout: request.timeoutInterval, operation: read)
+    let timeout = request.httpMethod == "GET" && request.url?.path != "/v1/events"
+      ? min(request.timeoutInterval, CodexControlRequestBudget.readTimeout ?? request.timeoutInterval)
+      : request.timeoutInterval
+    return try await CodexControlRequestBudget.perform(timeout: timeout, operation: read)
   }
 }
 
 enum CodexControlRequestBudget {
   @TaskLocal static var connectionDeadline: ContinuousClock.Instant?
+  @TaskLocal static var readTimeout: TimeInterval?
 
   static func perform(timeout: TimeInterval,
     operation: @escaping @Sendable () async throws -> (Data, URLResponse)) async throws -> (Data, URLResponse) {
@@ -690,7 +694,8 @@ struct VPNPeerSnapshot: Decodable, Sendable {
     defer { if generation == current { stop() } }
     while !Task.isCancelled {
       await scan(store)
-      if store.client?.agentConnection == nil, store.client?.online == false { await store.refresh() }
+      if let client = store.client, client.agentConnection == nil, !client.online,
+        store.allowsPassiveClientRead(client) { await store.refresh() }
       do { try await Task.sleep(for: .seconds(10)) } catch { return }
     }
   }

@@ -23,7 +23,8 @@ internal class NativeMigrationExport(private val context: Context,private val st
             requireSupportedScopes(records.text,allowProvisional=true,allowInbox=true,allowSelections=true)
             owner?.let {it.requireCurrent();check(it.storage===storage);it.requireRawWriters()}
             val projected=NativeMigrationProvisionalVoice.project(context,storage,originals,owner)
-            val portable=projected.records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(projected.records.text))),projected.records.text))
+            val reading=NativeReadingRecovery(storage).projectExport(projected.records.text)
+            val portable=projected.records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(reading))),reading))
             NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
             try {
@@ -41,19 +42,20 @@ internal class NativeMigrationExport(private val context: Context,private val st
         val clear=capture()
         try{return NativeMigrationCrypto.seal(clear,password)}finally{clear.fill(0)}
     }
-    internal fun capture(): ByteArray {
+    internal fun capture(): ByteArray = storage.snapshotTransaction { storage.operationTransaction {
         val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
         requireSupportedScopes(original.text)
         NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.text.keys+original.binary.keys,null)
-        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(original.text))),original.text))
+        val reading=NativeReadingRecovery(storage).projectExport(original.text)
+        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationUploadArchives.projectSource(NativeMigrationForeground.projectSource(reading))),reading))
         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
         try {
             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
             NativeMigrationCandidateStore(context,storage).validateArchive(clear)
             requireSupportedScopes(original.text)
-            return clear
+            clear
         }catch(error: Exception){clear.fill(0);throw error}
-    }
+    } }
     private fun legacyNames(read: (String)->String?)=NativeMigrationExistingAliases.root(read)
 
 }

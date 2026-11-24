@@ -133,7 +133,7 @@ func usageFailureReason(_ error: Error) -> String {
     return flight.task?.isCancelled != true
   }
   func refresh(_ client: Client, target: AgentRuntimeTarget, force: Bool = false) async {
-    guard !client.isDemo, !Task.isCancelled else { return }
+    guard !client.isDemo, client.migrationNeedsVerification != true, !Task.isCancelled else { return }
     let key = key(client, target)
     let flight: Flight
     if let existing = pending[key], !existing.task.isCancelled { flight = existing }
@@ -243,6 +243,7 @@ struct ClientUsageSummary: View {
   @State private var visible = false
   @Environment(\.scenePhase) private var scenePhase
   let client: Client; let target: AgentRuntimeTarget
+  var active = true
   @ObservedObject private var usage = UsageStore.shared
   var body: some View {
     let data = usage.value(client, target: target)
@@ -265,7 +266,7 @@ struct ClientUsageSummary: View {
       else if data.partial == true { Text(L10n.tr("部分额度暂不可用")) }
     }.font(.caption2).foregroundStyle(.secondary).lineLimit(2)
       .onAppear { visible = true }.onDisappear { visible = false }
-      .task(id: "\(usage.identity(client, target: target)):\(scenePhase):\(visible)") { if visible && scenePhase == .active { await usage.poll(client, target: target) } }
+      .task(id: "\(usage.identity(client, target: target)):\(scenePhase):\(visible):\(active)") { if active && visible && scenePhase == .active { await usage.poll(client, target: target) } }
   }
 }
 struct UsageFooterButton: View {
@@ -298,6 +299,7 @@ struct UsageFooterButton: View {
 struct UsageDetailsView: View {
   @Environment(\.scenePhase) private var scenePhase
   let client: Client; let target: AgentRuntimeTarget
+  var active = true
   @ObservedObject private var usage = UsageStore.shared
   @Environment(\.dismiss) private var dismiss
   var body: some View {
@@ -338,8 +340,8 @@ struct UsageDetailsView: View {
         .navigationTitle(L10n.tr("当前客户端额度"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.tr("完成")) { dismiss() } } }
-        .refreshable { await usage.refresh(client, target: target, force: true) }
-        .task(id: "\(usage.identity(client, target: target)):\(scenePhase)") { if scenePhase == .active { await usage.poll(client, target: target) } }
+        .refreshable { if active && scenePhase == .active { await usage.refresh(client, target: target, force: true) } }
+        .task(id: "\(usage.identity(client, target: target)):\(scenePhase):\(active)") { if active && scenePhase == .active { await usage.poll(client, target: target) } }
     }.presentationDetents([.medium, .large])
   }
 }

@@ -70,16 +70,24 @@ function program(source) {
   // Only the production thirty-second duration is shortened. Ordering, expiry,
   // transport close, operation IDs and original-receipt checks are unchanged.
   request = request
+    .replace('.seconds(livenessCheck ? 5 : 30)', '.milliseconds(livenessCheck ? 20 : 120)')
     .replace('.seconds(30)', '.milliseconds(120)')
     .replace('Date().addingTimeInterval(30)', 'Date().addingTimeInterval(0.12)');
   const expiry = source.includes('  private func expireRequest(')
     ? between(source, '  private func expireRequest(', '  private func publish(')
     : '  private func expireRequest(_ id: String, epoch requestEpoch: String) async {}\n';
+  const hasLiveness = source.includes('  private func verifySessionLiveness(');
   const verify = between(
     source,
     '  nonisolated static func verifiedWriteResult(',
-    '  private func requestData(',
+    hasLiveness ? '  private func verifySessionLiveness(' : '  private func requestData(',
   );
+  const liveness = hasLiveness
+    ? between(source, '  private func verifySessionLiveness(', '  private func requestData(')
+    : '';
+  const publishRead = source.includes('  private func publishRead(')
+    ? between(source, '  private func publishRead(', '  private func pump(')
+    : '';
   const gate = source.includes('enum EasyWorkRequestDeadlineAcceptance {')
     ? between(
         source,
@@ -121,6 +129,16 @@ actor Client {
   var lastError: Error?
   var responses: [String: [String: Any]] = [:]
   var pendingRequestIds: Set<String> = []
+  var transport: Bool? = true
+  var publishingOwners: [String: UUID] = [:]
+  var readPublishTasks: [UUID: Task<Void, Never>] = [:]
+  var readPublishResults: [UUID: Result<Void, Error>] = [:]
+  var readPublishWaiters: Set<UUID> = []
+  var sendingReads: Set<UUID> = []
+  enum ReadPublishError: Error { case capacity }
+  var lastVerifiedTraffic: ContinuousClock.Instant?
+  var livenessTask: Task<Void, Never>?
+  var livenessResult: Bool?
   static let readMethods: Set<String> = ["workspace/list", "command/status"]
   static let subscriptionMethods: Set<String> = []
   var sends: [(String, String)] = []
@@ -133,11 +151,17 @@ actor Client {
     if !connected { connected = true; epoch = UUID().uuidString; lastError = nil }
   }
   func disconnect() async { closes += 1; connected = false; await blocked.close() }
-  func publish(_ payload: [String: Any]) async throws {
+  func publish(_ payload: [String: Any], owner: UUID = UUID(), readOwner: UUID? = nil, expectedEpoch: String? = nil) async throws {
+    let publishEpoch = expectedEpoch ?? epoch
+    publishingOwners[publishEpoch] = owner
+    defer { if publishingOwners[publishEpoch] == owner { publishingOwners.removeValue(forKey: publishEpoch) } }
+    if let readOwner { sendingReads.insert(readOwner) }
+    defer { if let readOwner { sendingReads.remove(readOwner) } }
     let envelope = payload["envelope"] as! [String: Any]
     let method = envelope["method"] as! String, id = envelope["requestId"] as! String
     let params = envelope["params"] as! [String: Any]
     sends.append((method, id))
+    if method == "runtime/context" { throw URLError(.networkConnectionLost) }
     if method == "command/status" {
       let (originalMethod, originalId, originalParams) = original!
       let saved = try easyWorkObject(originalParams)
@@ -162,7 +186,9 @@ actor Client {
   }
 ${recoveryPolicy}
 ${verify}
+${liveness}
 ${expiry}
+${publishRead}
 ${request}
   func stats() -> ([(String, String)], Int) { (sends, closes) }
   func staleExpiryDoesNotClose() async {
@@ -184,8 +210,8 @@ ${request}
         let value = try await client.request("workspace/list", [:], id: "same-read")
         let decoded = try easyWorkObject(value)
         precondition(decoded["value"] as? String == "original-read")
-        let (calls, closes) = await client.stats()
-        precondition(calls.map { $0.1 } == ["same-read", "same-read"] && closes >= 1)
+        let (allCalls, closes) = await client.stats(); let calls = allCalls.filter { $0.0 != "runtime/context" }
+        precondition(calls.map { $0.1 } == ["same-read", "same-read"] && calls.allSatisfy { $0.0 == "workspace/list" } && closes >= 1)
       case "write":
         let value = try await client.request("resource/upload", ["transferId": "owned-transfer"], id: "same-write")
         let decoded = try easyWorkObject(value)
@@ -199,7 +225,7 @@ ${request}
         precondition(calls.map { $0.0 } == ["turn/start", "command/status"])
       case "both-blocked":
         do { _ = try await client.request("workspace/list", [:], id: "same-read"); preconditionFailure("unbounded retry") } catch {}
-        let (calls, _) = await client.stats(); precondition(calls.count == 2 && calls.allSatisfy { $0.1 == "same-read" })
+        let (allCalls, _) = await client.stats(); let calls = allCalls.filter { $0.0 != "runtime/context" }; precondition(calls.count == 2 && calls.allSatisfy { $0.0 == "workspace/list" && $0.1 == "same-read" })
       case "cancel":
         let task = Task { try await client.request("workspace/list", [:], id: "cancelled") }
         try await Task.sleep(for: .milliseconds(20)); task.cancel()
@@ -218,7 +244,7 @@ ${request}
         let value = try await client.request("workspace/list", [:], id: "response-before-send-callback")
         let decoded = try easyWorkObject(value)
         precondition(decoded["value"] as? String == "original-read")
-        let (calls, closes) = await client.stats(); precondition(calls.count == 1 && closes == 1)
+        let (calls, closes) = await client.stats(); precondition(calls.count == 1 && closes == 0)
       case "guard":
         let target = fixtureTarget().dictionary
         let encoded = try easyWorkJSON(target)

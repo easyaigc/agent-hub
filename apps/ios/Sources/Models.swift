@@ -940,7 +940,23 @@ struct SessionHistoryPage: Codable {
   let encrypted: Bool
 }
 
+// Optional local cache facts. Old App versions ignore these; no control proof is saved.
+struct HistoryPagingCheckpoint: Codable {
+  var nextCursor: String?
+  var windowed: Bool
+  var revision: Int?
+}
+
+struct HistoryViewportBookmark: Codable {
+  var anchorId: String
+  var offset: Double
+  var messageLimit: Int
+  var followsLatest: Bool
+}
+
 struct SavedSession: Codable {
+  var historyPaging: [String: HistoryPagingCheckpoint]? = nil
+  var historyViewports: [String: HistoryViewportBookmark]? = nil
   var recentProjects: RecentProjects? = nil
   var workspaceManagement: [WorkspaceManagementOperation]? = nil
   var demoDeletedProjectIds: [String]? = nil

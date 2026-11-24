@@ -56,7 +56,7 @@ private fun usageWindowSummary(metric:JSONObject,now:Long,translate:(String)->St
     return now
 }
 @Composable internal fun ClientUsageSummary(session:MobileSession,client:MobileClient) {
-    ClientUsageSummaryContent(session.usage,client,session.usageForeground)
+    ClientUsageSummaryContent(session.usage,client,session.allowsPassiveClientRead(client))
 }
 @Composable internal fun ClientUsageSummaryContent(usage:MobileUsageStore,client:MobileClient,foreground:Boolean) {
     val text=currentProductText()
@@ -80,7 +80,7 @@ private fun usageWindowSummary(metric:JSONObject,now:Long,translate:(String)->St
     LaunchedEffect(usage,identity,foreground,visible){if(foreground && visible)usage.poll(client)}
 }
 @Composable internal fun UsageFooter(session:MobileSession,client:MobileClient,active:Boolean) {
-    UsageFooterContent(session.usage,client,active,session.usageForeground)
+    UsageFooterContent(session.usage,client,active,session.allowsPassiveClientRead(client))
 }
 @Composable internal fun UsageFooterContent(usage:MobileUsageStore,client:MobileClient,active:Boolean,foreground:Boolean) {
     val text=currentProductText()

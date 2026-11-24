@@ -67,7 +67,7 @@ class MobileUsageStore(
         refreshOnMain(client)
     }
     private suspend fun refreshOnMain(client:MobileClient) {
-        if(client.isDemo || client.scope==null)return
+        if(client.isDemo || client.scope==null || client.migrationEasyWork!=null || client.connectionPhase==ConnectionPhase.FAILED)return
         currentCoroutineContext().ensureActive()
         val key=key(client)
         val existing=pending[key]?.takeUnless { it.task.isCancelled }

@@ -382,7 +382,8 @@ class MobileReadTest {
         assertTrue(session.error!!.startsWith("加载更早消息失败，请重试。")); assertEquals(cached,session.messages); assertEquals("older",session.historyCursor)
         shot("history-pull-network-retry")
         ui.runOnIdle { fail=false; holding=true; session.enterForeground() }; runBlocking { started.await() }
-        assertEquals(ConnectionPhase.CONNECTING,session.selectedClient.connectionPhase)
+        // A foreground check preserves the prior real failure until fresh evidence arrives.
+        assertEquals(ConnectionPhase.WAITING,session.selectedClient.connectionPhase)
         release.complete(Unit); ui.waitUntil { !session.loading && session.selectedClient.online }
         assertNull(session.error); assertEquals(cached,session.messages)
         ui.runOnIdle { session.leaveForeground() }

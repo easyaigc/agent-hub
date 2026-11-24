@@ -185,7 +185,14 @@ actor EasyWorkRemoteSession {
   private var transport: (any AgentTransport)?
   private var crypto: EasyWorkEnvelopeCrypto?
   private var sequence = 1
-  private var publishingEpochs: Set<String> = []
+  private var publishingOwners: [String: UUID] = [:]
+  // Read callers own their wait, never the shared transport's send callback.
+  // Retired sends remain bounded and cannot release a newer publisher's lock.
+  private var readPublishTasks: [UUID: Task<Void, Never>] = [:]
+  private var readPublishResults: [UUID: Result<Void, Error>] = [:]
+  private var readPublishWaiters: Set<UUID> = []
+  private var sendingReads: Set<UUID> = []
+  private enum ReadPublishError: Error { case capacity }
   private var keyConfirmed = false
   private var receiveTask: Task<Void, Never>?
   private var responses: [String: [String: Any]] = [:]
@@ -210,7 +217,13 @@ actor EasyWorkRemoteSession {
   private var activeCandidateInfo: AgentConnectionCandidate?
   // Preserve transport error types so expected reconnects remain nonmodal in the UI.
   private var lastError: Error?
-  private var connecting = false
+  private var connectionTask: (id: UUID, task: Task<Void, Never>)?
+  private var connectionDeadline: Task<Void, Never>?
+  private var connectionResults: [UUID: Result<Void, Error>] = [:]
+  private var connectionWaiters: [UUID: Int] = [:]
+  private var lastVerifiedTraffic: ContinuousClock.Instant?
+  private var livenessTask: Task<Void, Never>?
+  private var livenessResult: Bool?
   private var closed = false
   private static let readMethods: Set<String> = [
     "thread/open-status",
@@ -274,26 +287,77 @@ actor EasyWorkRemoteSession {
   func rememberAuthenticatedNetworks(_ networks: [HostDiscoveryNetwork]?) {
     authenticatedNetworks = networks
   }
-  func close() async { closed = true; await disconnect() }
+  func close() async {
+    closed = true
+    if let flight = connectionTask { finishConnection(flight.id, .failure(CancellationError())); flight.task.cancel() }
+    connectionDeadline?.cancel(); livenessTask?.cancel()
+    await disconnect()
+  }
   private func disconnect() async {
     diagnostic("disconnect")
     let previous = transport
+    for task in readPublishTasks.values { task.cancel() }
+    publishingOwners.removeAll()
     receiveTask?.cancel(); receiveTask = nil; transport = nil; crypto = nil; keyConfirmed = false
     threadSyncs.removeAll(); threadSyncOrder.removeAll()
     await eventSignal.signal()
     subagents.clear()
     await previous?.close()
   }
+  private func finishConnection(_ id: UUID, _ result: Result<Void, Error>) {
+    guard connectionTask?.id == id else { return }
+    if connectionWaiters[id, default: 0] > 0 { connectionResults[id] = result }
+    connectionTask = nil
+    connectionDeadline?.cancel(); connectionDeadline = nil
+  }
+  private func requireConnectionOwner(_ id: UUID) throws {
+    try Task.checkCancellation()
+    guard !closed, connectionTask?.id == id else { throw CancellationError() }
+  }
+  private func expireConnection(_ id: UUID) async {
+    guard let flight = connectionTask, flight.id == id else { return }
+    finishConnection(id, .failure(URLError(.timedOut)))
+    flight.task.cancel()
+    await disconnect()
+  }
   private func connect(excluding: String? = nil) async throws {
     #if R2_REAL_DEV_ACCEPTANCE
     try R2Admission.connection(connection)
     #endif
-    while connecting { try await Task.sleep(for: .milliseconds(25)) }
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
     if transport != nil && keyConfirmed && (excluding == nil || activeCandidate != excluding) { return }
-    connecting = true; defer { connecting = false }
+    let id: UUID
+    if let flight = connectionTask { id = flight.id }
+    else {
+      id = UUID()
+      let task = Task { [self] in
+        do { try await performConnect(excluding: excluding, owner: id); finishConnection(id, .success(())) }
+        catch { finishConnection(id, .failure(error)) }
+      }
+      connectionTask = (id, task)
+      connectionDeadline = Task { [weak self] in
+        do { try await Task.sleep(for: .seconds(30)) } catch { return }
+        await self?.expireConnection(id)
+      }
+    }
+    connectionWaiters[id, default: 0] += 1
+    defer {
+      connectionWaiters[id, default: 0] -= 1
+      if connectionWaiters[id] == 0 { connectionWaiters.removeValue(forKey: id); connectionResults.removeValue(forKey: id) }
+    }
+    while connectionResults[id] == nil {
+      try Task.checkCancellation()
+      guard !closed else { throw CancellationError() }
+      try await Task.sleep(for: .milliseconds(25))
+    }
+    try Task.checkCancellation()
+    try connectionResults[id]!.get()
+  }
+  private func performConnect(excluding: String?, owner: UUID) async throws {
+    try requireConnectionOwner(owner)
     await disconnect()
+    try requireConnectionOwner(owner)
     var candidates = connection.candidates
     let excludedEndpoint = candidates.first { $0.id == excluding }?.endpoint
     if connection.preference == .lanOnly { candidates = candidates.filter { $0.transportId == "lan-wss" } }
@@ -301,6 +365,7 @@ actor EasyWorkRemoteSession {
     if connection.preference == .automatic { candidates.sort { ($0.transportId == "lan-wss" ? 0 : 1) < ($1.transportId == "lan-wss" ? 0 : 1) } }
     if let excluding { candidates.removeAll { $0.id == excluding } }
     candidates = await EasyWorkPairing.reachableCandidates(candidates, binding: credential.binding)
+    try requireConnectionOwner(owner)
     if let excluding { candidates.removeAll { $0.id == excluding || $0.endpoint == excludedEndpoint } }
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
@@ -311,6 +376,7 @@ actor EasyWorkRemoteSession {
         guard binding.target == target else { throw HostServiceError.wrongHost }
         let channel = try EasyWorkEnvelopeCrypto(credential: credential, binding: binding)
         let route = try await AgentTransportRegistry.shared.make(AgentTransportOptions(candidate: candidate, bindingId: binding.bindingId, accessToken: credential.accessToken, grantRef: credential.grantRef, authorizationBinding: binding))
+        do { try requireConnectionOwner(owner) } catch { await route.close(); throw error }
         transport = route; crypto = channel; sequence = 1; keyConfirmed = false; lastError = nil; activeCandidate = candidate.id; activeCandidateInfo = candidate; epoch = UUID().uuidString
         let pumpEpoch = epoch
         receiveTask = Task { await self.pump(route, channel: channel, epoch: pumpEpoch) }
@@ -323,14 +389,15 @@ actor EasyWorkRemoteSession {
         }
         defer { handshakeDeadline.cancel() }
         try await publish(["kind": "key-confirmation", "value": channel.confirmation])
-        let deadline = Date().addingTimeInterval(8)
-        while !keyConfirmed && lastError == nil && !closed && Date() < deadline { try await Task.sleep(for: .milliseconds(25)) }
-        guard !closed else { throw CancellationError() }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(8))
+        while !keyConfirmed && lastError == nil && !closed && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(25)) }
+        try requireConnectionOwner(owner)
         guard keyConfirmed else { throw lastError ?? HostServiceError.unavailable }
         diagnostic("connected", candidate.transportId)
         return
       } catch {
         diagnostic("connect-error", "\((error as NSError).domain):\((error as NSError).code)")
+        try requireConnectionOwner(owner)
         let authorizationFailure = (error as? EasyWorkDeviceAuthorizationFailure) ?? (lastError as? EasyWorkDeviceAuthorizationFailure)
         // A cancelled trust challenge is a real failure unless this task/lifecycle was cancelled.
         lastError = (error as? URLError)?.code == .cancelled ? HostServiceError.message(error.localizedDescription) : error
@@ -356,21 +423,29 @@ actor EasyWorkRemoteSession {
     // The normal recovery path retains the original operation and queries writes.
     await disconnect()
   }
-  private func publish(_ payload: [String: Any]) async throws {
-    let publishEpoch = epoch
+  private func publish(_ payload: [String: Any], owner: UUID = UUID(), readOwner: UUID? = nil,
+    expectedEpoch: String? = nil) async throws {
+    let publishEpoch = expectedEpoch ?? epoch
     // Actor isolation does not keep HTTP requests ordered across send's await.
     // Assign the authenticated sequence only after the preceding send finishes.
-    while publishingEpochs.contains(publishEpoch) {
+    while publishingOwners[publishEpoch] != nil {
       try await Task.sleep(for: .milliseconds(10))
       guard epoch == publishEpoch, !closed else { throw HostServiceError.unavailable }
     }
     try Task.checkCancellation()
     guard !closed else { throw CancellationError() }
     guard epoch == publishEpoch, let transport, let crypto else { throw HostServiceError.unavailable }
-    publishingEpochs.insert(publishEpoch)
-    defer { publishingEpochs.remove(publishEpoch) }
+    if let readOwner, !readPublishWaiters.contains(readOwner) { throw CancellationError() }
+    publishingOwners[publishEpoch] = owner
+    defer { if publishingOwners[publishEpoch] == owner { publishingOwners.removeValue(forKey: publishEpoch) } }
     let frame = try crypto.seal(payload, sequence: sequence); sequence += 1
-    try await transport.send(frame)
+    if let readOwner { sendingReads.insert(readOwner) }
+    do { try await transport.send(frame) }
+    catch {
+      if let readOwner { sendingReads.remove(readOwner) }
+      throw error
+    }
+    if let readOwner { sendingReads.remove(readOwner) }
     #if DEBUG
     if !requestDeadlineFaultConsumed, let request = payload["envelope"] as? [String: Any],
       EasyWorkRequestDeadlineAcceptance.matches(bundleIdentifier: Bundle.main.bundleIdentifier,
@@ -385,6 +460,42 @@ actor EasyWorkRemoteSession {
       throw URLError(.networkConnectionLost)
     }
     #endif
+  }
+  private func publishRead(_ payload: [String: Any], id: String,
+    deadline: ContinuousClock.Instant) async throws {
+    // A lower-level callback may ignore cancellation. Bound retained callbacks
+    // without turning local backpressure into a shared connection failure.
+    guard readPublishTasks.count < 16 else { throw ReadPublishError.capacity }
+    let owner = UUID(), publishEpoch = epoch
+    let encoded = try easyWorkJSON(payload)
+    readPublishWaiters.insert(owner)
+    readPublishTasks[owner] = Task { [self] in
+      let result: Result<Void, Error>
+      do {
+        try await publish(easyWorkObject(encoded), owner: owner, readOwner: owner, expectedEpoch: publishEpoch)
+        result = .success(())
+      } catch { result = .failure(error) }
+      if readPublishWaiters.contains(owner) { readPublishResults[owner] = result }
+      readPublishTasks.removeValue(forKey: owner)
+    }
+    defer {
+      readPublishWaiters.remove(owner)
+      readPublishResults.removeValue(forKey: owner)
+      if publishingOwners[publishEpoch] == owner { publishingOwners.removeValue(forKey: publishEpoch) }
+      // Do not cancel an in-flight shared transport send on caller retirement.
+      // Queued publishers and local post-send work can be cancelled safely.
+      if !sendingReads.contains(owner) { readPublishTasks[owner]?.cancel() }
+    }
+    while true {
+      try Task.checkCancellation()
+      if responses[id] != nil { return }
+      guard !closed else { throw CancellationError() }
+      guard epoch == publishEpoch, transport != nil else { throw lastError ?? HostServiceError.unavailable }
+      if let lastError { throw lastError }
+      if let result = readPublishResults[owner] { try result.get(); return }
+      guard ContinuousClock.now < deadline else { throw URLError(.timedOut) }
+      try await Task.sleep(for: .milliseconds(25))
+    }
   }
   private func pump(_ route: any AgentTransport, channel: EasyWorkEnvelopeCrypto, epoch pumpEpoch: String) async {
     diagnostic("pump-start", pumpEpoch)
@@ -427,6 +538,7 @@ actor EasyWorkRemoteSession {
         var sequences = previous.sequences.filter { $0 > highest - 2000 }
         sequences.insert(envelopeSequence)
         received[peerSession] = (highest, sequences)
+        lastVerifiedTraffic = ContinuousClock.now
         try await route.acknowledge(data)
       }
     } catch {
@@ -472,7 +584,24 @@ actor EasyWorkRemoteSession {
     }
     return try easyWorkJSON(response["result"] ?? NSNull())
   }
-  private func requestData(_ method: String, params: Data, id: String) async throws -> Data {
+  private func verifySessionLiveness(epoch expected: String) async -> Bool {
+    if livenessTask == nil {
+      livenessResult = nil
+      livenessTask = Task { [self] in
+        let began = ContinuousClock.now
+        do { _ = try await requestData("runtime/context", params: easyWorkJSON([:]), id: UUID().uuidString, livenessCheck: true) }
+        catch { /* Authenticated error responses also prove transport liveness. */ }
+        livenessResult = epoch == expected && lastError == nil && lastVerifiedTraffic.map { $0 > began } == true
+        livenessTask = nil
+      }
+    }
+    while livenessTask != nil {
+      if Task.isCancelled || closed || epoch != expected { return false }
+      do { try await Task.sleep(for: .milliseconds(25)) } catch { return false }
+    }
+    return epoch == expected && livenessResult == true
+  }
+  private func requestData(_ method: String, params: Data, id: String, livenessCheck: Bool = false) async throws -> Data {
     #if R2_REAL_DEV_ACCEPTANCE
     try R2Admission.request(method, id: id, params: params, connection: connection)
     #endif
@@ -490,20 +619,26 @@ actor EasyWorkRemoteSession {
       try await connect()
       let route = activeCandidate
       let requestEpoch = epoch
+      let requestStarted = ContinuousClock.now
       let clock = ContinuousClock()
-      let deadline = clock.now.advanced(by: .seconds(30))
-      let requestDeadline = Task {
+      let deadline = clock.now.advanced(by: .seconds(livenessCheck ? 5 : 30))
+      let isRead = Self.readMethods.contains(method) || Self.subscriptionMethods.contains(method)
+      // Writes retain their original bounded send/reconciliation path. A read
+      // deadline retires only that waiter; liveness decides shared recovery.
+      let requestDeadline: Task<Void, Never>? = isRead ? nil : Task {
         do { try await clock.sleep(until: deadline) }
         catch { return }
         await self.expireRequest(id, epoch: requestEpoch)
       }
-      defer { requestDeadline.cancel() }
+      defer { requestDeadline?.cancel() }
       do {
         #if R2_REAL_DEV_ACCEPTANCE
         try R2Admission.request(method, id: id, params: params, connection: connection)
         #endif
-        do { try await publish(["kind": "protocol", "envelope": request]) }
-        catch {
+        do {
+          if isRead { try await publishRead(["kind": "protocol", "envelope": request], id: id, deadline: deadline) }
+          else { try await publish(["kind": "protocol", "envelope": request]) }
+        } catch {
           // A verified response may precede send's completion callback. Closing
           // that blocked send must not discard the response or republish it.
           guard responses[id] != nil else { throw error }
@@ -560,16 +695,28 @@ actor EasyWorkRemoteSession {
           return try easyWorkJSON(response["result"] ?? NSNull())
         }
         diagnostic("request-timeout", method)
-        throw lastError ?? HostServiceError.unavailable
+        throw lastError ?? URLError(.timedOut)
       } catch {
         diagnostic("request-error", "\(method):\((error as NSError).domain):\((error as NSError).code)")
         if closed || Task.isCancelled { throw CancellationError() }
+        if livenessCheck { throw error }
+        if error is ReadPublishError { throw URLError(.timedOut) }
         // Management recovery validates the saved original in its adapter and never republishes.
         if method == "thread/manage" || method == "workspace/manage" || method == "thread/acknowledge-read" { throw error }
         if let failure = (error as? EasyWorkDeviceAuthorizationFailure) ?? (lastError as? EasyWorkDeviceAuthorizationFailure) { throw failure }
         if error is EasyWorkRemoteRejection { throw error }
         if case HostServiceError.message = error { throw error }
         if method == "resource/upload-status", case HostServiceError.rejected(404, _) = error { throw error }
+        if case HostServiceError.invalidResponse = error { throw error }
+        if case HostServiceError.wrongHost = error { throw error }
+        // Only an actual timeout is eligible for liveness classification.
+        // Authenticated rejection and protocol errors keep their original meaning.
+        if (error as? URLError)?.code == .timedOut, epoch == requestEpoch, lastError == nil {
+          if lastVerifiedTraffic.map({ $0 > requestStarted }) == true { throw error }
+          if await verifySessionLiveness(epoch: requestEpoch) { throw error }
+          try Task.checkCancellation()
+          guard !closed else { throw CancellationError() }
+        }
         // A Relay can stay online while the Host restarts. A request timeout must
         // invalidate the old handshake even when the user selected only one path.
         // The retry keeps the original operation ID; Host receipts decide whether

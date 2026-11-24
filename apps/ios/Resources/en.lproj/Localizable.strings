@@ -1916,3 +1916,10 @@
 "电脑拒绝了已有设备授权，请核对电脑端的授权状态。" = "The computer rejected the saved device authorization. Check its authorization status on that computer.";
 
 "本轮已发现" = "Found in this scan";
+
+"预览已暂停" = "Preview paused";
+"继续预览" = "Continue preview";
+"重试关闭" = "Retry closing";
+"上次预览状态未确认" = "The previous preview status is unconfirmed";
+
+"部分阅读缓存无法恢复，原文件已保留。" = "Some reading cache could not be restored. The original files have been preserved.";

@@ -18,7 +18,7 @@ struct ClientPickerView: View {
                                 Image(systemName: "laptopcomputer").font(.title3)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(client.name)
-                                    ClientUsageSummary(client: client, target: target)
+                                    ClientUsageSummary(client: client, target: target, active: store.allowsPassiveClientRead(client))
                                     let running = store.runningConversationCount(for: client).map { $0.formatted() } ?? "—"
                                     let unread = store.unreadCount(for: client, snapshot: notifications.unreadSnapshot)
                                     ViewThatFits(in: .horizontal) {

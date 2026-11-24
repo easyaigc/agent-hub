@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 // Provider-neutral presentation data. Original IDs/content are retained for actions and recovery.
 data class MobileMessage(val id: String, val role: String, val text: String, val status: String? = null,
@@ -320,6 +321,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var commands: CodexCommands = providers
     val usage = MobileUsageStore { client -> commands.usage(client) }
     private var execution = storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }
+    private val foregroundReadiness=ForegroundReadiness()
+    private var foregroundBudget: Job? = null
+    private var foregroundCheckTimedOut by mutableStateOf(false)
     private var freshQ04ReplyFenceBound=false
     internal fun bindFreshQ04ReplyDispatchFence(owner: NativeSessionStorage,checker: (NativeOriginalReplyDispatch)->Unit) {
         check(BuildConfig.DEBUG && storage===owner && !freshQ04ReplyFenceBound)
@@ -419,6 +423,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var readyHistorySelection: Triple<String,Long,Long>?=null
     private var foreground by mutableStateOf(true)
     val usageForeground: Boolean get()=foreground
+    internal fun allowsPassiveClientRead(client: MobileClient): Boolean = localReady && foreground &&
+        !migrationPaused && !migrationRawPreparing && migrationRawOwner==null &&
+        client.migrationEasyWork==null && client.connectionPhase!=ConnectionPhase.FAILED &&
+        realClients.any { current -> NativeReadingDirectory.sameConnection(current,client) &&
+            current.migrationEasyWork==null && current.connectionPhase!=ConnectionPhase.FAILED }
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
     internal val attachmentRecoveryBusy: Boolean get()=listOfNotNull(documentPicker?.recovery,photoPicker?.recovery,cameraCapture?.recovery).any {!it.migrationIdle}
     internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}.apply {beforeNoticeRead={chatNotifications?.invalidateBeforeChange()}}
@@ -693,12 +702,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val now=System.nanoTime()
         if(!force && phoneReadingDirectoryAttemptNanos?.let { now-it<30_000_000_000L }==true)return null
         phoneReadingDirectoryAttemptNanos=now
-        val clients=realClients.filter { !it.isDemo && it.scope!=null }.map { Triple(it,revisions[it.id] ?: 0,workspaceManagementRevisions[it.cacheKey(null)] ?: 0) }
+        val clients=realClients.filter { !it.isDemo && it.scope!=null && allowsPassiveClientRead(it) }.map { Triple(it,revisions[it.id] ?: 0,workspaceManagementRevisions[it.cacheKey(null)] ?: 0) }
         val epoch=phoneReadingDirectoryGeneration;val owner=Any();phoneReadingDirectoryOwner=owner
         phoneReadingDirectoryJob=tasks.launch {
             try {
                 for((client,revision,management) in clients) {
-                    fun current()=localReady && foreground && incomingEasyWorkLink==null && epoch==phoneReadingDirectoryGeneration &&
+                    fun current()=allowsPassiveClientRead(client) && incomingEasyWorkLink==null && epoch==phoneReadingDirectoryGeneration &&
                         (revisions[client.id] ?: 0)==revision && (workspaceManagementRevisions[client.cacheKey(null)] ?: 0)==management &&
                         realClients.any { NativeReadingDirectory.sameConnection(it,client) }
                     if(!current())continue
@@ -821,7 +830,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         recentPhotos?.migrationIdle!=false && photoAuthorization?.migrationIdle!=false &&
         documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this) && discovery?.migrationStopPending!=true
     internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
-    internal fun invalidateMigrationLease(){storage?.invalidateMigrationSession(this);migrationGenerationLease=null;migrationQuiescent=false;migrationEpoch++}
+    internal fun invalidateMigrationLease(){readingRecoveryEpoch.incrementAndGet();storage?.invalidateMigrationSession(this);migrationGenerationLease=null;migrationQuiescent=false;migrationEpoch++}
     internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
     private var migrationLocalPhotoOwners: NativeMigrationPhotoOwners?=null
     private var migrationLocalPhotoWriters: List<NativeInboxOwnership.LocalPhotoLease> = emptyList()
@@ -1063,6 +1072,65 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val histories = mutableStateMapOf<String, List<MobileMessage>>()
     private val historyPages = mutableStateMapOf<String, MobileHistory>()
     private val pagedSelections = mutableMapOf<String, Long>()
+    private val historyPaging = mutableMapOf<String, NativeHistoryPagingCheckpoint>()
+    private val historyViewports = mutableMapOf<String, NativeHistoryViewportBookmark>()
+    private val durableHistoryViewports = mutableMapOf<String, NativeHistoryViewportBookmark>()
+    private val restoredPagingKeys = mutableMapOf<String, Pair<Long, Long>>()
+    private val historyCacheReads = mutableMapOf<String, Pair<Any, Job>>()
+    private val readingRecovery=storage?.takeIf {it.canUseReadingRecovery}?.let(::NativeReadingRecovery)
+    private val readingRecoveryEpoch=AtomicLong()
+    private class ReadingCheckpointVersion { val content=AtomicLong();val durable=AtomicLong(-1);val requested=AtomicLong(-1) }
+    private val readingCheckpointVersions=mutableMapOf<String,ReadingCheckpointVersion>()
+    private val protectedReadingKeys=mutableSetOf<String>()
+    private fun checkpointReading(key: String,stableBody: Boolean=false) {
+        val cache=readingRecovery?.takeIf {it.enabled} ?: return
+        if(!localReady)return
+        val client=realClients.firstOrNull {host -> historyPages[key]?.let {it.hostId==host.id&&host.cacheKey(it.threadId)==key}==true} ?: return
+        if(client.readerId.isNullOrEmpty()||client.isDemo||client.migrationEasyWork!=null)return
+        val page=historyPages[key] ?: return
+        val viewport=historyViewports[key]
+        if(key !in protectedReadingKeys&&viewport?.followsLatest!=false)return
+        protectedReadingKeys.add(key)
+        val messages=histories[key]?.toList() ?: return
+        val version=readingCheckpointVersions.getOrPut(key){ReadingCheckpointVersion()}
+        val content=version.content.get();val epoch=readingRecoveryEpoch.get()
+        if(stableBody)version.requested.set(content)
+        val paging=historyPaging[key] ?: NativeHistoryPagingCheckpoint(page.nextCursor,page.windowed,page.historyRevision)
+        storage?.enqueueSnapshot("reading-recovery:$key",{
+            val current={readingRecoveryEpoch.get()==epoch&&version.content.get()==content}
+            val before=cache.bodyWrites
+            if(cache.checkpoint(client,page.threadId,messages,paging,viewport,version.requested.get()>version.durable.get(),current)) {
+                if(cache.bodyWrites!=before)version.durable.set(content)
+                if(viewport!=null)tasks.launch {if(current()&&historyViewports[key]==viewport)durableHistoryViewports[key]=viewport}
+            }
+        }) {storageFailure()}
+    }
+    internal fun historyViewport(key: String)=historyViewports[key]
+    internal fun rememberHistoryViewport(key: String,value: NativeHistoryViewportBookmark,settled: Boolean) {
+        if(histories[key]?.isNotEmpty()!=true || value.offset !in -100_000..100_000)return
+        if(value.followsLatest && historyViewports[key]?.followsLatest==true)return
+        val firstNonFollow=!value.followsLatest&&historyViewports[key]?.followsLatest!=false
+        historyViewports[key]=value
+        if(settled && durableHistoryViewports[key]!=value) {
+            persistMetadata();checkpointReading(key,firstNonFollow)
+        }
+    }
+    private fun restoreHistoryPaging(key: String,page: MobileHistory,selection: Long) {
+        val cached=historyPaging[key] ?: return
+        val generation=selection to (revisions[selectedClient.id] ?: 0)
+        if(restoredPagingKeys.put(key,generation)==generation)return
+        val ids=page.messages.map { it.id }.toSet()
+        if(com.agenthub.core.HistoryCacheRecovery.canKeepPrefix(cached.windowed,page.windowed,cached.revision ?: -1L,page.historyRevision ?: -1L,
+                histories[key].orEmpty().any { it.id in ids })) {
+            pagedSelections[key]=selection
+            historyPages[key]=historyPages[key]?.copy(nextCursor=cached.nextCursor,historyRevision=cached.revision) ?: return
+            loadedHistorySelections[key]=selection to (revisions[selectedClient.id] ?: 0)
+        } else {
+            historyPaging.remove(key);historyViewports.remove(key);protectedReadingKeys.remove(key)
+            readingRecoveryEpoch.incrementAndGet()
+            readingRecovery?.takeIf {it.enabled}?.let {cache ->storage?.enqueueSnapshot("reading-recovery:$key",{cache.discard(key)}) {storageFailure()}}
+        }
+    }
     // Network reads only, never restored from disk. Selection + connection revision
     // bound the V9 no-revision compatibility path to this actual reading generation.
     private val loadedHistorySelections = mutableMapOf<String, Pair<Long, Long>>()
@@ -1084,18 +1152,32 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foregroundJob: Job? = null
     private var earlierReadLifecycle=0L
     fun enterForeground() {
-        if(migrationPaused)return
+        if(migrationPaused || foreground && foregroundJob?.isActive==true)return
         invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
         tasks.launch { easyWorkLogin?.foreground() }
         foreground=true;chatNotifications?.reconcile();if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
-        realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
-        if(localReady) { refresh(); loadHistory() }
+        foregroundCheckTimedOut=false
+        if(localReady) {
+            if(selectedClient.connectionPhase!=ConnectionPhase.FAILED) { refresh(); loadHistory(); startEvents() }
+            loadOperations()
+        }
+        foregroundBudget?.cancel()
+        val recoveryNavigation=clientNavigationRevision
+        foregroundBudget=tasks.launch {
+            delay(8_000)
+            if(foreground && clientNavigationRevision==recoveryNavigation && !connectionReady())foregroundCheckTimedOut=true
+        }
         foregroundJob?.cancel()
         foregroundJob=tasks.launch {
+            var retryDelay=1_000L
+            var lastDirectoryRead=android.os.SystemClock.elapsedRealtime()
             while(isActive) {
-                delay(15_000)
-                if(hasClient && selectedClient.isConnecting) { refresh(); loadHistory() }
-                refreshPhoneReadingDirectory()
+                delay(if(connectionReady() && workspaceReady(selectedClient))15_000L else retryDelay)
+                if(hasClient && !workspaceReady(selectedClient) && selectedClient.connectionPhase!=ConnectionPhase.FAILED && !loading)refresh()
+                if(hasClient && !connectionReady() && !historyLoading)loadHistory()
+                val now=android.os.SystemClock.elapsedRealtime()
+                if(now-lastDirectoryRead>=15_000) { refreshPhoneReadingDirectory();lastDirectoryRead=now }
+                retryDelay=minOf(retryDelay*2,15_000L)
             }
         }
     }
@@ -1114,6 +1196,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             // scope or a command/POST; original intent and operation ID survive.
             delay(200)
             if(!foreground||incomingEasyWorkLink!=null||clientKey!=key||clientNavigationRevision!=navigation||(revisions[client.id] ?: 0)!=revision)return@launch
+            foregroundReadiness.invalidate();freshWorkspaces.clear();freshHistories.clear()
             workspaceJob?.cancel();loadingTargets.remove(key)
             historyJob?.cancel();historyTargets.remove(targetKey)
             eventReadOwner=null;eventJob?.cancel();eventJob=null
@@ -1124,7 +1207,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { uploadJobs?.targetInvalidated(); earlierReadLifecycle++;easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;if(!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null){voice?.suspendRecording();questionVoice?.suspendRecording()};easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { if(!foreground)return;protectedReadingKeys.toList().forEach {checkpointReading(it,true)};uploadJobs?.targetInvalidated();foregroundReadiness.invalidate();foregroundBudget?.cancel();earlierReadLifecycle++;easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;if(!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null){voice?.suspendRecording();questionVoice?.suspendRecording()};easyWorkLogin?.background();foreground=false;suspendForegroundReads();chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear(); persistMetadata() }
+    private fun suspendForegroundReads() {
+        // These jobs own GET waiters only. A submitted write and the shared
+        // transport producer keep their independent owners and original IDs.
+        workspaceJob?.cancel(); workspaceJob=null; loadingTargets.remove(clientKey)
+        historyJob?.cancel(); historyJob=null; historyTargets.remove(targetKey)
+    }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -1596,12 +1685,23 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 rejected?.let { original -> it.id==original.id&&it.target==original.target }==true) && (it.kind!="reply" || it.phase!="submitted") }
     }
     private val creationWorkPending get()=pendingRecords.any { it.kind in listOf("creation","thread-create")&&it.phase!="rejected" }
+    private fun proofScope(client: MobileClient)=client.cacheKey(null)+"|"+(client.agentConnection?.credentialRef ?: "codex")+"|"+clientNavigationRevision
+    private fun workspaceReady(client: MobileClient)=client.isDemo || foreground && foregroundReadiness.workspaceReady(proofScope(client))
+    private fun connectionReady(): Boolean {
+        if(selectedClient.isDemo)return true
+        if(!foreground)return false
+        return if(selectedThread.isEmpty() || selectedThread.startsWith("draft-"))workspaceReady(selectedClient)
+            else foregroundReadiness.threadReady(proofScope(selectedClient),selectedThread) && (runtime?.canControl==true || workspaceReady(selectedClient))
+    }
+    val connectionWaitEnded get()=foregroundCheckTimedOut
+    val connectionChecking get()=hasClient && !selectedClient.isDemo && selectedClient.online && !connectionReady()
+    val foregroundConnectionLabel get()=if(!selectedClient.isDemo && !connectionReady() && foregroundCheckTimedOut) "连接未完成 · 查看缓存" else if(connectionChecking) { if(foregroundCheckTimedOut) "连接未完成 · 查看缓存" else "同步中" } else selectedClient.connectionLabel
     private val access: SessionAccess get() {
         if(!localReady) return SessionAccess(false,false,false,emptyList(),false,false,false,false,false)
         val local=demo && selectedClient.isDemo
-        val fresh=selectedClient.migrationEasyWork==null && freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
+        val fresh=selectedClient.migrationEasyWork==null && connectionReady() && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
         return SessionAccess(local,local || selectedClient.online && fresh,
-            if(local) null else if(fresh) workspace?.runtimeConnected else false,
+            if(local) null else if(fresh && runtime?.canControl==true) true else if(fresh) workspace?.runtimeConnected else false,
             if(local) emptyList() else if(fresh) workspace?.capabilities.orEmpty() else emptyList(),
             selectedThread.isNotEmpty(),projects.any { it.id==newProjects[clientKey] && it.hostId==selectedClient.id } || threads.any { it.id==selectedThread && it.projectId!=null },
             selectedThread.isEmpty() && newProjects.containsKey(clientKey) && newProjects[clientKey]==null,
@@ -1612,7 +1712,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val initialHistoryLoading get()=historyLoading&&readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0)
     private fun confirmedReplyReads(client: MobileClient,thread: String): Pair<MobileWorkspace,MobileHistory>? {
         if(!foreground||client.id!=selectedClient.id||thread!=selectedThread||client.endpoint!=selectedClient.endpoint||
-            !sameScope(client.scope,selectedClient.scope)||freshWorkspaces[clientKey]!=true||freshHistories[targetKey]!=true||
+            !sameScope(client.scope,selectedClient.scope)||!connectionReady()||freshHistories[targetKey]!=true||
             readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[client.id] ?: 0)||!isWritable)return null
         val currentWorkspace=workspace ?: return null
         val currentHistory=historyPages[targetKey] ?: return null
@@ -1650,11 +1750,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         replaceClient(chosen);select(chosen);persistMetadata()
     }
     val isWritable get() = currentChat?.archived!=true && SessionPolicies.writable(access)
-    val canCompose get() = currentChat?.archived!=true && codexStorageConflictMessage == null && SessionPolicies.compose(access)
-    val canCreateThread get() = codexStorageConflictMessage == null && SessionPolicies.createThread(access) && access.online
-    val canCreateProjectless get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access) && access.online
+    val canCompose get() = localReady && currentChat?.archived!=true && codexStorageConflictMessage == null && (selectedClient.isDemo || "reply" in workspace?.capabilities.orEmpty())
+    private val creationAccess get()=SessionAccess(selectedClient.isDemo,selectedClient.online && workspaceReady(selectedClient),
+        if(workspaceReady(selectedClient))workspace?.runtimeConnected else false,workspace?.capabilities.orEmpty(),false,false,true,false,false)
+    val canCreateThread get() = codexStorageConflictMessage == null && SessionPolicies.createThread(creationAccess) && workspaceReady(selectedClient) && selectedClient.online
+    val canCreateProjectless get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(creationAccess) && workspaceReady(selectedClient) && selectedClient.online
     internal val offersProjectlessChoice get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access)
-    val canCreateProject get()=localReady&&codexStorageConflictMessage == null && access.online&&"projects:create" in workspace?.capabilities.orEmpty()
+    val canCreateProject get()=localReady&&codexStorageConflictMessage == null && workspaceReady(selectedClient)&&selectedClient.online&&"projects:create" in workspace?.capabilities.orEmpty()
     internal val newChatUnavailableReason: String? get() = when {
         canCreateThread -> null
         codexStorageConflictMessage!=null -> codexStorageConflictMessage
@@ -1727,6 +1829,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             (client.scope==null || verified.scope==null || sameScope(client.scope,verified.scope))) { "电脑运行目标不匹配" }
         freshWorkspaces[key]=true;recordConnectionSuccess(client);reconcilePhoneReading();refreshPhoneReadingDirectory(seedClient=client,seed=verified)
         selectClient(client,refreshAutomatically=false)
+        foregroundReadiness.confirmWorkspace(proofScope(client),foregroundReadiness.revision)
         freshHistories[targetKey]=false
         val events=selectedThread.isNotEmpty() && verified.capabilities.containsAll(listOf("events","commands:target-bound:v1"))
         if(events)startEvents(initialReadGraceMillis=8_000) else loadHistory()
@@ -1800,6 +1903,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(client.migrationEasyWork!=null) {if(userInitiated)error=NativeMigrationEasyWorkGate.MESSAGE;return}
         if (!localReady || client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
         val key = clientKey; val revision = revisions[client.id] ?: 0
+        val foregroundRevision=foregroundReadiness.revision
         val old = workspace
         val owner=WorkspaceReadOwner(clientNavigationRevision,revision,workspaceManagementRevisions[key] ?: 0)
         workspaceJob = tasks.launch {
@@ -1817,6 +1921,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 merged = merged.copy(wire=encodeWorkspace(merged).toString())
                 workspaces[key] = merged
                 reconcilePhoneReading()
+                if(foreground)foregroundReadiness.confirmWorkspace(proofScope(client),foregroundRevision)
                 freshWorkspaces[key]=true
                 recordConnectionSuccess(client)
                 val originalConnection=client.agentConnection
@@ -1843,6 +1948,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val key=client.cacheKey(null)
         connectionSuccesses.keys.retainAll(realClients.map { it.cacheKey(null) }.toSet()+key)
         connectionSuccesses[key]=(connectionSuccesses[key] ?: 0)+1
+        val latest=realClients.firstOrNull { NativeReadingDirectory.sameConnection(it,client) } ?: return
+        if(latest.connectionPhase!=ConnectionPhase.CONNECTING)replaceClient(latest.copy(connectionPhase=ConnectionPhase.CONNECTING))
     }
     private fun recordConnectionFailure(client: MobileClient,failure: Exception,source: String,successAtStart: Long? = null,displayError: Boolean=true) {
         val transient=(failure as? HostReadError)?.transient==true
@@ -1876,28 +1983,39 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             suggestionNeedsFreshHistory=true
             if(!transient) { desktopSuggestionReader.clear();suggestionReadAhead.cancel() }
         }
+        foregroundReadiness.invalidateScope(proofScope(client))
         freshWorkspaces[client.cacheKey(null)]=false
         val latest=realClients.firstOrNull { it.id==client.id&&sameScope(it.scope,client.scope) }?:client
         replaceClient(latest.copy(online=false,connectionPhase=if(transient) ConnectionPhase.WAITING else ConnectionPhase.FAILED))
+        if(!transient && client.id==selectedClient.id && sameScope(client.scope,selectedClient.scope)) {
+            // Keep immutable writes/receipts; only passive event/history readers stop.
+            eventReadOwner=null;eventJob?.cancel();eventJob=null
+            historyRecoveryJob?.cancel();historyRecoveryJob=null
+        }
         if(!transient&&displayError) readError(failure,fallback="读取失败，保留缓存")
     }
     fun loadHistory(more: Boolean = false, userInitiated: Boolean = false): Job? {
         val acceptanceTiming=NativeReadAcceptanceTiming.capture()
         val client = selectedClient; val thread = selectedThread; val key = targetKey
         if(client.migrationEasyWork!=null)return null
+        if(!more && !userInitiated && client.connectionPhase==ConnectionPhase.FAILED)return null
         if (client.isDemo || incomingEasyWorkLink!=null || thread.isEmpty() || thread.startsWith("draft-") || historyLoading) return null
         if(!more && userInitiated) { pagedSelections.remove(key); loadedHistorySelections.remove(key) }
         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
+        val foregroundRevision=foregroundReadiness.revision
         if(!more)prepareSuggestionRead()
         val cursor = if (more) historyCursor ?: return null else null
         val fence=currentSnapshotFence();val readRevision=fence.beginRead()
         val owner=HistoryReadOwner(selection,revision,more)
+        val cachedRead=loadCachedHistory()
         historyJob = tasks.launch {
             val successAtStart=connectionSuccesses[client.cacheKey(null)] ?: 0
             val snapshotAtStart=conversationSnapshotRevisions[key] ?: 0
             historyTargets[key] = owner
             var failureStage="history-request-or-decode"
             try {
+                cachedRead?.join()
+                if(targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision || historyTargets[key]!==owner)return@launch
                 val result = reads.history(client, thread, cursor)
                 if (targetKey != key || selectionRevision != selection || (revisions[client.id] ?: 0) != revision || historyTargets[key]!==owner) return@launch
                 failureStage="history-target-validation"
@@ -1907,15 +2025,18 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 if(!more&&!fence.accepts(readRevision,result.epoch.orEmpty(),result.cursor ?: -1))return@launch
                 failureStage="history-local-apply"
                 acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.HISTORY_APPLYING,result.hostId,result.threadId)
+                if(!more)restoreHistoryPaging(key,result,selection)
                 val previous = histories[key].orEmpty()
                 val previousPage=historyPages[key]
                 val sameReadGeneration=loadedHistorySelections[key]==(selection to revision)
                 if(more)require(MobileHistoryWindowPolicy.acceptsEarlierPage(previousPage,result,sameReadGeneration)) { "聊天历史已变化，请刷新后重试。" }
                 val compatiblePrefix=MobileHistoryWindowPolicy.compatiblePrefix(previousPage,result,previous,sameReadGeneration)
+                val incomingIds=result.messages.map { it.id }.toSet()
+                val plainPaging=!result.windowed&&historyPaging[key]?.windowed==false&&pagedSelections[key]==selection&&
+                    sameReadGeneration&&previous.any {it.id in incomingIds}
                 val paged = com.agenthub.core.ReadingPolicy.preserveHistoryPrefix(!result.runtimePresent||result.windowed,
                     pagedSelections.containsKey(key),pagedSelections[key]==selection && (!result.windowed || sameReadGeneration),
-                    !result.windowed || compatiblePrefix) || result.windowed&&chatSearchJump?.context?.key==key
-                val incomingIds=result.messages.map { it.id }.toSet()
+                    !result.windowed || compatiblePrefix) || plainPaging || result.windowed&&chatSearchJump?.context?.key==key
                 val previousIds=if(more)previous.map { it.id }.toSet() else emptySet()
                 val merged = when {
                     more -> result.messages.filter { it.id !in previousIds }.distinctBy { it.id } + previous
@@ -1929,11 +2050,17 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 }
                 if(!more&&result.windowed&&!paged)pagedSelections.remove(key)
                 if(more) pagedSelections[key]=selection
+                val priorPaging=historyPaging[key]
+                if(more||paged) {
+                    historyPaging[key]=NativeHistoryPagingCheckpoint(page.nextCursor,page.windowed,page.historyRevision)
+                    restoredPagingKeys[key]=selection to revision
+                } else historyPaging.remove(key)
                 if (more) { visibleMessageLimit += merged.size - previous.size; revealedEarlier = true }
                 invalidatePanelNoticeForHistory(key,page);historyPages[key] =page; histories[key] = merged; runs.remove(key)
                 loadedHistorySelections[key]=selection to revision
                 clearReadError(userInitiated)
                 if(!more) {
+                    if(foreground && result.runtimePresent)foregroundReadiness.confirmThread(proofScope(client),thread,foregroundRevision)
                     freshHistories[key]=true
                     fence.accepted(result.epoch.orEmpty(),result.cursor ?: -1)
                     readyHistorySelection=Triple(key,selection,revision)
@@ -1943,7 +2070,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 replaceClient(selectedClient.copy(online=true))
                 if(!more)prepareSuggestionRead()
                 failureStage="history-cache-enqueue"
-                persistHistory(key, client, thread, page, merged)
+                persistHistory(key, client, thread, page, merged,reuseUnchangedFragments=previous==merged,
+                    readingChanged=previous!=merged||historyPaging[key]!=priorPaging)
+                if(historyPaging[key]!=priorPaging)persistMetadata()
+                if(more) {protectedReadingKeys.add(key);checkpointReading(key,true)}
                 startEvents()
             } catch (cancel: CancellationException) { throw cancel }
             catch (failure: Exception) { if (targetKey == key && selectionRevision == selection && (revisions[client.id] ?: 0)==revision && historyTargets[key]===owner) { recordConnectionFailure(client,failure,failureStage,successAtStart); if(more) readError(failure,"加载更早消息失败，请重试。\n",true) else { if((failure as? HostReadError)?.transient!=true || userInitiated || (conversationSnapshotRevisions[key] ?: 0)==snapshotAtStart)conversationSyncIssues[key]=ConversationSyncIssue(conversationReadFailure(failure));if(userInitiated) readError(failure,"加载历史失败，请重试。\n",true) } } }
@@ -2684,7 +2814,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             initialReference=reference)
     }
     private fun startEvents(initialReadGraceMillis: Long=0) {
-        if(selectedClient.migrationEasyWork!=null)return
+        if(selectedClient.migrationEasyWork!=null || selectedClient.connectionPhase==ConnectionPhase.FAILED)return
         if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
         val client=selectedClient; val thread=selectedThread; val key=targetKey; val selection=selectionRevision; val revision=revisions[client.id] ?: 0
         val recoveryIdentity=Triple(key,selection,revision)
@@ -2713,6 +2843,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val stream=Any();eventReadOwner=stream
         val fence=currentSnapshotFence()
         eventJob=tasks.launch {
+            loadCachedHistory()?.join()
             var epoch=historyPages[key]?.epoch.orEmpty(); var cursor=historyPages[key]?.cursor ?: 0
             var retryDelay=1_000L
             var observedSnapshotRevision=conversationSnapshotRevisions[key] ?: 0
@@ -2727,6 +2858,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 }
                 var failureStage="events-request-or-decode"
                 var readRevision=fence.beginRead()
+                val foregroundRevision=foregroundReadiness.revision
                 try {
                     val batch=commands.events(client,thread,epoch,cursor)
                     if(!foreground || eventReadOwner!==stream || targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision) break
@@ -2750,12 +2882,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         epoch=decision.epoch; cursor=decision.cursor
                         batch.snapshots.forEach { page ->
                             if(!fence.accepts(readRevision,page.epoch.orEmpty(),page.cursor ?: -1))return@forEach
+                            restoreHistoryPaging(key,page,selection)
                             failureStage="events-snapshot-apply"
                             val prior=historyPages[key]
                             val sameReadGeneration=loadedHistorySelections[key]==(selection to revision)
                             val compatiblePrefix=MobileHistoryWindowPolicy.compatiblePrefix(prior,page,histories[key].orEmpty(),sameReadGeneration)
+                            val incomingIds=page.messages.map { it.id }.toSet()
+                            val plainPaging=!page.windowed && historyPaging[key]?.windowed==false && pagedSelections[key]==selection &&
+                                histories[key].orEmpty().any { it.id in incomingIds }
                             val retain=com.agenthub.core.ReadingPolicy.preserveHistoryPrefix(page.windowed,pagedSelections.containsKey(key),
-                                pagedSelections[key]==selection && sameReadGeneration,compatiblePrefix) || page.windowed&&chatSearchJump?.context?.key==key
+                                pagedSelections[key]==selection && sameReadGeneration,compatiblePrefix) || plainPaging || page.windowed&&chatSearchJump?.context?.key==key
                             val incoming=page.messages.map { it.id }.toSet()
                             val merged=if(retain)histories[key].orEmpty().takeWhile { it.id !in incoming }+page.messages else page.messages
                             val unchangedMessages=histories[key]==merged
@@ -2764,6 +2900,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                             invalidatePanelNoticeForHistory(key,stored);historyPages[key]=stored; histories[key]=merged; runs.remove(key)
                             loadedHistorySelections[key]=selection to revision
                             fence.accepted(page.epoch.orEmpty(),page.cursor ?: -1);readRevision=fence.beginRead()
+                            if(foreground && batch.ready!=false && page.runtimePresent)foregroundReadiness.confirmThread(proofScope(client),thread,foregroundRevision)
                             freshHistories[key]=batch.ready!=false
                             if(batch.ready!=false)readyHistorySelection=Triple(key,selection,revision)
                             receivedConversationSnapshot(key,client,page,batch.ready!=false)
@@ -2821,6 +2958,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun replaceClient(client: MobileClient): MobileClient {
         val index = realClients.indexOfFirst { it.id == client.id }
         val prior=realClients.getOrNull(index)
+        if(prior!=null&&(!sameScope(prior.scope,client.scope)||prior.readerId!=client.readerId))readingRecoveryEpoch.incrementAndGet()
         val remembered=if(client.storageIdentity==null && prior?.storageIdentity!=null && sameScope(client.scope,prior.scope)) client.copy(storageIdentity=prior.storageIdentity) else client
         if (index < 0) realClients.add(remembered) else realClients[index] = remembered
         if (selectedClient.id == client.id) { selectedClient = remembered;synchronizeReadingPresentation() }
@@ -2945,7 +3083,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 lease.checkpoint()
             return lease.commit {
                 EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
-                client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
+                client=client.copy(online=true,readerId=realClients.firstOrNull {it.id==id&&sameScope(it.scope,scope)}?.readerId ?: UUID.randomUUID().toString());replaceClient(client);revisions[id]=revision+1
                 workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);version(targetKey);easyWorkDiscovery?.scan()
                 client
             }
@@ -3183,6 +3321,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun removeClient(id: String) {
         val removed=realClients.firstOrNull { it.id==id } ?: return
+        readingRecoveryEpoch.incrementAndGet()
+        val retainedReaders=realClients.filter {it.id!=id}.toList()
+        readingRecovery?.takeIf {it.enabled}?.let {cache ->
+            storage?.enqueueSnapshot("reading-recovery-remove:$id",{cache.reconcile(retainedReaders)}) {storageFailure()}
+        }
         invalidatePanelNoticeCredential(id);chatNotifications?.connectionsWillChange()
         // A removed private client must not be recovered from its atomic credential record after a crash.
         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
@@ -3222,23 +3365,50 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(recentProjectIDs.isNotEmpty()) json.put("recentProjects",NativeRecentProjects.encode(recentProjectIDs.toMap()))
         return json.toString()
     }
-    private fun persistHistory(key: String, client: MobileClient, thread: String, result: MobileHistory, messages: List<MobileMessage>, reuseUnchangedFragments: Boolean=false) {
+    private fun persistHistory(key: String, client: MobileClient, thread: String, result: MobileHistory, messages: List<MobileMessage>, reuseUnchangedFragments: Boolean=false,
+        readingChanged: Boolean=!reuseUnchangedFragments) {
         if (storage == null) return
+        if(readingChanged)readingCheckpointVersions.getOrPut(key){ReadingCheckpointVersion()}.content.incrementAndGet()
         val snapshot=messages.toList()
         storage.enqueueSnapshot("history:$key",{ NativeHistoryCache(storage).save(key,client,thread,result,snapshot,reuseUnchangedFragments) }) { storageFailure() }
     }
 
-    private fun loadCachedHistory() {
+    private fun loadCachedHistory(): Job? {
         val acceptanceTiming=NativeReadAcceptanceTiming.capture()
-        val storage = storage ?: return; val key = targetKey; val selection = selectionRevision
-        if (histories.containsKey(key) || selectedThread.isEmpty()) return
-        tasks.launch {
+        val storage = storage ?: return null; val key = targetKey; val selection = selectionRevision
+        if (histories.containsKey(key) || selectedThread.isEmpty()) return null
+        historyCacheReads[key]?.second?.takeIf { it.isActive }?.let { return it }
+        val owner=Any();val client=selectedClient;val thread=selectedThread
+        val job=tasks.launch(start=CoroutineStart.LAZY) {
             try {
-                val page = withContext(Dispatchers.IO) { NativeHistoryCache(storage).read(key) } ?: return@launch
-                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { releasePhoneReadingProof();acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; invalidatePanelNoticeForHistory(key,page);historyPages[key] =page }
-            } catch (_: Exception) { if (targetKey == key) error = "本地缓存无法读取，原缓存已保留" }
+                val cached = withContext(Dispatchers.IO) {
+                    val ordinary=NativeHistoryCache(storage).read(key)
+                    val recovery=if(ordinary!=null&&ordinary.hostId==client.id&&ordinary.threadId==thread&&sameScope(ordinary.scope,client.scope))
+                        runCatching {readingRecovery?.read(client,thread)}.getOrElse {storageFailure();null} else null
+                    ordinary to recovery
+                }
+                val page=cached.first ?: return@launch
+                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) {
+                    releasePhoneReadingProof();acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId)
+                    val recovery=cached.second
+                    if(recovery!=null) {
+                        recovery.paging?.let {historyPaging[key]=it}
+                        recovery.viewport?.let {historyViewports[key]=it;durableHistoryViewports[key]=it}
+                        protectedReadingKeys.add(key)
+                        readingCheckpointVersions.getOrPut(key){ReadingCheckpointVersion()}.let {it.durable.set(it.content.get())}
+                    }
+                    val messages=recovery?.messages ?: page.messages
+                    historyViewports[key]?.let { visibleMessageLimit=com.agenthub.core.HistoryCacheRecovery.visibleLimit(it.messageLimit.toLong(),messages.size.toLong()).toInt() }
+                    histories[key] = messages;invalidatePanelNoticeForHistory(key,page)
+                    historyPages[key] =if(recovery!=null)page.copy(messages=messages,nextCursor=recovery.paging?.nextCursor,
+                        historyRevision=recovery.paging?.revision,windowed=recovery.paging?.windowed ?: false) else page
+                }
+            } catch (cancel: CancellationException) { throw cancel }
+            catch (_: Exception) { if (targetKey == key) error = "本地缓存无法读取，原缓存已保留" }
             catch (_: OutOfMemoryError) { if(targetKey == key) error = "本地缓存内存不足，原缓存已保留" }
+            finally { if(historyCacheReads[key]?.first===owner)historyCacheReads.remove(key) }
         }
+        historyCacheReads[key]=owner to job;job.start();return job
     }
     fun retryLocalRecovery() { if(localRecoveryRequired&&!restoring) restore() }
     fun restore()=restoreUsingGeneration(null)
@@ -3247,6 +3417,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         invalidatePanelNoticeContext();chatNotifications?.connectionsWillChange()
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
+        readingRecoveryEpoch.incrementAndGet()
         voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
@@ -3279,9 +3450,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     val expandedProjects=this@MobileSession.expandedProjects.toMutableMap().apply { clear() }
                     val sidebarStates=this@MobileSession.sidebarStates.toMutableMap().apply { clear() }
                     val workspaces=this@MobileSession.workspaces.toMutableMap().apply { clear() }
+                    val historyPaging=mutableMapOf<String,NativeHistoryPagingCheckpoint>()
+                    val historyViewports=mutableMapOf<String,NativeHistoryViewportBookmark>()
                     if (json != null) {
                         require(json.getInt("version") == 1)
-                        val storageKeys=listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces").flatMap { field -> json.optJSONObject(field)?.keys()?.asSequence()?.toList().orEmpty() }.distinct()
+                        val storageKeys=listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces","historyPaging","historyViewports").flatMap { field -> json.optJSONObject(field)?.keys()?.asSequence()?.toList().orEmpty() }.distinct()
                         realClients.clear(); realClients.addAll(json.getJSONArray("clients").objects().map(::decodeClient).map { it.copy(online = false, storageIdentity=it.storageIdentity?.withKeys(storageKeys)) })
                         appearance = json.getString("appearance");language=NativeAppLanguage.from(json.optString("language","system")).value; demo = json.getBoolean("demo")
                         json.getJSONObject("drafts").let { v -> v.keys().forEach { drafts[it] = v.getString(it) } }
@@ -3289,6 +3462,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         json.optJSONObject("attachmentImportGenerations")?.let { v -> v.keys().forEach { attachmentImportGenerations[it]=v.getString(it) } }
                         json.optJSONObject("newProjects")?.let { v -> v.keys().forEach { newProjects[it]=v.optional(it) } }
                         recentProjectIDs.putAll(NativeRecentProjects.read(json))
+                        json.optJSONObject("historyPaging")?.let { v -> v.keys().forEach { key -> v.optJSONObject(key)?.let(NativeHistoryPagingCheckpoint::decode)?.let { historyPaging[key]=it } } }
+                        json.optJSONObject("historyViewports")?.let { v -> v.keys().forEach { key -> v.optJSONObject(key)?.let(NativeHistoryViewportBookmark::decode)?.let { historyViewports[key]=it } } }
                         json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> NativePhotoOrigins.attach(LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))),json.optJSONObject("photoSources")) } } }
                         NativePhotoOrigins.validate(json.optJSONObject("photoSources"),draftFiles.values.flatten())
                         json.optJSONObject("generation")?.let { v -> v.keys().forEach { key -> val s=v.getJSONObject(key); generation[key]=GenerationSettings(s.optional("model"),s.optional("effort"),s.optional("permissionMode"),s.optional("speed"),s.optional("collaborationMode")) } }
@@ -3333,6 +3508,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         this@MobileSession.expandedProjects.apply { clear();putAll(expandedProjects) }
                         this@MobileSession.sidebarStates.apply { clear();putAll(sidebarStates) }
                         this@MobileSession.workspaces.apply { clear();putAll(workspaces) }
+                        this@MobileSession.historyPaging.apply { clear();putAll(historyPaging) }
+                        this@MobileSession.historyViewports.apply { clear();putAll(historyViewports) }
+                        durableHistoryViewports.apply { clear();putAll(historyViewports) }
+                        restoredPagingKeys.clear()
                         this@MobileSession.selectedClient=selectedClient
                     }
                     publish
@@ -3342,6 +3521,21 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     val permit=withContext(Dispatchers.IO){storage.prepareRestorePublication(generation)}
                     storage.finishPreparedRestore(permit,applyState)
                 } else storage.finishRestore(generation,applyState)
+                // Inspect the disk carrier before initializing legacy nil readers. A failed
+                // invalidation cannot be hidden by stamping the same derived identity again.
+                if(readingRecovery?.enabled==true) {
+                    try {
+                        val original=realClients.toList()
+                        withContext(Dispatchers.IO){readingRecovery.reconcile(original)}
+                        val stamped=original.map {if(!it.isDemo&&it.migrationEasyWork==null&&it.scope!=null&&it.readerId.isNullOrEmpty())it.copy(readerId=UUID.randomUUID().toString()) else it}
+                        if(stamped!=original) {
+                            realClients.clear();realClients.addAll(stamped)
+                            stamped.firstOrNull {it.id==selectedClient.id}?.let {selectedClient=it}
+                            val metadata=metadataSnapshot()
+                            withContext(Dispatchers.IO){storage.write("metadata",metadata);check(storage.read("metadata")==metadata)}
+                        }
+                    } catch(_:Exception) {readingRecovery.disable();storageFailure()}
+                }
                 localRecoveryRequired=false;error=null
             } catch (cancel: CancellationException) { localRecoveryRequired=true;throw cancel }
             catch (failure: Exception) {
@@ -3379,7 +3573,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         recentProjectIDs.clear()
         aiSharing.clearAcceptance();aiSharingRequest=null
-        desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
+        readingRecoveryEpoch.incrementAndGet();protectedReadingKeys.clear();readingCheckpointVersions.clear();desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); historyPaging.clear(); historyViewports.clear(); durableHistoryViewports.clear(); restoredPagingKeys.clear(); historyCacheReads.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
         selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false
         // Existing native fixtures own Chinese app copy; language tests explicitly override it.
         demo = false; appearance = "system";language="zh-Hans"; restoring = false; localRecoveryRequired=false;localRecoveryAllowsAttachmentStaging=false; error = null

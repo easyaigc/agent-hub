@@ -1,5 +1,21 @@
 # 架构设计
 
+2026-11-24：LIFE01 阅读恢复沿用旧端已认识的真实 reader carrier，另在当前加密 namespace/持久代次内保存仅含完整消息的 body 与小型原子 index；state 成功后才进入同一 history lane。旧 writer 不认识的可选字段不足以提供回退保全。恢复仅呈现缓存，远端同模式、修订与正重叠校验后才允许旧分页；owner/epoch、预算与失效顺序见[最终补修设计](plans/mobile-foreground-connection-20261122.md)。
+
+Android 的阅读家族物理保存在 `noBackupFilesDir/ReadingRecovery-v1`，不进入旧版闭合的 root 记录图，仍受当前 namespace、持久 generation、密钥与存储 owner 管理。既有资料导出在同一快照锁中校验普通页与完整阅读 body，仅生成旧版已认识的 history v1；冲突或超限保留源文件并明确失败。EasyWork 本地客户端 ID 与物理 Host ID 的差异留在原生 codec 适配层，完整目标、reader 和附件归属继续严格校验。
+
+2026-11-23 Codex 元数据恢复隔离：读取器失败不再关闭健康的桌面 IPC；保留原 owner、live 状态与事件 epoch，整体 ready 和命令门禁仍依赖真实读取器就绪。仅真实桌面断开重置完整运行状态，避免只读超时触发全部历史重写。实现与分层验收见[Host 诊断](host-reconnect-diagnostics.md)。
+
+2026-11-23 LIFE01 Android 运行时归属补充：同一进程内自然关闭 Activity 再打开时复用既有 `Retained` 运行时，沿用旋转已有的 Session、迁移控制器及待处理入口队列。Activity 不再另建相同授权的接收泵，已捕获业务操作继续由原 Session 持有；新 Activity 的新 Intent 仍处理一次，旋转不重复分派。独立测试子类和冷启动准入保持各自原 owner。进程死亡仍使用现有存储恢复，不引入 A6 持久迁移、ViewModel 或协议字段；准确原生范围见原 LIFE01 台账。
+
+2026-11-23 LIFE01 冷阅读缓存补充：分页耗尽事实与视口书签以可选本地缓存元数据保存；最新页与事件先对齐原目标、消息锚定及窗口修订，才恢复早页和游标。Android 先完成同目标缓存读取再合并首次网络页，避免快响应抢先覆盖缓存。共同恢复规则只处理阅读数据，不持久化控制证明；旧端可忽略新增字段，真实组合与原生红绿按唯一台账记录。
+
+2026-11-23 LIFE01 前后台恢复候选：共同 `ForegroundReadiness` 仅在内存中保存 workspace／Thread 控制证明，按完整目标、凭据及连接／导航代次隔离。生命周期不直接改写最近连接事实；短暂 inactive 保持读循环，真正后台撤回前台 GET 等待者和控制证明，保留页面、草稿、原操作及健康共享传输。目录、历史、事件和原回执独立恢复；八秒界面预算不替代各请求的实际截止。
+
+EasyWork 建连由 session 拥有 producer、等待结果及独立三十秒截止，每个候选握手仍为八秒。调用者只取消自己的 waiter；超时先结束等待并撤下逻辑占位，不等待不配合取消的 factory 返回。各 await 后重检 owner，退休 factory 返回只关闭自己的 route；Android 的发送串行器与序号属于对应 route，迟到 pump 不得更新新代次。单读超时与实际会话失效分开，认证、目标及协议拒绝保持原语义。iOS 读取另由 session 拥有有界发送任务：已认证回执可先于发送回调返回，单个等待者结束不关闭健康通道。每个发送者使用独立 owner，迟到回调不释放新发送者；不配合取消的回调最多保留16个，达到上限时只拒绝新增读取。非读操作保持原截止和原操作回执核对。
+
+iOS 开发服务预览保留暂停页，确认旧租约关闭后才允许主动继续；创建在途或关闭未知时保留原 ID，404 不代表创建已终止。当前 WebView 先于 Cookie 安装创建，Cookie 等待八秒有界，回调绑定原租约与实例。这些连接与预览变化不增加 Host wire 必填字段，不自动重放业务输入；冷阅读缓存另使用上文登记的可选本地元数据。准确源码、原生受控与真实 Host 范围只读[计划及矩阵](plans/mobile-foreground-connection-20261122.md)和[唯一台账 LIFE01](plans/ios-easywork-alignment-20261112/status.json)，不代表全通道验收或部署。
+
 2026-11-23：目录和原 owner 使用一致的单行标题展示值，避免成对加粗标记与空白格式差异反复触发后台元数据发布。原重命名、输入与控制权契约保持，macOS已完成保留原任务的部署和CPU复测；跨平台与原生验收分列，见[标题稳定性](design/desktop-title-stability.md)。
 
 2026-11-23：macOS可替换后台持久化复用精确未变内容；已有历史快照不因无关元数据变化失效，同次候选共享UTF-8编码及摘要，新快照准入和同步屏障、实时完整账本与历史字节校验保留。私有实采和合成基准分开，目标CPU复测仍由原部署负责人负责，见[设计及边界](design/background-persistence-performance.md)。
@@ -1675,3 +1691,5 @@ F59 哈希内存修复：iOS/macOS 共用的 UploadCenter 对每个 256 KiB 读�
 INC01 候选将已认证网络范围提升为共同 Host 观察：两个 Host 复用 `interfaceDiscoveryNetworks` 和 `DiscoveryNetworksSnapshot`，EasyWork 通过既有加密 runtime/context 投影；App 共同解析/扫描与原连接元数据回填，不复制业务协议。实际验收/交付仅见专项唯一台账，详见 [协议边界](design/unified-host-protocol.md#inc01已认证的网络范围学习)。
 
 INC02 / F77 候选将 EasyWork 原具名资源读取的严格 range-v1 分支映射到共同固定版本播放器；视频完整下载有界落盘、全摘要和原回执后发布。两 Host 的未知读取消保留有界 scoped tombstone，防止取消越过准备时迟到工作重新打开；原领域状态、410、权限和写回执策略保持。设计见 [固定视频读取](design/easywork-progressive-video.md)，当前验收/交付只见 EasyWork 唯一台账。
+
+LIFE01 被动读取门禁候选：原生未读目录与可见额度摘要在各平台 Session 的前台生命周期内执行；迁移待核或真实失败的连接不进入被动请求，已保存快照继续可读。读取入口再次核对当前绑定，排队消费者随页面/生命周期取消；额度底层另拒绝迁移待核连接。健康未选中客户端的必要摘要读取继续独立运行，不据此授予执行权限。原生四客户端红例及候选复验分别保存在 LIFE01 唯一台账，未作为协议或凭据格式变化。

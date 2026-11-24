@@ -70,4 +70,11 @@ object MobileSnapshotCodec {
         return MobileHistorySynchronization(state as String,checkedAt as? String)
     }
     fun header(client: MobileClient)=JSONObject().put("mobileSnapshotVersion",1).put("providerId","easywork").put("hostId",client.id).put("target",CodexCommandCodec.target(client.scope!!))
+    /** Existing native cache formats keep the local client ID distinct from a
+     * provider's physical host ID. Do not reinterpret an EasyWork cache as wire. */
+    internal fun historyCacheHeader(client: MobileClient): JSONObject = when(client.scope?.agentId) {
+        "easywork" -> header(client)
+        "codex" -> JSONObject().put("hostId",client.id).put("readTarget",CodexCommandCodec.target(client.scope))
+        else -> error("Unsupported reading cache provider")
+    }
 }

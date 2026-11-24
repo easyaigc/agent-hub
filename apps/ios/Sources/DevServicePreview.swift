@@ -105,8 +105,34 @@ final class DevPreviewGateway: @unchecked Sendable {
   private var easyWorkChannel: EasyWorkRemoteSession?
   private var id: String?
   private var ended = false
+  private var creationTask: Task<Void, Never>?
+  private var revokeTask: Task<Bool, Never>?
+  private var creationSubmitted = false
+  private var receiptConfirmed = false
+  private var cookieConfirmedLease: String?
+  private var pauseBudget: Task<Void, Never>?
+  @Published private(set) var paused = false
+  @Published private(set) var creationPending = false
+  @Published private(set) var closeConfirmed = true
+  var canResume: Bool { paused && closeConfirmed && !creationPending && !ended }
+
   func start(_ config: DevPreviewConfiguration) async {
-    guard gateway == nil, !ended else { return }
+    guard creationTask == nil, gateway == nil, !ended, !paused else { return }
+    creationPending = true
+    let task = Task { [self] in
+      await performStart(config)
+      creationPending = false; creationTask = nil
+    }
+    creationTask = task
+    await task.value
+  }
+  func resume() async {
+    guard canResume, let config else { return }
+    id = nil; creationSubmitted = false; receiptConfirmed = false
+    paused = false; error = nil
+    await start(config)
+  }
+  private func performStart(_ config: DevPreviewConfiguration) async {
     self.config = config
     do {
       guard ["codex", "easywork"].contains(config.target.agentId), let source = URL(string: config.url), source.scheme == "http",
@@ -116,7 +142,8 @@ final class DevPreviewGateway: @unchecked Sendable {
       let localPort = try await gateway.listen()
       try Task.checkCancellation()
       let secret = SHA256.hash(data: Data((UUID().uuidString + UUID().uuidString).utf8)).map { String(format: "%02x", $0) }.joined()
-      let id = UUID().uuidString; self.id = id
+      guard !paused, !ended else { return }
+      let id = UUID().uuidString; self.id = id; closeConfirmed = false
       let target = try JSONSerialization.jsonObject(with: JSONEncoder().encode(config.target))
       var serviceURL = URLComponents(url: source, resolvingAgainstBaseURL: false)!
       serviceURL.fragment = nil
@@ -128,6 +155,8 @@ final class DevPreviewGateway: @unchecked Sendable {
         guard let client = config.client, client.agentConnection?.target == config.target else { throw HostServiceError.wrongHost }
         let channel = try await EasyWorkSessions.shared.session(client)
         easyWorkChannel = channel
+        guard !paused, !ended else { closeConfirmed = true; return }
+        creationSubmitted = true
         let prepared = try await EasyWorkDevPreview.prepare(channel: channel, configuration: config, id: id,
           url: serviceURL.url!.absoluteString, port: localPort, secret: secret)
         receipt = try JSONDecoder().decode(DevPreviewReceipt.self, from: prepared.receipt)
@@ -139,10 +168,13 @@ final class DevPreviewGateway: @unchecked Sendable {
         (healthJSON["capabilities"] as? [String])?.contains("preview:http:v1") == true else { throw HostServiceError.message(L10n.tr("当前电脑连接尚不支持开发服务预览，请检查连接方式。")) }
       try Task.checkCancellation()
       let request = HostService.request(control, token: config.token, method: "POST", body: try JSONSerialization.data(withJSONObject: payload))
+      guard !paused, !ended else { closeConfirmed = true; return }
+      creationSubmitted = true
       receipt = try await HostService.load(request)
       guard receipt.id == id, receipt.target == config.target, receipt.threadId == config.threadId else { throw HostServiceError.invalidResponse }
       try Task.checkCancellation()
-      guard !ended else { throw CancellationError() }
+      receiptConfirmed = true
+      guard !paused, !ended else { _ = await revoke(); return }
       var tunnel = URLComponents(url: try endpoint(config, "/v1/dev-previews/connect"), resolvingAgainstBaseURL: false)!
       tunnel.queryItems = [URLQueryItem(name: "hostId", value: config.target.hostId), URLQueryItem(name: "id", value: id), URLQueryItem(name: "target", value: String(decoding: try JSONEncoder().encode(config.target), as: UTF8.self))]
       // Choose trust using the paired HTTPS origin before switching to WSS.
@@ -153,38 +185,120 @@ final class DevPreviewGateway: @unchecked Sendable {
       }
       guard receipt.id == id, receipt.target == config.target, receipt.threadId == config.threadId else { throw HostServiceError.invalidResponse }
       try Task.checkCancellation()
-      guard !ended else { throw CancellationError() }
+      receiptConfirmed = true
+      guard !paused, !ended else {
+        if config.target.agentId == "easywork" { session.invalidateAndCancel() }
+        _ = await revoke(); return
+      }
       await gateway.configure(connect, session: session, ownsSession: config.target.agentId == "easywork")
       let cookie = HTTPCookie(properties: [.domain: "127.0.0.1", .path: "/", .name: "__agent_hub_preview", .value: secret, HTTPCookiePropertyKey("HttpOnly"): "TRUE"])!
-      await dataStore.httpCookieStore.setCookie(cookie)
+      try await prepareBrowser(cookie: cookie, leaseId: id)
       var browser = URLComponents(url: source, resolvingAgainstBaseURL: false)!
       browser.host = "127.0.0.1"; browser.port = Int(localPort)
-      guard !ended else { throw CancellationError() }
+      guard !paused, !ended else { gateway.stop(); _ = await revoke(); return }
       url = browser.url
-    } catch { self.error = error.localizedDescription; close(); await revoke() }
+    } catch {
+      let message = error.localizedDescription
+      self.error = message
+      paused = true; stopLocal()
+      if creationSubmitted { _ = await revoke() }
+      else { closeConfirmed = true }
+      if closeConfirmed { self.error = message }
+    }
+  }
+  private func prepareBrowser(cookie: HTTPCookie, leaseId: String) async throws {
+    // A reused nonpersistent store may wait for a web process after its last
+    // view was released. Construct this lease's view before installing cookies;
+    // it does not load the page until the native cookie is acknowledged.
+    let configuration = WKWebViewConfiguration(); configuration.websiteDataStore = dataStore
+    let view = WKWebView(frame: .zero, configuration: configuration)
+    webView = view; cookieConfirmedLease = nil
+    dataStore.httpCookieStore.setCookie(cookie) { [weak self, weak view] in
+      Task { @MainActor in
+        guard let self, let view, self.webView === view, self.id == leaseId,
+          !self.paused, !self.ended else { return }
+        self.cookieConfirmedLease = leaseId
+      }
+    }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(8))
+    while cookieConfirmedLease != leaseId {
+      try Task.checkCancellation()
+      guard !paused, !ended, id == leaseId, webView === view else { throw CancellationError() }
+      guard ContinuousClock.now < deadline else { throw URLError(.timedOut) }
+      try await Task.sleep(for: .milliseconds(25))
+    }
   }
   private func endpoint(_ config: DevPreviewConfiguration, _ path: String) throws -> URL {
     let base = try HostService.baseURL(config.endpoint)
     return base.appendingPathComponent(String(path.dropFirst()))
   }
-  func close() {
-    guard !ended else { return }; ended = true
-    webView?.stopLoading(); webView?.loadHTMLString("", baseURL: nil); webView = nil
-    gateway?.stop(); gateway = nil
-    Task { await revoke() }
+  private func stopLocal() {
+    let previous = webView
+    webView = nil; cookieConfirmedLease = nil
+    previous?.navigationDelegate = nil; previous?.stopLoading(); previous?.loadHTMLString("", baseURL: nil)
+    url = nil; gateway?.stop(); gateway = nil
   }
-  private func revoke() async {
-    if let config, let id {
-        if let channel = easyWorkChannel {
-          _ = try? await channel.request("dev/preview/close", ["id": id, "threadId": config.threadId])
-          return
-        }
-        guard let endpoint = try? endpoint(config, "/v1/dev-previews"), let target = try? JSONSerialization.jsonObject(with: JSONEncoder().encode(config.target)),
-          let data = try? JSONSerialization.data(withJSONObject: ["id": id, "target": target, "threadId": config.threadId]) else { return }
-        // Idempotent close; expiry remains the fallback if the Host is unreachable.
-        _ = try? await HostService.bytes(HostService.request(endpoint, token: config.token, method: "DELETE", body: data))
+  func pause() {
+    guard !ended, !paused else { return }
+    paused = true
+    // Retain only navigation within the original service origin, in memory.
+    if let current = webView?.url, let config,
+      var original = URLComponents(string: config.url),
+      let local = url, current.host == local.host, current.port == local.port {
+      original.percentEncodedPath = URLComponents(url: current, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? "/"
+      original.percentEncodedQuery = URLComponents(url: current, resolvingAgainstBaseURL: false)?.percentEncodedQuery
+      if let address = original.url?.absoluteString {
+        self.config = DevPreviewConfiguration(endpoint: config.endpoint, token: config.token, target: config.target,
+          threadId: config.threadId, url: address, computerName: config.computerName, client: config.client)
+      }
     }
+    stopLocal()
+    pauseBudget?.cancel()
+    pauseBudget = Task { [weak self] in
+      do { try await Task.sleep(for: .seconds(8)) } catch { return }
+      guard let self, self.paused, !self.closeConfirmed else { return }
+      self.error = L10n.tr("上次预览状态未确认")
+    }
+    // Do not close before the original create response: 404 is not a tombstone.
+    if !creationPending { Task { _ = await revoke() } }
   }
+  func close() {
+    guard !ended else { return }
+    ended = true; paused = true; pauseBudget?.cancel(); stopLocal()
+    if !creationPending { Task { _ = await revoke() } }
+  }
+  func retryClose() async { guard !creationPending else { return }; _ = await revoke() }
+  @discardableResult private func revoke() async -> Bool {
+    if let revokeTask { return await revokeTask.value }
+    guard let config, let id else { closeConfirmed = !creationSubmitted; return closeConfirmed }
+    let channel = easyWorkChannel
+    let task = Task { [self] () -> Bool in
+      do {
+        let bytes: Data
+        if let channel {
+          bytes = try await channel.request("dev/preview/close", ["id": id, "threadId": config.threadId])
+        } else {
+          let address = try endpoint(config, "/v1/dev-previews")
+          let target = try JSONSerialization.jsonObject(with: JSONEncoder().encode(config.target))
+          let data = try JSONSerialization.data(withJSONObject: ["id": id, "target": target, "threadId": config.threadId])
+          bytes = try await HostService.bytes(HostService.request(address, token: config.token, method: "DELETE", body: data))
+        }
+        let result = try JSONSerialization.jsonObject(with: bytes) as? [String: Any]
+        guard result?["id"] as? String == id, result?["closed"] as? Bool == true else { throw HostServiceError.invalidResponse }
+        guard self.id == id else { return false }
+        closeConfirmed = true; error = nil; pauseBudget?.cancel()
+        return true
+      } catch {
+        if self.id == id { self.error = L10n.tr("上次预览状态未确认") }
+        return false
+      }
+    }
+    revokeTask = task
+    let result = await task.value
+    revokeTask = nil
+    return result
+  }
+
 }
 
 struct DevServicePreview: View {
@@ -197,7 +311,17 @@ struct DevServicePreview: View {
       VStack(spacing: 0) {
         Text(configuration.computerName ?? configuration.target.hostId).font(.caption).foregroundStyle(.secondary)
         if let error = model.error { Text(error).padding().accessibilityIdentifier("dev-preview-error") }
-        if let url = model.url { DevPreviewWebView(url: url, model: model).accessibilityIdentifier("dev-preview-web") }
+        if model.paused {
+          Text(L10n.tr("预览已暂停")).padding().accessibilityIdentifier("dev-preview-paused")
+          if model.canResume {
+            Button(L10n.tr("继续预览")) { Task { await model.resume() } }
+              .disabled(phase != .active).accessibilityIdentifier("dev-preview-resume")
+          } else if !model.creationPending {
+            Button(L10n.tr("重试关闭")) { Task { await model.retryClose() } }
+              .disabled(phase != .active).accessibilityIdentifier("dev-preview-retry-close")
+          }
+        }
+        else if let url = model.url { DevPreviewWebView(url: url, model: model).accessibilityIdentifier("dev-preview-web") }
         else if model.error == nil { ProgressView(L10n.tr("正在连接开发服务…")) }
       }
       .navigationTitle(L10n.tr("开发服务"))
@@ -215,7 +339,7 @@ struct DevServicePreview: View {
     }
     .task { await model.start(configuration) }
     .onDisappear { model.close() }
-    .onChange(of: phase) { _, phase in if phase == .background { model.close(); dismiss() } }
+    .onChange(of: phase) { _, phase in if phase == .background { model.pause() } }
   }
 }
 private struct DevPreviewWebView: UIViewRepresentable {
@@ -224,7 +348,7 @@ private struct DevPreviewWebView: UIViewRepresentable {
   func makeCoordinator() -> Coordinator { Coordinator(model: model, origin: url) }
   func makeUIView(context: Context) -> WKWebView {
     let config = WKWebViewConfiguration(); config.websiteDataStore = model.dataStore
-    let view = WKWebView(frame: .zero, configuration: config); view.navigationDelegate = context.coordinator
+    let view = model.webView ?? WKWebView(frame: .zero, configuration: config); view.navigationDelegate = context.coordinator
     model.webView = view; view.load(URLRequest(url: url)); return view
   }
   func updateUIView(_ view: WKWebView, context: Context) {}
@@ -233,13 +357,14 @@ private struct DevPreviewWebView: UIViewRepresentable {
     let model: DevPreviewModel; let origin: URL
     init(model: DevPreviewModel, origin: URL) { self.model = model; self.origin = origin }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+      guard model.webView === webView, !model.paused else { decisionHandler(.cancel); return }
       guard let url = action.request.url, url.scheme == origin.scheme, url.host == origin.host, url.port == origin.port else {
         model.error = L10n.tr("此链接需要单独打开或配置服务地址。"); decisionHandler(.cancel); return
       }
       decisionHandler(.allow)
     }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { model.error = L10n.tr("开发服务连接中断，请核对网页操作结果后重新打开。") }
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { model.close() }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { guard model.webView === webView, !model.paused else { return }; model.error = L10n.tr("开发服务连接中断，请核对网页操作结果后重新打开。") }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { guard model.webView === webView else { return }; model.pause() }
   }
 }
 

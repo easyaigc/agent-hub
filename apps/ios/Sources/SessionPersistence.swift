@@ -13,6 +13,7 @@ struct SessionPersistenceReplacementRollbackError: Error {
 struct SessionPersistenceSnapshot<State, Page>: @unchecked Sendable {
   let state: State
   let histories: [String: Page]
+  var historyWork: [String: @Sendable () throws -> Void] = [:]
 }
 
 // Recovery state has its own ordered queue. Large, replaceable history pages
@@ -23,6 +24,7 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   private let historyQueue = DispatchQueue(label: "com.codexmanage.session-history", qos: .utility)
   private let lock = NSLock()
   private var pendingPages: [String: Page] = [:]
+  private var pendingHistoryWork: [String: @Sendable () throws -> Void] = [:]
   private var pendingCompletions: [Completion] = []
   private var historyScheduled = false
   private var historyFailure: (@Sendable (Error) -> Void)?
@@ -170,6 +172,9 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   func onHistoryFailure(_ handler: @escaping @Sendable (Error) -> Void) {
     lock.lock(); historyFailure = handler; lock.unlock()
   }
+  /// Restore/invalidate the independent reader cache on the same ordered lane
+  /// as page writes. Never wait for stateQueue from this closure.
+  func withHistory<T>(_ work: () throws -> T) rethrows -> T { try historyQueue.sync(execute: work) }
   private func pageURL(_ id: String) -> URL {
     let name = SHA256.hash(data: Data(id.utf8)).map { String(format: "%02x", $0) }.joined()
     return historyURL.appendingPathComponent(name + ".json")
@@ -248,16 +253,17 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
         lastGoodBytes = data
       }
       guard case .success = result else { completion(result, Thread.isMainThread); return }
-      enqueueHistory(snapshot.histories, completion: flushHistory ? completion : nil)
+      enqueueHistory(snapshot.histories, work: snapshot.historyWork, completion: flushHistory ? completion : nil)
       if !flushHistory { completion(result, Thread.isMainThread) }
     }
   }
 
-  private func enqueueHistory(_ pages: [String: Page], completion: Completion?) {
+  private func enqueueHistory(_ pages: [String: Page], work: [String: @Sendable () throws -> Void], completion: Completion?) {
     lock.lock()
     pendingPages.merge(pages) { _, latest in latest }
+    pendingHistoryWork.merge(work) { _, latest in latest }
     if let completion { pendingCompletions.append(completion) }
-    let schedule = !historyScheduled && (!pendingPages.isEmpty || !pendingCompletions.isEmpty)
+    let schedule = !historyScheduled && (!pendingPages.isEmpty || !pendingHistoryWork.isEmpty || !pendingCompletions.isEmpty)
     if schedule { historyScheduled = true }
     lock.unlock()
     if schedule { historyQueue.async { [self] in drainHistory() } }
@@ -265,15 +271,16 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   private func drainHistory() {
     while true {
       lock.lock()
-      if pendingPages.isEmpty && pendingCompletions.isEmpty {
+      if pendingPages.isEmpty && pendingHistoryWork.isEmpty && pendingCompletions.isEmpty {
         historyScheduled = false; lock.unlock(); return
       }
-      let pages = pendingPages, completions = pendingCompletions
-      pendingPages = [:]; pendingCompletions = []
+      let pages = pendingPages, work = pendingHistoryWork, completions = pendingCompletions
+      pendingPages = [:]; pendingHistoryWork = [:]; pendingCompletions = []
       lock.unlock()
       let result = Result<Void, Error> {
         try FileManager.default.createDirectory(at: historyURL, withIntermediateDirectories: true)
         for (id, page) in pages { try atomicWrite(encodePage(page), to: pageURL(id)) }
+        for operation in work.values { try operation() }
       }
       if case .failure(let error) = result {
         lock.lock(); let handler = historyFailure; lock.unlock()

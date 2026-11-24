@@ -16,9 +16,21 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     internal val uploadMobileDeviceId get()=credential.binding.mobileId
     private val migrationContext=ownerContext.easyWorkOwnerContext()
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO+migrationContext)
-    private val connecting=Mutex()
-    private val sending=Mutex()
-    private val routeLock=Any()
+    private val connectionFlightLock=Any()
+    private class ConnectionFlight {
+        val id=UUID.randomUUID().toString()
+        val result=CompletableDeferred<Unit>()
+        lateinit var producer: Job
+        lateinit var deadline: Job
+    }
+    private var connectionFlight: ConnectionFlight?=null
+    private val livenessLock=Any()
+    private var livenessFlight: Pair<String,Deferred<Boolean>>?=null
+    @Volatile private var lastVerifiedTraffic=0L
+    private var sending=Mutex()
+    // A flight transition and its route claim must be one atomic decision.
+    private val routeLock=connectionFlightLock
+    private var routeOwner: String?=null
     @Volatile private var route: AgentFrameTransport?=null
     @Volatile private var crypto: EasyWorkCrypto?=null
     @Volatile private var closed=false
@@ -39,25 +51,83 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     private val received=mutableMapOf<String,Pair<Long,MutableSet<Long>>>()
     private var pump: Job?=null
     init { require(sameScope(target.scope(),connection.target)) { "连接运行时身份不匹配" };require(credential.grantRef==null||authorize!=null) { "设备授权不可降级为旧登录凭据" };require(credential.binding.json.optJSONObject("deviceAuthorization")==null||credential.grantRef!=null) { "设备授权凭据缺失，请重新配对" } }
-    private fun disconnect() = synchronized(routeLock) {
-        val previous=route;route=null;crypto=null;confirmed=false;pump?.cancel();pump=null;previous?.close()
+    private fun detachRoute(): AgentFrameTransport? {
+        // Called with routeLock held. Close outside it so a retiring route
+        // cannot hold the next connection owner behind platform cleanup.
+        val previous=route;route=null;routeOwner=null;crypto=null;confirmed=false;pump?.cancel();pump=null
         synchronized(threadSyncs) { threadSyncs.clear() }
         synchronized(subagents) { subagents.clear() }
         eventChanges.signal()
+        return previous
+    }
+    private fun disconnect(expectedEpoch: String?=null, owner: ConnectionFlight?=null) {
+        val previous=synchronized(routeLock) {
+            if(expectedEpoch!=null&&epoch!=expectedEpoch || owner!=null&&connectionFlight!==owner)return
+            detachRoute()
+        }
+        previous?.close()
     }
     private val retirement=ownerContext[NativeEasyWorkMigrationOwners]?.register({stop()},{tasks.coroutineContext[Job]!!.join()})
-    private fun stop() {synchronized(routeLock){closed=true;disconnect()};tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
+    private fun stop() {
+        synchronized(routeLock) {
+            closed=true
+            connectionFlight?.let { flight ->
+                connectionFlight=null;flight.deadline.cancel();flight.producer.cancel();flight.result.cancel()
+            }
+        }
+        disconnect();tasks.cancel();pending.values.forEach { it.cancel() };pending.clear()
+    }
     fun close() {retirement?.retire()?:stop()}
     suspend fun closeAndJoinForMigration(){close();retirement?.await()?:tasks.coroutineContext[Job]!!.join()}
-    private suspend fun connect(excluding: String? = null) = connecting.withLock {
+    private suspend fun connect(excluding: String? = null) {
+        currentCoroutineContext().ensureActive()
         check(!closed)
-        if(route!=null&&confirmed&&(excluding==null||activeCandidate?.id!=excluding))return@withLock
-        disconnect()
+        if(route!=null&&confirmed&&(excluding==null||activeCandidate?.id!=excluding))return
+        val flight=synchronized(connectionFlightLock) {
+            check(!closed)
+            connectionFlight ?: ConnectionFlight().also { created ->
+                connectionFlight=created
+                created.producer=tasks.launch(start=CoroutineStart.LAZY) {
+                    try { performConnect(excluding,created);finishConnection(created,null) }
+                    catch(failure: Throwable) { finishConnection(created,failure) }
+                }
+                created.deadline=tasks.launch(start=CoroutineStart.LAZY) {
+                    delay(30_000)
+                    finishConnection(created,HostReadError("电脑握手超时",transient=true),expired=true)
+                }
+            }
+        }
+        flight.deadline.start();flight.producer.start()
+        // Neither this waiter nor an uncooperative factory owns the deadline.
+        flight.result.await()
+    }
+    private fun finishConnection(flight: ConnectionFlight,failure: Throwable?,expired: Boolean=false) {
+        val previous=synchronized(connectionFlightLock) {
+            if(connectionFlight!==flight)return
+            connectionFlight=null;flight.deadline.cancel()
+            if(expired)flight.producer.cancel()
+            val previous=if(failure!=null&&routeOwner==flight.id)detachRoute() else null
+            if(failure==null)flight.result.complete(Unit) else flight.result.completeExceptionally(failure)
+            previous
+        }
+        previous?.close()
+    }
+    private suspend fun requireConnectionOwner(owner: ConnectionFlight) {
+        currentCoroutineContext().ensureActive()
+        synchronized(connectionFlightLock) {
+            if(closed||connectionFlight!==owner)throw CancellationException("Connection owner retired")
+        }
+    }
+    private suspend fun performConnect(excluding: String?,owner: ConnectionFlight) {
+        requireConnectionOwner(owner)
+        disconnect(owner=owner)
+        requireConnectionOwner(owner)
         var options=candidates.filter { connection.preference!="lan-only"||it.transportId=="lan-wss" }
             .filter { connection.preference!="relay-only"||it.transportId=="relay-http" }
         if(connection.preference=="automatic") options=options.sortedBy { if(it.transportId=="lan-wss") 0 else 1 }
         val excludedEndpoint=options.firstOrNull { it.id==excluding }?.endpoint
         options=EasyWorkPairing.reachable(options,credential.binding)
+        requireConnectionOwner(owner)
         if(excluding!=null) options=options.filter { it.id!=excluding&&it.endpoint!=excludedEndpoint }
         var failure: Throwable=HostReadError("电脑暂无可用连接",transient=true)
         for(candidate in options) {
@@ -66,26 +136,41 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                 require(binding.target==target) { "双通道运行时身份不匹配" }
                 val channel=EasyWorkCrypto(credential,binding)
                 val transport=transports.make(candidate,binding,token,authorize)
+                try { requireConnectionOwner(owner) } catch(failure: Throwable) { transport.close();throw failure }
                 val attemptEpoch=synchronized(routeLock) {
-                    if(closed){transport.close();throw CancellationException("EasyWork session is closed")}
-                    route=transport;crypto=channel;sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
-                    epoch.also {value->pump=tasks.launch {receive(transport,channel,value)}}
+                    if(closed||connectionFlight!==owner)null else {
+                        route=transport;routeOwner=owner.id;crypto=channel;sending=Mutex();sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
+                        epoch.also {value->pump=tasks.launch {receive(transport,channel,value)}}
+                    }
                 }
+                if(attemptEpoch==null){transport.close();throw CancellationException("Connection owner retired")}
                 withTimeout(8_000) {
-                    publish(JSONObject().put("kind","key-confirmation").put("value",channel.confirmation))
+                    publish(JSONObject().put("kind","key-confirmation").put("value",channel.confirmation),attemptEpoch)
                     while(!confirmed&&lastError==null&&!closed)delay(25)
                     if(!confirmed)throw lastError?:HostReadError("电脑握手未确认",transient=true)
                 }
-                return@withLock
-            } catch(cancel: CancellationException) { val rejected=lastError as? EasyWorkDeviceAuthorizationError;disconnect();if(!currentCoroutineContext().isActive||closed)throw cancel;if(rejected!=null)throw rejected;failure=HostReadError("电脑握手超时",transient=true) }
-            catch(e: Exception) { failure=lastError as? EasyWorkDeviceAuthorizationError?:e;disconnect();if(failure is EasyWorkDeviceAuthorizationError)throw failure }
+                requireConnectionOwner(owner)
+                return
+            } catch(cancel: CancellationException) { requireConnectionOwner(owner);val rejected=lastError as? EasyWorkDeviceAuthorizationError;disconnect(owner=owner);if(rejected!=null)throw rejected;failure=HostReadError("电脑握手超时",transient=true) }
+            catch(e: Exception) { requireConnectionOwner(owner);failure=lastError as? EasyWorkDeviceAuthorizationError?:e;disconnect(owner=owner);if(failure is EasyWorkDeviceAuthorizationError)throw failure }
         }
         throw failure
     }
-    private suspend fun publish(payload: JSONObject) = sending.withLock {
-        check(!closed);val transport=route?:throw HostReadError("电脑连接中断",transient=true)
-        val channel=crypto?:throw HostReadError("电脑握手未确认",transient=true)
-        transport.send(channel.seal(payload,sequence.getAndIncrement()))
+    private suspend fun publish(payload: JSONObject,expectedEpoch: String?=null) {
+        // Serialization belongs to one route. A cancelled old route's send
+        // cannot hold the next handshake behind an uncooperative platform call.
+        val lane=synchronized(routeLock) { sending }
+        lane.withLock {
+            currentCoroutineContext().ensureActive()
+            val frame=synchronized(routeLock) {
+                check(!closed)
+                if(sending!==lane || expectedEpoch!=null&&epoch!=expectedEpoch)throw HostReadError("电脑连接中断",transient=true)
+                val transport=route?:throw HostReadError("电脑连接中断",transient=true)
+                val channel=crypto?:throw HostReadError("电脑握手未确认",transient=true)
+                transport to channel.seal(payload,sequence.getAndIncrement())
+            }
+            frame.first.send(frame.second)
+        }
     }
     private suspend fun receive(transport: AgentFrameTransport,channel: EasyWorkCrypto,pumpEpoch: String) {
         try {
@@ -99,30 +184,31 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                 }
                 if(replay) { transport.acknowledge(frame);continue }
                 val payload=opened.payload
-                when(payload.getString("kind")) {
-                    "key-confirmation" -> { require(payload.getString("value")==channel.confirmation) { "电脑握手密钥不匹配" };confirmed=true }
-                    "protocol" -> {
-                        val message=payload.getJSONObject("envelope")
-                        require(message.getInt("protocolVersion")==2) { "电脑协议版本不匹配" }
-                        if(!confirmed) { transport.acknowledge(frame);continue }
-                        message.optJSONObject("target")?.let { require(EasyWorkTarget.decode(it)==target) { "电脑消息运行时身份不匹配" } }
-                        when(message.getString("kind")) {
-                            "response" -> pending[message.getString("requestId")]?.complete(message)
-                            "event" -> {
-                                require(EasyWorkTarget.decode(message.getJSONObject("target"))==target)
-                                val payload=message.getJSONObject("payload")
-                                val thread=payload.getString("threadId");val cursor=message.getLong("sequence")
-                                require(cursor in 0..9007199254740991L);threadSequences.merge(thread,cursor,::maxOf)
-                                synchronized(routeLock) {
-                                    if(!closed&&epoch==pumpEpoch&&route===transport)
-                                        synchronized(subagents) { subagents.accept(payload.toString()) }
+                synchronized(routeLock) {
+                    if(closed||epoch!=pumpEpoch||route!==transport)return
+                    when(payload.getString("kind")) {
+                        "key-confirmation" -> { require(payload.getString("value")==channel.confirmation) { "电脑握手密钥不匹配" };confirmed=true }
+                        "protocol" -> {
+                            val message=payload.getJSONObject("envelope")
+                            require(message.getInt("protocolVersion")==2) { "电脑协议版本不匹配" }
+                            if(!confirmed)return@synchronized
+                            message.optJSONObject("target")?.let { require(EasyWorkTarget.decode(it)==target) { "电脑消息运行时身份不匹配" } }
+                            when(message.getString("kind")) {
+                                "response" -> pending[message.getString("requestId")]?.complete(message)
+                                "event" -> {
+                                    require(EasyWorkTarget.decode(message.getJSONObject("target"))==target)
+                                    val payload=message.getJSONObject("payload")
+                                    val thread=payload.getString("threadId");val cursor=message.getLong("sequence")
+                                    require(cursor in 0..9007199254740991L);threadSequences.merge(thread,cursor,::maxOf)
+                                    synchronized(subagents) { subagents.accept(payload.toString()) }
+                                    eventChanges.signal()
                                 }
-                                eventChanges.signal()
+                                else -> error("电脑返回消息类型无效")
                             }
-                            else -> error("电脑返回消息类型无效")
                         }
+                        else -> error("电脑加密消息类型无效")
                     }
-                    else -> error("电脑加密消息类型无效")
+                    lastVerifiedTraffic=System.nanoTime()
                 }
                 transport.acknowledge(frame)
             }
@@ -176,7 +262,18 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
             require(threadId.isNotEmpty()&&messageId.isNotEmpty()) { "电脑回执格式无效" }
             requestOwned("queue/status",JSONObject().put("threadId",threadId).put("messageId",messageId),UUID.randomUUID().toString(),true)
         }
-    private suspend fun requestOwned(method: String,params: JSONObject,id: String,nullableQueue: Boolean): JSONObject? {
+    private suspend fun verifySessionLiveness(expectedEpoch: String): Boolean {
+        val flight=synchronized(livenessLock) {
+            livenessFlight?.takeIf { it.first==expectedEpoch && !it.second.isCompleted }?.second ?: tasks.async {
+                val began=System.nanoTime()
+                try { withTimeout(5_000) { requestOwned("runtime/context",JSONObject(),UUID.randomUUID().toString(),false,true) } }
+                catch(_: Exception) { /* An authenticated rejection also proves the transport is alive. */ }
+                epoch==expectedEpoch && lastError==null && lastVerifiedTraffic>began
+            }.also { livenessFlight=expectedEpoch to it }
+        }
+        return flight.await()
+    }
+    private suspend fun requestOwned(method: String,params: JSONObject,id: String,nullableQueue: Boolean,livenessCheck: Boolean=false): JSONObject? {
         require(method in READ_METHODS||method in WRITE_METHODS) { "未注册此电脑操作" }
         check(!nullableQueue||method=="queue/status")
         val response=CompletableDeferred<JSONObject>()
@@ -185,15 +282,18 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         try {
             repeat(2) { attempt ->
                 connect();val currentRoute=activeCandidate?.id;val requestEpoch=epoch
+                val requestStarted=System.nanoTime()
+                var timedOut=false
                 try {
-                    publish(JSONObject().put("kind","protocol").put("envelope",request))
-                    val deadline=System.nanoTime()+30_000_000_000L
+                    publish(JSONObject().put("kind","protocol").put("envelope",request),requestEpoch)
+                    val deadline=System.nanoTime()+(if(livenessCheck)5_000_000_000L else 30_000_000_000L)
                     while(!response.isCompleted&&lastError==null&&!closed&&System.nanoTime()<deadline)delay(25)
                     check(!closed)
                     if(response.isCompleted) {
                         val v=response.await()
                         return if(nullableQueue)queueResult(v) else result(v)
                     }
+                    timedOut=lastError==null
                     throw lastError?:HostReadError("电脑操作结果未确认",transient=true)
                 } catch(e: EasyWorkRejection) {
                     // The method is already whitelisted. Never log arbitrary peer error
@@ -202,9 +302,15 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                     throw e
                 }
                 catch(e: EasyWorkDeviceAuthorizationError) { throw e }
+                catch(e: org.json.JSONException) { throw e }
+                catch(e: IllegalArgumentException) { throw e }
                 catch(cancel: CancellationException) { throw cancel }
                 catch(e: Exception) {
-                    if(epoch==requestEpoch)disconnect()
+                    if(livenessCheck)throw e
+                    if(timedOut && epoch==requestEpoch && lastError==null &&
+                        (lastVerifiedTraffic>requestStarted || verifySessionLiveness(requestEpoch)))throw e
+                    currentCoroutineContext().ensureActive()
+                    disconnect(expectedEpoch=requestEpoch)
                     if(attempt==1)throw e
                     if(connection.preference=="automatic")connect(currentRoute) else connect()
                     if(method == "thread/open") {

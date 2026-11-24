@@ -518,6 +518,7 @@ export class RuntimeSession {
   private reconnecting = false;
   private reconnectTimer: NodeJS.Timeout | undefined;
   private reconnectDelay = 1000;
+  private reconnectRequiresReset = false;
   private desktopOwnerQueue = new Set<string>();
   private desktopNotificationOwnerQueue = new Set<string>();
   private desktopNotificationNewThreads = new Map<string, number>();
@@ -754,6 +755,7 @@ export class RuntimeSession {
     };
     this.runtime.onDisconnect = () => {
       if (this.closed) return;
+      this.reconnectRequiresReset = true;
       this.desktopSuggestionSources.clear();
       this.approvals.clear();
       this.loaded.clear();
@@ -780,6 +782,15 @@ export class RuntimeSession {
       this.saveBackground();
       if (this.connectedOnce && !this.closed && !this.reconnecting) this.scheduleReconnect();
     };
+    if (this.runtime instanceof DesktopRuntime) {
+      this.runtime.onMetadataDisconnect = () => {
+        if (this.closed) return;
+        // Keep the exact desktop owner, approvals and live publication intact.
+        // Readiness remains false until the reader recovers; never replay input.
+        for (const listener of this.listeners) listener();
+        if (this.connectedOnce && !this.reconnecting) this.scheduleReconnect();
+      };
+    }
     this.save();
   }
 
@@ -918,10 +929,18 @@ export class RuntimeSession {
             this.runtime.close();
             return;
           }
+          if (!this.ready) return;
           diagnosticEvent({ scope: 'runtime-reconnect', stage: 'ready', ready: this.ready });
           this.reconnectDelay = 1000;
-          this.epoch = randomUUID();
-          for (const thread of this.state.threads) this.emit(thread.id, 'runtime-reconnected');
+          if (this.reconnectRequiresReset) {
+            this.reconnectRequiresReset = false;
+            this.epoch = randomUUID();
+            for (const thread of this.state.threads) this.emit(thread.id, 'runtime-reconnected');
+          } else {
+            // Metadata-only recovery does not invalidate the event cursor or
+            // dirty every cached transcript, which would amplify the stall.
+            for (const listener of this.listeners) listener();
+          }
         })
         .catch((error: unknown) => {
           runtimeFailure('runtime-reconnect', error);

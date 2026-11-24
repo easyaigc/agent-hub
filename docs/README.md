@@ -10,6 +10,8 @@ iOS 对接 EasyWork 的唯一计划入口为 [对齐总览](plans/ios-easywork-a
 
 Android / iOS × Codex / EasyWork 的当前开发、验收、剩余项与调度以[权威状态和计划](plans/android-ios-alignment-20261107/progress.md)为唯一来源；本页及其他历史资料不独立发布完成率。
 
+手机切后台后返回前台的连接恢复见 [修复计划](plans/mobile-foreground-connection-20261122.md)：覆盖双端人为离线状态、短暂 inactive、聊天与回执恢复及预览暂停入口。该文档承载方案与验收门槛，开发、验收和交付状态仍回填原计划，不将方案审核记为产品修复完成。
+
 额度与余额的新需求见[实施计划](plans/agent-usage-20261028.md)、[类型与约束](design/agent-usage-contract.md)及[手机 UI](design/agent-usage.md)：F73 已按确认的修订 6 落地协议、Codex／EasyWork 适配及双端原生入口；真实与辅助结果见[验收记录](acceptance/agent-usage-20261028.md)。
 
 Android 的当前范围、已完成/未完成、优先级与待验项统一见[开发计划与进度总表](plans/android-ios-alignment-20261107/progress.md)；详细过程按主题保存在[分阶段档案](plans/android-alignment-20261022/records/README.md)，总表不再追加运行流水。

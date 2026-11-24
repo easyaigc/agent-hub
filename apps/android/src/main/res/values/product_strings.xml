@@ -1900,6 +1900,11 @@
     <string name="product_c6f028a3f2a51078bdd53dcc" formatted="false">"Network ranges come automatically from the current LAN and authorized computers. No address entry is needed. You can stop discovery at any time; saved computers and authorizations are preserved."</string>
     <string name="product_7fa3dadd4ac3e2e0eea584e6" formatted="false">"The computer rejected the saved device authorization. Check its authorization status on that computer."</string>
     <string name="product_bc3b41e454c84515234214b0" formatted="false">"Found in this scan"</string>
+    <string name="product_a84478cfd2a8b49769b3d688" formatted="false">"Preview paused"</string>
+    <string name="product_018098ff54e63100fef53765" formatted="false">"Continue preview"</string>
+    <string name="product_9885597cc98254af7e818e36" formatted="false">"Retry closing"</string>
+    <string name="product_704c1f90a8e9580ea3a5dc59" formatted="false">"The previous preview status is unconfirmed"</string>
+    <string name="product_5767bd826ba462a0e7b15ea9" formatted="false">"Some reading cache could not be restored. The original files have been preserved."</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

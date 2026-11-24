@@ -18841,7 +18841,9 @@ extension CodexManageUITests {
     XCTAssertNotNil(selected, "Expected exact original desktop thread")
     selected?.tap()
     let draft = "SYNC_ACCEPTANCE_UNSENT_DRAFT"
-    XCTAssertTrue(composer.waitForExistence(timeout: 30)); composer.tap(); typeComposerText(draft)
+    let closeQuestions = app.buttons["close-async-questions"]
+    if closeQuestions.waitForExistence(timeout: 5) { closeQuestions.tap() }
+    XCTAssertTrue(composer.waitForExistence(timeout: 30)); focusLiveComposer(); typeComposerText(draft)
     let (_, armed) = try await URLSession.shared.data(from: base.appendingPathComponent("arm"))
     XCTAssertEqual((armed as? HTTPURLResponse)?.statusCode, 200)
     let menu = app.buttons["chat-menu"]

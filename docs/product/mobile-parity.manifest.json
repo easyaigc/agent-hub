@@ -26481,6 +26481,18 @@
         "packages/codex-adapter/src/desktop-shared-control.ts": "3f811f69b67125541b5afec74097351eb3a08a4647aecd06ea26d5c425f6f0b2",
         "scripts/desktop-shared-control.test.mjs": "13fdda9644aac9afb36efd3c5a6e1d40528113b91ed32bd7fed37ef8b8738b21"
       }
+    },
+    {
+      "id": "ios-subagent-presenter-close-20261124",
+      "baseCommit": "924f8725d77ba616a59d18d19706349f798bcec1",
+      "features": ["F20"],
+      "summary": "关闭当前iOS子任务详情时由对应呈现者清除选择；回归重复关闭、原文重开和嵌套返回。保留原10秒关闭断言、远端子任务及Android既有实现和验收边界。",
+      "files": {
+        "apps/ios/Sources/SubagentHistory.swift": "12cf55455bbc940ea30dbe034761c76ca70af1d46442a7bd919919aa41a635c9",
+        "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0d6441dcab86a1976b239d54e2480cb99ae375d9418f0fc63d0b5f4ea1ab8691",
+        "scripts/subagent-reading-ios-fixture.mjs": "94b26059fbb64674cfce70838fdf9f372f5dd9459c7ae5edb6db5df2964dd5f5",
+        "scripts/mobile/ios-baseline.mjs": "514ba69e4fa49dc083d6cedf5b89fb41ac1a83c091bb86ca9acf8ee2f91c3b0a"
+      }
     }
   ]
 }

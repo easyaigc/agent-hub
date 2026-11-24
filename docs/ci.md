@@ -1,5 +1,13 @@
 # Gitea Actions 运行指南
 
+## 手动运行 CI
+
+按用户 2026-11-24 的选择，`.github/workflows/ci.yml` 仅保留 `workflow_dispatch`，Gitea 与 GitHub 的推送和 PR 均不再自动触发 workspace 或 iOS 检查。需要运行时，在 Actions 中选择 **CI → Run workflow**，选择分支，并按需填写 `mobile_parity_base`。两组检查及本机检查命令继续保留，结果按实际执行的源码和范围登记。
+
+独立的 GitHub 主线同步工作流仍在 Gitea `main` 推送后自动运行，并保留定时补查与手动入口。关闭自动 CI 不关闭主线同步；历史 CI 运行及其失败记录继续保留。
+
+本机首次准备测试包时，可先执行 Xcode `build-for-testing`，再用同一 `.xctestrun` 执行 `test-without-building`，分别记录编译准备与实际测试期限。[子任务详情关闭回归](acceptance/ios-subagent-sheet-20261124.md)保留了本次环境恢复、原始失败及四项原生测试结果。
+
 依赖安装保持 `--frozen-lockfile`，下载超时设为 300 秒、并发为 4，安装步骤最多 20 分钟。工作区检查和 iOS 构建分别先记录目标卷可用空间，低于 4 GiB 时停止本阶段新增写入。构建前从已安装的 Turbo 包解析本平台二进制，直接执行并核对版本；缺失或不可执行时明确失败，避免 Turbo 启动器在构建步骤内调用 npm 静默补装。此设置用于处理慢速下载，不改变锁定版本、完整检查范围或原生构建要求。
 
 Gitea 的工作区使用 Linux，会跳过 macOS 专属 Swift 回归；因此 macOS 的 iOS 任务在构建后补跑建议读取全套与下载原生边界检查。GitHub 的 macOS 工作区仍在完整 `pnpm check` 中执行这些检查。建议回归的每个原生可执行用例有 120 秒上限，受控请求不依赖固定等待窗口。上述检查是辅助证据，不代替真实手机或原桌面场景。
@@ -49,10 +57,10 @@ Android SDK Platform 37 的实际包 ID 是 `platforms;android-37.0`，旧工作
 
 ## 核对与恢复
 
-工作区 Job 在完整 `pnpm check` 前选择移动端一致性比较基准：PR 使用事件中的准确 base SHA，主线 push 使用 `before`，并通过环境文件传入后续全部检查。公开仓库保留独立快照历史，不要求它包含 Gitea manifest 中的历史提交。手动审计可指定 `mobile_parity_base`；省略时优先保留可读取的 manifest 全量基准，公开开发分支使用与 `origin/main` 的共同祖先，公开主线使用前一快照。明确指定但缺失的 PR、push 或手动基准直接失败，不降级为只检查最后一次提交；没有可比较历史时也须补齐基准。`mobile-parity-base.test.mjs` 用真实独立 Git 历史核对多提交 PR 范围、环境传递和失败边界。
+工作区 Job 在完整 `pnpm check` 前选择移动端一致性比较基准，并通过环境文件传入后续全部检查。当前手动运行可指定 `mobile_parity_base`；省略时优先保留可读取的 manifest 全量基准，公开开发分支使用与 `origin/main` 的共同祖先，公开主线使用前一快照。历史 PR 的准确 base SHA 与主线 push 的 `before` 口径继续保留在选择器中，便于追查原记录。公开仓库保留独立快照历史，不要求它包含 Gitea manifest 中的历史提交。明确指定但缺失的基准直接失败；没有可比较历史时也须补齐基准。`mobile-parity-base.test.mjs` 用真实独立 Git 历史核对比较范围、环境传递和失败边界。
 
 1. 通过 API 读取仓库及组织运行器，确认标签、在线状态和容量。queued 且没有 `runner_id`、没有开始时间表示尚未领取，不能视为测试失败或通过。
-2. 核对 PR 最终 head 和远端 `main` 的准确 SHA，分别读取对应 push、pull_request 运行及各 Job 的结论。PR 的分支检查不能代替合并后主线检查。
+2. 核对 PR 最终 head 和远端 `main` 的准确 SHA，将本机检查与手动 CI 结果绑定到各自源码；查询旧自动运行时，分别核对原事件与各 Job。没有运行的范围如实标明，不能把分支结果写成合并后主线 CI 已通过。
 3. 运行器上线后，从任务日志区分下载 action、准备工具、依赖安装、构建和断言失败。下载或工具链失败先修复环境，再重跑原任务；保持失败尝试和日志可读。
 4. 仅取消已被新提交取代且尚未执行的本仓库旧任务，不打断其他项目或正在运行的任务，不删除历史。Gitea 1.27 的 runs DELETE 接口实际删除运行；`tea actions runs delete` 的 cancel 别名也不是保留记录的取消。取消应使用平台提供的取消操作。
 5. 以服务器实际运行日志、执行时间、运行器和 success 结论验收，记录 run/job 链接。`pnpm check` 与 iOS Simulator 构建分别保留结果；模拟器编译不代表真机验收或发布成功。

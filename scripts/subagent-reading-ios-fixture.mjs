@@ -7,6 +7,7 @@ const child = spawn(
   [
     'scripts/mobile/native-ios-cases.mjs',
     'testLongChildDetailOpensClosesAndReopensWithOriginalText',
+    'testClosingNestedChildDetailPreservesParentPresentation',
     'testStructuredChildTimelineToolGroupAndCommandOutput',
     'testNativeLongPressSelectAndCopyChildDetail',
   ],

@@ -46,6 +46,7 @@ packages/mobile-core/build/
 *.heapsnapshot
 
 # Public mobile specifications and sanitized evidence remain versioned.
+!/docs/acceptance/ios-subagent-sheet-20261124.md
 !/docs/acceptance/startup-brand-20261119.md
 !/docs/acceptance/composer-focus-longpress-20261116.md
 !/docs/acceptance/file-download-progress-20261114.md

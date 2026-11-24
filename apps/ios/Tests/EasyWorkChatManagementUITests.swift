@@ -42,6 +42,51 @@ final class EasyWorkSubagentReadingUITests: XCTestCase {
     row.tap()
     XCTAssertTrue(full.waitForExistence(timeout: 15))
     XCTAssertEqual(full.label, original, "Reopening must preserve the original")
+    XCTAssertTrue(close.isHittable, "The reopened detail must expose its close action")
+    close.tap()
+    XCTAssertTrue(sheet.waitForNonExistence(timeout: 10), "Closing the reopened detail must remove its sheet")
+    XCTAssertFalse(full.exists, "Repeated close must unmount the original body")
+    XCTAssertTrue(row.isHittable, "Closing must return to the original transcript")
+  }
+
+  @MainActor func testClosingNestedChildDetailPreservesParentPresentation() {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments = ["-ui-testing", "-subagent-timeline-fixture", "-subagent-nested-fixture"]
+    app.launch()
+    defer { app.terminate() }
+    let root = app.buttons["subagent-c2-fixture-child"]
+    let parent = app.scrollViews["subagent-detail-c2-fixture-child"]
+    let nested = app.scrollViews["subagent-detail-c2-nested-child"]
+    func closePresentedDetail() {
+      // Parent and child toolbars intentionally share the same action ID.
+      // Only the currently presented toolbar is available for interaction.
+      let actions = app.buttons.matching(identifier: "subagent-detail-close")
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        actions.allElementsBoundByIndex.filter { $0.isHittable }.count == 1
+      }, object: app)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
+      let visible = actions.allElementsBoundByIndex.filter { $0.isHittable }
+      XCTAssertEqual(visible.count, 1, "Only the current detail's close action may be tapped")
+      visible.first?.tap()
+    }
+    XCTAssertTrue(root.waitForExistence(timeout: 30)); root.tap()
+    XCTAssertTrue(parent.waitForExistence(timeout: 15))
+    let child = parent.buttons["subagent-c2-nested-child"]
+    XCTAssertTrue(child.waitForExistence(timeout: 15)); child.tap()
+    XCTAssertTrue(nested.waitForExistence(timeout: 15))
+    closePresentedDetail()
+    XCTAssertTrue(nested.waitForNonExistence(timeout: 10), "Only the nested presentation must close")
+    XCTAssertTrue(parent.exists, "Closing a nested detail must preserve the parent sheet")
+    XCTAssertTrue(child.isHittable, "The parent history must remain usable")
+    child.tap()
+    XCTAssertTrue(nested.waitForExistence(timeout: 15), "The nested history must reopen")
+    closePresentedDetail()
+    XCTAssertTrue(nested.waitForNonExistence(timeout: 10))
+    closePresentedDetail()
+    XCTAssertTrue(parent.waitForNonExistence(timeout: 10), "Closing the parent must return to the transcript")
+    XCTAssertTrue(root.isHittable)
+    evidence("nested-subagent-details-closed", app: app)
   }
 
   @MainActor func testNativeLongPressSelectAndCopyChildDetail() {

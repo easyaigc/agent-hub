@@ -27,7 +27,12 @@ struct SubagentHistoryPresentation: ViewModifier {
     }
     return content.environment(\.openSubagentHistory, open)
     .sheet(item: $selection) { value in
-      SubagentDetailView(message: value.message, client: client, threadId: threadId, supportsHistory: supportsHistory, lineageEnabled: lineageEnabled, anchorCurrent: { anchorCurrent(value.targetKey, value.lineageContext, $0) }).id(value.id)
+      SubagentDetailView(message: value.message, client: client, threadId: threadId, supportsHistory: supportsHistory, lineageEnabled: lineageEnabled, anchorCurrent: { anchorCurrent(value.targetKey, value.lineageContext, $0) }, close: {
+        // Clear the state that presented this level, rather than resolving a
+        // dismiss action through the detail's nested sheet/NavigationStack.
+        guard selection?.id == value.id else { return }
+        selection = nil
+      }).id(value.id)
     }
     .onChange(of: targetKey) { _, _ in selection = nil }
   }
@@ -129,11 +134,11 @@ private struct SubagentDetailView: View {
   var supportsHistory = true
   var lineageEnabled = false
   var anchorCurrent: (ChatMessage) -> Bool = { _ in false }
+  let close: () -> Void
   @State private var lineage = false
   @State private var typedUnavailable = false
   @State private var lineageRequest = UUID()
   @State private var lineageLoading = false
-  @Environment(\.dismiss) private var dismiss
   @Environment(\.scenePhase) private var scenePhase
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @State private var snapshot: SubagentHistorySnapshot?
@@ -170,14 +175,14 @@ private struct SubagentDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .confirmationAction) {
-            Button(L10n.tr("完成")) { dismiss() }.accessibilityIdentifier("subagent-detail-close")
+            Button(L10n.tr("完成"), action: close).accessibilityIdentifier("subagent-detail-close")
           }
         }
     }.presentationDetents([.large]).presentationDragIndicator(.visible)
       .task(id: refreshKey) { await observe() }
       .onDisappear { lineageRequest = UUID(); earlierTask?.cancel(); earlierTask = nil }
       .onChange(of: lineage && (!lineageEnabled || !anchorCurrent(message))) { _, invalid in
-        if invalid { dismiss() }
+        if invalid { close() }
       }
       .onChange(of: scenePhase) { _, phase in if phase != .active { earlierTask?.cancel() } }
       .modifier(SubagentHistoryPresentation(targetKey: key, client: client, threadId: snapshot?.threadId, supportsHistory: supportsHistory))
@@ -338,9 +343,11 @@ private struct SubagentDetailView: View {
     #if DEBUG && targetEnvironment(simulator)
     if client.isDemo, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
       ProcessInfo.processInfo.arguments.contains("-subagent-timeline-fixture") {
-      let childId = "c2-timeline-child"
+      let nestedFixture = ProcessInfo.processInfo.arguments.contains("-subagent-nested-fixture")
+      let nestedDetail = nestedFixture && message.id == "c2-nested-child"
+      let childId = nestedDetail ? "c2-timeline-grandchild" : "c2-timeline-child"
       let runId = "c2-timeline-run"
-      let records = [
+      var records = [
         ChatMessage(id: "c2-child-prompt", role: "user", text: "C2 child task", kind: "userMessage", runId: runId),
         ChatMessage(id: "c2-child-command-1", role: "tool", text: "printf child-one", kind: "commandExecution",
           status: "completed", detail: "C2_CHILD_OUTPUT_ONE\nExit 0", runId: runId),
@@ -349,6 +356,10 @@ private struct SubagentDetailView: View {
         ChatMessage(id: "c2-child-reply", role: "assistant", text: "**C2 child completed**", kind: "agentMessage",
           status: "completed", runId: runId)
       ]
+      if nestedFixture && !nestedDetail {
+        records.append(ChatMessage(id: "c2-nested-child", role: "tool", text: "C2 nested child",
+          kind: "subAgent", status: "completed", detail: "C2_NESTED_ORIGINAL", runId: runId))
+      }
       return SubagentHistorySnapshot(version: 1, hostId: client.id,
         readTarget: AgentRuntimeTarget(agentId: "codex", hostId: client.id, workspaceId: "demo", runtimeId: "demo"),
         parentThreadId: threadId, messageId: message.id,

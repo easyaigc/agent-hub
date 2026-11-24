@@ -2,7 +2,9 @@
 
 源仓库是 Gitea 的 `BCAI/agent-hub-app`，公开仓库是 GitHub 的 `easyaigc/agent-hub`，两端主分支均为 `main`。
 
-`.github/workflows/sync-github.yml` 仅在 Gitea 执行：主线推送后同步，每小时第 17 分钟补查，也支持手动运行。任务使用仓库级 `agent-hub-linux` 运行器。GitHub 上同名任务自动跳过，原 CI 继续运行。
+`.github/workflows/sync-github.yml` 仅在 Gitea 执行：主线推送后同步，每小时第 17 分钟补查，也支持手动运行。任务使用仓库级 `agent-hub-linux` 运行器。GitHub 上同名任务自动跳过。
+
+完整 CI（`.github/workflows/ci.yml`）仅保留 `workflow_dispatch` 手动入口，Gitea 和 GitHub 上的推送、PR 均不再自动触发 workspace 或 iOS 构建与测试。需要时可在 Actions 中选择 CI 并手动运行，或在本机按开发指南执行对应检查；GitHub 主线自动同步不受此设置影响。
 
 在检出源码之前，运行器使用内置 Node 查询两端主线的提交元数据。只有公开提交的来源指纹等于当前 Gitea `main`、两端文件树完全相同，且复读两端主线指针仍未变化时，才跳过 checkout、工具安装和发布。私有接口使用本任务的只读 Actions token，公开接口不携带它；不保存个人凭据或另建同步状态库。单次元数据请求等待 20 秒，接口不可用、授权不足、数据不完整或指针变化均继续原有完整同步，不将未核实结果写成无需同步。该预检依赖 Linux 运行器预装 Node。
 

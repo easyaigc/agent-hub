@@ -1,9 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Run the full workspace and native suites only when explicitly requested.
+  # Publishing main to GitHub remains in the separate sync-github workflow.
   workflow_dispatch:
     inputs:
       mobile_parity_base:

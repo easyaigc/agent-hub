@@ -44,7 +44,7 @@ const fixtures = {
   history: ['history-pagination', 5],
   sidebar: ['sidebar-refresh', 9],
   readUI: ['native-read-ui', 2],
-  subagents: ['subagent-reading', 3],
+  subagents: ['subagent-reading', 4],
   voiceTap: ['voice-tap-stop', 4],
   usageDetails: ['usage-details', 1],
 };

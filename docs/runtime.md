@@ -1,5 +1,7 @@
 # 完整运行时连接与开发验收
 
+2026-11-24 原桌面通道兼容候选：配置已有 `CODEX_SHARED_SERVER_URL` 的 macOS，在旧 follower IPC 缺失/拒绝连接时会核对原桌面共享服务的私有配置、进程父链和唯一监听，使用同一执行服务恢复连接；不改变 `desktop-runtime` 机器身份，不修改手机授权、草稿或未知操作。协议/权限拒绝不触发替代写入。详见[共享控制适配](design/desktop-shared-control.md)，部署与手机实测分别登记。
+
 2026-11-14：Codex desktop-runtime 在历史、实时、完整与有界消息投影中统一轮次限定的重建序号 ID，并以同一标识维护阅读头与缓存重合。该转换只处理有准确原轮次的序号，不按正文删除消息、不改原桌面记录。实现与本机验证见[历史切换记录](acceptance/history-owner-identity-20261114.md)。
 
 ## Windows 原生建议 Responses 转发退役

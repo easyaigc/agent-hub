@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-24 原桌面通道兼容候选：原 follower IPC 明确不存在/拒绝连接时，可使用已核对原 Electron、launcher 与唯一官方 executor 父链的现有共享服务；外部完整机器目标仍为 `desktop-runtime`。读取不加载会话，显式命令仅 attach 同服务已加载的准确会话，未知写入不换路重放。接口与验证边界见[共享控制适配](design/desktop-shared-control.md)。
+
 2026-11-24：LIFE01 阅读恢复沿用旧端已认识的真实 reader carrier，另在当前加密 namespace/持久代次内保存仅含完整消息的 body 与小型原子 index；state 成功后才进入同一 history lane。旧 writer 不认识的可选字段不足以提供回退保全。恢复仅呈现缓存，远端同模式、修订与正重叠校验后才允许旧分页；owner/epoch、预算与失效顺序见[最终补修设计](plans/mobile-foreground-connection-20261122.md)。
 
 Android 的阅读家族物理保存在 `noBackupFilesDir/ReadingRecovery-v1`，不进入旧版闭合的 root 记录图，仍受当前 namespace、持久 generation、密钥与存储 owner 管理。既有资料导出在同一快照锁中校验普通页与完整阅读 body，仅生成旧版已认识的 history v1；冲突或超限保留源文件并明确失败。EasyWork 本地客户端 ID 与物理 Host ID 的差异留在原生 codec 适配层，完整目标、reader 和附件归属继续严格校验。

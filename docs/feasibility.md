@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-11-24 原桌面 IPC 缺失修复候选复用原 Electron 已有共享 App Server，不启动替代执行器。旧 IPC 优先，只有缺失/拒绝连接才按真实进程归属尝试适配，完整目标与提交回执保持。源码、辅助、部署与实际手机连接分别核对，见[适配及验收边界](design/desktop-shared-control.md)。
+
 2026-11-24：LIFE01 跨版本阅读保全采用有限独立缓存家族，避免旧 writer 重写普通 metadata/history 时抹掉早页与视口。单 body 32 MiB/50,000 消息、已发布总预算128 MiB，超限保留已有 good；稳定阅读边界写 body，滚动仅改小 index。旧 remove/re-add 丢 carrier 必须失效，受限 owner 在新 I/O 前跳过；不增加后台权限、Host wire 或控制证明。设计与验收边界见[最终计划补修](plans/mobile-foreground-connection-20261122.md)，当前状态仍只读原唯一台账。
 
 2026-11-23 Codex 读取超时连锁恢复修复候选：复用现有只读恢复，不增加协议、后台权限或重复执行实例；健康 IPC 与元数据故障隔离，真实断线和命令门禁保持。辅助注入、正式部署、负载复测和原生手机结果分别登记，详见[Host 诊断](host-reconnect-diagnostics.md)。

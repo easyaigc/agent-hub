@@ -1911,7 +1911,11 @@ private var userRequestedWorkspaceGeneration: UUID?
     if saved.threadForks?[pending.id]?.phase.isPending == true {
       saved.threadForks?[pending.id]?.phase = .outcomeUnknown
     }
-    saved.threadForks?[pending.id]?.error = failure.userFacingDescription + L10n.tr("\n请查询原回执；不会再次提交。")
+    if saved.threadForks?[pending.id]?.phase == .confirmed {
+      saved.threadForks?[pending.id]?.error = L10n.tr("分支已创建，但暂时无法打开。") + "\n" + failure.userFacingDescription
+    } else {
+      saved.threadForks?[pending.id]?.error = failure.userFacingDescription + L10n.tr("\n请查询原回执；不会再次提交。")
+    }
     persist()
   }
   private func acceptFork(_ operation: ThreadForkOperation, host: Client, pending: PendingThreadFork,
@@ -1961,7 +1965,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard history.hostId == host.id, history.threadId == id,
       history.readTarget == nil || history.readTarget == pending.sourceTarget,
       let thread = workspace.threads.first(where: { $0.id == id }) ?? history.thread,
-      thread.id == id, thread.hostId == host.id, thread.projectId == pending.projectId else { throw HostServiceError.wrongHost }
+      thread.id == id, thread.hostId == host.id else { throw HostServiceError.wrongHost }
+    // Project membership is mutable catalog metadata, not runtime identity.
+    // Keep the creation-time project in the receipt and open the current thread.
     try await waitForSidebarInteraction()
     // Switching away and back invalidates this intent too; source equality alone is insufficient.
     guard canOpenFork(pending, navigation: navigation) else { return }

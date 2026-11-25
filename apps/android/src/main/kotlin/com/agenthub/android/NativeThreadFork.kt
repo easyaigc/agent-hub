@@ -106,7 +106,8 @@ class NativeThreadForkFlow(private val journal: NativeOperationJournal,private v
         require(history.hostId==client.id && history.threadId==id && sameScope(history.scope,client.scope)) { "分支聊天运行目标不匹配" }
         val thread=workspace.threads.firstOrNull { it.id==id } ?: JSONObject(history.wire).optJSONObject("thread")?.let(HostReadCodec::thread)
             ?: error("分支已创建，聊天尚未出现在电脑列表；请查询原回执")
-        require(thread.hostId==client.id && thread.id==id && thread.projectId==outcome.projectId) { "分支聊天归属不匹配" }
+        // The receipt retains its creation-time project; current project membership may change.
+        require(thread.hostId==client.id && thread.id==id) { "分支聊天归属不匹配" }
         return CodexFlowResult(record,thread)
     }
 }

@@ -121,3 +121,6 @@ apps/ios/FilePreviewKit/.swiftpm/
 !/docs/acceptance/attachment-dark-20261119.md
 
 !/docs/acceptance/released-workflow-regressions-20261119.md
+
+# Sanitized fork receipt/project membership regression summary.
+!/docs/acceptance/fork-project-drift-20261104.md

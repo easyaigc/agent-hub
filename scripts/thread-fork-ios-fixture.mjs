@@ -24,6 +24,11 @@ const modes = new Set([
   'rejected',
   'mismatched-receipt',
   'missing-receipt',
+  'project-moved-same',
+  'project-moved-worktree',
+  'fork-wrong-host',
+  'fork-wrong-thread',
+  'fork-wrong-runtime',
 ]);
 let mode = 'same-directory';
 let confirmed = false;
@@ -66,6 +71,12 @@ const thread = (id, name = 'fork-source', projectId = 'fork-project') => ({
   state: 'idle',
 });
 const forkId = (operation) => 'fork-result-' + operation.clientOperationId;
+const currentProject = (operation) =>
+  mode === 'project-moved-same'
+    ? 'fork-moved-project'
+    : mode === 'project-moved-worktree'
+      ? null
+      : receipt(operation).projectId;
 const receipt = (operation) => ({
   ...operation,
   phase:
@@ -168,14 +179,13 @@ const history = (id, name, cursor) => {
   if (mode === 'legacy') for (const message of messages) delete message.runId;
   for (const message of messages) message.files = [];
   return {
-    hostId: id,
-    readTarget: target(id),
-    threadId: name,
-    thread: thread(
-      id,
-      name,
-      fork?.environment === 'worktree' ? 'fork-worktree-project' : 'fork-project',
-    ),
+    hostId: fork && mode === 'fork-wrong-host' ? secondHostId : id,
+    readTarget:
+      fork && mode === 'fork-wrong-runtime'
+        ? { ...target(id), runtimeId: 'other-runtime' }
+        : target(id),
+    threadId: fork && mode === 'fork-wrong-thread' ? 'wrong-thread' : name,
+    thread: thread(id, name, fork ? currentProject(fork) : 'fork-project'),
     messages:
       mode === 'paginated' && !fork && name === 'fork-source'
         ? cursor
@@ -216,6 +226,9 @@ const createHost = (id) =>
           capabilities: caps(),
           projects: [
             { id: 'fork-project', hostId: id, name: 'Fork fixture project', roots: [] },
+            ...(mode === 'project-moved-same'
+              ? [{ id: 'fork-moved-project', hostId: id, name: 'Moved fixture project', roots: [] }]
+              : []),
             ...(confirmed
               ? [
                   {
@@ -234,12 +247,16 @@ const createHost = (id) =>
               .filter(
                 (op) => (confirmed || confirmedIds.has(op.clientOperationId)) && op.hostId === id,
               )
-              .map((op) => thread(id, forkId(op), receipt(op).projectId)),
+              .map((op) => thread(id, forkId(op), currentProject(op))),
           ],
           nextProjectCursor: null,
           nextThreadCursor: null,
         });
-      if (request.method === 'GET') assert.equal(url.searchParams.get('hostId'), id);
+      // Usage is independently targeted via its target query, not a hostId query.
+      // This fork-only fixture does not implement usage.
+      if (url.pathname === '/v1/usage' && request.method === 'GET')
+        return json(response, 404, { error: 'Usage is not available in this fixture' });
+      if (request.method === 'GET') assert.equal(url.searchParams.get('hostId'), id, url.pathname);
       if (url.pathname === '/v1/history') {
         historyReads.push({
           hostId: id,
@@ -338,9 +355,17 @@ const createHost = (id) =>
           for (const resolve of heldResolvers) resolve();
           heldResolvers = [];
         }
-        confirmed = ['same-directory', 'worktree', 'paginated', 'mismatched-receipt'].includes(
-          mode,
-        );
+        confirmed = [
+          'same-directory',
+          'worktree',
+          'paginated',
+          'mismatched-receipt',
+          'project-moved-same',
+          'project-moved-worktree',
+          'fork-wrong-host',
+          'fork-wrong-thread',
+          'fork-wrong-runtime',
+        ].includes(mode);
         return json(response, 200, {
           ...receipt(payload),
           ...(mode === 'mismatched-receipt' ? { turnId: 'wrong-turn' } : {}),
@@ -446,6 +471,9 @@ if (process.argv.includes('--serve-only')) {
     'PaginatedTurnSelection',
     'SameDirectory',
     'Worktree',
+    'ProjectMovedSameDirectory',
+    'ProjectMovedWorktree',
+    'IdentityBoundaries',
     'PendingLateResultPreservesDraft',
     'RestartQueriesOriginalReceipt',
     'HostSwitchDoesNotNavigate',

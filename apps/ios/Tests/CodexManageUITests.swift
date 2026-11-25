@@ -15569,6 +15569,57 @@ final class CodexManageUITests: XCTestCase {
   }
   @MainActor func testThreadForkSameDirectory() async throws { try await runThreadForkRoute("same-directory") }
   @MainActor func testThreadForkWorktree() async throws { try await runThreadForkRoute("worktree") }
+  @MainActor private func runThreadForkProjectMoved(_ environment: String, mode: String, receiptProject: String) async throws {
+    let fixture = try await threadForkFixture(mode)
+    connectLive(fixture, supportsCreation: false)
+    openFirstForkMenu(); tapForkEnvironment(environment)
+    var counters = try await threadForkCounters()
+    for _ in 0..<30 where (counters["posts"] as? [Any])?.isEmpty != false {
+      try await Task.sleep(for: .milliseconds(200))
+      counters = try await threadForkCounters()
+    }
+    let post = try XCTUnwrap(try XCTUnwrap(counters["posts"] as? [[String: Any]]).first)
+    let operationId = try XCTUnwrap(post["clientOperationId"] as? String)
+    let record = try XCTUnwrap(try XCTUnwrap(counters["records"] as? [[String: Any]]).first)
+    XCTAssertEqual(record["projectId"] as? String, receiptProject)
+    let opened = app.staticTexts["FORK_OPERATION_" + operationId].waitForExistence(timeout: 20)
+    XCTAssertTrue(opened, "A changed project association must not reject the confirmed fork")
+    guard opened else { return }
+    openForkFixtureThread(fixture.threadId)
+    let receipt = app.otherElements["fork-receipt-" + operationId]
+    XCTAssertTrue(receipt.waitForExistence(timeout: 15))
+    XCTAssertTrue(app.buttons["query-fork-" + operationId].label.contains("打开分支"))
+    XCTAssertFalse(receipt.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "电脑身份不一致")).firstMatch.exists)
+    XCTAssertFalse(receipt.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "查询原回执")).firstMatch.exists)
+    app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
+    let button = app.buttons["query-fork-" + operationId]
+    XCTAssertTrue(button.waitForExistence(timeout: 20)); button.tap()
+    XCTAssertTrue(app.staticTexts["FORK_OPERATION_" + operationId].waitForExistence(timeout: 30))
+    try await assertSingleFork(environment, fixture: fixture)
+    let after = try await threadForkCounters()
+    let queries = try XCTUnwrap(after["queries"] as? [[String: Any]])
+    XCTAssertTrue(queries.contains { $0["id"] as? String == operationId })
+  }
+  @MainActor func testThreadForkProjectMovedSameDirectory() async throws {
+    try await runThreadForkProjectMoved("same-directory", mode: "project-moved-same", receiptProject: "fork-project")
+  }
+  @MainActor func testThreadForkProjectMovedWorktree() async throws {
+    try await runThreadForkProjectMoved("worktree", mode: "project-moved-worktree", receiptProject: "fork-worktree-project")
+  }
+  @MainActor func testThreadForkIdentityBoundaries() async throws {
+    for mode in ["fork-wrong-host", "fork-wrong-thread", "fork-wrong-runtime"] {
+      if mode != "fork-wrong-host" { app.terminate(); app.launchArguments = ["-ui-testing"]; app.launchChineseTest() }
+      let fixture = try await threadForkFixture(mode)
+      connectLive(fixture, supportsCreation: false)
+      openFirstForkMenu(); tapForkEnvironment("same-directory")
+      XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "电脑身份不一致")).firstMatch.waitForExistence(timeout: 20), mode)
+      XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "分支已创建，但暂时无法打开。")).firstMatch.exists, mode)
+      XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "分支已创建")).firstMatch.exists, mode)
+      XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "请查询原回执；不会再次提交")).firstMatch.exists, mode)
+      XCTAssertFalse(app.staticTexts["FORK_RESULT_same-directory"].exists, mode)
+      try await assertSingleFork("same-directory", fixture: fixture)
+    }
+  }
   @MainActor func testThreadForkPaginatedTurnSelection() async throws { try await runThreadForkRoute("same-directory", mode: "paginated") }
   @MainActor func testThreadForkRepeatAfterSuccess() async throws {
     let fixture = try await threadForkFixture("same-directory")

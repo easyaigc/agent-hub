@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-11-04 F62／UI06：分支创建时的项目归属保留在原回执中；之后目录可把同一分支归入其他项目或无项目，iOS／Android 仍按准确 Agent、Host、workspace、runtime 与聊天 ID 打开，不把项目变化报为电脑身份不一致。创建已确认后的读取失败保留成功回执，恢复只查询原操作，不重发创建。实现和本次检查分别见[专项记录](../acceptance/fork-project-drift-20261104.md)。A6 保持暂停。
+
 LIFE01（F05/F09/F17/F44/F47/F76）规定最近连接事实、当前核对和副作用控制证明分开表达；单个读取取消不撤回共享建连，预览保留暂停页，冷缓存不授控制。 早页跨版本恢复使用旧端保留的真实reader carrier与独立加密快照；先失效丢失标记的旧入口，再建立新阅读记录。整份缓存与远端模式/有效revision/正重叠证明分开，滚动仅更新小索引，受限owner先于I/O跳过。规格与验收关联见[最终计划](../plans/mobile-foreground-connection-20261122.md)；当前用户功能状态只读[唯一完整清单](../plans/android-ios-alignment-20261107/progress.md)，iOS 专项详情沿用原唯一计划。
 
 2026-11-19 F47／F56：补 Android 正式签名、私有密钥稳定复用、缺签名拒绝发布构建和 APK/AAB 证书核对；回环网络配置显式写出原有子域名默认值以通过 release lint，不扩大明文范围。iOS 身份、双端 UI 与产品语义保持。正式安装/升级、备案及商店审核继续独立验收，见[发布准备](../android-release-readiness.md)。

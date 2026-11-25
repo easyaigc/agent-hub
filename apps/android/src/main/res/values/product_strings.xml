@@ -263,6 +263,7 @@
     <string name="product_08095d2270353155c7146fce" formatted="false">"Share downloaded attachment"</string>
     <string name="product_2b071bbfa1f67dc95182e75d" formatted="false">"Branch conversation"</string>
     <string name="product_63ef16c77a9a148d9566c2fa" formatted="false">"Branch created"</string>
+    <string name="product_cf3e954e79b29181cc2dca3e" formatted="false">"Branch created, but it could not be opened right now."</string>
     <string name="product_94206062c7c45279e4be22b7" formatted="false">"Branch not created"</string>
     <string name="product_22afa9ea735c48eaa9304785" formatted="false">"Branch result unconfirmed"</string>
     <string name="product_14a6a4587985393dd817edcd" formatted="false">"Switch client, %@, %@"</string>

@@ -45,7 +45,7 @@ const testCount = (
     ),
   )
 ).reduce((n, s) => n + (s.match(/@Test\s/g)?.length ?? 0), 0);
-assert.equal(testCount, scope === 'full' ? 81 : 21, 'Review changed acceptance scope');
+assert.equal(testCount, scope === 'full' ? 82 : 22, 'Review changed acceptance scope');
 const root =
   '.local/android-development/upstream-migration/' +
   step +

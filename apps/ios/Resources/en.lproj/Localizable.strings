@@ -261,6 +261,7 @@
 "分享已下载附件" = "Share downloaded attachment";
 "分支对话" = "Branch conversation";
 "分支已创建" = "Branch created";
+"分支已创建，但暂时无法打开。" = "Branch created, but it could not be opened right now.";
 "分支未创建" = "Branch not created";
 "分支结果待确认" = "Branch result unconfirmed";
 "切换客户端，%@，%@" = "Switch client, %@, %@";

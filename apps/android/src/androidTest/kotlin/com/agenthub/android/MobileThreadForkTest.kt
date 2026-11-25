@@ -71,6 +71,21 @@ class MobileThreadForkTest {
             assertEquals(first.record.result,j.records(first.record.target).single().result);assertEquals(1,f.posts.size)
         }
     }
+    @Test fun currentProjectMayChangeWithoutChangingConfirmedReceiptOrReposting()=runBlocking {
+        for(environment in listOf("same-directory","worktree")) for(project in listOf("moved-project",null)) ForkFixture().use { f ->
+            f.childProject=project
+            val name=namespace();val j=journal(name);val request=intent(environment)
+            val first=flow(j).submit(f.client,request,SubmissionOrigin("key","v"),{true})
+            assertEquals("confirmed",first.record.phase);assertEquals(project,first.thread!!.projectId)
+            assertEquals("fork-project",JSONObject(first.record.result!!).getString("projectId"))
+            f.childProject=if(project==null) "another-project" else null
+            val restored=journal(name);val original=restored.records(first.record.target).single()
+            val queried=flow(restored).query(f.client,original)
+            assertEquals(f.childProject,queried.thread!!.projectId)
+            assertEquals(first.record.intent,queried.record.intent);assertEquals(first.record.result,queried.record.result)
+            assertEquals(1,f.posts.size)
+        }
+    }
     @Test fun runtimeAgentAndConnectionTrustChangesCannotQueryOriginal()=runBlocking {
         ForkFixture().use { f -> f.phase="outcome-unknown";val first=flow(journal()).submit(f.client,intent(),SubmissionOrigin("key","v"),{true})
             val scope=f.client.scope!!
@@ -113,11 +128,12 @@ class MobileThreadForkTest {
 }
 internal class ForkFixture: java.io.Closeable {
     @Volatile var phase="confirmed";@Volatile var disconnect=false;@Volatile var statusCode=200;@Volatile var mode="desktop-runtime";@Volatile var wrongHistory=false
+    @Volatile var childProject: String?="fork-project"
     var patch: (JSONObject)->JSONObject={it}
     private val operations=ConcurrentHashMap<String,JSONObject>()
     val runtimeId="fork-runtime-"+UUID.randomUUID()
     val target=JSONObject().put("agentId","codex").put("hostId","fork-host").put("workspaceId","fork-workspace").put("runtimeId",runtimeId)
-    private fun thread(id: String)=JSONObject().put("id",id).put("hostId","fork-host").put("title",if(id=="source") "Fork source" else "Fork result").put("state","idle").put("projectId","fork-project")
+    private fun thread(id: String)=JSONObject().put("id",id).put("hostId","fork-host").put("title",if(id=="source") "Fork source" else "Fork result").put("state","idle").put("projectId",(if(id=="source") "fork-project" else childProject) ?: JSONObject.NULL)
     private fun receipt(request: JSONObject)=patch(JSONObject(request.toString()).put("phase",phase).put("forkedThreadId",if(phase=="confirmed") "fork-"+request.getString("clientOperationId") else JSONObject.NULL)
         .put("projectId",if(phase=="confirmed") "fork-project" else JSONObject.NULL).put("error",if(phase=="rejected") "电脑拒绝了分支" else JSONObject.NULL))
     val server=CommandFixture { r -> when(r.path) {

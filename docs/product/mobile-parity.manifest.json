@@ -26583,6 +26583,21 @@
         "packages/codex-adapter/src/runtime-session.ts": "520a90cf613f34c1323b04dab989ee0882d30021aa95763fa53c572a67767e43",
         "scripts/desktop-project-creation.test.mjs": "1ca026bad5563d54bd645a1c3ababe18631a841675cb2a62ee458f8183b734ca"
       }
+    },
+    {
+      "id": "desktop-confirmed-project-visibility-20261125",
+      "baseCommit": "df05ef79cf5490a40b679cfe824ce438e5a3fce9",
+      "features": ["F12", "F16", "F26"],
+      "summary": "Include only this machine's confirmed phone-created native projects in the desktop workspace view while keeping legacy desktop ordering and orphan filtering. Every row must still exist in the official catalog; pending/foreign receipts do not grant visibility and deleted metadata cannot be resurrected. No official desktop state is written. Current physical operation recovery and mobile acceptance are separate. Project POST responses use the same presentation catalog as GET so orphan metadata cannot flash into the phone list.",
+      "files": {
+        "packages/codex-adapter/src/desktop-sidebar.ts": "89312ccbab53fd1798f496b385996420c945fdee743055869926fda63e61dac2",
+        "packages/codex-adapter/src/desktop-workspace-view.ts": "9d0540e30899a3bbdcc9b4b2eb1c30199c2f998813d7b71d6d16475aa9bfc2db",
+        "packages/codex-adapter/src/history-reader.ts": "3fbb89cf523d49dd0403400658e90123afeda953478f75f9e1d4f32489297c58",
+        "packages/codex-adapter/src/runtime-session.ts": "3e28ec967ecbf928707056fd2e87f92ac351c474954c42ef04c06dfc4920dfb4",
+        "scripts/desktop-project-creation.test.mjs": "7581af85d1eb315a0ff0f33eb644c38a9d72e466f379a9c36f30537516147ca1",
+        "scripts/history-smoke.mjs": "2300b0cd88d36d8c6aa37b2a2599144460671e6d589966fa9e49ab4dc2a1e637",
+        "apps/host-agent/src/runtime-server.ts": "e400b72a6bb5fb10dee043890510d2d89b00205ea9d2a027a103c309442203f9"
+      }
     }
   ]
 }

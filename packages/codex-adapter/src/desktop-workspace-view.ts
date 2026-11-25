@@ -117,7 +117,7 @@ export class DesktopWorkspaceView {
     let catalog;
     try {
       await this.session.connectDesktopReader(this.reader, false, () => !this.closed);
-      catalog = await this.reader.desktopWorkspace();
+      catalog = await this.reader.desktopWorkspace(this.session.confirmedCreatedProjectIds());
     } catch (error) {
       // Only transport failures can retry a complete idempotent catalog once.
       // Protocol rejections, exit barriers and write operations never enter it.
@@ -131,7 +131,7 @@ export class DesktopWorkspaceView {
       )
         throw error;
       await this.session.connectDesktopReader(this.reader, true, () => !this.closed);
-      catalog = await this.reader.desktopWorkspace();
+      catalog = await this.reader.desktopWorkspace(this.session.confirmedCreatedProjectIds());
     }
     if (this.closed) {
       this.reader.close();

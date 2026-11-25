@@ -7,6 +7,9 @@ import { DesktopProjectCreation } from '../packages/codex-adapter/dist/desktop-p
 import { DesktopWorkspaceManagement } from '../packages/codex-adapter/dist/desktop-workspace-management.js';
 import { MetadataConnection } from '../packages/codex-adapter/dist/desktop-thread-preparer.js';
 import { CodexRejection } from '../packages/codex-adapter/dist/runtime.js';
+import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
+import { DesktopWorkspaceView } from '../packages/codex-adapter/dist/desktop-workspace-view.js';
+import { startRuntimeServer } from '../apps/host-agent/dist/runtime-server.js';
 
 const target = {
   agentId: 'codex',
@@ -14,6 +17,59 @@ const target = {
   workspaceId: 'host-a',
   runtimeId: 'desktop-runtime',
 };
+
+test('only completed same-machine creation provenance extends project visibility after restart', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'project-visibility-provenance-'));
+  const record = {
+    target,
+    operationId: 'visibility-operation',
+    name: 'Demo',
+    root: directory,
+    state: 'completed',
+    projectId: 'confirmed-native-project',
+  };
+  await writeFile(
+    join(directory, 'runtime.json'),
+    JSON.stringify({
+      hostId: target.hostId,
+      projects: [],
+      threads: [],
+      attachments: [],
+      receipts: [],
+      creations: {},
+      projectCreations: {
+        confirmed: record,
+        uncertain: { ...record, state: 'outcome-unknown', projectId: 'uncertain-project' },
+        foreign: {
+          ...record,
+          target: { ...target, hostId: 'another-host' },
+          projectId: 'foreign-project',
+        },
+        otherRuntime: {
+          ...record,
+          target: { ...target, runtimeId: 'managed-runtime' },
+          projectId: 'other-runtime',
+        },
+        rejected: { ...record, state: 'rejected', projectId: 'rejected-project' },
+      },
+    }),
+    { mode: 0o600 },
+  );
+  let session;
+  try {
+    session = new RuntimeSession({
+      mode: 'desktop-runtime',
+      directory,
+      root: directory,
+      name: 'Project visibility fixture',
+      executable: '/not-started',
+    });
+    assert.deepEqual([...session.confirmedCreatedProjectIds()], ['confirmed-native-project']);
+  } finally {
+    session?.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 test('creation is durable before write; duplicates coalesce and changed inputs conflict', async () => {
   const records = {};
   let durable,
@@ -194,6 +250,109 @@ for await (const line of createInterface({input:process.stdin})) {
       assert.equal(await transport.close(), 0);
     }
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('HTTP project creation and subsequent GET use the same projected catalog without exposing orphans', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'project-create-http-view-'));
+  const environment = { ...process.env };
+  const connect = RuntimeSession.prototype.connect;
+  const create = RuntimeSession.prototype.createProject;
+  const rawWorkspace = RuntimeSession.prototype.workspace;
+  const viewWorkspace = DesktopWorkspaceView.prototype.workspace;
+  let host,
+    writes = 0,
+    connectedFixture = false;
+  try {
+    for (const key of Object.keys(process.env))
+      if (
+        key.startsWith('HOST_AGENT_') ||
+        key.startsWith('CODEX_DESKTOP_') ||
+        ['CODEX_SHARED_SERVER_URL', 'HOST_NOTIFICATION_RELAY_URL'].includes(key)
+      )
+        delete process.env[key];
+    Object.assign(process.env, {
+      CODEX_RUNTIME_MODE: 'desktop-runtime',
+      HOST_AGENT_STATE_DIR: directory,
+      HOST_AGENT_ROOT: directory,
+      HOST_AGENT_TOKEN: 'synthetic-project-test-token-0000000000',
+      HOST_AGENT_PORT: '0',
+      HOST_AGENT_BIND: '127.0.0.1',
+      HOST_AGENT_DISCOVERY: '0',
+      CODEX_DESKTOP_SUGGESTION_OBSERVER: '0',
+      CODEX_SOCKET: join(directory, 'fixture-only.sock'),
+    });
+    const workspace = (session, projected) => ({
+      hostId: session.hostId,
+      ready: true,
+      capabilities: ['projects:read', 'projects:create'],
+      projects: [
+        'desktop-project',
+        ...(writes ? ['created-project'] : []),
+        ...(projected ? [] : ['old-orphan']),
+      ].map((id) => ({ id, hostId: session.hostId, name: id, roots: [directory] })),
+      threads: [],
+      nextProjectCursor: null,
+      nextThreadCursor: null,
+    });
+    RuntimeSession.prototype.connect = async function () {
+      connectedFixture = true;
+      Object.defineProperty(this.runtime, 'ready', { value: true, writable: true });
+    };
+    RuntimeSession.prototype.workspace = async function () {
+      return workspace(this, false);
+    };
+    RuntimeSession.prototype.createProject = async function (name, root, operation) {
+      assert.equal(name, 'Added');
+      assert.equal(root, directory);
+      assert.equal(operation, 'operation-http');
+      writes++;
+      return this.workspace();
+    };
+    DesktopWorkspaceView.prototype.workspace = async function () {
+      return workspace(this.session, true);
+    };
+    host = await startRuntimeServer();
+    assert.equal(connectedFixture, true, 'Production server must use the fenced fixture session');
+    const url = `http://127.0.0.1:${host.server.address().port}`;
+    const headers = {
+      Authorization: `Bearer ${process.env.HOST_AGENT_TOKEN}`,
+      'Content-Type': 'application/json',
+    };
+    const response = await fetch(url + '/v1/projects', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        hostId: host.session.hostId,
+        name: 'Added',
+        directory,
+        clientOperationId: 'operation-http',
+      }),
+    });
+    assert.equal(response.status, 200);
+    const posted = await response.json();
+    assert.deepEqual(
+      posted.projects.map((p) => p.id),
+      ['desktop-project', 'created-project'],
+    );
+    const refreshed = await (await fetch(url + '/v1/workspace', { headers })).json();
+    assert.deepEqual(refreshed.projects, posted.projects);
+    assert.equal(writes, 1, 'Refreshing the catalog cannot replay project creation');
+  } finally {
+    if (host) {
+      await new Promise((done) => {
+        host.server.once('close', done);
+        host.close();
+      });
+      await host.diagnostics.close();
+    }
+    RuntimeSession.prototype.connect = connect;
+    RuntimeSession.prototype.createProject = create;
+    RuntimeSession.prototype.workspace = rawWorkspace;
+    DesktopWorkspaceView.prototype.workspace = viewWorkspace;
+    for (const key of Object.keys(process.env)) if (!(key in environment)) delete process.env[key];
+    Object.assign(process.env, environment);
     await rm(directory, { recursive: true, force: true });
   }
 });

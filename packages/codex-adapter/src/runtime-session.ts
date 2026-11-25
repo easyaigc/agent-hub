@@ -2817,6 +2817,21 @@ export class RuntimeSession {
     return this.state.threads.some((thread) => thread.id === id && thread.archived);
   }
 
+  /** Visibility provenance only; every returned project still comes from official project/list. */
+  confirmedCreatedProjectIds(): ReadonlySet<string> {
+    const target = this.readingTarget();
+    return new Set(
+      Object.values(this.state.projectCreations ?? {}).flatMap((record) =>
+        record.state === 'completed' &&
+        typeof record.projectId === 'string' &&
+        record.projectId &&
+        isDeepStrictEqual(record.target, target)
+          ? [record.projectId]
+          : [],
+      ),
+    );
+  }
+
   private managementBroker(): WorkspaceManagementBroker {
     this.requireReady();
     if (!(this.runtime instanceof DesktopRuntime))

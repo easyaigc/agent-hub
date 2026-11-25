@@ -1670,13 +1670,14 @@ export async function startRuntimeServer() {
             data.projectId === null ? null : text(data.projectId),
             text(data.clientOperationId),
           );
-        else if (url.pathname === '/v1/projects')
+        else if (url.pathname === '/v1/projects') {
           result = await session.createProject(
             text(data.name),
             text(data.directory),
             text(data.clientOperationId),
           );
-        else if (url.pathname === '/v1/replies')
+          if (workspaceView) result = await workspaceView.workspace();
+        } else if (url.pathname === '/v1/replies')
           result = await session.submit(
             {
               hostId: text(data.hostId),

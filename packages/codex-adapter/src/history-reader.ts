@@ -428,7 +428,9 @@ export class CodexHistoryReader {
   }
 
   /** Complete metadata snapshot so sparse projects and removed chats stay accurate. */
-  async desktopWorkspace(): Promise<ReadWorkspace> {
+  async desktopWorkspace(
+    confirmedCreatedIds: ReadonlySet<string> = new Set(),
+  ): Promise<ReadWorkspace> {
     const sidebar = this.desktopStatePath ? new DesktopSidebar(this.desktopStatePath) : undefined;
     const pages = async (method: string, params: RecordValue): Promise<unknown[]> => {
       const rows: unknown[] = [];
@@ -481,7 +483,11 @@ export class CodexHistoryReader {
     ]);
     this.sidebar = sidebar;
     this.knownProjects.clear();
-    const result = this.mapWorkspace({ data: projects }, { data: [...threads, ...archived] });
+    const result = this.mapWorkspace(
+      { data: projects },
+      { data: [...threads, ...archived] },
+      confirmedCreatedIds,
+    );
     const archivedIds = new Set(archived.map((v) => string(object(v).id)));
     result.threads = result.threads.map((v) => ({ ...v, archived: archivedIds.has(v.id) }));
     result.pinnedThreadIds = pinned.map((v) => string(object(v).id));
@@ -510,7 +516,11 @@ export class CodexHistoryReader {
     return this.mapWorkspace(object(projectResult), object(threadResult));
   }
 
-  private mapWorkspace(p: RecordValue, t: RecordValue): ReadWorkspace {
+  private mapWorkspace(
+    p: RecordValue,
+    t: RecordValue,
+    confirmedCreatedIds: ReadonlySet<string> = new Set(),
+  ): ReadWorkspace {
     const sourceProjects = array(p.data).map((value) => {
       const row = object(value);
       return {
@@ -520,7 +530,7 @@ export class CodexHistoryReader {
         roots: array(row.roots).map((root) => string(object(root).path)),
       };
     });
-    const projects = this.sidebar?.projects(sourceProjects) ?? sourceProjects;
+    const projects = this.sidebar?.projects(sourceProjects, confirmedCreatedIds) ?? sourceProjects;
     for (const project of projects) this.knownProjects.set(project.id, project);
     const threads: ReadThread[] = array(t.data).map((value) => {
       const row = object(value);

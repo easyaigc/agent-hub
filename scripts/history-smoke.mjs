@@ -25,6 +25,7 @@ createInterface({input:process.stdin}).on('line', line => {
 
  let result={};
  if(r.method==='project/list')result=r.params.cursor?{data:[{id:'later-project',name:'fixture',roots:[{path:'/later'}]}]}:{data:[{id:'p',name:'fixture',roots:[{path:'/fixture'}]},{id:'nested',name:'fixture',roots:[{path:'/fixture/nested'}]},{id:'ambiguous-a',name:'first',roots:[{path:'/shared'}]},{id:'ambiguous-b',name:'second',roots:[{path:'/shared'}]}],nextCursor:'projects-page-2'};
+ if(r.method==='project/list' && existsSync(${JSON.stringify(join(directory, 'native-project-deleted'))}))result.data=result.data.filter(p=>p.id!=='nested');
  if(r.method==='thread/list')result={data:r.params.cursor?[{id:'page-2-legacy',projectId:null,cwd:'/fixture',name:'older fixture',preview:''},{id:'page-2-project',projectId:null,cwd:'/later',name:'other fixture',preview:''}]:[{id:'t',projectId:'p',name:'fixture thread',preview:''},{id:'legacy',projectId:null,cwd:${JSON.stringify(process.platform === 'win32' ? '/FiXtUrE/' : '/fixture/')},name:'legacy title',preview:''},{id:'nested-thread',projectId:null,cwd:'/fixture/nested',name:'nested title',preview:''},{id:'canonical',projectId:'nested',cwd:'/fixture',name:'assigned title',preview:''},{id:'descendant',projectId:null,cwd:'/fixture/other',name:'unassigned child',preview:''},{id:'ambiguous',projectId:null,cwd:'/shared',name:'ambiguous title',preview:''},{id:'same-name',projectId:null,cwd:'/elsewhere/fixture',name:'different directory',preview:''}],nextCursor:r.params.cursor?null:'threads-page-2'};
  if(r.method==='thread/list' && r.params.archived===true)result={data:[],nextCursor:null};
  if(r.method==='thread/list' && r.params.sectionId)result={data:(existsSync(${JSON.stringify(join(directory, 'server-pins.json'))})?JSON.parse(readFileSync(${JSON.stringify(join(directory, 'server-pins.json'))},'utf8')):[]).map(id=>({id})),nextCursor:null};
@@ -217,6 +218,37 @@ try {
       'An older server can fall back on read-only catalog ordering',
     );
     assert.equal(compatible.sidebar.version, 1);
+    // Server-confirmed phone creations are not in the desktop's local catalog
+    // yet. Keep ordinary orphan filtering while admitting only those native IDs.
+    sidebar['local-projects'] = {
+      'display-a': { name: 'desktop first', rootPaths: ['/shared'] },
+      'display-b': { name: 'desktop second', rootPaths: ['/shared'] },
+    };
+    await writeFile(sidebarFile, JSON.stringify(sidebar));
+    assert.deepEqual((await desktop.desktopWorkspace()).projects.map((p) => p.id).sort(), [
+      'ambiguous-a',
+      'ambiguous-b',
+    ]);
+    const created = await desktop.desktopWorkspace(new Set(['nested', 'missing-on-server']));
+    assert.deepEqual(created.projects.map((p) => p.id).sort(), [
+      'ambiguous-a',
+      'ambiguous-b',
+      'nested',
+    ]);
+    assert.equal(created.projects.find((p) => p.id === 'ambiguous-a').name, 'desktop first');
+    assert.equal(created.threads.find((t) => t.id === 'nested-thread').projectId, 'nested');
+    assert.equal(created.threads.find((t) => t.id === 'canonical').projectId, 'nested');
+    assert(created.sidebar.projectThreadIds.nested.includes('nested-thread'));
+    assert(
+      !created.projects.some((p) => ['p', 'later-project', 'missing-on-server'].includes(p.id)),
+    );
+    await writeFile(join(directory, 'native-project-deleted'), 'removed');
+    assert(
+      !(await desktop.desktopWorkspace(new Set(['nested']))).projects.some(
+        (p) => p.id === 'nested',
+      ),
+      'A retained creation receipt cannot resurrect a project absent from the official catalog',
+    );
     await writeFile(sidebarFile, '{broken');
     await assert.rejects(desktop.desktopWorkspace(), /sidebar metadata unavailable/);
   } finally {

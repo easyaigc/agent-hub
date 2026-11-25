@@ -33,7 +33,10 @@ export class DesktopSidebar {
   }
 
   /** The desktop catalog, not every project left in the app-server database. */
-  projects(projects: ReadProject[]): ReadProject[] {
+  projects(
+    projects: ReadProject[],
+    confirmedCreatedIds: ReadonlySet<string> = new Set(),
+  ): ReadProject[] {
     if (!Object.hasOwn(this.state, 'local-projects')) return projects;
     const catalog = record(this.state['local-projects']);
     const byId = new Map(projects.map((p) => [p.id, p]));
@@ -45,6 +48,16 @@ export class DesktopSidebar {
         ? [{ ...project, name: typeof row.name === 'string' ? row.name : project.name }]
         : [];
     });
+    // A phone-created project is real server metadata but is not necessarily
+    // adopted by the desktop's local display preferences yet. Only explicit,
+    // confirmed creations may extend that display catalog, never old orphans.
+    const visibleIds = new Set(visible.map((project) => project.id));
+    for (const project of projects) {
+      if (confirmedCreatedIds.has(project.id) && !visibleIds.has(project.id)) {
+        visible.push(project);
+        visibleIds.add(project.id);
+      }
+    }
     const order = strings(this.atoms['unified-sidebar-project-order-v1'])
       .filter((id) => id.startsWith('codex:project:'))
       .map((id) => this.nativeProjectId(id.slice('codex:project:'.length)));

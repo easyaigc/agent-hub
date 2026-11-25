@@ -8600,7 +8600,7 @@
     {
       "id": "F69",
       "group": "草稿、创建与附件",
-      "assertion": "只读同步桌面已生成的准确来源建议，原 Codex 来源以原 owner、当前实例、完成轮与私有 Trace 绑定跨项目读取，不依赖全局目录或项目目录存续；手机灰字预览、采用到本机草稿及撤销，来源失效清空且不自动发送；每会话保留一条最新提取正文，按来源绑定、持久化、封口与占用核对回收已替代的原始 Trace",
+      "assertion": "只读同步桌面已生成的准确来源建议，原 Codex 来源绑定当前实例、原完成轮、原生结果与安全判定，兼容既有私有 Trace 来源；手机灰字预览、采用到本机草稿及撤销，来源失效清空且不自动发送；每会话保留一条最新提取正文，按来源、持久化、writer 完成与占用核对安全回收诊断资料",
       "sourceAliases": [
         "Suggestions",
         "State",
@@ -8629,7 +8629,7 @@
       "androidStages": ["A4"],
       "scenarios": ["S07", "S13"],
       "ui": ["UI07"],
-      "revision": 41,
+      "revision": 42,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -26492,6 +26492,44 @@
         "apps/ios/Tests/EasyWorkChatManagementUITests.swift": "0d6441dcab86a1976b239d54e2480cb99ae375d9418f0fc63d0b5f4ea1ab8691",
         "scripts/subagent-reading-ios-fixture.mjs": "94b26059fbb64674cfce70838fdf9f372f5dd9459c7ae5edb6db5df2964dd5f5",
         "scripts/mobile/ios-baseline.mjs": "514ba69e4fa49dc083d6cedf5b89fb41ac1a83c091bb86ca9acf8ee2f91c3b0a"
+      }
+    },
+    {
+      "id": "trace-storage-without-full-rollout-20261125",
+      "baseCommit": "dda6237e6b06f3c4b8d38ec06716b2629f0b3908",
+      "features": ["F47", "F69"],
+      "summary": "Separate normal native suggestion results from full rollout recording; recognize writer completion, preserve active/unknown sources, recover proven old owners, and bound retention discovery/accounting. This scoped delivery keeps current main chat creation, control, history and mobile adoption/undo implementations unchanged. Real no-recording windows, storage boundary checks and current source checks are recorded separately.",
+      "files": {
+        "packages/codex-adapter/resources/desktop-completion-notify-observer.py": "063bcd2d747c93895d2b483b1889af640f0b4886a24fef08acdc4fae9ac9f7f8",
+        "packages/codex-adapter/src/desktop-native-sample-bridge.ts": "0572b44d11f6e818377b84fcb98179e3f367c5ccf22cf74569f4736ffe727d3a",
+        "packages/codex-adapter/src/desktop-native-sample-capture.ts": "4fd2e858f1f1c8139c3919b4de1cabf83c904ca342b44864add0a83e09817e80",
+        "packages/codex-adapter/src/desktop-native-sample-consumer.ts": "7e40c6f153ccf4d29f0e1c6eafbd1ce6cb545e2e8f42ed89d0d2398f3a4dff6f",
+        "packages/codex-adapter/src/desktop-native-sample-platform.ts": "14febaa82510209474abc9027b304cd5d9c287b477836a51eefc56c1c8f21a79",
+        "packages/codex-adapter/src/desktop-native-suggestion-channel.ts": "fecc4f33053c8ed9424176adc34ec47cd91bc3e7b8f59467dd8b59eb676d0952",
+        "packages/codex-adapter/src/desktop-native-trace-policy.ts": "4da6f847f712b5494b7c6f7d3e4519a0c9814aa8577e4dcfdd92cf9a1af562d6",
+        "packages/codex-adapter/src/desktop-original-source.ts": "42951aae09811434810d584199b5fc111036b0c3a49019c48e8bd382fed2ac58",
+        "packages/codex-adapter/src/desktop-platform.ts": "fb56e4986d83ea676e97f05167e4c338e542287bc36e09482950384c29c2fb86",
+        "packages/codex-adapter/src/desktop-shared-launcher.ts": "68040f4825d3776690b0b951a4bd72cb13751dd7af6d14ba40adb6649a2bd5ae",
+        "packages/codex-adapter/src/desktop-suggestion-observer.ts": "bb16a8d380e5e2cca643673b6707f391f7f6b9bce61822e69aeeaaaf71f5feda",
+        "packages/codex-adapter/src/desktop-trace-lifecycle.ts": "4d063b53a24e4d7156ed13b52f2ce672bdbecb150159c3a95bb86ebabdcf7833",
+        "packages/codex-adapter/src/desktop-trace-retention-worker.ts": "59918715324c2adb9209c7a3b4d39d73ce2570096fb197fae978fa08ceb2b4ed",
+        "packages/codex-adapter/src/desktop-trace-retention.ts": "48b8bff7f4a95e1f8b606d4498262d313f4d9fc3913bc834850e0b368e8bd3f7",
+        "packages/codex-adapter/src/desktop-trace-storage-inventory.ts": "8ce37e470b0f969ae3fd2651a3620a614e4d3f197cc5e45c8cc8c3a480406856",
+        "packages/codex-adapter/src/runtime.ts": "897a997122be0e6aca832d7b78e38ac59e20eaf33129baf82cc80a11a73bfe45",
+        "scripts/desktop-completion-notify-observer-test.py": "a6f27e97b55c15da921fbc646f52690ecd4f390d7ae44bdcc890bd2804c6f463",
+        "scripts/desktop-completion-notify-observer.py": "063bcd2d747c93895d2b483b1889af640f0b4886a24fef08acdc4fae9ac9f7f8",
+        "scripts/desktop-native-sample-bridge.test.mjs": "203b403e62f5c9826445bee99725a3481ba67eba039254f645b660acaceff35b",
+        "scripts/desktop-native-sample-capture.test.mjs": "3c03f3512370b27cd476a39ec57cc6af9261c8fbc3510498a6f9b80fd4394391",
+        "scripts/desktop-native-suggestion-channel.test.mjs": "81b85f60efa10c8234a2d8e68e768d05c9088ebe31d71ddd448559d2cc93be57",
+        "scripts/desktop-native-suggestions-environment.mjs": "1e7676c2c0e6cc7aae3c2688dde1718696f81029495102fd90698d52f9362386",
+        "scripts/desktop-native-suggestions-runtime.mjs": "747a359b6b0f3d599abaafd4e4b0f40ca23d5f2efa7951e781975d9689ba7cb5",
+        "scripts/desktop-native-trace-policy.mjs": "011addbf4731aec923b3913dee9230e604b722b082f302719dbf24b5b53fd28a",
+        "scripts/desktop-original-source.test.mjs": "e6b4a88ceab6934b55dd1be9737ade6d1c18b435e7d0c7c6be9979e5ea88f456",
+        "scripts/desktop-trace-lifecycle.test.mjs": "734b2aa2cbc78f399ae98a4a4441b3ea3fc5563ac8275ecbf88219116fd98f7b",
+        "scripts/desktop-trace-retention.test.mjs": "8e6e7b3c098b101ffbc9243846c40f19ace5de520e75d7c7cf62b30ca22da496",
+        "scripts/desktop-trace-storage.test.mjs": "7fe80284d0b9b59d6d3a8d6bf973636506953d773b1e25b74420c3dfaa91dd61",
+        "scripts/host-trace-retry.test.mjs": "7e68bf78a13d45c43d599456affcbafb3eb9fd5284ca6a2c62c682bff87dc3dd",
+        "scripts/package-host-connect.mjs": "7996b7e181be4217f488e0b2b8c43521c150a3f968d37b3546ff75bbb724ef36"
       }
     }
   ]

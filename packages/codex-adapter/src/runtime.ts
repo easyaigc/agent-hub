@@ -198,7 +198,11 @@ export class CodexRuntime {
     this.child.stdin.write(JSON.stringify(message) + '\n');
   }
 
-  async call(method: string, params: WireObject = {}): Promise<WireObject> {
+  async call(
+    method: string,
+    params: WireObject = {},
+    beforeWrite?: () => void,
+  ): Promise<WireObject> {
     const id = ++this.counter;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(
@@ -210,6 +214,7 @@ export class CodexRuntime {
       );
       this.pending.set(id, { resolve, reject, timer });
       try {
+        beforeWrite?.();
         this.write({ id, method, params });
       } catch (error) {
         clearTimeout(timer);

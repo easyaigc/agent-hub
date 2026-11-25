@@ -127,7 +127,7 @@ Bonjour 能列出未保存电脑，并提供无凭据 VPN 目录来源；公开 
 
 ## 原桌面下一轮建议
 
-每次完整接入和升级均完成 [Trace 交付收尾](desktop-suggestions.md#每次安装与升级的收尾)：先解释它用于手机同步原生下一步建议，macOS 和原生 x64 Windows 默认配置各平台持久环境及观察器，保留用户明确关闭或本次诊断的选择，不增加重复授权门槛。配置就绪后给出正常重开的具体动作；未来环境、当前进程、新记录和手机结果分别记证。Windows 注册表成功不等于当前实例已继承，按本机实际结果报告，不能用其他电脑的验收代替。
+每次完整接入和升级均完成[原生建议配置与收尾](desktop-suggestions.md#每次安装与升级的收尾)：macOS 默认配置被动原生采样、共享 v2 与 Host 观察器，不重新开启全量 Trace。保留用户明确选择，配置就绪后由用户保存工作、正常退出并从原图标重开；未来配置、实际 producer、无新增全量记录、Host 与 App 结果分别留证。Windows 已暂停的原生 producer 安装保持暂停，兼容 reader 与其他功能按实际能力交付，不用 Mac 证明代替。只同步文档时不改运行配置、不重启服务或重跑模型。
 
 按 [建议采集与客户端重启](desktop-suggestions.md) 启用。Host 服务持久保存 `CODEX_DESKTOP_SUGGESTION_OBSERVER` 和 `CODEX_DESKTOP_SUGGESTION_TRACE_ROOT`；`HOST_AGENT_STATE_DIR` 显式指定已有状态目录，更新时保留原程序、Node 和工作目录。原 Codex 的 `CODEX_ROLLOUT_TRACE_ROOT` 是另一个进程的启动环境，不能只给 Host 设置同名变量或仅重启 Host 就宣称开启。
 

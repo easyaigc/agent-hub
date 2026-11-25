@@ -19,6 +19,7 @@ import {
 } from '../packages/protocol/dist/index.js';
 import { DesktopNativeSuggestionChannel } from '../packages/codex-adapter/dist/desktop-native-suggestion-channel.js';
 import { sharedDesktopEnvironment } from './desktop-shared-environment.mjs';
+import { traceEnvironment } from './desktop-suggestion-trace-environment.mjs';
 
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 function privatePath(path, directory = false) {
@@ -45,6 +46,7 @@ export function nativeSuggestionsEnvironment({
   sharedState,
   node = process.execPath,
   shared,
+  trace,
 } = {}) {
   state = resolve(state);
   const manifestPath = join(state, 'environment.json'),
@@ -79,6 +81,8 @@ export function nativeSuggestionsEnvironment({
       configPath,
       hostEnvironment: { CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG: configPath },
       currentProducerReady: ready,
+      futureTraceRecording: 'disabled',
+      currentTraceRecording: 'requires-independent-process-check',
       normalDesktopReopenRequired: !ready,
       originalModelRequests: 0,
       desktopProcessesStarted: 0,
@@ -138,6 +142,15 @@ export function nativeSuggestionsEnvironment({
       nativeSuggestionsConfig: configPath,
     });
     atomic(manifestPath, { ...manifest, phase: 'configured' });
+    // Retire only our exact managed login environment. An unrelated user's
+    // trace root is preserved. Existing original processes are never stopped.
+    const traceState = dirname(traceRoot);
+    if (existsSync(join(traceState, 'environment.json'))) {
+      privatePath(join(traceState, 'environment.json'));
+      const traceManifest = JSON.parse(readFileSync(join(traceState, 'environment.json'), 'utf8'));
+      if (traceManifest.traceRoot === traceRoot)
+        (trace ?? traceEnvironment({ state: traceState, node })).disable();
+    }
     return status();
   };
   return { install, status };

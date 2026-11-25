@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { syncBuiltinESMExports } from 'node:module';
+import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { DesktopSuggestionStore } from '../packages/codex-adapter/dist/desktop-suggestion-store.js';
 import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
 import { protectWindowsStateDirectory } from '../packages/codex-adapter/dist/desktop-platform.js';
+import { compatibleNativeSuggestionImplementation } from '../packages/codex-adapter/dist/desktop-native-sample-consumer.js';
+import { nativeSuggestionImplementationFingerprint } from '../packages/codex-adapter/dist/desktop-native-sample-platform.js';
 import { now as syntheticNow, advance } from './fixtures/desktop-native-sample-synthetic-clock.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
@@ -51,6 +53,13 @@ for (const [from, to] of [
     ),
   ],
   ["'./desktop-native-sample-platform.js'", JSON.stringify(pathToFileURL(platform).href)],
+  [
+    "'./desktop-native-sample-consumer.js'",
+    JSON.stringify(
+      new URL('../packages/codex-adapter/dist/desktop-native-sample-consumer.js', import.meta.url)
+        .href,
+    ),
+  ],
 ])
   source = replaceExactly(source, from, to);
 source = replaceExactly(source, 'Date.now()', 'syntheticNow()', 3);
@@ -424,4 +433,204 @@ test('native acknowledgement rejects invalid retained-body ranges even in a vali
       );
       assert.deepEqual(readFileSync(slot), bytes);
     });
+});
+
+function compatibleProducerFixture(t) {
+  const program = realpathSync(mkdtempSync(join(tmpdir(), 'native-compatible-producer-')));
+  t.after(() => rmSync(program, { recursive: true }));
+  const directory = join(program, 'packages/codex-adapter/dist');
+  fs.mkdirSync(directory, { recursive: true });
+  fs.mkdirSync(join(program, 'packages/codex-adapter/resources'));
+  fs.mkdirSync(join(program, 'scripts'));
+  const actual = new URL('../packages/codex-adapter/dist/', import.meta.url);
+  for (const name of fs.readdirSync(actual).filter((name) => name.endsWith('.js')))
+    if (
+      ![
+        'desktop-native-sample-consumer.js',
+        'desktop-shared-control.js',
+        'desktop-title.js',
+      ].includes(name)
+    )
+      fs.copyFileSync(new URL(name, actual), join(directory, name));
+  for (const name of ['desktop-native-suggestions-runtime.mjs', 'desktop-native-trace-policy.mjs'])
+    fs.copyFileSync(new URL(name, import.meta.url), join(program, 'scripts', name));
+  fs.copyFileSync(
+    new URL(
+      '../packages/codex-adapter/resources/desktop-completion-notify-observer.py',
+      import.meta.url,
+    ),
+    join(program, 'packages/codex-adapter/resources/desktop-completion-notify-observer.py'),
+  );
+  // Consumer-only bytes are never executed by this fixture or the compatibility reader.
+  for (const name of [
+    'desktop-ipc.js',
+    'desktop-original-session.js',
+    'desktop-prepared-bridge.js',
+    'desktop-thread-preparer.js',
+    'desktop-native-suggestion-channel.js',
+    'history-reader.js',
+    'runtime-persistence.js',
+    'runtime-session.js',
+  ])
+    writeFileSync(join(directory, name), 'export const olderConsumerOnly = true;\n');
+  const configPath = join(program, 'config.json');
+  const config = {
+    entry: join(program, 'scripts/desktop-native-suggestions-runtime.mjs'),
+    target,
+    traceRoot: join(program, 'trace'),
+  };
+  const save = () => writeFileSync(configPath, JSON.stringify(config), { mode: 0o600 });
+  save();
+  const fingerprint = () => {
+    const files = {};
+    for (const name of fs
+      .readdirSync(directory)
+      .filter((name) => name.endsWith('.js'))
+      .sort())
+      files[name] = digest(readFileSync(join(directory, name)));
+    for (const name of [
+      'desktop-native-suggestions-runtime.mjs',
+      'desktop-native-trace-policy.mjs',
+    ])
+      files['scripts/' + name] = digest(readFileSync(join(program, 'scripts', name)));
+    files['resources/desktop-completion-notify-observer.py'] = digest(
+      readFileSync(
+        join(program, 'packages/codex-adapter/resources/desktop-completion-notify-observer.py'),
+      ),
+    );
+    return digest(JSON.stringify(files));
+  };
+  const check = (overrides = {}) =>
+    compatibleNativeSuggestionImplementation({
+      configPath,
+      traceRoot: config.traceRoot,
+      targetKey: machineRuntimeTargetKey(target),
+      producerSha256: fingerprint(),
+      consumerSha256: nativeSuggestionImplementationFingerprint(),
+      ...overrides,
+    });
+  return { program, directory, config, configPath, save, fingerprint, check };
+}
+
+test(
+  'Host-only upgrade can read the unchanged original native producer without executing its code',
+  { skip: process.platform !== 'darwin' },
+  (t) => {
+    const f = compatibleProducerFixture(t);
+    assert.equal(f.check(), true);
+    assert.equal(f.check({ producerSha256: 'a'.repeat(64) }), false);
+    assert.equal(f.check({ consumerSha256: 'b'.repeat(64) }), false);
+    assert.equal(
+      f.check({ targetKey: machineRuntimeTargetKey({ ...target, hostId: 'other-host' }) }),
+      false,
+    );
+    assert.equal(f.check({ traceRoot: join(f.program, 'other-root') }), false);
+  },
+);
+
+test(
+  'native compatibility rejects changed producer dependencies and unknown modules',
+  { skip: process.platform !== 'darwin' },
+  (t) => {
+    const f = compatibleProducerFixture(t);
+    const path = join(f.directory, 'desktop-native-sample-capture.js');
+    const original = readFileSync(path);
+    writeFileSync(path, Buffer.concat([original, Buffer.from('\n// changed native parser\n')]));
+    assert.equal(
+      f.check(),
+      false,
+      'Even a matching advertised full hash cannot admit a changed parser',
+    );
+    writeFileSync(path, original);
+    assert.equal(f.check(), true);
+    writeFileSync(join(f.directory, 'unknown-module.js'), 'export const unknown = true;\n');
+    assert.equal(f.check(), false);
+  },
+);
+
+test(
+  'native compatibility requires a private canonical config and owned unchanged launch inputs',
+  { skip: process.platform !== 'darwin' },
+  (t) => {
+    const f = compatibleProducerFixture(t);
+    const script = join(f.program, 'scripts/desktop-native-trace-policy.mjs');
+    const original = readFileSync(script);
+    writeFileSync(
+      script,
+      Buffer.concat([original, Buffer.from('\n// changed recording policy\n')]),
+    );
+    assert.equal(f.check(), false);
+    writeFileSync(script, original);
+    fs.chmodSync(f.configPath, 0o644);
+    assert.equal(f.check(), false);
+    fs.chmodSync(f.configPath, 0o600);
+    f.config.entry = join(f.program, 'scripts/arbitrary-entry.mjs');
+    f.save();
+    assert.equal(f.check(), false);
+    f.config.entry = join(f.program, 'scripts/desktop-native-suggestions-runtime.mjs');
+    f.save();
+    const alias = join(f.program, 'config-alias.json');
+    fs.symlinkSync(f.configPath, alias);
+    assert.equal(f.check({ configPath: alias }), false);
+    assert.equal(f.check(), true);
+  },
+);
+
+test('native startup dependency graph cannot import the consumer compatibility exceptions', () => {
+  const ts = createRequire(new URL('../packages/codex-adapter/package.json', import.meta.url))(
+    'typescript',
+  );
+  const pending = [
+    new URL('./desktop-native-suggestions-runtime.mjs', import.meta.url),
+    new URL('../packages/codex-adapter/dist/desktop-shared-launcher.js', import.meta.url),
+  ];
+  const visited = new Set();
+  while (pending.length) {
+    const url = pending.pop();
+    if (visited.has(url.href)) continue;
+    visited.add(url.href);
+    assert(
+      !/\/(?:desktop-ipc|desktop-original-session|desktop-prepared-bridge|desktop-thread-preparer|desktop-native-suggestion-channel|desktop-native-sample-consumer|desktop-shared-control|desktop-title|history-reader|runtime-persistence|runtime-session)\.js$/.test(
+        url.pathname,
+      ),
+    );
+    const source = ts.createSourceFile(
+      fileURLToPath(url),
+      readFileSync(url, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.JS,
+    );
+    const add = (name) => {
+      if (name.startsWith('.')) pending.push(new URL(name, url));
+    };
+    const walk = (node) => {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      )
+        add(node.moduleSpecifier.text);
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        assert.equal(node.arguments.length, 1);
+        assert(
+          ts.isStringLiteral(node.arguments[0]),
+          'Unknown dynamic imports cannot establish producer/consumer separation',
+        );
+        add(node.arguments[0].text);
+      }
+      if (
+        ts.isNewExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'URL' &&
+        node.arguments?.length &&
+        ts.isStringLiteral(node.arguments[0]) &&
+        /\.(?:m?js)$/.test(node.arguments[0].text)
+      )
+        add(node.arguments[0].text);
+      ts.forEachChild(node, walk);
+    };
+    walk(source);
+  }
+  assert(visited.size > 10);
 });

@@ -624,7 +624,6 @@ export class DesktopSuggestionObserver {
     if (
       !this.closed &&
       !this.options.nativeWorker &&
-      this.options.enabled &&
       this.options.traceRetention &&
       this.options.traceRoot &&
       !this.retentionWorker &&
@@ -648,6 +647,7 @@ export class DesktopSuggestionObserver {
           typeof value === 'object' &&
           'kind' in value &&
           value.kind === 'retention' &&
+          (!('phase' in value) || value.phase === 'running') &&
           (!('state' in value) || value.state !== 'unavailable')
         )
           this.retentionFailures = 0;

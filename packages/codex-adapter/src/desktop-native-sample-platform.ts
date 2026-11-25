@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { dirname, isAbsolute, join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMainThread } from 'node:worker_threads';
 import {
@@ -17,8 +17,12 @@ export interface NativeSuggestionProducerIdentity {
   desktopPid: number;
   desktopStartedAt: number;
   wrapperStartedAt: number;
+  /** Exact bundled Node-service process, when the original CLI moved there. */
+  logPid?: number;
+  logStartedAt?: number;
 }
 let implementationSha256: string | undefined;
+let nativeHelperSha256: string | undefined;
 let selfIdentity:
   | {
       configPath: string;
@@ -32,6 +36,14 @@ const configHash = (path: string) => createHash('sha256').update(readFileSync(pa
 export function nativeSuggestionImplementationFingerprint(): string {
   if (implementationSha256) return implementationSha256;
   const directory = dirname(fileURLToPath(import.meta.url));
+  const container = dirname(dirname(directory));
+  const program =
+    basename(container) === 'packages'
+      ? dirname(container)
+      : basename(container) === '@codex-manage' && basename(dirname(container)) === 'node_modules'
+        ? dirname(dirname(container))
+        : undefined;
+  if (!program) throw new Error('NATIVE_SUGGESTION_PROGRAM_LAYOUT');
   const files: Record<string, string> = {};
   for (const name of readdirSync(directory)
     .filter((n) => n.endsWith('.js'))
@@ -39,8 +51,84 @@ export function nativeSuggestionImplementationFingerprint(): string {
     files[name] = createHash('sha256')
       .update(readFileSync(join(directory, name)))
       .digest('hex');
+  for (const name of [
+    'desktop-native-suggestions-runtime.mjs',
+    'desktop-native-trace-policy.mjs',
+  ]) {
+    const path = join(program, 'scripts', name);
+    files['scripts/' + name] = createHash('sha256').update(readFileSync(path)).digest('hex');
+  }
+  if (process.platform === 'darwin') {
+    const helper = join(dirname(directory), 'resources/desktop-completion-notify-observer.py');
+    nativeHelperSha256 = createHash('sha256').update(readFileSync(helper)).digest('hex');
+    files['resources/desktop-completion-notify-observer.py'] = nativeHelperSha256;
+  }
   implementationSha256 = createHash('sha256').update(JSON.stringify(files)).digest('hex');
   return implementationSha256;
+}
+
+/** A failed inspector/launch is unknown. Only the kernel can prove this instance is gone. */
+export function nativeSuggestionProcessInstanceExited(pid: number, startedAt: number): boolean {
+  if (
+    process.platform !== 'darwin' ||
+    !Number.isSafeInteger(pid) ||
+    pid <= 1 ||
+    pid > 2147483647 ||
+    !Number.isSafeInteger(startedAt) ||
+    startedAt <= 0 ||
+    startedAt > Date.now()
+  )
+    return false;
+  try {
+    const packaged = fileURLToPath(
+      new URL('../resources/desktop-completion-notify-observer.py', import.meta.url),
+    );
+    const helper = existsSync(packaged)
+      ? packaged
+      : fileURLToPath(
+          new URL('../../../scripts/desktop-completion-notify-observer.py', import.meta.url),
+        );
+    nativeSuggestionImplementationFingerprint();
+    const helperMatches = () =>
+      createHash('sha256').update(readFileSync(helper)).digest('hex') === nativeHelperSha256;
+    if (!helperMatches()) return false;
+    const value: unknown = JSON.parse(
+      execFileSync(
+        '/usr/bin/python3',
+        [
+          '-I',
+          helper,
+          '--inspect-process-instance',
+          String(pid),
+          '--expected-started-at',
+          String(startedAt),
+        ],
+        { encoding: 'utf8', timeout: 3000, maxBuffer: 8192, stdio: ['ignore', 'pipe', 'pipe'] },
+      ),
+    );
+    if (!helperMatches()) return false;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const row = value as Record<string, unknown>;
+    if (
+      Object.keys(row).some(
+        (k) => !['version', 'pid', 'expectedStartedAt', 'state', 'actualStartedAt'].includes(k),
+      ) ||
+      row.version !== 1 ||
+      row.pid !== pid ||
+      row.expectedStartedAt !== startedAt
+    )
+      return false;
+    if (row.state === 'exited') return row.actualStartedAt === undefined;
+    return (
+      row.state === 'replaced' &&
+      Number.isSafeInteger(row.actualStartedAt) &&
+      Number(row.actualStartedAt) > 0 &&
+      Number(row.actualStartedAt) <= Date.now() &&
+      row.actualStartedAt !== startedAt
+    );
+  } catch {
+    return false;
+  }
 }
 /** Original launcher startup only; no dependency on an as-yet uninitialized IPC pipe. */
 export function resolveNativeSuggestionExecutable(configPath: string, configured?: string): string {
@@ -218,7 +306,15 @@ export function inspectNativeSuggestionProducer(
     value.desktopStartedAt <= 0 ||
     !Number.isSafeInteger(value.wrapperStartedAt) ||
     value.wrapperStartedAt < value.desktopStartedAt ||
-    value.wrapperStartedAt > Date.now()
+    value.wrapperStartedAt > Date.now() ||
+    ((value.logPid !== undefined || value.logStartedAt !== undefined) &&
+      (!Number.isSafeInteger(value.logPid) ||
+        Number(value.logPid) <= 1 ||
+        value.logPid === value.desktopPid ||
+        value.logPid === value.pid ||
+        !Number.isSafeInteger(value.logStartedAt) ||
+        Number(value.logStartedAt) < value.desktopStartedAt ||
+        Number(value.logStartedAt) > value.wrapperStartedAt))
   )
     throw new Error('Native producer identity changed');
   if (process.platform === 'win32' && isMainThread && pid === process.pid)

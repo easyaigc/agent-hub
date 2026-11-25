@@ -13,6 +13,7 @@ import {
   nativeSamplerProtocol,
 } from '../packages/codex-adapter/dist/desktop-native-sample-forwarding.js';
 import { getWindowsProcessGate } from '../packages/codex-adapter/dist/windows-process.js';
+import { nativeDesktopChildEnvironment } from './desktop-native-trace-policy.mjs';
 import {
   privateStateExecArgv,
   privateStateNodeOptions,
@@ -35,7 +36,7 @@ if (process.platform === 'win32' && (args.includes('app-server') || !existsSync(
 const child = spawn(executable, args, {
   stdio: ['pipe', 'pipe', 'inherit'],
   windowsHide: true,
-  env: process.env,
+  env: process.platform === 'darwin' ? nativeDesktopChildEnvironment(process.env) : process.env,
 });
 const observing =
   args.includes('app-server') &&

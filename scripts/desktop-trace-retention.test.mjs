@@ -115,6 +115,68 @@ const read = (root, f, target = 'host-a') =>
   );
 const processTrace = (retention, f, now) => retention.process(basename(f.directory), now);
 
+for (const trailer of ['recording_completed', 'thread_ended', 'inference_cancelled'])
+  test(
+    `schema 2 shared writer retirement distinguishes ${trailer}`,
+    { skip: process.platform !== 'darwin' },
+    () =>
+      withRoot(async (root) => {
+        const f = fixture(root);
+        f.manifest.schema_version = 2;
+        fs.writeFileSync(join(f.directory, 'manifest.json'), JSON.stringify(f.manifest));
+        for (const event of f.events) event.schema_version = 2;
+        f.events.push({
+          schema_version: 2,
+          seq: f.events.length + 1,
+          wall_time_unix_ms: 20,
+          rollout_id: f.predictionThreadId,
+          thread_id: null,
+          codex_turn_id: null,
+          payload: { type: trailer },
+        });
+        saveQuietEvents(f);
+        const raw = fs.readFileSync(f.logPath);
+        const retention = new DesktopTraceRetention(root, 'host-a');
+        const result = await processTrace(retention, f);
+        assert.equal(
+          result.state,
+          trailer === 'recording_completed' ? 'retired' : 'writer-completion-unverified',
+        );
+        if (trailer === 'recording_completed') {
+          assert(!fs.existsSync(f.directory));
+          assert.equal(read(root, f)[0].text, 'Synthetic follow-up suggestion.');
+        } else assert.deepEqual(fs.readFileSync(f.logPath), raw);
+      }),
+  );
+
+test(
+  'recording completion does not bypass an original open writer handle',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      const f = fixture(root);
+      f.manifest.schema_version = 2;
+      fs.writeFileSync(join(f.directory, 'manifest.json'), JSON.stringify(f.manifest));
+      for (const event of f.events) event.schema_version = 2;
+      f.events.push({
+        schema_version: 2,
+        seq: f.events.length + 1,
+        wall_time_unix_ms: 20,
+        rollout_id: f.predictionThreadId,
+        payload: { type: 'recording_completed' },
+      });
+      saveQuietEvents(f);
+      const handle = fs.openSync(f.logPath, 'r');
+      try {
+        const result = await processTrace(new DesktopTraceRetention(root, 'host-a'), f);
+        assert.equal(result.state, 'occupied');
+        assert(fs.existsSync(f.directory));
+      } finally {
+        fs.closeSync(handle);
+      }
+    }),
+);
+
 test(
   'sealed prediction persists through retirement and a fresh reader',
   { skip: process.platform !== 'darwin' && process.platform !== 'win32' },
@@ -188,6 +250,176 @@ test('root ownership, abort and unsealed input fail closed', () =>
     assert(fs.existsSync(f.directory));
     await assert.rejects(retention.process('../outside'), /TRACE_RETENTION_CLOSED/);
   }));
+
+test(
+  'retention remount revalidation requires the same inode, target and fresh original producer',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      const original = new DesktopTraceRetention(root, 'host-a'),
+        path = join(root, '.agent-hub-retention-owner.json'),
+        current = fs.readFileSync(path),
+        owner = JSON.parse(current),
+        parts = owner.rootIdentity.split(':');
+      parts[0] = String(BigInt(parts[0]) + 1n);
+      owner.rootIdentity = parts.join(':');
+      fs.writeFileSync(path, JSON.stringify(owner));
+      let checks = 0;
+      const restored = new DesktopTraceRetention(root, 'host-a', undefined, () => {
+        checks++;
+        return true;
+      });
+      assert.equal(checks, 2);
+      assert.deepEqual(fs.readFileSync(path), current);
+      assert.equal(restored.rootIdentity, original.rootIdentity);
+      assert.doesNotThrow(
+        () =>
+          new DesktopTraceRetention(root, 'host-a', undefined, () => {
+            throw new Error('An unchanged owner must not require native revalidation');
+          }),
+      );
+      assert.equal(fs.readdirSync(root).filter((n) => n.includes('.remount-')).length, 0);
+    }),
+);
+
+test(
+  'retention remount revalidation preserves unknown proofs, foreign ownership and concurrent replacements',
+  { skip: process.platform !== 'darwin' },
+  async () => {
+    for (const change of [
+      'unknown',
+      'throws',
+      'lost-proof',
+      'inode',
+      'target',
+      'extra',
+      'duplicate',
+      'replacement',
+    ]) {
+      await withRoot(async (root) => {
+        new DesktopTraceRetention(root, 'host-a');
+        const path = join(root, '.agent-hub-retention-owner.json'),
+          owner = JSON.parse(fs.readFileSync(path)),
+          parts = owner.rootIdentity.split(':');
+        parts[0] = String(BigInt(parts[0]) + 1n);
+        if (change === 'inode') parts[1] = String(BigInt(parts[1]) + 1n);
+        owner.rootIdentity = parts.join(':');
+        if (change === 'target') owner.targetKey = 'host-b';
+        if (change === 'extra') owner.extra = true;
+        let before = JSON.stringify(owner);
+        if (change === 'duplicate') before = before.replace('{', '{"version":1,');
+        fs.writeFileSync(path, before);
+        let checks = 0;
+        assert.throws(
+          () =>
+            new DesktopTraceRetention(root, 'host-a', undefined, () => {
+              checks++;
+              if (change === 'throws') throw new Error('Unknown native proof');
+              if (change === 'replacement' && checks === 2) {
+                before = JSON.stringify({ ...owner, targetKey: 'replacement-owner' });
+                fs.writeFileSync(path, before);
+              }
+              return change !== 'unknown' && (change !== 'lost-proof' || checks === 1);
+            }),
+          /TRACE_OWNED_BY_OTHER_RUNTIME|TRACE_OWNER_CHANGED/,
+        );
+        assert.equal(
+          checks,
+          ['unknown', 'throws'].includes(change)
+            ? 1
+            : ['lost-proof', 'replacement'].includes(change)
+              ? 2
+              : 0,
+          change,
+        );
+        assert.equal(fs.readFileSync(path, 'utf8'), before, change);
+        assert.equal(fs.readdirSync(root).filter((n) => n.includes('.remount-')).length, 0, change);
+      });
+    }
+  },
+);
+
+test(
+  'the production retention worker cannot rebind a mount from configuration without a live producer',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      const target = {
+          agentId: 'codex',
+          hostId: randomUUID(),
+          workspaceId: randomUUID(),
+          runtimeId: 'desktop-runtime',
+        },
+        key = machineRuntimeTargetKey(target);
+      new DesktopTraceRetention(root, key);
+      const path = join(root, '.agent-hub-retention-owner.json'),
+        originalBytes = fs.readFileSync(path),
+        owner = JSON.parse(originalBytes),
+        parts = owner.rootIdentity.split(':');
+      parts[0] = String(BigInt(parts[0]) + 1n);
+      owner.rootIdentity = parts.join(':');
+      const before = JSON.stringify(owner);
+      fs.writeFileSync(path, before);
+      const directory = join(root, 'host-state');
+      fs.mkdirSync(directory, { mode: 0o700 });
+      const worker = new Worker(
+        new URL(
+          '../packages/codex-adapter/dist/desktop-trace-retention-worker.js',
+          import.meta.url,
+        ),
+        {
+          workerData: { traceRoot: root, target, directory },
+          env: {
+            ...process.env,
+            CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG: join(root, 'missing-native-config.json'),
+          },
+        },
+      );
+      const statuses = [];
+      let initialOwnerPreserved = false;
+      let exited = false;
+      try {
+        const exitCode = await new Promise((resolve, reject) => {
+          const deadline = setTimeout(
+            () => reject(new Error('Own retention worker did not exit')),
+            10000,
+          );
+          worker.on('message', (value) => {
+            statuses.push(value);
+            if (value.phase === 'degraded' && value.lastError === 'TRACE_OWNED_BY_OTHER_RUNTIME') {
+              initialOwnerPreserved = fs.readFileSync(path, 'utf8') === before;
+              worker.postMessage({ kind: 'close' });
+            }
+          });
+          worker.once('error', (error) => {
+            clearTimeout(deadline);
+            reject(error);
+          });
+          worker.once('exit', (code) => {
+            exited = true;
+            clearTimeout(deadline);
+            resolve(code);
+          });
+        });
+        assert.equal(exitCode, 0);
+        assert.ok(
+          statuses.some(
+            (value) =>
+              value.phase === 'degraded' && value.lastError === 'TRACE_OWNED_BY_OTHER_RUNTIME',
+          ),
+        );
+        assert.equal(initialOwnerPreserved, true);
+        assert.equal(
+          statuses.some((value) => value.phase === 'running'),
+          false,
+        );
+        assert.equal(fs.readFileSync(path, 'utf8'), before);
+        assert.equal(fs.readdirSync(root).filter((n) => n.includes('.remount-')).length, 0);
+      } finally {
+        if (!exited) await worker.terminate();
+      }
+    }),
+);
 
 for (const kind of ['unknown', 'symlink', 'hardlink', 'save-failure'])
   test(`${kind} preserves the only trace`, () =>
@@ -823,6 +1055,90 @@ for (const kind of ['ordinary', 'prediction'])
   );
 
 test(
+  'formal retention supervisor preserves a remount without proof and recovers after valid ownership returns',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      const traceRoot = join(root, 'traces');
+      fs.mkdirSync(traceRoot, { mode: 0o700 });
+      const target = {
+          agentId: 'codex',
+          hostId: randomUUID(),
+          workspaceId: randomUUID(),
+          runtimeId: 'desktop-runtime',
+        },
+        key = machineRuntimeTargetKey(target);
+      new DesktopTraceRetention(traceRoot, key);
+      const ownerPath = join(traceRoot, '.agent-hub-retention-owner.json'),
+        canonical = fs.readFileSync(ownerPath),
+        owner = JSON.parse(canonical),
+        parts = owner.rootIdentity.split(':');
+      parts[0] = String(BigInt(parts[0]) + 1n);
+      owner.rootIdentity = parts.join(':');
+      const before = JSON.stringify(owner);
+      fs.writeFileSync(ownerPath, before);
+      const f = fixture(traceRoot),
+        directory = join(root, 'host-state'),
+        observer = new DesktopSuggestionObserver({
+          directory,
+          target: () => target,
+          enabled: true,
+          traceRoot,
+          traceRetention: true,
+        });
+      // Use the production retention supervisor; the unrelated suggestion worker is outside this fixture.
+      observer.workerClient = { start() {}, close() {} };
+      observer.start();
+      const first = observer.retentionWorker;
+      assert(first);
+      try {
+        await new Promise((resolve, reject) => {
+          const deadline = setTimeout(
+            () => reject(new Error('Initial guarded worker did not exit')),
+            10000,
+          );
+          first.once('error', (error) => {
+            clearTimeout(deadline);
+            reject(error);
+          });
+          first.once('exit', (code) => {
+            clearTimeout(deadline);
+            if (code === 0) resolve();
+            else reject(new Error('Initial guarded worker failed'));
+          });
+        });
+        assert(observer.retentionFailures >= 1);
+        assert.equal(fs.readFileSync(ownerPath, 'utf8'), before);
+        assert(fs.existsSync(f.directory));
+        // A task-owned fixture supplies valid canonical ownership; this does not simulate a native producer proof.
+        fs.writeFileSync(ownerPath, canonical);
+        const status = join(
+            directory,
+            'trace-retention-' + createHash('sha256').update(key).digest('hex') + '.json',
+          ),
+          until = Date.now() + 15000;
+        while (
+          (!fs.existsSync(status) || JSON.parse(fs.readFileSync(status, 'utf8')).retired < 1) &&
+          Date.now() < until
+        )
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        assert.equal(JSON.parse(fs.readFileSync(status, 'utf8')).retired, 1);
+        assert.notEqual(observer.retentionWorker, first);
+        assert.equal(fs.existsSync(f.directory), false);
+        assert.deepEqual(fs.readFileSync(ownerPath), canonical);
+      } finally {
+        const worker = observer.retentionWorker,
+          exited = worker
+            ? new Promise((resolve) => worker.once('exit', resolve))
+            : Promise.resolve();
+        observer.close();
+        await exited;
+      }
+      assert.equal(observer.retentionRetry, undefined);
+    }),
+);
+
+test(
   'formal retention supervisor retries a missing root after confirmed exit and cancels retry on close',
   { skip: process.platform !== 'darwin' },
   () =>
@@ -848,13 +1164,20 @@ test(
       const first = observer.retentionWorker;
       assert(first);
       await new Promise((resolve) => first.once('exit', resolve));
+      assert(
+        observer.retentionFailures >= 1,
+        'degraded/stopped status must not reset failure backoff',
+      );
       fs.mkdirSync(traceRoot, { mode: 0o700 });
       const f = fixture(traceRoot);
       const digest = createHash('sha256').update(machineRuntimeTargetKey(target)).digest('hex');
       const status = join(directory, 'trace-retention-' + digest + '.json');
       const until = Date.now() + 15000;
       try {
-        while (!fs.existsSync(status) && Date.now() < until)
+        while (
+          (!fs.existsSync(status) || JSON.parse(fs.readFileSync(status, 'utf8')).retired < 1) &&
+          Date.now() < until
+        )
           await new Promise((resolve) => setTimeout(resolve, 20));
         assert(fs.existsSync(status));
         assert.equal(JSON.parse(fs.readFileSync(status, 'utf8')).retired, 1);
@@ -869,6 +1192,117 @@ test(
         await exited;
       }
       assert.equal(observer.retentionRetry, undefined);
+    }),
+);
+
+test(
+  'explicit retention still runs when suggestion observation is disabled',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      const f = fixture(root);
+      const target = {
+        agentId: 'codex',
+        hostId: '11111111-1111-4111-8111-111111111111',
+        workspaceId: '22222222-2222-4222-8222-222222222222',
+        runtimeId: 'desktop-runtime',
+      };
+      const directory = join(root, 'host-state');
+      fs.mkdirSync(directory, { mode: 0o700 });
+      const observer = new DesktopSuggestionObserver({
+        directory,
+        target: () => target,
+        enabled: false,
+        traceRoot: root,
+        traceRetention: true,
+      });
+      observer.start();
+      const worker = observer.retentionWorker;
+      assert(worker);
+      const exited = new Promise((resolve) => worker.once('exit', resolve));
+      let timer;
+      try {
+        const result = await Promise.race([
+          new Promise((resolve, reject) => {
+            worker.once('error', reject);
+            worker.on('message', (value) => {
+              if (value.retired === 1) resolve(value);
+            });
+          }),
+          new Promise((_, reject) => {
+            timer = setTimeout(
+              () => reject(new Error('disabled observer retention timeout')),
+              15000,
+            );
+          }),
+        ]);
+        assert(result.releasedBytes > 0);
+        assert(!fs.existsSync(f.directory));
+        assert.equal(observer.worker, undefined, 'no desktop suggestion observer was started');
+      } finally {
+        clearTimeout(timer);
+        observer.close();
+        await exited;
+      }
+    }),
+);
+
+test(
+  'a backlog beyond 20000 names still processes bounded work and reports heartbeat',
+  { skip: process.platform !== 'darwin' },
+  () =>
+    withRoot(async (root) => {
+      for (let i = 0; i < 20001; i++) {
+        const id = '00000000-0000-4000-8000-' + i.toString(16).padStart(12, '0');
+        fs.writeFileSync(join(root, 'trace-' + id + '-22222222-2222-4222-8222-222222222222'), '', {
+          mode: 0o600,
+        });
+      }
+      const target = {
+        agentId: 'codex',
+        hostId: '11111111-1111-4111-8111-111111111111',
+        workspaceId: '22222222-2222-4222-8222-222222222222',
+        runtimeId: 'desktop-runtime',
+      };
+      const directory = join(root, 'host-state');
+      fs.mkdirSync(directory, { mode: 0o700 });
+      const worker = new Worker(
+        new URL(
+          '../packages/codex-adapter/dist/desktop-trace-retention-worker.js',
+          import.meta.url,
+        ),
+        { workerData: { traceRoot: root, target, directory } },
+      );
+      const exited = new Promise((resolve) => worker.once('exit', resolve));
+      let timer;
+      try {
+        const result = await Promise.race([
+          new Promise((resolve, reject) => {
+            worker.once('error', reject);
+            worker.on('message', (value) => {
+              if (value.phase === 'running') resolve(value);
+            });
+          }),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('large catalog progress timeout')), 15000);
+          }),
+        ]);
+        assert(
+          result.failed > 0,
+          'individual unsafe entries were inspected, not a global catalog rejection',
+        );
+        assert(result.pending > 0 && result.pending <= 4096);
+        assert(result.lastSuccessfulTick > 0);
+        assert.notEqual(result.lastError, 'TRACE_DIRECTORY_BUDGET');
+        assert.equal(
+          fs.readdirSync(root).filter((name) => name.startsWith('trace-')).length,
+          20001,
+        );
+      } finally {
+        clearTimeout(timer);
+        worker.postMessage({ kind: 'close' });
+        await exited;
+      }
     }),
 );
 

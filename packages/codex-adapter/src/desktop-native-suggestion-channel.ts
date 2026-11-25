@@ -13,6 +13,7 @@ import {
   inspectNativeSuggestionProducer,
   nativeSuggestionImplementationFingerprint,
 } from './desktop-native-sample-platform.js';
+import { compatibleNativeSuggestionImplementation } from './desktop-native-sample-consumer.js';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -37,7 +38,14 @@ export class DesktopNativeSuggestionChannel {
     if (
       !state ||
       state.phase !== 'listening' ||
-      state.implementationSha256 !== this.implementationSha256 ||
+      (state.implementationSha256 !== this.implementationSha256 &&
+        !compatibleNativeSuggestionImplementation({
+          configPath: this.scope.configPath,
+          traceRoot: this.scope.traceRoot,
+          targetKey: this.targetKey,
+          producerSha256: state.implementationSha256,
+          consumerSha256: this.implementationSha256,
+        })) ||
       now < state.checkedAt ||
       now - state.checkedAt > 6000 ||
       state.rootIdentity !== this.store.rootIdentity()

@@ -37,6 +37,7 @@ const names = [
   'desktop-suggestion-store',
   'desktop-native-suggestion-channel',
   'desktop-native-sample-platform',
+  'desktop-native-sample-consumer',
 ];
 const modes = [
   'normal',

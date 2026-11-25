@@ -28,6 +28,24 @@ test('retained backlog backs off while fresh, active and recovered bundles remai
           JSON.stringify(new URL('../packages/protocol/dist/index.js', import.meta.url).href),
         )
         .replace("'./desktop-trace-retention.js'", "'./retention.mjs'")
+        .replace(
+          "'./desktop-trace-storage-inventory.js'",
+          JSON.stringify(
+            new URL(
+              '../packages/codex-adapter/dist/desktop-trace-storage-inventory.js',
+              import.meta.url,
+            ).href,
+          ),
+        )
+        .replace(
+          "'./desktop-native-suggestion-channel.js'",
+          JSON.stringify(
+            new URL(
+              '../packages/codex-adapter/dist/desktop-native-suggestion-channel.js',
+              import.meta.url,
+            ).href,
+          ),
+        )
         .replace("'./desktop-trace-native.js'", "'./platform.mjs'")
         .replace("'./desktop-platform.js'", "'./platform.mjs'"),
     );

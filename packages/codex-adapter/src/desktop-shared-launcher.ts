@@ -6,10 +6,18 @@ import { isAbsolute, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createServer } from 'node:net';
 import { createDesktopNativeSampleBridge } from './desktop-native-sample-bridge.js';
+import { nativeDesktopChildEnvironment } from './desktop-native-trace-policy.js';
 
 /** Local executable override, invoked by Electron. No remote endpoint can invoke this launcher. */
 export async function runDesktopSharedLauncher(executable: string, args: string[]) {
   if (!isAbsolute(executable)) throw new Error('Absolute original Codex executable required');
+  // The default shared service and the direct native launcher must apply the
+  // same policy. Keep a trace-only legacy installation unchanged until its
+  // native result source has been configured; no suggestion downgrade.
+  const environment =
+    process.platform === 'darwin' && process.env.AGENT_HUB_NATIVE_SUGGESTIONS_CONFIG
+      ? nativeDesktopChildEnvironment(process.env)
+      : process.env;
   // The desktop also invokes its executable before native tool initialization,
   // for policy/authentication reads. Preserve those original invocations exactly.
   const shared =
@@ -18,7 +26,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
     !args.includes('--remote') &&
     Boolean(process.env.CODEX_APP_TOOLS_PIPE_PATH);
   if (!shared) {
-    const child = spawn(executable, args, { stdio: 'inherit' });
+    const child = spawn(executable, args, { stdio: 'inherit', env: environment });
     for (const signal of ['SIGINT', 'SIGTERM'] as const)
       process.on(signal, () => child.kill(signal));
     child.on('error', () => process.exit(1));
@@ -65,6 +73,33 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   let ending = false;
   let ownsService = false;
   let suggestions: ReturnType<typeof createDesktopNativeSampleBridge>;
+  let suggestionRetry: NodeJS.Timeout | undefined;
+  let nextSuggestionAttempt = 0;
+  let suggestionFailures = 0;
+  const closeSuggestions = () => {
+    clearInterval(suggestionRetry);
+    suggestionRetry = undefined;
+    try {
+      suggestions?.close();
+    } catch {
+      /* Observation cannot stop original forwarding. */
+    }
+    suggestions = undefined;
+  };
+  const startSuggestions = () => {
+    if (ending || suggestions?.available || performance.now() < nextSuggestionAttempt) return;
+    try {
+      suggestions?.close();
+      suggestions = createDesktopNativeSampleBridge();
+    } catch {
+      suggestions = undefined;
+    }
+    if (suggestions?.available) suggestionFailures = 0;
+    else suggestionFailures = Math.min(suggestionFailures + 1, 7);
+    nextSuggestionAttempt =
+      performance.now() +
+      (suggestionFailures ? Math.min(60000, 1000 * 2 ** (suggestionFailures - 1)) : 1000);
+  };
   const alive = (pid: number) => {
     if (!Number.isSafeInteger(pid) || pid <= 1) return true;
     try {
@@ -137,7 +172,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   const finish = () => {
     if (ending) return;
     ending = true;
-    suggestions?.close();
+    closeSuggestions();
     connection.socket?.close();
     if (child) {
       child.kill('SIGTERM');
@@ -151,18 +186,25 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   if (ownsService) {
     // Observe only this original desktop connection. Never issue a sample,
     // change initialize opt-outs, or alter any forwarded request/result.
-    suggestions = createDesktopNativeSampleBridge();
+    if (process.env.AGENT_HUB_NATIVE_SUGGESTIONS_CONFIG) {
+      startSuggestions();
+      // Recover only passive observation. Never restart the executor or replay
+      // frames missed while the original source was unavailable.
+      suggestionRetry = setInterval(startSuggestions, 1000);
+      suggestionRetry.unref();
+    }
     // Inherit the real Electron child environment. Never reconstruct or copy
     // native tool credentials from another process or configuration file.
     child = spawn(executable, [...args, '--listen', url.origin], {
       stdio: ['ignore', 'ignore', 'inherit'],
+      env: environment,
     });
     child.on('error', () => {
       release();
       process.exit(1);
     });
     child.on('exit', (code) => {
-      suggestions?.close();
+      closeSuggestions();
       release();
       process.exit(code ?? 1);
     });

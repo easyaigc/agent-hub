@@ -260,7 +260,12 @@ export class DesktopNativeSampleCapture {
       }
       if (
         !object(parsed) ||
-        Object.keys(parsed).length !== 1 ||
+        // Current native predictions can add these optional scoring fields.
+        // They never select text, provenance or safety; retain the exact raw
+        // result digest and reject unrelated fields as before.
+        Object.keys(parsed).some(
+          (key) => !['suggestion', 'confidence_score', 'p_iqv3_low'].includes(key),
+        ) ||
         !Object.hasOwn(parsed, 'suggestion') ||
         (parsed.suggestion !== null && typeof parsed.suggestion !== 'string')
       ) {

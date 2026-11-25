@@ -625,12 +625,16 @@ export async function packageHostConnect({
         windowsPublisherPolicy: 'not-checked',
         windowsPrivateStatePolicy: 'current-owner-protected-dacl-no-sacl',
         suggestions: {
-          darwin: 'read-existing-native-trace-and-completion-notify',
+          darwin: 'read-existing-native-sample-and-completion-notify',
           win32: 'read-existing-native-trace-with-current-instance-dacl-validation',
           windowsLiveAcceptance: 'pending-physical-phone-and-read-performance',
           originalDesktopTraceRequiresRestart: true,
           defaultDesktopStartupEnablesTrace: false,
-          hostInstallationTraceDefault: 'persistent',
+          hostInstallationTraceDefault: 'platform-specific',
+          hostInstallationTraceDefaults: {
+            darwin: 'native-results-without-full-rollout-recording',
+            win32: 'unchanged-legacy-trace-reader',
+          },
           mobileAdoption: 'explicit-local-draft-only',
         },
       },

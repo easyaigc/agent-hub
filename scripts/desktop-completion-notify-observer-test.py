@@ -1,5 +1,7 @@
 """Synthetic lifecycle boundaries; no real notifier argv or process mutations."""
 import contextlib
+import ctypes as C
+import errno
 import importlib.util
 import io
 import json
@@ -18,6 +20,34 @@ spec = importlib.util.spec_from_file_location(
 observer_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(observer_module)
 m = observer_module
+
+
+class KernelInstanceTests(unittest.TestCase):
+    def probe(self, returned, error, **changes):
+        def read(_pid, _flavor, _arg, pointer, _size):
+            info = C.cast(pointer, C.POINTER(m.ProcBSDInfo)).contents
+            for key, value in {'pid': 77, 'uid': os.getuid(), 'started_seconds': 100,
+                               'started_microseconds': 123000, **changes}.items():
+                setattr(info, key, value)
+            C.set_errno(error)
+            return returned
+        native = m.Native.__new__(m.Native)
+        native.stats = {'pidIdentityCalls': 0}
+        native.lib = SimpleNamespace(proc_pidinfo=read)
+        return native.instance_state(77, 100123)
+
+    def test_only_kernel_esrch_proves_absence(self):
+        self.assertEqual(self.probe(0, errno.ESRCH)['state'], 'exited')
+        for returned, error in [(0, errno.EPERM), (0, errno.EACCES), (0, 0),
+                                (-1, errno.ESRCH), (16, 0)]:
+            self.assertEqual(self.probe(returned, error)['state'], 'unknown')
+
+    def test_exact_start_and_reused_pid_are_distinct(self):
+        self.assertEqual(self.probe(136, 0)['state'], 'same')
+        self.assertEqual(self.probe(136, 0, started_microseconds=124000)['state'], 'replaced')
+        for changed in [{'pid': 78}, {'uid': os.getuid() + 1},
+                        {'started_seconds': 0}, {'started_microseconds': 1000000}]:
+            self.assertEqual(self.probe(136, 0, **changed)['state'], 'unknown')
 
 
 class FakeNative:
@@ -63,6 +93,71 @@ class FakeNative:
         return result
 
     notifier_argv = m.Native.notifier_argv
+
+
+class ProducerLineageTests(unittest.TestCase):
+    helper = '/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/158.0.8127.37/Helpers/Codex (Aperitif).app/Contents/MacOS/Codex (Aperitif)'
+
+    def chain(self):
+        native = FakeNative()
+        native.add(11, 10, self.helper)
+        native.add(15, 11, '/synthetic/node')
+        return native
+
+    def test_direct_parent_keeps_old_identity_shape(self):
+        native = FakeNative()
+        native.add(15, 10, '/synthetic/node')
+        self.assertEqual(m.producer_identity(native, 15), {
+            'pid': 15, 'desktopPid': 10, 'wrapperStartedAt': 100000,
+            'desktopStartedAt': 100000})
+
+    def test_bundled_utility_keeps_main_desktop_and_separate_log_identity(self):
+        native = self.chain()
+        self.assertEqual(m.producer_identity(native, 15), {
+            'pid': 15, 'desktopPid': 10, 'wrapperStartedAt': 100000,
+            'desktopStartedAt': 100000, 'logPid': 11, 'logStartedAt': 100000})
+        self.assertEqual(native.stats['notifierArgvReads'], 0)
+        # Recognized framework layout is independent of a version number.
+        native.paths[11] = self.helper.replace('158.0.8127.37', '159.1.0')
+        self.assertEqual(m.producer_identity(native, 15)['desktopPid'], 10)
+
+    def test_unrecognized_parent_and_arbitrary_descendant_are_rejected(self):
+        for path in ['/synthetic/node', self.helper.replace('ChatGPT.app', 'Other.app'),
+                     self.helper.replace('Codex (Aperitif)', 'Unrecognized Helper'),
+                     self.helper.replace('/Versions/158.0.8127.37/', '/Versions/../')]:
+            with self.subTest(path=path):
+                native = self.chain()
+                native.paths[11] = path
+                with self.assertRaises(RuntimeError):
+                    m.producer_identity(native, 15)
+        native = self.chain()
+        native.add(12, 11, self.helper)
+        native.add(15, 12, '/synthetic/node')
+        with self.assertRaises(RuntimeError):
+            m.producer_identity(native, 15)
+
+    def test_uid_parent_start_and_process_reuse_fail_closed(self):
+        for pid in [10, 11, 15]:
+            native = self.chain()
+            native.identities[pid] = native.identities[pid]._replace(uid=os.getuid() + 1)
+            with self.assertRaises(RuntimeError):
+                m.producer_identity(native, 15)
+        native = self.chain()
+        native.add(11, 10, self.helper, started=200)
+        with self.assertRaises(RuntimeError):
+            m.producer_identity(native, 15)
+        native = self.chain()
+        original = native.identity
+        seen = [0]
+        def changed(pid):
+            if pid == 11:
+                seen[0] += 1
+                if seen[0] > 2:
+                    native.add(11, 10, self.helper, started=200)
+            return original(pid)
+        native.identity = changed
+        with self.assertRaises(RuntimeError):
+            m.producer_identity(native, 15)
 
 
 class FakeQueue:
@@ -274,6 +369,57 @@ class SharedLauncherTests(unittest.TestCase):
         self.native.paths[15] = '/synthetic/other-node'
         self.assertFalse(m.executor_valid(self.native, identities, 20, 10))
         self.assertEqual(self.native.stats['notifierArgvReads'], 0)
+
+    def install_utility_parent(self):
+        helper = (str(Path(m.DESKTOP).parent.parent.parent)
+                  + '/Contents/Frameworks/Codex Framework.framework/Versions/158.0.1/'
+                    'Helpers/Codex (Aperitif).app/Contents/MacOS/Codex (Aperitif)')
+        self.native.add(12, 10, helper)
+        self.native.add(15, 12, self.node)
+        owner_path = Path(self.temp.name) / 'service/desktop-service-owner.json'
+        owner = json.loads(owner_path.read_text())
+        owner['electronPid'] = 12
+        owner_path.write_text(json.dumps(owner))
+        return helper
+
+    def test_shared_utility_parent_pins_main_helper_wrapper_and_executor(self):
+        helper = self.install_utility_parent()
+        parents, _, identities = m.discover(self.native)
+        self.assertEqual(parents, {20: 10})
+        self.assertEqual(set(identities), {10, 12, 15, 20})
+        self.assertEqual(identities.wrapper_helper_path, helper)
+        self.assertTrue(m.executor_valid(self.native, identities, 20, 10))
+        self.assertEqual(self.native.stats['notifierArgvReads'], 0)
+        self.native.add(12, 10, helper, 200)
+        self.assertFalse(m.executor_valid(self.native, identities, 20, 10))
+
+    def test_shared_utility_identity_and_path_cannot_drift(self):
+        helper = self.install_utility_parent()
+        _, _, identities = m.discover(self.native)
+        self.native.paths[12] = helper.replace('/158.0.1/', '/another/')
+        self.assertFalse(m.executor_valid(self.native, identities, 20, 10))
+        self.native.paths[12] = '/synthetic/other-helper'
+        with self.assertRaisesRegex(RuntimeError, 'launcher process changed'):
+            m.discover(self.native)
+
+    def test_missing_shared_owner_does_not_admit_utility_descendants(self):
+        self.install_utility_parent()
+        (Path(self.temp.name) / 'service/desktop-service-owner.json').unlink()
+        with self.assertRaisesRegex(RuntimeError, 'executors are unavailable'):
+            m.discover(self.native)
+
+    def test_shared_inspection_names_only_the_exact_original_executor(self):
+        self.install_utility_parent()
+        inspected = m.inspect_shared_service(self.native)
+        self.assertEqual(inspected['kind'], 'original-desktop-shared-service')
+        self.assertEqual(inspected['serverPid'], 20)
+        self.assertEqual(inspected['producer']['desktopPid'], 10)
+        self.assertEqual(inspected['producer']['logPid'], 12)
+        self.assertEqual(inspected['url'], self.manifest['url'])
+        self.assertEqual(self.native.stats['notifierArgvReads'], 0)
+        self.native.add(21, 15, m.EXECUTOR)
+        with self.assertRaisesRegex(RuntimeError, 'One exact original shared executor'):
+            m.inspect_shared_service(self.native)
 
     def test_changed_shebang_or_noncanonical_node_is_rejected(self):
         wrapper = Path(self.temp.name) / 'codex-shared.mjs'

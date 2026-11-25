@@ -386,3 +386,7 @@ Framework 的 `Exception.Data` 会拒绝不可序列化的值。私有定型 own
 诊断读取也须保留原拒绝：先确定是 owner 拒绝，再在保护内取得 Data、检查键和读取私有定型值；缺键或 Data getter／Contains／索引器异常只表示证据不可用。Framework 只读字典的缺键行为与 .NET8 不同，原只读 Data 回归保留，并加入跨 CLR 故障字典及固定阶段报告。PR88 已取得 Windows 通知 OWNER2／实际子进程／同句柄通过；managed 后续失败不撤销该范围，也不代表 CLI／serve 或 Trace 协议已验证。见[读取边界与复验](acceptance/windows-owner-evidence-data-lookup-20261031.md)。
 
 创建租约的共享访问修正：metadata-only 的 READ_CONTROL／FILE_READ_ATTRIBUTES 不足以让无 DELETE share 阻止 rename。私有 CREATE_NEW 租约额外请求最小 FILE_READ_DATA，READ|WRITE share、Node FD 身份核对及原通道 release ACK 后截断顺序保持；编译发布的 WRITE/DELETE 创建分支不改。PR89 Framework managed 已实测通过，后续真实 rename 门禁失败仍保留；新 Native key 须由 Windows 同一 CLI／serve 用例核验，Mac 检查不代替。见[创建租约复验范围](acceptance/windows-private-creation-lease-20261031.md)。
+
+## 正常运行的 Trace 存储
+
+macOS 已配置原生建议时，原 CLI 启动环境移除 `CODEX_ROLLOUT_TRACE_ROOT`，建议只保存准确来源的最新提取结果及有限轮转诊断。原 retention opt-in 独立于手机建议观察开关；Schema 2 recording-completed、旧目录占用与挂载恢复继续保持私有对象、原 writer、来源、安全与持久化门禁。容量压力不是任意删除授权；仅旧 Trace 或 Windows 安装保持其已支持路径。详见[范围与验收](acceptance/desktop-trace-storage-20261123.md)。

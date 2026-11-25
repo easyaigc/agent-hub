@@ -314,6 +314,48 @@ test('existing valid safety records are placed at EOF, never replayed', (t) => {
   assert.equal(f.row(req).state, 'completed');
 });
 
+test('a pinned utility log is seeded at EOF and only its new exact-source decision approves', (t) => {
+  const f = fixture(t),
+    req = request();
+  f.identity.logPid = 812346;
+  f.identity.logStartedAt = f.identity.desktopStartedAt + 1000;
+  const helper = f.log('helper', f.identity.logPid);
+  privateFile(helper, f.decision(req) + '\n');
+  assert(f.start());
+  f.send(req);
+  privateFile(f.log('other-helper', f.identity.logPid + 1), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(helper, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().producer.desktopPid, f.identity.desktopPid);
+});
+
+test('utility instance changes revoke the producer without rebinding its logs', (t) => {
+  const f = fixture(t);
+  f.identity.logPid = 812346;
+  f.identity.logStartedAt = f.identity.desktopStartedAt + 1000;
+  assert(f.start());
+  f.identity.logStartedAt++;
+  f.tick(2000);
+  assert.equal(f.bridge.available, false);
+});
+
+test('partial or invalid utility identity cannot create a producer', (t) => {
+  for (const value of [
+    { logPid: 812346 },
+    { logStartedAt: 1 },
+    { logPid: 812345, logStartedAt: 1 },
+    { logPid: 812346, logStartedAt: Number.MAX_SAFE_INTEGER },
+  ]) {
+    const f = fixture(t);
+    Object.assign(f.identity, value);
+    assert.equal(f.start(), undefined);
+    assert.equal(existsSync(f.ownerPath), false);
+  }
+});
+
 test('an existing partial last line is discarded through its first newline', (t) => {
   const f = fixture(t),
     req = request(),
@@ -748,6 +790,162 @@ test('a proven different PID start identity reclaims an old owner', (t) => {
   );
   assert.notEqual(f.store.readProducer().producer.epoch, owner.producer.epoch);
   assert.equal(f.store.readProducer().phase, 'listening');
+});
+
+test('positive kernel exit proof reclaims a stale owner and is rechecked before replacement', (t) => {
+  const f = fixture(t),
+    owner = f.owner();
+  privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+  let checked = 0;
+  assert.ok(
+    f.start({
+      instanceExited: (pid, startedAt) => {
+        assert.equal(pid, owner.producer.pid);
+        assert.equal(startedAt, owner.wrapperStartedAt);
+        checked++;
+        return true;
+      },
+    }),
+  );
+  assert.equal(checked, 2);
+  assert.notEqual(f.store.readProducer().producer.epoch, owner.producer.epoch);
+  assert.equal(f.store.readProducer().phase, 'listening');
+});
+
+test('a lost exit proof or concurrent owner replacement remains protected', (t) => {
+  const f = fixture(t),
+    owner = f.owner();
+  privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+  const before = readFileSync(f.ownerPath);
+  let checks = 0;
+  assert.equal(f.start({ instanceExited: () => ++checks === 1 }), undefined);
+  assert.deepEqual(readFileSync(f.ownerPath), before);
+  assert.ok(f.codes.includes('native_bridge_owner_unknown'));
+  const g = fixture(t),
+    old = g.owner();
+  privateFile(g.ownerPath, JSON.stringify(old) + '\n');
+  const replacement =
+    JSON.stringify({ ...old, producer: { ...old.producer, epoch: randomUUID() } }) + '\n';
+  assert.equal(
+    g.start({
+      instanceExited: () => {
+        privateFile(g.ownerPath, replacement);
+        return true;
+      },
+    }),
+    undefined,
+  );
+  assert.equal(readFileSync(g.ownerPath, 'utf8'), replacement);
+  assert.ok(g.codes.includes('native_bridge_owner_changed'));
+});
+
+test(
+  'a changed macOS mount device can recover only the same root and a proven exited owner',
+  { skip: process.platform !== 'darwin' },
+  (t) => {
+    const f = fixture(t),
+      owner = f.owner(),
+      parts = owner.rootIdentity.split(':');
+    parts[0] = String(BigInt(parts[0]) + 1n);
+    owner.rootIdentity = parts.join(':');
+    privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+    const oldBody = JSON.stringify({
+      version: 1,
+      kind: 'native-sample-producer',
+      targetKey: f.store.targetKey,
+      producer: owner.producer,
+      wrapperStartedAt: owner.wrapperStartedAt,
+      rootIdentity: owner.rootIdentity,
+      implementationSha256: 'b'.repeat(64),
+      checkedAt: f.now() - 100,
+      phase: 'listening',
+    });
+    privateFile(
+      join(f.store.directory, 'producer.json'),
+      JSON.stringify({ body: oldBody, sha256: hash(oldBody) }),
+    );
+    let checks = 0;
+    const bridge = f.start({
+      instanceExited: (pid, startedAt) => {
+        assert.equal(pid, owner.producer.pid);
+        assert.equal(startedAt, owner.wrapperStartedAt);
+        checks++;
+        return true;
+      },
+    });
+    assert.ok(bridge, 'same inode/UID/mode after remount must not permanently block a dead owner');
+    assert.equal(checks, 2);
+    assert.equal(f.store.readProducer().phase, 'listening');
+    assert.equal(f.store.readProducer().rootIdentity, f.store.rootIdentity());
+    assert.notEqual(f.store.readProducer().producer.epoch, owner.producer.epoch);
+  },
+);
+
+test(
+  'remount recovery preserves unknown owners and different roots, targets or schemas',
+  { skip: process.platform !== 'darwin' },
+  (t) => {
+    for (const change of [
+      'unknown',
+      'lost-proof',
+      'inode',
+      'uid',
+      'mode',
+      'target',
+      'extra',
+      'malformed',
+    ]) {
+      const f = fixture(t),
+        owner = f.owner(),
+        parts = owner.rootIdentity.split(':');
+      parts[0] = String(BigInt(parts[0]) + 1n);
+      const index = { inode: 1, uid: 2, mode: 3 }[change];
+      if (index !== undefined) parts[index] = String(BigInt(parts[index]) + 1n);
+      owner.rootIdentity = parts.join(':');
+      if (change === 'malformed') owner.rootIdentity = '0' + owner.rootIdentity;
+      if (change === 'target') owner.targetKey += '-foreign';
+      if (change === 'extra') owner.extra = true;
+      privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+      const before = readFileSync(f.ownerPath);
+      let checks = 0;
+      assert.equal(
+        f.start({
+          instanceExited: () => {
+            checks++;
+            return change !== 'unknown' && (change !== 'lost-proof' || checks === 1);
+          },
+          identity: (pid) =>
+            pid === process.pid
+              ? { ...f.identity }
+              : { ...f.identity, pid, wrapperStartedAt: owner.wrapperStartedAt + 1 },
+        }),
+        undefined,
+        change,
+      );
+      assert.deepEqual(readFileSync(f.ownerPath), before, change);
+      assert.equal(existsSync(join(f.store.directory, 'producer.json')), false, change);
+    }
+  },
+);
+
+test('the final kernel query cannot replace the owner after the last file fence', (t) => {
+  const f = fixture(t),
+    owner = f.owner();
+  privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+  const replacement =
+    JSON.stringify({ ...owner, producer: { ...owner.producer, epoch: randomUUID() } }) + '\n';
+  let checks = 0;
+  assert.equal(
+    f.start({
+      instanceExited: () => {
+        if (++checks === 2) privateFile(f.ownerPath, replacement);
+        return true;
+      },
+    }),
+    undefined,
+  );
+  assert.equal(readFileSync(f.ownerPath, 'utf8'), replacement);
+  assert.ok(f.codes.includes('native_bridge_owner_changed'));
 });
 
 test('invalid or changed owner identities are retained instead of guessed away', (t) => {

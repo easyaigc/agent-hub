@@ -18,6 +18,7 @@ import { open as openAsync } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { desktopTraceLifecycle } from './desktop-trace-lifecycle.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { DesktopPredictionTraceReader } from './desktop-prediction-trace.js';
 import {
@@ -213,22 +214,6 @@ function tail(path: string, maximum: number, root: string): Buffer {
     closeSync(fd);
   }
 }
-function finalEvent(
-  path: string,
-  root: string,
-):
-  | {
-      schema_version: number;
-      rollout_id: string;
-      wall_time_unix_ms: number;
-      payload: { type: string; status: string };
-    }
-  | undefined {
-  const bytes = tail(path, 65536, root);
-  if (!bytes.length || bytes.at(-1) !== 10) return undefined;
-  const lines = bytes.toString('utf8').trimEnd().split('\n');
-  return JSON.parse(lines.at(-1)!);
-}
 interface DirectoryProof {
   id: string;
   mode: number;
@@ -367,6 +352,7 @@ export class DesktopTraceRetention {
     private readonly root: string,
     private readonly targetKey: string,
     private readonly signal?: AbortSignal,
+    revalidateRemountedRoot?: () => boolean,
   ) {
     privateDirectory(root);
     const s = lstatSync(root, { bigint: true });
@@ -389,9 +375,89 @@ export class DesktopTraceRetention {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       }
     }
-    if (bounded(ownerPath, 16384, this.root).toString('utf8') !== owner)
+    const previous = bounded(ownerPath, 16384, this.root);
+    if (
+      previous.toString('utf8') !== owner &&
+      !this.revalidateOwnerAfterRemount(ownerPath, previous, owner, revalidateRemountedRoot)
+    )
       throw new Error('TRACE_OWNED_BY_OTHER_RUNTIME');
     this.reader = new DesktopPredictionTraceReader(root, () => targetKey);
+  }
+  /** Only a current original producer can rebind an old mount device number.
+   * This changes the ownership marker, never a bundle, pending intent or result.
+   */
+  private revalidateOwnerAfterRemount(
+    path: string,
+    previous: Buffer,
+    current: string,
+    prove?: () => boolean,
+  ): boolean {
+    if (process.platform !== 'darwin' || !prove) return false;
+    let old: { version?: unknown; targetKey?: unknown; rootIdentity?: unknown };
+    try {
+      old = JSON.parse(previous.toString('utf8'));
+    } catch {
+      return false;
+    }
+    if (
+      !old ||
+      old.version !== 1 ||
+      old.targetKey !== this.targetKey ||
+      typeof old.rootIdentity !== 'string' ||
+      !/^[1-9]\d{0,19}:[1-9]\d{0,19}$/.test(old.rootIdentity) ||
+      JSON.stringify({ version: 1, targetKey: this.targetKey, rootIdentity: old.rootIdentity }) !==
+        previous.toString('utf8')
+    )
+      return false;
+    const recorded = old.rootIdentity.split(':'),
+      actual = this.rootIdentity.split(':');
+    if (recorded[0] === actual[0] || recorded[1] !== actual[1]) return false;
+    const valid = () => {
+      try {
+        return prove() === true;
+      } catch {
+        return false;
+      }
+    };
+    const before = regular(path, this.root);
+    if (!bounded(path, 16384, this.root).equals(previous)) throw new Error('TRACE_OWNER_CHANGED');
+    if (!valid()) return false;
+    this.rootCurrent();
+    const temporary = path + '.remount-' + randomUUID() + '.tmp';
+    let temporaryId: string | undefined;
+    try {
+      const fd = openPrivateFileSync(temporary, 'wx', 0o600);
+      try {
+        temporaryId = regular(temporary, this.root).id;
+        writeFileSync(fd, current);
+        fsyncSync(fd);
+      } finally {
+        closeSync(fd);
+      }
+      if (!valid()) return false;
+      this.rootCurrent();
+      if (
+        JSON.stringify(regular(path, this.root)) !== JSON.stringify(before) ||
+        !bounded(path, 16384, this.root).equals(previous)
+      )
+        throw new Error('TRACE_OWNER_CHANGED');
+      renameSync(temporary, path);
+      const directory = openSync(this.root, 'r');
+      try {
+        fsyncSync(directory);
+      } finally {
+        closeSync(directory);
+      }
+      return true;
+    } finally {
+      if (temporaryId && existsSync(temporary)) {
+        try {
+          if (regular(temporary, this.root).id === temporaryId) unlinkSync(temporary);
+        } catch {
+          // Preserve an unexpected namespace or staging-file replacement.
+        }
+      }
+    }
   }
   private rootCurrent(): void {
     if (this.signal?.aborted) throw new Error('TRACE_RETENTION_CLOSED');
@@ -475,18 +541,14 @@ export class DesktopTraceRetention {
       return { state: 'unsupported', bytes: 0 };
     const logPath = join(directory, 'trace.jsonl'),
       proof = regular(logPath, this.root),
-      end = finalEvent(logPath, this.root);
-    if (
-      !end ||
-      end.schema_version !== manifest.schema_version ||
-      end.rollout_id !== match[2] ||
-      end.payload?.type !== 'rollout_ended' ||
-      end.payload?.status !== 'completed' ||
-      !Number.isSafeInteger(end.wall_time_unix_ms) ||
-      end.wall_time_unix_ms > now ||
-      now - proof.mtimeMs < 5000
-    )
-      return { state: 'active-or-unsealed', bytes: 0 };
+      lifecycle = desktopTraceLifecycle(
+        tail(logPath, 65536, this.root),
+        manifest.schema_version,
+        match[2]!,
+        now,
+      );
+    if (lifecycle.state !== 'sealed') return { state: lifecycle.state, bytes: 0 };
+    if (now - proof.mtimeMs < 5000) return { state: 'active-or-unsealed', bytes: 0 };
     if (proof.size > 8 * 1024 * 1024) {
       // Never expire an oversized prediction whose only body has not been saved.
       // Large ordinary traces can be classified from the original bounded header.

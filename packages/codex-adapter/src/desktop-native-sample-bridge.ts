@@ -28,6 +28,7 @@ import { DesktopNativeSampleDiagnostics } from './desktop-native-sample-diagnost
 import {
   inspectNativeSuggestionProducer,
   nativeSuggestionImplementationFingerprint,
+  nativeSuggestionProcessInstanceExited,
 } from './desktop-native-sample-platform.js';
 import {
   DesktopSuggestionStore,
@@ -177,6 +178,7 @@ interface Budget {
 }
 interface Hooks {
   identity?: typeof inspectNativeSuggestionProducer;
+  instanceExited?: typeof nativeSuggestionProcessInstanceExited;
   clock?: () => number;
   /** Fixture-only substitute for the fixed macOS root; never accepted in config. */
   loggerPaths?: { root: string };
@@ -206,7 +208,15 @@ function validIdentity(value: Identity, at: number): boolean {
     integer(value.desktopStartedAt) &&
     integer(value.wrapperStartedAt) &&
     value.wrapperStartedAt >= value.desktopStartedAt &&
-    value.wrapperStartedAt <= at
+    value.wrapperStartedAt <= at &&
+    ((value.logPid === undefined && value.logStartedAt === undefined) ||
+      (integer(value.logPid) &&
+        value.logPid > 1 &&
+        value.logPid !== value.pid &&
+        value.logPid !== value.desktopPid &&
+        integer(value.logStartedAt) &&
+        value.logStartedAt >= value.desktopStartedAt &&
+        value.logStartedAt <= value.wrapperStartedAt))
   );
 }
 function sameIdentity(a: Identity, b: Identity): boolean {
@@ -214,7 +224,9 @@ function sameIdentity(a: Identity, b: Identity): boolean {
     a.pid === b.pid &&
     a.desktopPid === b.desktopPid &&
     a.desktopStartedAt === b.desktopStartedAt &&
-    a.wrapperStartedAt === b.wrapperStartedAt
+    a.wrapperStartedAt === b.wrapperStartedAt &&
+    a.logPid === b.logPid &&
+    a.logStartedAt === b.logStartedAt
   );
 }
 function sameProducer(a: Producer, b: Producer): boolean {
@@ -575,6 +587,18 @@ function validOwner(value: unknown, key: string, root: string, at: number): valu
   );
 }
 
+/** A persisted macOS device number may change on a later mount. This only
+ * identifies a possible remount; reclaim still needs two positive kernel
+ * proofs that the exact recorded process instance has exited.
+ */
+function sameRootAfterRemount(recorded: string, current: string): boolean {
+  const numeric = /^(?:0|[1-9]\d{0,19})(?::(?:0|[1-9]\d{0,19})){3}$/;
+  if (!numeric.test(recorded) || !numeric.test(current)) return false;
+  const previous = recorded.split(':'),
+    actual = current.split(':');
+  return previous[0] !== actual[0] && previous.slice(1).every((part, i) => part === actual[i + 1]);
+}
+
 class Bridge implements DesktopNativeSampleBridge {
   private readonly files = new LocalFiles();
   private readonly now: () => number;
@@ -898,25 +922,46 @@ class Bridge implements DesktopNativeSampleBridge {
       if (!missing(error)) fail('native_bridge_owner_unknown');
     }
     if (existing) {
-      const owner = json(existing.bytes);
-      if (!validOwner(owner, this.store.targetKey, this.root, at))
+      const owner = json(existing.bytes),
+        recordedRoot =
+          record(owner) && typeof owner.rootIdentity === 'string' ? owner.rootIdentity : '',
+        remounted = process.platform === 'darwin' && sameRootAfterRemount(recordedRoot, this.root);
+      if (!validOwner(owner, this.store.targetKey, remounted ? recordedRoot : this.root, at))
         fail('native_bridge_owner_unknown');
-      let reclaim = false;
-      try {
-        const actual = this.inspect(owner.producer.pid, this.configPath);
-        if (!validIdentity(actual, at) || actual.pid !== owner.producer.pid)
+      // A fixture identity substitute never silently acquires a real kernel proof.
+      const exited =
+        this.hooks.instanceExited ??
+        (this.hooks.identity ? () => false : nativeSuggestionProcessInstanceExited);
+      const instanceExited = () => {
+        try {
+          return exited(owner.producer.pid, owner.wrapperStartedAt);
+        } catch {
+          return false;
+        }
+      };
+      const exitProof = instanceExited();
+      // A different mounted device must never be accepted through the weaker
+      // historical inspector fallback, even when that inspector sees a PID reuse.
+      if (remounted && !exitProof) fail('native_bridge_owner_unknown');
+      let reclaim = exitProof;
+      if (!reclaim) {
+        try {
+          const actual = this.inspect(owner.producer.pid, this.configPath);
+          if (!validIdentity(actual, at) || actual.pid !== owner.producer.pid)
+            fail('native_bridge_owner_unknown');
+          reclaim = actual.wrapperStartedAt !== owner.wrapperStartedAt;
+        } catch {
+          // Inspector errors, including an ESRCH about launching the helper,
+          // remain unknown and never authorize removing an owner.
           fail('native_bridge_owner_unknown');
-        reclaim = actual.wrapperStartedAt !== owner.wrapperStartedAt;
-      } catch {
-        // The four-number inspector currently has NO positive-exit variant.
-        // Even ESRCH on a failed helper launch is not evidence about this PID.
-        // Until that contract exists, a missing/denied/uninspectable PID stays locked.
-        fail('native_bridge_owner_unknown');
+        }
       }
       if (!reclaim) fail('native_bridge_owner_busy');
+      if (exitProof && !instanceExited()) fail('native_bridge_owner_unknown');
       const again = this.files.privateBytes(this.ownerPath, limits.ownerBytes);
       if (again.info.identity !== existing.info.identity || !again.bytes.equals(existing.bytes))
         fail('native_bridge_owner_changed');
+      if (this.store.rootIdentity() !== this.root) fail('native_bridge_root_changed');
       unlinkSync(this.ownerPath);
     }
     let fd: number;
@@ -951,7 +996,7 @@ class Bridge implements DesktopNativeSampleBridge {
     let entries = 0;
     this.selectedFiles = this.emptyFiles = this.directoryEntries = 0;
     const pattern = new RegExp(
-      `^codex-desktop-[A-Za-z0-9_.-]+-${this.identity.desktopPid}-[A-Za-z0-9_.-]+\\.log$`,
+      `^codex-desktop-[A-Za-z0-9_.-]+-(?:${[this.identity.desktopPid, this.identity.logPid].filter((pid) => pid !== undefined).join('|')})-[A-Za-z0-9_.-]+\\.log$`,
     );
     for (const directory of directories) {
       try {

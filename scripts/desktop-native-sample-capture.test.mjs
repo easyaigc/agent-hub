@@ -427,6 +427,33 @@ test('exact result.text JSON rejects duplicate and escaped keys, extra keys and 
   }
 });
 
+test('recognized optional native scores preserve exact text, source, safety and original result digest', (t) => {
+  for (const metadata of [
+    { confidence_score: 0.9, p_iqv3_low: 0.1 },
+    { confidence_score: null, p_iqv3_low: 'ignored-native-score' },
+  ]) {
+    const f = setup();
+    t.after(() => f.capture.close());
+    const req = request();
+    const text = JSON.stringify({ suggestion: '  Bound scored suggestion  ', ...metadata });
+    outbound(f, req);
+    f.advance();
+    inbound(f, req, 'unused', { text });
+    assert.equal(completedWrites(f).length, 0, 'scores cannot stand in for a safety decision');
+    f.advance();
+    f.safety(req, false, { sourceTurnId: randomUUID() });
+    assert.equal(completedWrites(f).length, 0, 'scores cannot select another source');
+    f.safety(req);
+    const value = f.current(req);
+    assert.equal(value.state, 'completed');
+    assert.equal(value.result.text, 'Bound scored suggestion');
+    assert.equal(value.result.resultSha256, hash(text));
+    assert.equal(value.sourceTurnId, req.params.expectedTurnId);
+    assert.equal(JSON.stringify(value).includes('confidence_score'), false);
+    assert.equal(JSON.stringify(value).includes('p_iqv3_low'), false);
+  }
+});
+
 test('null, whitespace, oversized bodies and response IDs never publish', (t) => {
   const values = [
     [null, {}],

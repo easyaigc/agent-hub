@@ -50,6 +50,8 @@ class ProcessIdentity(NamedTuple):
 class ProcessIdentities(dict):
     # Keep the executable pinned at discovery, including later executor checks.
     wrapper_node = None
+    wrapper_desktop_pid = None
+    wrapper_helper_path = None
 
 
 class ProcBSDInfo(C.Structure):
@@ -74,6 +76,57 @@ def process_matches(native, identity, path):
 def process_identity(native, pid, path):
     identity = native.identity(pid)
     return identity if process_matches(native, identity, path) else None
+
+
+def producer_lineage(native, pid):
+    """Pin a direct desktop child or its single bundled Node-service helper.
+
+    Recent desktops host the CLI launcher in an Electron utility process. Its
+    executable must be the recognized helper inside this exact application;
+    an arbitrary descendant or another Node process is never sufficient.
+    """
+    wrapper = native.identity(pid)
+    parent = native.identity(wrapper.ppid) if wrapper is not None else None
+    if wrapper is None or parent is None or wrapper.uid != os.getuid():
+        raise RuntimeError('Original desktop producer identity unavailable')
+    desktop, helper = parent, None
+    if native.path(parent.pid) != DESKTOP:
+        prefix = str(Path(DESKTOP).parent.parent.parent) + '/Contents/Frameworks/'
+        helper_path = native.path(parent.pid)
+        relative = helper_path[len(prefix):] if isinstance(helper_path, str) and helper_path.startswith(prefix) else ''
+        if not re.fullmatch(r'Codex Framework\.framework/Versions/[A-Za-z0-9][A-Za-z0-9._-]*/'
+                            r'Helpers/Codex \(Aperitif\)\.app/Contents/MacOS/Codex \(Aperitif\)',
+                            relative):
+            raise RuntimeError('Original desktop producer identity unavailable')
+        helper = parent
+        desktop = native.identity(helper.ppid)
+        if not process_matches(native, helper, helper_path):
+            raise RuntimeError('Original desktop producer identity changed')
+    if (not process_matches(native, desktop, DESKTOP)
+            or parent.uid != os.getuid()
+            or (wrapper.started_seconds, wrapper.started_microseconds)
+            < (parent.started_seconds, parent.started_microseconds)
+            or (parent.started_seconds, parent.started_microseconds)
+            < (desktop.started_seconds, desktop.started_microseconds)
+            or native.identity(wrapper.pid) != wrapper
+            or native.identity(parent.pid) != parent
+            or (helper is not None and not process_matches(native, helper, helper_path))
+            or not process_matches(native, desktop, DESKTOP)):
+        raise RuntimeError('Original desktop producer identity changed')
+    return wrapper, desktop, helper, helper_path if helper is not None else None
+
+
+def producer_identity(native, pid):
+    wrapper, desktop, helper, _ = producer_lineage(native, pid)
+    result = {'pid': wrapper.pid, 'desktopPid': desktop.pid,
+              'wrapperStartedAt': wrapper.started_seconds * 1000 + wrapper.started_microseconds // 1000,
+              'desktopStartedAt': desktop.started_seconds * 1000 + desktop.started_microseconds // 1000}
+    if helper is not None:
+        # Safety decisions can move with the Node service. Keep the main
+        # desktop identity stable and admit only this separately pinned log PID.
+        result.update(logPid=helper.pid,
+                      logStartedAt=helper.started_seconds * 1000 + helper.started_microseconds // 1000)
+    return result
 
 
 def utc_now():
@@ -112,6 +165,27 @@ class Native:
             return None
         return ProcessIdentity(info.pid, info.ppid, info.uid,
                                info.started_seconds, info.started_microseconds)
+
+    def instance_state(self, pid, expected_started_at):
+        """Only a direct kernel result can prove the recorded instance exited."""
+        result = {'version': 1, 'pid': pid, 'expectedStartedAt': expected_started_at,
+                  'state': 'unknown'}
+        self.stats['pidIdentityCalls'] += 1
+        info = ProcBSDInfo()
+        size = C.sizeof(info)
+        if size != 136:
+            return result
+        C.set_errno(0)
+        returned = self.lib.proc_pidinfo(pid, 3, 0, C.byref(info), size)
+        error = C.get_errno()
+        if returned == 0 and error == errno.ESRCH:
+            return {**result, 'state': 'exited'}
+        if (returned != size or info.pid != pid or info.uid != os.getuid()
+                or not info.started_seconds or info.started_microseconds >= 1000000):
+            return result
+        started_at = info.started_seconds * 1000 + info.started_microseconds // 1000
+        return {**result, 'state': 'same' if started_at == expected_started_at else 'replaced',
+                'actualStartedAt': started_at}
 
     def path(self, pid):
         self.stats['pidPathCalls'] += 1
@@ -235,8 +309,7 @@ def shared_wrapper(native, desktops):
             or not re.fullmatch(r'[0-9a-f]{64}', owner.get('fingerprint', ''))):
         raise RuntimeError('Installed shared desktop identity changed')
     electron_pid, wrapper_pid = owner.get('electronPid'), owner.get('ownerPid')
-    if (type(electron_pid) is not int or type(wrapper_pid) is not int
-            or electron_pid not in desktops):
+    if type(electron_pid) is not int or type(wrapper_pid) is not int:
         raise RuntimeError('Shared launcher must belong to the original desktop')
     # The installed wrapper is hash-pinned above. Its absolute shebang records
     # the Node selected at installation (bundled or NVM); do not guess a path.
@@ -251,10 +324,16 @@ def shared_wrapper(native, desktops):
             or not os.access(node_path, os.X_OK)):
         raise RuntimeError('Installed shared launcher Node identity changed')
     wrapper = process_identity(native, wrapper_pid, node)
-    if (wrapper is None or wrapper.ppid != electron_pid
-            or not process_matches(native, desktops[electron_pid], DESKTOP)):
+    if wrapper is None or wrapper.ppid != electron_pid:
         raise RuntimeError('Original shared launcher process changed')
-    return wrapper, node
+    try:
+        _, desktop, helper, helper_path = producer_lineage(native, wrapper_pid)
+    except RuntimeError as error:
+        raise RuntimeError('Original shared launcher process changed') from error
+    if (desktops.get(desktop.pid) != desktop
+            or native.identity(wrapper_pid) != wrapper):
+        raise RuntimeError('Original shared launcher process changed')
+    return wrapper, node, desktop, helper, helper_path
 
 
 def executor_valid(native, identities, pid, desktop_pid):
@@ -266,8 +345,16 @@ def executor_valid(native, identities, pid, desktop_pid):
         return True
     wrapper = identities.get(executor.ppid)
     node = getattr(identities, 'wrapper_node', None)
-    return (node is not None and wrapper is not None and wrapper.ppid == desktop_pid
-            and process_matches(native, wrapper, node))
+    if (node is None or wrapper is None
+            or getattr(identities, 'wrapper_desktop_pid', None) != desktop_pid
+            or not process_matches(native, wrapper, node)):
+        return False
+    if wrapper.ppid == desktop_pid:
+        return True
+    helper = identities.get(wrapper.ppid)
+    helper_path = getattr(identities, 'wrapper_helper_path', None)
+    return (helper is not None and helper.ppid == desktop_pid
+            and helper_path is not None and process_matches(native, helper, helper_path))
 
 
 def discover(native):
@@ -291,10 +378,14 @@ def discover(native):
     if wrapper is not None:
         identities[wrapper.pid] = wrapper
         identities.wrapper_node = launcher[1]
+        identities.wrapper_desktop_pid = launcher[2].pid
+        identities.wrapper_helper_path = launcher[4]
+        if launcher[3] is not None:
+            identities[launcher[3].pid] = launcher[3]
     parents = {}
     for pid, ppid, name in rows:
         desktop_pid = ppid if ppid in desktops else (
-            wrapper.ppid if wrapper is not None and ppid == wrapper.pid else None)
+            identities.wrapper_desktop_pid if wrapper is not None and ppid == wrapper.pid else None)
         if desktop_pid is None or name != EXECUTOR:
             continue
         identity = process_identity(native, pid, EXECUTOR)
@@ -308,9 +399,44 @@ def discover(native):
     selected = set(parents) | set(parents.values())
     if wrapper is not None:
         selected.add(wrapper.pid)
+        if launcher[3] is not None:
+            selected.add(launcher[3].pid)
     pinned = ProcessIdentities({pid: identity for pid, identity in identities.items() if pid in selected})
     pinned.wrapper_node = identities.wrapper_node
+    pinned.wrapper_desktop_pid = identities.wrapper_desktop_pid
+    pinned.wrapper_helper_path = identities.wrapper_helper_path
     return parents, rows, pinned
+
+
+def inspect_shared_service(native):
+    """Read a fixed installed service; never connect, load a thread or execute it."""
+    if SHARED_STATE is None:
+        raise RuntimeError('Installed shared desktop state required')
+    state = Path(SHARED_STATE)
+    manifest_path = state / 'environment.json'
+    owner_path = state / 'service/desktop-service-owner.json'
+    parents, _, identities = discover(native)
+    manifest_bytes, owner_bytes = manifest_path.read_bytes(), owner_path.read_bytes()
+    if len(manifest_bytes) > 16384 or len(owner_bytes) > 4096:
+        raise RuntimeError('Shared desktop identity exceeds its budget')
+    owner = json.loads(owner_bytes)
+    wrapper_pid = owner.get('ownerPid')
+    servers = [pid for pid in parents if identities[pid].ppid == wrapper_pid]
+    if len(servers) != 1:
+        raise RuntimeError('One exact original shared executor required')
+    pid = servers[0]
+    if not executor_valid(native, identities, pid, parents[pid]):
+        raise RuntimeError('Original shared executor changed')
+    result = {'version': 1, 'kind': 'original-desktop-shared-service',
+              'url': owner['url'], 'producer': producer_identity(native, wrapper_pid),
+              'serverPid': pid,
+              'serverStartedAt': identities[pid].started_seconds * 1000
+                  + identities[pid].started_microseconds // 1000,
+              'manifestSha256': sha256(manifest_bytes), 'ownerSha256': sha256(owner_bytes)}
+    if (manifest_path.read_bytes() != manifest_bytes or owner_path.read_bytes() != owner_bytes
+            or not executor_valid(native, identities, pid, parents[pid])):
+        raise RuntimeError('Original shared service changed during inspection')
+    return result
 
 
 def proc_event(pid, flags, token):
@@ -665,13 +791,18 @@ class Observer:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output-dir', type=Path, required=True,
+    parser.add_argument('--output-dir', type=Path,
                         help='Private evidence directory; must not be committed')
     parser.add_argument('--application-path', type=Path, default=Path('/Applications/ChatGPT.app'))
     parser.add_argument('--codex-home', type=Path, default=Path.home() / '.codex')
     parser.add_argument('--self-check', action='store_true', help='Check real local APIs without starting observation')
     parser.add_argument('--inspect-producer', type=int,
                         help='Read only the exact native parent/started identity of an original desktop CLI wrapper')
+    parser.add_argument('--inspect-shared-service', action='store_true',
+                        help='Read only the installed original shared executor identity; no connection or thread load')
+    parser.add_argument('--inspect-process-instance', type=int,
+                        help='Read only kernel existence/start identity of one recorded producer PID')
+    parser.add_argument('--expected-started-at', type=int)
     parser.add_argument('--duration-seconds', type=int, default=900)
     parser.add_argument('--shared-desktop-state', type=Path,
                         help='Installed private shared launcher state; no arbitrary process attachment')
@@ -680,14 +811,23 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.duration_seconds <= 900:
         parser.error('--duration-seconds must be between 1 and 900')
+    if args.inspect_process_instance is not None:
+        if (not 1 < args.inspect_process_instance <= 2147483647
+                or args.expected_started_at is None
+                or not 0 < args.expected_started_at <= int(time.time() * 1000)
+                or args.inspect_producer is not None or args.self_check
+                or args.stream_only or args.shared_desktop_state is not None
+                or args.inspect_shared_service):
+            parser.error('Invalid fixed process-instance query')
+        print(json.dumps(Native().instance_state(args.inspect_process_instance,
+                                                args.expected_started_at)))
+        return
+    if args.expected_started_at is not None or (args.output_dir is None and not args.inspect_shared_service):
+        parser.error('--output-dir is required outside process-instance queries')
     os.umask(0o077)
     global ROOT, CONFIG, NOTIFIER, EXECUTOR, DESKTOP, STREAM_ONLY, SHARED_STATE
     SHARED_STATE = args.shared_desktop_state
     STREAM_ONLY = args.stream_only
-    ROOT = args.output_dir.expanduser().resolve()
-    ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if ROOT.is_symlink() or ROOT.stat().st_uid != os.getuid() or ROOT.stat().st_mode & 0o077:
-        parser.error('--output-dir must be owned by the current user with permissions 0700')
     codex_home = args.codex_home.expanduser().resolve()
     app = args.application_path.expanduser().resolve()
     CONFIG = codex_home / 'config.toml'
@@ -696,16 +836,18 @@ def main():
     EXECUTOR = str(app / 'Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex')
     DESKTOP = str(app / 'Contents/MacOS/ChatGPT')
     native = Native()
+    if args.inspect_shared_service:
+        if (args.shared_desktop_state is None or args.inspect_producer is not None
+                or args.self_check or args.stream_only):
+            parser.error('Invalid fixed shared-service inspection')
+        print(json.dumps(inspect_shared_service(native)))
+        return
+    ROOT = args.output_dir.expanduser().resolve()
+    ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if ROOT.is_symlink() or ROOT.stat().st_uid != os.getuid() or ROOT.stat().st_mode & 0o077:
+        parser.error('--output-dir must be owned by the current user with permissions 0700')
     if args.inspect_producer is not None:
-        wrapper = native.identity(args.inspect_producer)
-        desktop = native.identity(wrapper.ppid) if wrapper is not None else None
-        if (wrapper is None or desktop is None or wrapper.uid != os.getuid()
-                or desktop.uid != os.getuid() or native.path(desktop.pid) != DESKTOP
-                or wrapper.started_seconds < desktop.started_seconds):
-            raise RuntimeError('Original desktop producer identity unavailable')
-        print(json.dumps({'pid': wrapper.pid, 'desktopPid': desktop.pid,
-                          'wrapperStartedAt': wrapper.started_seconds * 1000 + wrapper.started_microseconds // 1000,
-                          'desktopStartedAt': desktop.started_seconds * 1000 + desktop.started_microseconds // 1000}))
+        print(json.dumps(producer_identity(native, args.inspect_producer)))
         return
     config_hash = verify_config()
     parents, rows, identities = discover(native)

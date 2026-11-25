@@ -18,7 +18,7 @@ const fail = (code) => {
 };
 const components = [
   'apps/host-agent',
-  ...['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'].map(
+  ...['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime', 'dev-preview'].map(
     (name) => 'packages/' + name,
   ),
 ];
@@ -157,7 +157,9 @@ export function collectRegularRuntime(repository, nodeExecutable) {
       add(component + '/dist/' + name, regularBytes(join(repository, component, 'dist', name)));
     for (const [dependency, version] of Object.entries(manifest.dependencies ?? {})) {
       if (
-        (component === 'apps/host-agent' && ['bonjour-service', 'qrcode'].includes(dependency)) ||
+        (component === 'apps/host-agent' &&
+          ['bonjour-service', 'qrcode', 'ws'].includes(dependency)) ||
+        (component === 'packages/dev-preview' && dependency === 'ws') ||
         (component === 'packages/codex-adapter' && dependency === 'smol-toml')
       ) {
         copyDependency(dependency, join(repository, component, 'package.json'));
@@ -186,6 +188,7 @@ export function collectRegularRuntime(repository, nodeExecutable) {
   if (
     versions.get('bonjour-service') !== '1.4.4' ||
     versions.get('qrcode') !== '1.5.4' ||
+    versions.get('ws') !== '8.18.3' ||
     versions.get('smol-toml') !== '1.9.1'
   )
     fail('HOST_RUNTIME_DEPENDENCY_VERSION_CHANGED');

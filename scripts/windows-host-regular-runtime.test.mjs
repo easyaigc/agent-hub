@@ -4,7 +4,12 @@ import { mkdtempSync, realpathSync, mkdirSync, writeFileSync, rmSync, linkSync }
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { regularCompiledFiles, verifyRegularRuntime } from './windows-host-regular-runtime.mjs';
+import { execFileSync } from 'node:child_process';
+import {
+  collectRegularRuntime,
+  regularCompiledFiles,
+  verifyRegularRuntime,
+} from './windows-host-regular-runtime.mjs';
 import {
   applyProtectedHostEnvironment,
   protectedHostProgram,
@@ -12,6 +17,91 @@ import {
 import { validateWindowsHostEnvironment } from './windows-host-environment.mjs';
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+test('frozen runtime includes dev-preview and its pinned ws dependency from a clean source', () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'regular-runtime-closure-')));
+  const repository = join(root, 'source');
+  mkdirSync(repository);
+  const write = (name, value) => {
+    const target = join(repository, name);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, typeof value === 'string' ? value : JSON.stringify(value));
+  };
+  const components = [
+    'codex-adapter',
+    'protocol',
+    'service-runtime',
+    'notification-runtime',
+    'dev-preview',
+  ];
+  try {
+    write('.gitignore', 'node_modules/\ndist/\n');
+    write('package.json', { private: true, type: 'module' });
+    write('LICENSE', 'Synthetic fixture.\n');
+    write('pnpm-lock.yaml', 'lockfileVersion: 9.0\n');
+    write('scripts/desktop-completion-notify-observer.py', '# synthetic helper\n');
+    write('scripts/desktop-trace-retire.py', '# synthetic helper\n');
+    for (const component of ['host-agent', ...components]) {
+      const directory = component === 'host-agent' ? 'apps/' + component : 'packages/' + component;
+      let dependencies = {};
+      if (component === 'host-agent') {
+        dependencies = Object.fromEntries(
+          components.map((name) => ['@codex-manage/' + name, 'workspace:*']),
+        );
+        Object.assign(dependencies, { 'bonjour-service': '1.4.4', qrcode: '1.5.4', ws: '8.18.3' });
+      } else if (component === 'codex-adapter') {
+        dependencies = { 'smol-toml': 'catalog:' };
+      } else if (component === 'dev-preview') {
+        dependencies = { '@codex-manage/protocol': 'workspace:*', ws: '8.18.3' };
+      }
+      write(directory + '/package.json', {
+        name: '@codex-manage/' + component,
+        type: 'module',
+        dependencies,
+      });
+      const entry = component === 'host-agent' ? 'runtime-entry' : 'index';
+      write(directory + '/src/' + entry + '.ts', 'export const fixture = true;\n');
+      write(directory + '/dist/' + entry + '.js', 'export const fixture = true;\n');
+    }
+    for (const [name, version] of Object.entries({
+      'bonjour-service': '1.4.4',
+      qrcode: '1.5.4',
+      ws: '8.18.3',
+      'smol-toml': '1.9.1',
+    })) {
+      write('node_modules/' + name + '/package.json', { name, version, main: 'index.js' });
+      write('node_modules/' + name + '/index.js', 'module.exports = {};\n');
+    }
+    const git = (...args) => execFileSync('git', args, { cwd: repository, stdio: 'pipe' });
+    git('init', '--quiet');
+    git('add', '.');
+    git(
+      '-c',
+      'user.name=Runtime Fixture',
+      '-c',
+      'user.email=fixture@example.invalid',
+      '-c',
+      'commit.gpgsign=false',
+      'commit',
+      '--quiet',
+      '-m',
+      'Synthetic runtime closure',
+    );
+    const node = join(root, 'node.exe');
+    writeFileSync(node, 'Synthetic executable input.\n');
+    const collected = collectRegularRuntime(repository, node);
+    assert(collected.files.has('packages/dev-preview/dist/index.js'));
+    assert(collected.files.has('node_modules/@codex-manage/dev-preview/dist/index.js'));
+    assert(collected.files.has('node_modules/ws/index.js'));
+    assert.equal(collected.manifest.dependencies.ws, '8.18.3');
+    write('node_modules/ws/package.json', { name: 'ws', version: '8.18.4', main: 'index.js' });
+    assert.throws(() => collectRegularRuntime(repository, node), {
+      code: 'HOST_RUNTIME_DEPENDENCY_VERSION_CHANGED',
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 test('frozen runtime refuses stale, missing and nested emitted modules before collecting a closure', () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'regular-runtime-source-')));
   const component = 'packages/codex-adapter';

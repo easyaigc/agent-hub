@@ -34,6 +34,7 @@ process.on('SIGTERM',()=>{record({event:'term'}); if(mode==='ignore' || mode==='
 process.stdin.on('end',()=>{if(mode!=='ignore' && mode!=='silent-init')process.exit(0)});
 createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);record({event:'request',method:r.method});if(r.id===undefined)return;
 if(r.method==='initialize' && mode==='silent-init')return;
+if(r.method==='initialize' && mode==='slow-init'){setTimeout(()=>process.stdout.write(JSON.stringify({id:r.id,result:{}})+'\\n'),700);return;}
 if(r.method==='thread/queue/list' && mode==='bad-list'){process.stdout.write('not-json\\n');return}
 if(r.method==='thread/queue/add')return;
 if(r.method==='model/list' && mode==='timeout')return;
@@ -47,7 +48,17 @@ setInterval(()=>{},1000);
   childProcess.spawn = (command, args, options) => {
     if (command !== cli) return originalSpawn(command, args, options);
     const child = originalSpawn(process.execPath, [cli, ...args], options);
-    const entry = { child, closed: false, overlap: children.some((x) => !x.closed) };
+    const entry = {
+      child,
+      closed: false,
+      initialized: false,
+      overlap: children.some((x) => !x.closed),
+    };
+    // Synthetic replies start with initialize. Do not turn process startup
+    // into an artificial 350 ms race before the child can answer at all.
+    child.stdout.once('data', () => {
+      entry.initialized = true;
+    });
     children.push(entry);
     child.once('close', () => {
       entry.closed = true;
@@ -60,7 +71,8 @@ setInterval(()=>{},1000);
       fn,
       mode === 'late-close' && ms === 5000
         ? 200
-        : [10000, 12000, 15000, 20000].includes(ms)
+        : [10000, 12000, 15000, 20000].includes(ms) &&
+            !children.some((entry) => !entry.closed && !entry.initialized)
           ? 350
           : ms,
       ...args,
@@ -94,6 +106,20 @@ setInterval(()=>{},1000);
     await rm(dir, { recursive: true, force: true });
   }
 }
+
+test('synthetic: slow child initialization keeps its startup budget before request timeouts accelerate', async () => {
+  await fixture('slow-init', async ({ cli, dir, children, waitFor }) => {
+    const reader = new CodexHistoryReader('synthetic', 'synthetic', cli);
+    await reader.connect();
+    assert.equal(reader.ready, true);
+    reader.close();
+    await waitFor(() => children[0].closed, 'slow reader child survived close');
+    const queue = new DesktopNativeQueue(cli, dir);
+    assert.deepEqual(await queue.list('t'), []);
+    assert.equal(children.length, 2);
+    queue.close();
+  });
+});
 
 test('synthetic: concurrent history connects and queue lists share one child', async () => {
   await fixture('normal', async ({ cli, dir, children }) => {

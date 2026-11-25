@@ -2,6 +2,7 @@ import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import type { WorkspaceManagementRequest } from '@codex-manage/protocol';
 import { MetadataConnection, MetadataRejection } from './desktop-thread-preparer.js';
 import { CodexRuntime, CodexRejection, object, list, string } from './runtime.js';
+import type { ProjectCreationRecord } from './desktop-project-creation.js';
 
 type Action = WorkspaceManagementRequest['action'];
 /** Fixed catalog mutations only; never resumes a thread or starts a model executor. */
@@ -29,7 +30,13 @@ export class DesktopWorkspaceManagement {
         return await work({
           rpc: (method, params) => {
             if (
-              !['project/list', 'project/delete', 'thread/list', 'thread/archive'].includes(method)
+              ![
+                'project/list',
+                'project/create',
+                'project/delete',
+                'thread/list',
+                'thread/archive',
+              ].includes(method)
             )
               throw new Error('Fixed workspace metadata method required');
             return runtime.call(method, params);
@@ -59,6 +66,64 @@ export class DesktopWorkspaceManagement {
     }
     if (failure) throw failure;
     return result as T;
+  }
+
+  async createProject(record: ProjectCreationRecord, beforeWrite: () => void): Promise<string> {
+    return this.connection(async (client) => {
+      beforeWrite();
+      let result;
+      try {
+        result = await client.rpc('project/create', {
+          name: record.name,
+          roots: [{ path: record.root }],
+          idempotencyKey: record.operationId,
+          metadata: {
+            'agent-hub:create-operation': record.operationId,
+            'agent-hub:host': record.target.hostId,
+          },
+        });
+      } catch (error) {
+        if (error instanceof MetadataRejection || error instanceof CodexRejection)
+          throw new CodexRejection('官方接口拒绝此次项目创建，请刷新后核对；不会自动重试');
+        throw error;
+      }
+      const id = string(object(result.project).id);
+      if (!id) throw new Error('官方项目创建结果缺少项目 ID，结果待确认');
+      return id;
+    });
+  }
+
+  async findCreatedProject(record: ProjectCreationRecord): Promise<string | undefined> {
+    return this.connection(async (client) => {
+      const seen = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const page = await client.rpc('project/list', {
+          limit: 100,
+          ...(cursor ? { cursor } : {}),
+        });
+        if (!Array.isArray(page.data)) throw new Error('项目列表查询结果无效');
+        for (const row of list(page.data)) {
+          const project = object(row);
+          const metadata = object(project.metadata);
+          const identified = record.projectId
+            ? project.id === record.projectId
+            : metadata['agent-hub:create-operation'] === record.operationId &&
+              metadata['agent-hub:host'] === record.target.hostId;
+          if (!identified) continue;
+          const roots = list(project.roots).map((root) => string(object(root).path));
+          if (project.name !== record.name || roots.length !== 1 || roots[0] !== record.root)
+            throw new Error('官方项目结果与原创建输入不一致，请在电脑核对');
+          const id = string(project.id);
+          if (!id) throw new Error('官方项目查询缺少项目 ID');
+          return id;
+        }
+        cursor = string(page.nextCursor) || undefined;
+        if (cursor && seen.has(cursor)) throw new Error('项目查询分页游标重复');
+        if (cursor) seen.add(cursor);
+      } while (cursor);
+      return undefined;
+    });
   }
 
   async execute(action: Action, id: string, beforeWrite: () => Promise<void>): Promise<void> {

@@ -96,6 +96,7 @@ import {
 } from '@codex-manage/protocol';
 import { WorkspaceManagementBroker } from './workspace-management.js';
 import { DesktopWorkspaceManagement } from './desktop-workspace-management.js';
+import { DesktopProjectCreation, type ProjectCreationRecord } from './desktop-project-creation.js';
 import { sharedCatalogPage } from './shared-catalog.js';
 import { mergeSharedMessages } from './shared-history.js';
 import { desktopPinnedSection } from './desktop-sidebar.js';
@@ -393,6 +394,7 @@ const openOperationId = /^[a-zA-Z0-9_-]{8,100}$/;
 const unknownOpenError = 'Codex 打开结果待确认，请刷新';
 
 interface State {
+  projectCreations?: Record<string, ProjectCreationRecord>;
   workspaceManagement?: Record<string, WorkspaceManagementOperation>;
   hostId: string;
   projects: Project[];
@@ -441,6 +443,7 @@ export class RuntimeSession {
   private readonly desktopCreationDriver?: DesktopCreationBridge;
   private readonly desktopForks?: DesktopForkBroker;
   private workspaceManagement?: WorkspaceManagementBroker;
+  private desktopProjectCreation?: DesktopProjectCreation;
   private readonly openOperations = new Map<string, DesktopOpenOperation>();
   private openingThreads = new Map<string, Promise<boolean>>();
   private state: State;
@@ -825,6 +828,7 @@ export class RuntimeSession {
       return this.ready
         ? [
             'projects:read',
+            'projects:create',
             'projects:delete',
             'threads:archive:unloaded',
             'threads:read',
@@ -2888,10 +2892,51 @@ export class RuntimeSession {
 
   async createProject(name: string, directory: string, key: string) {
     this.requireReady();
-    if (this.mode === 'desktop-runtime') throw new RuntimeError(409, '请在 Codex 中创建项目');
     if (!name.trim() || !key) throw new RuntimeError(400, '项目名称和操作 ID 必填');
     const root = this.allowedPath(resolve(this.options.root, directory));
     if (!statSync(root).isDirectory()) throw new RuntimeError(400, '项目目录不存在');
+    if (this.runtime instanceof DesktopRuntime) {
+      if (!this.desktopProjectCreation) {
+        const home =
+          process.platform === 'win32'
+            ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
+            : dirname(dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')));
+        const metadata = new DesktopWorkspaceManagement(
+          () =>
+            this.options.executable ??
+            (process.platform === 'darwin'
+              ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
+              : 'codex'),
+          home,
+          this.options.sharedWebsocketUrl,
+        );
+        this.state.projectCreations ??= {};
+        this.desktopProjectCreation = new DesktopProjectCreation(
+          this.readingTarget(),
+          this.state.projectCreations,
+          () => this.save(),
+          (record, beforeWrite) =>
+            metadata.createProject(record, () => {
+              this.requireReady();
+              // Recheck the allowed real directory immediately before the metadata mutation.
+              if (
+                this.allowedPath(record.root) !== record.root ||
+                !statSync(record.root).isDirectory()
+              )
+                throw new CodexRejection('项目目录已变化，请重新核对');
+              beforeWrite();
+            }),
+          (record) => metadata.findCreatedProject(record),
+        );
+      }
+      try {
+        await this.desktopProjectCreation.submit(name.trim(), root, key);
+      } catch (error) {
+        if (error instanceof CodexRejection) throw new RuntimeError(409, error.message);
+        throw error;
+      }
+      return this.workspace();
+    }
     if (this.mode === 'shared-runtime') {
       await this.runtime.call('project/create', {
         name: name.trim(),

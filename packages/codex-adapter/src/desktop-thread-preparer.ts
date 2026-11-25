@@ -36,6 +36,7 @@ const allowed = new Set(['initialize', 'thread/start', 'thread/name/set', 'threa
 const managementAllowed = new Set([
   'initialize',
   'project/list',
+  'project/create',
   'thread/list',
   'project/delete',
   'thread/archive',

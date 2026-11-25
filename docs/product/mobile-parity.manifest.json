@@ -26570,6 +26570,19 @@
         "apps/android/src/main/res/values-zh/product_strings.xml": "6ffa8f787935d77a3e2114788c879ac7bf1b7c5a667a435886baf70065562127",
         "apps/android/src/main/res/values/product_strings.xml": "ac87a1ddbfde5f0f1ccfada450af34ee5612a28f85ff664c9a824de5efbb95a2"
       }
+    },
+    {
+      "id": "desktop-native-project-registration-20261125",
+      "baseCommit": "6fffb113e83f0fcf5d8f55c015bddb139e1fe7d1",
+      "features": ["F16", "F26"],
+      "summary": "Register an existing authorized directory through the original desktop project/create metadata contract. Persist immutable operation inputs before dispatch, verify official project/list, and query uncertain results without replay. No thread or model executor is created by registration. Auxiliary checks do not imply mobile acceptance; Android UI is unchanged.",
+      "files": {
+        "packages/codex-adapter/src/desktop-project-creation.ts": "c867a1736cfddb375a9e06d918df69cd05bb1c585e934526e0a9ec9ddaa30207",
+        "packages/codex-adapter/src/desktop-thread-preparer.ts": "750b5353b31aa5f24bf83a8768cbe85c833a7510b737843757fbcd3a8ad0ecca",
+        "packages/codex-adapter/src/desktop-workspace-management.ts": "d9f966f20c6dde4a6a63a2ff5013412082aaf9793ef2659facbb1d4931756b4d",
+        "packages/codex-adapter/src/runtime-session.ts": "520a90cf613f34c1323b04dab989ee0882d30021aa95763fa53c572a67767e43",
+        "scripts/desktop-project-creation.test.mjs": "1ca026bad5563d54bd645a1c3ababe18631a841675cb2a62ee458f8183b734ca"
+      }
     }
   ]
 }

@@ -26541,6 +26541,16 @@
         "packages/codex-adapter/src/desktop-shared-control.ts": "7f99f69166a82f3dc5e54535dccfffb6c6e88f1f966c19348e5dc47f8f01ed5b",
         "scripts/desktop-prepared-bridge-smoke.mjs": "81dfdf4dcde72eb397eae062872b2e054ca1eb4c953e0f72285ddcfed0dd803d"
       }
+    },
+    {
+      "id": "desktop-shared-node-launcher-20261125",
+      "baseCommit": "3168734f46597ec64ac629bd3c830ec8f3c3f4cb",
+      "features": ["F04", "F05"],
+      "summary": "Accept the installed Node shebang launcher only when its verified private wrapper, actual interpreter, first script argument, original Electron ancestry and unique official executor agree. Preserve the existing desktop-runtime target and device authorization. Auxiliary regression and native reconnection results remain separate.",
+      "files": {
+        "packages/codex-adapter/src/desktop-shared-control.ts": "6e4c57bfb8bbd648b123e56e745914db2baa736445fe9f23ad2d2840820bc799",
+        "scripts/desktop-shared-control.test.mjs": "9c2cfca8a91e7dc8b377a3474ba4f208549e6060ccaf04ed48cb4d45c72aed5c"
+      }
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import { homedir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { CodexRuntime, object, list, string, type WireObject } from './runtime.js';
@@ -41,6 +41,31 @@ async function processIdentity(pid: number) {
   if (!match || Number(match[1]) !== process.getuid?.())
     throw new Error('Original desktop process ownership unavailable');
   return { pid, parent: Number(match[2]), started: match[3], executable: realpathSync(match[4]!) };
+}
+
+/** Bind an installed Node shebang to the running, digest-checked wrapper. */
+export async function verifyDesktopSharedLauncher(
+  pid: number,
+  executable: string,
+  wrapper: string,
+  source: string,
+): Promise<boolean> {
+  const interpreter = /^#!([^\r\n]+)\r?\n/.exec(source)?.[1];
+  if (
+    !interpreter ||
+    !isAbsolute(interpreter) ||
+    basename(interpreter) !== 'node' ||
+    realpathSync(interpreter) !== executable
+  )
+    return false;
+  const { stdout } = await execute('/bin/ps', ['-p', String(pid), '-o', 'command='], {
+    encoding: 'utf8',
+    timeout: 2000,
+    maxBuffer: 8192,
+  });
+  const expected = `${interpreter} ${wrapper}`;
+  const command = stdout.trimEnd();
+  return command === expected || command.startsWith(expected + ' ');
 }
 
 /** Verify the existing launcher and listening executor, never start or replace either. */
@@ -85,12 +110,11 @@ export async function verifyDesktopSharedService(
     (owner.home !== undefined && owner.home !== join(homedir(), '.codex'))
   )
     throw new Error('Original desktop shared target changed');
-  privatePath(join(directory, 'codex-shared.mjs'));
-  if (
-    createHash('sha256')
-      .update(readFileSync(join(directory, 'codex-shared.mjs')))
-      .digest('hex') !== environment.wrapperSha256
-  )
+  const wrapper = join(directory, 'codex-shared.mjs');
+  privatePath(wrapper);
+  if (lstatSync(wrapper).size > 8192) throw new Error('Invalid shared desktop launcher');
+  const wrapperSource = readFileSync(wrapper);
+  if (createHash('sha256').update(wrapperSource).digest('hex') !== environment.wrapperSha256)
     throw new Error('Original desktop launcher changed');
   const [launcher, utility] = await Promise.all([
     processIdentity(Number(owner.ownerPid)),
@@ -108,7 +132,13 @@ export async function verifyDesktopSharedService(
     launcher.parent !== utility.pid ||
     desktop.executable !== realpathSync('/Applications/ChatGPT.app/Contents/MacOS/ChatGPT') ||
     !utility.executable.startsWith('/Applications/ChatGPT.app/Contents/Frameworks/') ||
-    !launcher.executable.startsWith('/Applications/ChatGPT.app/Contents/Resources/')
+    (!launcher.executable.startsWith('/Applications/ChatGPT.app/Contents/Resources/') &&
+      !(await verifyDesktopSharedLauncher(
+        launcher.pid,
+        launcher.executable,
+        wrapper,
+        wrapperSource.toString('utf8'),
+      )))
   )
     throw new Error('Original desktop launcher lineage unavailable');
   const listeners = sockets.stdout

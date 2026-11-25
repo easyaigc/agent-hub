@@ -1,13 +1,67 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   DesktopSharedControl,
+  verifyDesktopSharedLauncher,
   verifyDesktopSharedService,
 } from '../packages/codex-adapter/dist/desktop-shared-control.js';
 
 const threadId = randomUUID();
 const turnId = randomUUID();
+
+test('Node launcher verification binds the live interpreter and first script argument', async () => {
+  if (process.platform !== 'darwin') return;
+  const directory = await mkdtemp(join(tmpdir(), 'desktop-shared-launcher-'));
+  const wrapper = join(directory, 'codex-shared.mjs');
+  const node = realpathSync(process.execPath);
+  const source = `#!${node}\nconsole.log('ready'); setInterval(() => {}, 1000);\n`;
+  let child, decoy;
+  try {
+    await writeFile(wrapper, source, { mode: 0o700 });
+    child = spawn(node, [wrapper, 'app-server'], { stdio: ['ignore', 'pipe', 'pipe'] });
+    await once(child.stdout, 'data');
+    assert.equal(await verifyDesktopSharedLauncher(child.pid, node, wrapper, source), true);
+    const otherScript = join(directory, 'other.mjs');
+    await writeFile(otherScript, source, { mode: 0o700 });
+    decoy = spawn(node, [otherScript, wrapper], { stdio: ['ignore', 'pipe', 'pipe'] });
+    await once(decoy.stdout, 'data');
+    // A wrapper mentioned later in argv must not make another script trusted.
+    assert.equal(await verifyDesktopSharedLauncher(decoy.pid, node, wrapper, source), false);
+    assert.equal(
+      await verifyDesktopSharedLauncher(child.pid, node, wrapper.slice(0, -4), source),
+      false,
+    );
+    assert.equal(
+      await verifyDesktopSharedLauncher(child.pid, node, wrapper + '.other', source),
+      false,
+    );
+    assert.equal(
+      await verifyDesktopSharedLauncher(child.pid, '/different/node', wrapper, source),
+      false,
+    );
+    assert.equal(
+      await verifyDesktopSharedLauncher(child.pid, node, wrapper, '#!/usr/bin/env node\n'),
+      false,
+    );
+  } finally {
+    for (const process of [child, decoy]) {
+      if (process && process.exitCode === null) {
+        const exited = once(process, 'exit');
+        process.kill('SIGTERM');
+        await exited;
+      }
+    }
+    await rm(directory, { recursive: true });
+  }
+});
+
 function fixture() {
   const calls = [],
     responses = [];

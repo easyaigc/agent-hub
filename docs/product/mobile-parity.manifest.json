@@ -26598,6 +26598,16 @@
         "scripts/history-smoke.mjs": "2300b0cd88d36d8c6aa37b2a2599144460671e6d589966fa9e49ab4dc2a1e637",
         "apps/host-agent/src/runtime-server.ts": "e400b72a6bb5fb10dee043890510d2d89b00205ea9d2a027a103c309442203f9"
       }
+    },
+    {
+      "id": "ios-real-voice-capture-metadata-20261125",
+      "baseCommit": "9f32802b5e242ca89d342ef4efcb6cbf54d24da8",
+      "features": ["F64"],
+      "summary": "Opt-in bounded public-API metadata for the existing real iOS audio recorder, independently of UI-test fixtures. Capture clock, route, meters and sealed frame count without audio/draft content; default startup and capture semantics unchanged. Android implementation is unaffected. Physical diagnosis and transcription success remain separate.",
+      "files": {
+        "apps/ios/Sources/VoiceInput.swift": "a16bca872871509bd6df5d93d228bf4bc7d492d851dfff2f1b266ea309bccd73",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "66f0b8a4ca01e26e43472b134711bfa801226a42dfacfc8f909e4f61afafc21c"
+      }
     }
   ]
 }

@@ -72,6 +72,96 @@ struct VoiceTranscriptionProvider {
   }
 }
 
+/// Opt-in device diagnostics: timing and format metadata only, never audio or draft text.
+/// This flag is independent of UI-test fixtures and does not select a capture backend.
+fileprivate final class VoiceCaptureProbe: NSObject, AVAudioRecorderDelegate, @unchecked Sendable {
+  private let operationId: UUID
+  private let audioURL: URL
+  private let outputURL: URL
+  private let lock = NSLock()
+  private var eventCount = 0
+  private var observers: [NSObjectProtocol] = []
+  private weak var observedRecorder: AVAudioRecorder?
+
+  static func make(id: UUID, url: URL) -> VoiceCaptureProbe? {
+    guard ProcessInfo.processInfo.arguments.contains("-voice-capture-diagnostics") else { return nil }
+    return try? VoiceCaptureProbe(id: id, url: url)
+  }
+  private init(id: UUID, url: URL) throws {
+    operationId = id; audioURL = url
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("voice-capture-diagnostics", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true,
+      attributes: [.posixPermissions: 0o700, .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
+    outputURL = root.appendingPathComponent(id.uuidString.lowercased() + ".jsonl")
+    try Data().write(to: outputURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: outputURL.path)
+    super.init()
+  }
+  func attach(_ recorder: AVAudioRecorder) {
+    observedRecorder = recorder
+    recorder.delegate = self
+    for name in [AVAudioSession.routeChangeNotification, AVAudioSession.interruptionNotification] {
+      observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: nil) { [weak self] note in
+        guard let self else { return }
+        var details: [String: Any] = [:]
+        if let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? NSNumber { details["routeChangeReason"] = reason }
+        if let type = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber { details["interruptionType"] = type }
+        self.sample(name == AVAudioSession.routeChangeNotification ? "route-changed" : "interruption", recorder: self.observedRecorder, details: details)
+      })
+    }
+  }
+  func endObserving() {
+    for observer in observers { NotificationCenter.default.removeObserver(observer) }
+    observers.removeAll()
+  }
+  deinit { endObserving() }
+  func sample(_ event: String, recorder: AVAudioRecorder?, details: [String: Any] = [:]) {
+    lock.withLock {
+      guard eventCount < 340 else { return }
+      eventCount += 1
+      let session = AVAudioSession.sharedInstance()
+      var value: [String: Any] = [
+        "operationId": operationId.uuidString.lowercased(), "event": event,
+        "timestamp": Date().timeIntervalSince1970, "uptime": ProcessInfo.processInfo.systemUptime,
+        "category": session.category.rawValue, "mode": session.mode.rawValue,
+        "sampleRate": session.sampleRate, "inputChannels": session.inputNumberOfChannels,
+        "inputAvailable": session.isInputAvailable, "inputMuted": AVAudioApplication.shared.isInputMuted,
+        "inputPorts": session.currentRoute.inputs.map { $0.portType.rawValue },
+        "outputPorts": session.currentRoute.outputs.map { $0.portType.rawValue },
+        "audioFileExists": FileManager.default.fileExists(atPath: audioURL.path),
+      ]
+      if let bytes = (try? FileManager.default.attributesOfItem(atPath: audioURL.path)[.size]) as? NSNumber {
+        value["audioFileBytes"] = bytes
+      }
+      if let recorder {
+        value["isRecording"] = recorder.isRecording
+        value["recorderCurrentTime"] = recorder.currentTime
+        value["recorderDeviceTime"] = recorder.deviceCurrentTime
+        value["averagePower"] = recorder.averagePower(forChannel: 0)
+        value["peakPower"] = recorder.peakPower(forChannel: 0)
+        value["recordingSampleRate"] = recorder.settings[AVSampleRateKey]
+        value["recordingChannels"] = recorder.settings[AVNumberOfChannelsKey]
+      }
+      value.merge(details) { _, new in new }
+      guard JSONSerialization.isValidJSONObject(value),
+        var data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+        let handle = try? FileHandle(forWritingTo: outputURL) else { return }
+      data.append(0x0A)
+      defer { try? handle.close() }
+      _ = try? handle.seekToEnd()
+      try? handle.write(contentsOf: data)
+    }
+  }
+  func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+    sample("delegate-finished", recorder: recorder, details: ["successfully": flag])
+  }
+  func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+    let error = error as NSError?
+    sample("delegate-encode-error", recorder: recorder,
+      details: ["errorDomain": error?.domain ?? "", "errorCode": error?.code ?? 0])
+  }
+}
+
 /// Keep an in-flight transcription with its draft, rather than with the visible page.
 @MainActor
 final class VoiceInputSessions: ObservableObject {
@@ -216,6 +306,7 @@ final class VoiceInputController: ObservableObject {
   private(set) var originalText = ""
   private var generation = UUID()
   private var recorder: AVAudioRecorder?
+  private var captureProbe: VoiceCaptureProbe?
   private var fileURL: URL?
   private var recording: VoiceRecording?
   private var recordingPersisted = false
@@ -278,7 +369,7 @@ final class VoiceInputController: ObservableObject {
     guard !isActive else { return }
     VoiceMigrationSafety.track(self)
     targetKey = target; originalText = text; self.provider = provider; onDraftChange = onChange
-    transcript = ""; error = nil; diagnosticInfo = ""; recording = nil; recordingPersisted = false
+    transcript = ""; error = nil; diagnosticInfo = ""; recording = nil; recordingPersisted = false; captureProbe = nil
     fixtureCaptured = false
     usesLocalRecognition = VoiceTranscriptionPreference.current == .local
     usesLocalFallback = false
@@ -375,18 +466,25 @@ final class VoiceInputController: ObservableObject {
         do { try await waitForCaptureForeground(id: id) }
         catch { prepared.recorder.stop(); throw error }
         let recorder = prepared.recorder
-        self.recorder = recorder; phase = .listening
+        self.recorder = recorder; captureProbe = prepared.probe; phase = .listening
+        captureProbe?.sample("foreground-listening", recorder: recorder)
         if ProcessInfo.processInfo.arguments.contains("-ui-testing") { diagnosticInfo = "backend=HostTranscription format=16000/1 file=wav" }
         interruptionObserver = NotificationCenter.default.addObserver(
           forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] notification in
             guard (notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt) == AVAudioSession.InterruptionType.began.rawValue else { return }
-            Task { @MainActor [weak self] in _ = await self?.finish() }
+            Task { @MainActor [weak self] in
+              self?.captureProbe?.sample("interruption-began", recorder: self?.recorder)
+              _ = await self?.finish()
+            }
           }
         meterTask = Task {
+          var ticks = 0
           while generation == id, phase == .listening {
             do { try await Task.sleep(for: .milliseconds(70)) } catch { return }
             guard generation == id, phase == .listening else { return }
             recorder.updateMeters()
+            ticks += 1
+            if ticks % 14 == 0 { captureProbe?.sample("recording", recorder: recorder) }
             levels.removeFirst(); levels.append(CGFloat(max(0, min(1, (recorder.averagePower(forChannel: 0) + 55) / 45))))
             if !recorder.isRecording { _ = await finish(); return }
           }
@@ -468,6 +566,10 @@ final class VoiceInputController: ObservableObject {
             guard let fileURL else { throw HostServiceError.message(L10n.tr("原录音不存在")) }
             stopCapture()
             let audio = try AVAudioFile(forReading: fileURL)
+            captureProbe?.sample("sealed-audio-file", recorder: nil, details: [
+              "audioFrames": audio.length, "processingSampleRate": audio.processingFormat.sampleRate,
+              "processingChannels": audio.processingFormat.channelCount,
+            ])
             guard audio.length > 0 else {
               failSetup(id: id, message: L10n.tr("没有采集到录音，请重录。使用手机镜像时，请先退出镜像。"))
               return false
@@ -662,7 +764,13 @@ final class VoiceInputController: ObservableObject {
   }
   private func stopCapture() {
     meterTask?.cancel(); meterTask = nil
-    recorder?.stop(); recorder = nil
+    if let recorder {
+      captureProbe?.sample("will-stop", recorder: recorder)
+      recorder.stop()
+      captureProbe?.sample("did-stop", recorder: recorder)
+    }
+    captureProbe?.endObserving()
+    recorder = nil
     if let observer = interruptionObserver { NotificationCenter.default.removeObserver(observer); interruptionObserver = nil }
     if let id = activeAudioSession { audioSession.deactivate(id: id); activeAudioSession = nil }
   }
@@ -695,7 +803,8 @@ final class VoiceAudioSession: @unchecked Sendable {
 
   final class PreparedRecorder: @unchecked Sendable {
     let recorder: AVAudioRecorder
-    init(_ recorder: AVAudioRecorder) { self.recorder = recorder }
+    fileprivate let probe: VoiceCaptureProbe?
+    fileprivate init(_ recorder: AVAudioRecorder, probe: VoiceCaptureProbe?) { self.recorder = recorder; self.probe = probe }
   }
   private final class RecorderRequest: @unchecked Sendable {
     private let lock = NSLock()
@@ -723,13 +832,17 @@ final class VoiceAudioSession: @unchecked Sendable {
             AVNumberOfChannelsKey: 1, AVLinearPCMBitDepthKey: 16,
             AVLinearPCMIsFloatKey: false, AVLinearPCMIsBigEndianKey: false,
           ])
+          let probe = VoiceCaptureProbe.make(id: id, url: url)
+          probe?.attach(recorder)
           recorder.isMeteringEnabled = true
+          probe?.sample("recorder-created", recorder: recorder)
           guard request.pending, recorder.prepareToRecord(), request.pending,
             recorder.record(forDuration: 300) else {
             recorder.stop(); try? FileManager.default.removeItem(at: url)
             request.resolve(.failure(HostServiceError.message(L10n.tr("无法开始录音")))); return
           }
-          if !request.resolve(.success(PreparedRecorder(recorder))) {
+          probe?.sample("record-started", recorder: recorder)
+          if !request.resolve(.success(PreparedRecorder(recorder, probe: probe))) {
             recorder.stop(); try? FileManager.default.removeItem(at: url)
           }
         } catch { request.resolve(.failure(error)) }

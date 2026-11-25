@@ -400,6 +400,14 @@ export class DesktopSharedControl {
       ...thread,
       id,
       hostId: 'local',
+      // The prepared bridge consumes the same workspace contract as follower IPC.
+      // An omitted/unknown project identity must not be guessed as projectless.
+      workspaceKind:
+        typeof thread.projectId === 'string' && thread.projectId.trim()
+          ? 'project'
+          : thread.projectId === null
+            ? 'projectless'
+            : undefined,
       resumeState: 'resumed',
       threadRuntimeStatus: thread.status,
       latestModel: settings.model,

@@ -26531,6 +26531,16 @@
         "scripts/host-trace-retry.test.mjs": "7e68bf78a13d45c43d599456affcbafb3eb9fd5284ca6a2c62c682bff87dc3dd",
         "scripts/package-host-connect.mjs": "7996b7e181be4217f488e0b2b8c43521c150a3f968d37b3546ff75bbb724ef36"
       }
+    },
+    {
+      "id": "desktop-shared-creation-workspace-20261125",
+      "baseCommit": "2e65871fef26185eb8aea94eb1ca1dd48776e8b7",
+      "features": ["F26", "F27", "F45"],
+      "summary": "Normalize shared-service project identity to the existing prepared-owner workspace contract so project and projectless creations reach the first input after the original empty-thread handoff. Missing project identity stays unconfirmed. Preserve original creation IDs, input boundaries and no-replay behavior; native mobile verification remains separate.",
+      "files": {
+        "packages/codex-adapter/src/desktop-shared-control.ts": "7f99f69166a82f3dc5e54535dccfffb6c6e88f1f966c19348e5dc47f8f01ed5b",
+        "scripts/desktop-prepared-bridge-smoke.mjs": "81dfdf4dcde72eb397eae062872b2e054ca1eb4c953e0f72285ddcfed0dd803d"
+      }
     }
   ]
 }

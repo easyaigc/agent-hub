@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DesktopPreparedBridge } from '../packages/codex-adapter/dist/desktop-prepared-bridge.js';
 import { DesktopThreadPreparer } from '../packages/codex-adapter/dist/desktop-thread-preparer.js';
+import { DesktopSharedControl } from '../packages/codex-adapter/dist/desktop-shared-control.js';
 
 // Exercise a real child process and durable journals; never contacts a desktop.
 if (process.platform === 'win32')
@@ -303,6 +304,67 @@ try {
   );
   assert.equal(recoveryInputs, 0);
   recovery.close();
+
+  // Exercise the actual shared-service projection together with the prepared
+  // bridge. A mocked follower state hides missing workspace normalization.
+  for (const sharedProjectId of [projectId, null]) {
+    const sharedCalls = [];
+    const shared = new DesktopSharedControl('ws://127.0.0.1:12345', executable, {
+      inspectService: async () => 'synthetic-original-owner',
+      client: {
+        async connect() {},
+        close() {},
+        onEvent() {},
+        onRequest() {},
+        onDisconnect() {},
+        respond() {},
+        async call(method) {
+          sharedCalls.push(method);
+          if (method === 'thread/loaded/list') return { data: [threadId] };
+          if (method === 'thread/read')
+            return {
+              thread: {
+                ...JSON.parse(await readFile(output, 'utf8')),
+                status: { type: 'idle' },
+              },
+            };
+          throw Error('Shared creation must not dispatch ' + method);
+        },
+      },
+    });
+    let firstInputs = 0;
+    const sharedPlan = { ...plan, projectId: sharedProjectId, clientOperationId: randomUUID() };
+    const sharedJournal = join(directory, 'shared-' + sharedPlan.clientOperationId);
+    const sharedBridge = new DesktopPreparedBridge(
+      config,
+      hostId,
+      { ...runtime, ipc: shared },
+      sharedJournal,
+      executable,
+      home,
+      async (_plan, id) => {
+        assert.equal(id, threadId);
+        const record = JSON.parse(
+          await readFile(join(sharedJournal, sharedPlan.clientOperationId + '.json'), 'utf8'),
+        );
+        assert.equal(record.exitCode, 0);
+        assert.throws(() => process.kill(record.pid, 0));
+        assert.equal(shared.state(id).workspaceKind, sharedProjectId ? 'project' : 'projectless');
+        firstInputs++;
+      },
+    );
+    try {
+      await shared.connect();
+      assert.equal(await sharedBridge.create(sharedPlan), threadId);
+      assert.equal(await sharedBridge.create(sharedPlan), threadId);
+      assert.equal(await sharedBridge.reconcile(sharedPlan), threadId);
+      assert.equal(firstInputs, 1);
+      assert(sharedCalls.every((method) => ['thread/loaded/list', 'thread/read'].includes(method)));
+    } finally {
+      sharedBridge.close();
+      shared.close();
+    }
+  }
   assert.throws(() => new DesktopThreadPreparer('relative-cli', home));
   // A broker constructed before a Windows installation refresh must use the
   // newly verified CLI when it next prepares empty metadata, not its old path.

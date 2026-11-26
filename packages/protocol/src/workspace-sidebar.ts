@@ -4,5 +4,7 @@ export interface WorkspaceSidebar {
   pinned: { kind: 'thread' | 'project'; id: string }[];
   recentThreadIds: string[];
   projectIds: string[];
+  /** Confirmed phone creations not present in the current desktop display catalog. */
+  pendingProjectIds?: string[];
   projectThreadIds: Record<string, string[]>;
 }

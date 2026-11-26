@@ -1924,3 +1924,14 @@
 "上次预览状态未确认" = "The previous preview status is unconfirmed";
 
 "部分阅读缓存无法恢复，原文件已保留。" = "Some reading cache could not be restored. The original files have been preserved.";
+"待同步项目" = "Projects awaiting desktop sync";
+"待同步" = "Awaiting sync";
+"待核对" = "Needs confirmation";
+
+"项目创建结果待确认，请使用原名称和目录重试，避免重复创建。" = "The project creation result is unconfirmed. Retry with the original name and folder to avoid creating a duplicate.";
+
+"项目创建已被拒绝，请检查后重新创建。" = "The project creation was rejected. Check the details and create it again.";
+
+"待确认的项目创建" = "Project creations awaiting confirmation";
+
+"查询创建结果" = "Check creation result";

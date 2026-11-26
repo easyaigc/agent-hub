@@ -3,7 +3,176 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { DatabaseSync } from 'node:sqlite';
 import { DesktopSidebar } from '../packages/codex-adapter/dist/desktop-sidebar.js';
+import { desktopDisplayFingerprint } from '../packages/codex-adapter/dist/desktop-display-state.js';
+
+test('unrelated legacy window and editor preferences do not invalidate a coherent display collection', () => {
+  const state = {
+    'local-projects': { p: { name: 'P', rootPaths: [], createdAt: 1 } },
+    'electron-persisted-atom-state': { 'sidebar-show-projects-in-recents': true },
+  };
+  const before = desktopDisplayFingerprint(state);
+  state.window = { width: 1200 };
+  state['electron-persisted-atom-state']['unrelated-editor-setting'] = 'changed';
+  assert.equal(desktopDisplayFingerprint(state), before);
+  state['local-projects'].p.name = 'Renamed';
+  assert.notEqual(desktopDisplayFingerprint(state), before);
+});
+
+test('ambiguous native mapping and malformed desktop project rows fail without dropping duplicate identities', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sidebar-conflict-'));
+  const path = join(directory, '.codex-global-state.json');
+  try {
+    const native = [{ id: 'n', hostId: 'h', name: 'N', roots: [] }];
+    await writeFile(
+      path,
+      JSON.stringify({
+        'local-projects': { a: { name: 'A' }, b: { name: 'B' } },
+        'app-server-project-id-by-legacy-project-id-by-host': {
+          ['local:' + directory]: { a: 'n', b: 'n' },
+        },
+      }),
+    );
+    assert.throws(() => new DesktopSidebar(path).projects(native), {
+      code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+    });
+    for (const invalid of ['not-an-object', ['n']]) {
+      await writeFile(path, JSON.stringify({ 'local-projects': invalid }));
+      assert.throws(
+        () => new DesktopSidebar(path),
+        /metadata unavailable/,
+        'A corrupt legacy catalog must never become authoritative empty-removal evidence',
+      );
+    }
+    await writeFile(path, JSON.stringify({ 'local-projects': { n: 'invalid' } }));
+    assert.throws(() => new DesktopSidebar(path).projects(native), {
+      code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+    });
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('SQLite WAL catalog supersedes stale JSON and follows empty creation, rename and delayed removal', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sidebar-sqlite-'));
+  const path = join(directory, '.codex-global-state.json');
+  const database = new DatabaseSync(join(directory, '.codex-global-state.sqlite'));
+  try {
+    database.exec(
+      'PRAGMA journal_mode=WAL; CREATE TABLE settings(scope TEXT,key TEXT,value TEXT,PRIMARY KEY(scope,key)) WITHOUT ROWID',
+    );
+    const set = (scope, key, value) =>
+      database
+        .prepare('INSERT OR REPLACE INTO settings VALUES(?,?,?)')
+        .run(scope, key, JSON.stringify(value));
+    await writeFile(path, JSON.stringify({ 'local-projects': { stale: { name: 'Stale' } } }));
+    const native = ['native', 'stale', 'unrelated'].map((id) => ({
+      id,
+      hostId: 'h',
+      name: id,
+      roots: [],
+    }));
+    set('global', 'local-projects', { legacy: { name: 'Empty new project' } });
+    set('global', 'app-server-project-id-by-legacy-project-id-by-host', {
+      ['local:' + directory]: { legacy: 'native' },
+    });
+    assert.deepEqual(
+      new DesktopSidebar(path).projects(native).map((p) => [p.id, p.name]),
+      [['native', 'Empty new project']],
+    );
+    set('global', 'local-projects', { legacy: { name: 'Renamed' } });
+    assert.equal(new DesktopSidebar(path).projects(native)[0].name, 'Renamed');
+    set('global', 'local-projects', {});
+    assert.deepEqual(
+      new DesktopSidebar(path).projects(native),
+      [],
+      'Raw server retention cannot resurrect a removed desktop project',
+    );
+    set('global', 'local-projects', null);
+    assert.deepEqual(new DesktopSidebar(path).projects(native), []);
+    database.exec("DELETE FROM settings WHERE scope='global' AND key='local-projects'");
+    assert.deepEqual(
+      new DesktopSidebar(path).projects(native),
+      [],
+      'Uninitialized official SQLite catalog is empty',
+    );
+    set('global', 'local-projects', []);
+    assert.throws(
+      () => new DesktopSidebar(path),
+      /metadata unavailable/,
+      'Malformed authoritative state must fail without stale JSON fallback',
+    );
+  } finally {
+    database.close();
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('SQLite display uses only current owner values and live atom overrides', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sidebar-owner-'));
+  const path = join(directory, '.codex-global-state.json');
+  const database = new DatabaseSync(join(directory, '.codex-global-state.sqlite'));
+  try {
+    database.exec(
+      'CREATE TABLE settings(scope TEXT,key TEXT,value TEXT,PRIMARY KEY(scope,key)) WITHOUT ROWID',
+    );
+    const set = (scope, key, value) =>
+      database
+        .prepare('INSERT OR REPLACE INTO settings VALUES(?,?,?)')
+        .run(scope, key, JSON.stringify(value));
+    const projects = ['p', 'q'].map((id) => ({ id, hostId: 'h', name: id, roots: [] }));
+    set('global', 'local-projects', { p: {}, q: {} });
+    set('global', 'electron-renderer-content-owner', 'current');
+    set('global', 'app-server-pending-project-deletions-by-host', {
+      ['local:' + directory]: { p: { projectId: 'stale-global' } },
+    });
+    set('global', 'electron-owner-value:app-server-pending-project-deletions-by-host:old', {
+      ['local:' + directory]: { p: { projectId: 'old-owner' } },
+    });
+    set('global', 'electron-owner-value:app-server-pending-project-deletions-by-host:current', {
+      ['local:' + directory]: { p: { projectId: 'p' } },
+    });
+    set('electron-owner-atoms:current', 'unified-sidebar-project-order-v1', [
+      'codex:project:q',
+      'codex:project:p',
+    ]);
+    assert.deepEqual(
+      new DesktopSidebar(path).projects(projects).map((p) => p.id),
+      ['q', 'p'],
+    );
+    set('atom', 'unified-sidebar-project-order-v1', ['codex:project:p', 'codex:project:q']);
+    assert.deepEqual(
+      new DesktopSidebar(path).projects(projects).map((p) => p.id),
+      ['p', 'q'],
+    );
+    assert.deepEqual([...new DesktopSidebar(path).pendingProjectDeletionIds()], ['p']);
+    set('global', 'electron-renderer-content-owner', 'new-owner-with-no-values');
+    assert.deepEqual(
+      [...new DesktopSidebar(path).pendingProjectDeletionIds()],
+      [],
+      'Missing current owner data cannot inherit global or another owner',
+    );
+  } finally {
+    database.close();
+    await rm(directory, { recursive: true });
+  }
+});
+
+test('existing broken SQLite and unresolved current project metadata fail instead of returning a successful truncated catalog', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sidebar-unavailable-'));
+  const path = join(directory, '.codex-global-state.json');
+  try {
+    await writeFile(path, JSON.stringify({ 'local-projects': { new: { name: 'New' } } }));
+    assert.throws(() => new DesktopSidebar(path).projects([]), {
+      code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+    });
+    await writeFile(join(directory, '.codex-global-state.sqlite'), 'not a database');
+    assert.throws(() => new DesktopSidebar(path), /metadata unavailable/);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+});
 
 test('desktop display catalog, recency, optional project recents and pin slots', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'sidebar-projection-'));

@@ -1,5 +1,11 @@
 # 应用协议与领域契约
 
+2026-11-26 项目同步可选扩展（修复候选）：具备实际后继读取实现的 Host 声明 `workspace:refresh:v1`。客户端显式刷新使用鉴权 `GET /v1/workspace?refresh=1`，与既有完整目标、reader 等查询项组合；普通读取保持原契约。请求到达时已有读取在途的，必须等待之后启动的目录批次；取消某个 HTTP 等待者不取消共享批次。失败明确返回既有错误，不返回旧快照冒充成功。旧 Host 不声明该能力时，手机仍发起正常网络读取，不能宣称得到该后继批次保证。
+
+Host 可选声明 `projects:create:receipts:v1`：鉴权 `GET /v1/projects/creations?hostId=<host>&target=<完整机器目标JSON>&id=<原操作ID>` 直接读取本机原创建回执，与目录读取器是否可用分离。响应包含原 target、operationId、规范 name、directory、state 及存在时的 projectId；新记录另含原始 requestName、requestDirectory，保留合法的空白名称输入和相对目录形式，不与规范绝对路径混淆。精确目标不符为 409，缺失为 404，格式错误为 400。该 GET 不创建、不重放，也不从目录暂不可用推定失败。iOS 按操作分别持久保存完整目标、原名称、目录及稳定操作 ID，发送前先落盘 submitted 状态，POST 和 GET 均在网络边界绑定原机器目标；结果不明时只查询原操作，不自动补发 POST。待确认记录有独立查询入口，其他独立创建照常处理；已确认拒绝的记录结束等待，保留历史。旧 Host 无回执能力时保留原未知记录及电脑核对入口，普通新建、列表、历史等既有能力保持。回执查询不依赖当前目录 ready/online 准入，首次或升级后尚未获新能力列表也允许进行这个准确目标的只读探测；404 本身不能证明原操作未执行。旧回执仅有规范元数据时，已鉴权完整目标与原不可变 operationId 的账本条目是恢复依据，手机不猜远端根目录，也不改写原输入。Host 按实际 beforeWrite 边界识别准备连接、第二次运行/路径核对中的明确未写入失败，并保存 rejected 回执；真正写后未知保持未知且不重放。同根前一未知的既有限制只拒绝该新操作，不阻止前一操作结束后的正常新建。单写者恢复中，无在途且无官方响应 ID 的 orphan prepared 利用写前原子提交保证收敛为 rejected；活跃准备和真正写后未知不按此终结。
+
+项目可选 `desktopVisibility` 为 `pending`（已创建、尚未观察到桌面采用）或 `unknown`（旧回执缺少正向观察证据）；缺省表示当前桌面目录。sidebar v1 可选 `pendingProjectIds`，与当前 `projectIds` 和项目置顶分开展示，保留操作入口。未认识的可选字段保持兼容；字段不授予访问或执行权限。Host 内部目录来源指纹、原始目录和删除证据不属于 HTTP 响应。详见[方案与兼容边界](plans/project-directory-sync-20261126.md)。
+
 EasyWork 文件解析恢复：`resource/resolve` 与 `resource/resolve-document-link` 会分配文件传输，按具名写操作处理。沿用稳定 `requestId` 作为默认操作 ID、完整目标及设备作用域和原方法／参数指纹；电脑保存分配前状态及原响应。Android 丢失回复后只查询原 `command/status`，验证原身份及指纹后使用原响应；旧电脑无回执、仍在提交或结果不确定时保留未知，不再次分配。普通 `resource/read`／`resource/download` 读取规则不变，也不从同名历史传输猜测原结果。当前实现及验收只见下方唯一清单链接。
 
 2026-11-22 F06/F08 自动发现修正候选：取消正常页手填范围，使用手机实际 LAN 掩码及原已配对 Host 的独立已鉴权 networks 接口自动学习并持久保存；正常前台连接即可学习，关联地址优先、范围完整惰性扫描。电脑全部退出 Tailscale 后使用已学范围，首次学习需一条原可信路径可达。网络错误保留实际分类，仅明确认证拒绝才引导重新授权；原凭据、记录、草稿和未知写入不变。Android／EasyWork 独立范围提供适配及原手机升级验收未因此通过；旧117证据仍限原手填场景。[契约与边界](design/office-subnet-discovery.md)，当前状态只见[唯一完整功能清单](plans/android-ios-alignment-20261107/progress.md)。

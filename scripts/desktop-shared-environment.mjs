@@ -120,11 +120,20 @@ export function sharedDesktopEnvironment({
       migrationRequired: value.schemaVersion !== 2,
       url: value.url,
       program: value.program,
+      executable: value.executable,
+      nativeSuggestionsConfig: value.nativeSuggestionsConfig ?? null,
       currentDesktopActivated: 'requires-independent-process-check',
       desktopProcessesStarted: 0,
     };
   };
-  const install = ({ program, executable, url, nativeSuggestionsConfig }) => {
+  const install = ({ program, executable, url, nativeSuggestionsConfig, preserveNode = false }) => {
+    if (preserveNode) {
+      manifest();
+      const originalNode = readFileSync(wrapper, 'utf8').split('\n')[0].slice(2);
+      if (!originalNode.startsWith('/') || !lstatSync(originalNode).isFile())
+        throw Error('Original shared launcher Node is unavailable');
+      node = originalNode;
+    }
     program = realpathSync(resolve(program));
     executable = realpathSync(resolve(executable));
     node = realpathSync(node);

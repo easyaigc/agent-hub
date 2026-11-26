@@ -72,6 +72,18 @@ TASK_HUB_BUNDLE="/path/to/frozen-task-hub-artifact" pnpm package:connect
 
 按同一 ZIP SHA-256 分发到各目标。超过文件传输单文件上限时，只拆分同一 ZIP 字节并逐块记录 SHA-256，接收后先还原并核对完整 ZIP SHA-256，再解压部署；不是生成各机不同的程序包。升级只按变更文件合并，保存旧文件和本机独有差异，不覆盖 `.local`、私有配置、Task Hub 数据、其他工作树或目标机独有文件。手机已有正式 App 与连接优先保留。
 
+## macOS 统一升级入口
+
+Host 服务、原桌面共享启动器与建议 producer 是同一接入包的运行组件。三个入口各有持久路径，替换 Host 文件或仅执行 `restart` 不会更新原桌面中加载的采集代码。升级从新包的程序根目录执行：
+
+```bash
+HOST_AGENT_STATE_DIR='<原私有状态目录>' '<原Node绝对路径>' scripts/desktop-service.mjs upgrade
+```
+
+该入口先核对完整程序及既有机器目标、私有结果目录、共享 URL 和原生配置，再一起更新 Host 入口、共享 launcher 及采集程序引用；保留原 Node、身份、密钥、端口、设备授权、草稿与历史，保留用户关闭观察器的选择，不启动或退出原桌面。自定义共享环境仍须按其真实配置处理，不能猜测路径或绕过身份不符。
+
+`status`／`restart` 也返回 `runtimeBundle`：`componentsConfiguredTogether` 表示配置是否指向同一程序，`currentProducerReady` 表示当前结果通道是否有效，`normalDesktopReopenRequired` 表示是否仍需正常重开。分别核对包 SHA、Host 实际入口／依赖、共享 manifest／wrapper、原生 config／producer 实现及当前能力。混装、等待重开、来源结果缺失与手机未验分别报告，不能只凭 HTTP 200 宣称升级完成。实际采集或公共适配发生变化时，由用户保存工作并正常重开原桌面，再验证准确旧会话的已有建议、来源和安全决定，以及手机原连接和草稿；不重发模型输入或调用预测生成接口补造证明。
+
 ## 断连诊断候选
 
 升级后按准确包 SHA 核对实际 ESM 闭包和新进程。Host 错误诊断 ID、分层 ready／bridge／reader／存储状态，以及诊断异步写入的限额与失败计数见随包 `docs/host-reconnect-diagnostics.md`。Windows C#、正式服务、手机与模型验收分别执行，不能把 Mac Worker／HTTP 辅助检查写成 Windows 通过。保留原权限、身份和未知操作，不重放故障请求以取证。

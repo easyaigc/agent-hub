@@ -10,6 +10,15 @@ export class DesktopWorkspaceView {
   private readonly reader: CodexHistoryReader;
   private summaries = new Map<string, Summary>();
   private refreshing: Promise<Workspace> | undefined;
+  private readSeq = 0;
+  private pendingFresh:
+    | {
+        minimumSeq: number;
+        promise: Promise<Workspace>;
+        resolve: (value: Workspace) => void;
+        reject: (error: unknown) => void;
+      }
+    | undefined;
   private closed = false;
   private deleted = new Set<string>();
   private retryAt = 0;
@@ -69,8 +78,48 @@ export class DesktopWorkspaceView {
     this.recoveryTimer.unref();
   }
 
-  workspace(): Promise<Workspace> {
-    if (this.refreshing) return this.refreshing;
+  workspace(options: { fresh?: boolean; signal?: AbortSignal } = {}): Promise<Workspace> {
+    if (options.signal?.aborted) return Promise.reject(options.signal.reason);
+    const work = this.scheduleRead(options.fresh === true);
+    const signal = options.signal;
+    if (!signal) return work;
+    if (signal.aborted) return Promise.reject(signal.reason);
+    return new Promise((resolve, reject) => {
+      const aborted = () => {
+        cleanup();
+        reject(signal.reason);
+      };
+      const cleanup = () => signal.removeEventListener('abort', aborted);
+      signal.addEventListener('abort', aborted, { once: true });
+      void work.then(
+        (value) => {
+          cleanup();
+          resolve(value);
+        },
+        (error: unknown) => {
+          cleanup();
+          reject(error);
+        },
+      );
+    });
+  }
+
+  private scheduleRead(fresh: boolean): Promise<Workspace> {
+    if (this.closed) return Promise.reject(new Error('Desktop workspace view closed'));
+    if (this.refreshing) {
+      if (!fresh) return this.refreshing;
+      if (!this.pendingFresh) {
+        let resolve!: (value: Workspace) => void;
+        let reject!: (error: unknown) => void;
+        const promise = new Promise<Workspace>((done, fail) => {
+          resolve = done;
+          reject = fail;
+        });
+        this.pendingFresh = { minimumSeq: this.readSeq + 1, promise, resolve, reject };
+      }
+      return this.pendingFresh.promise;
+    }
+    this.readSeq++;
     const work = this.refresh()
       .then((workspace) => {
         if (this.closed) throw new Error('Desktop workspace view closed');
@@ -106,6 +155,14 @@ export class DesktopWorkspaceView {
       })
       .finally(() => {
         if (this.refreshing === work) this.refreshing = undefined;
+        // Seal the successor batch as it starts. Later explicit requests see
+        // the new in-flight sequence and must queue another successor.
+        const pending = this.pendingFresh;
+        this.pendingFresh = undefined;
+        if (pending) {
+          if (this.closed) pending.reject(new Error('Desktop workspace view closed'));
+          else void this.scheduleRead(false).then(pending.resolve, pending.reject);
+        }
       });
     this.refreshing = work;
     return work;
@@ -117,7 +174,9 @@ export class DesktopWorkspaceView {
     let catalog;
     try {
       await this.session.connectDesktopReader(this.reader, false, () => !this.closed);
-      catalog = await this.reader.desktopWorkspace(this.session.confirmedCreatedProjectIds());
+      catalog = await this.reader.desktopWorkspace(undefined, (value) =>
+        this.session.desktopCatalogProjects(value),
+      );
     } catch (error) {
       // Only transport failures can retry a complete idempotent catalog once.
       // Protocol rejections, exit barriers and write operations never enter it.
@@ -131,7 +190,9 @@ export class DesktopWorkspaceView {
       )
         throw error;
       await this.session.connectDesktopReader(this.reader, true, () => !this.closed);
-      catalog = await this.reader.desktopWorkspace(this.session.confirmedCreatedProjectIds());
+      catalog = await this.reader.desktopWorkspace(undefined, (value) =>
+        this.session.desktopCatalogProjects(value),
+      );
     }
     if (this.closed) {
       this.reader.close();
@@ -140,16 +201,27 @@ export class DesktopWorkspaceView {
     // Populate the existing session's read-only catalog through its public
     // pagination API, so every displayed ID remains openable by that session.
     let workspace = await this.session.workspace();
-    const seen = new Set<string>();
-    while (workspace.nextProjectCursor || workspace.nextThreadCursor) {
-      const key = JSON.stringify([workspace.nextProjectCursor, workspace.nextThreadCursor]);
-      if (seen.has(key)) throw new Error('Repeated desktop workspace cursor');
-      seen.add(key);
+    const seenProjects = new Set<string>();
+    const seenThreads = new Set<string>();
+    let projectCursor = workspace.nextProjectCursor;
+    let threadCursor = workspace.nextThreadCursor;
+    while (projectCursor || threadCursor) {
+      if (projectCursor && seenProjects.has(projectCursor))
+        throw new Error('Repeated desktop project cursor');
+      if (threadCursor && seenThreads.has(threadCursor))
+        throw new Error('Repeated desktop thread cursor');
+      if (projectCursor) seenProjects.add(projectCursor);
+      if (threadCursor) seenThreads.add(threadCursor);
       workspace = await this.session.workspace(
-        workspace.nextProjectCursor ?? undefined,
-        workspace.nextThreadCursor ?? undefined,
+        projectCursor ?? undefined,
+        threadCursor ?? undefined,
       );
+      // Omitting an exhausted dimension may return its first page again;
+      // it never reopens that dimension or resets its completion fact.
+      projectCursor = projectCursor ? workspace.nextProjectCursor : null;
+      threadCursor = threadCursor ? workspace.nextThreadCursor : null;
     }
+    const projects = catalog.projects;
     const existing = new Map(workspace.threads.map((thread) => [thread.id, thread]));
     const threads: Summary[] = catalog.threads.map((metadata) => {
       const current = existing.get(metadata.id);
@@ -164,9 +236,19 @@ export class DesktopWorkspaceView {
       // has no explicit assignment and directory grouping is ambiguous.
       const chosen =
         current &&
-        !catalog.sidebar &&
         !this.reader.hasDesktopAssignment(metadata.id) &&
         (((metadata.projectIds?.length ?? 0) > 1 && (current.projectIds?.length ?? 0) <= 1) ||
+          (current.projectId !== metadata.projectId &&
+            projects.some(
+              (p) =>
+                p.id === current.projectId &&
+                p.desktopVisibility !== undefined &&
+                p.roots.some((root) =>
+                  projects.some(
+                    (other) => other.id === metadata.projectId && other.roots.includes(root),
+                  ),
+                ),
+            )) ||
           (current.projectId === null && current.projectIds?.length === 0));
       return {
         ...current,
@@ -194,11 +276,12 @@ export class DesktopWorkspaceView {
         threads.push(thread);
     }
     this.summaries = new Map(threads.map((thread) => [thread.id, thread]));
+    const sidebar = this.reader.desktopSidebar(projects, { ...catalog, threads });
     return {
       ...workspace,
-      projects: catalog.projects,
+      projects,
       threads,
-      ...(catalog.sidebar ? { sidebar: catalog.sidebar } : {}),
+      ...(sidebar ? { sidebar } : {}),
       pinnedThreadIds: (catalog.pinnedThreadIds ?? []).filter((id) =>
         threads.some((thread) => thread.id === id),
       ),
@@ -241,6 +324,8 @@ export class DesktopWorkspaceView {
 
   close(): void {
     this.closed = true;
+    this.pendingFresh?.reject(new Error('Desktop workspace view closed'));
+    this.pendingFresh = undefined;
     if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
     this.recoveryTimer = undefined;
     this.reader.close();

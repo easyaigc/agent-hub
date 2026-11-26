@@ -5,6 +5,15 @@ import kotlin.test.*
 import kotlinx.serialization.json.*
 
 class WorkspaceSidebarRulesTest {
+    @Test fun pendingProjectsRemainAccessibleWithoutBecomingCurrentDesktopFoldersOrPins() {
+        val projects=listOf(SidebarProjectState("current","h"),SidebarProjectState("pending","h"),SidebarProjectState("foreign","other"))
+        val source=SidebarSource(1,listOf(SidebarPinnedItem("project","pending")),emptyList(),listOf("pending","current"),
+            emptyList(),listOf("pending","pending","missing","foreign"))
+        val order=WorkspaceSidebarRules.order("h",emptyList(),projects,emptyList(),source)
+        assertEquals(listOf("current"),order.projectIds)
+        assertEquals(emptyList(),order.pinned)
+        assertEquals(listOf("pending"),order.pendingProjectIds)
+    }
     private val vectors=Json.parseToJsonElement(Base64.decode(stateVectorBase64).decodeToString()).jsonObject
     private fun JsonObject.text(key: String)=getValue(key).jsonPrimitive.content
     private fun JsonObject.strings(key: String)=getValue(key).jsonArray.map { it.jsonPrimitive.content }

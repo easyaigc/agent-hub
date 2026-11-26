@@ -209,6 +209,7 @@ protocol AgentClient: Sendable {
   func connectionMetadata(_ client: Client) async -> AgentConnectionMetadata
   func close(_ client: Client) async
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot
+  func latestWorkspace(_ client: Client) async throws -> WorkspaceSnapshot
   func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?) async throws -> SubagentHistorySnapshot
   func subagentHistory(_ client: Client, parentThreadId: String, messageId: String, childId: String?, cursor: String?, association: String) async throws -> SubagentHistorySnapshot
@@ -229,6 +230,7 @@ protocol AgentClient: Sendable {
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult
   func manageWorkspace(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation
   func workspaceManagementStatus(_ client: Client, request: WorkspaceManagementRequest) async throws -> WorkspaceManagementOperation
+  func projectCreationReceipt(_ client: Client, operationId: String) async throws -> ProjectCreationReceipt
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment
   func uploadFile(_ client: Client, threadId: String, file: LocalAttachment, source: URL) async throws -> RemoteAttachment
@@ -266,6 +268,9 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func latestWorkspace(_ client: Client) async throws -> WorkspaceSnapshot {
+    try await workspace(client, projectCursor: nil, threadCursor: nil)
+  }
   func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool {
     workspace?.capabilities?.contains("subagents:history:read:v1") == true
   }
@@ -331,6 +336,7 @@ extension AgentClient {
   func models(_ client: Client) async throws -> ModelList { throw HostServiceError.message(L10n.tr("此客户端未开放模型设置")) }
   func executeQueue(_ client: Client, threadId: String, messageId: String, expectedTurnId: String?) async throws -> CommandResult { throw HostServiceError.message(L10n.tr("此客户端未开放立即执行队列")) }
   func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult { throw HostServiceError.message(L10n.tr("此客户端未开放取消队列")) }
+  func projectCreationReceipt(_ client: Client, operationId: String) async throws -> ProjectCreationReceipt { throw HostServiceError.invalidResponse }
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { throw HostServiceError.message(L10n.tr("请先在桌面授权项目目录")) }
   func openThread(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { throw HostServiceError.unavailable }
   func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { throw HostServiceError.unavailable }
@@ -516,7 +522,13 @@ struct CodexAgentClient: AgentClient {
     return SessionPolicies.shared.codexCapabilities(capabilities: capabilities, connectionMode: connectionMode)
   }
   func workspace(_ client: Client, projectCursor: String?, threadCursor: String?) async throws -> WorkspaceSnapshot {
-    var snapshot = try await HostService.workspace(client.endpoint ?? "", token: CredentialVault.token(client.id), projectCursor: projectCursor, threadCursor: threadCursor, readerId: client.readingScopeId)
+    try await readWorkspace(client, projectCursor: projectCursor, threadCursor: threadCursor)
+  }
+  func latestWorkspace(_ client: Client) async throws -> WorkspaceSnapshot {
+    try await readWorkspace(client, projectCursor: nil, threadCursor: nil, fresh: true)
+  }
+  private func readWorkspace(_ client: Client, projectCursor: String?, threadCursor: String?, fresh: Bool = false) async throws -> WorkspaceSnapshot {
+    var snapshot = try await HostService.workspace(client.endpoint ?? "", token: CredentialVault.token(client.id), projectCursor: projectCursor, threadCursor: threadCursor, readerId: client.readingScopeId, fresh: fresh)
     if let direct = client.codexDirect, snapshot.readTarget != direct.target { throw HostServiceError.wrongHost }
     snapshot.capabilities = normalizedCapabilities(snapshot.capabilities ?? [], connectionMode: snapshot.connectionMode)
     return snapshot
@@ -563,7 +575,14 @@ struct CodexAgentClient: AgentClient {
   }
   func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult { try await HostService.post(client, "v1/queue/cancel", ["threadId": threadId, "clientMessageId": messageId], query: queueTargetQuery(client)) }
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult { try await HostService.post(client, "v1/approvals", ["threadId": approval.threadId, "turnId": approval.turnId, "approvalId": approval.id, "decision": decision, "answers": answers]) }
-  func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId]) }
+  func projectCreationReceipt(_ client: Client, operationId: String) async throws -> ProjectCreationReceipt {
+    guard let target = client.readingTarget ?? client.codexDirect?.target else { throw HostServiceError.wrongHost }
+    return try await HostService.projectCreationReceipt(client, operationId: operationId, target: target)
+  }
+  func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot {
+    guard let target = client.readingTarget ?? client.codexDirect?.target else { throw HostServiceError.wrongHost }
+    return try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId], query: HostService.projectTargetQuery(target))
+  }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
   func download(_ client: Client, file: RemoteAttachment, progress: FileDownloadProgressHandler? = nil) async throws -> URL { try await HostService.download(client, file: file, progress: progress) }
   func prepareMediaRead(_ client: Client, file: RemoteAttachment, readId: String, progress: @escaping @Sendable (Int64, Int64) -> Void) async throws -> MediaReadDescriptor? {

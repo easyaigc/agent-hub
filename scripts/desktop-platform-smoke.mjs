@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  stat,
+  writeFile,
+  symlink,
+} from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -73,22 +83,47 @@ try {
     // Mock launchctl and version discovery: never touch a user's actual service.
     await mkdir(join(directory, 'scripts'));
     await mkdir(join(directory, 'packages/codex-adapter/dist'), { recursive: true });
-    await writeFile(join(directory, 'package.json'), '{"type":"module"}');
-    await cp(
-      new URL('./desktop-service.mjs', import.meta.url),
-      join(directory, 'scripts/desktop-service.mjs'),
+    await mkdir(join(directory, 'apps/host-agent/dist'), { recursive: true });
+    await writeFile(
+      join(directory, 'apps/host-agent/dist/runtime-entry.js'),
+      '// Fixture identity only; launchctl is mocked.\n',
     );
+    await writeFile(join(directory, 'package.json'), '{"type":"module"}');
+    // The startup entry imports the runtime upgrade helpers. Copy the actual
+    // module graph and its workspace protocol package into this isolated fixture.
     for (const name of [
-      'diagnostic-events',
-      'desktop-platform',
-      'desktop-private-state-native',
-      'desktop-private-state-native-worker',
-      'windows-process',
-    ])
+      'desktop-service',
+      'desktop-runtime-upgrade',
+      'desktop-native-suggestions-environment',
+      'desktop-shared-environment',
+      'desktop-suggestion-trace-environment',
+    ]) {
       await cp(
-        new URL('../packages/codex-adapter/dist/' + name + '.js', import.meta.url),
-        join(directory, 'packages/codex-adapter/dist', name + '.js'),
+        new URL('./' + name + '.mjs', import.meta.url),
+        join(directory, 'scripts', name + '.mjs'),
       );
+    }
+    await cp(
+      new URL('../packages/codex-adapter/dist', import.meta.url),
+      join(directory, 'packages/codex-adapter/dist'),
+      { recursive: true },
+    );
+    await mkdir(join(directory, 'packages/protocol'), { recursive: true });
+    await cp(
+      new URL('../packages/protocol/dist', import.meta.url),
+      join(directory, 'packages/protocol/dist'),
+      { recursive: true },
+    );
+    await cp(
+      new URL('../packages/protocol/package.json', import.meta.url),
+      join(directory, 'packages/protocol/package.json'),
+    );
+    await mkdir(join(directory, 'node_modules/@codex-manage'), { recursive: true });
+    await symlink(
+      '../../packages/protocol',
+      join(directory, 'node_modules/@codex-manage/protocol'),
+      'dir',
+    );
     const mock = join(directory, 'service-fixture.mjs');
     await writeFile(
       mock,
@@ -201,7 +236,11 @@ syncBuiltinESMExports();
       );
     const afterLogout = service('status');
     assert.equal(afterLogout.status, 0, afterLogout.stderr);
-    assert.deepEqual(JSON.parse(afterLogout.stdout), {
+    // Bundle diagnostics are additive. Keep the original registration contract
+    // exact and ensure observing status never launches a desktop process.
+    const { runtimeBundle, ...registration } = JSON.parse(afterLogout.stdout);
+    assert.equal(runtimeBundle.desktopProcessesStarted, 0);
+    assert.deepEqual(registration, {
       service: 'com.codexmanage.host.desktop',
       installed: false,
       running: false,

@@ -8,12 +8,13 @@ import {
   readMacDesktopVersion,
   assertPrivateFile,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
+import { upgradeDesktopRuntime, desktopRuntimeBundleStatus } from './desktop-runtime-upgrade.mjs';
 
 // Persist the user LaunchAgent so it also returns after the next login.
 if (process.platform !== 'darwin') throw Error('Desktop service requires macOS launchd');
 const action = process.argv[2] ?? 'status';
-if (!['start', 'stop', 'status', 'restart'].includes(action))
-  throw Error('Use start/stop/status/restart');
+if (!['start', 'stop', 'status', 'restart', 'upgrade'].includes(action))
+  throw Error('Use start/stop/status/restart/upgrade');
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const directory = resolve(process.env.HOST_AGENT_STATE_DIR ?? join(root, '.local/desktop-runtime'));
 const label = 'com.codexmanage.host.desktop';
@@ -49,7 +50,7 @@ if (action === 'stop') {
     await rm(loginPlist);
   }
   if (status().installed) launch(['bootout', target]);
-} else if (action === 'start' || action === 'restart') {
+} else if (['start', 'restart', 'upgrade'].includes(action)) {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   let previous = {};
   let previousArguments;
@@ -138,10 +139,15 @@ if (action === 'stop') {
     previousArguments?.[0] && existsSync(previousArguments[0])
       ? previousArguments[0]
       : process.execPath;
+  // Restart preserves an installation. Upgrade explicitly moves every program
+  // reference, including the original desktop's separately loaded producer.
+  const runtimeUpgrade =
+    action === 'upgrade' ? upgradeDesktopRuntime({ program: root, environment }) : undefined;
   const entryPath =
-    previousArguments?.[1] && existsSync(previousArguments[1])
+    runtimeUpgrade?.entryPath ??
+    (previousArguments?.[1] && existsSync(previousArguments[1])
       ? previousArguments[1]
-      : join(root, 'apps/host-agent/dist/runtime-entry.js');
+      : join(root, 'apps/host-agent/dist/runtime-entry.js'));
   if (creationKeys.some((key) => process.env[key])) {
     if (!creationKeys.every((key) => process.env[key]))
       throw Error('Desktop creation requires all three local configuration paths');
@@ -157,7 +163,7 @@ if (action === 'stop') {
 <plist version="1.0"><dict>
 <key>Label</key><string>${label}</string>
 <key>ProgramArguments</key><array><string>${xml(nodePath)}</string><string>${xml(entryPath)}</string></array>
-<key>WorkingDirectory</key><string>${xml(previousWorkingDirectory ?? root)}</string>
+<key>WorkingDirectory</key><string>${xml(runtimeUpgrade?.workingDirectory ?? previousWorkingDirectory ?? root)}</string>
 <key>EnvironmentVariables</key><dict>${Object.entries(environment)
       .map(([key, value]) => `<key>${key}</key><string>${xml(value)}</string>`)
       .join('')}</dict>
@@ -174,7 +180,7 @@ if (action === 'stop') {
   await chmod(loginPlist, 0o600);
   // start/restart also clears a persistent launchctl disable override for this job.
   launch(['enable', target]);
-  if (action === 'restart' && status().installed) {
+  if (['restart', 'upgrade'].includes(action) && status().installed) {
     launch(['bootout', target]);
     const deadline = Date.now() + 5000;
     while (status().installed && Date.now() < deadline)
@@ -183,6 +189,22 @@ if (action === 'stop') {
   }
   if (!status().installed) launch(['bootstrap', domain, loginPlist]);
 }
+let runtimeBundle;
+if (existsSync(plist) && action !== 'stop') {
+  assertPrivateFile(plist);
+  const installed = JSON.parse(
+    execFileSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plist], { encoding: 'utf8' }),
+  );
+  runtimeBundle = desktopRuntimeBundleStatus({
+    entryPath: installed.ProgramArguments?.[1],
+    environment: installed.EnvironmentVariables ?? {},
+  });
+}
 console.log(
-  JSON.stringify({ service: label, ...status(), loginAutostart: existsSync(loginPlist) }),
+  JSON.stringify({
+    service: label,
+    ...status(),
+    loginAutostart: existsSync(loginPlist),
+    runtimeBundle,
+  }),
 );

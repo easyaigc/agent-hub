@@ -176,6 +176,7 @@ struct SidebarDisplayOrder {
   let recentThreadIds: [String]
   let projectIds: [String]
   let projectThreadIds: [String: [String]]
+  let pendingProjectIds: [String]
 }
 
 extension SharedMobileRules {
@@ -185,7 +186,8 @@ extension SharedMobileRules {
       SidebarSource(version: Int32(clamping: value.version), pinned: value.pinned.map {
         SidebarPinnedItem(kind: $0.kind, id: $0.id)
       }, recentThreadIds: value.recentThreadIds, projectIds: value.projectIds,
-        projectThreads: value.projectThreadIds.map { SidebarProjectThreads(projectId: $0.key, threadIds: $0.value) })
+        projectThreads: value.projectThreadIds.map { SidebarProjectThreads(projectId: $0.key, threadIds: $0.value) },
+        pendingProjectIds: value.pendingProjectIds)
     }
     let result = WorkspaceSidebarRules.shared.order(hostId: hostId, threads: threads.map {
       SidebarThreadState(id: $0.id, hostId: $0.hostId, projectId: $0.projectId,
@@ -194,7 +196,8 @@ extension SharedMobileRules {
       pinnedThreadIds: pinnedThreadIds, source: source)
     return SidebarDisplayOrder(pinned: result.pinned.map { WorkspaceSidebar.Item(kind: $0.kind, id: $0.id) },
       recentThreadIds: result.recentThreadIds, projectIds: result.projectIds,
-      projectThreadIds: Dictionary(result.projectThreads.map { ($0.projectId, $0.threadIds) }, uniquingKeysWith: { first, _ in first }))
+      projectThreadIds: Dictionary(result.projectThreads.map { ($0.projectId, $0.threadIds) }, uniquingKeysWith: { first, _ in first }),
+      pendingProjectIds: result.pendingProjectIds)
   }
   static func runningConversationCount(hostId: String, online: Bool, demo: Bool,
     workspaceAvailable: Bool, connectionMode: String?, conversations: [Conversation]) -> Int? {

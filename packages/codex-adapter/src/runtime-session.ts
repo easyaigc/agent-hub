@@ -11,7 +11,7 @@ import {
   encodeLineageCursor,
 } from './parent-lineage.js';
 import { SubagentHistoryError } from './subagents.js';
-import type { CodexHistoryReader } from './history-reader.js';
+import type { CodexHistoryReader, ReadWorkspace } from './history-reader.js';
 import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
 import type { UploadManifest } from '@codex-manage/protocol';
 import { publishUploadedFile } from './upload-publication.js';
@@ -101,6 +101,7 @@ import {
 import { WorkspaceManagementBroker } from './workspace-management.js';
 import { DesktopWorkspaceManagement } from './desktop-workspace-management.js';
 import { DesktopProjectCreation, type ProjectCreationRecord } from './desktop-project-creation.js';
+import { DesktopProjectVisibility } from './desktop-project-visibility.js';
 import { sharedCatalogPage } from './shared-catalog.js';
 import { mergeSharedMessages } from './shared-history.js';
 import { desktopPinnedSection } from './desktop-sidebar.js';
@@ -451,6 +452,7 @@ export class RuntimeSession {
   private readonly desktopForks?: DesktopForkBroker;
   private workspaceManagement?: WorkspaceManagementBroker;
   private desktopProjectCreation?: DesktopProjectCreation;
+  private desktopProjectVisibility?: DesktopProjectVisibility;
   private readonly openOperations = new Map<string, DesktopOpenOperation>();
   private openingThreads = new Map<string, Promise<boolean>>();
   private state: State;
@@ -2825,6 +2827,27 @@ export class RuntimeSession {
   }
 
   /** Visibility provenance only; every returned project still comes from official project/list. */
+  private projectVisibility(): DesktopProjectVisibility {
+    return (this.desktopProjectVisibility ??= new DesktopProjectVisibility(
+      () => this.persistence.loadProjectVisibility(),
+      (value) => this.persistence.saveProjectVisibility(value),
+    ));
+  }
+
+  desktopCatalogProjects(catalog: ReadWorkspace) {
+    const evidence = catalog.desktopCatalog;
+    if (!evidence) return catalog.projects;
+    return this.projectVisibility().observe(
+      this.readingTarget(),
+      evidence.profile,
+      evidence.fingerprint,
+      evidence.nativeProjects,
+      catalog.projects,
+      evidence.pendingDeletionIds,
+      Object.values(this.state.projectCreations ?? {}),
+    );
+  }
+
   confirmedCreatedProjectIds(): ReadonlySet<string> {
     const target = this.readingTarget();
     return new Set(
@@ -2912,17 +2935,108 @@ export class RuntimeSession {
     }
   }
 
+  async projectCreationReceipt(operationId: string) {
+    const record = Object.hasOwn(this.state.projectCreations ?? {}, operationId)
+      ? this.state.projectCreations?.[operationId]
+      : undefined;
+    if (
+      !record ||
+      machineRuntimeTargetKey(record.target) !== machineRuntimeTargetKey(this.readingTarget())
+    )
+      throw new RuntimeError(404, '项目创建记录不存在');
+    const expected = machineRuntimeTargetKey(record.target);
+    if (
+      record.state === 'prepared' &&
+      !record.projectId &&
+      !this.desktopProjectCreation?.isPending(operationId)
+    ) {
+      record.state = 'rejected';
+      record.error = '项目创建尚未提交，请重新创建';
+      this.save();
+    }
+    if (
+      record.state !== 'completed' &&
+      record.state !== 'rejected' &&
+      !this.desktopProjectCreation?.isPending(operationId)
+    ) {
+      const home =
+        process.platform === 'win32'
+          ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
+          : dirname(dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')));
+      const metadata = new DesktopWorkspaceManagement(
+        () =>
+          this.options.executable ??
+          (process.platform === 'darwin'
+            ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
+            : 'codex'),
+        home,
+        this.options.sharedWebsocketUrl,
+      );
+      // Query the saved official response ID or exact operation/Host marker; never create.
+      const id = await metadata.findCreatedProject(record, true);
+      if (machineRuntimeTargetKey(this.readingTarget()) !== expected)
+        throw new RuntimeError(409, '项目创建运行目标已变化');
+      const current = this.state.projectCreations?.[operationId];
+      if (current !== record) throw new RuntimeError(409, '项目创建记录已变化');
+      if (id && current.state !== 'completed' && current.state !== 'rejected') {
+        current.projectId = id;
+        current.state = 'completed';
+        delete current.error;
+        this.save();
+      }
+    }
+    return {
+      hostId: this.hostId,
+      target: record.target,
+      operationId: record.operationId,
+      name: record.name,
+      directory: record.root,
+      ...(record.request
+        ? { requestName: record.request.name, requestDirectory: record.request.directory }
+        : {}),
+      state: record.state,
+      ...(record.projectId ? { projectId: record.projectId } : {}),
+    };
+  }
+
   async createProject(name: string, directory: string, key: string) {
-    this.requireReady();
-    if (!name.trim() || !key) throw new RuntimeError(400, '项目名称和操作 ID 必填');
-    const root = this.allowedPath(resolve(this.options.root, directory));
-    if (!statSync(root).isDirectory()) throw new RuntimeError(400, '项目目录不存在');
+    let root: string;
+    try {
+      this.requireReady();
+      if (!name.trim() || !key) throw new RuntimeError(400, '项目名称和操作 ID 必填');
+      root = this.allowedPath(resolve(this.options.root, directory));
+      if (!statSync(root).isDirectory()) throw new RuntimeError(400, '项目目录不存在');
+    } catch (error) {
+      // These checks precede every official write. Preserve a definitive refusal
+      // for this new operation instead of leaving a bare, unrecoverable 404.
+      if (
+        this.runtime instanceof DesktopRuntime &&
+        /^[a-zA-Z0-9_-]{8,100}$/.test(key) &&
+        !['__proto__', 'prototype', 'constructor'].includes(key) &&
+        !Object.hasOwn(this.state.projectCreations ?? {}, key)
+      ) {
+        this.state.projectCreations ??= {};
+        this.state.projectCreations[key] = {
+          target: this.readingTarget(),
+          operationId: key,
+          name: name.trim(),
+          root: resolve(this.options.root, directory),
+          request: { name, directory },
+          state: 'rejected',
+          error: '项目创建请求尚未受理，请检查电脑状态及目录后重新创建',
+        };
+        this.save();
+      }
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+        throw new RuntimeError(400, '项目目录不存在');
+      throw error;
+    }
     if (this.runtime instanceof DesktopRuntime) {
+      const home =
+        process.platform === 'win32'
+          ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
+          : dirname(dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')));
       if (!this.desktopProjectCreation) {
-        const home =
-          process.platform === 'win32'
-            ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
-            : dirname(dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')));
         const metadata = new DesktopWorkspaceManagement(
           () =>
             this.options.executable ??
@@ -2952,7 +3066,12 @@ export class RuntimeSession {
         );
       }
       try {
-        await this.desktopProjectCreation.submit(name.trim(), root, key);
+        const known = Object.hasOwn(this.state.projectCreations ?? {}, key);
+        const id = await this.desktopProjectCreation.submit(name.trim(), root, key, {
+          name,
+          directory,
+        });
+        if (!known) this.projectVisibility().created(this.readingTarget(), home, id);
       } catch (error) {
         if (error instanceof CodexRejection) throw new RuntimeError(409, error.message);
         throw error;

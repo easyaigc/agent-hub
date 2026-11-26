@@ -42,6 +42,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun prepareVoice(client: MobileClient,request: VoiceManifest)=provider(client).second.prepareVoice(client,request)
     override suspend fun uploadVoice(client: MobileClient,request: VoiceManifest,bytes: ByteArray)=provider(client).second.uploadVoice(client,request,bytes)
     override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=provider(client).first.workspace(client,projectCursor,threadCursor)
+    override suspend fun latestWorkspace(client: MobileClient)=provider(client).first.latestWorkspace(client)
     override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.history(client,threadId,cursor)
     override suspend fun subagentHistory(client: MobileClient,request: MobileSubagentHistoryRequest)=provider(client).first.subagentHistory(client,request)
     override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.searchHistory(client,threadId,cursor)

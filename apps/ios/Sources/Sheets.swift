@@ -516,10 +516,15 @@ struct ProjectPickerView: View {
 struct AddProjectView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
     @ObservedObject var store: SessionStore
+    @Environment(\.dismiss) private var dismiss
+    private enum SubmissionKind: Equatable { case create(String, String); case query(String) }
+    @State private var submissionToken: UUID?
+    @State private var submissionKind: SubmissionKind?
     @State private var name = ""
     @State private var directory = "."
     var body: some View {
-        NavigationStack {
+        let failureRevision = store.errorRevision
+        return NavigationStack {
             Form {
                 Section { TextField(L10n.tr("项目名称"), text: $name).accessibilityIdentifier("project-name") }
                 if store.client?.isDemo == false {
@@ -535,8 +540,30 @@ struct AddProjectView: View {
                     ).foregroundStyle(
                         Palette.secondary)
                 }
-                Button(L10n.tr("添加项目")) { store.addProject(name, directory: directory) }.disabled(
-                    name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                if !store.pendingProjectCreations.isEmpty {
+                    Section(L10n.tr("待确认的项目创建")) {
+                        ForEach(store.pendingProjectCreations, id: \.operationId) { intent in
+                            Button {
+                                guard !store.isProjectCreationBusy(intent) else { return }
+                                let presentation = confirmation(for: intent)
+                                store.queryProjectCreation(intent, isCurrent: presentation.isCurrent, onConfirmed: presentation.confirmed)
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(intent.name)
+                                    Text(intent.directory).font(.caption).foregroundStyle(.secondary)
+                                    Text(L10n.tr("查询创建结果")).font(.caption)
+                                }
+                            }.disabled(store.isProjectCreationBusy(intent))
+                              .accessibilityIdentifier("recover-project-" + intent.operationId)
+                        }
+                    }
+                }
+                Button(L10n.tr("添加项目")) {
+                    guard !store.isProjectCreationBusy(name: name, directory: directory) else { return }
+                    let presentation = confirmation()
+                    store.addProject(name, directory: directory, isCurrent: presentation.isCurrent, onConfirmed: presentation.confirmed)
+                }.disabled(
+                    name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !store.canCreateProject || store.isProjectCreationBusy(name: name, directory: directory)
                 ).accessibilityIdentifier("confirm-project")
             }.navigationTitle(L10n.tr("添加项目")).navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -545,6 +572,32 @@ struct AddProjectView: View {
                     }
                 }
         }.presentationDetents([.medium, .large])
+          // The presented form owns its alert so a rejection cannot replace
+          // the sheet and discard the user's independent creation draft.
+          .alert(store.errorTitle, isPresented: Binding(
+            get: { store.error != nil && store.errorRevision == failureRevision && store.sheet == .addProject },
+            set: { if !$0 { store.dismissError(failureRevision, inProjectForm: true) } }
+          )) {
+            Button(L10n.tr("好"), role: .cancel) { store.dismissError(failureRevision, inProjectForm: true) }
+          } message: {
+            Text(store.error ?? "")
+          }
+          .onChange(of: name) { _, _ in submissionToken = nil; submissionKind = nil }
+          .onChange(of: directory) { _, _ in submissionToken = nil; submissionKind = nil }
+          .onDisappear { submissionToken = nil; submissionKind = nil }
+    }
+    private func confirmation(for query: ProjectCreationIntent? = nil) -> (isCurrent: () -> Bool, confirmed: () -> Void) {
+        let kind = query.map { SubmissionKind.query($0.operationId) } ?? .create(name, directory)
+        let token = submissionKind == kind ? submissionToken ?? UUID() : UUID()
+        submissionToken = token; submissionKind = kind
+        let capturedName = name, capturedDirectory = directory
+        let owned = { submissionToken == token && submissionKind == kind && name == capturedName && directory == capturedDirectory }
+        let mayDismiss = query == nil || (name.isEmpty && directory == ".") || (name == query?.name && directory == query?.directory)
+        return (owned, {
+            guard mayDismiss, owned() else { return }
+            store.drawerOpen = false
+            dismiss()
+        })
     }
 }
 

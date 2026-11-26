@@ -38,6 +38,7 @@ let armed,
   historyCount = 0,
   refreshCount = 0,
   historyRuntimePublished = false;
+let directoryCase, creationCase;
 const counters = () => ({ workspaceCount, historyCount, refreshCount });
 const anchor = {
   id: 'refresh-anchor',
@@ -133,6 +134,67 @@ const fixture = createServer(async (request, response) => {
       delayedEndpoint: endpoint,
     });
   }
+  if (url.pathname === '/creation-enable') {
+    creationCase = {
+      writes: 0,
+      posts: 0,
+      operations: {},
+      receiptAvailable: false,
+      receiptReads: 0,
+      operation: null,
+    };
+    return json(response, 200, { enabled: true });
+  }
+  if (url.pathname === '/creation-recover') {
+    assert(creationCase);
+    creationCase.receiptAvailable = true;
+    return json(response, 200, { ready: true });
+  }
+  if (url.pathname === '/creation-directory-offline') {
+    assert(creationCase);
+    creationCase.workspaceUnavailable = true;
+    creationCase.legacyReceipt = true;
+    return json(response, 200, { offline: true });
+  }
+  if (url.pathname === '/creation-hold-post') {
+    assert(creationCase);
+    creationCase.holdPost = true;
+    return json(response, 200, { holding: true });
+  }
+  if (url.pathname === '/creation-release-post') {
+    assert(creationCase?.release);
+    const release = creationCase.release;
+    creationCase.release = undefined;
+    creationCase.holdPost = false;
+    release();
+    return json(response, 200, { released: true });
+  }
+  if (url.pathname === '/creation-state') return json(response, 200, creationCase);
+  if (url.pathname === '/directory-enable') {
+    directoryCase = { revision: 0, freshReads: 0, held: 0, releases: new Map(), projectPages: 0 };
+    return json(response, 200, { enabled: true });
+  }
+  if (url.pathname === '/directory-state')
+    return json(response, 200, {
+      freshReads: directoryCase?.freshReads ?? 0,
+      held: directoryCase?.held ?? 0,
+      projectPages: directoryCase?.projectPages ?? 0,
+      historyCount,
+    });
+  if (url.pathname === '/directory-change') {
+    assert(directoryCase);
+    directoryCase.revision++;
+    return json(response, 200, { revision: directoryCase.revision });
+  }
+  if (url.pathname === '/directory-release') {
+    assert(directoryCase);
+    const id = Number(url.searchParams.get('id'));
+    const release = directoryCase.releases.get(id);
+    assert(release, 'Release the exact held request');
+    directoryCase.releases.delete(id);
+    release();
+    return json(response, 200, { released: id });
+  }
   if (url.pathname === '/arm') {
     armed = url.searchParams.get('mode');
     return json(response, 200, counters());
@@ -164,8 +226,107 @@ const fixture = createServer(async (request, response) => {
   }
   if (request.headers.authorization !== 'Bearer ' + token)
     return json(response, 401, { error: 'Fixture auth required' });
+  if (url.pathname === '/v1/projects' && request.method === 'POST' && creationCase) {
+    let bytes = '';
+    for await (const chunk of request) bytes += chunk;
+    const body = JSON.parse(bytes);
+    assert.equal(body.hostId, hostId);
+    assert.deepEqual(JSON.parse(url.searchParams.get('target')), {
+      agentId: 'codex',
+      hostId,
+      workspaceId: hostId,
+      runtimeId: 'history-only',
+    });
+    creationCase.posts++;
+    const rejected = body.name === 'Rejected project';
+    if (Object.hasOwn(creationCase.operations, body.clientOperationId))
+      assert.deepEqual(
+        creationCase.operations[body.clientOperationId].body,
+        body,
+        'Recovery retains original bytes',
+      );
+    else {
+      creationCase.operations[body.clientOperationId] = { body, rejected };
+      if (!creationCase.operation) creationCase.operation = body;
+      if (!rejected) creationCase.writes++;
+    }
+    if (creationCase.holdPost) {
+      creationCase.postHeld = true;
+      await new Promise((resolve) => {
+        creationCase.release = resolve;
+      });
+    }
+    return json(response, rejected ? 409 : 503, {
+      error: rejected
+        ? 'Official create rejected'
+        : 'Directory unavailable after confirmed creation',
+    });
+  }
+  if (url.pathname === '/v1/projects/creations' && creationCase) {
+    creationCase.receiptReads++;
+    if (!creationCase.receiptAvailable)
+      return json(response, 503, { error: 'Receipt temporarily unavailable' });
+    const item = creationCase.operations[url.searchParams.get('id')];
+    if (!item) return json(response, 404, { error: 'No original receipt' });
+    const body = item.body;
+    return json(response, 200, {
+      hostId,
+      target: JSON.parse(url.searchParams.get('target')),
+      operationId: body.clientOperationId,
+      name: body.name.trim(),
+      directory: '/synthetic/canonical-root',
+      ...(!creationCase.legacyReceipt
+        ? { requestName: body.name, requestDirectory: body.directory }
+        : {}),
+      state: item.rejected ? 'rejected' : 'completed',
+      ...(!item.rejected ? { projectId: 'created-after-read-failure' } : {}),
+    });
+  }
   if (url.pathname === '/v1/workspace') {
     workspaceCount++;
+    if (creationCase?.workspaceUnavailable)
+      return json(response, 503, { error: 'Workspace remains unavailable after restart' });
+    if (directoryCase) {
+      const state = directoryCase,
+        captured = state.revision;
+      const more = url.searchParams.get('projectCursor') === 'directory-project-page-2';
+      const first = {
+        id: 'refresh-project',
+        hostId,
+        name: captured >= 2 ? 'Directory renamed final' : 'Directory original',
+        roots: [],
+      };
+      const added = {
+        id: 'directory-added',
+        hostId,
+        name: 'Directory new empty project',
+        roots: [],
+      };
+      const removed = {
+        id: 'directory-removed',
+        hostId,
+        name: 'Directory removed project',
+        roots: [],
+      };
+      if (url.searchParams.get('refresh') === '1') {
+        const id = ++state.freshReads;
+        if (id <= 2) {
+          state.held = id;
+          await new Promise((resolve) => state.releases.set(id, resolve));
+        }
+      }
+      if (more) state.projectPages++;
+      return json(response, 200, {
+        hostId,
+        name: 'Refresh fixture',
+        connectionMode: 'history-only',
+        capabilities: ['projects:read', 'threads:read', 'history:read', 'workspace:refresh:v1'],
+        projects: more ? [added, ...(captured < 2 ? [removed] : [])] : [first],
+        threads: [thread()],
+        nextProjectCursor: more ? null : 'directory-project-page-2',
+        nextThreadCursor: null,
+      });
+    }
     if (armed) {
       const mode = armed;
       // Background unread/sidebar reads can race the user's pull gesture.
@@ -199,12 +360,44 @@ const fixture = createServer(async (request, response) => {
       if (mode === 'error') return json(response, 503, { error: 'Fixture refresh unavailable' });
       revision++;
     }
+    const createdProject = Object.values(creationCase?.operations ?? {}).find(
+      (item) => !item.rejected,
+    )?.body;
     return json(response, 200, {
       hostId,
       name: 'Refresh fixture',
       connectionMode: runtime ? 'shared-runtime' : 'history-only',
-      capabilities: ['projects:read', 'threads:read', 'history:read'],
-      projects: [{ id: 'refresh-project', hostId, name: 'Fixture project', roots: [] }],
+      capabilities: [
+        'projects:read',
+        'threads:read',
+        'history:read',
+        ...(creationCase
+          ? ['projects:create', 'projects:create:receipts:v1', 'workspace:refresh:v1']
+          : []),
+      ],
+      ...(creationCase
+        ? {
+            readTarget: {
+              agentId: 'codex',
+              hostId,
+              workspaceId: hostId,
+              runtimeId: 'history-only',
+            },
+          }
+        : {}),
+      projects: [
+        { id: 'refresh-project', hostId, name: 'Fixture project', roots: [] },
+        ...(createdProject
+          ? [
+              {
+                id: 'created-after-read-failure',
+                hostId,
+                name: createdProject.name.trim(),
+                roots: [],
+              },
+            ]
+          : []),
+      ],
       threads: [
         ...(unreadState ? [anchor] : []),
         thread(),
@@ -293,6 +486,11 @@ const availableTests = [
   'testSidebarPinnedConversations',
   'testSidebarPullRefreshUpdatesListAndRetainsDraft',
   'testSidebarPullRefreshFailurePreservesCachedList',
+  'testProjectDirectoryFreshBatchesAndIndependentPagination',
+  'testProjectCreationReadFailureRecoversOriginalOperationAfterRelaunch',
+  'testRejectedProjectDoesNotBlockIndependentCreation',
+  'testLateProjectConfirmationPreservesAnotherFormDraft',
+  'testInFlightProjectQueryPreservesOriginalConfirmation',
   'testSidebarHistoryUpdatesStateBeforeEvents',
   'testSidebarStatePriorityPreservesPhoneUnread',
   'testSidebarAsyncQuestionStatus',
@@ -318,6 +516,7 @@ try {
     await exec('xcrun', ['simctl', 'shutdown', device]);
     await exec('xcrun', ['simctl', 'boot', device]);
     await exec('xcrun', ['simctl', 'bootstatus', device, '-b']);
+    directoryCase = creationCase = undefined;
     armed = unreadState = undefined;
     runtime = false;
     historyRuntimePublished = false;
@@ -425,6 +624,8 @@ try {
     }),
   );
 } finally {
+  creationCase?.release?.();
+  for (const release of directoryCase?.releases.values() ?? []) release();
   await writeFile(captureDirectory + '/index.json', JSON.stringify(captures, null, 2) + '\n');
   await writeFile(captureDirectory + '/requests.json', JSON.stringify(requests, null, 2) + '\n');
   child?.kill('SIGTERM');

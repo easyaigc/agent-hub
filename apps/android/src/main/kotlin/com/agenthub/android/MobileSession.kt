@@ -449,7 +449,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     val saved = realClients.singleOrNull { it.id == client.id && sameScope(it.scope, client.scope) && it.agentConnection?.credentialRef == client.agentConnection?.credentialRef } ?: return false
                     if (!ready() || !current() || !sameScope(workspace.scope, saved.scope) || workspace.threads.none { it === thread }) return false
                     invalidatePanelNoticeContext(); chatNotifications?.navigationWillChange()
-                    workspaces[saved.cacheKey(null)] = workspace
+                    installWorkspaceDirectory(saved.cacheKey(null),workspace,preserveCatalog=true)
                     selectVerifiedClient(saved); selectThread(thread)
                     return selectedThread == thread.id && sameScope(selectedClient.scope, saved.scope)
                 }
@@ -500,7 +500,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 if(location.workspace.scope?.let {NativeChatNoticeTarget.from(it)}!=location.connection.target ||
                     location.workspace.threads.none {it===location.thread} || location.thread.hostId!=saved.id)return false
                 invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
-                workspaces[saved.cacheKey(null)]=location.workspace
+                installWorkspaceDirectory(saved.cacheKey(null),location.workspace,preserveCatalog=true)
                 selectVerifiedClient(saved)
                 selectThread(location.thread)
                 return selectedThread==location.thread.id && sameScope(selectedClient.scope,saved.scope)
@@ -1136,7 +1136,22 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val loadedHistorySelections = mutableMapOf<String, Pair<Long, Long>>()
     private val runs = mutableStateMapOf<String, String>()
     private val workspaces = mutableStateMapOf<String, MobileWorkspace>()
-    private class WorkspaceReadOwner(val navigation: Long,val connectionRevision: Long,val managementRevision: Long)
+    private class WorkspaceReadOwner(val navigation: Long,val connectionRevision: Long,val managementRevision: Long,
+        val request: Long,val applied: Long)
+    private class WorkspaceDemand(val minimumRequest: Long,val completion: CompletableDeferred<Unit>)
+    private class ManualWorkspaceLane(val navigation: Long,val connection: Long) {
+        val pending=mutableListOf<WorkspaceDemand>();val carried=mutableListOf<WorkspaceDemand>()
+        var active: List<WorkspaceDemand> = emptyList();var job: Job?=null
+    }
+    private sealed class WorkspaceReadResult {
+        data object Published: WorkspaceReadResult()
+        data object Obsolete: WorkspaceReadResult()
+        class Failed(val cause: Exception): WorkspaceReadResult()
+    }
+    private class WorkspaceReadObsolete: CancellationException("Workspace directory superseded")
+    private val workspaceRequests=mutableMapOf<String,Long>()
+    private val workspaceApplied=mutableMapOf<String,Long>()
+    private val manualWorkspaceLanes=mutableStateMapOf<String,ManualWorkspaceLane>()
     private val workspaceManagementRevisions=mutableStateMapOf<String,Long>()
     private val loadingTargets = mutableStateMapOf<String,WorkspaceReadOwner>()
     private class HistoryReadOwner(val selection: Long,val connectionRevision: Long,val more: Boolean)
@@ -1173,7 +1188,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             var lastDirectoryRead=android.os.SystemClock.elapsedRealtime()
             while(isActive) {
                 delay(if(connectionReady() && workspaceReady(selectedClient))15_000L else retryDelay)
-                if(hasClient && !workspaceReady(selectedClient) && selectedClient.connectionPhase!=ConnectionPhase.FAILED && !loading)refresh()
+                if(hasClient && selectedClient.connectionPhase!=ConnectionPhase.FAILED && !loading)refresh()
                 if(hasClient && !connectionReady() && !historyLoading)loadHistory()
                 val now=android.os.SystemClock.elapsedRealtime()
                 if(now-lastDirectoryRead>=15_000) { refreshPhoneReadingDirectory();lastDirectoryRead=now }
@@ -1478,7 +1493,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val workspace get() = workspaces[clientKey]
     val projects get() = if (selectedClient.isDemo && demo) DemoMobileData.projects.filter { it.hostId == selectedClient.id } else workspace?.projects.orEmpty()
     val threads get() = if (selectedClient.isDemo && demo) DemoMobileData.threads.filter { it.hostId == selectedClient.id } else workspace?.threads.orEmpty()
-    val loading get() = loadingTargets[clientKey]?.let { it.navigation==clientNavigationRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0)&&it.managementRevision==(workspaceManagementRevisions[clientKey] ?: 0) }==true
+    private fun workspaceReadBusy(key: String,client: MobileClient) = loadingTargets[key]?.let { it.navigation==clientNavigationRevision && it.connectionRevision==(revisions[client.id] ?: 0)&&it.managementRevision==(workspaceManagementRevisions[key] ?: 0) }==true
+    val loading get() = workspaceReadBusy(clientKey,selectedClient) || manualWorkspaceLanes[clientKey]?.let { it.navigation==clientNavigationRevision&&it.connection==(revisions[selectedClient.id] ?: 0) }==true
     val historyLoading get() = historyTargets[targetKey]?.let { it.selection==selectionRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0) }==true
     val historyCursor get() = historyPages[targetKey]?.nextCursor
     val sourceLabel get()=selectedClient.sourceLabel
@@ -1898,28 +1914,155 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         synchronizeReadingPresentation();persistMetadata()
         return true
     }
-    fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
-        val client = selectedClient
-        if(client.migrationEasyWork!=null) {if(userInitiated)error=NativeMigrationEasyWorkGate.MESSAGE;return}
-        if (!localReady || client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
-        val key = clientKey; val revision = revisions[client.id] ?: 0
+    internal fun refreshSidebarDirectory(): Job? =
+        if(foreground&&allowsPassiveClientRead(selectedClient))refresh() else null
+    private fun workspaceRequest(key: String,newRequest: Boolean=false): Long {
+        if(newRequest)workspaceRequests[key]=(workspaceRequests[key] ?: 0)+1
+        return workspaceRequests[key] ?: 0
+    }
+    private fun invalidateWorkspaceDirectory(key: String) {
+        workspaceRequest(key,true);workspaceApplied[key]=(workspaceApplied[key] ?: 0)+1
+    }
+    private fun captureWorkspacePublications() = (workspaceRequests.keys+workspaceApplied.keys+workspaces.keys).associateWith {
+        (workspaceRequests[it] ?: 0) to (workspaceApplied[it] ?: 0)
+    }
+    private fun installWorkspaceDirectory(key: String,snapshot: MobileWorkspace,preserveCatalog: Boolean=false,
+        observed: Map<String,Pair<Long,Long>>?=null) {
+        if(observed!=null&&(observed[key] ?: (0L to 0L))!=((workspaceRequests[key] ?: 0L) to (workspaceApplied[key] ?: 0L)))return
+        val previous=workspaces[key]?.takeIf { sameScope(it.scope,snapshot.scope) }
+        var value=snapshot
+        if(previous!=null&&preserveCatalog) {
+            value=snapshot.copy(projects=previous.projects,nextProjectCursor=previous.nextProjectCursor,sidebar=previous.sidebar)
+        } else if(previous!=null&&snapshot.nextProjectCursor!=null) {
+            val projects=LinkedHashMap<String,MobileProject>().apply {
+                previous.projects.forEach {put(it.id,it)};snapshot.projects.forEach {put(it.id,it)}
+            }.values.toList()
+            val sidebar=snapshot.sidebar?.let { incoming ->
+                if(incoming.version!=1||previous.sidebar?.version!=1)incoming else {
+                    val pending=(incoming.pendingProjectIds+previous.sidebar.pendingProjectIds).distinct()
+                    val ids=(incoming.projectIds+previous.sidebar.projectIds).distinct()
+                    val children=previous.sidebar.projectThreadIds+incoming.projectThreadIds
+                    incoming.copy(projectIds=ids,projectThreadIds=children,pendingProjectIds=pending,
+                        wire=JSONObject(incoming.wire).put("projectIds",JSONArray(ids)).put("projectThreadIds",JSONObject(children))
+                            .put("pendingProjectIds",JSONArray(pending)).toString())
+                }
+            } ?: previous.sidebar
+            value=snapshot.copy(projects=projects,sidebar=sidebar)
+        }
+        invalidateWorkspaceDirectory(key)
+        workspaces[key]=value.copy(wire=encodeWorkspace(value).toString())
+    }
+    private fun manualWorkspaceCurrent(client: MobileClient,key: String,lane: ManualWorkspaceLane) =
+        localReady&&incomingEasyWorkLink==null&&selectedClient.id==client.id&&clientKey==key&&
+            clientNavigationRevision==lane.navigation&&(revisions[client.id] ?: 0)==lane.connection&&
+            sameScope(selectedClient.scope,client.scope)&&manualWorkspaceLanes[key]===lane
+    private fun latestWorkspaceRefresh(client: MobileClient,key: String): Job {
+        val previous=manualWorkspaceLanes[key]
+        if(previous!=null&&!manualWorkspaceCurrent(client,key,previous))previous.job?.cancel()
+        val lane=previous?.takeIf { manualWorkspaceCurrent(client,key,it) }
+            ?: ManualWorkspaceLane(clientNavigationRevision,revisions[client.id] ?: 0)
+        val completion=CompletableDeferred<Unit>()
+        lane.pending.add(WorkspaceDemand(workspaceRequest(key,true),completion))
+        manualWorkspaceLanes[key]=lane
+        if(lane.job==null) {
+            lane.job=tasks.launch(start=CoroutineStart.LAZY) {
+                try {
+                    while(isActive&&manualWorkspaceCurrent(client,key,lane)&&(lane.pending.isNotEmpty()||lane.carried.isNotEmpty())) {
+                        while(workspaceReadBusy(key,client)) {
+                            ensureActive();if(!manualWorkspaceCurrent(client,key,lane))return@launch
+                            delay(50)
+                        }
+                        lane.active=lane.pending.toList();lane.pending.clear()
+                        val owner=WorkspaceReadOwner(clientNavigationRevision,revisions[client.id] ?: 0,
+                            workspaceManagementRevisions[key] ?: 0,workspaceRequest(key),workspaceApplied[key] ?: 0)
+                        when(val result=performWorkspaceRefresh(client,key,more=false,userInitiated=true,owner=owner)) {
+                            WorkspaceReadResult.Obsolete -> lane.carried.addAll(lane.active)
+                            WorkspaceReadResult.Published -> {
+                                (lane.carried+lane.active).forEach { it.completion.complete(Unit) };lane.carried.clear()
+                            }
+                            is WorkspaceReadResult.Failed -> {
+                                (lane.carried+lane.active).forEach { it.completion.completeExceptionally(result.cause) };lane.carried.clear()
+                            }
+                        }
+                        lane.active=emptyList()
+                    }
+                } finally {
+                    if(manualWorkspaceLanes[key]===lane)manualWorkspaceLanes.remove(key)
+                    (lane.pending+lane.carried+lane.active).forEach { it.completion.cancel() }
+                    lane.pending.clear();lane.carried.clear();lane.active=emptyList()
+                }
+            }
+            workspaceJob=lane.job
+            lane.job!!.start()
+        }
+        return completion
+    }
+    fun refresh(more: Boolean = false, userInitiated: Boolean = false): Job? {
+        val client=selectedClient
+        if(client.migrationEasyWork!=null) {if(userInitiated)error=NativeMigrationEasyWorkGate.MESSAGE;return null}
+        if(!localReady||client.isDemo||!hasClient||incomingEasyWorkLink!=null)return null
+        val key=clientKey
+        // Explicit intent is registered before the occupied-reader guard.
+        if(userInitiated&&!more)return latestWorkspaceRefresh(client,key)
+        if(!userInitiated&&(workspaceReadBusy(key,client)||manualWorkspaceLanes[key]!=null))return null
+        val navigation=clientNavigationRevision;val revision=revisions[client.id] ?: 0
+        val job=tasks.launch {
+            while(workspaceReadBusy(key,client)||manualWorkspaceLanes[key]!=null) {
+                ensureActive()
+                if(clientNavigationRevision!=navigation||(revisions[client.id] ?: 0)!=revision||clientKey!=key)return@launch
+                delay(50)
+            }
+            if(clientNavigationRevision!=navigation||(revisions[client.id] ?: 0)!=revision||clientKey!=key)return@launch
+            val owner=WorkspaceReadOwner(navigation,revision,workspaceManagementRevisions[key] ?: 0,
+                workspaceRequest(key,true),workspaceApplied[key] ?: 0)
+            performWorkspaceRefresh(client,key,more,userInitiated,owner)
+        }
+        workspaceJob=job
+        return job
+    }
+    private suspend fun completeWorkspaceProjects(client: MobileClient,first: MobileWorkspace,current: ()->Boolean): MobileWorkspace {
+        fun valid(page: MobileWorkspace) {
+            if(!current())throw WorkspaceReadObsolete()
+            require(page.hostId==client.id&&sameScope(page.scope,first.scope)&&
+                page.projects.all { it.hostId==client.id }&&page.threads.all { it.hostId==client.id }) { "电脑身份不匹配" }
+        }
+        fun merge(old: List<MobileProject>,incoming: List<MobileProject>): List<MobileProject> =
+            LinkedHashMap<String,MobileProject>().apply { old.forEach {put(it.id,it)};incoming.forEach {put(it.id,it)} }.values.toList()
+        valid(first)
+        var result=first.copy(projects=merge(emptyList(),first.projects));var cursor=first.nextProjectCursor
+        val seen=mutableSetOf<String>()
+        while(cursor!=null) {
+            currentCoroutineContext().ensureActive()
+            require(seen.add(cursor)) { "项目目录分页游标重复" }
+            val page=reads.workspace(client,projectCursor=cursor);valid(page)
+            cursor=page.nextProjectCursor
+            result=result.copy(projects=merge(result.projects,page.projects),nextProjectCursor=cursor,
+                pinnedThreadIds=page.pinnedThreadIds ?: result.pinnedThreadIds,sidebar=page.sidebar ?: result.sidebar)
+        }
+        return result
+    }
+    private suspend fun performWorkspaceRefresh(client: MobileClient,key: String,more: Boolean,userInitiated: Boolean,
+        owner: WorkspaceReadOwner): WorkspaceReadResult {
         val foregroundRevision=foregroundReadiness.revision
-        val old = workspace
-        val owner=WorkspaceReadOwner(clientNavigationRevision,revision,workspaceManagementRevisions[key] ?: 0)
-        workspaceJob = tasks.launch {
+        val old=workspaces[key]
             val successAtStart=connectionSuccesses[key] ?: 0
             loadingTargets[key] = owner
             var failureStage="workspace-request-or-decode"
             try {
-                val result = reads.workspace(client, if (more) old?.nextProjectCursor else null, if (more) old?.nextThreadCursor else null)
-                if (!currentWorkspace(client, key, owner)) return@launch
+                var first = if(userInitiated&&!more&&"workspace:refresh:v1" in old?.capabilities.orEmpty())reads.latestWorkspace(client)
+                    else reads.workspace(client,null,if(more)old?.nextThreadCursor else null)
+                if(userInitiated&&!more&&"workspace:refresh:v1" !in old?.capabilities.orEmpty()&&"workspace:refresh:v1" in first.capabilities)
+                    first=reads.latestWorkspace(client)
+                val result = completeWorkspaceProjects(client,first) { currentWorkspace(client,key,owner) }
+                if (!currentWorkspace(client, key, owner)) return WorkspaceReadResult.Obsolete
                 failureStage="workspace-target-validation"
                 require(result.hostId == client.id && (!client.requiresReadTarget || result.scope != null) && (client.scope == null || result.scope == null || sameScope(client.scope, result.scope))) { "电脑身份不匹配" }
                 failureStage="workspace-merge-and-local-reading"
                 // Each page is merged only with that same scope; refresh replaces removed entries.
-                var merged = if (more && old != null) MobileWorkspaceMetadata.mergePage(old,result) else result
+                var merged = if (more && old != null) MobileWorkspaceMetadata.mergePage(old,result).copy(projects=result.projects,nextProjectCursor=null) else result
                 merged = merged.copy(wire=encodeWorkspace(merged).toString())
                 workspaces[key] = merged
+                workspaceApplied[key]=(workspaceApplied[key] ?: 0)+1
                 reconcilePhoneReading()
                 if(foreground)foregroundReadiness.confirmWorkspace(proofScope(client),foregroundRevision)
                 freshWorkspaces[key]=true
@@ -1934,16 +2077,26 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 clearReadError(userInitiated)
                 failureStage="workspace-post-apply"
                 persistMetadata(); startEvents(); loadModels();refreshPhoneReadingDirectory(seedClient=client,seed=result)
-            } catch (cancel: CancellationException) { throw cancel }
-            catch (failure: Exception) { if (currentWorkspace(client, key, owner)) { recordConnectionFailure(client,failure,failureStage,successAtStart); if(userInitiated) readError(failure,"刷新失败，请重试。\n",true); persistMetadata() } }
+                return WorkspaceReadResult.Published
+            } catch (_: WorkspaceReadObsolete) { return WorkspaceReadResult.Obsolete }
+            catch (cancel: CancellationException) { throw cancel }
+            catch (failure: Exception) {
+                if(!currentWorkspaceRequest(client,key,owner))return WorkspaceReadResult.Obsolete
+                recordConnectionFailure(client,failure,failureStage,successAtStart)
+                if(userInitiated)readError(failure,"刷新失败，请重试。\n",true)
+                persistMetadata()
+                return WorkspaceReadResult.Failed(failure)
+            }
             finally { if(loadingTargets[key]===owner)loadingTargets.remove(key) }
-        }
     }
     // A client navigation/connection owns its catalog. Selecting only one of
     // its threads keeps that owner and its valid connection proof intact.
-    private fun currentWorkspace(client: MobileClient,key: String,owner: WorkspaceReadOwner) =
+    private fun currentWorkspaceRequest(client: MobileClient,key: String,owner: WorkspaceReadOwner) =
         selectedClient.id==client.id && clientKey==key && clientNavigationRevision==owner.navigation &&
-        (revisions[client.id] ?: 0)==owner.connectionRevision && (workspaceManagementRevisions[key] ?: 0)==owner.managementRevision && loadingTargets[key]===owner && sameScope(selectedClient.scope,client.scope)
+        (revisions[client.id] ?: 0)==owner.connectionRevision && (workspaceManagementRevisions[key] ?: 0)==owner.managementRevision &&
+        workspaceRequest(key)==owner.request&&loadingTargets[key]===owner&&sameScope(selectedClient.scope,client.scope)
+    private fun currentWorkspace(client: MobileClient,key: String,owner: WorkspaceReadOwner) =
+        currentWorkspaceRequest(client,key,owner)&&(workspaceApplied[key] ?: 0)==owner.applied
     private fun recordConnectionSuccess(client: MobileClient) {
         val key=client.cacheKey(null)
         connectionSuccesses.keys.retainAll(realClients.map { it.cacheKey(null) }.toSet()+key)
@@ -2133,7 +2286,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             it.id==record.id && it.selection==selectionRevision && it.draft==version(origin)
         }==true else !record.detached && origin!=null && draftVersions[origin]==record.sourceVersion)
         val clientCache=client.cacheKey(null)
-        result.project?.let { project -> workspaces[clientCache]?.let { old->val updated=old.copy(projects=(old.projects+project).distinctBy { it.id });workspaces[clientCache]=updated.copy(wire=encodeWorkspace(updated).toString()) } }
+        // A confirmed creation receipt proves the operation, not current desktop membership.
+        // Re-read the directory rather than resurrecting a project from a late receipt.
+        result.project?.let { invalidateWorkspaceDirectory(clientCache) }
         result.thread?.let { thread ->
             workspaces[clientCache]?.let { old -> val updated=old.copy(threads=(listOf(thread)+old.threads).distinctBy { it.id }); workspaces[clientCache]=updated.copy(wire=encodeWorkspace(updated).toString()) }
             // A late creation may be shown in the sidebar; it cannot replace a newer draft.
@@ -2147,7 +2302,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             scrollToLatestRevision++
         }
         persistMetadata()
-        if(selectedClient.id==client.id && sameScope(selectedClient.scope,client.scope)) { loadOperations(); refresh(); loadHistory() }
+        if(selectedClient.id==client.id && sameScope(selectedClient.scope,client.scope)) { loadOperations(); refresh(userInitiated=result.project!=null); loadHistory() }
     }
     private fun restartOperationReadObservers() {
         val active=observingOperations.filterValues { it.isActive }.keys
@@ -2935,6 +3090,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         }
     }
     suspend fun connect(name: String, address: String, secret: String, editing: MobileClient? = null): MobileClient {
+        val directoryObservation=captureWorkspacePublications()
         val acceptanceTiming=NativeReadAcceptanceTiming.capture();val startedAt=android.os.SystemClock.elapsedRealtimeNanos()
         require(name.trim().isNotEmpty() && name.length <= 256) { "请输入客户端名称" }
         NativeHostReads.baseAddress(address)
@@ -2952,7 +3108,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         invalidatePanelNoticeCredential(client.id);chatNotifications?.connectionsWillChange()
         withContext(Dispatchers.IO) { storage?.setToken(client.id, secret) }
         revisions[client.id] = (revisions[client.id] ?: 0) + 1
-        val remembered = replaceClient(client); workspaces[remembered.cacheKey(null)] = result
+        val remembered = replaceClient(client); installWorkspaceDirectory(remembered.cacheKey(null),result,observed=directoryObservation)
         selectVerifiedClient(remembered);acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CONNECTION_SUCCESS,remembered.id,startedAtNanos=startedAt); return remembered
     }
     private fun replaceClient(client: MobileClient): MobileClient {
@@ -3027,6 +3183,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         return withEasyWorkConnectionAction(this,EasyWorkConnectionInput("save",name,"",binding.value)) {saveEasyWorkLeased(name,binding,candidates,token,grantRef,it)}
     }
     private suspend fun saveEasyWorkLeased(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?,grantRef: String?,lease: EasyWorkConnectionActionLease): MobileClient {
+        val directoryObservation=captureWorkspacePublications()
         require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         require(name.isNotBlank()&&name.length<=256);val store=storage?:error("本地安全存储不可用")
         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
@@ -3084,7 +3241,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             return lease.commit {
                 EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
                 client=client.copy(online=true,readerId=realClients.firstOrNull {it.id==id&&sameScope(it.scope,scope)}?.readerId ?: UUID.randomUUID().toString());replaceClient(client);revisions[id]=revision+1
-                workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);version(targetKey);easyWorkDiscovery?.scan()
+                installWorkspaceDirectory(MobileRules.cacheKey(id,scope,null,null),workspace,observed=directoryObservation);select(client);version(targetKey);easyWorkDiscovery?.scan()
                 client
             }
         } catch(failure: Exception) {
@@ -3145,6 +3302,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
      * The manual-address form keeps its separate LAN lookup contract below.
      */
     suspend fun connectSavedEasyWork(clientId: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("saved","","",clientId)) { lease->
+        val directoryObservation=captureWorkspacePublications()
         require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
         val known=realClients.firstOrNull { it.id==clientId&&it.agentConnection?.target?.agentId=="easywork" }?:error("原连接已移除")
@@ -3156,11 +3314,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         lease.checkpoint()
         lease.commit {
             val client=if(snapshot==null)known else known.copy(online=true)
-            if(snapshot!=null) {replaceClient(client);workspaces[client.cacheKey(null)]=snapshot}
+            if(snapshot!=null) {replaceClient(client);installWorkspaceDirectory(client.cacheKey(null),snapshot,observed=directoryObservation)}
             select(client);version(targetKey);client
         }
     }
     suspend fun connectKnownEasyWork(address: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("known","",address,"")) { lease->
+        val directoryObservation=captureWorkspacePublications()
         require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
         val endpoint=CodexEndpoints.local(address)
@@ -3168,7 +3327,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val snapshot=reads.workspace(known)
         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion && realClients.any { it==known }) { "所选目标、草稿或连接已改变" }
         lease.checkpoint()
-        lease.commit {val client=known.copy(online=true);replaceClient(client);workspaces[client.cacheKey(null)]=snapshot;select(client);version(targetKey);client}
+        lease.commit {val client=known.copy(online=true);replaceClient(client);installWorkspaceDirectory(client.cacheKey(null),snapshot,observed=directoryObservation);select(client);version(targetKey);client}
     }
     fun dismissIncomingLink(presentation: String?) { if(presentation!=null&&incomingEasyWorkLink?.presentation==presentation) { incomingEasyWorkLink=null;if(hasClient) { refresh();loadHistory() } } }
     fun receiveLink(uri: android.net.Uri) {
@@ -3177,6 +3336,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal fun storedCredential(id: String): String = storage?.token(id).orEmpty()
     suspend fun connectKnownCodex(host: DiscoveredCodexHost) {
+        val directoryObservation=captureWorkspacePublications()
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
         check(localReady&&codexDiscoveryAllowed)
         val store=storage;val migrationVersion=migrationEpoch
@@ -3200,11 +3360,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         checkpoint()
         require(selectionRevision == selection && targetKey == sourceKey && version(sourceKey) == sourceVersion && (revisions[host.id] ?: 0) == revision && realClients.any { it == client }) { "所选目标或连接已改变" }
         val connected = replaceClient(client.copy(online = true))
-        workspaces[connected.cacheKey(null)] = snapshot
+        installWorkspaceDirectory(connected.cacheKey(null),snapshot,observed=directoryObservation)
         selectVerifiedClient(connected)
         }
     }
     suspend fun connectCodexDiscovered(host: DiscoveredCodexHost, hostKey: String = ""): MobileClient {
+        val directoryObservation=captureWorkspacePublications()
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
         check(localReady&&codexDiscoveryAllowed)
         val store = storage ?: error("本地安全存储不可用")
@@ -3240,12 +3401,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         CodexConnectionVault(store).save(client, authorized.token)
         revisions[host.id] = revision + 1
         val remembered = replaceClient(client)
-        workspaces[remembered.cacheKey(null)] = authorized.workspace
+        installWorkspaceDirectory(remembered.cacheKey(null),authorized.workspace,observed=directoryObservation)
         selectVerifiedClient(remembered); discovery?.scan()
         remembered
         }
     }
     suspend fun connectCodexQR(text: String, name: String): MobileClient {
+        val directoryObservation=captureWorkspacePublications()
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
         check(localReady&&codexDiscoveryAllowed)
         val store=storage;val migrationVersion=migrationEpoch
@@ -3284,7 +3446,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 checkpoint()
                 client = client.copy(online = true)
                 revisions[client.id] = revision + 1; client = replaceClient(client)
-                workspaces[client.cacheKey(null)] = snapshot
+                installWorkspaceDirectory(client.cacheKey(null),snapshot,observed=directoryObservation)
                 selectVerifiedClient(client); discovery?.scan(); return@run client
             } catch(cancel: CancellationException) { throw cancel }
             catch(failure: Exception) { checkpoint();last = failure }
@@ -3573,7 +3735,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         recentProjectIDs.clear()
         aiSharing.clearAcceptance();aiSharingRequest=null
-        readingRecoveryEpoch.incrementAndGet();protectedReadingKeys.clear();readingCheckpointVersions.clear();desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); historyPaging.clear(); historyViewports.clear(); durableHistoryViewports.clear(); restoredPagingKeys.clear(); historyCacheReads.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
+        readingRecoveryEpoch.incrementAndGet();protectedReadingKeys.clear();readingCheckpointVersions.clear();desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); historyPaging.clear(); historyViewports.clear(); durableHistoryViewports.clear(); restoredPagingKeys.clear(); historyCacheReads.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); manualWorkspaceLanes.clear(); workspaceRequests.clear(); workspaceApplied.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
         selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false
         // Existing native fixtures own Chinese app copy; language tests explicitly override it.
         demo = false; appearance = "system";language="zh-Hans"; restoring = false; localRecoveryRequired=false;localRecoveryAllowsAttachmentStaging=false; error = null

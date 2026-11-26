@@ -833,8 +833,7 @@ private final class SidebarPullRefreshView: UIView {
   private weak var scroll: UIScrollView?
   private var startedAtTop = false
   private var maximumPull: CGFloat = 0
-  private var request: Task<Void, Never>?
-  private var requestToken: UUID?
+  private var requests: [UUID: Task<Void, Never>] = [:]
   init() {
     super.init(frame: .zero)
     isUserInteractionEnabled = false
@@ -865,7 +864,7 @@ private final class SidebarPullRefreshView: UIView {
     scroll = nil
     startedAtTop = false
   }
-  func cancel() { request?.cancel(); request = nil; requestToken = nil }
+  func cancel() { for task in requests.values { task.cancel() }; requests = [:] }
   @objc private func panned(_ pan: UIPanGestureRecognizer) {
     guard let scroll else { return }
     let pull = max(0, -scroll.adjustedContentInset.top - scroll.contentOffset.y)
@@ -878,11 +877,10 @@ private final class SidebarPullRefreshView: UIView {
     case .ended:
       let movement = pan.translation(in: scroll)
       guard startedAtTop, max(maximumPull, pull) >= 60,
-        movement.y > abs(movement.x), request == nil, let action else { return }
+        movement.y > abs(movement.x), let action else { return }
       let token = UUID()
-      requestToken = token
-      request = Task { @MainActor [weak self] in
-        defer { if self?.requestToken == token { self?.request = nil; self?.requestToken = nil } }
+      requests[token] = Task { @MainActor [weak self] in
+        defer { self?.requests.removeValue(forKey: token) }
         guard !Task.isCancelled else { return }
         await action()
       }
@@ -1798,11 +1796,15 @@ struct RootView: View {
   }
 
   private var normalBody: some View {
-    presentedRootContent.alert(
+    let failureRevision = store.errorRevision
+    return presentedRootContent.alert(
       store.errorTitle,
-      isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })
+      isPresented: Binding(
+        get: { store.error != nil && store.errorRevision == failureRevision && store.sheet != .addProject },
+        set: { if !$0 { store.dismissError(failureRevision, inProjectForm: false) } }
+      )
     ) {
-      Button(L10n.tr("好"), role: .cancel) { store.error = nil }
+      Button(L10n.tr("好"), role: .cancel) { store.dismissError(failureRevision, inProjectForm: false) }
     } message: {
       Text(store.error ?? "")
     }
@@ -2509,6 +2511,8 @@ struct RootView: View {
     let pinnedItems = sidebarPinnedItems(order)
     let recentThreads = sidebarRecentThreads(order)
     let filteredProjects = sidebarFilteredProjects(order)
+    let pendingProjects = order.pendingProjectIds.compactMap { id in store.projects.first { $0.id == id } }
+      .filter { project in matches(project.name) || projectThreads(project, order: order).contains { matches($0.title) } }
     return VStack(spacing: 0) {
       HStack(spacing: 0) {
         Button {
@@ -2651,6 +2655,14 @@ struct RootView: View {
               }
             }
           }
+          if !store.pendingProjectCreations.isEmpty {
+            Button {
+              store.sheet = .addProject
+            } label: {
+              Label(L10n.tr("待确认的项目创建"), systemImage: "clock.arrow.circlepath")
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 12).padding(.vertical, 8)
+            }.accessibilityIdentifier("project-creation-recovery")
+          }
           if !filteredProjects.isEmpty || store.canCreateProject {
             HStack(spacing: 0) {
               AssistedContentButton(native:store.client?.agentConnection?.target.agentId=="easywork",
@@ -2677,7 +2689,12 @@ struct RootView: View {
               ForEach(filteredProjects) { project in sidebarProject(project, order: order) }
             }
           }
-          if filteredProjects.isEmpty && recentThreads.isEmpty && pinnedItems.isEmpty {
+          if !pendingProjects.isEmpty {
+            Text(L10n.tr("待同步项目")).font(.caption).foregroundStyle(Palette.secondary)
+              .padding(.leading, 9).padding(.top, 12).accessibilityIdentifier("sidebar-pending-projects")
+            ForEach(pendingProjects) { project in sidebarProject(project, order: order) }
+          }
+          if filteredProjects.isEmpty && pendingProjects.isEmpty && recentThreads.isEmpty && pinnedItems.isEmpty {
             Text(store.search.isEmpty ? L10n.tr("还没有项目或对话") : L10n.tr("没有找到相关内容"))
               .font(.subheadline).foregroundStyle(Palette.secondary).padding(.vertical, 24)
           }
@@ -2744,7 +2761,6 @@ struct RootView: View {
 
   private var sidebarClientKey: String { store.client?.id ?? "none" }
   @MainActor private func refreshSidebar() async {
-    guard sidebarRefreshRequest == nil else { return }
     let request = UUID()
     sidebarRefreshRequest = request
     defer { if sidebarRefreshRequest == request { sidebarRefreshRequest = nil } }
@@ -2872,6 +2888,11 @@ struct RootView: View {
           .accessibilityIdentifier("project-\(project.id)")
           .accessibilityValue(expanded ? L10n.tr("已展开") : L10n.tr("已折叠"))
           .disabled(!store.search.isEmpty)
+        if let visibility = project.desktopVisibility {
+          Text(L10n.tr(visibility == "pending" ? "待同步" : "待核对"))
+            .font(.caption2).foregroundStyle(Palette.secondary).padding(.horizontal, 4)
+            .accessibilityIdentifier("project-sync-\(project.id)")
+        }
         if store.supportsProjectGit, let client = store.projectGitClient {
           ProjectGitCycleButton(client: client, target: store.mobileReadingTarget(client), projectId: project.id)
         }
@@ -5961,7 +5982,7 @@ private struct ArchivedChatsView: View {
             .disabled(store.loading).accessibilityIdentifier("archived-load-more")
         }
       }.navigationTitle(L10n.tr("已归档对话"))
-        .refreshable { await store.refresh() }
+        .refreshable { await store.refresh(includeHistory: false, userInitiated: true) }
         .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("完成")) { dismiss() } } }
     }
   }

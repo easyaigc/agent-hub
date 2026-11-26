@@ -26630,6 +26630,73 @@
       }
     },
     {
+      "id": "desktop-runtime-unified-upgrade-20261126",
+      "baseCommit": "619d819be1d422dfb7a98225b91e351bcc08e562",
+      "features": ["F04", "F69"],
+      "summary": "Upgrade macOS Host, original shared launcher and native suggestion producer from one program while retaining machine identity, Node, connection authorization, private state and drafts. Report configured component alignment separately from live producer readiness and normal desktop reopen. Mobile UI and Android code are unchanged; actual existing-thread suggestion acceptance remains separate.",
+      "files": {
+        "scripts/desktop-native-suggestions-environment.mjs": "f09a5ce5cc25d01d9a80f6a1c7fe5554376f669f93309659c115c17fb860d30a",
+        "scripts/desktop-service.mjs": "517df78c13eaf2eedf091eaf158415d77e94555ce9f6998960437a4438b8ede1",
+        "scripts/desktop-shared-environment.mjs": "28b46d39ce066af566f023de83c9b70a7e030cbccc665adf0c0c6092943f0366",
+        "scripts/desktop-runtime-upgrade.mjs": "265cbe9fc091c5dee44cd80df4ebcfbffd54eb0f136d05d419abbf8f8c77c346",
+        "scripts/desktop-runtime-upgrade.test.mjs": "ac60913948b48b39652fb4bd714a18f625b17b8053bdabb4bf0c8ca9870b438f"
+      }
+    },
+    {
+      "id": "project-directory-sync-20261126",
+      "baseCommit": "409c37dbdeb6d556e5b01244e68e28e3bef368c9",
+      "features": ["F12"],
+      "summary": "修复当前桌面项目目录来源、完整分页与手动后继刷新；隔离迟到目录、待同步项目及原创建回执恢复，双端增量验收分别记录。",
+      "files": {
+        "apps/android/src/androidTest/assets/localization-catalog.json": "45da18f374c31a71928ab6f5c756c4dab29e2aa99eb3a46cd363c9fc11d28f37",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "0dc7e3830efc48702d44a4e5be271f3519de468cee2fc64d6da87a10ecf16229",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "81108f4fcf01970af6dd4d52061ee5cb76654fc7c5ec4695875ea8c028e5b27c",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "cedbae62e36a663a9727a83d61a0c590308c9427463eddf6352d0c4613db3a66",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSidebarProjection.kt": "5cc3b47e64b52a02bf24ef34881a039b36347f69a24bb660c6cd26cd763aad32",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileWorkspaceMetadata.kt": "feccc5c31806072d2805a59a389257aa6b7f2ff31fe8df1e1b630caf149de82f",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "86510a5d79ef31fbbefcc62539ad12f80581b5130cb7a2931aaf7288f459d90d",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "909a0749faef30a3db9e0b0c6d9e07811da90a74276f07f93a8bc40b22d7edef",
+        "apps/android/src/main/res/values/product_strings.xml": "9317761e2d08f51747065bbe14a6c58a39c90536510f2cd9186c231468551659",
+        "apps/host-agent/src/runtime-server.ts": "95abf62a476906c6e57d78edacd092f4c38ddfa9671e9c9e553a9a0f1e40a233",
+        "apps/ios/Sources/AgentClient.swift": "08696b5179d65bd6267a8870ef8b8ba4254762f61a2468383213a991834d55b2",
+        "apps/ios/Sources/EasyWorkPairing.swift": "9e703160e1aae24f5dcad4b0229f9d5323c02526e44c99aa75cc736276fc29fb",
+        "apps/ios/Sources/HostService.swift": "49a4e176d45f7dbe02a079deba5f1915ac7a98920857a2636bce97fa4c650cf3",
+        "apps/ios/Sources/Models.swift": "e53b057755c950602369a8561b41acdb47cc8cb41e513a5de23041e1d7b79452",
+        "apps/ios/Sources/RootView.swift": "4a9bf7f4534002c4b6f38ee82548aba4726e55be6d642bb7edb983d40fa62646",
+        "apps/ios/Sources/SessionStore.swift": "9258a5131f090f2a522c10cc74d41c1cdacf57fd12268e152076b9b5d3a6384f",
+        "apps/ios/Sources/SharedMobileRules.swift": "925200e161743cb8bbf5307d2a6951d156315c241e63ce0f315977f3364de15d",
+        "apps/ios/Tests/CodexManageUITests.swift": "c4fab4286f712648748a0617e48dd6dd56d1ad5cecd2dbf8299caac04f769d70",
+        "packages/codex-adapter/src/desktop-project-creation.ts": "95a4aa13be8a8d65096df10fd9433701ec7e449d31e693b16d4158fb7baad72d",
+        "packages/codex-adapter/src/desktop-sidebar.ts": "d52ae222072176f900344fbb5be38b15a932ef5c095f606ab4a355ec3f99010e",
+        "packages/codex-adapter/src/desktop-workspace-view.ts": "4ebb68245944b7043bbab16bc87d2c6c2a37ece76f718221eb51dc36b6bf84a9",
+        "packages/codex-adapter/src/history-reader.ts": "2b7432067b64baae2ebf37ea97abef3737d92260881fa6a45dc22f898bb51e87",
+        "packages/codex-adapter/src/runtime-persistence.ts": "60cca71219f13c311de1b9b10656e37391de80d6747187a3ad3411b53d592613",
+        "packages/codex-adapter/src/runtime-session.ts": "6087a666351922181b46ae917fc7d4bec7b662ff5e3c399732dd334313358351",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceSidebarRules.kt": "e153ca1624df876286c07c005df5ac246b9e9f622b9cdb2c184aabd14fe80558",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceSidebarRulesTest.kt": "4b903bbce85c797bee83825dd26114143980e500de04ffa7a5574ce3d2331f32",
+        "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "110a5cd733a162d71709af949bc76f80aae040b510f45e1601e71cef251bf4e8",
+        "packages/protocol/src/index.ts": "261f050d74fe695732d86220d165713b99e1e4271f566221d742bebeca0accfe",
+        "packages/protocol/src/workspace-sidebar.ts": "50449577e9e9edca59ad488cef7a1381473d6da4e6d81c71efa82d3460bee8b0",
+        "packages/codex-adapter/src/desktop-display-state.ts": "542318b3a01918887ea5ea316b181d710feba8a686a72ccceb5040c1dc2aaa50",
+        "packages/codex-adapter/src/desktop-project-visibility.ts": "0496021adca4aac2619d0b1b0094a6b82039b37ff3f5c83da4683182eaaf8263",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/ProjectDirectorySyncTest.kt": "be0077ec4e9e445a498a6e61709a92958f07418738d6462c1e979031b2782e1c",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "8ea7940356dda3bbc1bc3fd261ef78531abb3a6a6c3a4cd700866b6db612931d",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "347b3106f715b42a25b4b67e2cfeb60751442baa0325ec87977bd84bed65b0e7",
+        "apps/ios/Sources/Sheets.swift": "b00703aef489cbe81c6e30127790be42ef9f80b20bd9bd9020cd3b9be6723cd0",
+        "packages/codex-adapter/src/desktop-workspace-management.ts": "5eabc48f470bda1d8d5ccd42c51a7f23bffdf037eaab19b84fdddb2626e5b23c"
+      }
+    },
+    {
+      "id": "project-sync-native-harness-maintenance-20261127",
+      "baseCommit": "409c37dbdeb6d556e5b01244e68e28e3bef368c9",
+      "features": ["F20", "F64"],
+      "summary": "Maintain required native harnesses encountered during project directory sync acceptance. Model disabled capture diagnostics while retaining the actual voice finish body and original recovery assertions; select the original subagent default methods by their complete method signature independently of the newly preceding workspace method. No voice or subagent product behavior or acceptance status changes.",
+      "files": {
+        "scripts/easywork-voice-recovery.test.mjs": "395400100a02c747f299d16268cf164a9b146448cd5b6c38318752de2f06578b",
+        "scripts/mobile/easywork-subagent-history-native.mjs": "dce40ee55701a4922716c1f7be77a2ce9af2ce91491ae2e96bd8b184bdf2aa8b"
+      }
+    },
+    {
       "id": "codex-async-question-original-permissions-20261126",
       "baseCommit": "619d819be1d422dfb7a98225b91e351bcc08e562",
       "features": ["F58", "F43"],
@@ -26659,6 +26726,16 @@
       "summary": "Keep the existing extracted voice recovery harness compatible with the optional capture diagnostic observer. The observer remains nil and expectations for original operation recovery and no retranscription are unchanged; test scaffolding only.",
       "files": {
         "scripts/easywork-voice-recovery.test.mjs": "a371398349647e16a5d26fcbc77a8a42a0b8fd4c2725ef79d9301bae7699f645"
+      }
+    },
+    {
+      "id": "project-sync-mainline-permissions-integration-20261127",
+      "baseCommit": "bcd1033796989c6efc88c48ff39461325f240d65",
+      "features": ["F12", "F43", "F58", "F64"],
+      "summary": "Integrate project directory refresh and creation recovery with the current mainline original-question permission snapshot. Retain both deployed Host unified-upgrade and mainline permission checks; retain the disabled voice diagnostic stub and its stronger recovery-only assertion. Native product sources are unchanged from the reviewed directory candidate.",
+      "files": {
+        "packages/codex-adapter/src/runtime-session.ts": "22cc8d7f7696541dc7f783818188652213db88245a6dce485ea52a45b87a2e5d",
+        "scripts/easywork-voice-recovery.test.mjs": "395400100a02c747f299d16268cf164a9b146448cd5b6c38318752de2f06578b"
       }
     }
   ]

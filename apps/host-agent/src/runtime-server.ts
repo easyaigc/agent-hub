@@ -499,6 +499,7 @@ export async function startRuntimeServer() {
       ...domSuggestions.capabilities,
       ...(desktopTranscription?.capabilityAvailable ? ['voice:transcribe'] : []),
       ...(chatActions ? ['threads:manage'] : []),
+      ...(workspaceView ? ['workspace:refresh:v1', 'projects:create:receipts:v1'] : []),
       'notifications',
       'files:upload',
       UPLOAD_CAPABILITY,
@@ -791,17 +792,49 @@ export async function startRuntimeServer() {
         });
         return;
       }
+      if (request.method === 'GET' && url.pathname === '/v1/projects/creations') {
+        if (!workspaceView) throw new RuntimeError(404, '此连接没有项目创建回执');
+        if (
+          !commandTarget ||
+          url.searchParams.get('hostId') !== session.hostId ||
+          [...url.searchParams.keys()].some(
+            (key) =>
+              !['hostId', 'target', 'id'].includes(key) ||
+              url.searchParams.getAll(key).length !== 1,
+          )
+        )
+          throw new RuntimeError(400, '项目回执查询必须包含准确目标和原操作 ID');
+        const id = url.searchParams.get('id') ?? '';
+        if (!/^[a-zA-Z0-9_-]{8,100}$/.test(id)) throw new RuntimeError(400, '项目操作 ID 无效');
+        json(response, 200, await session.projectCreationReceipt(id));
+        return;
+      }
       if (request.method === 'GET' && url.pathname === '/v1/workspace') {
+        if (url.searchParams.has('refresh') && url.searchParams.get('refresh') !== '1')
+          throw new RuntimeError(400, '无效目录刷新参数');
         for (const id of chatActions?.deletedThreadIds() ?? []) {
           workspaceView?.removed(id);
           session.removeSharedThread(id);
         }
-        const workspace = workspaceView
-          ? await workspaceView.workspace()
-          : await session.workspace(
-              url.searchParams.get('projectCursor') ?? undefined,
-              url.searchParams.get('threadCursor') ?? undefined,
-            );
+        const waiter = new AbortController();
+        const disconnected = () => {
+          if (!response.writableFinished) waiter.abort();
+        };
+        response.once('close', disconnected);
+        let workspace;
+        try {
+          workspace = workspaceView
+            ? await workspaceView.workspace({
+                fresh: url.searchParams.get('refresh') === '1',
+                signal: waiter.signal,
+              })
+            : await session.workspace(
+                url.searchParams.get('projectCursor') ?? undefined,
+                url.searchParams.get('threadCursor') ?? undefined,
+              );
+        } finally {
+          response.removeListener('close', disconnected);
+        }
         await sendReadJSON(
           request,
           response,
@@ -1671,12 +1704,15 @@ export async function startRuntimeServer() {
             text(data.clientOperationId),
           );
         else if (url.pathname === '/v1/projects') {
-          result = await session.createProject(
+          const created = await session.createProject(
             text(data.name),
             text(data.directory),
             text(data.clientOperationId),
           );
-          if (workspaceView) result = await workspaceView.workspace();
+          const workspace = workspaceView
+            ? await workspaceView.workspace({ fresh: true })
+            : created;
+          result = { ...workspace, capabilities: mergeHostCapabilities(workspace.capabilities) };
         } else if (url.pathname === '/v1/replies')
           result = await session.submit(
             {

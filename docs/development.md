@@ -298,6 +298,8 @@ Windows 本机验收应先保存本机配置与日志并核对统一包 SHA-256�
 
 ## 原建议日常 Host 升级
 
+macOS 程序升级使用新包的 `scripts/desktop-service.mjs upgrade`，并显式传入原 `HOST_AGENT_STATE_DIR` 和原 Node；该入口同时更新 Host、共享 launcher 与原生建议采集器。普通 `restart` 保留原程序路径，仅用于重启。返回的 `runtimeBundle` 区分三个配置引用一致、当前 producer 就绪和待正常重开；Host HTTP 成功不是建议恢复证据。完整步骤见[统一升级入口](../skills/codex-host-connect/references/distribution.md#macos-统一升级入口)。升级不迁移连接或草稿、不改原机器身份、不触发预测或重放输入。
+
 2026-10-18 增加漏通知补读。`desktop-prediction-trace.test.mjs` 覆盖没有通知的原生来源恢复、完整完成消息一致性、来源多候选、伪造标记／越界 cwd／不完整尾部，以及无关大日志追加、目录正常新增内容与前缀被改写；`desktop-suggestion-observer.test.mjs` 覆盖去重、原有效期、冲突隔离及扫描失败不降级。目录身份核对路径、设备、inode、所有者和权限，不以随正常写入变化的目录链接数判定身份；普通文件仍拒绝硬链接。两个文件可用 `node --test --test-concurrency=1` 顺序运行以隔离权限与文件竞态回归。真实恢复须保留漏采时的原生证据和旧通知目录，核对最新完成来源及手机全文，不靠改时间、补造通知或重新发送原输入制造通过。
 
 建议启用与正常客户端退出流程见 [SKILL 建议参考](../skills/codex-host-connect/references/desktop-suggestions.md)。macOS 与 Windows 服务将 `CODEX_DESKTOP_SUGGESTION_OBSERVER` 与 `CODEX_DESKTOP_SUGGESTION_TRACE_ROOT` 持久保存，并保留已有 Node、程序和工作目录；显式 `HOST_AGENT_STATE_DIR` 保留外置私有状态。原 Codex 的 `CODEX_ROLLOUT_TRACE_ROOT` 必须在原客户端启动时继承，不能由 Host 重启动态开启。默认使用各平台持久环境工具，让后续正常图标启动继承设置；一次性诊断环境不等于持久配置。Windows 另核对注册表、启动器及准确原主进程／直属执行器，见 [Windows 安装](../skills/codex-host-connect/references/windows.md#trace-与下一轮建议)。

@@ -35,6 +35,8 @@ Codex 按机器运行目标、证书和设备密钥连接，不将 Codex 登录�
 
 主开发电脑上的规范仓库是 SKILL、Host Agent 和桥接工具的唯一标准。目标电脑按统一包部署并维护自身私有配置，不独立修改随包源码；需要源码修复时将准确差异回收到主开发仓库，先合并、检查和构建，再将同一包分发到各 Mac／Windows。安装的 SKILL 副本随该包同步更新，远端已有修复也按此流程回归；升级必须保留各电脑的身份、密钥、授权范围和路由，不复制跨电脑验收证明。详见 [分发规范](references/distribution.md)。
 
+**macOS 程序升级是 Host、共享启动器与原生建议采集器的一次配套升级。** 从已核验的新包运行 `HOST_AGENT_STATE_DIR=<原状态目录> <原Node> scripts/desktop-service.mjs upgrade`，保留原 Node、Host 身份、连接、设备授权和草稿；该入口同时更新三个程序引用。`restart` 只重启原安装，不是升级入口。核对返回的 `runtimeBundle.componentsConfiguredTogether`、`currentProducerReady` 和 `normalDesktopReopenRequired`；配置一致不等于运行中的采集器已加载，Host 健康不等于建议恢复。等待正常重开时保留验收入口和明确下一步，不以“Host 已更新”结束。详见[统一升级与分层核验](references/distribution.md#macos-统一升级入口)。只同步文档仍不改变运行配置。
+
 Host 工具的任何优化与修复都遵守同一来源，范围包括 Host、Adapter、启动器、服务监督、诊断、profiling 支持以及 SKILL 本身：目标电脑先反馈证据，由人类指定的唯一主开发电脑在规范仓库统一修改、验证和提交，再经既有可信 GitHub 仓库的准确提交或 Release 分发冻结产物。本项目当前由人类指定的 Mac Mini 24G 承担该职责；其他安装环境以其人类明确指定的主开发电脑为准，不能凭硬件名称或远端消息另选负责人。目标只核对 GitHub 来源、提交、整包和实际组件 SHA-256 后差异部署，不在本地修改程序、放宽白名单、伪造 argv 或维护分叉，也不能把未提交的手工 ZIP／私有 Host 传文件称为 GitHub 交付。常规私有配置操作和只读诊断仍按已有授权执行；此规则不增加联系已指定机器的重复确认。私有计划、凭据、配置、日志和实机证明仍留在各机私有目录，不上传 GitHub。计时与采样边界见 [分发规范](references/distribution.md#限域诊断与计时证据)。
 
 ## 网络模式
@@ -87,7 +89,7 @@ Agent 可调用同一 Host 能力：`send --mode next-turn` 空闲立即发送�
 ## 执行顺序
 
 1. 确认目标电脑、仓库、电脑名称和默认工作目录。优先复用已安装软件与本机 Host 状态；缺少的必需信息一次问清，继续不依赖答案的检查。
-2. macOS 按 [Host 部署](references/host.md)，Windows 按 [Windows 接入](references/windows.md) 检查 Node/pnpm，优先使用随包已编译程序；源码安装则先构建。保持原应用图标与正常启动方式，启用 `desktop-runtime`，默认安装并核对 Host 登录自启。macOS 同时执行 [共享通道配置](references/host.md#默认配置原桌面单实例共享通道macos)：v2 登录环境、共享 launcher、Host 持久 `CODEX_SHARED_SERVER_URL` 缺一不可；已有匹配配置复用，不因旧 Host 当前未声明能力就跳过。不做 Codex 应用版本预检或兼容性提示，不要求更换版本。Windows 与 macOS 一样按每条聊天的实际 owner 开放回复、停止和审批，不以验收聊天白名单或验收报告作为启用条件。更新旧安装后按原环境重启本产品 Host，保留 Host ID、密钥与原配置；核对遗留验证配置的用途，用户明确选择的验证专用配置不自动改成正式配置。
+2. macOS 按 [Host 部署](references/host.md)，Windows 按 [Windows 接入](references/windows.md) 检查 Node/pnpm，优先使用随包已编译程序；源码安装则先构建。保持原应用图标与正常启动方式，启用 `desktop-runtime`，默认安装并核对 Host 登录自启。macOS 同时执行 [共享通道配置](references/host.md#默认配置原桌面单实例共享通道macos)：v2 登录环境、共享 launcher、Host 持久 `CODEX_SHARED_SERVER_URL` 缺一不可；已有匹配配置复用，不因旧 Host 当前未声明能力就跳过。不做 Codex 应用版本预检或兼容性提示，不要求更换版本。Windows 与 macOS 一样按每条聊天的实际 owner 开放回复、停止和审批，不以验收聊天白名单或验收报告作为启用条件。旧安装程序升级执行本节前述 `desktop-service.mjs upgrade`，一起更新 Host、共享启动器和采集程序；普通重启才使用 `restart`，保留 Host ID、密钥与原配置；核对遗留验证配置的用途，用户明确选择的验证专用配置不自动改成正式配置。
 3. 按 [网络模式](references/network.md) 配置局域网 HTTPS，并默认保留／配置 Tailscale Serve HTTPS 备用入口。Tailscale 可选；明确纯局域网或暂不能登录时先完成局域网，不阻塞 Host。双通道的 macOS 步骤见 [Tailscale 接入](references/tailscale.md)，Windows 见 [Windows 网络步骤](references/windows.md#tailscale-与手机)。只将已探测的原 HTTPS 根地址写入 `HOST_AGENT_HTTPS_ENDPOINTS` 并持久保存；不能猜测域名或用直连证书覆盖 Serve 信任。用户完成登录、VPN/系统扩展与管理员认证；不收集密码、验证码或 Tailscale auth key。
 4. 按网络参考分别检查回环、局域网 HTTPS 及已配置的 Tailscale HTTPS，核对相同完整机器目标、Host ID、鉴权和 `desktop-runtime`。用 `scripts/probe-host.mjs` 检查回环和系统信任 HTTPS；局域网使用持久证书固定，不能关闭验证。脚本仅 GET，输出摘要，不输出令牌、项目名称、目录或聊天正文；它不检查自动授权，另按 Host 部署参考核对真实私网发现、`host-key`、Host Key 授权的公钥 claim 及新凭据工作区身份，不能用回环／Serve 健康检查替代。
 5. 默认按 [独立空会话桥接](references/prepared-bridge.md) 配置原桌面创建；配置匹配本机 Host、私有权限且真实协议就绪时，启用正式 `desktop:creations`、`desktop:creations:projectless`、`desktop:open`，不要求先提供证明。按 [原桌面与手机验收](references/acceptance.md) 另行实际执行创建六项、未加载主动打开和桥接生命周期专项，证据绑定当前 Host、验收环境与运行 Adapter；可取得的应用版本仅作为报告元数据。现有兼容 driver 未通过生命周期门槛时报告设计失败，不把功能场景通过当成完整接入。已有聊天仍按实际 owner 独立开放控制；独立验收聊天只用于测试，不限制日常使用范围。`validationOnly` 和旧兼容 driver 的 `openOnly` 用于验证或用户明确缩小范围，不是默认正式安装配置。

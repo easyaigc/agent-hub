@@ -8,9 +8,9 @@ class SidebarProjectState(val id: String,val hostId: String)
 class SidebarPinnedItem(val kind: String,val id: String)
 class SidebarProjectThreads(val projectId: String,val threadIds: List<String>)
 class SidebarSource(val version: Int,val pinned: List<SidebarPinnedItem>,val recentThreadIds: List<String>,
-    val projectIds: List<String>,val projectThreads: List<SidebarProjectThreads>)
+    val projectIds: List<String>,val projectThreads: List<SidebarProjectThreads>,val pendingProjectIds: List<String> = emptyList())
 class SidebarOrder(val pinned: List<SidebarPinnedItem>,val recentThreadIds: List<String>,
-    val projectIds: List<String>,val projectThreads: List<SidebarProjectThreads>)
+    val projectIds: List<String>,val projectThreads: List<SidebarProjectThreads>,val pendingProjectIds: List<String> = emptyList())
 
 /** Shared display projection only. IDs and ordering never authorize reading or execution. */
 object WorkspaceSidebarRules {
@@ -31,22 +31,23 @@ object WorkspaceSidebarRules {
         val folderIds=folders.map { it.id }.toSet()
         val pinnedIds=pinnedThreadIds.toSet()
         val desktop=source?.takeIf { it.version==1 }
+        val pendingFolders=desktop?.pendingProjectIds.orEmpty().toSet()
         fun ordered(ids: List<String>,known: Set<String>)=ids.filter { it in known }.distinct()
         val pinned=if(desktop==null)ordered(pinnedThreadIds,threadIds).map { SidebarPinnedItem("thread",it) }
             else desktop.pinned.filter { item -> when(item.kind) {
                 "thread" -> item.id in threadIds&&item.id in pinnedIds
-                "project" -> item.id in folderIds
+                "project" -> item.id in folderIds && item.id !in pendingFolders
                 else -> false
             } }.distinctBy { it.kind to it.id }
         val recent=ordered(desktop?.recentThreadIds ?: active.map { it.id },threadIds).filter { it !in pinnedIds }
         val children=desktop?.projectThreads?.associate { it.projectId to it.threadIds }.orEmpty()
         val pinnedFolders=pinned.filter { it.kind=="project" }.map { it.id }.toSet()
-        return SidebarOrder(pinned,recent,ordered(desktop?.projectIds ?: folders.map { it.id },folderIds).filter { it !in pinnedFolders },
+        return SidebarOrder(pinned,recent,ordered(desktop?.projectIds ?: folders.map { it.id },folderIds).filter { it !in pinnedFolders && it !in pendingFolders },
             folders.map { project ->
                 val ids=if(desktop!=null)ordered(children[project.id].orEmpty(),threadIds).filter { it !in pinnedIds }
                     else active.filter { it.projectId==project.id||project.id in it.projectIds }.map { it.id }
                 SidebarProjectThreads(project.id,ids)
-            })
+            },ordered(desktop?.pendingProjectIds.orEmpty(),folderIds))
     }
     fun expanded(preference: Boolean,searching: Boolean): Boolean = preference||searching
     fun visibleIds(ids: List<String>,expanded: Boolean,searching: Boolean): List<String> =

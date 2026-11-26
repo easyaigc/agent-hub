@@ -39,6 +39,7 @@ export interface ProjectSummary {
   hostId: string;
   name: string;
   roots: readonly string[];
+  desktopVisibility?: 'pending' | 'unknown';
 }
 
 export interface ThreadSummary {

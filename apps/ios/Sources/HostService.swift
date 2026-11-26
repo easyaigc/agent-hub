@@ -253,7 +253,7 @@ struct HostService {
   }
   static func workspace(
     _ address: String, token: String = "", projectCursor: String? = nil,
-    threadCursor: String? = nil, readerId: String? = nil
+    threadCursor: String? = nil, readerId: String? = nil, fresh: Bool = false
   ) async throws -> WorkspaceSnapshot {
     var components = URLComponents(
       url: try baseURL(address).appendingPathComponent("v1/workspace"),
@@ -262,8 +262,17 @@ struct HostService {
       projectCursor.map { URLQueryItem(name: "projectCursor", value: $0) },
       threadCursor.map { URLQueryItem(name: "threadCursor", value: $0) },
       readerId.map { URLQueryItem(name: "readerId", value: $0) },
+      fresh ? URLQueryItem(name: "refresh", value: "1") : nil,
     ].compactMap { $0 }
     return try await load(request(components.url!, token: token))
+  }
+  static func projectTargetQuery(_ target: AgentRuntimeTarget) throws -> [String: String] {
+    let machine = ["agentId": target.agentId, "hostId": target.hostId, "workspaceId": target.workspaceId, "runtimeId": target.runtimeId]
+    return ["target": String(decoding: try JSONSerialization.data(withJSONObject: machine), as: UTF8.self)]
+  }
+  static func projectCreationReceipt(_ client: Client, operationId: String, target: AgentRuntimeTarget) async throws -> ProjectCreationReceipt {
+    let query = try projectTargetQuery(target).merging(["id": operationId]) { _, new in new }
+    return try await load(request(try url(client, "v1/projects/creations", query), token: CredentialVault.token(client.id)))
   }
   static func history(_ client: Client, threadId: String, cursor: String? = nil) async throws
     -> HistorySnapshot

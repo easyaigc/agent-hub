@@ -8,4 +8,4 @@ internal fun mobileSidebarOrder(client: MobileClient,threads: List<MobileThread>
         threads.map { SidebarThreadState(it.id,it.hostId,it.projectId,it.projectIds,it.archived==true) },
         projects.map { SidebarProjectState(it.id,it.hostId) },workspace?.pinnedThreadIds.orEmpty(),
         workspace?.sidebar?.let { value -> SidebarSource(value.version,value.pinned.map { SidebarPinnedItem(it.kind,it.id) },
-            value.recentThreadIds,value.projectIds,value.projectThreadIds.map { SidebarProjectThreads(it.key,it.value) }) })
+            value.recentThreadIds,value.projectIds,value.projectThreadIds.map { SidebarProjectThreads(it.key,it.value) },value.pendingProjectIds) })

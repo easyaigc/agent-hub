@@ -79,6 +79,7 @@ export function nativeSuggestionsEnvironment({
       installed: true,
       configured: manifest.phase === 'configured',
       configPath,
+      program: dirname(dirname(config.entry)),
       hostEnvironment: { CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG: configPath },
       currentProducerReady: ready,
       futureTraceRecording: 'disabled',
@@ -88,22 +89,27 @@ export function nativeSuggestionsEnvironment({
       desktopProcessesStarted: 0,
     };
   };
-  const install = ({
-    program,
-    executable,
-    traceRoot,
-    targetFile,
-    applicationPath = '/Applications/ChatGPT.app',
-    logDirectory = join(homedir(), 'Library/Logs/com.openai.codex'),
-    url,
-  }) => {
+  const install = (
+    {
+      program,
+      executable,
+      traceRoot,
+      targetFile,
+      applicationPath = '/Applications/ChatGPT.app',
+      logDirectory = join(homedir(), 'Library/Logs/com.openai.codex'),
+      url,
+    },
+    retainedTarget,
+  ) => {
     program = realpathSync(resolve(program));
     executable = realpathSync(resolve(executable));
     node = realpathSync(node);
     traceRoot = realpathSync(resolve(traceRoot));
     privatePath(traceRoot, true);
-    privatePath(resolve(targetFile));
-    const target = parseNotificationTarget(JSON.parse(readFileSync(targetFile, 'utf8')));
+    if (!retainedTarget) privatePath(resolve(targetFile));
+    const target = parseNotificationTarget(
+      retainedTarget ?? JSON.parse(readFileSync(targetFile, 'utf8')),
+    );
     if (target.agentId !== 'codex' || target.runtimeId !== 'desktop-runtime')
       throw new Error('Original Codex target required');
     const previous = existsSync(manifestPath) ? read() : undefined;
@@ -140,6 +146,7 @@ export function nativeSuggestionsEnvironment({
       executable,
       url: url ?? current.url,
       nativeSuggestionsConfig: configPath,
+      ...(retainedTarget ? { preserveNode: true } : {}),
     });
     atomic(manifestPath, { ...manifest, phase: 'configured' });
     // Retire only our exact managed login environment. An unrelated user's
@@ -153,7 +160,21 @@ export function nativeSuggestionsEnvironment({
     }
     return status();
   };
-  return { install, status };
+  const upgrade = ({ program, hostId }) => {
+    const { config } = read();
+    if (config.target.hostId !== hostId) throw new Error('Preserve another machine target');
+    const current = sharedApi().status();
+    if (!current.installed || !current.futureLaunchEnvironmentReady)
+      throw new Error('Existing shared desktop environment must be ready before upgrade');
+    // Retain the original machine, source directory and Node. Only program
+    // references move together; no desktop is launched and no input is replayed.
+    node = config.node;
+    const result = install({ ...config, program, url: current.url }, config.target);
+    if (sharedApi().status().program !== realpathSync(resolve(program)))
+      throw new Error('Shared launcher did not adopt the upgraded program');
+    return result;
+  };
+  return { install, status, upgrade };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.platform !== 'darwin') throw new Error('Use the native Windows installer on Windows');

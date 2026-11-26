@@ -23,7 +23,7 @@ internal fun JSONObject.resourceIdentityOrNull(): String? = when(val value=opt("
 internal fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }
 internal fun JSONArray.strings(): List<String> = (0 until length()).map { getString(it) }
 
-data class MobileProject(val id: String, val hostId: String, val name: String, val roots: List<String>)
+data class MobileProject(val id: String, val hostId: String, val name: String, val roots: List<String>,val desktopVisibility: String? = null)
 data class MobileThread(val id: String, val hostId: String, val title: String, val state: String,
     val projectId: String? = null, val projectIds: List<String> = emptyList(), val unread: Boolean = false,
     val archived: Boolean? = null, val lastTurnStatus: String? = null,
@@ -102,7 +102,7 @@ object HostReadCodec {
         val it = validated(wire, "workspace")
         val host = it.getString("hostId")
         val projects = it.getJSONArray("projects").objects().map { p -> MobileProject(p.getString("id"),
-            p.getString("hostId"), p.getString("name"), p.getJSONArray("roots").strings()) }
+            p.getString("hostId"), p.getString("name"), p.getJSONArray("roots").strings(),p.optional("desktopVisibility")) }
         val threads = it.getJSONArray("threads").objects().map(::thread)
         val scope = target(it.optJSONObject("readTarget"))
         require(projects.all { p -> p.hostId == host } && threads.all { t -> t.hostId == host } &&
@@ -138,6 +138,7 @@ object HostReadCodec {
 /** Deliberately exposes reads only. Adding execution will use a separate capability boundary. */
 interface AgentReads {
     suspend fun workspace(client: MobileClient, projectCursor: String? = null, threadCursor: String? = null): MobileWorkspace
+    suspend fun latestWorkspace(client: MobileClient): MobileWorkspace = workspace(client)
     suspend fun history(client: MobileClient, threadId: String, cursor: String? = null): MobileHistory
     suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String? = null): MobileHistory = history(client,threadId,cursor)
     suspend fun subagentHistory(client: MobileClient,request: MobileSubagentHistoryRequest): MobileSubagentHistory =
@@ -205,7 +206,11 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
     }
     override suspend fun workspace(client: MobileClient, projectCursor: String?, threadCursor: String?): MobileWorkspace {
-        val query = buildMap { projectCursor?.let { put("projectCursor", it) }; threadCursor?.let { put("threadCursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) } }
+        return readWorkspace(client,projectCursor,threadCursor,false)
+    }
+    override suspend fun latestWorkspace(client: MobileClient): MobileWorkspace = readWorkspace(client,null,null,true)
+    private suspend fun readWorkspace(client: MobileClient,projectCursor: String?,threadCursor: String?,fresh: Boolean): MobileWorkspace {
+        val query = buildMap { projectCursor?.let { put("projectCursor", it) }; threadCursor?.let { put("threadCursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) };if(fresh)put("refresh","1") }
         val wire=read(client, "v1/workspace", query)
         val result = withContext(Dispatchers.Default) { decode { HostReadCodec.workspace(wire) } }
         if (client.id.isNotEmpty() && result.hostId != client.id) throw HostReadError("电脑身份不匹配，未保存连接")

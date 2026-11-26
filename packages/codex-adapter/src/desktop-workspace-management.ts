@@ -93,7 +93,10 @@ export class DesktopWorkspaceManagement {
     });
   }
 
-  async findCreatedProject(record: ProjectCreationRecord): Promise<string | undefined> {
+  async findCreatedProject(
+    record: ProjectCreationRecord,
+    allowLaterEdits = false,
+  ): Promise<string | undefined> {
     return this.connection(async (client) => {
       const seen = new Set<string>();
       let cursor: string | undefined;
@@ -106,14 +109,18 @@ export class DesktopWorkspaceManagement {
         for (const row of list(page.data)) {
           const project = object(row);
           const metadata = object(project.metadata);
-          const identified = record.projectId
-            ? project.id === record.projectId
-            : metadata['agent-hub:create-operation'] === record.operationId &&
-              metadata['agent-hub:host'] === record.target.hostId;
+          const marker =
+            metadata['agent-hub:create-operation'] === record.operationId &&
+            metadata['agent-hub:host'] === record.target.hostId;
+          const identified = record.projectId ? project.id === record.projectId : marker;
           if (!identified) continue;
-          const roots = list(project.roots).map((root) => string(object(root).path));
-          if (project.name !== record.name || roots.length !== 1 || roots[0] !== record.root)
-            throw new Error('官方项目结果与原创建输入不一致，请在电脑核对');
+          // A preserved original response ID or exact operation/Host marker
+          // identifies the creation. Later edits do not undo that operation.
+          if (!allowLaterEdits) {
+            const roots = list(project.roots).map((root) => string(object(root).path));
+            if (project.name !== record.name || roots.length !== 1 || roots[0] !== record.root)
+              throw new Error('官方项目结果与原创建输入不一致，请在电脑核对');
+          }
           const id = string(project.id);
           if (!id) throw new Error('官方项目查询缺少项目 ID');
           return id;

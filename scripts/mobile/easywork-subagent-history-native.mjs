@@ -39,9 +39,9 @@ const projection = between(
 const provider = between(source, '  func supportsSubagentHistory(', '\n  func history(');
 const defaults = between(
   agent,
-  'extension AgentClient {\n  func supportsSubagentHistory(',
+  '  func supportsSubagentHistory(_ client: Client, workspace: WorkspaceSnapshot?) -> Bool {',
   '\n  func connectionMetadata(',
-).replace('extension AgentClient {', '');
+);
 const integer = between(reading, '  static func integer(', '\n  static func position(');
 const documentMessageSource = between(
   models,

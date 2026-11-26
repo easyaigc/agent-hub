@@ -46,6 +46,7 @@ struct Project: Identifiable, Codable, Equatable {
   let hostId: String
   var name: String
   var roots: [String]
+  var desktopVisibility: String? = nil
 }
 
 struct Conversation: Identifiable, Codable, Equatable {
@@ -466,18 +467,25 @@ struct WorkspaceSidebar: Codable {
   let recentThreadIds: [String]
   let projectIds: [String]
   let projectThreadIds: [String: [String]]
-  enum CodingKeys: String, CodingKey { case version, pinned, recentThreadIds, projectIds, projectThreadIds }
+  let pendingProjectIds: [String]
+  enum CodingKeys: String, CodingKey { case version, pinned, recentThreadIds, projectIds, projectThreadIds, pendingProjectIds }
+  init(version: Int, pinned: [Item], recentThreadIds: [String], projectIds: [String],
+    projectThreadIds: [String: [String]], pendingProjectIds: [String] = []) {
+    self.version = version; self.pinned = pinned; self.recentThreadIds = recentThreadIds
+    self.projectIds = projectIds; self.projectThreadIds = projectThreadIds; self.pendingProjectIds = pendingProjectIds
+  }
   init(from decoder: Decoder) throws {
     let value = try decoder.container(keyedBy: CodingKeys.self)
     version = try value.decode(Int.self, forKey: .version)
     guard version == 1 else {
-      pinned = []; recentThreadIds = []; projectIds = []; projectThreadIds = [:]
+      pinned = []; recentThreadIds = []; projectIds = []; projectThreadIds = [:]; pendingProjectIds = []
       return
     }
     pinned = try value.decode([Item].self, forKey: .pinned)
     recentThreadIds = try value.decode([String].self, forKey: .recentThreadIds)
     projectIds = try value.decode([String].self, forKey: .projectIds)
     projectThreadIds = try value.decode([String: [String]].self, forKey: .projectThreadIds)
+    pendingProjectIds = try value.decodeIfPresent([String].self, forKey: .pendingProjectIds) ?? []
   }
 }
 
@@ -954,7 +962,30 @@ struct HistoryViewportBookmark: Codable {
   var followsLatest: Bool
 }
 
+struct ProjectCreationReceipt: Decodable {
+  let hostId: String
+  let target: AgentRuntimeTarget
+  let operationId: String
+  let name: String
+  let directory: String
+  let state: String
+  let projectId: String?
+  let requestName: String?
+  let requestDirectory: String?
+}
+
+struct ProjectCreationIntent: Codable {
+  let operationId: String
+  let target: AgentRuntimeTarget
+  let name: String
+  let directory: String
+  var confirmed = false
+  var submitted: Bool? = nil
+  var rejected: Bool? = nil
+}
+
 struct SavedSession: Codable {
+  var projectCreationIntents: [String: ProjectCreationIntent]? = nil
   var historyPaging: [String: HistoryPagingCheckpoint]? = nil
   var historyViewports: [String: HistoryViewportBookmark]? = nil
   var recentProjects: RecentProjects? = nil

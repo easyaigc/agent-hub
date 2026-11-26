@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-11-26 项目目录同步修复候选：Host 只读当前桌面 profile 的 SQLite settings 事务（包含已提交 WAL），按 global、当前 owner 普通值和 atom 覆盖规则投影目录；SQLite 确实缺失才读取旧 JSON，权威来源损坏时明确失败并由手机保留缓存。目录收集前后校验展示指纹，项目和聊天分别遍历至游标耗尽，当前展示目录与原始项目元数据共同决定当前列表。原“白名单”是桌面展示对齐规则，不是目录访问授权。手机已确认创建项目的展示状态保存到独立私有旁账，身份映射不能证明桌面曾采用，创建回执不会因后续改名或移除被改写。显式刷新采用在途批次之后的只读后继批次；手机以请求代次和发布修订隔离迟到结果。规格及独立方案审核范围见[详细方案](plans/project-directory-sync-20261126.md)；实际实现与原生验收状态只回填既有 F12 清单。
+
 2026-11-24 原桌面通道兼容候选：原 follower IPC 明确不存在/拒绝连接时，可使用已核对原 Electron、launcher 与唯一官方 executor 父链的现有共享服务；外部完整机器目标仍为 `desktop-runtime`。读取不加载会话，显式命令仅 attach 同服务已加载的准确会话，未知写入不换路重放。接口与验证边界见[共享控制适配](design/desktop-shared-control.md)。
 
 2026-11-24：LIFE01 阅读恢复沿用旧端已认识的真实 reader carrier，另在当前加密 namespace/持久代次内保存仅含完整消息的 body 与小型原子 index；state 成功后才进入同一 history lane。旧 writer 不认识的可选字段不足以提供回退保全。恢复仅呈现缓存，远端同模式、修订与正重叠校验后才允许旧分页；owner/epoch、预算与失效顺序见[最终补修设计](plans/mobile-foreground-connection-20261122.md)。

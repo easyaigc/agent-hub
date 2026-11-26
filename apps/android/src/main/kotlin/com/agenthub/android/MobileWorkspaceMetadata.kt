@@ -7,7 +7,7 @@ import org.json.JSONObject
 data class MobileSidebarItem(val kind: String, val id: String)
 data class MobileWorkspaceSidebar(val version: Int, val pinned: List<MobileSidebarItem>,
     val recentThreadIds: List<String>, val projectIds: List<String>,
-    val projectThreadIds: Map<String,List<String>>, internal val wire: String)
+    val projectThreadIds: Map<String,List<String>>, internal val wire: String,val pendingProjectIds: List<String> = emptyList())
 
 internal object MobileWorkspaceMetadata {
     private const val invalid="电脑返回的数据格式无效"
@@ -39,11 +39,11 @@ internal object MobileWorkspaceMetadata {
         }
         val children=value.getJSONObject("projectThreadIds")
         return MobileWorkspaceSidebar(version,pinned,strings(value.getJSONArray("recentThreadIds")),
-            strings(value.getJSONArray("projectIds")),children.keys().asSequence().associateWith { strings(children.getJSONArray(it)) },value.toString())
+            strings(value.getJSONArray("projectIds")),children.keys().asSequence().associateWith { strings(children.getJSONArray(it)) },value.toString(),strings(value,"pendingProjectIds").orEmpty())
     }
     fun mergePage(previous: MobileWorkspace,incoming: MobileWorkspace): MobileWorkspace {
         require(previous.hostId==incoming.hostId&&sameScope(previous.scope,incoming.scope)) { "电脑身份不匹配" }
-        return incoming.copy(projects=(previous.projects+incoming.projects).distinctBy { it.id },
+        return incoming.copy(projects=LinkedHashMap<String,MobileProject>().apply { previous.projects.forEach {put(it.id,it)};incoming.projects.forEach {put(it.id,it)} }.values.toList(),
             threads=(previous.threads+incoming.threads).distinctBy { it.id },
             nextProjectCursor=if(previous.nextProjectCursor==null)null else incoming.nextProjectCursor,
             nextThreadCursor=if(previous.nextThreadCursor==null)null else incoming.nextThreadCursor,
@@ -53,7 +53,7 @@ internal object MobileWorkspaceMetadata {
     fun encode(workspace: MobileWorkspace): JSONObject = JSONObject(workspace.wire)
         .put("nextProjectCursor",workspace.nextProjectCursor).put("nextThreadCursor",workspace.nextThreadCursor)
         .put("projects",JSONArray(workspace.projects.map { JSONObject().put("id",it.id).put("hostId",it.hostId)
-            .put("name",it.name).put("roots",JSONArray(it.roots)) }))
+            .put("name",it.name).put("roots",JSONArray(it.roots)).put("desktopVisibility",it.desktopVisibility) }))
         .put("threads",JSONArray(workspace.threads.map { JSONObject().put("id",it.id).put("hostId",it.hostId)
             .put("title",it.title).put("state",it.state).put("projectId",it.projectId).put("projectIds",JSONArray(it.projectIds))
             .put("hasUnreadTurn",it.unread).put("archived",it.archived).put("lastTurnStatus",it.lastTurnStatus)

@@ -1906,6 +1906,13 @@
     <string name="product_9885597cc98254af7e818e36" formatted="false">"Retry closing"</string>
     <string name="product_704c1f90a8e9580ea3a5dc59" formatted="false">"The previous preview status is unconfirmed"</string>
     <string name="product_5767bd826ba462a0e7b15ea9" formatted="false">"Some reading cache could not be restored. The original files have been preserved."</string>
+    <string name="product_3d3cbc8dc4db305b02de6518" formatted="false">"Projects awaiting desktop sync"</string>
+    <string name="product_e09cbaccf1dd8bf8480f4171" formatted="false">"Awaiting sync"</string>
+    <string name="product_33df16b4afab2d5faa163834" formatted="false">"Needs confirmation"</string>
+    <string name="product_2787ede17eb360bd0e261414" formatted="false">"The project creation result is unconfirmed. Retry with the original name and folder to avoid creating a duplicate."</string>
+    <string name="product_37509ded680318725d28e096" formatted="false">"The project creation was rejected. Check the details and create it again."</string>
+    <string name="product_e722825da8157371e1421c23" formatted="false">"Project creations awaiting confirmation"</string>
+    <string name="product_ffcd0668e97cc20fb1092d24" formatted="false">"Check creation result"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

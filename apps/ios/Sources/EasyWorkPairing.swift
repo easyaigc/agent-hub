@@ -224,6 +224,7 @@ enum AgentCache {
 extension SessionStore {
   private func bindingPin(_ candidates: [AgentConnectionCandidate]) -> String? { candidates.first(where: { $0.transportId == "lan-wss" })?.peerFingerprint }
   func saveEasyWork(name: String, binding: EasyWorkBinding, candidates: [AgentConnectionCandidate], token: String? = nil, grantRef: String? = nil) async throws {
+    let directoryObservation = captureWorkspacePublications()
     #if R2_REAL_DEV_ACCEPTANCE
     let admission = try R2Admission.require()
     try R2AdmissionPolicy.require(admission.lease.mode == "enroll" && saved.clients.isEmpty, "fresh enrollment only")
@@ -324,7 +325,7 @@ extension SessionStore {
     }
     client.online = true
     if let index = saved.clients.firstIndex(where: { $0.id == id }) { saved.clients[index] = client } else { saved.clients.append(client) }
-    saved.workspaces[id] = snapshot
+    installWorkspaceDirectory(snapshot, observed: directoryObservation)
     pendingConnection = nil
     try await finishValidatedAgentConnection(id)
   }

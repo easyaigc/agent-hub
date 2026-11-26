@@ -135,7 +135,7 @@ final class SessionStore: ObservableObject {
   @Published private(set) var chatActionBusy: [String: String] = [:]
   @Published private var chatActionQueryErrors: [String: String] = [:]
   @Published private var openingDesktopTargets: Set<String> = []
-  private var errorRevision: UInt64 = 0
+  private(set) var errorRevision: UInt64 = 0
   @Published private var operationFailure: OperationFailure? { didSet { errorRevision &+= 1 } }
   var error: String? {
     get { operationFailure?.message }
@@ -147,6 +147,10 @@ final class SessionStore: ObservableObject {
     }
   }
   var errorTitle: String { operationFailure?.title ?? L10n.tr("无法完成操作") }
+  func dismissError(_ revision: UInt64, inProjectForm: Bool) {
+    guard errorRevision == revision, (sheet == .addProject) == inProjectForm else { return }
+    error = nil
+  }
   func presentError(_ failure: Error, line: UInt = #line) {
     #if DEBUG
     ConnectionNoticeDiagnostics.record("present:\(line):\(String(describing: type(of: failure)))")
@@ -223,7 +227,29 @@ final class SessionStore: ObservableObject {
   private var connectionAuthorizationNotices = ConnectionAuthorizationNotices<ConnectionAuthorizationIdentity<AgentRuntimeTarget>?>()
   private var workspaceRefreshGeneration: UUID?
   private var workspaceRefreshOwner: UUID?
-  private var pendingManualHistoryRefresh: (client: UUID, history: UUID)?
+  struct WorkspacePublication {
+    let request: UInt64
+    let applied: UInt64
+  }
+  private struct ManualWorkspaceDemand {
+    let id: UUID
+    let minimumRequest: UInt64
+    let history: UUID?
+    let continuation: CheckedContinuation<Void, Never>
+  }
+  private final class ManualWorkspaceLane {
+    let generation: UUID
+    var pending: [ManualWorkspaceDemand] = []
+    var active: [ManualWorkspaceDemand] = []
+    var carried: [ManualWorkspaceDemand] = []
+    var task: Task<Void, Never>?
+    init(generation: UUID) { self.generation = generation }
+  }
+  private enum WorkspaceRefreshResult: Equatable { case published, failed, obsolete }
+  private var workspaceRequests: [String: UInt64] = [:]
+  private var workspaceApplied: [String: UInt64] = [:]
+  @Published private var projectCreationBusy: Set<String> = []
+  private var manualWorkspaceLanes: [String: ManualWorkspaceLane] = [:]
 
 private var userRequestedWorkspaceGeneration: UUID?
   private var latestHistoryReads: [String: UUID] = [:]
@@ -1954,6 +1980,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   private func openConfirmedFork(_ pending: PendingThreadFork, host: Client, navigation: ForkNavigation?) async throws {
     guard let id = pending.forkedThreadId, pending.phase == .confirmed,
       canOpenFork(pending, navigation: navigation) else { return }
+    let publication = workspacePublication(host.id)
     let agent = try AgentClients.resolve(host)
     let workspace = try await completeReadingThreadPages(
       try await agent.workspace(readingClient(host), projectCursor: nil, threadCursor: nil), host: host)
@@ -1973,8 +2000,13 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard canOpenFork(pending, navigation: navigation) else { return }
     var snapshot = workspace
     if !snapshot.threads.contains(where: { $0.id == id }) { snapshot.threads.insert(thread, at: 0) }
-    saved.workspaces[host.id] = snapshot
-    openThread(thread, loadAutomatically: false)
+    if workspacePublicationCurrent(host.id, publication) {
+      saved.workspaces[host.id] = snapshot
+      workspaceApplied[host.id, default: 0] &+= 1
+    } else if saved.workspaces[host.id]?.threads.contains(where: { $0.id == id }) == false {
+      saved.workspaces[host.id]?.threads.insert(thread, at: 0)
+    }
+    openThread(saved.workspaces[host.id]?.threads.first { $0.id == id } ?? thread, loadAutomatically: false)
     apply(history)
     startEvents()
     persist()
@@ -3261,6 +3293,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func addClient(name: String, address: String, token: String = "") async throws {
+    let directoryObservation = captureWorkspacePublications()
     guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
       throw ClientFormError.emptyName
     }
@@ -3282,7 +3315,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           id: snapshot.hostId, name: name.trimmingCharacters(in: .whitespacesAndNewlines),
           endpoint: address, isDemo: false, online: true))
     }
-    saved.workspaces[snapshot.hostId] = snapshot
+    installWorkspaceDirectory(snapshot, observed: directoryObservation)
     selectVerifiedClient(snapshot.hostId)
   }
 
@@ -3308,15 +3341,17 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func addCodexQR(_ text: String, name: String) async throws {
+    let directoryObservation = captureWorkspacePublications()
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connect(text, name: name)
-    try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: name)
+    try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: name, observed: directoryObservation)
   }
   func addCodexDiscovered(_ host: CodexHostDiscovery.Host, hostKey: String = "") async throws {
+    let directoryObservation = captureWorkspacePublications()
     let expected = saved.clients.first(where: { $0.id == host.id })?.codexDirect ?? host.observedConnection
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connectDiscovered(host.endpoint, hostId: host.id, name: "", hostKey: hostKey, expected: expected)
-    try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: "")
+    try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: "", observed: directoryObservation)
   }
-  private func saveCodexConnection(_ offer: CodexHostDescriptor, incoming: Client, rawSnapshot: WorkspaceSnapshot, name: String) throws {
+  private func saveCodexConnection(_ offer: CodexHostDescriptor, incoming: Client, rawSnapshot: WorkspaceSnapshot, name: String, observed: [String: WorkspacePublication]) throws {
     guard rawSnapshot.projects.allSatisfy({ $0.hostId == incoming.id }), rawSnapshot.threads.allSatisfy({ $0.hostId == incoming.id }) else { throw HostServiceError.wrongHost }
     if let old = saved.clients.first(where: { $0.id == incoming.id }),
       let target = old.codexDirect?.target ?? saved.workspaces[old.id]?.readTarget, target != offer.target { throw HostServiceError.wrongHost }
@@ -3342,7 +3377,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       client = saved.clients[index]
     } else { saved.clients.append(client) }
     CodexHostRoutes.shared.register(client)
-    saved.workspaces[client.id] = snapshot
+    installWorkspaceDirectory(snapshot, observed: observed)
     selectVerifiedClient(client.id); persist()
   }
 
@@ -3387,6 +3422,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   }
 
   func updateClient(_ id: String, name: String, address: String, token: String) async throws {
+    let directoryObservation = captureWorkspacePublications()
     let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
     let address = address.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !name.isEmpty else { throw ClientFormError.emptyName }
@@ -3427,7 +3463,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     // Keep loaded pages and the current conversation when editing the connection.
     let previous = saved.workspaces[id]
     let sameReadingTarget = previous?.readTarget == snapshot.readTarget
-    saved.workspaces[id] = WorkspaceSnapshot(
+    let updatedWorkspace = WorkspaceSnapshot(
       hostId: id, name: snapshot.name, connectionMode: snapshot.connectionMode,
       projects: sameReadingTarget ? previous?.projects ?? snapshot.projects : snapshot.projects,
       threads: sameReadingTarget ? previous?.threads ?? snapshot.threads : snapshot.threads,
@@ -3435,6 +3471,7 @@ private var userRequestedWorkspaceGeneration: UUID?
       nextThreadCursor: sameReadingTarget ? previous?.nextThreadCursor : snapshot.nextThreadCursor,
       capabilities: snapshot.capabilities, clientType: snapshot.clientType, readTarget: snapshot.readTarget,
       pinnedThreadIds: snapshot.pinnedThreadIds, sidebar: snapshot.sidebar)
+    installWorkspaceDirectory(updatedWorkspace, observed: directoryObservation)
     if client?.id == id {
       clientGeneration = UUID()
       historyGeneration = UUID()
@@ -3448,6 +3485,104 @@ private var userRequestedWorkspaceGeneration: UUID?
     persist()
   }
 
+  private func workspacePublication(_ hostId: String, newRequest: Bool = false) -> WorkspacePublication {
+    if newRequest { workspaceRequests[hostId, default: 0] &+= 1 }
+    return WorkspacePublication(request: workspaceRequests[hostId, default: 0], applied: workspaceApplied[hostId, default: 0])
+  }
+  private func workspacePublicationCurrent(_ hostId: String, _ publication: WorkspacePublication) -> Bool {
+    workspaceRequests[hostId, default: 0] == publication.request && workspaceApplied[hostId, default: 0] == publication.applied
+  }
+  private func invalidateWorkspaceDirectory(_ hostId: String) {
+    workspaceRequests[hostId, default: 0] &+= 1
+    workspaceApplied[hostId, default: 0] &+= 1
+  }
+  func captureWorkspacePublications() -> [String: WorkspacePublication] {
+    var values: [String: WorkspacePublication] = [:]
+    for host in saved.clients { values[host.id] = workspacePublication(host.id) }
+    return values
+  }
+  func installWorkspaceDirectory(_ snapshot: WorkspaceSnapshot, observed: [String: WorkspacePublication]? = nil) {
+    if let observed, !workspacePublicationCurrent(snapshot.hostId, observed[snapshot.hostId] ?? WorkspacePublication(request: 0, applied: 0)) { return }
+    invalidateWorkspaceDirectory(snapshot.hostId)
+    var value = snapshot
+    if snapshot.nextProjectCursor != nil, let previous = saved.workspaces[snapshot.hostId],
+      previous.readTarget == snapshot.readTarget {
+      value.projects = mergeDirectoryItems(previous.projects, snapshot.projects)
+      if let sidebar = snapshot.sidebar, sidebar.version == 1, let prior = previous.sidebar, prior.version == 1 {
+        let known = Set(value.projects.map(\.id))
+        value.sidebar = WorkspaceSidebar(version: sidebar.version, pinned: sidebar.pinned,
+          recentThreadIds: sidebar.recentThreadIds,
+          projectIds: (sidebar.projectIds + prior.projectIds.filter { !sidebar.projectIds.contains($0) }).filter { known.contains($0) },
+          projectThreadIds: prior.projectThreadIds.merging(sidebar.projectThreadIds) { _, new in new },
+          pendingProjectIds: (sidebar.pendingProjectIds + prior.pendingProjectIds.filter { !sidebar.pendingProjectIds.contains($0) }).filter { known.contains($0) })
+      }
+    }
+    saved.workspaces[snapshot.hostId] = value
+  }
+  private func finishManualWorkspace(_ hostId: String, _ lane: ManualWorkspaceLane) {
+    let demands = lane.pending + lane.active + lane.carried
+    lane.pending = []; lane.active = []; lane.carried = []
+    if manualWorkspaceLanes[hostId] === lane { manualWorkspaceLanes.removeValue(forKey: hostId) }
+    for demand in demands { demand.continuation.resume() }
+  }
+  private func cancelManualWorkspace(_ hostId: String, _ id: UUID) {
+    guard let lane = manualWorkspaceLanes[hostId] else { return }
+    let demand = (lane.pending + lane.active + lane.carried).first { $0.id == id }
+    lane.pending.removeAll { $0.id == id }; lane.active.removeAll { $0.id == id }; lane.carried.removeAll { $0.id == id }
+    demand?.continuation.resume()
+  }
+  private func requestLatestWorkspace(_ host: Client, includeHistory: Bool) async {
+    let generation = clientGeneration
+    if let old = manualWorkspaceLanes[host.id], old.generation != generation {
+      old.task?.cancel(); finishManualWorkspace(host.id, old)
+    }
+    let lane = manualWorkspaceLanes[host.id] ?? ManualWorkspaceLane(generation: generation)
+    manualWorkspaceLanes[host.id] = lane
+    // Register before any loading or interaction guard. This immediately fences
+    // a background sweep that started before this explicit request.
+    let sequence = workspacePublication(host.id, newRequest: true).request
+    let id = UUID()
+    await withTaskCancellationHandler {
+      await withCheckedContinuation { continuation in
+        lane.pending.append(ManualWorkspaceDemand(id: id, minimumRequest: sequence,
+          history: includeHistory ? historyGeneration : nil, continuation: continuation))
+        if lane.task == nil {
+          lane.task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.runManualWorkspace(host, lane)
+          }
+        }
+      }
+    } onCancel: { [weak self] in
+      Task { @MainActor in self?.cancelManualWorkspace(host.id, id) }
+    }
+  }
+  private func runManualWorkspace(_ host: Client, _ lane: ManualWorkspaceLane) async {
+    defer { finishManualWorkspace(host.id, lane) }
+    while !Task.isCancelled, pendingConnection == nil, clientGeneration == lane.generation, client?.id == host.id,
+      manualWorkspaceLanes[host.id] === lane, !lane.pending.isEmpty || !lane.carried.isEmpty {
+      do {
+        while workspaceRefreshGeneration == lane.generation || sidebarInteracting {
+          try Task.checkCancellation()
+          guard clientGeneration == lane.generation, client?.id == host.id else { return }
+          try await Task.sleep(for: .milliseconds(50))
+        }
+      } catch { return }
+      lane.active = lane.pending; lane.pending = []
+      let publication = workspacePublication(host.id)
+      let needsHistory = (lane.active + lane.carried).contains { $0.history == historyGeneration }
+      let outcome = await performWorkspaceRefresh(loadMore: false, includeHistory: needsHistory,
+        userInitiated: true, publication: publication)
+      if outcome == .obsolete {
+        lane.carried += lane.active; lane.active = []
+      } else {
+        let completed = lane.carried + lane.active
+        lane.carried = []; lane.active = []
+        for demand in completed { demand.continuation.resume() }
+      }
+    }
+  }
+
   func refresh(loadMore: Bool = false, includeHistory: Bool = true, userInitiated: Bool = false) async {
     #if DEBUG
     if userInitiated, client?.isDemo == true,
@@ -3459,30 +3594,41 @@ private var userRequestedWorkspaceGeneration: UUID?
       return
     }
     #endif
-    guard !sidebarInteracting else { return }
-    guard pendingConnection == nil, let host = client, !host.isDemo, host.endpoint != nil || host.agentConnection != nil else { return }
+    guard pendingConnection == nil, let host = client, !host.isDemo,
+      host.endpoint != nil || host.agentConnection != nil else { return }
+    if userInitiated, !loadMore {
+      await requestLatestWorkspace(host, includeHistory: includeHistory)
+      return
+    }
+    let generation = clientGeneration
+    if userInitiated {
+      do {
+        while workspaceRefreshGeneration == generation || manualWorkspaceLanes[host.id] != nil {
+          try Task.checkCancellation()
+          guard clientGeneration == generation, client?.id == host.id else { return }
+          try await Task.sleep(for: .milliseconds(50))
+        }
+      } catch { return }
+    }
+    guard !sidebarInteracting, workspaceRefreshGeneration != generation,
+      manualWorkspaceLanes[host.id] == nil, clientGeneration == generation else { return }
+    _ = await performWorkspaceRefresh(loadMore: loadMore, includeHistory: includeHistory,
+      userInitiated: userInitiated, publication: workspacePublication(host.id, newRequest: true))
+  }
+
+  private func performWorkspaceRefresh(loadMore: Bool, includeHistory: Bool, userInitiated: Bool, publication: WorkspacePublication) async -> WorkspaceRefreshResult {
+    guard !sidebarInteracting else { return .obsolete }
+    guard pendingConnection == nil, let host = client, !host.isDemo, host.endpoint != nil || host.agentConnection != nil else { return .obsolete }
     guard host.migrationNeedsVerification != true else {
       if userInitiated { error = L10n.tr("迁移的 EasyWork 连接需要重新配对，请先核对电脑身份。") }
-      return
+      return .failed
     }
     let generation = clientGeneration
     if userInitiated { userRequestedWorkspaceGeneration = generation }
     let foregroundRevision = foregroundReadiness.revision
     let expectedReadTarget = readingClient(host).readingTarget
-    if workspaceRefreshGeneration == generation {
-      // Coalesce an explicit latest-history refresh behind the occupied reader.
-      // Preserve its navigation; a later target must not inherit this request.
-      if userInitiated && includeHistory && !loadMore {
-        pendingManualHistoryRefresh = (generation, historyGeneration)
-      }
-      guard userInitiated else { return }
-      do {
-        while workspaceRefreshGeneration == generation, clientGeneration == generation {
-          try await Task.sleep(for: .milliseconds(50))
-        }
-      } catch {}
-      return
-    }
+    let requestedHistoryGeneration = historyGeneration
+    guard workspaceRefreshGeneration != generation else { return .obsolete }
     let owner = UUID()
     workspaceRefreshOwner = owner
     workspaceRefreshGeneration = generation
@@ -3499,30 +3645,36 @@ private var userRequestedWorkspaceGeneration: UUID?
         workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil
         if userRequestedWorkspaceGeneration == generation { userRequestedWorkspaceGeneration = nil }
         if clientGeneration == generation { loading = false }
-        if let pending = pendingManualHistoryRefresh {
-          pendingManualHistoryRefresh = nil
-          Task {
-            guard clientGeneration == pending.client, historyGeneration == pending.history else { return }
-            await refresh(userInitiated: true)
-          }
-        }
+
       }
     }
     do {
       let previous = saved.workspaces[host.id]
-      var result = try await AgentClients.resolve(host).workspace(
-        readingClient(host),
-        projectCursor: loadMore ? previous?.nextProjectCursor : nil,
-        threadCursor: loadMore ? previous?.nextThreadCursor : nil)
+      let provider = try AgentClients.resolve(host)
+      var first: WorkspaceSnapshot
+      if userInitiated, !loadMore, previous?.capabilities?.contains("workspace:refresh:v1") == true {
+        first = try await provider.latestWorkspace(readingClient(host))
+      } else {
+        first = try await provider.workspace(readingClient(host),
+          projectCursor: nil,
+          threadCursor: loadMore ? previous?.nextThreadCursor : nil)
+      }
+      if userInitiated, !loadMore, previous?.capabilities?.contains("workspace:refresh:v1") != true,
+        first.capabilities?.contains("workspace:refresh:v1") == true {
+        first = try await provider.latestWorkspace(readingClient(host))
+      }
+      var result = try await completeWorkspacePages(first, host: host, includeThreads: false) {
+        self.clientGeneration == generation && self.workspaceRefreshOwner == owner && self.workspacePublicationCurrent(host.id, publication)
+      }
       try await waitForSidebarInteraction()
       try Task.checkCancellation()
-      guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
+      guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return .obsolete }
       var connectionMetadata: AgentConnectionMetadata?
       if host.agentConnection != nil {
         connectionMetadata = await (try AgentClients.resolve(host)).connectionMetadata(host)
         try await waitForSidebarInteraction()
         try Task.checkCancellation()
-        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
+        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return .obsolete }
       }
       guard result.hostId == host.id, result.projects.allSatisfy({ $0.hostId == host.id }),
         result.threads.allSatisfy({ $0.hostId == host.id })
@@ -3533,7 +3685,7 @@ private var userRequestedWorkspaceGeneration: UUID?
         target.hostId != host.id || target.agentId != (result.clientType?.id ?? "codex") {
         throw HostServiceError.wrongHost
       }
-      guard managementRevisions[host.id] == managementRevision else { return }
+      guard managementRevisions[host.id] == managementRevision, workspacePublicationCurrent(host.id, publication) else { return .obsolete }
       if let metadata = connectionMetadata {
         connectionRoutes[host.id] = metadata.title
         if let index = saved.clients.firstIndex(where: { $0.id == host.id }) {
@@ -3562,23 +3714,20 @@ private var userRequestedWorkspaceGeneration: UUID?
         result.threads += previous.threads.filter { !ids.contains($0.id) }
       }
       if loadMore, let previous, previous.readTarget == result.readTarget {
-        let projects = result.projects.reduce(into: previous.projects) { items, new in
-          if !items.contains(where: { $0.id == new.id }) { items.append(new) }
-        }
         let threads = result.threads.reduce(into: previous.threads) { items, new in
           if !items.contains(where: { $0.id == new.id }) { items.append(new) }
         }
         saved.workspaces[host.id] = WorkspaceSnapshot(
           hostId: host.id, name: result.name, connectionMode: result.connectionMode,
-          projects: projects, threads: threads,
-          nextProjectCursor: previous.nextProjectCursor == nil
-            ? nil : result.nextProjectCursor,
+          projects: result.projects, threads: threads,
+          nextProjectCursor: result.nextProjectCursor,
           nextThreadCursor: previous.nextThreadCursor == nil
             ? nil : result.nextThreadCursor, capabilities: result.capabilities, clientType: result.clientType, agentConnectionState: result.agentConnectionState, readTarget: result.readTarget,
           pinnedThreadIds: result.pinnedThreadIds ?? previous.pinnedThreadIds, sidebar: result.sidebar ?? previous.sidebar)
       } else {
         saved.workspaces[host.id] = result
       }
+      workspaceApplied[host.id, default: 0] &+= 1
       recordConnectionSuccess(host)
       if !connectionInBackground,
         foregroundReadiness.confirmWorkspace(scope: proofScope(host), observedRevision: foregroundRevision) {
@@ -3594,49 +3743,82 @@ private var userRequestedWorkspaceGeneration: UUID?
         if selectedThreadId == nil { restoreSelection(host.id) }
         // A restored pending input must be queried even if the first history
         // request never returns. The workspace above has validated this target.
-        let initialEvents = !userInitiated && includeHistory && selectedThreadId != nil
+        let mayReadHistory = includeHistory && historyGeneration == requestedHistoryGeneration
+        let initialEvents = !userInitiated && mayReadHistory && selectedThreadId != nil
           && loadedHistoryGeneration != historyGeneration
           && saved.workspaces[host.id]?.capabilities?.contains("events") == true
           && latestHistoryReads[targetKey] != historyGeneration
         startEvents(initialReadGrace: initialEvents ? 8 : 0)
-        if includeHistory, !initialEvents, let thread = conversation { await loadHistory(threadId: thread.id, userInitiated: userInitiated) }
+        if mayReadHistory, !initialEvents, let thread = conversation { await loadHistory(threadId: thread.id, userInitiated: userInitiated) }
         try Task.checkCancellation()
-        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
+        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return .obsolete }
         startEvents()
       }
       persist()
+      return .published
     } catch {
-      guard !isReadCancellation(error), clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
+      guard !isReadCancellation(error), clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner, workspaceRequests[host.id, default: 0] == publication.request else { return .obsolete }
       recordConnectionFailure(error, host: host, startedAt: startedAt)
       if userInitiated || userRequestedWorkspaceGeneration == generation {
         self.error = "刷新失败，请重试。\n" + error.userFacingDescription
       }
       if client?.id == host.id { startEvents() }
       persist()
+      return .failed
     }
   }
 
-  /// Read every configured workspace without navigating, loading a conversation or changing selection.
-  private func completeReadingThreadPages(_ first: WorkspaceSnapshot, host: Client) async throws -> WorkspaceSnapshot {
-    var result = first
-    var cursors: Set<String> = []
-    let provider = try AgentClients.resolve(host)
-    while let cursor = result.nextThreadCursor {
-      guard cursors.insert(cursor).inserted else { throw HostServiceError.invalidResponse }
-      let page = try await provider.workspace(readingClient(host), projectCursor: nil, threadCursor: cursor)
-      guard page.hostId == host.id, page.readTarget == result.readTarget,
-        page.threads.allSatisfy({ $0.hostId == host.id }) else { throw HostServiceError.wrongHost }
-      let threads = page.threads.reduce(into: result.threads) { items, thread in
-        if !items.contains(where: { $0.id == thread.id }) { items.append(thread) }
-      }
-      result = WorkspaceSnapshot(hostId: result.hostId, name: result.name, connectionMode: result.connectionMode,
-        projects: result.projects, threads: threads, nextProjectCursor: result.nextProjectCursor,
-        nextThreadCursor: page.nextThreadCursor, capabilities: result.capabilities, clientType: result.clientType,
-        agentConnectionState: result.agentConnectionState, readTarget: result.readTarget,
-        pinnedThreadIds: result.pinnedThreadIds ?? page.pinnedThreadIds, sidebar: result.sidebar ?? page.sidebar)
-      try Task.checkCancellation()
+  private func mergeDirectoryItems<T: Identifiable>(_ old: [T], _ incoming: [T]) -> [T] where T.ID == String {
+    var result = old
+    var positions = Dictionary(old.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+    for item in incoming {
+      if let index = positions[item.id] { result[index] = item }
+      else { positions[item.id] = result.count; result.append(item) }
     }
     return result
+  }
+
+  /// Complete each requested cursor lane once. Omitted exhausted cursors may
+  /// return their first page again; those rows and cursors never reopen a lane.
+  private func completeWorkspacePages(_ first: WorkspaceSnapshot, host: Client, includeThreads: Bool,
+    current: () -> Bool = { true }) async throws -> WorkspaceSnapshot {
+    var result = first
+    result.projects = mergeDirectoryItems([], first.projects)
+    result.threads = mergeDirectoryItems([], first.threads)
+    var projectCursor = first.nextProjectCursor
+    var threadCursor = includeThreads ? first.nextThreadCursor : nil
+    var seenProjects: Set<String> = []; var seenThreads: Set<String> = []
+    let provider = try AgentClients.resolve(host)
+    func validate(_ page: WorkspaceSnapshot) throws {
+      try Task.checkCancellation()
+      guard current() else { throw CancellationError() }
+      guard page.hostId == host.id, page.readTarget == first.readTarget,
+        page.projects.allSatisfy({ $0.hostId == host.id }), page.threads.allSatisfy({ $0.hostId == host.id })
+      else { throw HostServiceError.wrongHost }
+    }
+    try validate(first)
+    while projectCursor != nil || threadCursor != nil {
+      if let cursor = projectCursor, !seenProjects.insert(cursor).inserted { throw HostServiceError.invalidResponse }
+      if let cursor = threadCursor, !seenThreads.insert(cursor).inserted { throw HostServiceError.invalidResponse }
+      let page = try await provider.workspace(readingClient(host), projectCursor: projectCursor, threadCursor: threadCursor)
+      try validate(page)
+      let projects = projectCursor == nil ? result.projects : mergeDirectoryItems(result.projects, page.projects)
+      let threads = threadCursor == nil ? result.threads : mergeDirectoryItems(result.threads, page.threads)
+      projectCursor = projectCursor == nil ? nil : page.nextProjectCursor
+      threadCursor = threadCursor == nil ? nil : page.nextThreadCursor
+      result = WorkspaceSnapshot(hostId: result.hostId, name: result.name, connectionMode: result.connectionMode,
+        projects: projects, threads: threads, nextProjectCursor: projectCursor,
+        nextThreadCursor: includeThreads ? threadCursor : first.nextThreadCursor,
+        capabilities: result.capabilities, clientType: result.clientType,
+        agentConnectionState: result.agentConnectionState, readTarget: result.readTarget,
+        pinnedThreadIds: page.pinnedThreadIds ?? result.pinnedThreadIds, sidebar: page.sidebar ?? result.sidebar)
+    }
+    return result
+  }
+
+  /// The unread/fork directory needs both lanes; project-only refresh keeps chat pagination.
+  private func completeReadingThreadPages(_ first: WorkspaceSnapshot, host: Client) async throws -> WorkspaceSnapshot {
+    try await completeWorkspacePages(first, host: host, includeThreads: true)
   }
 
   func refreshMobileUnread() async {
@@ -3645,27 +3827,33 @@ private var userRequestedWorkspaceGeneration: UUID?
     for host in saved.clients.filter({ allowsPassiveClientRead($0) }) {
       if Task.isCancelled { return }
       guard allowsPassiveClientRead(host) else { continue }
-      if host.id == client?.id && (loading || historyLoading) { continue }
+      if host.id == client?.id && (loading || historyLoading) || manualWorkspaceLanes[host.id] != nil { continue }
+      let publication = workspacePublication(host.id)
+      let managementRevision = managementRevisions[host.id]
+      let expectedTarget = readingClient(host).readingTarget
       do {
         let provider = try AgentClients.resolve(host)
         let previous = saved.workspaces[host.id]
         var result = try await provider.workspace(readingClient(host), projectCursor: nil, threadCursor: nil)
-        result = try await completeReadingThreadPages(result, host: host)
+        result = try await completeWorkspacePages(result, host: host, includeThreads: true) {
+          self.workspacePublicationCurrent(host.id, publication) && self.managementRevisions[host.id] == managementRevision
+        }
         try await waitForSidebarInteraction()
         try Task.checkCancellation()
         if host.id == client?.id && loading { continue }
-        guard allowsPassiveClientRead(host),
+        guard workspacePublicationCurrent(host.id, publication), managementRevisions[host.id] == managementRevision,
+          saved.clients.contains(where: { $0.id == host.id && $0.endpoint == host.endpoint && $0.agentConnection == host.agentConnection && $0.codexDirect == host.codexDirect }),
+          allowsPassiveClientRead(host),
           saved.workspaces[host.id]?.readTarget == previous?.readTarget else { continue }
         guard result.hostId == host.id, result.threads.allSatisfy({ $0.hostId == host.id }),
           result.projects.allSatisfy({ $0.hostId == host.id }),
+          (expectedTarget == nil || result.readTarget == nil || expectedTarget == result.readTarget),
           result.readTarget.map({ $0.hostId == host.id && $0.agentId == (result.clientType?.id ?? "codex") }) ?? true else { throw HostServiceError.wrongHost }
         if result.readTarget == previous?.readTarget {
           result.threads = result.threads.map { incoming in mergeReadingSummary(incoming, prior: previous?.threads.first { $0.id == incoming.id }) }
         }
-        if let previous, previous.readTarget == result.readTarget {
-          result.projects = previous.projects + result.projects.filter { project in !previous.projects.contains { $0.id == project.id } }
-        }
         saved.workspaces[host.id] = result
+        workspaceApplied[host.id, default: 0] &+= 1
         if let index = saved.clients.firstIndex(where: { $0.id == host.id }) { saved.clients[index].online = true }
         reconcileReading(host)
         persist()
@@ -5677,6 +5865,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     saved.workspaceManagement?[index] = result
     let ids = Set(result.items.filter { $0.state == "completed" }.map(\.id))
     if !ids.isEmpty {
+      invalidateWorkspaceDirectory(host.id)
       managementRevisions[host.id] = UUID()
       if original.action == .archiveThreads, client?.id == host.id {
         workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil; loading = false
@@ -5709,25 +5898,147 @@ private var userRequestedWorkspaceGeneration: UUID?
     persist()
   }
 
-  func addProject(_ name: String, directory: String) {
-    if client?.isDemo == true {
-      addDemoProject(name)
-      return
-    }
-    guard let host = client else { return }
-    Task {
-      do {
-        let snapshot: WorkspaceSnapshot = try await AgentClients.resolve(host).createProject(host, name: name, directory: directory, operationId: UUID().uuidString)
-        guard snapshot.hostId == host.id else { throw HostServiceError.wrongHost }
-        saved.workspaces[host.id] = snapshot
-        if client?.id == host.id {
-          drawerOpen = false
-          sheet = nil
-        }
-        persist()
-      } catch { self.presentError(error) }
+  func isProjectCreationBusy(_ intent: ProjectCreationIntent) -> Bool {
+    (saved.projectCreationIntents ?? [:]).contains { key, value in
+      value.operationId == intent.operationId && value.target == intent.target && projectCreationBusy.contains(key)
     }
   }
+  func isProjectCreationBusy(name: String, directory: String) -> Bool {
+    guard let host = client else { return false }
+    let target = mobileReadingTarget(host)
+    return (saved.projectCreationIntents ?? [:]).contains { key, value in
+      value.target == target && !value.confirmed && value.rejected != true &&
+        value.name == name && value.directory == directory && projectCreationBusy.contains(key)
+    }
+  }
+  var pendingProjectCreations: [ProjectCreationIntent] {
+    guard let host = client else { return [] }
+    let target = mobileReadingTarget(host)
+    return (saved.projectCreationIntents ?? [:]).sorted { $0.key < $1.key }.map(\.value).filter {
+      $0.target == target && !$0.confirmed && $0.rejected != true && $0.submitted != false
+    }
+  }
+  private func recoverProjectCreation(_ intent: ProjectCreationIntent, key: String, host: Client) async throws -> Bool {
+    var captured = host; captured.readingTarget = intent.target
+    let receipt = try await AgentClients.resolve(host).projectCreationReceipt(captured, operationId: intent.operationId)
+    guard receipt.hostId == host.id, receipt.target == intent.target, receipt.operationId == intent.operationId else { throw HostServiceError.wrongHost }
+    // The server's canonical name/root may differ from valid raw form input.
+    // New receipts retain both; legacy receipts keep their authenticated
+    // original operation key without guessing a remote path.
+    let inputMatches: Bool
+    if let name = receipt.requestName, let directory = receipt.requestDirectory {
+      inputMatches = name == intent.name && directory == intent.directory
+    } else {
+      // Legacy Hosts persisted only canonical input. Their authenticated,
+      // target-scoped immutable operation ID is the authoritative receipt key;
+      // canonical metadata never rewrites the phone's captured raw input.
+      inputMatches = receipt.requestName == nil && receipt.requestDirectory == nil
+    }
+    guard inputMatches else { return false }
+    if receipt.state == "rejected" {
+      saved.projectCreationIntents?[key]?.rejected = true; persist()
+      throw HostServiceError.message(L10n.tr("项目创建已被拒绝，请检查后重新创建。"))
+    }
+    guard receipt.state == "completed", receipt.projectId != nil else { return false }
+    saved.projectCreationIntents?[key]?.confirmed = true; persist()
+    return true
+  }
+  func queryProjectCreation(_ intent: ProjectCreationIntent, isCurrent: @escaping () -> Bool = { true }, onConfirmed: @escaping () -> Void = {}) {
+    guard let host = client, mobileReadingTarget(host) == intent.target,
+      let stored = saved.projectCreationIntents?.first(where: { $0.value.operationId == intent.operationId &&
+        $0.value.target == intent.target && $0.value.name == intent.name && $0.value.directory == intent.directory }),
+      !projectCreationBusy.contains(stored.key) else { return }
+    let generation = clientGeneration
+    projectCreationBusy.insert(stored.key)
+    Task {
+      defer { projectCreationBusy.remove(stored.key) }
+      do {
+        guard try await recoverProjectCreation(intent, key: stored.key, host: host) else {
+          throw HostServiceError.message(L10n.tr("项目创建结果待确认，请使用原名称和目录重试，避免重复创建。"))
+        }
+        if client?.id == host.id, clientGeneration == generation { onConfirmed() }
+        if client?.id == host.id, clientGeneration == generation { await refresh(includeHistory: false, userInitiated: false) }
+      } catch { if !isReadCancellation(error), client?.id == host.id, clientGeneration == generation, isCurrent() { presentError(error) } }
+    }
+  }
+  func addProject(_ name: String, directory: String, isCurrent: @escaping () -> Bool = { true }, onConfirmed: @escaping () -> Void = {}) {
+    if client?.isDemo == true { addDemoProject(name); return }
+    guard let host = client, canCreateProject else { return }
+    let target = mobileReadingTarget(host)
+    // Independent creations have independent records. Only an identical pending
+    // intent recovers its original ID; it never blocks another valid project.
+    let previous = saved.projectCreationIntents?.sorted { $0.key < $1.key }.first {
+      !$0.value.confirmed && $0.value.rejected != true && $0.value.target == target &&
+        $0.value.name == name && $0.value.directory == directory
+    }
+    let key = previous?.key ?? UUID().uuidString
+    let intent = previous?.value ?? ProjectCreationIntent(operationId: key, target: target, name: name, directory: directory, submitted: false)
+    guard !projectCreationBusy.contains(key) else { return }
+    if saved.projectCreationIntents == nil { saved.projectCreationIntents = [:] }
+    saved.projectCreationIntents?[key] = intent
+    projectCreationBusy.insert(key)
+    let generation = clientGeneration
+    invalidateWorkspaceDirectory(host.id)
+    let publication = workspacePublication(host.id)
+    Task {
+      defer { projectCreationBusy.remove(key) }
+      var attemptedWrite = false
+      do {
+        try await persistBeforeCommand()
+        guard clientGeneration == generation, mobileReadingTarget(host) == intent.target else { throw CancellationError() }
+        if intent.submitted != false {
+          guard try await recoverProjectCreation(intent, key: key, host: host) else {
+            throw HostServiceError.message(L10n.tr("项目创建结果待确认，请使用原名称和目录重试，避免重复创建。"))
+          }
+          if client?.id == host.id, clientGeneration == generation { onConfirmed() }
+          if client?.id == host.id, clientGeneration == generation { await refresh(includeHistory: false, userInitiated: false) }
+          return
+        }
+        saved.projectCreationIntents?[key]?.submitted = true
+        try await persistBeforeCommand()
+        guard clientGeneration == generation, mobileReadingTarget(host) == intent.target else { throw CancellationError() }
+        var captured = host; captured.readingTarget = intent.target
+        attemptedWrite = true
+        let snapshot = try await AgentClients.resolve(host).createProject(captured, name: intent.name,
+          directory: intent.directory, operationId: intent.operationId)
+        guard snapshot.hostId == host.id, snapshot.readTarget == nil || snapshot.readTarget == intent.target else { throw HostServiceError.wrongHost }
+        saved.projectCreationIntents?[key]?.confirmed = true; persist()
+        if client?.id == host.id, clientGeneration == generation { onConfirmed() }
+        if workspacePublicationCurrent(host.id, publication) {
+          let complete = try await completeWorkspacePages(snapshot, host: host, includeThreads: false) {
+            self.workspacePublicationCurrent(host.id, publication)
+          }
+          if workspacePublicationCurrent(host.id, publication) {
+            saved.workspaces[host.id] = complete
+            workspaceApplied[host.id, default: 0] &+= 1
+          }
+        } else if client?.id == host.id, clientGeneration == generation {
+          if client?.id == host.id, clientGeneration == generation { await refresh(includeHistory: false, userInitiated: false) }
+        }
+        persist()
+      } catch {
+        let original = error
+        var reported: Error = original
+        if !attemptedWrite, intent.submitted == false { saved.projectCreationIntents?[key]?.submitted = false; persist() }
+        if attemptedWrite, !isReadCancellation(original) {
+          do {
+            if try await recoverProjectCreation(intent, key: key, host: host) {
+              if client?.id == host.id, clientGeneration == generation { onConfirmed() }
+              if client?.id == host.id, clientGeneration == generation { await refresh(includeHistory: false, userInitiated: false) }
+              return
+            }
+          } catch { reported = error }
+          // These request-validation/authentication/router refusals occur before
+          // the create operation. A rejected receipt above is also terminal.
+          if case HostServiceError.rejected(let status, _) = original, [400, 401, 403, 404, 422].contains(status) {
+            saved.projectCreationIntents?[key]?.rejected = true; persist()
+          }
+        }
+        if !isReadCancellation(reported), client?.id == host.id, clientGeneration == generation, isCurrent() { self.presentError(reported) }
+      }
+    }
+  }
+
   func loadModels() async {
     guard let host = client, let key = modelLoadingKey else { return }
     guard !Task.isCancelled else { return }

@@ -721,6 +721,24 @@ export class RuntimePersistence<State extends RuntimeState> {
     this.saveState(state, true);
   }
 
+  /** Independent display provenance survives older writers rewriting runtime metadata. */
+  loadProjectVisibility(): unknown {
+    const file = join(dirname(this.file), 'project-visibility-v1.json');
+    try {
+      assertPrivateFile(file);
+      return JSON.parse(privateBytes(file).toString('utf8')) as unknown;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+  }
+
+  saveProjectVisibility(value: unknown): void {
+    if (this.closed) throw new RuntimePersistenceError('closed', undefined);
+    this.assertReplyWriter();
+    this.atomicWrite(join(dirname(this.file), 'project-visibility-v1.json'), value, true);
+  }
+
   private persistedState(state: State) {
     return {
       ...state,

@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agenthub.core.WorkspaceSidebarRules
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun Sidebar(session: MobileSession,close: () -> Unit,clients: () -> Unit,newChat: () -> Unit,settings: () -> Unit,addProject: ()->Unit={},fileTransfers: ()->Unit={},active: Boolean=true) {
@@ -46,6 +48,12 @@ import com.agenthub.core.WorkspaceSidebarRules
     }
     LaunchedEffect(active) { if(active&&searchVisible)finishSearchEditing() }
     val client=session.selectedClient
+    LaunchedEffect(active,client.id,client.scope) {
+        if(active&&!client.isDemo) {
+            delay(220)
+            while(isActive) { session.refreshSidebarDirectory()?.join();delay(3_000) }
+        }
+    }
     val source=if(session.hasClient)clientSourceText(client) else productText("尚未连接客户端")
     val connection=if(session.hasClient)clientConnectionText(client) else productText("未连接")
     val switchDescription=productText("切换客户端，%@，%@",if(session.hasClient)client.name else productText("未连接"),source)
@@ -63,6 +71,7 @@ import com.agenthub.core.WorkspaceSidebarRules
     val pinned=order.pinned.filter { item -> if(item.kind=="thread")byThread[item.id]?.let { matches(it.title) }==true else byProject[item.id]?.let(::projectMatches)==true }
     val recent=order.recentThreadIds.mapNotNull(byThread::get).filter { matches(it.title) }
     val folders=order.projectIds.mapNotNull(byProject::get).filter(::projectMatches)
+    val pendingFolders=order.pendingProjectIds.mapNotNull(byProject::get).filter(::projectMatches)
     Column(Modifier.fillMaxSize().background(colors.surface).padding(horizontal=10.dp).testTag("sidebar")) {
         Row(verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f).heightIn(min=48.dp).padding(start=9.dp).testTag("sidebar-client-switch")
@@ -121,7 +130,11 @@ import com.agenthub.core.WorkspaceSidebarRules
                     } }
                     if(expanded)folders.forEach { project -> sidebarProjectRows(project,projectChildren(project),session,searching,close,active) }
                 }
-                if(folders.isEmpty()&&recent.isEmpty()&&pinned.isEmpty())item { Text(productText(if(!searching) "还没有项目或对话" else "没有找到相关内容"),Modifier.padding(vertical=24.dp,horizontal=9.dp),fontSize=14.sp,color=colors.onSurfaceVariant) }
+                if(pendingFolders.isNotEmpty()) {
+                    item(key="pending-projects-section") { Text(productText("待同步项目"),Modifier.padding(start=9.dp,top=12.dp).testTag("sidebar-pending-projects"),fontSize=12.sp,color=colors.onSurfaceVariant) }
+                    pendingFolders.forEach { project -> sidebarProjectRows(project,projectChildren(project),session,searching,close,active) }
+                }
+                if(folders.isEmpty()&&pendingFolders.isEmpty()&&recent.isEmpty()&&pinned.isEmpty())item { Text(productText(if(!searching) "还没有项目或对话" else "没有找到相关内容"),Modifier.padding(vertical=24.dp,horizontal=9.dp),fontSize=14.sp,color=colors.onSurfaceVariant) }
                 if(session.workspace?.nextProjectCursor!=null||session.workspace?.nextThreadCursor!=null)item { TextButton(onClick={ session.refresh(more=true,userInitiated=true) },enabled=!session.loading,modifier=Modifier.testTag("sidebar-load-more")) { Text(productText("加载更多"),color=colors.onSurfaceVariant) } }
                 item { Spacer(Modifier.height(24.dp)) }
             }
@@ -162,6 +175,7 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
                 ProductIcon("folder");Spacer(Modifier.width(10.dp));Text(project.name,Modifier.weight(1f),maxLines=1,fontSize=16.sp,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(Modifier.width(8.dp));ProductIcon(if(expanded) "down" else "chevron",Modifier.size(12.dp),colors.onSurfaceVariant)
             }
+            project.desktopVisibility?.let { visibility -> Text(productText(if(visibility=="pending") "待同步" else "待核对"),Modifier.padding(horizontal=4.dp).testTag("project-sync-${project.id}"),fontSize=11.sp,color=colors.onSurfaceVariant) }
             if(session.canCreateThread) {
                 val target=session.captureNewChatTarget()
                 IconAction("new",productText("在 %@ 新建对话",project.name),"new-in-${project.id}") {

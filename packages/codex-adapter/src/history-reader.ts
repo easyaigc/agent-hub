@@ -82,6 +82,7 @@ export interface ReadProject {
   hostId: string;
   name: string;
   roots: string[];
+  desktopVisibility?: 'pending' | 'unknown';
 }
 export interface ReadThread {
   id: string;
@@ -110,6 +111,13 @@ export interface ReadWorkspace {
   sidebar?: WorkspaceSidebar;
   nextProjectCursor: string | null;
   nextThreadCursor: string | null;
+  /** Internal adapter evidence; DesktopWorkspaceView never spreads this into HTTP. */
+  desktopCatalog?: {
+    profile: string;
+    fingerprint: string;
+    nativeProjects: ReadProject[];
+    pendingDeletionIds: ReadonlySet<string>;
+  };
 }
 
 /** Dedicated metadata reader. Never loads, resumes, starts or submits a turn. */
@@ -134,7 +142,9 @@ export class CodexHistoryReader {
   >();
   private knownThreads = new Set<string>();
   private knownProjects = new Map<string, ReadProject>();
+  private canonicalProjectThreads = new Set<string>();
   private sidebar: DesktopSidebar | undefined;
+  private sidebarRecency: RecordValue[] = [];
   private executableGeneration: string | undefined;
   onDisconnect: () => void = () => {};
 
@@ -424,12 +434,23 @@ export class CodexHistoryReader {
   }
 
   hasDesktopAssignment(threadId: string): boolean {
-    return this.sidebar?.assignment(threadId) !== undefined;
+    return (
+      this.canonicalProjectThreads.has(threadId) || this.sidebar?.assignment(threadId) !== undefined
+    );
   }
 
   /** Complete metadata snapshot so sparse projects and removed chats stay accurate. */
   async desktopWorkspace(
     confirmedCreatedIds: ReadonlySet<string> = new Set(),
+    resolveProjects?: (catalog: ReadWorkspace) => ReadProject[],
+  ): Promise<ReadWorkspace> {
+    return this.readDesktopWorkspace(confirmedCreatedIds, true, resolveProjects);
+  }
+
+  private async readDesktopWorkspace(
+    confirmedCreatedIds: ReadonlySet<string>,
+    retryChangedDisplay: boolean,
+    resolveProjects?: (catalog: ReadWorkspace) => ReadProject[],
   ): Promise<ReadWorkspace> {
     const sidebar = this.desktopStatePath ? new DesktopSidebar(this.desktopStatePath) : undefined;
     const pages = async (method: string, params: RecordValue): Promise<unknown[]> => {
@@ -481,24 +502,95 @@ export class CodexHistoryReader {
         sortDirection: 'asc',
       }),
     ]);
-    this.sidebar = sidebar;
+    const latestSidebar = this.desktopStatePath
+      ? new DesktopSidebar(this.desktopStatePath)
+      : undefined;
+    if (sidebar?.fingerprint !== latestSidebar?.fingerprint) {
+      if (retryChangedDisplay)
+        return this.readDesktopWorkspace(confirmedCreatedIds, false, resolveProjects);
+      throw Object.assign(new Error('Desktop display catalog changed during collection'), {
+        code: 'DESKTOP_CATALOG_CHANGED',
+      });
+    }
+    this.sidebar = latestSidebar;
     this.knownProjects.clear();
-    const result = this.mapWorkspace(
-      { data: projects },
-      { data: [...threads, ...archived] },
-      confirmedCreatedIds,
-    );
+    this.canonicalProjectThreads.clear();
+    let evidence: ReadWorkspace['desktopCatalog'];
+    let resolvedProjects: ReadProject[] | undefined;
+    let result: ReadWorkspace;
+    try {
+      if (latestSidebar?.hasProjectCatalog) {
+        const nativeProjects = this.mapProjects({ data: projects });
+        evidence = {
+          profile: dirname(this.desktopStatePath!),
+          fingerprint: latestSidebar.fingerprint,
+          nativeProjects,
+          pendingDeletionIds: latestSidebar.pendingProjectDeletionIds(),
+        };
+        const current = latestSidebar.projects(nativeProjects, confirmedCreatedIds);
+        if (resolveProjects)
+          resolvedProjects = resolveProjects({
+            hostId: this.hostId,
+            name: this.name,
+            connectionMode: 'history-only',
+            clientType: codexClientType,
+            projects: current,
+            threads: [],
+            nextProjectCursor: null,
+            nextThreadCursor: null,
+            desktopCatalog: evidence,
+          });
+      }
+      result = this.mapWorkspace(
+        { data: projects },
+        { data: [...threads, ...archived] },
+        confirmedCreatedIds,
+        resolvedProjects,
+      );
+    } catch (error) {
+      if (
+        retryChangedDisplay &&
+        (error as { code?: string }).code === 'DESKTOP_PROJECT_METADATA_INCOMPLETE'
+      )
+        return this.readDesktopWorkspace(confirmedCreatedIds, false, resolveProjects);
+      throw error;
+    }
     const archivedIds = new Set(archived.map((v) => string(object(v).id)));
     result.threads = result.threads.map((v) => ({ ...v, archived: archivedIds.has(v.id) }));
     result.pinnedThreadIds = pinned.map((v) => string(object(v).id));
-    if (sidebar)
-      result.sidebar = sidebar.presentation(
+    if (latestSidebar) {
+      this.sidebarRecency = threads.map((value) => {
+        const row = object(value);
+        return {
+          id: row.id,
+          recencyAt: row.recencyAt,
+          updatedAt: row.updatedAt,
+          createdAt: row.createdAt,
+        };
+      });
+      result.sidebar = latestSidebar.presentation(
         result.projects,
         result.threads,
         result.pinnedThreadIds,
-        threads.map(object),
+        this.sidebarRecency,
       );
+      if (evidence) result.desktopCatalog = evidence;
+    }
     return result;
+  }
+
+  desktopSidebar(
+    projects: ReadProject[],
+    catalog: Pick<ReadWorkspace, 'pinnedThreadIds'> & {
+      threads: Parameters<DesktopSidebar['presentation']>[1];
+    },
+  ): WorkspaceSidebar | undefined {
+    return this.sidebar?.presentation(
+      projects,
+      catalog.threads,
+      catalog.pinnedThreadIds ?? [],
+      this.sidebarRecency,
+    );
   }
 
   async workspace(projectCursor?: string, threadCursor?: string): Promise<ReadWorkspace> {
@@ -520,17 +612,13 @@ export class CodexHistoryReader {
     p: RecordValue,
     t: RecordValue,
     confirmedCreatedIds: ReadonlySet<string> = new Set(),
+    resolvedProjects?: ReadProject[],
   ): ReadWorkspace {
-    const sourceProjects = array(p.data).map((value) => {
-      const row = object(value);
-      return {
-        id: string(row.id),
-        hostId: this.hostId,
-        name: string(row.name),
-        roots: array(row.roots).map((root) => string(object(root).path)),
-      };
-    });
-    const projects = this.sidebar?.projects(sourceProjects, confirmedCreatedIds) ?? sourceProjects;
+    const sourceProjects = this.mapProjects(p);
+    const projects =
+      resolvedProjects ??
+      this.sidebar?.projects(sourceProjects, confirmedCreatedIds) ??
+      sourceProjects;
     for (const project of projects) this.knownProjects.set(project.id, project);
     const threads: ReadThread[] = array(t.data).map((value) => {
       const row = object(value);
@@ -560,6 +648,18 @@ export class CodexHistoryReader {
     };
   }
 
+  private mapProjects(p: RecordValue): ReadProject[] {
+    return array(p.data).map((value) => {
+      const row = object(value);
+      return {
+        id: string(row.id),
+        hostId: this.hostId,
+        name: string(row.name),
+        roots: array(row.roots).map((root) => string(object(root).path)),
+      };
+    });
+  }
+
   private projectsForThread(row: RecordValue): { projectId: string | null; projectIds: string[] } {
     const desktopAssignment = this.sidebar?.assignment(string(row.id));
     if (desktopAssignment !== undefined) {
@@ -568,7 +668,10 @@ export class CodexHistoryReader {
       return { projectId, projectIds: projectId ? [projectId] : [] };
     }
     const assignment = cursor(row.projectId);
-    if (assignment) return { projectId: assignment, projectIds: [assignment] };
+    if (assignment) {
+      this.canonicalProjectThreads.add(string(row.id));
+      return { projectId: assignment, projectIds: [assignment] };
+    }
     if (this.sidebar?.hasProjectCatalog) {
       const projectId = this.sidebar.projectForDirectory(string(row.id), row.cwd, [
         ...this.knownProjects.values(),

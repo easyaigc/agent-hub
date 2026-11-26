@@ -1,10 +1,10 @@
 /** Current desktop profile's built-in server-owned pinned section. */
 export const desktopPinnedSection = '01984de2-8f74-7c91-a3b2-5c5e937cf318';
 
-import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, normalize, sep } from 'node:path';
 import type { WorkspaceSidebar } from '@codex-manage/protocol';
 import type { ReadProject, ReadThread } from './history-reader.js';
+import { desktopDisplayFingerprint, readDesktopDisplayState } from './desktop-display-state.js';
 
 type RecordValue = Record<string, unknown>;
 const record = (value: unknown): RecordValue =>
@@ -16,19 +16,42 @@ export class DesktopSidebar {
   private readonly projectIds: RecordValue;
   private readonly atoms: RecordValue;
 
+  get fingerprint(): string {
+    return desktopDisplayFingerprint(this.state);
+  }
+
+  pendingProjectDeletionIds(): ReadonlySet<string> {
+    const entries = record(
+      record(this.state['app-server-pending-project-deletions-by-host'])[
+        `local:${dirname(this.path)}`
+      ],
+    );
+    return new Set(
+      Object.values(entries).flatMap((value) => {
+        const id = record(value).projectId;
+        return typeof id === 'string' ? [id] : [];
+      }),
+    );
+  }
+
   constructor(private readonly path: string) {
     try {
-      this.state = record(JSON.parse(readFileSync(path, 'utf8')));
+      this.state = readDesktopDisplayState(path);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
         throw new Error('Desktop sidebar metadata unavailable', { cause: error });
       this.state = {};
     }
-    this.projectIds = record(
-      record(this.state['app-server-project-id-by-legacy-project-id-by-host'])[
-        `local:${dirname(path)}`
-      ],
-    );
+    const identities = this.state['app-server-project-id-by-legacy-project-id-by-host'];
+    const validRecord = (value: unknown): RecordValue => {
+      if (value == null) return {};
+      if (typeof value !== 'object' || Array.isArray(value))
+        throw Object.assign(new Error('Invalid desktop project identity mapping'), {
+          code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+        });
+      return value as RecordValue;
+    };
+    this.projectIds = validRecord(validRecord(identities)[`local:${dirname(path)}`]);
     this.atoms = record(this.state['electron-persisted-atom-state']);
   }
 
@@ -40,13 +63,25 @@ export class DesktopSidebar {
     if (!Object.hasOwn(this.state, 'local-projects')) return projects;
     const catalog = record(this.state['local-projects']);
     const byId = new Map(projects.map((p) => [p.id, p]));
+    const mapped = new Set<string>();
     const visible = Object.entries(catalog).flatMap(([id, value]) => {
       const nativeId = this.nativeProjectId(id);
       const project = byId.get(nativeId);
+      if (!value || typeof value !== 'object' || Array.isArray(value) || mapped.has(nativeId))
+        throw Object.assign(new Error('Invalid or ambiguous desktop project catalog'), {
+          code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+        });
+      mapped.add(nativeId);
       const row = record(value);
-      return project
-        ? [{ ...project, name: typeof row.name === 'string' ? row.name : project.name }]
-        : [];
+      if (Object.hasOwn(row, 'name') && typeof row.name !== 'string')
+        throw Object.assign(new Error('Invalid desktop project name'), {
+          code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+        });
+      if (!project)
+        throw Object.assign(new Error('Desktop project metadata is not synchronized'), {
+          code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+        });
+      return [{ ...project, name: typeof row.name === 'string' ? row.name : project.name }];
     });
     // A phone-created project is real server metadata but is not necessarily
     // adopted by the desktop's local display preferences yet. Only explicit,
@@ -70,6 +105,13 @@ export class DesktopSidebar {
   }
 
   private nativeProjectId(id: string): string {
+    if (
+      Object.hasOwn(this.projectIds, id) &&
+      (typeof this.projectIds[id] !== 'string' || !this.projectIds[id])
+    )
+      throw Object.assign(new Error('Invalid desktop project identity'), {
+        code: 'DESKTOP_PROJECT_METADATA_INCOMPLETE',
+      });
     return typeof this.projectIds[id] === 'string' ? this.projectIds[id] : id;
   }
 
@@ -123,7 +165,7 @@ export class DesktopSidebar {
   /** Resolve all three lists once, using the desktop's persisted display rules. */
   presentation(
     projects: ReadProject[],
-    threads: ReadThread[],
+    threads: Pick<ReadThread, 'id' | 'archived' | 'projectId' | 'projectIds'>[],
     pinnedIds: string[],
     metadata: RecordValue[],
   ): WorkspaceSidebar {
@@ -148,7 +190,8 @@ export class DesktopSidebar {
       ? pinnedThreadIds
       : pinnedThreadIds.slice().sort((a, b) => (recency.get(b) ?? 0) - (recency.get(a) ?? 0));
     const pinnedThreads = new Set(pinnedThreadIds);
-    const projectIds = new Set(projects.map((p) => p.id));
+    const currentProjects = projects.filter((project) => project.desktopVisibility === undefined);
+    const projectIds = new Set(currentProjects.map((p) => p.id));
     const pinnedProjectIds = strings(this.state['pinned-project-ids'])
       .map((id) => this.nativeProjectId(id))
       .filter((id) => projectIds.has(id));
@@ -212,8 +255,11 @@ export class DesktopSidebar {
       ),
       projectIds:
         mode === 'project'
-          ? projects.filter((p) => !pinnedProjects.has(p.id)).map((p) => p.id)
+          ? currentProjects.filter((p) => !pinnedProjects.has(p.id)).map((p) => p.id)
           : [],
+      pendingProjectIds: projects
+        .filter((project) => project.desktopVisibility !== undefined)
+        .map((p) => p.id),
       projectThreadIds,
     };
   }
@@ -228,8 +274,7 @@ export class DesktopSidebar {
     if (!Object.hasOwn(assignments, threadId)) return undefined;
     const assignment = record(assignments[threadId]);
     if (assignment.projectKind !== 'local' || typeof assignment.projectId !== 'string') return null;
-    const mapped = this.projectIds[assignment.projectId];
-    return typeof mapped === 'string' ? mapped : assignment.projectId;
+    return this.nativeProjectId(assignment.projectId);
   }
 
   /** Desktop order, scoped to this computer's app-server metadata namespace. */

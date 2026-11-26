@@ -8852,6 +8852,192 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(composer.value as? String, "refresh-keeps-this-draft")
   }
 
+  @MainActor func testProjectDirectoryFreshBatchesAndIndependentPagination() async throws {
+    guard app.responds(to: NSSelectorFromString("setCurrentInteractionOptions:")) else {
+      throw XCTSkip("This Xcode cannot inject a second gesture while the first read is held")
+    }
+    let fixture = try await sidebarRefreshFixture()
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["REFRESH_FIXTURE_HISTORY"].waitForExistence(timeout: 10))
+    composer.tap(); typeComposerText("directory-sync-keeps-draft")
+    app.buttons["open-sidebar"].tap()
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797/" + path)!)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    func held(_ id: Int) async throws {
+      for _ in 0..<100 {
+        if (try await control("directory-state"))["held"] as? Int == id { return }
+        try await Task.sleep(for: .milliseconds(50))
+      }
+      XCTFail("The exact fresh successor request was not observed: \(id)")
+    }
+    _ = try await control("directory-enable")
+    app.setValue(NSNumber(value: 3), forKey: "currentInteractionOptions")
+    defer { app.setValue(NSNumber(value: 0), forKey: "currentInteractionOptions") }
+    pullSidebarRefresh(); try await held(1)
+    _ = try await control("directory-change")
+    pullSidebarRefresh()
+    _ = try await control("directory-release?id=1")
+    try await held(2)
+    _ = try await control("directory-change")
+    pullSidebarRefresh()
+    _ = try await control("directory-release?id=2")
+    XCTAssertTrue(app.staticTexts["Directory renamed final"].waitForExistence(timeout: 15))
+    XCTAssertTrue(app.buttons["project-directory-added"].exists, "Complete the project cursor before publishing")
+    XCTAssertFalse(app.buttons["project-directory-removed"].exists, "A complete replacement removes stale objects")
+    let state = try await control("directory-state")
+    XCTAssertEqual(state["freshReads"] as? Int, 3, "A gesture after a successor starts needs another fresh batch")
+    XCTAssertGreaterThanOrEqual(state["projectPages"] as? Int ?? 0, 1)
+    shot("project-directory-fresh-successors-complete-catalog")
+    app.buttons["close-sidebar"].tap()
+    XCTAssertEqual(composer.value as? String, "directory-sync-keeps-draft")
+  }
+
+  @MainActor func testProjectCreationReadFailureRecoversOriginalOperationAfterRelaunch() async throws {
+    let fixture = try await sidebarRefreshFixture()
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["REFRESH_FIXTURE_HISTORY"].waitForExistence(timeout: 10))
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797/" + path)!)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    _ = try await control("creation-enable")
+    app.buttons["open-sidebar"].tap(); pullSidebarRefresh()
+    XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 10))
+    app.buttons["add-project"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    app.textFields["project-name"].tap();app.textFields["project-name"].typeText("Recover original project")
+    app.buttons["confirm-project"].tap()
+    XCTAssertTrue(app.alerts["无法完成操作"].waitForExistence(timeout: 10))
+    app.alerts.buttons["好"].tap()
+    let original = try await control("creation-state")
+    let operation = try XCTUnwrap(original["operation"] as? [String: Any])
+    let originalId = try XCTUnwrap(operation["clientOperationId"] as? String)
+    _ = try await control("creation-directory-offline")
+    app.terminate();app.launchArguments.append("-restore-testing");app.launchChineseTest()
+    XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 10))
+    _ = try await control("creation-recover")
+    app.buttons["open-sidebar"].tap()
+    XCTAssertTrue(app.buttons["project-creation-recovery"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["add-project"].exists, "Current workspace failure keeps the POST entry closed")
+    app.buttons["project-creation-recovery"].tap()
+    // The real failure hierarchy showed the half-height Form's final action
+    // below its viewport. Expand using the native sheet handle before reading it.
+    let handle = app.buttons["表单控制柄"]
+    XCTAssertTrue(handle.waitForExistence(timeout: 10))
+    handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1,
+      thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)))
+    let name = app.textFields["project-name"]
+    XCTAssertTrue(name.waitForExistence(timeout: 10))
+    name.tap(); name.typeText("Recover original project\n")
+    XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["confirm-project"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.frame.intersects(app.buttons["confirm-project"].frame), "Inspect the action within the expanded sheet viewport")
+    XCTAssertEqual(name.value as? String, "Recover original project", "Use valid input so workspace unavailability is the only POST gate")
+    XCTAssertFalse(app.buttons["confirm-project"].isEnabled, "A failed workspace cannot authorize another POST")
+    let recover = app.buttons["recover-project-" + originalId]
+    XCTAssertTrue(recover.waitForExistence(timeout: 10));recover.tap()
+    XCTAssertTrue(app.buttons["confirm-project"].waitForNonExistence(timeout: 15), "The original receipt remains recoverable while workspace stays 503")
+    let recovered = try await control("creation-state")
+    XCTAssertEqual(recovered["writes"] as? Int, 1, "A directory failure and relaunch cannot create another project")
+    XCTAssertEqual(recovered["posts"] as? Int, 1, "Recovery only queries the original receipt")
+    XCTAssertEqual((recovered["operation"] as? [String: Any])?["clientOperationId"] as? String, originalId)
+    XCTAssertGreaterThanOrEqual(recovered["receiptReads"] as? Int ?? 0, 2)
+    shot("project-creation-original-receipt-recovered-after-relaunch")
+  }
+
+  @MainActor func testRejectedProjectDoesNotBlockIndependentCreation() async throws {
+    let fixture = try await sidebarRefreshFixture()
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["REFRESH_FIXTURE_HISTORY"].waitForExistence(timeout: 10))
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797/" + path)!)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    _ = try await control("creation-enable");_ = try await control("creation-recover")
+    app.buttons["open-sidebar"].tap();pullSidebarRefresh()
+    XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 10));app.buttons["add-project"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    app.textFields["project-name"].tap();app.textFields["project-name"].typeText("Rejected project")
+    app.buttons["confirm-project"].tap()
+    XCTAssertTrue(app.alerts["无法完成操作"].waitForExistence(timeout: 10));app.alerts.buttons["好"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    XCTAssertEqual(app.textFields["project-name"].value as? String, "Rejected project", "A rejection preserves the current form draft")
+    replaceText(app.textFields["project-name"], with: "Independent project")
+    app.buttons["confirm-project"].tap()
+    XCTAssertTrue(app.buttons["confirm-project"].waitForNonExistence(timeout: 15))
+    let state = try await control("creation-state")
+    XCTAssertEqual(state["writes"] as? Int, 1)
+    XCTAssertEqual(state["posts"] as? Int, 2, "A rejected operation cannot block another legitimate creation")
+    XCTAssertEqual((state["operations"] as? [String: Any])?.count, 2)
+    shot("rejected-project-preserves-independent-creation")
+  }
+
+  @MainActor func testLateProjectConfirmationPreservesAnotherFormDraft() async throws {
+    let fixture = try await sidebarRefreshFixture()
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["REFRESH_FIXTURE_HISTORY"].waitForExistence(timeout: 10))
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797/" + path)!)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    _ = try await control("creation-enable");_ = try await control("creation-recover");_ = try await control("creation-hold-post")
+    app.buttons["open-sidebar"].tap();pullSidebarRefresh()
+    XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 10));app.buttons["add-project"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    app.textFields["project-name"].tap();app.textFields["project-name"].typeText("Delayed project")
+    app.buttons["confirm-project"].tap()
+    var originalId: String?
+    for _ in 0..<100 {
+      let state = try await control("creation-state")
+      if state["postHeld"] as? Bool == true { originalId = (state["operation"] as? [String: Any])?["clientOperationId"] as? String;break }
+      try await Task.sleep(for: .milliseconds(50))
+    }
+    let id = try XCTUnwrap(originalId)
+    app.buttons["取消"].tap()
+    app.buttons["add-project"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    app.textFields["project-name"].tap();app.textFields["project-name"].typeText("Independent B draft")
+    _ = try await control("creation-release-post")
+    XCTAssertTrue(app.buttons["recover-project-" + id].waitForNonExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["confirm-project"].exists)
+    XCTAssertEqual(app.textFields["project-name"].value as? String, "Independent B draft", "A's late completion cannot close or replace B")
+    let finalState = try await control("creation-state")
+    XCTAssertEqual(finalState["writes"] as? Int, 1)
+    shot("late-project-confirmation-preserves-other-form")
+  }
+
+  @MainActor func testInFlightProjectQueryPreservesOriginalConfirmation() async throws {
+    let fixture = try await sidebarRefreshFixture()
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["REFRESH_FIXTURE_HISTORY"].waitForExistence(timeout: 10))
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797/" + path)!)
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+    _ = try await control("creation-enable");_ = try await control("creation-recover");_ = try await control("creation-hold-post")
+    app.buttons["open-sidebar"].tap();pullSidebarRefresh()
+    XCTAssertTrue(app.buttons["add-project"].waitForExistence(timeout: 10));app.buttons["add-project"].tap()
+    XCTAssertTrue(app.textFields["project-name"].waitForExistence(timeout: 10))
+    app.textFields["project-name"].tap();app.textFields["project-name"].typeText("In-flight project")
+    app.buttons["confirm-project"].tap()
+    var id: String?
+    for _ in 0..<100 {
+      let state = try await control("creation-state")
+      if state["postHeld"] as? Bool == true { id = (state["operation"] as? [String: Any])?["clientOperationId"] as? String;break }
+      try await Task.sleep(for: .milliseconds(50))
+    }
+    let recover = app.buttons["recover-project-" + (try XCTUnwrap(id))]
+    XCTAssertTrue(recover.waitForExistence(timeout: 10));XCTAssertFalse(recover.isEnabled)
+    XCTAssertFalse(app.buttons["confirm-project"].isEnabled, "The same operation cannot supersede its active confirmation callback")
+    _ = try await control("creation-release-post")
+    XCTAssertTrue(app.buttons["confirm-project"].waitForNonExistence(timeout: 15))
+    let finalState = try await control("creation-state")
+    XCTAssertEqual(finalState["posts"] as? Int, 1)
+    shot("in-flight-project-original-confirmation-remains-owned")
+  }
+
   @MainActor func testSidebarPullRefreshFailurePreservesCachedList() async throws {
     let fixture = try await sidebarRefreshFixture()
     connectLive(fixture, supportsCreation: false)

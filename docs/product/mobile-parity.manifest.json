@@ -26618,6 +26618,16 @@
         "apps/ios/Sources/VoiceInput.swift": "be908c18f81968d43800a7c05f952ccec61a931c3110a825177d58f4698875ef",
         "apps/ios/CodexManage.xcodeproj/project.pbxproj": "a1ec4f8224988c3fb40819b6632de87e51ea1db9ffa0dc5f40b1326a7b620f03"
       }
+    },
+    {
+      "id": "ios-local-mic-tap-probe-20261126",
+      "baseCommit": "df6806de0c8ae2016a2774497a49da729a3ea417",
+      "features": ["F33"],
+      "summary": "Extend existing opt-in real microphone metadata to LocalVoiceInput: permission/session/engine timing and actual input-tap buffer/frame counters with sampled RMS, without audio/text retention, fixtures, backend changes or silence-policy changes. Android unaffected; physical diagnosis remains separate.",
+      "files": {
+        "apps/ios/Sources/LocalVoiceInput.swift": "fbcaf6f9f597e450eb1741d378c11c45ffc3f9322916d0ed6a2abb377b0449bf",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "ec95d349bc889f1719188d5641edfc7e23df617bb36c264df16b86c8d2d80062"
+      }
     }
   ]
 }

@@ -2,6 +2,76 @@ import AVFoundation
 import Speech
 import SwiftUI
 
+/// Opt-in scalar observations of the existing microphone tap, independent of fixtures.
+/// No audio buffers, transcript, target or credentials are retained.
+@MainActor
+private final class LocalVoiceCaptureProbe {
+  private let id: UUID
+  private let url: URL
+  private var events = 0
+  private var buffers = 0
+  private var frames: UInt64 = 0
+  private var meterBuffers = 0
+  private var meteredFrames: UInt64 = 0
+  private var maximumRMS: Float = 0
+  private var lastSample = -Double.infinity
+
+  static func make(id: UUID) -> LocalVoiceCaptureProbe? {
+    guard ProcessInfo.processInfo.arguments.contains("-voice-capture-diagnostics") else { return nil }
+    return try? LocalVoiceCaptureProbe(id: id)
+  }
+
+  private init(id: UUID) throws {
+    self.id = id
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("local-voice-capture-diagnostics", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true,
+      attributes: [.posixPermissions: 0o700, .protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
+    url = root.appendingPathComponent(id.uuidString.lowercased() + ".jsonl")
+    try Data().write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+  }
+
+  func buffer(frames count: AVAudioFrameCount, rate: Double, channels: AVAudioChannelCount, rms: Float?) {
+    buffers += 1
+    frames += UInt64(count)
+    if let rms {
+      meterBuffers += 1
+      meteredFrames += UInt64(count)
+      maximumRMS = max(maximumRMS, rms)
+    }
+    let now = ProcessInfo.processInfo.systemUptime
+    guard now - lastSample >= 1 else { return }
+    lastSample = now
+    sample("input-tap", details: ["bufferFrames": count, "tapSampleRate": rate,
+      "tapChannels": channels, "sampledRMS": rms as Any? ?? NSNull()])
+  }
+
+  func sample(_ event: String, details: [String: Any] = [:]) {
+    guard events < 340 else { return }
+    events += 1
+    let session = AVAudioSession.sharedInstance()
+    var value: [String: Any] = [
+      "operationId": id.uuidString.lowercased(), "event": event,
+      "timestamp": Date().timeIntervalSince1970, "uptime": ProcessInfo.processInfo.systemUptime,
+      "category": session.category.rawValue, "mode": session.mode.rawValue,
+      "sampleRate": session.sampleRate, "inputChannels": session.inputNumberOfChannels,
+      "inputAvailable": session.isInputAvailable, "inputMuted": AVAudioApplication.shared.isInputMuted,
+      "inputPorts": session.currentRoute.inputs.map { $0.portType.rawValue },
+      "outputPorts": session.currentRoute.outputs.map { $0.portType.rawValue },
+      "tapBuffers": buffers, "tapFrames": frames,
+      "meterBuffers": meterBuffers, "meteredFrames": meteredFrames, "maximumSampledRMS": maximumRMS,
+    ]
+    value.merge(details) { _, new in new }
+    guard JSONSerialization.isValidJSONObject(value),
+      var data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+      let handle = try? FileHandle(forWritingTo: url) else { return }
+    defer { try? handle.close() }
+    data.append(0x0A)
+    _ = try? handle.seekToEnd()
+    try? handle.write(contentsOf: data)
+  }
+}
+
 /// Recognizes an existing recording without opening the microphone again.
 @MainActor
 final class LocalRecordingTranscriber {
@@ -121,6 +191,7 @@ final class LocalVoiceInputController: ObservableObject {
   private var maximumRMS: Float = 0
   private var meterEvents = 0
   private var lastSignalAt = Date.distantFuture
+  private var captureProbe: LocalVoiceCaptureProbe?
   private(set) var targetKey = ""
   private(set) var originalText = ""
   private var generation = UUID()
@@ -166,12 +237,15 @@ final class LocalVoiceInputController: ObservableObject {
     lastSignalAt = .distantFuture
     generation = UUID()
     let id = generation
+    captureProbe = LocalVoiceCaptureProbe.make(id: id)
+    captureProbe?.sample("start-requested")
     phase = .requesting
     setupTask = Task {
       let speechPermission = await withCheckedContinuation { continuation in
         SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
       }
       guard generation == id, !Task.isCancelled else { return }
+      captureProbe?.sample("speech-permission", details: ["status": speechPermission.rawValue])
       guard speechPermission == .authorized else {
         complete(id: id, message: L10n.tr("语音识别权限未开启，请在系统设置中允许语音识别。"))
         return
@@ -180,11 +254,14 @@ final class LocalVoiceInputController: ObservableObject {
         AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
       }
       guard generation == id, !Task.isCancelled else { return }
+      captureProbe?.sample("microphone-permission", details: ["granted": microphonePermission])
       guard microphonePermission else {
         complete(id: id, message: L10n.tr("麦克风权限未开启，请在系统设置中允许访问麦克风。"))
         return
       }
       do { try await beginCapture(id: id) } catch {
+        let failure = error as NSError
+        captureProbe?.sample("setup-failed", details: ["errorDomain": failure.domain, "errorCode": failure.code])
         complete(id: id, message: L10n.tr("无法开始听写：\(error.localizedDescription)"))
       }
     }
@@ -199,6 +276,7 @@ final class LocalVoiceInputController: ObservableObject {
       return
     }
     activeAudioSession = id
+    captureProbe?.sample("session-activated")
     guard !AVAudioApplication.shared.isInputMuted else {
       throw HostServiceError.message(L10n.tr("麦克风已被系统静音，请解除静音后重试。原草稿已保留。"))
     }
@@ -259,20 +337,30 @@ final class LocalVoiceInputController: ObservableObject {
       }
     }
     diagnosticPrefix = "backend=\(backend) locale=\(locale.identifier) input=\(session.currentRoute.inputs.map(\.portType.rawValue).joined(separator: ",")) format=\(format.sampleRate)/\(format.channelCount) muted=\(AVAudioApplication.shared.isInputMuted)"
-    if ProcessInfo.processInfo.arguments.contains("-ui-testing") { diagnosticInfo = diagnosticPrefix }
+    let diagnosticsEnabled = captureProbe != nil
+    captureProbe?.sample("recognizer-prepared", details: ["backend": backend,
+      "tapSampleRate": format.sampleRate, "tapChannels": format.channelCount])
+    if ProcessInfo.processInfo.arguments.contains("-ui-testing") || diagnosticsEnabled { diagnosticInfo = diagnosticPrefix }
     input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-      guard let meter = sink.append(buffer) else { return }
+      let frames = buffer.frameLength
+      let rate = buffer.format.sampleRate
+      let channels = buffer.format.channelCount
+      let meter = sink.append(buffer)
+      guard meter != nil || diagnosticsEnabled else { return }
       Task { @MainActor [weak self] in
         guard let self, self.generation == id, self.phase == .listening else { return }
+        self.captureProbe?.buffer(frames: frames, rate: rate, channels: channels, rms: meter?.rms)
+        guard let meter else { return }
         self.levels.removeFirst()
         self.levels.append(meter.level)
         if meter.rms > 0 { self.lastSignalAt = Date() }
-        if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing") || diagnosticsEnabled {
           self.maximumRMS = max(self.maximumRMS, meter.rms)
           self.meterEvents += 1
           self.diagnosticInfo = self.diagnosticPrefix + " meters=\(self.meterEvents) peak=\(self.maximumRMS)"
         }
         if Date().timeIntervalSince(self.lastSignalAt) >= 8 {
+          self.captureProbe?.sample("silence-timeout", details: ["silenceSeconds": Date().timeIntervalSince(self.lastSignalAt)])
           self.complete(id: id, message: L10n.tr("麦克风未提供音频，听写已停止。请检查系统麦克风及通话、其他录音占用后重试。原草稿已保留。"))
         }
       }
@@ -286,6 +374,7 @@ final class LocalVoiceInputController: ObservableObject {
           == AVAudioSession.InterruptionType.began.rawValue
       else { return }
       Task { @MainActor [weak self] in
+        self?.captureProbe?.sample("interruption")
         self?.complete(id: id, message: L10n.tr("听写被中断，已识别的文字保留在草稿中。"))
       }
     }
@@ -293,6 +382,7 @@ final class LocalVoiceInputController: ObservableObject {
     try engine.start()
     lastSignalAt = Date()
     phase = .listening
+    captureProbe?.sample("engine-started", details: ["engineRunning": engine.isRunning])
   }
 
   nonisolated private static func recognitionErrorMessage(_ error: Error) -> String {
@@ -336,6 +426,7 @@ final class LocalVoiceInputController: ObservableObject {
   func cancel() { complete(id: generation, accepted: false) }
 
   private func stopCapture() {
+    captureProbe?.sample("will-stop", details: ["engineRunning": engine?.isRunning ?? false])
     engine?.stop()
     if tapInstalled {
       engine?.inputNode.removeTap(onBus: 0)
@@ -345,16 +436,19 @@ final class LocalVoiceInputController: ObservableObject {
       audioSession.deactivate(id: id)
       activeAudioSession = nil
     }
+    captureProbe?.sample("did-stop")
   }
 
   private func complete(id: UUID, message: String? = nil, accepted: Bool = true) {
     guard generation == id else { return }
+    captureProbe?.sample("completed", details: ["hasError": message != nil, "accepted": accepted])
     generation = UUID()
     setupTask?.cancel()
     setupTask = nil
     finishTimeout?.cancel()
     finishTimeout = nil
     stopCapture()
+    captureProbe = nil
     request?.endAudio()
     recognitionTask?.cancel()
     recognitionTask = nil

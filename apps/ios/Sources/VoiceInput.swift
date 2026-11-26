@@ -79,9 +79,28 @@ fileprivate final class VoiceCaptureProbe: NSObject, AVAudioRecorderDelegate, @u
   private let audioURL: URL
   private let outputURL: URL
   private let lock = NSLock()
+  private let lifecycleLock = NSLock()
   private var eventCount = 0
   private var observers: [NSObjectProtocol] = []
-  private weak var observedRecorder: AVAudioRecorder?
+  // The diagnostic keeps the same stopped recorder through its completion
+  // callback and first sealed-file read; normal capture has no probe.
+  private var retainedRecorder: AVAudioRecorder?
+  private var observedRecorder: AVAudioRecorder? {
+    get { lifecycleLock.withLock { retainedRecorder } }
+    set {
+      let previous = lifecycleLock.withLock {
+        let previous = retainedRecorder
+        retainedRecorder = newValue
+        return previous
+      }
+      // Releasing an audio object may invoke callbacks; never do so under the
+      // state lock used by the diagnostic completion callback.
+      withExtendedLifetime(previous) {}
+    }
+  }
+  private var completionObserved = false
+  private var completionSucceeded: Bool?
+  private var finalObservationScheduled = false
 
   static func make(id: UUID, url: URL) -> VoiceCaptureProbe? {
     guard ProcessInfo.processInfo.arguments.contains("-voice-capture-diagnostics") else { return nil }
@@ -115,6 +134,63 @@ fileprivate final class VoiceCaptureProbe: NSObject, AVAudioRecorderDelegate, @u
     observers.removeAll()
   }
   deinit { endObserving() }
+  /// Observe one UUID without making delayed audio eligible for transcription.
+  /// The bounded deadline ends diagnostics; it is not a sealing workaround.
+  func observeInitialFile(_ audio: AVAudioFile) -> Bool {
+    let empty = audio.length == 0
+    sample("sealed-audio-file", recorder: nil, details: [
+      "audioFrames": audio.length, "processingSampleRate": audio.processingFormat.sampleRate,
+      "processingChannels": audio.processingFormat.channelCount,
+    ])
+    let schedule = lifecycleLock.withLock {
+      guard !finalObservationScheduled else { return false }
+      finalObservationScheduled = true
+      return true
+    }
+    if schedule {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [self] in
+        let completion = lifecycleLock.withLock { (completionObserved, completionSucceeded) }
+        let finalFrames = observeFile(completion.0 ? "bounded-file-after-completion" : "completion-not-observed-at-deadline",
+          details: ["completionObserved": completion.0,
+            "completionSucceeded": completion.1 as Any? ?? NSNull()])
+        if empty, finalFrames == 0 {
+          do {
+            try FileManager.default.removeItem(at: audioURL)
+            sample("diagnostic-empty-file-cleanup", recorder: nil, details: ["removed": true])
+          } catch {
+            let error = error as NSError
+            sample("diagnostic-empty-file-cleanup", recorder: nil,
+              details: ["removed": false, "errorDomain": error.domain, "errorCode": error.code])
+          }
+        } else if empty {
+          // A positive or unreadable final file is evidence, not disposable
+          // empty input. The task owner may export this exact UUID normally.
+          sample("diagnostic-file-retained", recorder: nil,
+            details: ["reason": finalFrames == nil ? "final-read-failed" : "positive-final-frames"])
+        }
+        observedRecorder = nil
+      }
+    }
+    return empty
+  }
+  @discardableResult private func observeFile(_ event: String, details: [String: Any] = [:]) -> AVAudioFramePosition? {
+    do {
+      // Each observation opens a fresh reader; no audio samples are read.
+      let audio = try AVAudioFile(forReading: audioURL)
+      sample(event, recorder: nil, details: details.merging([
+        "audioFrames": audio.length, "processingSampleRate": audio.processingFormat.sampleRate,
+        "processingChannels": audio.processingFormat.channelCount,
+      ]) { _, new in new })
+      return audio.length
+    } catch {
+      let error = error as NSError
+      sample(event, recorder: nil, details: details.merging([
+        "fileReadErrorDomain": error.domain, "fileReadErrorCode": error.code,
+      ]) { _, new in new })
+      return nil
+    }
+  }
+  func releaseRecorder() { observedRecorder = nil }
   func sample(_ event: String, recorder: AVAudioRecorder?, details: [String: Any] = [:]) {
     lock.withLock {
       guard eventCount < 340 else { return }
@@ -153,7 +229,9 @@ fileprivate final class VoiceCaptureProbe: NSObject, AVAudioRecorderDelegate, @u
     }
   }
   func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+    lifecycleLock.withLock { completionObserved = true; completionSucceeded = flag }
     sample("delegate-finished", recorder: recorder, details: ["successfully": flag])
+    observeFile("delegate-file-state", details: ["successfully": flag])
   }
   func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
     let error = error as NSError?
@@ -566,12 +644,10 @@ final class VoiceInputController: ObservableObject {
             guard let fileURL else { throw HostServiceError.message(L10n.tr("原录音不存在")) }
             stopCapture()
             let audio = try AVAudioFile(forReading: fileURL)
-            captureProbe?.sample("sealed-audio-file", recorder: nil, details: [
-              "audioFrames": audio.length, "processingSampleRate": audio.processingFormat.sampleRate,
-              "processingChannels": audio.processingFormat.channelCount,
-            ])
+            let preserveDiagnosticFile = captureProbe?.observeInitialFile(audio) ?? false
             guard audio.length > 0 else {
-              failSetup(id: id, message: L10n.tr("没有采集到录音，请重录。使用手机镜像时，请先退出镜像。"))
+              failSetup(id: id, message: L10n.tr("没有采集到录音，请重录。使用手机镜像时，请先退出镜像。"),
+                preserveDiagnosticFile: preserveDiagnosticFile)
               return false
             }
             let duration = max(1, Int((Double(audio.length) / audio.processingFormat.sampleRate * 1000).rounded()))
@@ -605,6 +681,7 @@ final class VoiceInputController: ObservableObject {
       } catch {
         guard generation == id, !Task.isCancelled else { return false }
         stopCapture()
+        captureProbe?.releaseRecorder()
         phase = .failed
         needsReceiptRecovery = !recoverOriginal && !usesLocalRecognition && !usingLocalRecording
           && recording != nil && provider?.recover != nil
@@ -750,14 +827,14 @@ final class VoiceInputController: ObservableObject {
       self.transcript = text
     }
   }
-  private func failSetup(id: UUID, message: String) {
+  private func failSetup(id: UUID, message: String, preserveDiagnosticFile: Bool = false) {
     guard generation == id else { return }
     // Keep the target and callbacks so a preparation/capture failure remains
     // visible and can be re-recorded instead of returning to an empty composer.
     stopCapture()
     localObservation = nil
     localRecognition?.cancel(); localRecognition = nil
-    if let fileURL { try? FileManager.default.removeItem(at: fileURL) }
+    if let fileURL, !preserveDiagnosticFile { try? FileManager.default.removeItem(at: fileURL) }
     fileURL = nil; recording = nil
     levels = Array(repeating: 0, count: 9)
     phase = .failed; error = message
@@ -780,6 +857,7 @@ final class VoiceInputController: ObservableObject {
     backgroundedWhileFinishing = false
     fixtureCaptured = false
     stopCapture()
+    captureProbe?.releaseRecorder()
     localObservation = nil
     localRecognition?.cancel(); localRecognition = nil
     phase = .idle; onDraftChange = nil; provider = nil; finishTask = nil

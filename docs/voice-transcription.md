@@ -68,3 +68,7 @@ UM05当前安卓封存使用逐块AES-GCM认证的二进制文件，音频不再
 每条包含本次UUID、墙钟/单调时间、系统音频类别和模式、输入/输出端口类型、采样率/声道、输入静音状态、录音器时钟/录音状态/实际电平、该UUID临时WAV存在与字节数，以及停止后读取到的帧数。只记录公开API的真实返回；不记录音频内容、草稿文字、Host凭据、端口名称或设备UID。只读回确切本次UUID，经正常App文件接口导出，留存所需最小证据后回收；后续正常启动不带该参数即可关闭。
 
 文件大小不增长不能单独证明没有硬件帧，播放命令成功也不能证明发声。按同一次录音的开始、录中、紧贴停止和封口结果判断：有正帧但静音再查声源/路由；时钟推进但封口0帧再查生命周期；始终无帧的错误发生在转写前，不通过换Host或注入现成音频冒充采集成功。诊断入口实现及编译不等于真机故障已修复；真实结论记录于对应任务证据。
+
+The opt-in probe also retains the same stopped recorder through the first sealed-file observation and completion callback. It opens a fresh `AVAudioFile` in the callback, then records one final bounded observation after two seconds, including whether completion was observed and any file-read error. The deadline ends observation; it does not retry capture, make late audio eligible for transcription, or claim that delayed reading repairs recording.
+
+Only a file initially measured as empty enters the diagnostic cleanup branch. It remains available to the completion callback. If the final fresh read still measures zero frames, the probe removes that exact UUID file and records the result. A positive or unreadable final file is retained for the task owner's normal, scoped export and later cleanup. The probe releases its recorder at the bounded observation; normal startup has no probe and retains the original empty-file handling. UI-test fixtures, audio samples, draft text, backend selection and the production 16 kHz format remain unchanged.

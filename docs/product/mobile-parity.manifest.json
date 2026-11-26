@@ -26608,6 +26608,16 @@
         "apps/ios/Sources/VoiceInput.swift": "a16bca872871509bd6df5d93d228bf4bc7d492d851dfff2f1b266ea309bccd73",
         "apps/ios/CodexManage.xcodeproj/project.pbxproj": "66f0b8a4ca01e26e43472b134711bfa801226a42dfacfc8f909e4f61afafc21c"
       }
+    },
+    {
+      "id": "ios-voice-sealed-lifecycle-probe-20261126",
+      "baseCommit": "a1fec2ecd6bbd5a71cb2ce3f8152be95d6c3478f",
+      "features": ["F64"],
+      "summary": "Extend only the existing opt-in iOS recorder probe: retain same recorder/UUID file through initial sealed read and completion callback, observe fresh file metadata and a bounded deadline, remove only verified empty diagnostic input and preserve positive/unreadable evidence. No delayed transcription, default capture change, format downgrade or audio injection. Android unchanged; real diagnosis separate.",
+      "files": {
+        "apps/ios/Sources/VoiceInput.swift": "be908c18f81968d43800a7c05f952ccec61a931c3110a825177d58f4698875ef",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "a1ec4f8224988c3fb40819b6632de87e51ea1db9ffa0dc5f40b1326a7b620f03"
+      }
     }
   ]
 }

@@ -26628,6 +26628,38 @@
         "apps/ios/Sources/LocalVoiceInput.swift": "fbcaf6f9f597e450eb1741d378c11c45ffc3f9322916d0ed6a2abb377b0449bf",
         "apps/ios/CodexManage.xcodeproj/project.pbxproj": "ec95d349bc889f1719188d5641edfc7e23df617bb36c264df16b86c8d2d80062"
       }
+    },
+    {
+      "id": "codex-async-question-original-permissions-20261126",
+      "baseCommit": "619d819be1d422dfb7a98225b91e351bcc08e562",
+      "features": ["F58", "F43"],
+      "summary": "Recover ended asynchronous question permissions from the verified original owner turn, including concrete sandbox restrictions, exact reviewer and cwd. Persist the private policy snapshot in immutable reply intent; never substitute current defaults, broaden custom restrictions or replay unknown submissions. Legacy IPC actions and ordinary-message defaults remain compatible. Real target deployment/native acceptance recorded separately.",
+      "files": {
+        "packages/codex-adapter/src/original-question-permissions.ts": "3a435dcba93eb99a387f5f8eaf39bde72bee77f964442628959027d553170588",
+        "packages/codex-adapter/src/desktop-ipc.ts": "afb86d4a23365bdd44e44a09a8e5700d3936a91de0e65a815eda444644fe117b",
+        "packages/codex-adapter/src/runtime-session.ts": "19224bd116df4b55018775fcbf0e6617b073af60659cb1faffb88178fc944a15",
+        "scripts/original-question-permissions.test.mjs": "80c13c86917fa00e81720e821ded919d6604f28bd95efb92a253f5d17a6f53f0",
+        "scripts/desktop-ipc-smoke.mjs": "4a8e1ddd4074f7039ec03cff32f5df179d23c9ad3ab22399eabd24c8b938670a",
+        "packages/codex-adapter/src/desktop-prepared-bridge.ts": "69881af02c8c9de38f03d1eddbd90b3464051d96749c335a67e1af2c53c8e09c"
+      }
+    },
+    {
+      "id": "desktop-catalog-confirmed-project-fixture-20261126",
+      "baseCommit": "619d819be1d422dfb7a98225b91e351bcc08e562",
+      "features": ["F12"],
+      "summary": "Update the existing synthetic CLI-refresh session to provide the confirmed-project accessor required by the current production catalog. The fixture has no phone-created projects; expected discovery, recovery and zero owner inputs are unchanged. Test scaffolding only; no production or acceptance claim.",
+      "files": {
+        "scripts/desktop-workspace-cli-refresh.test.mjs": "f4754213e409ec6ecd96d7ed9d2055286280acf23fcbc4e8ddd47ccfcc1a83f9"
+      }
+    },
+    {
+      "id": "voice-recovery-disabled-probe-fixture-20261126",
+      "baseCommit": "619d819be1d422dfb7a98225b91e351bcc08e562",
+      "features": ["F64"],
+      "summary": "Keep the existing extracted voice recovery harness compatible with the optional capture diagnostic observer. The observer remains nil and expectations for original operation recovery and no retranscription are unchanged; test scaffolding only.",
+      "files": {
+        "scripts/easywork-voice-recovery.test.mjs": "a371398349647e16a5d26fcbc77a8a42a0b8fd4c2725ef79d9301bae7699f645"
+      }
     }
   ]
 }

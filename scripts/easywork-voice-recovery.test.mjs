@@ -30,6 +30,7 @@ struct Provider { let scopeKey = "owned-scope"; let transcribe: (VoiceRecording)
   static func resolveLocally(_ id: String) { remove(id) }
 }
 struct AVAudioFile { let length = 0; let processingFormat = Format(); struct Format { let sampleRate = 16000.0 }; init(forReading: URL) throws {} }
+struct CaptureProbe { func observeInitialFile(_ audio: AVAudioFile) -> Bool { false }; func releaseRecorder() {} }
 struct LocalRecordingTranscriber { func transcribe(_ url: URL, _ onStart: () -> Void) async throws -> String { onStart(); return "local-recording" } }
 final class LocalRecognition { var error: String?; let transcript = "local-recognition"; func finish() async -> Bool { true } }
 @MainActor final class UIApplication { enum State { case active }; static let shared = UIApplication(); let applicationState = State.active }
@@ -37,6 +38,7 @@ final class LocalRecognition { var error: String?; let transcript = "local-recog
   enum Phase { case idle, requesting, listening, finishing, failed }
   var phase: Phase; var finishTask: Task<Bool, Never>?; var generation = UUID()
   var recording: VoiceRecording?; var fileURL: URL?; var provider: Provider?
+  var captureProbe: CaptureProbe?
   var recordingPersisted = false; var usesSavedLocalRecognition = false; var usesLocalRecognition = false
   var isFixture = false; var simulatesTranscriptionFailure = false; var localRecognition: LocalRecognition?
   var targetKey = "owned-target"; var originalText = "original prefix "; var transcript = ""; var error: String?
@@ -46,7 +48,7 @@ final class LocalRecognition { var error: String?; let transcript = "local-recog
   init(_ phase: Phase, _ recording: VoiceRecording?, _ provider: Provider) { self.phase = phase; self.recording = recording; self.provider = provider }
   func beginBackgroundTime(id: UUID) {}; func endBackgroundTime() {}; func stopCapture() {}
   func recoverAfterInterruption() { preconditionFailure("unexpected implicit recovery") }
-  func failSetup(id: UUID, message: String) { phase = .failed; error = message }
+  func failSetup(id: UUID, message: String, preserveDiagnosticFile: Bool = false) { phase = .failed; error = message }
   func reset(discard: Bool, preservePending: Bool) { phase = .idle; if discard { recording = nil } }
 ${source.slice(start, end)}
 }

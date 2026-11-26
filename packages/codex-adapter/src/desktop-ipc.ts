@@ -26,6 +26,10 @@ import { DesktopFrameDecoder, desktopFrameLimits } from './desktop-framing.js';
 import { DesktopLiveWindow, type DesktopLiveObservation } from './desktop-live-window.js';
 import { configuredPermissionSettings, permissionSettings } from './generation-settings.js';
 import {
+  originalPermissionSettings,
+  readOriginalQuestionPermissions,
+} from './original-question-permissions.js';
+import {
   openWindowsDesktopPipe,
   windowsDesktopPipe,
   type WindowsDesktopIdentity,
@@ -1565,6 +1569,26 @@ export class DesktopRuntime {
     } finally {
       this.subagentHistoryReading = false;
     }
+  }
+  async originalQuestionPermissions(
+    state: WireObject,
+    turnId: string,
+  ): Promise<WireObject | undefined> {
+    const threadId = string(state.id);
+    const turn = desktopTurns(state).find((turn) => turn.turnId === turnId);
+    if (!turn || state.hostId !== 'local' || !this.ipc.hasOwner(threadId)) return;
+    const params = object(turn.params);
+    if (
+      ['permissions', 'activePermissionProfile', 'sandboxPolicy', 'sandbox'].some(
+        (key) => params[key] !== undefined,
+      )
+    )
+      return originalPermissionSettings(params);
+    if (!(this.ipc instanceof DesktopSharedControl)) return;
+    const home = dirname(
+      dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')),
+    );
+    return readOriginalQuestionPermissions(home, string(state.path), threadId, turnId);
   }
   /** Read this computer's desktop choice fresh; never copy another Host's settings. */
   async defaultPermissions(cwd: string): Promise<WireObject> {

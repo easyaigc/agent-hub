@@ -120,6 +120,7 @@ const loadedDigest = (() => {
     'runtime-persistence.js',
     'runtime-diagnostics.js',
     'generation-settings.js',
+    'original-question-permissions.js',
     'history-reader.js',
     'desktop-platform.js',
     'desktop-bridge-defaults.js',

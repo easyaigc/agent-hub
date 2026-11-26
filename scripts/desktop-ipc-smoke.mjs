@@ -1477,8 +1477,8 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     const idleFollowupRequest = commands.at(-1).params.turnStart.request;
     assert.equal(
       idleFollowupRequest.permissions,
-      ':read-only',
-      'Idle asynchronous answer preserves the original question permission, not computer defaults',
+      undefined,
+      'The concrete original policy must not be replaced by a named/current preset',
     );
     assert.deepEqual(idleFollowupRequest.sandboxPolicy, { type: 'readOnly' });
     assert.equal(idleFollowupRequest.approvalPolicy, 'on-request');
@@ -1503,6 +1503,17 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       await readFile(join(directory, 'session/runtime.json'), 'utf8'),
     );
     assert.equal(Object.keys(persistedAsync.asyncQuestionActions).length, 3);
+    assert.deepEqual(
+      persistedAsync.asyncQuestionActions[freeform.id].reply.originalQuestionPermissions,
+      {
+        turnId: freeform.turnId,
+        settings: {
+          sandboxPolicy: { type: 'readOnly' },
+          approvalPolicy: 'on-request',
+          approvalsReviewer: 'user',
+        },
+      },
+    );
     assert.equal(persistedAsync.asyncQuestionActions[skipped.id].decision, 'skip');
     assert(Object.values(persistedAsync.asyncQuestionActions).every((action) => action.resolved));
     assert.equal(

@@ -259,6 +259,7 @@ try {
   let ownerCommands = 0;
   const session = {
     hostId: 'fixture-host',
+    confirmedCreatedProjectIds: () => [],
     async connectDesktopReader(reader) {
       await reader.connect();
     },

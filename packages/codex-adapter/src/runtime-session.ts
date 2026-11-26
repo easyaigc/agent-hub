@@ -1,4 +1,8 @@
 import { beginCpuStage } from './cpu-stages.js';
+import {
+  originalPermissionSettings,
+  type OriginalQuestionPermissions,
+} from './original-question-permissions.js';
 import { desktopTitle } from './desktop-title.js';
 import {
   parentLineageCapability,
@@ -254,6 +258,8 @@ export interface Reply {
   speed?: string;
   collaborationMode?: string;
   expectedPlanId?: string;
+  /** Internal only: captured from the original question, never a client override. */
+  originalQuestionPermissions?: OriginalQuestionPermissions;
 }
 export interface ReplyTarget {
   agentId: string;
@@ -307,6 +313,7 @@ export function replyIntentFingerprint(reply: Reply, target: ReplyTarget): strin
               'speed',
               'collaborationMode',
               'expectedPlanId',
+              'originalQuestionPermissions',
             ]
               .filter((key) => reply[key as keyof Reply] !== undefined)
               .map((key) => [key, reply[key as keyof Reply]]),
@@ -4446,6 +4453,26 @@ export class RuntimeSession {
       suppliedTarget === undefined ? this.readingTarget() : suppliedTarget,
     );
     this.assertReplyOpen(target);
+    let originalQuestionPermissions: OriginalQuestionPermissions | undefined;
+    if (caller?.originalQuestionPermissions !== undefined) {
+      const source = Object.values(this.state.asyncQuestionActions ?? {}).find(
+        (action) => action.reply === caller && action.threadId === caller.threadId,
+      );
+      const snapshot = caller.originalQuestionPermissions;
+      if (!snapshot || typeof snapshot !== 'object')
+        throw new RuntimeError(409, '问题回复的原任务权限快照无效');
+      const settings = originalPermissionSettings(snapshot.settings);
+      if (
+        !source ||
+        source.turnId !== snapshot.turnId ||
+        caller.mode !== 'next-turn' ||
+        caller.permissionMode !== undefined ||
+        !settings ||
+        !isDeepStrictEqual(settings, snapshot.settings)
+      )
+        throw new RuntimeError(409, '问题回复的原任务权限快照无效');
+      originalQuestionPermissions = structuredClone(snapshot);
+    }
     const optional = [
       'expectedTurnId',
       'model',
@@ -4485,6 +4512,7 @@ export class RuntimeSession {
       text: caller.text,
       attachmentIds: Object.freeze([...caller.attachmentIds]) as unknown as string[],
       mode: caller.mode,
+      ...(originalQuestionPermissions ? { originalQuestionPermissions } : {}),
       ...Object.fromEntries(
         optional
           .filter((key) => caller[key as keyof Reply] !== undefined)
@@ -5378,11 +5406,13 @@ export class RuntimeSession {
       const permissions =
         mode === 'steer'
           ? {}
-          : reply.permissionMode
-            ? permissionSettings(reply.permissionMode, cwd)
-            : this.runtime instanceof DesktopRuntime
-              ? {} // Resolve the desktop choice immediately before its owner submits.
-              : await this.replyAwait(this.computerPermissions(cwd, target), target);
+          : reply.originalQuestionPermissions
+            ? structuredClone(reply.originalQuestionPermissions.settings)
+            : reply.permissionMode
+              ? permissionSettings(reply.permissionMode, cwd)
+              : this.runtime instanceof DesktopRuntime
+                ? {} // Resolve the desktop choice immediately before its owner submits.
+                : await this.replyAwait(this.computerPermissions(cwd, target), target);
       if (!(this.runtime instanceof DesktopRuntime)) delete permissions.permissions;
       this.assertReplyOpen(target);
       receipt.state = 'submitting';
@@ -5459,6 +5489,15 @@ export class RuntimeSession {
               throw new RuntimeError(409, '回复附件实际字节已变化');
           }
           check('execution');
+          if (reply.originalQuestionPermissions && this.runtime instanceof DesktopRuntime) {
+            const turns = desktopTurns(this.runtime.ipc.state(thread.id) ?? {});
+            const last = turns.at(-1);
+            if (
+              last?.turnId !== reply.originalQuestionPermissions.turnId ||
+              last.status === 'inProgress'
+            )
+              throw new RuntimeError(409, '问题所属任务已变化，回复未发送');
+          }
           if (creation) {
             creation.boundaryAttempted = true;
             creation.boundary.beforeWrite(creation.checkpoint);
@@ -5732,9 +5771,31 @@ export class RuntimeSession {
             selected.length > 10
       )
         throw new RuntimeError(400, '请填写有效回复');
-      const originalPermissionMode = currentPermissionMode(object(latest.params));
-      if (decision !== 'skip' && latest.status !== 'inProgress' && !originalPermissionMode)
-        throw new RuntimeError(409, '无法确认原问题的权限设置，回复未发送；请在桌面确认后刷新');
+      const originalPermissions =
+        decision !== 'skip' && latest.status !== 'inProgress'
+          ? await this.runtime.originalQuestionPermissions(owner, turnId)
+          : undefined;
+      if (decision !== 'skip' && latest.status !== 'inProgress') {
+        if (!originalPermissions)
+          throw new RuntimeError(
+            409,
+            '无法读取原任务的权限设置，回复未发送；请刷新重试或在桌面回答',
+          );
+        // The original policy read yields. Do not apply its answer to a newer task/question.
+        const currentOwner = await this.runtime.ipc.follow(threadId, 5000, true);
+        const currentTurn = desktopTurns(currentOwner ?? {}).at(-1);
+        if (
+          !currentOwner ||
+          currentOwner.hostId !== 'local' ||
+          !this.runtime.ipc.hasOwner(threadId) ||
+          currentTurn?.turnId !== turnId ||
+          currentTurn.status !== latest.status ||
+          !desktopQuestions(currentTurn.items).some(
+            (candidate) => candidate.id === question.id && isDeepStrictEqual(candidate, question),
+          )
+        )
+          throw new RuntimeError(409, '问题已回答或任务已变化，请刷新');
+      }
       action = {
         threadId,
         turnId,
@@ -5753,7 +5814,7 @@ export class RuntimeSession {
                 mode: latest.status === 'inProgress' ? ('steer' as const) : ('next-turn' as const),
                 ...(latest.status === 'inProgress'
                   ? { expectedTurnId: turnId }
-                  : { permissionMode: originalPermissionMode! }),
+                  : { originalQuestionPermissions: { turnId, settings: originalPermissions! } }),
               },
             }),
       };
@@ -5764,6 +5825,7 @@ export class RuntimeSession {
       if (
         action.reply.mode === 'next-turn' &&
         !action.reply.permissionMode &&
+        !action.reply.originalQuestionPermissions &&
         !this.state.receipts.some(
           (receipt) => receipt.clientMessageId === action.reply!.clientMessageId,
         )

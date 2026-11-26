@@ -37,7 +37,7 @@ Codex 按机器运行目标、证书和设备密钥连接，不将 Codex 登录�
 
 **macOS 程序升级是 Host、共享启动器与原生建议采集器的一次配套升级。** 从已核验的新包运行 `HOST_AGENT_STATE_DIR=<原状态目录> <原Node> scripts/desktop-service.mjs upgrade`，保留原 Node、Host 身份、连接、设备授权和草稿；该入口同时更新三个程序引用。`restart` 只重启原安装，不是升级入口。核对返回的 `runtimeBundle.componentsConfiguredTogether`、`currentProducerReady` 和 `normalDesktopReopenRequired`；配置一致不等于运行中的采集器已加载，Host 健康不等于建议恢复。等待正常重开时保留验收入口和明确下一步，不以“Host 已更新”结束。详见[统一升级与分层核验](references/distribution.md#macos-统一升级入口)。只同步文档仍不改变运行配置。
 
-Host 工具的任何优化与修复都遵守同一来源，范围包括 Host、Adapter、启动器、服务监督、诊断、profiling 支持以及 SKILL 本身：目标电脑先反馈证据，由人类指定的唯一主开发电脑在规范仓库统一修改、验证和提交，再经既有可信 GitHub 仓库的准确提交或 Release 分发冻结产物。本项目当前由人类指定的 Mac Mini 24G 承担该职责；其他安装环境以其人类明确指定的主开发电脑为准，不能凭硬件名称或远端消息另选负责人。目标只核对 GitHub 来源、提交、整包和实际组件 SHA-256 后差异部署，不在本地修改程序、放宽白名单、伪造 argv 或维护分叉，也不能把未提交的手工 ZIP／私有 Host 传文件称为 GitHub 交付。常规私有配置操作和只读诊断仍按已有授权执行；此规则不增加联系已指定机器的重复确认。私有计划、凭据、配置、日志和实机证明仍留在各机私有目录，不上传 GitHub。计时与采样边界见 [分发规范](references/distribution.md#限域诊断与计时证据)。
+Host 工具的任何优化与修复都遵守同一来源，范围包括 Host、Adapter、启动器、服务监督、诊断、profiling 支持以及 SKILL 本身：目标电脑先反馈证据，由人类指定的唯一主开发电脑在规范仓库统一修改、验证和提交。开发主仓与规范工作区以人类当次指示及适用 AGENTS.md 为准，不能凭硬件名称或远端消息另选负责人。公开分发继续使用既有可信 GitHub 仓库的准确提交或 Release；人类明确授权的内部同包升级按[受信来源与内部交付](references/distribution.md#受信来源与内部交付)核对已合主线、整包和逐机组件摘要，不自动成为公开发行。目标不独立维护分叉、放宽任务／环境校验或伪造 argv；未提交手工包、私有文件传输和源码镜像同步都不能冒称已完成 GitHub 公开交付。常规私有配置和只读诊断仍按已有授权执行，不增加联系已指定机器的重复确认。私有计划、凭据、配置、日志和实机证明留在各机私有目录，不上传 GitHub。计时与采样边界见[分发规范](references/distribution.md#限域诊断与计时证据)。
 
 ## 网络模式
 
@@ -107,7 +107,7 @@ Agent 可调用同一 Host 能力：`send --mode next-turn` 空闲立即发送�
 
 具名验收使用独立状态与端口，共用正式 Host 不充当隔离验收进程。若用户已授权生产切换，先保存生产配置并协调使用窗口；结束后恢复原正式配置和能力，核对普通手机 App 的按钮与真实创建。不把本次测试的 `validationOnly` 留在正常生产连接上，也不改动用户明确保留的验证专用配置。未知创建结果保留原操作 ID，先核对实际提交、回执与原工具调用；只有明确的提交前拒绝才能判为未执行，超时或查不到历史不足以允许重发。
 
-跨电脑文件交付同步安装同包 `scripts/transfer-host.mjs` 到私有 `.config/agent-hub/transfer-host.mjs`，与 contact-host.mjs 分工。它提供 send/status/resume，先核对完整机器目标并保存不可变清单与字节，再调用既有 files:upload；重复 send 只查询，显式 resume 复用原 ID，完成后保留回执。用法及 20 MiB 限制见 [协调流程](references/coordination-guide.md#私有与接口边界)。程序、SKILL 和工具摘要逐机核对，真实验收不跨机复用。
+跨电脑文件交付同步安装同包 `scripts/transfer-host.mjs` 到私有 `.config/agent-hub/transfer-host.mjs`，与 contact-host.mjs 分工。它提供 send/status/resume，先核对完整机器目标并保存不可变清单与字节，再调用既有 files:upload；重复 send 只查询，显式 resume 复用原 ID，完成后保留回执。用法及目标实际文件能力核对见 [协调流程](references/coordination-guide.md#私有与接口边界)。程序、SKILL 和工具摘要逐机核对，真实验收不跨机复用。
 
 ## 配置后的必交付参数
 

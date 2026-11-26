@@ -40,7 +40,7 @@
 
 文件字节不得经过聊天正文或工具输出进入模型上下文。Base64／Base64url、data URI、十六进制文件块以及大文件、图片、压缩包、完整补丁和长日志都走文件通道。工具拒绝 data URI、连续或以空白换行分组的长编码块（累计至少 256 字符）、二进制控制字符和无效 UTF-8；短 SHA-256、UUID 和必要的小段文字示例可保留。检测是常见载荷的防误传保护，不是允许其他编码载荷的例外。不要先读取／编码整份文件进工具输出再决定如何传。
 
-普通文件使用 `transfer-host.mjs`，完成并核对回执后，正文只列 **传输 ID、目标实际接收路径、字节数、SHA-256、用途及按需读取范围**。未确认的路径不猜造，传输完成不等于目标已读取或执行。源码差异回收可传独立文件；正式程序与 SKILL 分发继续遵循可信 GitHub 准确提交／Release 的统一产物规则，不能借文件通道替代正式分发。大于当前文件接口 20 MiB 上限时使用任务已授权的可信产物渠道，不退回聊天分片。
+普通文件使用 `transfer-host.mjs`，完成并核对回执后，正文只列 **传输 ID、目标实际接收路径、字节数、SHA-256、用途及按需读取范围**。未确认的路径不猜造，传输完成不等于目标已读取或执行。源码差异回收可传独立文件；正式程序与 SKILL 分发遵循[受信来源与内部交付](distribution.md#受信来源与内部交付)：分别核对公开 GitHub 交付和人类明确授权的内部同包升级，文件通道不改变来源及授权要求，也不证明已公开发行。文件大小按目标 Host 公布的实际能力及工具契约核对，不退回聊天分片。
 
 工具每次输出（完整 JSON 与换行）最多 **16 KiB**。`workspace --limit 20 --offset 0` 默认分别返回最多 20 个项目和 20 个会话，`--limit` 范围 1–50；按实际 JSON 字节预算可能减少条数。`nextProjectOffset`／`nextThreadOffset` 分别指示下一页偏移，null 表示该列表已结束；两个列表均使用本次 `--offset`，继续时按需要的列表选择对应偏移。可加 `--project-id ID` 只筛选该项目会话，项目列表保持原目录。只按需要取页，不合并打印全部目录；查询多次不代表整个聊天有固定预算。超长展示字段明确省略，准确 ID 不以缩写冒充完整值；回执只输出状态及标识，错误仅输出固定错误码，不输出嵌套正文，模型参数只输出具名设置。
 
@@ -96,7 +96,7 @@ Windows 使用原生用户目录中的同名工具与本机 Node 路径。`send`
 
 ## 私有与接口边界
 
-文件交付使用同包独立工具 `scripts/transfer-host.mjs`，安装时同步到当前用户私有 `.config/agent-hub/transfer-host.mjs`。使用 `send|status|resume --host-id HOST_ID --operation-id LOWERCASE_UUID`，首次 send 另附 `--file LOCAL_FILE`，可选 `--media-type TYPE`。连接读取 hosts.json；清单、字节快照和回执保存在私有 `file-transfers/<UUID>/`，不混入聊天 operations。先核对完整机器目标，再登记大小和 SHA-256 并上传二进制。重复 send/status 只查询，显式 resume 才按原 ID 和快照继续，已完成不重复交付。单文件 1 字节至 20 MiB，接收到目标固定目录，不接受远端目录参数。交付完成后再另外发送具名模型任务，注明传输 ID、路径、大小和摘要。跨机文件操作限于当前人类授权的目标与任务。
+文件交付使用同包独立工具 `scripts/transfer-host.mjs`，安装时同步到当前用户私有 `.config/agent-hub/transfer-host.mjs`。使用 `send|status|resume --host-id HOST_ID --operation-id LOWERCASE_UUID`，首次 send 另附 `--file LOCAL_FILE`，可选 `--media-type TYPE`。连接读取 hosts.json；清单、字节快照和回执保存在私有 `file-transfers/<UUID>/`，不混入聊天 operations。先核对完整机器目标，再登记大小和 SHA-256 并上传二进制。重复 send/status 只查询，显式 resume 才按原 ID 和快照继续，已完成不重复交付。文件必须非空，大小使用安全整数表示；以目标 Host 文件目录中的 `maxFileBytes` 和当前工具实际契约核对可用范围，`null` 表示未配置业务体积上限。接收到目标固定目录，不接受远端目录参数。交付完成后再另外发送具名模型任务，注明传输 ID、路径、大小和摘要。跨机文件操作限于当前人类授权的目标与任务。
 
 文件工具仅额外访问固定 `GET/POST /v1/file-transfers` 和 `POST /v1/file-transfers/content`。不增加任意方法或目录代理，不传密钥参数，不跟随重定向。安装后逐机核对工具 SHA-256，Windows 同时实际验证私有 DACL；程序和工具必须来自主开发仓库同一统一产物。
 

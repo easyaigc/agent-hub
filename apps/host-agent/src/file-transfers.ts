@@ -64,13 +64,13 @@ export class FileTransfers {
       temporary = destination + '.' + randomUUID();
     const file = await openPrivateFile(temporary, 'wx', 0o600);
     try {
-      await file.writeFile(JSON.stringify(receipt));
-      await file.sync();
-    } finally {
-      await file.close();
-    }
-    protectWindowsStateFile(temporary);
-    try {
+      try {
+        await file.writeFile(JSON.stringify(receipt));
+        await file.sync();
+      } finally {
+        await file.close();
+      }
+      protectWindowsStateFile(temporary);
       renamePrivateFileSync(temporary, destination);
       await this.syncDirectory(this.records);
     } finally {
@@ -161,20 +161,32 @@ export class FileTransfers {
   private async verify(receipt: FileTransferReceipt): Promise<boolean> {
     await this.directory(this.destinationDirectory);
     let file;
+    let checked;
     try {
+      checked = await lstat(receipt.destinationPath, { bigint: true });
       if (
-        !(await lstat(receipt.destinationPath)).isFile() ||
+        !checked.isFile() ||
         (await realpath(receipt.destinationPath)) !== receipt.destinationPath
       )
         throw new RuntimeError(409, '电脑上的接收文件已改变');
+      // Crash recovery only adopts a file that still satisfies the same
+      // Windows owner and DACL contract as a newly published file.
+      if (process.platform === 'win32') assertPrivateFile(receipt.destinationPath);
       file = await open(receipt.destinationPath, 'r');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      if ((error as { code?: string }).code === 'UNSAFE_WINDOWS_PRIVATE_STATE')
+        throw Object.assign(new RuntimeError(409, '电脑上的接收文件权限已变化'), { cause: error });
       throw error;
     }
     try {
       const before = await file.stat({ bigint: true });
-      if (before.size !== BigInt(receipt.sizeBytes))
+      if (
+        before.ino !== checked.ino ||
+        before.dev !== checked.dev ||
+        before.ctimeNs !== checked.ctimeNs ||
+        before.size !== BigInt(receipt.sizeBytes)
+      )
         throw new RuntimeError(409, '电脑上的接收文件已改变');
       const hash = createHash('sha256');
       for await (const chunk of file.createReadStream({ autoClose: false })) hash.update(chunk);
@@ -232,8 +244,8 @@ export class FileTransfers {
       const staging = join(stagingDirectory, id + '.partial');
       await rm(staging, { force: true });
       const file = await openPrivateFile(staging, 'wx', 0o600);
-      protectWindowsStateFile(staging);
       try {
+        protectWindowsStateFile(staging);
         let size = 0;
         const hash = createHash('sha256');
         for await (const chunk of source) {

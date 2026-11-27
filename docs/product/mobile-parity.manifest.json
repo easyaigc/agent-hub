@@ -26737,6 +26737,16 @@
         "packages/codex-adapter/src/runtime-session.ts": "22cc8d7f7696541dc7f783818188652213db88245a6dce485ea52a45b87a2e5d",
         "scripts/easywork-voice-recovery.test.mjs": "395400100a02c747f299d16268cf164a9b146448cd5b6c38318752de2f06578b"
       }
+    },
+    {
+      "id": "windows-file-transfer-private-recovery-20261127",
+      "baseCommit": "9466e1104f29a80a840ae20424e9fdfbdc77f826",
+      "features": ["F59"],
+      "summary": "Use the existing Windows owner and DACL guard before repairing a prepared file-transfer receipt. Reclaim owned scratch files when a receipt write or staging protection fails. Preserve transfer identity, completed receipts and mobile contracts.",
+      "files": {
+        "apps/host-agent/src/file-transfers.ts": "e3f1d7cf797fa5779882997f9928e584f6b34b5d2941fa877a94e32e1b74f483",
+        "scripts/file-transfers-private-state.test.mjs": "ff0c063c9de24eeb84223cc45f53ac26d4c39d91f0f1ad23a771293b0fddaf50"
+      }
     }
   ]
 }
